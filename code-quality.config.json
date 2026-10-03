@@ -1,0 +1,17 @@
+{
+  "lint": {
+    "oxlint": [".", "--type-aware"],
+    "eslint": [
+      "--cache",
+      "--cache-strategy",
+      "content",
+      "--concurrency",
+      "auto"
+    ]
+  },
+  "format": {
+    "engine": "oxfmt",
+    "args": ["!apps/**", "!packages/**", "!tools/test-recorder/**"]
+  },
+  "audit": ["--quiet"]
+}

@@ -35,13 +35,19 @@ jobs:
 
       - name: Audit new findings
         id: audit
-        uses: fallow-rs/fallow@c2da9fcae5388226a87e986b1812f9c872d288c6 # v3.24.1
-        with:
-          command: audit
-          version: '3.24.1'
-          format: json
-          branded-token: false
-          changed-since: ${{ steps.audit-base.outputs.sha }}
+        env:
+          BASE_SHA: ${{ steps.audit-base.outputs.sha }}
+        run: |
+          diff_file="$(mktemp)"
+          trap 'rm -f "$diff_file"' EXIT
+          git diff --unified=0 --relative "$BASE_SHA" HEAD -- > "$diff_file"
+          set +e
+          pnpm --silent fallow:audit --quiet --format json --changed-since "$BASE_SHA" --diff-file "$diff_file" > fallow-results.json
+          json_status=$?
+          pnpm --silent fallow:audit --quiet --format sarif --changed-since "$BASE_SHA" --diff-file "$diff_file" > fallow-results.sarif
+          sarif_status=$?
+          if [ "$json_status" -ne 0 ]; then exit "$json_status"; fi
+          exit "$sarif_status"
 
       # GitHub renders at most 10 annotations per type per step, and a repo-wide
       # audit emits enough warnings to crowd out the errors that fail the gate.
@@ -87,7 +93,7 @@ jobs:
           details-file: fallow-findings.md
           reproduce: |
             # the base the gate compared against
-            npx fallow audit --root . --quiet --format json \
+            pnpm --silent fallow:audit --root . --quiet --format json \
               --changed-since ${{ steps.audit-base.outputs.sha }}
           docs: '[ADR-DEVEX-LINT-0015](docs/adr/DEVEX-LINT-0015-adopt-fallow-with-new-only-baselines.md)'
           pr-number: ${{ github.event.pull_request.number }}

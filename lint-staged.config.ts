@@ -44,7 +44,7 @@ export default function lintStaged(stagedFiles: string[]) {
   return [
     ...commandsWithFiles(
       formattableFiles,
-      'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
+      'pnpm exec comfy-code-quality exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
     ...lintCommands(codeFiles, styleFiles, astroFiles),
     ...commandsWithFiles(
@@ -67,11 +67,11 @@ function lintCommands(
     ),
     ...commandsWithFiles(
       codeFiles,
-      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
+      'pnpm exec comfy-code-quality exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
     ),
     ...commandsWithFiles(
       [...codeFiles, ...astroFiles].filter(isEslintFile),
-      `pnpm exec eslint --cache --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
+      `pnpm exec comfy-code-quality exec eslint --cache --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
     )
   ]
 }
