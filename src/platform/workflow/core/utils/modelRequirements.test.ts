@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
+import { getSelectedModelsMetadata } from './modelRequirements'
 
-describe('modelMetadataUtil', () => {
+describe('modelRequirements', () => {
   describe('filterModelsByCurrentSelection', () => {
     it('should filter models to only include those selected in widget values', () => {
       const node = {
@@ -95,6 +95,48 @@ describe('modelMetadataUtil', () => {
               url: 'https://example.com/model_a.safetensors',
               directory: 'checkpoints'
             }
+          ]
+        }
+      }
+
+      const result = getSelectedModelsMetadata(node)
+
+      expect(result).toHaveLength(1)
+      expect(result![0].name).toBe('model_a.safetensors')
+    })
+
+    it.for([
+      { name: 'not an array', models: 'model_a.safetensors' },
+      { name: 'an array of null', models: [null] },
+      { name: 'an array of non-records', models: [1, 'x', true] },
+      {
+        name: 'an array of records missing a name',
+        models: [{ url: 'https://example.com/a.safetensors' }]
+      }
+    ])('returns nothing when properties.models is $name', ({ models }) => {
+      const node = {
+        type: 'SomeNode',
+        widgets_values: ['model_a.safetensors'],
+        properties: { models }
+      }
+
+      expect(() => getSelectedModelsMetadata(node)).not.toThrow()
+      expect(getSelectedModelsMetadata(node)).toBeUndefined()
+    })
+
+    it('keeps the valid entries and discards the malformed ones', () => {
+      const node = {
+        type: 'SomeNode',
+        widgets_values: ['model_a.safetensors', 'model_b.safetensors'],
+        properties: {
+          models: [
+            null,
+            {
+              name: 'model_a.safetensors',
+              url: 'https://example.com/model_a.safetensors',
+              directory: 'checkpoints'
+            },
+            { name: 'model_b.safetensors' }
           ]
         }
       }
