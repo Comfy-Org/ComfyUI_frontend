@@ -136,17 +136,14 @@ function defIds(wf: WorkflowJSON): string[] {
 
 describe("insert_workflow: happy path", () => {
   it("maps one explicit raw group id differently for two fixed operation ids", () => {
-    // Independently derived with Node 22.22.2, without importing the production remapper:
-    // node -e 'for(const op of ["c641df0c31f9440b9385ac8e01e099b2","0123456789abcdef0123456789abcdef"]) console.log(`insert:${op}:root:group:${encodeURIComponent(JSON.stringify("raw-group"))}`)'
+    // Independently derived with Node, without importing the production remapper:
+    // the string seed `insert:<op>:root:group:<original>`, first 128 bits of its
+    // sha256, modulo 2^53 - 1, plus one (group ids are numeric, as the frontend
+    // schema requires):
+    // node -e 'const c=require("crypto");for(const op of ["c641df0c31f9440b9385ac8e01e099b2","0123456789abcdef0123456789abcdef"]){const h=c.createHash("sha256").update(`insert:${op}:root:group:${encodeURIComponent(JSON.stringify("raw-group"))}`).digest("hex").slice(0,32);console.log(String(BigInt("0x"+h)%BigInt(Number.MAX_SAFE_INTEGER)+1n))}'
     const vectors = [
-      [
-        "c641df0c31f9440b9385ac8e01e099b2",
-        "insert:c641df0c31f9440b9385ac8e01e099b2:root:group:%22raw-group%22",
-      ],
-      [
-        "0123456789abcdef0123456789abcdef",
-        "insert:0123456789abcdef0123456789abcdef:root:group:%22raw-group%22",
-      ],
+      ["c641df0c31f9440b9385ac8e01e099b2", 5516296349936697],
+      ["0123456789abcdef0123456789abcdef", 8384614748614864],
     ] as const;
 
     for (const [opId, expectedGroupId] of vectors) {

@@ -49,6 +49,7 @@ import { assertReadableSchema } from "./schema-version.js";
 import { NODE_INCARNATION_KEY, type WidgetCatalog, type WorkflowJSON, type WorkflowNode } from "./types.js";
 import { hasDynamicCombos, optionOwnedWidgets, projectedLength, widgetLayoutForWidgets } from "./dynamic-combos.js";
 import { widgetIdentityFromStorageKey, widgetOccurrenceAt, widgetStorageKey, widgetIndexOf } from "./widget-identity.js";
+import { numericId } from "./remap.js";
 
 /** Sorted-by-id comparator: numeric when both ids are numbers, else string order. */
 function idCompare(a: unknown, b: unknown): number {
@@ -311,8 +312,34 @@ export function projectDefinition(dm: Y.Map<unknown>, catalog: WidgetCatalog): R
       out[k] = structuredClone(v);
     }
   });
+  if (Array.isArray(out["groups"])) out["groups"] = projectGroups(out["groups"]);
   return scrubPrivateKeys(out) as Record<string, unknown>;
 }
+
+/**
+ * Groups with a numeric id, as ComfyUI_frontend's schema requires (`id` is
+ * `z.number()`, and a string refuses the whole workflow). `insert_workflow`
+ * derives numeric group ids (`remap.ts` `derivedGroupId`); a document written
+ * before that still stores the string `derivedId`, which reads back here as the
+ * number that derivation gives for it. Only that derived form is coerced: any
+ * other string id (a workflow's own, never inserted) is left as it is, so
+ * `project(mint(wf))` round-trips it. Numeric and absent ids are untouched.
+ */
+function projectGroups(groups: unknown[]): unknown[] {
+  return groups.map((group) => {
+    if (typeof group !== "object" || group === null || Array.isArray(group)) return group;
+    const id = (group as { id?: unknown }).id;
+    return typeof id === "string" && DERIVED_GROUP_ID.test(id) ? { ...group, id: numericId(id) } : group;
+  });
+}
+
+/**
+ * The string `derivedId` `insert_workflow` gave a group before it derived
+ * numbers: `insert:<opId>:<scope>:group:<original>`. `opId` has no colon, a
+ * scope may (`root/definition:...`), and `<original>` is
+ * `encodeURIComponent(JSON.stringify(id))`, which never contains one.
+ */
+const DERIVED_GROUP_ID = /^insert:[^:]+:.+:group:[^:]*$/;
 
 function scrubPrivateKeys(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(scrubPrivateKeys);
@@ -367,6 +394,7 @@ export function project(doc: Y.Doc, catalog: WidgetCatalog): WorkflowJSON {
     if (k === "schema_version" || k === "catalog_version" || k.startsWith("__")) return;
     wf[k] = structuredClone(v);
   });
+  if (Array.isArray(wf["groups"])) wf["groups"] = projectGroups(wf["groups"]);
 
   const nodes: WorkflowNode[] = [];
   nodesMap(doc).forEach((ym) => {

@@ -64,9 +64,30 @@ const SAFE_INTEGER_MODULUS = BigInt(Number.MAX_SAFE_INTEGER);
  * arrival order.
  */
 function derivedLinkId(opId: string, scope: string, original: unknown): number {
-  const seed = derivedId(opId, scope, "link", original);
+  return numericId(derivedId(opId, scope, "link", original));
+}
+
+/**
+ * Fold a string seed into `[1, Number.MAX_SAFE_INTEGER]`: 128 bits of its
+ * sha256 reduced modulo `2^53 - 1`. Pure, so every replica derives the same
+ * number for the same seed.
+ */
+export function numericId(seed: string): number {
   const hex = sha256Hex(seed).slice(0, LINK_ID_HEX_DIGITS);
   return Number((BigInt(`0x${hex}`) % SAFE_INTEGER_MODULUS) + 1n);
+}
+
+/**
+ * A group id must be a `number`: ComfyUI_frontend's workflow schema declares
+ * `groups[].id` as `z.number()` at the root and inside
+ * `definitions.subgraphs[].groups`, and refuses the whole workflow otherwise.
+ * Groups therefore take the links' numeric derivation, seeded with the string
+ * `derivedId` they used to carry verbatim — which is also what lets
+ * `project.ts` read a document that still stores that string
+ * (`projectGroupId`) as the same number.
+ */
+function derivedGroupId(opId: string, scope: string, original: unknown): number {
+  return numericId(derivedId(opId, scope, "group", original));
 }
 
 function linkEndpoints(link: unknown): [unknown, unknown] | undefined {
@@ -227,7 +248,7 @@ function remapGraph(
     graph["groups"] = (graph["groups"] as unknown[]).map((group) => {
       if (typeof group === "object" && group !== null && !Array.isArray(group)) {
         const record = group as { id?: unknown };
-        if (record.id !== undefined) record.id = derivedId(opId, scope, "group", record.id);
+        if (record.id !== undefined) record.id = derivedGroupId(opId, scope, record.id);
       }
       return group;
     });
