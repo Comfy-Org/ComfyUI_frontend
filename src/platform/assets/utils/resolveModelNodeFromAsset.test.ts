@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
+import {
+  canCreateNodeForAsset,
+  resolveModelNodeFromAsset
+} from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
 
@@ -49,6 +52,18 @@ beforeEach(() => {
   vi.mocked(useModelToNodeStore().getNodeProvider).mockImplementation(
     mockGetNodeProvider
   )
+})
+
+describe('canCreateNodeForAsset', () => {
+  it('rejects an asset with no usable category before the registry is ready', () => {
+    expect(canCreateNodeForAsset(createMockAsset({ tags: ['models'] }))).toBe(
+      false
+    )
+  })
+
+  it('fails open while node definitions are unavailable', () => {
+    expect(canCreateNodeForAsset(createMockAsset())).toBe(true)
+  })
 })
 
 describe('resolveModelNodeFromAsset', () => {

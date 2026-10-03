@@ -37,11 +37,11 @@ export function canCreateNodeForAsset(asset: AssetItem): boolean {
   )
   const modelToNodeStore = useModelToNodeStore()
 
-  modelToNodeStore.registerDefaults()
+  if (candidates.length === 0) return false
   if (!modelToNodeStore.isReady) return true
 
-  return candidates.some(
-    (category) => modelToNodeStore.getNodeProvider(category) !== undefined
+  return candidates.some((category) =>
+    modelToNodeStore.hasNodeProvider(category)
   )
 }
 

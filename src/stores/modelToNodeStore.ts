@@ -109,6 +109,14 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     return findProvidersWithFallback(modelType)?.[0]
   }
 
+  /** Check the current registry without triggering default registration. */
+  function hasNodeProvider(modelType: unknown): boolean {
+    return (
+      typeof modelType === 'string' &&
+      findProvidersWithFallback(modelType) !== undefined
+    )
+  }
+
   /**
    * Get the list of all valid node providers for the given model type name.
    * Supports hierarchical lookups: if "parent/child" has no match, falls back to "parent".
@@ -173,6 +181,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     getRegisteredNodeTypes,
     getCategoryForNodeType,
     getNodeProvider,
+    hasNodeProvider,
     getAllNodeProviders,
     registerNodeProvider,
     quickRegister,
