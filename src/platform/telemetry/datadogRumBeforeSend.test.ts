@@ -129,15 +129,18 @@ describe('rumBeforeSend', () => {
   })
 
   it('redacts URL secrets from resource events', () => {
+    const secretUrl = 'https://user:secret@example.com/model.glb?token=private'
     const event = fromPartial<RumResourceEvent>({
       type: 'resource',
-      resource: {
-        url: 'https://user:secret@example.com/model.glb?token=private'
-      }
+      resource: { url: secretUrl },
+      context: { model: { source: secretUrl } }
     })
 
     expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
     expect(event.resource.url).toBe('https://example.com/model.glb')
+    expect(event.context).toEqual({
+      model: { source: 'https://example.com/model.glb' }
+    })
   })
 
   it('keeps the console copy while no reporter exists to replace it', () => {

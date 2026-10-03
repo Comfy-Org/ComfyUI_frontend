@@ -59,6 +59,7 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
   expect(
     options?.beforeSend?.(
       fromPartial({
+        tags: { source: secretUrl },
         extra: { source: secretUrl },
         contexts: { model: { source: secretUrl } },
         request: { url: secretUrl },
@@ -77,6 +78,7 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
       {}
     )
   ).toMatchObject({
+    tags: { source: 'https://example.com/model.glb' },
     extra: { source: 'https://example.com/model.glb' },
     contexts: { model: { source: 'https://example.com/model.glb' } },
     request: { url: 'https://example.com/model.glb' },
@@ -100,7 +102,10 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
   expect(
     options?.beforeSendSpan?.(
       fromPartial({
-        data: { source: secretUrl, sources: [secretUrl, null, 'safe'] },
+        data: {
+          source: secretUrl,
+          sources: [secretUrl, 42, null, 'safe'] as unknown as string[]
+        },
         description: `GET ${secretUrl}`,
         span_id: '1234567890abcdef',
         start_timestamp: 1,
@@ -111,7 +116,7 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
     description: 'GET https://example.com/model.glb',
     data: {
       source: 'https://example.com/model.glb',
-      sources: ['https://example.com/model.glb', null, 'safe']
+      sources: ['https://example.com/model.glb', 42, null, 'safe']
     }
   })
 })

@@ -13,6 +13,14 @@ function redactSentryEvent(event: ErrorEvent, hint: EventHint) {
   if (filtered.message) {
     filtered.message = redactTelemetryUrls(filtered.message)
   }
+  if (filtered.tags) {
+    filtered.tags = Object.fromEntries(
+      Object.entries(filtered.tags).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? redactTelemetryUrls(value) : value
+      ])
+    )
+  }
   filtered.extra = redactTelemetryValues(filtered.extra)
   filtered.contexts = redactSentryContexts(filtered.contexts)
   if (filtered.request?.url) {
@@ -76,16 +84,10 @@ export function initSentry({
       for (const [key, value] of Object.entries(span.data)) {
         if (typeof value === 'string') {
           span.data[key] = redactTelemetryUrls(value)
-        } else if (
-          Array.isArray(value) &&
-          value.every(
-            (item): item is string | null | undefined =>
-              typeof item === 'string' || item == null
-          )
-        ) {
+        } else if (Array.isArray(value)) {
           span.data[key] = value.map((item) =>
             typeof item === 'string' ? redactTelemetryUrls(item) : item
-          )
+          ) as typeof value
         }
       }
       return span
