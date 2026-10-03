@@ -1,6 +1,7 @@
 import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
+import { createUuidv4 } from '@/utils/uuid'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -43,6 +44,20 @@ export class ComfyWorkflow extends UserFile {
    * The change tracker for the workflow. Non-reactive raw object.
    */
   changeTracker: ChangeTracker | null = null
+  /**
+   * Identity of one *editing session*, as distinct from the file.
+   *
+   * Minted when the session begins and dropped when it ends, so it answers
+   * "have I already seen this document" — which neither of the persistent ids
+   * can. The path is a storage address and breaks on rename; the id inside the
+   * workflow JSON travels with the file, so two opens of it, and any copy made
+   * outside the app, all report the same value.
+   *
+   * Never serialized. Two opens are two sessions by construction, and a
+   * consumer that misses an eviction is left holding a key nothing answers to
+   * rather than state that appears to belong to the new document.
+   */
+  sessionId: string | null = null
   /**
    * Whether the workflow has been modified comparing to the initial state.
    */
@@ -152,6 +167,9 @@ export class ComfyWorkflow extends UserFile {
     const initialState = JSON.parse(this.originalContent)
     const { ChangeTracker } = await import('@/scripts/changeTracker')
     this.changeTracker = markRaw(new ChangeTracker(this, initialState))
+    // Beside the change tracker because they have the same life: this is the
+    // point the early return above defines as "the session already exists".
+    this.sessionId = createUuidv4()
     if (draftState && draftContent) {
       this.changeTracker.activeState = draftState
       this.content = draftContent
@@ -165,6 +183,7 @@ export class ComfyWorkflow extends UserFile {
 
   override unload(): void {
     this.changeTracker = null
+    this.sessionId = null
     this.activeMode = null
     super.unload()
   }

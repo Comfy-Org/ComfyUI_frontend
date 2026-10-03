@@ -32,6 +32,8 @@ import { watch } from 'vue'
 import { useExecutionStore } from '@/stores/executionStore'
 
 import { currentDocumentId, onAppReady, onWorkflowLoaded } from './appReady'
+import type { DocumentHandle, DocumentReader } from './documentHandle'
+import { onDocumentPhase } from './documentLifecycle'
 import { createNodeChangeObserver } from './nodeChanges'
 import type { NodeChangeEvent, NodeChangeOptions } from './nodeChanges'
 import { createSelectionObserver } from './selection'
@@ -65,7 +67,7 @@ type ComfyApiHost = {
     options: WorkflowOpenOptions
   ) => Promise<void>
   refreshDefinitions?: () => Promise<void>
-  getWorkflowName?: () => string | undefined
+  documents?: DocumentReader
 }
 
 /**
@@ -167,7 +169,8 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['node.fileDrop', '2.0'],
   ['workflow.open', '2.0'],
   ['workflow.open.new', '2.0'],
-  ['workflow.name', '2.0'],
+  ['workflow.document', '2.0'],
+  ['workflow.documentLifecycle', '2.0'],
   ['workflow.textReplacements', '2.0'],
   ['execution.node', '2.0'],
   ['defs.typeCompatibility', '2.0'],
@@ -363,8 +366,51 @@ export interface Comfy {
    * This is `afterConfigureGraph`. Unlike {@link onReady} it fires again for
    * every workflow the user opens, which is what a pack re-attaching itself to
    * the document needs — `onReady` fires once and misses every later open.
+   *
+   * It also fires for undo, redo and a reload of the same document, because a
+   * pack rebuilding state from the graph needs those too. The handle says
+   * which of them happened: an id equal to the one from last time means this
+   * document was rebuilt, not replaced. `undefined` when the host cannot name
+   * a document, as when raw workflow data is loaded with no file behind it.
    */
-  onWorkflowLoaded(listener: () => void): Unsubscribe
+  onWorkflowLoaded(
+    listener: (document: DocumentHandle | undefined) => void
+  ): Unsubscribe
+  /**
+   * A document's editing session began.
+   *
+   * Where per-document state belongs. Fires for a tab opened in the
+   * background too, so a pack that allocates here and releases in
+   * {@link onDocumentClosed} stays balanced however the user moves around.
+   */
+  onDocumentOpened(listener: (document: DocumentHandle) => void): Unsubscribe
+  /**
+   * A document became the one on screen.
+   *
+   * Distinct from opening: the user returning to a tab activates a document
+   * that was already open, and its state is still valid. Anything tied to
+   * *being visible* — a panel, a canvas overlay — belongs here.
+   */
+  onDocumentActivated(listener: (document: DocumentHandle) => void): Unsubscribe
+  /**
+   * A document stopped being the one on screen, but is still open.
+   *
+   * Fires before the next document is activated, so a pack moving something
+   * between them never sees two claiming the screen at once.
+   */
+  onDocumentDeactivated(
+    listener: (document: DocumentHandle) => void
+  ): Unsubscribe
+  /**
+   * A document's editing session ended, however it ended — the user closing
+   * the tab, a temporary workflow being deleted, or the host discarding a
+   * background tab whose file changed on disk.
+   *
+   * Release everything keyed to it. The handle already reports `isDeleted`,
+   * and carries the id so a pack can find what it stored; it will not describe
+   * the document, because there is no longer one to describe.
+   */
+  onDocumentClosed(listener: (document: DocumentHandle) => void): Unsubscribe
 }
 
 /** Per-major instances, memoised per graph provider. */
@@ -377,7 +423,7 @@ function buildMajor(
     data: WorkflowData,
     options: WorkflowOpenOptions
   ) => Promise<void>,
-  getWorkflowName?: () => string | undefined
+  documents?: DocumentReader
 ): Comfy {
   const graph = createGraphApi(
     getGraph,
@@ -402,7 +448,7 @@ function buildMajor(
     getGraph,
     openWorkflow,
     currentDocumentId,
-    getWorkflowName
+    documents
   )
   const definitionScopes = new WeakMap<LGraph, GraphHandle>()
   const capabilities = new Map(CAPABILITIES)
@@ -514,7 +560,17 @@ function buildMajor(
         (id) => listener(id ? executionNode(id) : undefined)
       )
     },
-    onWorkflowLoaded,
+    onWorkflowLoaded: (
+      listener: (document: DocumentHandle | undefined) => void
+    ) => onWorkflowLoaded(() => listener(workflow.current())),
+    onDocumentOpened: (listener: (document: DocumentHandle) => void) =>
+      onDocumentPhase('opened', listener),
+    onDocumentActivated: (listener: (document: DocumentHandle) => void) =>
+      onDocumentPhase('activated', listener),
+    onDocumentDeactivated: (listener: (document: DocumentHandle) => void) =>
+      onDocumentPhase('deactivated', listener),
+    onDocumentClosed: (listener: (document: DocumentHandle) => void) =>
+      onDocumentPhase('closed', listener),
     defs: defs.forMajor(
       (nodeId) => graph.node(nodeId)!,
       handleForDefinitionNode
@@ -547,7 +603,7 @@ export function createComfyApi(
         forMajor,
         defs,
         host.openWorkflow,
-        host.getWorkflowName
+        host.documents
       )
       byMajor.set(requested, instance)
     }

@@ -9,8 +9,6 @@ const noGraph = () => undefined as unknown as LGraph | null | undefined
 
 describe('WorkflowHandle.documentId', () => {
   it('reads through to the host-supplied reader', () => {
-    // The handle does not mint or track anything itself. The loaded-workflow
-    // lifecycle belongs to `appReady`, and this is only a read of it.
     const reader = vi.fn(() => 'doc-1')
     const api = createWorkflowApi(noGraph, undefined, reader)
 
@@ -25,27 +23,51 @@ describe('WorkflowHandle.documentId', () => {
   })
 })
 
-describe('WorkflowHandle.name', () => {
-  it('returns the host-provided display filename without a path', () => {
-    const api = createWorkflowApi(
-      noGraph,
-      undefined,
-      undefined,
-      () => 'Portrait workflow.json'
-    )
+describe('WorkflowHandle.current', () => {
+  const document = {
+    sessionId: 'session-a',
+    filename: 'portrait',
+    path: 'workflows/portrait.json',
+    isModified: true,
+    isActive: true
+  }
 
-    expect(api.name()).toBe('Portrait workflow.json')
+  it('describes the document on screen', () => {
+    const api = createWorkflowApi(noGraph, undefined, undefined, () => [
+      document
+    ])
+
+    const current = api.current()
+
+    expect(current?.id).toBe('session-a')
+    expect(current?.name).toBe('portrait')
+    expect(current?.isModified).toBe(true)
+    expect(current?.isDeleted).toBe(false)
   })
 
-  it('is undefined until the host has an active workflow', () => {
+  it('agrees with documentId', () => {
     const api = createWorkflowApi(
       noGraph,
       undefined,
-      undefined,
-      () => undefined
+      () => 'session-a',
+      () => [document]
     )
 
-    expect(api.name()).toBeUndefined()
+    expect(api.current()?.id).toBe(api.documentId())
+  })
+
+  it('is undefined before a document is open', () => {
+    const api = createWorkflowApi(noGraph, undefined, undefined, () => [])
+
+    expect(api.current()).toBeUndefined()
+  })
+
+  it('is undefined for a file whose session has not begun', () => {
+    const api = createWorkflowApi(noGraph, undefined, undefined, () => [
+      { ...document, sessionId: null }
+    ])
+
+    expect(api.current()).toBeUndefined()
   })
 })
 

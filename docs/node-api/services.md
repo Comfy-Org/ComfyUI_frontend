@@ -339,6 +339,71 @@ The mode defaults to `replace`. `name` is optional in `new` mode, is limited to
 128 Unicode code points and 512 UTF-8 bytes, and is a display name only. It
 cannot contain path separators or be used with `replace` mode.
 
+### The document
+
+A document is one editing session of one workflow — distinct from the file
+(the path and bytes on disk, shared by every copy and every open) and from the
+graph (the content, which the user mutates continuously).
+
+```js
+const document = comfy.workflow.current()
+
+if (document) {
+  console.info(document.id, document.name, document.isModified)
+}
+```
+
+`id` identifies the session, not the file. It is stable while the document is
+open — across undo, redo and tab switches — and is never reused. It is not the
+id inside the workflow JSON, which travels with the file so two opens of it
+report the same value, and not the path, which changes on rename. **Do not
+persist it**: it means nothing in the next page load. Key pack state on `id`,
+and store anything that must outlive the session against `path`.
+
+`comfy.workflow.documentId()` is the same value without the handle.
+
+### Document lifecycle
+
+```js
+const index = new Map()
+
+comfy.onDocumentOpened((document) => index.set(document.id, buildIndex()))
+comfy.onDocumentClosed((document) => index.delete(document.id))
+
+comfy.onDocumentActivated((document) => showPanelFor(document))
+comfy.onDocumentDeactivated(() => hidePanel())
+```
+
+| Event                   | Fires when                                                |
+| ----------------------- | --------------------------------------------------------- |
+| `onDocumentOpened`      | An editing session begins, including for a background tab |
+| `onDocumentActivated`   | The document becomes the one on screen                    |
+| `onDocumentDeactivated` | It stops being on screen but stays open                   |
+| `onDocumentClosed`      | The session ends, however it ends                         |
+
+`opened` and `closed` bracket existence; `activated` and `deactivated` bracket
+time on screen. A tab opened in the background is opened without being
+activated, so allocating on `opened` and releasing on `closed` stays balanced
+however the user navigates. Deactivation is announced before the next
+activation, so two documents never both claim the screen.
+
+`onDocumentClosed` fires for every way a session ends — the user shutting the
+tab, a temporary workflow being deleted, and the host discarding a background
+tab whose file changed on disk. The handle reports `isDeleted` as `true` by
+then and will not describe the document; it carries the `id` so a pack can find
+and release what it stored.
+
+These are observations, not hooks. A listener cannot veto or defer a
+transition: refusing to let a document close is a conversation the host has
+with the user, and any installed pack being able to block it is not a
+capability worth having.
+
+Do not use `onWorkflowLoaded` to detect a document swap. It is
+`afterConfigureGraph` and fires for undo, redo and same-document reloads as
+readily as for a swap — which is what a pack rebuilding state from the graph
+wants, but not what "did the document change" means. It passes the document, so
+compare the `id`: unchanged means this document was rebuilt, not replaced.
+
 Expand the host's workflow text tokens against the active root graph:
 
 ```js

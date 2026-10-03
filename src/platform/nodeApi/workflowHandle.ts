@@ -2,6 +2,8 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
+import { createDocumentHandle } from './documentHandle'
+import type { DocumentHandle, DocumentReader } from './documentHandle'
 import { ComfyApiError } from './errors'
 
 /** Parsed ComfyUI workflow JSON. */
@@ -32,13 +34,22 @@ export interface WorkflowHandle {
    * replaced" from "the document I was looking at got edited", which
    * comparing graph contents cannot do, since editing IS mutating the graph
    * contents of the very document that is still current.
+   *
+   * Equivalent to `current()?.id`, and kept because reading the id is the
+   * common case and does not need a handle.
    */
   documentId(): string | undefined
   /**
-   * The active workflow's display filename, without exposing its user-data
-   * path. Undefined before a workflow document is active.
+   * The document on screen, or `undefined` before one is open.
+   *
+   * A handle rather than the bare id when a pack needs to know what it is
+   * looking at — the name to label its own UI, whether there are unsaved
+   * edits, and whether a document it stored state for is still open.
+   *
+   * Read-only: opening has its own explicit call, and saving, closing and
+   * renaming belong to the user.
    */
-  name(): string | undefined
+  current(): DocumentHandle | undefined
 }
 
 export function createWorkflowApi(
@@ -48,7 +59,7 @@ export function createWorkflowApi(
     options: WorkflowOpenOptions
   ) => Promise<void>,
   getDocumentId?: () => string | undefined,
-  getName?: () => string | undefined
+  getDocuments?: DocumentReader
 ): WorkflowHandle {
   return Object.freeze({
     async open(data: WorkflowData, options?: WorkflowOpenOptions) {
@@ -79,8 +90,13 @@ export function createWorkflowApi(
     documentId() {
       return getDocumentId?.()
     },
-    name() {
-      return getName?.()
+    current() {
+      const read = getDocuments ?? (() => [])
+      const session = read().find(({ isActive }) => isActive)?.sessionId
+      // A document mid-load has a file but not yet a session, and naming it
+      // would hand out a handle that never becomes live.
+      if (!session) return undefined
+      return createDocumentHandle(session, read)
     }
   })
 }

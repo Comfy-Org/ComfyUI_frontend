@@ -48,20 +48,64 @@ describe('currentDocumentId', () => {
     expect(currentDocumentId()).toBeUndefined()
   })
 
-  it('mints a fresh id each time a workflow finishes loading', () => {
+  it('mints an id when the host cannot name a session', () => {
+    // Raw workflow data with no file behind it is a new document, and the
+    // host has no session to point at.
     notifyWorkflowLoaded()
     const first = currentDocumentId()
     expect(first).toBeDefined()
 
     notifyWorkflowLoaded()
-    const second = currentDocumentId()
 
-    // Two loads of the SAME file must still mint two different ids — this is
-    // a load-session identity, not the file's own saved `graph.id` (which
-    // round-trips through the workflow JSON and is deliberately excluded from
-    // deciding this).
-    expect(second).toBeDefined()
-    expect(second).not.toBe(first)
+    expect(currentDocumentId()).toBeDefined()
+    expect(currentDocumentId()).not.toBe(first)
+  })
+
+  it('reports the session the host names, not one of its own', () => {
+    // Two opens of the same file are two sessions, and the host is what knows
+    // that — `graph.id` round-trips through the workflow JSON and is the same
+    // for both.
+    notifyWorkflowLoaded('session-a')
+    expect(currentDocumentId()).toBe('session-a')
+
+    notifyWorkflowLoaded('session-b')
+    expect(currentDocumentId()).toBe('session-b')
+  })
+
+  it('holds the id still when the same session is configured again', () => {
+    // The load-bearing case: undo and redo reach `loadGraphData` too, through
+    // ChangeTracker.updateState. Minting there announced a new document on
+    // every undo step, which invalidates every cached projection in the app.
+    notifyWorkflowLoaded('session-a')
+    const opened = currentDocumentId()
+
+    notifyWorkflowLoaded('session-a')
+    notifyWorkflowLoaded('session-a')
+
+    expect(currentDocumentId()).toBe(opened)
+  })
+
+  it('still announces the reconfigure, so graph-derived state rebuilds', () => {
+    // The event is afterConfigureGraph and must keep firing for undo; only the
+    // identity holds still. A pack tells them apart by the id, not by silence.
+    const listener = vi.fn()
+    notifyWorkflowLoaded('session-a')
+    onWorkflowLoaded(listener)
+
+    notifyWorkflowLoaded('session-a')
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(currentDocumentId()).toBe('session-a')
+  })
+
+  it('returns to the id a tab already had', () => {
+    // Switching away and back is the same editing session, so a pack's stored
+    // state for that tab is still valid.
+    notifyWorkflowLoaded('session-a')
+    notifyWorkflowLoaded('session-b')
+    notifyWorkflowLoaded('session-a')
+
+    expect(currentDocumentId()).toBe('session-a')
   })
 
   it('is visible to a listener registered before the load it describes', () => {

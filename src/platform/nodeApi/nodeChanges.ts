@@ -29,6 +29,7 @@
  * names the scope it wants; how that scope maps onto graphs stays with the
  * bridge, which is where subgraph navigation is known.
  */
+import { currentDocumentId } from './appReady'
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
 import type { Unsubscribe } from './widgetHandle'
@@ -70,6 +71,16 @@ export interface NodeChangeEvent {
    * its own records under `'document'` must key on both.
    */
   readonly graphId: string
+  /**
+   * The editing session the change happened in, or `undefined` when the host
+   * cannot name one.
+   *
+   * `graphId` is restored from the saved workflow and round-trips through
+   * `serialize()`, so it identifies the graph on disk, not the document open
+   * in front of the user — two opens of one file report the same value. A pack
+   * holding records across a document swap needs this to know they are stale.
+   */
+  readonly documentId: string | undefined
   readonly property: TrackedProperty
   readonly from: unknown
   readonly to: unknown
@@ -124,7 +135,14 @@ export function createNodeChangeObserver(
       const node = handleFor(graphId, nodeId)
       // The node may have gone between the change and this fan-out.
       if (!node || node.isDeleted) return
-      listener({ node, graphId, property, from, to })
+      listener({
+        node,
+        graphId,
+        documentId: currentDocumentId(),
+        property,
+        from,
+        to
+      })
     })
   }
 }

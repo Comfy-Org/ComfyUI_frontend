@@ -50,6 +50,10 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
+  installDocumentLifecycleBridge,
+  openDocuments
+} from '@/platform/workflow/management/documentLifecycleBridge'
+import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
@@ -271,7 +275,7 @@ export interface QueuePromptOptions {
 
 async function finishWorkflowLoad(): Promise<void> {
   await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-  notifyWorkflowLoaded()
+  notifyWorkflowLoaded(useWorkflowStore().activeWorkflow?.sessionId)
 }
 
 function createNodeOutputsMutationView(
@@ -1036,10 +1040,10 @@ export class ComfyApp {
           await workflowStore.closeWorkflow(createdWorkflow)
         }
       },
-      getWorkflowName: () =>
-        useWorkspaceStore().workflow.activeWorkflow?.fullFilename,
-      refreshDefinitions: () => this.refreshComboInNodes()
+      refreshDefinitions: () => this.refreshComboInNodes(),
+      documents: openDocuments
     })
+    installDocumentLifecycleBridge()
     await installSecureNodesHost({
       workflowSnapshot: () => {
         if (!this.isGraphReady) {

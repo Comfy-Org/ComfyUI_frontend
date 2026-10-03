@@ -279,8 +279,51 @@ interface Comfy {
    * This is `afterConfigureGraph`. Unlike {@link onReady} it fires again for
    * every workflow the user opens, which is what a pack re-attaching itself to
    * the document needs — `onReady` fires once and misses every later open.
+   *
+   * It also fires for undo, redo and a reload of the same document, because a
+   * pack rebuilding state from the graph needs those too. The handle says
+   * which of them happened: an id equal to the one from last time means this
+   * document was rebuilt, not replaced. `undefined` when the host cannot name
+   * a document, as when raw workflow data is loaded with no file behind it.
    */
-  onWorkflowLoaded(listener: () => void): Unsubscribe
+  onWorkflowLoaded(
+    listener: (document: DocumentHandle | undefined) => void
+  ): Unsubscribe
+  /**
+   * A document's editing session began.
+   *
+   * Where per-document state belongs. Fires for a tab opened in the
+   * background too, so a pack that allocates here and releases in
+   * {@link onDocumentClosed} stays balanced however the user moves around.
+   */
+  onDocumentOpened(listener: (document: DocumentHandle) => void): Unsubscribe
+  /**
+   * A document became the one on screen.
+   *
+   * Distinct from opening: the user returning to a tab activates a document
+   * that was already open, and its state is still valid. Anything tied to
+   * *being visible* — a panel, a canvas overlay — belongs here.
+   */
+  onDocumentActivated(listener: (document: DocumentHandle) => void): Unsubscribe
+  /**
+   * A document stopped being the one on screen, but is still open.
+   *
+   * Fires before the next document is activated, so a pack moving something
+   * between them never sees two claiming the screen at once.
+   */
+  onDocumentDeactivated(
+    listener: (document: DocumentHandle) => void
+  ): Unsubscribe
+  /**
+   * A document's editing session ended, however it ended — the user closing
+   * the tab, a temporary workflow being deleted, or the host discarding a
+   * background tab whose file changed on disk.
+   *
+   * Release everything keyed to it. The handle already reports `isDeleted`,
+   * and carries the id so a pack can find what it stored; it will not describe
+   * the document, because there is no longer one to describe.
+   */
+  onDocumentClosed(listener: (document: DocumentHandle) => void): Unsubscribe
 }
 
 // ─── commandsHandle.ts ───────────────────────────────────────────
@@ -925,6 +968,39 @@ interface PropertyChangeEvent {
   reject(): void
 }
 
+// ─── documentHandle.ts ───────────────────────────────────────────
+
+interface DocumentHandle extends HandleCommon {
+  /**
+   * Identity of this editing session. Stable for as long as the document is
+   * open — including across undo, redo and tab switches — and never reused.
+   *
+   * Not the id inside the workflow JSON, which travels with the file, so two
+   * opens of it and any copy made outside the app all share one value. Not the
+   * path either, which is a storage address and changes on rename. Do not
+   * persist this: it means nothing in the next page load.
+   */
+  readonly id: string
+  /** Display name, without the directory or extension. */
+  readonly name: string | undefined
+  /**
+   * Storage path, for addressing the file. Undefined for a document with no
+   * file behind it yet. Changes when the user renames, so key pack state on
+   * {@link id} instead.
+   */
+  readonly path: string | undefined
+  /** Whether there are edits the user has not saved. */
+  readonly isModified: boolean
+  /**
+   * True once this editing session has ended.
+   *
+   * A handle is a snapshot of a session, and a pack may hold one across a tab
+   * close or a background unload. Check before acting on stored state rather
+   * than trusting a captured handle, exactly as for a node or a widget.
+   */
+  readonly isDeleted: boolean
+}
+
 // ─── graphHandle.ts ──────────────────────────────────────────────
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -1246,6 +1322,16 @@ interface NodeChangeEvent {
    * its own records under `'document'` must key on both.
    */
   readonly graphId: string
+  /**
+   * The editing session the change happened in, or `undefined` when the host
+   * cannot name one.
+   *
+   * `graphId` is restored from the saved workflow and round-trips through
+   * `serialize()`, so it identifies the graph on disk, not the document open
+   * in front of the user — two opens of one file report the same value. A pack
+   * holding records across a document swap needs this to know they are stale.
+   */
+  readonly documentId: string | undefined
   readonly property: TrackedProperty
   readonly from: unknown
   readonly to: unknown
@@ -3068,13 +3154,22 @@ interface WorkflowHandle {
    * replaced" from "the document I was looking at got edited", which
    * comparing graph contents cannot do, since editing IS mutating the graph
    * contents of the very document that is still current.
+   *
+   * Equivalent to `current()?.id`, and kept because reading the id is the
+   * common case and does not need a handle.
    */
   documentId(): string | undefined
   /**
-   * The active workflow's display filename, without exposing its user-data
-   * path. Undefined before a workflow document is active.
+   * The document on screen, or `undefined` before one is open.
+   *
+   * A handle rather than the bare id when a pack needs to know what it is
+   * looking at — the name to label its own UI, whether there are unsaved
+   * edits, and whether a document it stored state for is still open.
+   *
+   * Read-only: opening has its own explicit call, and saving, closing and
+   * renaming belong to the user.
    */
-  name(): string | undefined
+  current(): DocumentHandle | undefined
 }
 
 // ─── the published entry point ───────────────────────────────

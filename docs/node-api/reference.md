@@ -638,14 +638,16 @@ icon, optional label/tooltip, and `run(event)`. Their `ChromeItemHandle` can
 - `open(data: WorkflowData, options?: WorkflowOpenOptions): Promise<void>`
 - `applyTextReplacements(value: string): string`
 - `documentId(): string | undefined`
+- `current(): DocumentHandle | undefined`
 
 `WorkflowData` is parsed workflow JSON represented as a readonly record.
 `WorkflowOpenOptions` defaults `mode` to `replace`. `new` opens a separate
 workflow tab. Its optional `name` is a bounded display name, never a path, and
 is accepted only with `mode: 'new'`.
-`documentId()` is a process-local identity minted each time a workflow finishes
-loading. It changes when the document is replaced, even by a second load of the
-same file, and is absent before the first workflow load.
+`DocumentHandle` describes one editing session: stable process-local `id`,
+display `name`, logical storage `path`, modified state, and whether the session
+has ended. `documentId()` returns the current handle's identity without making
+a handle. Both are absent before a workflow session is active.
 
 ### `SystemHandle`
 
@@ -667,7 +669,7 @@ This block is generated from `CAPABILITIES` in `comfyApi.ts`.
 
 `backend`, `commands`, `commands.playSound`, `defs.define`, `defs.extend`,
 `defs.inputValues`, `defs.localizedInputNames`, `defs.typeCompatibility`,
-`execution.node`, `graph.nodes`, `graph.selection`,
+`execution.node`, `graph.nodes`, `graph.selection`, `graph.selectionChanged`,
 `interaction.nodeDragEnd`, `interaction.nodeMoved`, `interaction.state`,
 `models.sidecar`, `node.changeScope`, `node.connectVeto`, `node.fileDrop`,
 `node.geometry`, `node.menu`, `node.onPreview`, `node.onSerialize`,
@@ -679,8 +681,9 @@ This block is generated from `CAPABILITIES` in `comfyApi.ts`.
 `supply.resolved`, `system.monitor`, `ui.sidebarTab`, `viewport.changed`,
 `widgets.canvas`, `widgets.create`, `widgets.height`, `widgets.hidden`,
 `widgets.linked`, `widgets.mount`, `widgets.reorder`,
-`widgets.textInteraction`, `widgets.typeContext`, `workflow.open`,
-`workflow.open.new`, `workflow.textReplacements`.
+`widgets.textInteraction`, `widgets.typeContext`, `workflow.document`,
+`workflow.documentLifecycle`, `workflow.open`, `workflow.open.new`,
+`workflow.textReplacements`.
 <!-- node-api-capabilities:end -->
 
 Use `comfy.capabilities()` at runtime. The generated block exists for discovery
