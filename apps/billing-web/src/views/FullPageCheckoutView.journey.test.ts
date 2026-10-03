@@ -840,8 +840,9 @@ describe('the full-page checkout exits and endings', () => {
     vi.spyOn(window.location, 'assign').mockImplementation(() => {})
   })
 
-  const leavePage = () =>
+  const leavePage = () => {
     window.dispatchEvent(new PageTransitionEvent('pagehide'))
+  }
   const exitsOf = () =>
     journey().filter(({ name }) => name === 'billing.checkout.abandoned')
 

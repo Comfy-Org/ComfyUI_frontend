@@ -67,6 +67,7 @@ import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
+import type { BillingEntryState } from '@/entry/billingEntry'
 import { useBillingWebSession } from '@/session/billingWebSession'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import {
@@ -160,6 +161,13 @@ function railOf(
   } as const
 }
 
+/** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
+function arrivalPage({ entry, error }: BillingEntryState): CheckoutPage {
+  return error.value === undefined && entry.value?.plan !== undefined
+    ? RESOLVING
+    : UNREADABLE_LINK
+}
+
 /**
  * The full-page checkout's effects around one `CheckoutPage` state: the
  * reconciliation with whatever operation the workspace is already waiting
@@ -191,11 +199,8 @@ export function useFullPageCheckout() {
   const journey = useCheckoutJourney('full_page')
   journey.enter()
 
-  /** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
   const page = shallowRef<CheckoutPage>(
-    unreadableLink.value === undefined && entry.value?.plan !== undefined
-      ? RESOLVING
-      : UNREADABLE_LINK
+    arrivalPage({ entry, error: unreadableLink })
   )
 
   /** Busy from the Pay click until the attempt resolves, whatever the lifecycle's promise does. */
