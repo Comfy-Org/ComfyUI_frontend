@@ -113,34 +113,46 @@ const zSkillName = z
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
- * to the live WebSocket's `zAgentToolCallData` above. Sourced directly from
- * the generated `ToolCallSummary` schema (Comfy-Org/cloud#10360) — the
- * backend only ever persists terminal rows (`status: 'success' | 'error'`);
- * a row a dead turn left in `pending`/`running` has no wire-status mapping
- * and is dropped server-side rather than reaching this parser.
- *
- * This is also the element type of `zAgentMessageContent.tool_calls` below,
- * which is what lets a persisted `skill` reach `parseToolCallEntry` at all —
- * the generated `zToolCallSummary` has no `skill` key and no `.passthrough()`,
- * so using it there stripped the field before the transcript parser saw it.
+ * to the live WebSocket's `zAgentToolCallData` above. Sourced from the
+ * generated `ToolCallSummary` schema (Comfy-Org/cloud#10360), but relaxed:
+ * the generated schema requires `tool_call_id`, narrows `status` to the
+ * closed `'success' | 'error'` wire vocabulary, and requires `duration_ms`
+ * to be an integer, which is only true for rows persisted after that
+ * backend change landed. Real historical rows can still carry a bare `id`
+ * with no `tool_call_id`, a `status` of `'ok'` (an older success alias —
+ * see `toolCallOk` in `agentTranscript.ts`), or a non-integer `duration_ms`.
+ * `parseToolCallEntry` picks only the fields it actually reads from this,
+ * so an unrelated field (e.g. a strict `started_at`/`finished_at` datetime)
+ * never gates the entry.
  */
 export const zPersistedToolCallSummary = zToolCallSummary.extend({
+  id: z.string(),
+  tool_call_id: z.string().optional(),
+  status: z.string(),
+  duration_ms: z.number().optional(),
   skill: zSkillName
 })
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
- * The generated `AgentMessage.content` schema narrows to just `tool_calls`
- * (typed via `zToolCallSummary`), but the OpenAPI-generated TS type still
- * carries a `[key: string]: unknown` index signature for it — the zod
- * plugin's output didn't get a matching `.passthrough()`. Re-widened here so
- * a persisted row's other `content` fields (`text`, `attachments`,
+ * The message-parse boundary's `content.tool_calls` field is deliberately
+ * `z.array(z.unknown())`, not the stricter `zPersistedToolCallSummary`
+ * above: `agentRestClient.ts`'s `request()` calls `.parse()` (throws) on
+ * the whole `AgentMessages` array, so a single non-conforming historical
+ * tool-call row must never fail the entire conversation-history load.
+ * `agentTranscript.ts`'s `parseToolCallEntry` runs its own `safeParse`
+ * per entry and degrades just that one row instead.
+ *
+ * The generated `AgentMessage.content` schema also keeps a
+ * `[key: string]: unknown` index signature on its TS type but no matching
+ * `.passthrough()` on its zod schema — the `.passthrough()` below re-widens
+ * it so a persisted row's other `content` fields (`text`, `attachments`,
  * `attachment_refs`, `workflow_references`, ...; see `agentTranscript.ts`)
  * keep parsing.
  */
 const zAgentMessageContent = z
   .object({
-    tool_calls: z.array(zPersistedToolCallSummary).optional()
+    tool_calls: z.array(z.unknown()).optional()
   })
   .passthrough()
 

@@ -9,7 +9,8 @@ import {
   zAgentMessage,
   zAgentMessages,
   zAgentTurnAccepted,
-  zAgentWsEvent
+  zAgentWsEvent,
+  zPersistedToolCallSummary
 } from './agentApiSchema'
 import type { ZodTypeAny } from 'zod'
 
@@ -148,7 +149,19 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.data.skill).toBe(`${'a'.repeat(255)}😀`)
   })
 
-  it('keeps a whole transcript readable when one persisted skill is over-long', () => {
+  it('clamps an over-long skill on a persisted tool-call row', () => {
+    const parsed = zPersistedToolCallSummary.parse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: 'call-1',
+      tool_name: 'load_skill',
+      status: 'success',
+      skill: 'a'.repeat(300)
+    })
+
+    expect(parsed.skill).toBe('a'.repeat(256))
+  })
+
+  it('keeps a whole transcript readable when a persisted tool-call row is malformed', () => {
     const parsed = zAgentMessages.parse([
       {
         id: 'row-1',
@@ -159,20 +172,12 @@ describe('agentApiSchema contract subtleties', () => {
         status: 'complete',
         content: {
           text: 'Done',
-          tool_calls: [
-            {
-              id: 'audit-row-uuid-1',
-              tool_call_id: 'call-1',
-              tool_name: 'load_skill',
-              status: 'success',
-              skill: 'a'.repeat(300)
-            }
-          ]
+          tool_calls: [{ unexpected: 'shape' }]
         }
       }
     ])
 
-    expect(parsed[0].content?.tool_calls?.[0].skill).toBe('a'.repeat(256))
+    expect(parsed[0].content?.tool_calls).toEqual([{ unexpected: 'shape' }])
   })
 
   it('accepts agent_message_done with usage null (cancelled turn)', () => {
