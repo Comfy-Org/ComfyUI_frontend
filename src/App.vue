@@ -33,6 +33,7 @@ import {
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
+import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
@@ -81,7 +82,9 @@ onMounted(() => {
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
   window.addEventListener('vite:preloadError', (event) => {
-    event.preventDefault()
+    if (parsePreloadError(event.payload).kind === 'css_preload') {
+      event.preventDefault()
+    }
     reportPreloadError(event.payload)
     // Disabled: Third-party custom node extensions frequently trigger this toast
     // (e.g., bare "vue" imports, wrong relative paths to scripts/app.js, missing

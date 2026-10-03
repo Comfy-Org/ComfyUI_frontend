@@ -93,6 +93,10 @@
       "exports": ["convertToInput"]
     },
     {
+      "file": "src/extensions/core/clipspace.ts",
+      "exports": ["ClipspaceDialog"]
+    },
+    {
       "file": "src/lib/litegraph/src/widgets/widgetMap.ts",
       "exports": ["isAssetWidget"]
     },

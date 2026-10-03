@@ -50,11 +50,57 @@ describe('asset load error reporting', () => {
     it.for([
       ['https://www.googletagmanager.com/gtm.js?id=GTM-NP9JM6K7', 'script'],
       ['https://connect.facebook.net/en_US/fbevents.js', 'script'],
-      ['https://t.comfy.org/static/posthog-recorder.js', 'script']
+      ['https://t.comfy.org/static/posthog-recorder.js', 'script'],
+      ['https://r.wdfl.co/rw.js', 'script'],
+      ['https://snap.licdn.com/li.lms-analytics/insight.min.js', 'script'],
+      ['https://apis.google.com.evil.test/js/api.js', 'script'],
+      ['https://apis.google.com/other/api.js', 'script'],
+      ['http://apis.google.com/js/api.js', 'script'],
+      ['https://apis.google.com:8443/js/api.js', 'script'],
+      ['https://apis.google.com/js/api.js', 'link']
     ])('drops the third-party resource %s', ([url, tagName]) => {
       reportResourceLoadError(url, tagName)
 
       expect(mockReportError).not.toHaveBeenCalled()
+      expect(consoleError).not.toHaveBeenCalled()
+    })
+
+    it('reports auth SDK failures consistently across iframe callbacks', () => {
+      reportResourceLoadError(
+        'https://apis.google.com/js/api.js?onload=__iframefcb684860#first',
+        'script'
+      )
+      reportResourceLoadError(
+        'https://apis.google.com/js/api.js?onload=__iframefcb987654#retry',
+        'script'
+      )
+
+      expect(mockReportError).toHaveBeenCalledTimes(2)
+      expect(
+        mockReportError.mock.calls.map(([error, options]) => ({
+          message: error.message,
+          options
+        }))
+      ).toEqual([
+        {
+          message: 'Resource load failed: https://apis.google.com/js/api.js',
+          options: {
+            surface: 'auth',
+            errorType: 'error_loading_auth_sdk',
+            tags: { tag_name: 'script' },
+            context: { url: 'https://apis.google.com/js/api.js' }
+          }
+        },
+        {
+          message: 'Resource load failed: https://apis.google.com/js/api.js',
+          options: {
+            surface: 'auth',
+            errorType: 'error_loading_auth_sdk',
+            tags: { tag_name: 'script' },
+            context: { url: 'https://apis.google.com/js/api.js' }
+          }
+        }
+      ])
       expect(consoleError).not.toHaveBeenCalled()
     })
 

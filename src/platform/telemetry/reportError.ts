@@ -79,6 +79,21 @@ const definedEntriesOf = <V>(
 /** Written from `options`, so a caller tag of the same name never lands. */
 const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface'])
 
+const ASSET_LOAD_ERROR_GROUPING = new Map<string, { fingerprint: string[] }>([
+  [
+    'vite_preload_error',
+    { fingerprint: ['{{ default }}', 'vite_preload_error'] }
+  ],
+  [
+    'resource_load_error',
+    { fingerprint: ['{{ default }}', 'resource_load_error'] }
+  ],
+  [
+    'error_loading_auth_sdk',
+    { fingerprint: ['{{ default }}', 'error_loading_auth_sdk'] }
+  ]
+])
+
 let dispatching = false
 
 const definedTagsOf = (
@@ -171,6 +186,7 @@ function dispatch(
     if (sentryLive) {
       try {
         captureException(error, {
+          ...ASSET_LOAD_ERROR_GROUPING.get(errorType),
           tags: { ...tags, error_type: errorType, surface },
           extra: context,
           level

@@ -108,6 +108,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // State
   const loading = ref(false)
+  let pendingAuthActions = 0
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
   const customerProvisionedIdentity = ref<string | null>(null)
@@ -657,6 +658,7 @@ export const useAuthStore = defineStore('auth', () => {
       customerPayload?: Omit<CreateCustomerPayload, 'signup_source'>
     } = {}
   ): Promise<T> => {
+    pendingAuthActions += 1
     loading.value = true
 
     try {
@@ -668,7 +670,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       return result
     } finally {
-      loading.value = false
+      pendingAuthActions -= 1
+      loading.value = pendingAuthActions > 0
     }
   }
 

@@ -86,6 +86,163 @@ describe('reportError', () => {
     )
   })
 
+  it('preserves default grouping for unrelated failure categories', async () => {
+    const { reportError } = await loadReportError()
+    const error = new Error('Workspace initialization failed')
+
+    reportError(error, {
+      surface: 'workspace',
+      errorType: 'workspace_auth_gate_initialization_failure'
+    })
+
+    expect(captureException).toHaveBeenCalledExactlyOnceWith(error, {
+      tags: {
+        error_type: 'workspace_auth_gate_initialization_failure',
+        surface: 'workspace'
+      },
+      extra: {},
+      level: undefined
+    })
+  })
+
+  it('separates auth SDK load failures using their category', async () => {
+    const { reportError } = await loadReportError()
+    const error = new Error(
+      'Resource load failed: https://apis.google.com/js/api.js'
+    )
+
+    reportError(error, {
+      surface: 'auth',
+      errorType: 'error_loading_auth_sdk'
+    })
+
+    expect(captureException).toHaveBeenCalledExactlyOnceWith(
+      error,
+      expect.objectContaining({
+        fingerprint: ['{{ default }}', 'error_loading_auth_sdk']
+      })
+    )
+  })
+
+  it('separates failure categories without changing the error or delivery', async () => {
+    const { reportError } = await loadReportError()
+    const cause = new Error('Connection closed')
+    const error = Object.freeze(new TypeError('Failed to fetch', { cause }))
+    const originalStack = error.stack
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'vite_preload_error',
+      tags: { source: 'asset' },
+      context: { url: '/assets/app.js' }
+    })
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'resource_load_error',
+      tags: { source: 'asset' },
+      context: { url: '/assets/app.js' }
+    })
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'vite_preload_error',
+      tags: { source: 'asset' },
+      context: { url: '/assets/app.js' }
+    })
+
+    expect(
+      captureException.mock.calls.map(([sentryError, options]) => ({
+        sameError: sentryError === error,
+        ...options
+      }))
+    ).toEqual([
+      {
+        sameError: true,
+        fingerprint: ['{{ default }}', 'vite_preload_error'],
+        tags: {
+          error_type: 'vite_preload_error',
+          surface: 'platform',
+          source: 'asset'
+        },
+        extra: { url: '/assets/app.js' }
+      },
+      {
+        sameError: true,
+        fingerprint: ['{{ default }}', 'resource_load_error'],
+        tags: {
+          error_type: 'resource_load_error',
+          surface: 'platform',
+          source: 'asset'
+        },
+        extra: { url: '/assets/app.js' }
+      },
+      {
+        sameError: true,
+        fingerprint: ['{{ default }}', 'vite_preload_error'],
+        tags: {
+          error_type: 'vite_preload_error',
+          surface: 'platform',
+          source: 'asset'
+        },
+        extra: { url: '/assets/app.js' }
+      }
+    ])
+    expect(
+      addError.mock.calls.map(([datadogError, context]) => ({
+        copied: datadogError !== error,
+        error: datadogError,
+        context
+      }))
+    ).toEqual([
+      {
+        copied: true,
+        error: expect.objectContaining({
+          name: 'vite_preload_error',
+          message: error.message,
+          stack: originalStack,
+          cause
+        }),
+        context: {
+          error_type: 'vite_preload_error',
+          surface: 'platform',
+          source: 'asset',
+          url: '/assets/app.js'
+        }
+      },
+      {
+        copied: true,
+        error: expect.objectContaining({
+          name: 'resource_load_error',
+          message: error.message,
+          stack: originalStack,
+          cause
+        }),
+        context: {
+          error_type: 'resource_load_error',
+          surface: 'platform',
+          source: 'asset',
+          url: '/assets/app.js'
+        }
+      },
+      {
+        copied: true,
+        error: expect.objectContaining({
+          name: 'vite_preload_error',
+          message: error.message,
+          stack: originalStack,
+          cause
+        }),
+        context: {
+          error_type: 'vite_preload_error',
+          surface: 'platform',
+          source: 'asset',
+          url: '/assets/app.js'
+        }
+      }
+    ])
+    expect(error.name).toBe('TypeError')
+    expect(error.stack).toBe(originalStack)
+    expect(error.cause).toBe(cause)
+  })
+
   it('names a Datadog copy without changing the original error', async () => {
     const { reportError } = await loadReportError()
     const cause = new Error('Connection closed')

@@ -1632,10 +1632,49 @@ describe('useAuthStore', () => {
       const googleLoginPromise = store.loginWithGoogle()
       const githubLoginPromise = store.loginWithGithub()
 
-      await Promise.all([googleLoginPromise, githubLoginPromise])
+      await expect(githubLoginPromise).rejects.toMatchObject({
+        code: 'auth/cancelled-popup-request'
+      })
+      await googleLoginPromise
 
       expect(store.loading).toBe(false)
     })
+
+    it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
+      'keeps the original sign-in loading when an overlapping %s is rejected and allows retry after failure',
+      async (method, { onTestFinished }) => {
+        let rejectFirst!: (reason: unknown) => void
+        const pending = new Promise<UserCredential>((_, reject) => {
+          rejectFirst = reject
+        })
+        vi.mocked(firebaseAuth.signInWithPopup).mockReturnValueOnce(pending)
+        const first = store.loginWithGoogle().catch((error: unknown) => error)
+        onTestFinished(async () => {
+          rejectFirst(
+            new FirebaseError('auth/network-request-failed', 'Offline')
+          )
+          await first
+        })
+
+        await expect(store[method]()).rejects.toMatchObject({
+          code: 'auth/cancelled-popup-request'
+        })
+        expect(store.loading).toBe(true)
+        rejectFirst(new FirebaseError('auth/network-request-failed', 'Offline'))
+        await expect(first).resolves.toMatchObject({
+          code: 'auth/network-request-failed'
+        })
+        expect(store.loading).toBe(false)
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValueOnce(
+          fromPartial<UserCredential>({ user: mockUser })
+        )
+
+        const result = await store.loginWithGoogle()
+
+        expect(result.user).toBe(mockUser)
+        expect(store.loading).toBe(false)
+      }
+    )
 
     describe('sign-up telemetry OR logic', () => {
       const mockUserCredential = {

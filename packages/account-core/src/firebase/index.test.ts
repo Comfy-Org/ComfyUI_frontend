@@ -464,6 +464,72 @@ describe('popup sign-in with the popup watched', () => {
     await expect(outcome).resolves.toBe(testCredential)
   })
 
+  it('starts and guards the popup while session restore remains pending', async () => {
+    const restore = deferred<void>()
+    sdk.resolvedAuth.authStateReady = () => restore.promise
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const first = identity.signInWithGoogle()
+
+    expect(sdk.signInWithPopup).toHaveBeenCalledOnce()
+    await expect(identity.signInWithGitHub()).rejects.toMatchObject({
+      code: 'auth/cancelled-popup-request'
+    })
+    expect(sdk.signInWithPopup).toHaveBeenCalledOnce()
+    restore.resolve()
+    popup.resolve(testCredential)
+    await expect(first).resolves.toBe(testCredential)
+  })
+
+  it('finishes sign-in and allows retry when the host start observer throws', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const first = identity.signInWithGoogle({
+      onStarted: () => {
+        throw new Error('Host observer failed')
+      }
+    })
+    popup.resolve(testCredential)
+
+    await expect(first).resolves.toBe(testCredential)
+    sdk.signInWithPopup.mockResolvedValueOnce(testCredential)
+    await expect(identity.signInWithGitHub()).resolves.toBe(testCredential)
+  })
+
+  it('keeps the first popup completing and permits another provider after it settles', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const first = identity.signInWithGoogle()
+
+    await expect(identity.signInWithGitHub()).rejects.toMatchObject({
+      code: 'auth/cancelled-popup-request'
+    })
+    popup.resolve(testCredential)
+    await expect(first).resolves.toBe(testCredential)
+    sdk.signInWithPopup.mockResolvedValueOnce(testCredential)
+
+    await expect(identity.signInWithGitHub()).resolves.toBe(testCredential)
+  })
+
+  it('waits for Firebase to settle an abandoned popup before opening another one', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const first = identity.signInWithGoogle()
+    watch.abandon()
+    await expect(first).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+
+    await expect(identity.signInWithGoogle()).rejects.toMatchObject({
+      code: 'auth/cancelled-popup-request'
+    })
+    popup.reject({ code: 'auth/popup-closed-by-user' })
+    await vi.advanceTimersByTimeAsync(0)
+    sdk.signInWithPopup.mockResolvedValueOnce(testCredential)
+
+    await expect(identity.signInWithGoogle()).resolves.toBe(testCredential)
+  })
+
   it('swallows Firebase’s own rejection of a popup it already reported as closed', async () => {
     const popup = pendingPopup()
     const identity = await watchedIdentity()
@@ -505,6 +571,33 @@ describe('popup sign-in with the popup watched', () => {
     await expect(onResumed.mock.calls[0][0]).resolves.toBe(testCredential)
   })
 
+  it.for(['signInWithGoogle', 'signInWithGitHub'] as const)(
+    'keeps an abandoned popup’s late result when a retry with %s was blocked',
+    async (method) => {
+      const popup = pendingPopup()
+      const onResumed = vi.fn()
+      const onStarted = vi.fn()
+      const identity = await watchedIdentity()
+      const outcome = identity
+        .signInWithGoogle({ onResumed, onStarted })
+        .catch((error: unknown) => error)
+      await vi.advanceTimersByTimeAsync(0)
+      watch.abandon()
+      await expect(outcome).resolves.toMatchObject({
+        code: 'auth/popup-closed-by-user'
+      })
+
+      await expect(identity[method]({ onStarted })).rejects.toMatchObject({
+        code: 'auth/cancelled-popup-request'
+      })
+      expect(onStarted).toHaveBeenCalledOnce()
+
+      expect(watch.lateResult()).toBe('kept')
+      popup.resolve(testCredential)
+      await expect(onResumed.mock.calls[0][0]).resolves.toBe(testCredential)
+    }
+  )
+
   it('discards a late result no host asked to finish', async () => {
     pendingPopup()
     const identity = await watchedIdentity()
@@ -518,18 +611,13 @@ describe('popup sign-in with the popup watched', () => {
   it.for([
     [
       'an email sign-in',
-      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
-        identity.signInWithEmail('a@b.co', 'pw')
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>): void =>
+        void identity.signInWithEmail('a@b.co', 'pw').catch(() => {})
     ],
     [
       'an account creation',
-      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
-        identity.createUserWithEmail('a@b.co', 'pw')
-    ],
-    [
-      'another popup',
-      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
-        identity.signInWithGitHub()
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>): void =>
+        void identity.createUserWithEmail('a@b.co', 'pw').catch(() => {})
     ]
   ] as const)(
     'discards a late result once %s has started since',
@@ -540,10 +628,7 @@ describe('popup sign-in with the popup watched', () => {
       void identity.signInWithGoogle({ onResumed }).catch(() => {})
       await vi.advanceTimersByTimeAsync(0)
       watch.abandon()
-      const lateResultRules = watch.state.options
-
-      void startAnother(identity).catch(() => {})
-      watch.state.options = lateResultRules
+      startAnother(identity)
 
       expect(watch.lateResult()).toBe('discarded')
       expect(onResumed).not.toHaveBeenCalled()

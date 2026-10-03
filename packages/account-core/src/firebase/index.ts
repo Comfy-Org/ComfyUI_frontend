@@ -83,6 +83,7 @@ export type FirebaseIdentityConfig =
  * after that; these decide whether it is finished or discarded unused.
  */
 export interface PopupSignInOptions {
+  readonly onStarted?: () => void
   /**
    * Finishes a result that arrived after the popup was reported closed, given
    * the credential still being exchanged. Without it such a result is
@@ -255,6 +256,8 @@ function authResolver(config: FirebaseIdentityConfig): AuthResolver {
   return { resolve, peek: () => resolved }
 }
 
+let pendingPopup: Promise<UserCredential> | undefined
+
 export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
@@ -265,10 +268,31 @@ export function createFirebaseIdentity(
     createProvider: () => GoogleAuthProvider | GithubAuthProvider,
     options: PopupSignInOptions | undefined
   ): Promise<UserCredential> {
+    if (pendingPopup) {
+      return Promise.reject(
+        new FirebaseError(
+          'auth/cancelled-popup-request',
+          'Another sign-in window is already open.'
+        )
+      )
+    }
     const started = ++signInsStarted
     const provider = createProvider()
-    const signIn = () => signInWithPopup(auth(), provider)
+    const signIn = () => {
+      pendingPopup = signInWithPopup(auth(), provider)
+      const clearPending = () => {
+        pendingPopup = undefined
+      }
+      void pendingPopup.then(clearPending, clearPending)
+      try {
+        options?.onStarted?.()
+      } catch {
+        // A host observer must not interrupt the Firebase operation.
+      }
+      return pendingPopup
+    }
     if (!config.watchPopupSignIn) return signIn()
+    // Observe restore separately; the popup starts synchronously below.
     // Read once the session has restored, so a restore landing after the
     // popup opened is not taken for someone else signing in.
     let userAtStart: string | null | undefined = null

@@ -176,6 +176,7 @@ import { useLitegraphSettings } from '@/platform/settings/composables/useLitegra
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -216,6 +217,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
+import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import SelectionRectangle from './SelectionRectangle.vue'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
@@ -530,6 +532,25 @@ onMounted(async () => {
   let startupOutcome: StartupOutcome | undefined
   let urlTemplateId: string | undefined
   let bootstrapOutcome: 'completed' | 'failed' = 'failed'
+  const reportStartupError = (error: unknown): undefined => {
+    bootstrapOutcome = 'failed'
+    reportError(error, {
+      errorType: 'failure_initializing_graph_canvas',
+      surface: 'graph'
+    })
+    const isPreloadError =
+      error instanceof Error && parsePreloadError(error).kind !== 'unknown'
+    toastStore.add({
+      severity: 'error',
+      summary: t(isPreloadError ? 'g.preloadErrorTitle' : 'g.error'),
+      detail: isPreloadError
+        ? t('g.preloadError')
+        : error instanceof Error
+          ? error.message
+          : t('g.unknownError')
+    })
+    return undefined
+  }
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -584,26 +605,43 @@ onMounted(async () => {
     )
 
     // Restore saved workflow and workflow tabs state
-    startupOutcome = await workflowPersistence.initializeWorkflow()
-    await workflowPersistence.restoreWorkflowTabsState()
-    urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
-    await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     bootstrapOutcome = 'completed'
+    startupOutcome = await workflowPersistence
+      .initializeWorkflow()
+      .catch(reportStartupError)
+    await workflowPersistence
+      .restoreWorkflowTabsState()
+      .catch(reportStartupError)
+    urlTemplateId = await workflowPersistence
+      .loadTemplateFromUrlIfPresent()
+      .catch(reportStartupError)
+    if (startupOutcome !== undefined) {
+      await useFirstRunEntry()
+        .handleStartupOutcome(startupOutcome)
+        .catch(reportStartupError)
+    }
+  } catch (error) {
+    reportStartupError(error)
+    if (!comfyAppReady.value) return
   } finally {
     workspaceStore.spinner = false
     bootstrapTracer.complete(bootstrapOutcome)
   }
-  const sharedStatus =
-    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+  const sharedStatus = await workflowPersistence
+    .loadSharedWorkflowFromUrlIfPresent()
+    .catch(reportStartupError)
 
   // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
-  await runUrlActionLoaders()
+  await runUrlActionLoaders().catch(reportStartupError)
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
-  const { useReleaseStore } =
-    await import('@/platform/updates/common/releaseStore')
-  const releaseStore = useReleaseStore()
-  void releaseStore.initialize()
+  try {
+    const { useReleaseStore } =
+      await import('@/platform/updates/common/releaseStore')
+    void useReleaseStore().initialize().catch(reportStartupError)
+  } catch (error) {
+    reportStartupError(error)
+  }
 
   emit('ready')
 

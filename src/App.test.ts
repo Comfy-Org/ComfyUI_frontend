@@ -4,11 +4,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import { reportPreloadError } from '@/platform/telemetry/assetLoadErrorReporting'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import App from './App.vue'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry/assetLoadErrorReporting'))
 
 vi.mock<unknown>(import('@/components/dialog/GlobalDialog.vue'), () => ({
   default: { template: '<div />' }
@@ -24,6 +26,61 @@ vi.mock<unknown>(
 )
 
 describe('App', () => {
+  it('reports preload failures without suppressing the import rejection', () => {
+    const { unmount } = render(App, {
+      global: { stubs: { RouterView: true } }
+    })
+    const error = new SyntaxError("Unexpected token '}'")
+    const event = Object.assign(
+      new Event('vite:preloadError', { cancelable: true }),
+      {
+        payload: error
+      }
+    )
+
+    window.dispatchEvent(event)
+
+    expect(reportPreloadError).toHaveBeenCalledWith(error)
+    expect(event.defaultPrevented).toBe(false)
+    unmount()
+  })
+
+  it('keeps CSS preload failures from blocking module execution', () => {
+    const { unmount } = render(App, {
+      global: { stubs: { RouterView: true } }
+    })
+    const error = new Error('Unable to preload CSS for /assets/graph.css')
+    const event = Object.assign(
+      new Event('vite:preloadError', { cancelable: true }),
+      { payload: error }
+    )
+
+    window.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(reportPreloadError).toHaveBeenCalledWith(error)
+    unmount()
+  })
+
+  it('preserves rejection when an evaluation error merely mentions a stylesheet', () => {
+    const { unmount } = render(App, {
+      global: { stubs: { RouterView: true } }
+    })
+    const error = new Error(
+      'Module failed while using https://example.com/app.css'
+    )
+    const event = Object.assign(
+      new Event('vite:preloadError', { cancelable: true }),
+      { payload: error }
+    )
+
+    window.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(reportPreloadError).toHaveBeenCalledWith(error)
+    unmount()
+  })
+
   it('blocks existing dialogs while loading and keeps a stable readiness hook', async () => {
     const workspaceStore = useWorkspaceStore()
     workspaceStore.spinner = true
