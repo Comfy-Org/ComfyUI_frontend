@@ -123,6 +123,25 @@ ${coverageRows}
   ).resolves.toBeUndefined()
 
   const [driftedRow] = ROUTER_PROVIDER_COVERAGE
+  const [driftedProvider] = ROUTER_SERVING_PROVIDERS
+  const driftedHeaderFetch = vi.fn<typeof fetch>(async (input) => {
+    const url = input instanceof Request ? input.url : String(input)
+    return url.endsWith('/providers.md')
+      ? new Response(
+          coverage.replace(
+            `**${driftedProvider.name}**`,
+            `**${driftedProvider.name}-drift**`
+          )
+        )
+      : fetchImpl(input)
+  })
+  await expect(
+    checkRouterProviderDrift({
+      fetchImpl: driftedHeaderFetch,
+      sleep: async () => {}
+    })
+  ).rejects.toThrow(new RegExp(`${driftedProvider.name}-drift`, 'i'))
+
   const driftedProviderFetch = vi.fn<typeof fetch>(async (input) =>
     (input instanceof Request ? input.url : String(input)).endsWith(
       `/${driftedRow.modelId}.json`
@@ -162,6 +181,24 @@ ${coverageRows}
     })
   ).rejects.toThrow(/-drift/)
 
+  const driftedComfyFetch = vi.fn<typeof fetch>(async (input) => {
+    const url = input instanceof Request ? input.url : String(input)
+    return url.endsWith('/providers.md')
+      ? new Response(
+          coverage.replace(
+            `| [${driftedRow.docsName ?? driftedRow.name}](${new URL(driftedRow.docsUrl).pathname}) | ✓ |`,
+            `| [${driftedRow.docsName ?? driftedRow.name}](${new URL(driftedRow.docsUrl).pathname}) | - |`
+          )
+        )
+      : fetchImpl(input)
+  })
+  await expect(
+    checkRouterProviderDrift({
+      fetchImpl: driftedComfyFetch,
+      sleep: async () => {}
+    })
+  ).rejects.toThrow()
+
   const [previewRow] = ROUTER_COMFY_ONLY_PREVIEW
   const driftedCatalogFetch = vi.fn<typeof fetch>(async (input) => {
     const url = input instanceof Request ? input.url : String(input)
@@ -175,4 +212,18 @@ ${coverageRows}
       sleep: async () => {}
     })
   ).rejects.toThrow(new RegExp(previewRow.name))
+
+  const previewPath = new URL(previewRow.docsUrl).pathname
+  const driftedPreviewCoverageFetch = vi.fn<typeof fetch>(async (input) => {
+    const url = input instanceof Request ? input.url : String(input)
+    return url.endsWith('/providers.md')
+      ? new Response(`${previewPath}\n${coverage}`)
+      : fetchImpl(input)
+  })
+  await expect(
+    checkRouterProviderDrift({
+      fetchImpl: driftedPreviewCoverageFetch,
+      sleep: async () => {}
+    })
+  ).rejects.toThrow(new RegExp(previewPath.replaceAll('/', '\\/')))
 })
