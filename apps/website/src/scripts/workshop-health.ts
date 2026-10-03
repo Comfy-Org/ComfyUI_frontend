@@ -69,7 +69,8 @@ function isExcludedFailure(failure: FailedRun): boolean {
   return (
     isAccountRefusal(failure) ||
     isActionableInputIssue(failure) ||
-    ['noCredits', 'policy', 'concurrency'].includes(failure.reason)
+    // 429s are deliberate refusals (allowance, queue or rate cap), not faults
+    ['noCredits', 'policy', 'concurrency', 'rateLimit'].includes(failure.reason)
   )
 }
 
