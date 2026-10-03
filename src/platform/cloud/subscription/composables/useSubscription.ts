@@ -600,9 +600,10 @@ function useSubscriptionInternal() {
   }
 
   const manageSubscription = async () => {
-    if (await openBillingPortal('manage_subscription')) {
-      startCancellationWatcher()
+    if (!(await openBillingPortal('manage_subscription'))) {
+      throw new PaymentPopupBlockedError(t('subscription.billingTabBlocked'))
     }
+    startCancellationWatcher()
   }
 
   const requireActiveSubscription = async (): Promise<void> => {
