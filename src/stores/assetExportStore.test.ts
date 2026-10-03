@@ -169,8 +169,13 @@ describe('useAssetExportStore polling', () => {
     (status) => {
       const store = useAssetExportStore()
       store.trackExport('task-1')
-      const [exportJob] = store.exportList
-      exportJob.status = status
+      dispatch(
+        createExportMessage({
+          task_id: 'task-1',
+          status,
+          progress: status === 'completed' ? 1 : 0.3
+        })
+      )
 
       dispatchUnknown({
         ...createExportMessage({ task_id: 'task-1' }),
