@@ -1745,23 +1745,34 @@ describe('Deferred promoted-widget demotion — teardown ordering', () => {
     return { subgraph, node, subgraphNode, promotedId }
   }
 
-  it('reclaims the widget store entry on a genuine disconnect', async () => {
-    const { subgraph, subgraphNode, promotedId } = promoteSingleWidget()
+  it('retains the widget store entry across a disconnect so a later re-promotion restores the value', async () => {
+    const { subgraph, node, subgraphNode, promotedId } = promoteSingleWidget()
+    const store = useWidgetValueStore()
+    store.setValue(promotedId, 77)
 
     subgraph.inputNode.slots[0].disconnect()
     await Promise.resolve()
 
+    // The slot fully demotes…
     expect(subgraphNode.inputs[0]?.widgetId).toBeUndefined()
-    // The deferred teardown clears the slot before asking whether any slot
-    // still holds `promotedId`. Asking first always matched the input being
-    // demoted, so the entry (and its node-widget-order entry) leaked for the
-    // host and a later re-promotion of the same slot name resurrected the
-    // stale value.
-    expect(useWidgetValueStore().getWidget(promotedId)).toBeUndefined()
+    expect(subgraphNode.widgets).toHaveLength(0)
+    // …but the store entry is deliberately retained. A rebind of the interior
+    // link disconnects and reconnects across two ticks, so the deferred
+    // teardown cannot tell it from a terminal disconnect, and reclaiming here
+    // would destroy the user's edit. Issue #14495; asserted end-to-end by
+    // subgraphPromotion.spec.ts "Promoted STRING widget edit survives a
+    // rebind of the interior link", which reds if this entry is deleted.
+    expect(store.getWidget(promotedId)).toBeDefined()
+
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+    await Promise.resolve()
+
+    expect(subgraphNode.inputs[0]?.widgetId).toBe(promotedId)
+    expect(store.getWidget(promotedId)?.value).toBe(77)
   })
 
   it('still demotes when a same-tick rewire lands on an interior input with no widget', async () => {
-    const { subgraph, node, subgraphNode, promotedId } = promoteSingleWidget()
+    const { subgraph, node, subgraphNode } = promoteSingleWidget()
 
     // SubgraphInput.connect dispatches 'input-connected' with no
     // widget/node when the new interior target has no widget locator.
@@ -1780,7 +1791,6 @@ describe('Deferred promoted-widget demotion — teardown ordering', () => {
     expect(subgraphNode.inputs[0]?.widgetId).toBeUndefined()
     expect(subgraphNode.inputs[0]?._widget).toBeUndefined()
     expect(subgraphNode.widgets).toHaveLength(0)
-    expect(useWidgetValueStore().getWidget(promotedId)).toBeUndefined()
   })
 
   it('dispatches no demotion event when the node is removed in the same tick', async () => {
