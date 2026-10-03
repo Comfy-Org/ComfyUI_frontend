@@ -1909,9 +1909,15 @@ describe('hosted redirect telemetry', () => {
     lifecycle.wake()
     lifecycle.wake()
 
-    expect(redirectsOf(telemetry).map((event) => event.name)).toEqual([
-      'billing.checkout.redirect_started',
-      'billing.checkout.returned'
+    expect(redirectsOf(telemetry)).toEqual([
+      expect.objectContaining({
+        name: 'billing.checkout.redirect_started',
+        navigation: 'new_tab'
+      }),
+      expect.objectContaining({
+        name: 'billing.checkout.returned',
+        navigation: 'new_tab'
+      })
     ])
   })
 
