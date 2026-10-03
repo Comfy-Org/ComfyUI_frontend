@@ -659,6 +659,7 @@ export class LiveGraphApplier {
     errorType: string,
     context: Record<string, unknown>
   ): void {
+    this.failureCount += 1
     if (this.reported.has(key)) return
     this.reported.add(key)
     reportError(new Error(message), {
