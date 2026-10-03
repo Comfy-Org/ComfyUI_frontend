@@ -103,8 +103,11 @@ function createAgentProxy(
       ...(comfyToken ? { 'X-Comfy-Token': comfyToken } : {})
     },
     configure: (proxy) => {
-      proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
-        if (isCrossOrigin(req)) socket.destroy()
+      proxy.on('proxyReqWs', (proxyReq, req, socket) => {
+        if (isCrossOrigin(req)) {
+          proxyReq.destroy()
+          socket.destroy()
+        }
       })
       if (tokenSource.kind !== 'discovery') return
 
