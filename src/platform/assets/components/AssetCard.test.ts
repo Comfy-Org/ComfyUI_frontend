@@ -132,6 +132,7 @@ describe('AssetCard', () => {
     expect(useButton).toHaveAttribute('aria-disabled', 'true')
     await user.click(useButton)
     expect(emitted()).not.toHaveProperty('select')
+    expect(emitted()).toHaveProperty('focus')
   })
 
   it('keeps keyboard selection from acknowledging a newly imported asset', async () => {

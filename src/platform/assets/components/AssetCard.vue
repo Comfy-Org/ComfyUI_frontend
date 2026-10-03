@@ -239,7 +239,10 @@ const { isLoading, error } = useImageQuiet({
 })
 
 function handleSelect() {
-  if (!canUseAsset.value) return
+  if (!canUseAsset.value) {
+    emit('focus', asset)
+    return
+  }
   acknowledgeAsset(asset.id)
   emit('select', asset)
 }
