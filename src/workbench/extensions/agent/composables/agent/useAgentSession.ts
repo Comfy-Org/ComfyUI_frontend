@@ -406,7 +406,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     attachments?: SentAttachment[],
     tags?: SentTag[],
-    workflowReferences?: WorkflowReference[]
+    workflowReferences?: WorkflowReference[],
+    clientMessageId?: string
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -498,6 +499,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
               ? `${attachment.subfolder}/${attachment.ref}`
               : attachment.ref
           ),
+          clientMessageId,
           ...(unboundTarget ? { currentTabUnbound: true } : {}),
           ...(shouldSendDraft ? { draft } : {})
         }

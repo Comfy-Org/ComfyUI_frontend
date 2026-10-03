@@ -87,6 +87,7 @@ export interface PostMessageInput {
    * is regenerated.
    */
   currentTabUnbound?: boolean
+  clientMessageId?: string
 }
 
 interface IngestErrorBody {
@@ -176,6 +177,8 @@ export function createAgentRestClient() {
     if (req.draft !== undefined) body.draft = req.draft
     if (req.currentTabUnbound !== undefined)
       body.current_tab_unbound = req.currentTabUnbound
+    if (req.clientMessageId !== undefined)
+      body.client_message_id = req.clientMessageId
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),

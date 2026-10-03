@@ -1401,6 +1401,38 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  it('posts the same client_message_id that telemetry reports', async () => {
+    const messageBodies: Record<string, unknown>[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        messageBodies.push(
+          JSON.parse(String(init?.body)) as Record<string, unknown>
+        )
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+
+    renderWithSelectedTarget()
+    await screen.findByRole('textbox')
+    telemetry.trackAgentMessageSent.mockClear()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() => {
+      expect(messageBodies).toHaveLength(1)
+      expect(telemetry.trackAgentMessageSent).toHaveBeenCalled()
+    })
+    const posted = messageBodies[0].client_message_id
+    expect(posted).toBeTypeOf('string')
+    expect(posted).not.toBe('')
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({ client_message_id: posted })
+    )
+  })
+
   it('rejects an upload response that omits the stored filename', async () => {
     vi.stubGlobal(
       'fetch',

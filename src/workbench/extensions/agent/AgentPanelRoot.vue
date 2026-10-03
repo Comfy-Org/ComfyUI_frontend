@@ -1313,7 +1313,13 @@ const { submit: onSend } = useAgentDraftSubmission({
         originContext === undefined ? null : { tabPath: originContext.tabPath }
     }
     try {
-      return await sendMessage(text, attachments, nodes, references)
+      return await sendMessage(
+        text,
+        attachments,
+        nodes,
+        references,
+        meta.clientMessageId
+      )
     } finally {
       // Normally already consumed by the refresh. A send rejected before it
       // gets that far still reports here, so the funnel counts the attempt.

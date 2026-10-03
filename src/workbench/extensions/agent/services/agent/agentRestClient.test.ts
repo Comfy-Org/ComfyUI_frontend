@@ -213,6 +213,19 @@ describe('postMessage wire body', () => {
     expect(Object.keys(parsed)).toEqual(['content'])
   })
 
+  it('sends client_message_id so the turn can be joined to the send', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'build it',
+      clientMessageId: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'build it',
+      client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+    })
+  })
+
   it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
