@@ -4,6 +4,11 @@ import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
+import {
+  redactTelemetryUrls,
+  redactTelemetryValues
+} from './redactTelemetryUrls'
+
 const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
 
 const FIREBASE_PENDING_PROMISE_ASSERTION =
@@ -53,6 +58,7 @@ function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (event.type !== 'error') return true
   if (isConsoleEchoOfReportedAssertion(event)) return false
+
   return !isRumErrorNoise(event.error)
 }
 
@@ -76,9 +82,24 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
 
 export const rumBeforeSend: RumBeforeSend = (event) => {
   if (!shouldKeepRumEvent(event)) return false
+  if (event.type === 'resource') {
+    event.resource.url = redactTelemetryUrls(event.resource.url)
+  }
   if (event.type === 'error') {
     fingerprintFirebasePendingPromise(event)
     tagRumErrorOrigin(event)
+    event.error.message = redactTelemetryUrls(event.error.message)
+    if (event.error.stack) {
+      event.error.stack = redactTelemetryUrls(event.error.stack)
+    }
+    for (const cause of event.error.causes ?? []) {
+      cause.message = redactTelemetryUrls(cause.message)
+      if (cause.stack) cause.stack = redactTelemetryUrls(cause.stack)
+    }
+    if (event.error.resource?.url) {
+      event.error.resource.url = redactTelemetryUrls(event.error.resource.url)
+    }
+    event.context = redactTelemetryValues(event.context) ?? {}
   }
   return true
 }
