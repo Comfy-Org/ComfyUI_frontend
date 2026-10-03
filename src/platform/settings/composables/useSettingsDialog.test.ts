@@ -49,7 +49,7 @@ describe('useSettingsDialog', () => {
   })
 
   const maxWidthCapsFromLastShow = (): string[] =>
-    String(showDialog.mock.calls[0][0].dialogComponentProps.contentClass)
+    String(showDialog.mock.lastCall?.[0].dialogComponentProps.contentClass)
       .split(' ')
       .filter((utility) => /(^|:)max-w-\[/.test(utility))
 
@@ -90,6 +90,7 @@ describe('useSettingsDialog', () => {
       .filter((utility) => /(^|:)max-w-\[/.test(utility))
 
     expect(survivingCaps.some((cap) => cap.startsWith('sm:'))).toBe(true)
+    expect(survivingCaps.some((cap) => !cap.startsWith('sm:'))).toBe(true)
     expect(
       survivingCaps.filter(
         (cap) =>
