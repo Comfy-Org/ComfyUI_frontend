@@ -655,7 +655,55 @@
       "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
-    "cinematic": {}
+    "cinematic": {},
+    "space": {
+      "createHint": "Use a ready-made tool",
+      "customizeHint": "Control the process",
+      "buildHint": "Put it in your product with APIs"
+    },
+    "explore": {
+      "subtitle": "What do you want to make? Start from a task or search. Every result says if it is an app, a workflow or a model.",
+      "searchLabel": "Search the Hub",
+      "searchPlaceholder": "Try “upscale”, “image to video” or a model name",
+      "tasks": "Tasks",
+      "tasksTitle": "Use cases",
+      "popularTitle": "Popular right now",
+      "resultsFor": "Results for “{query}”",
+      "empty": "Nothing matches yet.",
+      "clear": "Clear search",
+      "workflowPill": "Workflow",
+      "kindApp": "App",
+      "kindModel": "Model",
+      "doors": "Browse by format",
+      "doorApps": "Apps",
+      "appsHint": "One job each. No nodes needed.",
+      "doorWorkflows": "Workflows",
+      "workflowsHint": "Open one, change any step, make it yours.",
+      "modelsTitle": "Models",
+      "modelsHint": "Try them here or call them by API.",
+      "appsCount": "{count} app | {count} apps",
+      "workflowsCount": "{count} workflow | {count} workflows",
+      "modelsCount": "{count} model | {count} models",
+      "communityTitle": "From the community",
+      "communityHeading": "See what people make with Comfy",
+      "communityBody": "Real work from the community, made in ComfyUI.",
+      "communityExplore": "Explore the gallery",
+      "communityShare": "Share yours",
+      "modelsSeeAll": "See all models"
+    },
+    "build": {
+      "title": "Put it in your product.",
+      "body": "Call any model with Comfy Router, or run a workflow with Comfy API. Keys and usage live on Developer Platform.",
+      "routerTitle": "Comfy Router",
+      "routerBody": "Call any model below with one API key.",
+      "apiTitle": "Comfy API",
+      "apiBody": "Run any Hub workflow as an endpoint.",
+      "platformTitle": "Developer Platform",
+      "platformBody": "API keys, usage and deploys.",
+      "getKey": "Get an API key",
+      "docs": "Docs",
+      "snippetLabel": "Example request to Comfy Router"
+    }
   },
   "auth": {
     "signIn": {
@@ -2397,7 +2445,6 @@
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
     "workshop": "Hub",
-    "comfyWorkshop": "Browse Models",
     "signIn": "Sign in",
     "signOut": "Log out",
     "accountMenu": "Account menu",
@@ -2420,7 +2467,19 @@
     "upgrade": "Upgrade",
     "addCredits": "Add credits",
     "upgradeToAddCredits": "Upgrade to add credits",
-    "cinematicStudio": "Cinematic Studio"
+    "cinematicStudio": "Cinematic Studio",
+    "colCreate": "Create",
+    "colCustomize": "Customize",
+    "colBuild": "Build",
+    "hubApps": "Apps",
+    "hubWorkflows": "Workflows",
+    "hubModels": "Models",
+    "serverlessApi": "Serverless API",
+    "builds": "Builds",
+    "comfySdks": "Comfy SDKs",
+    "enterprise": "Enterprise",
+    "commercialLicensing": "Commercial licensing",
+    "contactSales": "Contact sales"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",

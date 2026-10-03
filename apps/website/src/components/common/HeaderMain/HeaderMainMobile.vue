@@ -145,6 +145,12 @@ onUnmounted(() => {
                   >
                     {{ column.header }}
                   </p>
+                  <p
+                    v-if="column.description"
+                    class="-mt-2 text-sm text-primary-warm-gray"
+                  >
+                    {{ column.description }}
+                  </p>
                   <Button
                     v-for="link in column.items"
                     :key="link.label"

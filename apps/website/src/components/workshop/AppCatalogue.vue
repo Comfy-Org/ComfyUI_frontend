@@ -7,14 +7,19 @@ import { translationsFor } from '../../i18n/translations'
 import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
-import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
+import AppFeatured from './AppFeatured.vue'
 import CardRow from './CardRow.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const ROW_LIMIT = 8
 
-const { apps, locale = 'en' } = defineProps<{
+const {
+  apps,
+  upcoming = [],
+  locale = 'en'
+} = defineProps<{
   apps: readonly CatalogueApp[]
+  upcoming?: readonly CatalogueApp[]
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -24,8 +29,10 @@ const emit = defineEmits<{ section: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 watch(browseAll, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
-const shelf = computed(() => apps.slice(0, ROW_LIMIT))
-const hasMore = computed(() => apps.length > ROW_LIMIT)
+const featured = computed(() => apps[0])
+const listed = computed(() => [...apps, ...upcoming])
+const shelf = computed(() => listed.value.slice(0, ROW_LIMIT))
+const hasMore = computed(() => listed.value.length > ROW_LIMIT)
 </script>
 
 <template>
@@ -46,17 +53,10 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
         {{ ac('allApps', locale) }}
         <span
           class="text-base font-normal text-primary-warm-gray tabular-nums"
-          >{{ apps.length }}</span
+          >{{ listed.length }}</span
         >
       </h2>
     </template>
-    <div
-      :id="HUB_TOOLBAR_ID"
-      class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
-      data-testid="workshop-toolbar"
-    >
-      <slot name="tabs" />
-    </div>
 
     <ul
       v-if="browseAll"
@@ -64,12 +64,13 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
       :aria-label="ac('apps', locale)"
       data-testid="app-search-results"
     >
-      <li v-for="app in apps" :key="app.key">
+      <li v-for="app in listed" :key="app.key">
         <WorkshopAppCard :app />
       </li>
     </ul>
 
     <div v-else class="flex flex-col gap-12">
+      <AppFeatured v-if="featured" :app="featured" :locale />
       <section aria-labelledby="app-shelf" data-testid="app-shelf">
         <CardRow :locale>
           <template #heading>

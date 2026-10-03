@@ -1,7 +1,13 @@
-import type { CatalogueTab } from '../../components/workshop/CatalogueTabs.vue'
+import type { HubSection } from '../../lib/workshop/hub-section'
 
 // Server-rendered only: translations.ts ships whole to every island, so page head copy lives here.
 export const HUB_SECTION_COPY = {
+  explore: {
+    title: 'Comfy Hub: AI Apps, Workflows & Models - Comfy',
+    description:
+      'Find a starting point in the Comfy Hub: ready-made apps, workflows you can control step by step, and models you can call by API.',
+    heading: 'Find your starting point.'
+  },
   workflows: {
     title: 'ComfyUI Workflows: Multi-Step AI Image & Video Workflows - Comfy',
     description:
@@ -15,6 +21,6 @@ export const HUB_SECTION_COPY = {
     heading: 'ComfyUI apps'
   }
 } as const satisfies Record<
-  Exclude<CatalogueTab, 'models'>,
+  Exclude<HubSection, 'models'>,
   Readonly<Record<'title' | 'description' | 'heading', string>>
 >

@@ -10,22 +10,23 @@ import {
   useWorkshopEnabled,
   useWorkshopFlag
 } from '../../scripts/posthog'
+import { DOOR_ART, TASK_ART } from '../../lib/workshop/explore-art'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 import type { WorkshopModel } from '../../config/models-catalogue'
 
 vi.mock(import('../../scripts/posthog'))
 
 let enabled: Ref<boolean>
-let appsEnabled: Ref<boolean>
 let reshootFlag: Ref<boolean>
+let appsFlag: Ref<boolean>
 
 beforeEach(() => {
   history.replaceState(null, '', '/models/')
   enabled = ref(false)
-  appsEnabled = ref(true)
   reshootFlag = ref(true)
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
-  vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsEnabled))
+  appsFlag = ref(false)
+  vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsFlag))
   vi.mocked(useWorkshopFlag).mockImplementation((name) =>
     readonly(name === 'workshop-reshoot-app-enabled' ? reshootFlag : ref(false))
   )
@@ -186,53 +187,358 @@ describe('ModelsCatalogue', () => {
     expect(screen.queryByRole('link', { name: /Change a material/ })).toBeNull()
   })
 
-  // The tabs belong with the controls that act on the list, not with the
-  // heading: they switch halves inside the catalogue rather than announce it.
-  // Apps has no list of its own, so it carries them anyway or there is no way
-  // back out of it.
-  it.for([
-    { section: 'models' },
-    { section: 'workflows' },
-    { section: 'apps' }
-  ] as const)(
-    'keeps the tabs beside the controls in the $section section',
-    async ({ section }) => {
-      render(ModelsCatalogue, { props: { models: launchModels, section } })
+  describe('explore', () => {
+    const entry = (
+      name: string,
+      kind: 'workflow' | 'model',
+      useCases: WorkshopModel['useCases']
+    ): WorkshopModel =>
+      kind === 'workflow'
+        ? {
+            type: 'CLOUD',
+            workflowId: `workflows/${name}`,
+            slug: `workflows/${name}`,
+            name,
+            href: `/hub/workflows/${name}/`,
+            workflowCount: 1,
+            capabilities: [],
+            useCases
+          }
+        : {
+            routerId: `acme/${name}`,
+            slug: name,
+            name,
+            href: `/hub/models/${name}/`,
+            workflowCount: 0,
+            capabilities: [],
+            useCases
+          }
+    const catalogue = [
+      entry('relight', 'workflow', ['edit-images']),
+      entry('painter', 'model', ['generate-images']),
+      entry('animator', 'model', ['animate-images']),
+      entry('animate-still', 'workflow', ['animate-images'])
+    ]
+    const renderExplore = (models = catalogue) =>
+      render(ModelsCatalogue, { props: { models, section: 'explore' } })
+    const resultNames = () =>
+      within(screen.getByTestId('explore-results'))
+        .queryAllByRole('link')
+        .map((link) => link.getAttribute('href'))
 
-      const controls = await screen.findByTestId('workshop-toolbar')
-      expect(within(controls).getByTestId('catalogue-tabs')).toBeVisible()
+    it('offers a task for each use case it holds, naming the formats behind it', async () => {
+      renderExplore()
+
+      const tasks = await screen.findAllByTestId('explore-task')
       expect(
-        within(screen.getByTestId('workshop-hero')).queryByTestId(
-          'catalogue-tabs'
-        )
-      ).toBeNull()
-    }
-  )
-
-  it.for([
-    { section: 'models', current: 'Models' },
-    { section: 'workflows', current: 'Workflows' },
-    { section: 'apps', current: 'Apps' }
-  ] as const)(
-    'links each tab to its hub page and marks $current as current',
-    async ({ section, current }) => {
-      render(ModelsCatalogue, { props: { models: launchModels, section } })
-      const tabs = within(await screen.findByTestId('catalogue-tabs'))
-
-      expect(
-        tabs
-          .getAllByRole('link')
-          .map((link) => [link.textContent.trim(), link.getAttribute('href')])
+        tasks.map((task) => [
+          within(task)
+            .getByText(/images|video/i)
+            .textContent.trim(),
+          within(task)
+            .getAllByTestId('explore-task-kind')
+            .map((kind) => kind.textContent.trim())
+        ])
       ).toEqual([
-        ['Models', '/hub/models/'],
-        ['Workflows', '/hub/workflows/'],
-        ['Apps', '/hub/apps/']
+        ['Generate images', ['Model']],
+        ['Edit images', ['Workflow']],
+        ['Image to video', ['Workflow', 'Model']]
       ])
-      expect(tabs.getByRole('link', { current: 'page' })).toHaveTextContent(
-        current
+    })
+
+    it('narrows the results to the task a visitor picks and links to it in the catalogue', async () => {
+      const user = userEvent.setup()
+      renderExplore()
+
+      await user.click((await screen.findAllByTestId('explore-task'))[2])
+
+      expect(screen.queryByTestId('explore-tasks')).toBeNull()
+      expect(
+        screen.getByRole('heading', { name: 'Image to video' })
+      ).toBeVisible()
+      expect(
+        screen.getByRole('button', { name: 'Image to video' })
+      ).toHaveAttribute('aria-pressed', 'true')
+      expect(resultNames()).toEqual([
+        '/hub/models/?useCase=animate-images',
+        '/hub/workflows/animate-still/',
+        '/hub/models/animator/'
+      ])
+    })
+
+    it.for([
+      {
+        query: 'relight',
+        kinds: ['workflow'],
+        heading: 'Results for “relight”'
+      },
+      { query: 'studio', kinds: ['app'], heading: 'Results for “studio”' },
+      {
+        query: '',
+        kinds: ['app', 'workflow', 'workflow', 'model', 'model'],
+        heading: 'Popular right now'
+      }
+    ])(
+      'tags every result with its format: "$query"',
+      async ({ query, kinds, heading }) => {
+        appsFlag.value = true
+        reshootFlag.value = false
+        const user = userEvent.setup()
+        renderExplore([
+          ...catalogue,
+          ...launchModels.filter((m) => m.type === 'APP')
+        ])
+
+        const search = await screen.findByTestId('explore-search')
+        if (query) await user.type(search, query)
+
+        expect(screen.getByRole('heading', { name: heading })).toBeVisible()
+        expect(
+          screen.getAllByTestId('explore-kind').map((tag) => tag.dataset.kind)
+        ).toEqual(kinds)
+      }
+    )
+
+    it('narrows by a task chip and widens back with All', async () => {
+      const user = userEvent.setup()
+      renderExplore()
+      const chips = within(await screen.findByRole('group', { name: 'Tasks' }))
+
+      await user.click(chips.getByRole('button', { name: 'Edit images' }))
+
+      expect(screen.getByRole('heading', { name: 'Edit images' })).toBeVisible()
+      expect(resultNames()).toEqual([
+        '/hub/models/?useCase=edit-images',
+        '/hub/workflows/relight/'
+      ])
+
+      await user.click(chips.getByRole('button', { name: 'All' }))
+
+      expect(screen.getByTestId('explore-tasks')).toBeVisible()
+      expect(
+        screen.getByRole('heading', { name: 'Popular right now' })
+      ).toBeVisible()
+    })
+
+    it.for([
+      {
+        covers: 'an image over a video',
+        image: true,
+        video: true,
+        media: 'IMG'
+      },
+      {
+        covers: 'a video without an image',
+        image: false,
+        video: true,
+        media: 'VIDEO'
+      },
+      {
+        covers: 'nothing when no item has art',
+        image: false,
+        video: false,
+        media: null
+      }
+    ])('covers a task with $covers', async ({ image, video, media }) => {
+      const withThumb = (
+        name: string,
+        thumbnail: WorkshopModel['thumbnail']
+      ): WorkshopModel => ({
+        ...entry(name, 'model', ['3d']),
+        thumbnail
+      })
+      renderExplore([
+        withThumb('plain', undefined),
+        ...(video
+          ? [withThumb('moving', { url: '/clip.mp4', kind: 'video' })]
+          : []),
+        ...(image
+          ? [withThumb('still', { url: '/still.webp', kind: 'image' })]
+          : [])
+      ])
+
+      const tile = await screen.findByTestId('explore-task')
+      expect(
+        within(tile).queryByTestId('model-card-media')?.tagName ?? null
+      ).toBe(media)
+    })
+
+    it('fronts a task with its own art rather than a catalogue thumbnail', async () => {
+      renderExplore([
+        {
+          ...entry('painter', 'model', ['generate-images']),
+          thumbnail: { url: '/painter.webp', kind: 'image' }
+        }
+      ])
+
+      const tile = await screen.findByTestId('explore-task')
+      expect(within(tile).getByTestId('model-card-media')).toHaveAttribute(
+        'src',
+        TASK_ART['generate-images']
       )
-    }
-  )
+    })
+
+    it('stacks section art the rest of the landing does not already show', async () => {
+      appsFlag.value = true
+      const [shownElsewhere] = DOOR_ART.models
+      renderExplore([
+        ...launchModels,
+        {
+          ...entry('lake', 'model', ['3d']),
+          thumbnail: { url: shownElsewhere, kind: 'image' }
+        }
+      ])
+
+      const doors = await screen.findByTestId('explore-doors')
+      const art = within(doors)
+        .getAllByTestId('explore-door-art')
+        .map((img) => img.getAttribute('src'))
+      const elsewhere = screen
+        .getAllByAltText('')
+        .filter((img) => !doors.contains(img))
+        .map((img) => img.getAttribute('src'))
+      expect(elsewhere).toContain(shownElsewhere)
+      expect(
+        within(screen.getByTestId('explore-door-models'))
+          .getAllByTestId('explore-door-art')
+          .map((img) => img.getAttribute('src'))
+      ).toEqual(DOOR_ART.models.slice(1, 4))
+      expect(art.filter((src) => elsewhere.includes(src))).toEqual([])
+    })
+
+    it('says when nothing matches and clears back to everything', async () => {
+      const user = userEvent.setup()
+      renderExplore()
+
+      await user.type(await screen.findByTestId('explore-search'), 'zzz')
+      expect(screen.getByTestId('explore-empty')).toBeVisible()
+
+      await user.click(screen.getByRole('button', { name: 'Clear search' }))
+
+      expect(screen.getByTestId('explore-search')).toHaveValue('')
+      expect(screen.getByTestId('explore-tasks')).toBeVisible()
+      expect(
+        screen.getByRole('heading', { name: 'Popular right now' })
+      ).toBeVisible()
+    })
+
+    it.for([
+      {
+        apps: true,
+        catalogue: 'apps, workflows and models',
+        models: launchModels,
+        doors: ['/hub/apps/', '/hub/workflows/', '/hub/models/']
+      },
+      {
+        apps: false,
+        catalogue: 'workflows and models',
+        models: launchModels,
+        doors: ['/hub/workflows/', '/hub/models/']
+      },
+      {
+        apps: false,
+        catalogue: 'models only',
+        models: launchModels.filter((model) => model.routerId),
+        doors: ['/hub/models/']
+      }
+    ])(
+      'ends with a door per format it holds: $catalogue',
+      async ({ apps, models, doors }) => {
+        appsFlag.value = apps
+        renderExplore(models)
+
+        expect(
+          within(await screen.findByTestId('explore-doors'))
+            .getAllByRole('link')
+            .map((link) => link.getAttribute('href'))
+        ).toEqual(doors)
+      }
+    )
+
+    it('closes on work from the community, leading to the gallery and to sharing', async () => {
+      renderExplore()
+
+      const community = within(await screen.findByTestId('explore-community'))
+      expect(community.getAllByTestId('explore-community-post')).toHaveLength(
+        16
+      )
+      expect(
+        community
+          .getByRole('link', { name: 'Explore the gallery' })
+          .getAttribute('href')
+      ).toBe('/gallery/')
+      expect(
+        community.getByRole('link', { name: 'Share yours' })
+      ).toHaveAttribute(
+        'href',
+        expect.stringMatching(/^https:\/\/docs\.google\.com\/forms\//)
+      )
+    })
+
+    it('shows only the doors when the catalogue is empty', async () => {
+      renderExplore([])
+
+      await screen.findByTestId('explore-doors')
+      expect(screen.queryByTestId('explore-tasks')).toBeNull()
+      expect(screen.queryByTestId('explore-results')).toBeNull()
+    })
+  })
+
+  it('leads the apps page with a featured app and lists the apps still being built', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'apps' }
+    })
+
+    expect(await screen.findByTestId('app-featured')).toHaveAttribute(
+      'href',
+      '/hub/apps/cinematic-studio/'
+    )
+    expect(
+      within(screen.getByTestId('app-shelf'))
+        .getAllByTestId('workshop-app-card')
+        .map((card) => [
+          within(card).getByTestId('app-card-name').textContent.trim(),
+          card.getAttribute('href')
+        ])
+    ).toEqual([
+      ['Cinematic Studio', '/hub/apps/cinematic-studio/'],
+      ['Re-shoot a video', '/hub/apps/reshoot/'],
+      ['Move anything', null],
+      ['Relight', null],
+      ['Hand product swap', null],
+      ['Background Removal', null],
+      ['Virtual try-on', null],
+      ['Sprite Sheet Generator', null]
+    ])
+    expect(screen.getByTestId('browse-all-end')).toBeVisible()
+  })
+
+  it('opens the models page with the API paths and a key link', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'models' }
+    })
+
+    expect(
+      within(await screen.findByTestId('build-api-band'))
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+    ).toEqual([
+      'https://platform.comfy.org/profile/api-keys?onboarding=router',
+      'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
+      '/platform/router/',
+      '/platform/comfy-api/',
+      '/platform/'
+    ])
+  })
+
+  it('keeps the API paths off the workflows page', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'workflows' }
+    })
+
+    await screen.findByTestId('workflow-catalogue')
+    expect(screen.queryByTestId('build-api-band')).toBeNull()
+  })
 
   it('lists the catalogue apps in the apps section, each on its own page', async () => {
     render(ModelsCatalogue, {
@@ -245,12 +551,6 @@ describe('ModelsCatalogue', () => {
         .getAllByRole('link')
         .map((link) => link.getAttribute('href'))
     ).toEqual(['/hub/apps/cinematic-studio/', '/hub/apps/reshoot/'])
-    expect(
-      within(screen.getByTestId('workshop-toolbar')).getByTestId(
-        'catalogue-tabs'
-      )
-    ).toBeVisible()
-    expect(screen.queryByRole('button', { name: /Browse all apps/ })).toBeNull()
   })
 
   it('hides an app whose PostHog flag is off, and shows it once it turns on', async () => {
@@ -274,53 +574,6 @@ describe('ModelsCatalogue', () => {
         '/hub/apps/reshoot/'
       ])
     )
-  })
-
-  it.for([
-    {
-      name: 'apps off',
-      apps: false,
-      workflows: true,
-      tabs: ['Models', 'Workflows']
-    },
-    {
-      name: 'workflows off',
-      apps: true,
-      workflows: false,
-      tabs: ['Models', 'Apps']
-    },
-    { name: 'both off', apps: false, workflows: false, tabs: [] }
-  ])(
-    'shows only the tabs a visitor can open: $name',
-    ({ apps, workflows, tabs }) => {
-      appsEnabled.value = apps
-      const models = launchModels.filter(
-        (model) =>
-          workflows || model.routerId !== undefined || model.type === 'APP'
-      )
-      render(ModelsCatalogue, { props: { models } })
-
-      expect(
-        screen
-          .queryAllByRole('link', { name: /^(Models|Workflows|Apps)$/ })
-          .map((link) => link.textContent.trim())
-      ).toEqual(tabs)
-    }
-  )
-
-  it('keeps the tab of the section on screen when it has nothing to list', async () => {
-    render(ModelsCatalogue, {
-      props: {
-        models: launchModels.filter((model) => model.type !== 'CLOUD'),
-        section: 'workflows'
-      }
-    })
-
-    expect(
-      within(await screen.findByTestId('catalogue-tabs'))
-        .getAllByRole('link')
-        .map((link) => link.textContent.trim())
-    ).toEqual(['Models', 'Workflows', 'Apps'])
   })
 
   it('opens all workflows with a count and returns to the use-case groups', async () => {

@@ -17,8 +17,7 @@ import {
 import { getMainNavigation } from '../../../data/mainNavigation'
 import type { NavItem } from '../../../data/mainNavigation'
 import type { Locale } from '../../../i18n/translations'
-import NavColumn from './NavColumn.vue'
-import NavFeaturedCard from './NavFeaturedCard.vue'
+import NavDropdownBody from './NavDropdownBody.vue'
 import NewBadge from './NewBadge.vue'
 
 const { locale = 'en', workshopInBuild = false } = defineProps<{
@@ -31,16 +30,15 @@ const mainNavigation = computed(() =>
 const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
-  if (navItem.href) return isHrefActive(navItem.href, path)
+  if (!navItem.columns) return isHrefActive(navItem.href, path)
   const onLeafPage = mainNavigation.value.some(
     (item) => item.href && isHrefActive(item.href, path)
   )
   return (
     !onLeafPage &&
-    (navItem.columns?.some((column) =>
+    navItem.columns.some((column) =>
       column.items.some((item) => isHrefActive(item.href, path))
-    ) ??
-      false)
+    )
   )
 }
 </script>
@@ -64,19 +62,12 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             </span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
-            <ul class="flex w-max gap-16">
-              <NavFeaturedCard
-                v-if="navItem.featured"
-                :featured="navItem.featured"
-              />
-              <NavColumn
-                v-for="column in navItem.columns"
-                :key="column.header"
-                :column="column"
-                :locale="locale"
-                :current-path="currentPath"
-              />
-            </ul>
+            <NavDropdownBody
+              :columns="navItem.columns"
+              :featured="navItem.featured"
+              :locale
+              :current-path="currentPath"
+            />
           </NavigationMenuContent>
         </template>
         <NavigationMenuLink

@@ -11,16 +11,29 @@ async function openMenu(workshopInBuild: boolean) {
 }
 
 describe('HeaderMainMobile', () => {
-  it('omits the Hub when the workshop is not in the build', async () => {
-    await openMenu(false)
+  it.for([
+    { build: 'in', workshopInBuild: true, hub: '/hub/' },
+    { build: 'not in', workshopInBuild: false, hub: undefined }
+  ])(
+    'lists the Hub on its own when the workshop is $build the build',
+    async ({ workshopInBuild, hub }) => {
+      await openMenu(workshopInBuild)
 
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
-  })
+      expect(
+        screen.queryByRole('link', { name: /^Hub/ })?.getAttribute('href')
+      ).toBe(hub)
+    }
+  )
 
-  it('offers the Hub when the workshop is in the build', async () => {
+  it('describes each Products column in the drill-down', async () => {
     await openMenu(true)
+    await userEvent.click(screen.getByRole('button', { name: /^Products/ }))
 
-    expect(screen.getByRole('link', { name: /^Hub\b/i })).toBeTruthy()
+    expect(
+      ['Use a ready-made tool', 'Control the process'].map(
+        (text) => screen.getByText(text).tagName
+      )
+    ).toEqual(['P', 'P'])
   })
 
   it('labels a new top-level section with a NEW badge', async () => {

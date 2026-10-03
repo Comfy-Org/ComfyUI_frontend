@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { waitForIsland } from './fixtures/islands'
 import { test } from './fixtures/modelsAccount'
 
 const viewports = [
@@ -34,18 +35,19 @@ for (const viewport of viewports) {
     if (viewport.desktopNavigation) {
       await expect(desktopLinks).toBeVisible()
       await expect(
-        desktopLinks.getByRole('link', { name: 'Hub', exact: true })
-      ).toHaveAttribute('href', '/hub/models/')
+        desktopLinks.getByRole('link', { name: /^Hub/ })
+      ).toHaveAttribute('href', '/hub/')
       await expect(menuButton).toBeHidden()
     } else {
       await expect(desktopLinks).toBeHidden()
       await expect(menuButton).toBeVisible()
+      await waitForIsland(page, menuButton)
       await menuButton.click()
       const menu = page.getByRole('dialog', { name: 'Menu' })
       await expect(menu).toBeVisible()
-      await expect(menu.getByRole('link', { name: /^Hub\b/ })).toHaveAttribute(
+      await expect(menu.getByRole('link', { name: /^Hub/ })).toHaveAttribute(
         'href',
-        '/hub/models/'
+        '/hub/'
       )
     }
 

@@ -2887,7 +2887,6 @@
     "comfyEnterprise": "Comfy 企业版",
     "comfyHub": "Comfy Workflows",
     "comfyLocal": "Comfy 桌面版",
-    "comfyWorkshop": "浏览模型",
     "community": "社区",
     "company": "公司",
     "contact": "联系我们",
@@ -2954,7 +2953,19 @@
     "workspacesLoading": "正在加载工作区…",
     "x": "X",
     "youtube": "YouTube",
-    "cinematicStudio": "电影工作室"
+    "cinematicStudio": "电影工作室",
+    "colCreate": "创作",
+    "colCustomize": "定制",
+    "colBuild": "构建",
+    "hubApps": "应用",
+    "hubWorkflows": "工作流",
+    "hubModels": "模型",
+    "serverlessApi": "无服务器 API",
+    "builds": "Builds",
+    "comfySdks": "Comfy SDK",
+    "enterprise": "企业版",
+    "commercialLicensing": "商业授权",
+    "contactSales": "联系销售"
   },
   "payment": {
     "failed": {
@@ -5009,7 +5020,55 @@
       "notSaved": "这次生成未能保存到你的素材。结果在过期前仍然留在页面上。",
       "cancelError": "无法请求取消。生成可能仍在进行。"
     },
-    "cinematic": {}
+    "cinematic": {},
+    "space": {
+      "createHint": "使用现成工具",
+      "customizeHint": "掌控整个流程",
+      "buildHint": "通过 API 用在你的产品中"
+    },
+    "explore": {
+      "subtitle": "你想做什么？从一个任务开始，或直接搜索。每个结果都会标明它是应用、工作流还是模型。",
+      "searchLabel": "搜索 Hub",
+      "searchPlaceholder": "试试“upscale”、“image to video”或模型名称",
+      "tasks": "任务",
+      "tasksTitle": "使用场景",
+      "popularTitle": "当前热门",
+      "resultsFor": "“{query}”的结果",
+      "empty": "暂时没有匹配的结果。",
+      "clear": "清除搜索",
+      "workflowPill": "工作流",
+      "kindApp": "应用",
+      "kindModel": "模型",
+      "doors": "按类型浏览",
+      "doorApps": "应用",
+      "appsHint": "每个应用只做一件事，无需节点。",
+      "doorWorkflows": "工作流",
+      "workflowsHint": "打开一个工作流，修改任意步骤，变成你自己的。",
+      "modelsTitle": "模型",
+      "modelsHint": "在这里试用，或通过 API 调用。",
+      "appsCount": "{count} 个应用",
+      "workflowsCount": "{count} 个工作流",
+      "modelsCount": "{count} 个模型",
+      "communityTitle": "来自社区",
+      "communityHeading": "看看大家用 Comfy 做了什么",
+      "communityBody": "社区用 ComfyUI 创作的真实作品。",
+      "communityExplore": "浏览作品集",
+      "communityShare": "分享你的作品",
+      "modelsSeeAll": "查看全部模型"
+    },
+    "build": {
+      "title": "把它用在你的产品中。",
+      "body": "用 Comfy Router 调用任意模型，或用 Comfy API 运行工作流。密钥和用量在开发者平台管理。",
+      "routerTitle": "Comfy Router",
+      "routerBody": "用一个 API 密钥调用下面的任意模型。",
+      "apiTitle": "Comfy API",
+      "apiBody": "把任意 Hub 工作流作为端点运行。",
+      "platformTitle": "开发者平台",
+      "platformBody": "API 密钥、用量和部署。",
+      "getKey": "获取 API 密钥",
+      "docs": "文档",
+      "snippetLabel": "Comfy Router 请求示例"
+    }
   },
   "cinematic": {
     "ux": {

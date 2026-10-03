@@ -2,6 +2,7 @@ import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/workshopVisibility'
+import { waitForIsland } from './fixtures/islands'
 
 function settleAnimations(root: Locator) {
   return root.evaluate((el) =>
@@ -31,6 +32,7 @@ const minimaxRouteZh = '/zh-CN/minimax-h3/'
 const TOP_LEVEL_LABELS = [
   'Hub',
   'Products',
+  'Enterprise',
   'Pricing',
   'Community',
   'Company'
@@ -107,7 +109,7 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
-  test('NEW badge shows on Workshop, Products and Community only', async ({
+  test('NEW badge shows on Hub, Products and Community only', async ({
     page
   }) => {
     await page.setViewportSize({ width: 1600, height: 900 })
@@ -119,6 +121,9 @@ test.describe('Desktop navigation @smoke', () => {
         .getByRole('link', { name: 'Hub' })
         .getByText('NEW', { exact: true })
     ).toBeVisible()
+    await expect(
+      desktopLinks.getByRole('button', { name: 'Enterprise' }).getByText('NEW')
+    ).toHaveCount(0)
     for (const label of ['Products', 'Community']) {
       await expect(
         desktopLinks
@@ -158,6 +163,7 @@ test.describe('Desktop dropdown @interaction', () => {
     const productsButton = desktopLinks.getByRole('button', {
       name: 'Products'
     })
+    await waitForIsland(page, productsButton)
     await productsButton.hover()
 
     const dropdown = nav.getByTestId('nav-dropdown')
@@ -165,7 +171,25 @@ test.describe('Desktop dropdown @interaction', () => {
       'Comfy Desktop',
       'Comfy Cloud',
       'Developer Platform',
-      'Comfy Enterprise'
+      'Comfy Router'
+    ]) {
+      await expect(dropdown.getByText(item)).toBeVisible()
+    }
+  })
+
+  test('hovering ENTERPRISE shows the enterprise offers', async ({ page }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const enterpriseButton = nav
+      .getByTestId('desktop-nav-links')
+      .getByRole('button', { name: 'Enterprise' })
+    await waitForIsland(page, enterpriseButton)
+    await enterpriseButton.hover()
+
+    const dropdown = nav.getByTestId('nav-dropdown')
+    for (const item of [
+      'Comfy Enterprise',
+      'Forward Deployed Creatives',
+      'Contact sales'
     ]) {
       await expect(dropdown.getByText(item)).toBeVisible()
     }
@@ -327,12 +351,18 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['Hub', 'Products', 'Pricing', 'Community']) {
+    for (const label of [
+      'Hub',
+      'Products',
+      'Enterprise',
+      'Pricing',
+      'Community'
+    ]) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
 
-  test('NEW badge shows on Workshop, Products and Community only', async ({
+  test('NEW badge shows on Hub, Products and Community only', async ({
     page
   }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
@@ -344,6 +374,9 @@ test.describe('Mobile menu @mobile', () => {
         exact: true
       })
     ).toBeVisible()
+    await expect(
+      menu.getByRole('button', { name: 'Enterprise' }).getByText('NEW')
+    ).toHaveCount(0)
     for (const label of ['Products', 'Community']) {
       await expect(
         menu.getByRole('button', { name: label }).getByText('NEW', {

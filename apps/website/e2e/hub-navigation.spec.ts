@@ -15,121 +15,107 @@ test.beforeEach(async ({ context }) => {
   })
 })
 
-for (const { from, to, copy, reducedMotion } of [
-  {
-    from: 'models',
-    to: 'workflows',
-    copy: 'Turn your ideas into finished results',
-    reducedMotion: 'no-preference'
-  },
-  {
-    from: 'workflows',
-    to: 'apps',
-    copy: 'Take on bigger ideas with apps',
-    reducedMotion: 'no-preference'
-  },
-  {
-    from: 'apps',
-    to: 'models',
-    copy: 'Try the latest AI models',
-    reducedMotion: 'no-preference'
-  },
-  {
-    from: 'models',
-    to: 'workflows',
-    copy: 'Turn your ideas into finished results',
-    reducedMotion: 'reduce'
-  }
-] as const) {
-  test(`${from} to ${to} respects ${reducedMotion} motion preferences`, async ({
-    page
-  }) => {
-    await page.emulateMedia({ reducedMotion })
-    await page.goto(`/hub/${from}/`)
-    await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
-      'aria-current',
-      'page'
-    )
-    const centreOf = async (testId: string) => {
-      const box = await page.getByTestId(testId).boundingBox()
-      if (!box) throw new Error(`${testId} has no box to measure`)
-      return box.x + box.width / 2
-    }
-    const expectMarkerOver = async (tab: string) =>
-      expect(async () =>
-        expect(
-          Math.abs(
-            (await centreOf('catalogue-marker')) -
-              (await centreOf(`catalogue-tab-${tab}`))
-          )
-        ).toBeLessThan(1)
-      ).toPass()
-    // A named transition can animate a marker that never moves, so the
-    // positions either side of the navigation are what prove it travelled.
-    await expectMarkerOver(from)
-    const departed = await centreOf('catalogue-marker')
-    const motion = await page.evaluateHandle((destination) => {
-      const observed = { crossfade: false, marker: false }
-      const finished = new Promise<void>((resolve) => {
-        document.addEventListener(
-          'astro:before-swap',
-          (event) => {
-            void event.viewTransition.finished.then(resolve)
-          },
-          { once: true }
-        )
-      })
-      let frame: number
-      function record() {
-        observed.crossfade ||= [
-          '::view-transition-old(root)',
-          '::view-transition-new(root)'
-        ].every((pseudo) => isFading(document.documentElement, pseudo))
-        observed.marker ||=
-          location.pathname === destination &&
-          document
-            .getAnimations()
-            .some(
-              (animation) =>
-                animation.effect instanceof KeyframeEffect &&
-                animation.effect.pseudoElement ===
-                  '::view-transition-group(catalogue-marker)'
-            )
-        frame = requestAnimationFrame(record)
-      }
-      function isFading(element: Element, pseudo?: string) {
-        const opacity = Number(getComputedStyle(element, pseudo).opacity)
-        return opacity > 0 && opacity < 1
-      }
-      record()
-      return {
-        observed,
-        finished,
-        stop() {
-          cancelAnimationFrame(frame)
-        }
-      }
-    }, `/hub/${to}/`)
-    try {
-      await page.getByTestId(`catalogue-tab-${to}`).click()
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-        `ComfyUI ${to}`
+const SECTIONS = {
+  explore: { path: '/hub/', heading: 'Find your starting point.' },
+  apps: { path: '/hub/apps/', heading: 'ComfyUI apps' },
+  workflows: { path: '/hub/workflows/', heading: 'ComfyUI workflows' },
+  models: { path: '/hub/models/', heading: 'ComfyUI models' }
+} as const
+
+type HubSection = keyof typeof SECTIONS
+
+// The Hub is a landing that sends to each section, and each section leads
+// back to it: there are no tabs joining the sections to each other.
+function wayTo(page: Page, from: HubSection, to: HubSection) {
+  if (to === 'explore') return page.getByTestId('hub-back')
+  if (from !== 'explore')
+    throw new Error(`${from} only leads back to the Hub, not to ${to}`)
+  return page.getByTestId(`explore-door-${to}`)
+}
+
+async function expectAt(page: Page, section: HubSection) {
+  await expect(page).toHaveURL(SECTIONS[section].path)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    SECTIONS[section].heading
+  )
+  await expect(page.getByTestId('hub-back')).toHaveCount(
+    section === 'explore' ? 0 : 1
+  )
+}
+
+async function navigateObservingCrossfade(
+  page: Page,
+  from: HubSection,
+  to: HubSection
+) {
+  const motion = await page.evaluateHandle(() => {
+    const observed = { crossfade: false }
+    const finished = new Promise<void>((resolve) => {
+      document.addEventListener(
+        'astro:before-swap',
+        (event) => {
+          void event.viewTransition.finished.then(resolve)
+        },
+        { once: true }
       )
-      await motion.evaluate((probe) => probe.finished)
-      await expect(page.getByTestId('workshop-hero')).toContainText(copy)
-      await expectMarkerOver(to)
-      expect(
-        Math.abs((await centreOf('catalogue-marker')) - departed)
-      ).toBeGreaterThan(1)
-      expect(await motion.evaluate((probe) => probe.observed)).toEqual({
-        crossfade: reducedMotion === 'no-preference',
-        marker: reducedMotion === 'no-preference'
+    })
+    let frame: number
+    function record() {
+      observed.crossfade ||= [
+        '::view-transition-old(root)',
+        '::view-transition-new(root)'
+      ].every((pseudo) => {
+        const opacity = Number(
+          getComputedStyle(document.documentElement, pseudo).opacity
+        )
+        return opacity > 0 && opacity < 1
       })
-    } finally {
-      await motion.evaluate((probe) => probe.stop())
-      await motion.dispose()
+      frame = requestAnimationFrame(record)
+    }
+    record()
+    return {
+      observed,
+      finished,
+      stop() {
+        cancelAnimationFrame(frame)
+      }
     }
   })
+  try {
+    await wayTo(page, from, to).click()
+    await expectAt(page, to)
+    await motion.evaluate((probe) => probe.finished)
+    return await motion.evaluate((probe) => probe.observed)
+  } finally {
+    await motion.evaluate((probe) => probe.stop())
+    await motion.dispose()
+  }
+}
+
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  for (const { from, to, copy } of [
+    {
+      from: 'explore',
+      to: 'workflows',
+      copy: 'Turn your ideas into finished results'
+    },
+    { from: 'apps', to: 'explore', copy: 'What do you want to make?' }
+  ] as const) {
+    test(`${from} to ${to} crossfades only under no-preference (${reducedMotion})`, async ({
+      page
+    }) => {
+      await page.emulateMedia({ reducedMotion })
+      await page.goto(SECTIONS[from].path)
+      await expectAt(page, from)
+
+      const observed = await navigateObservingCrossfade(page, from, to)
+
+      await expect(page.getByTestId('workshop-hero')).toContainText(copy)
+      expect(observed).toEqual({
+        crossfade: reducedMotion === 'no-preference'
+      })
+    })
+  }
 }
 
 for (const width of [1440, 390]) {
@@ -137,236 +123,98 @@ for (const width of [1440, 390]) {
     test.use({ viewport: { width, height: 900 } })
 
     for (const { from, to } of [
-      { from: 'models', to: 'workflows' },
-      { from: 'workflows', to: 'apps' },
-      { from: 'apps', to: 'models' }
-    ]) {
+      { from: 'explore', to: 'models' },
+      { from: 'models', to: 'explore' },
+      { from: 'explore', to: 'apps' },
+      { from: 'workflows', to: 'explore' }
+    ] as const) {
       test(`${from} to ${to} keeps the page steady, including Back and Forward`, async ({
         page
       }) => {
         const errors: string[] = []
         page.on('pageerror', (error) => errors.push(error.message))
-        await page.goto(`/hub/${from}/`)
-        await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
-          'aria-current',
-          'page'
-        )
+        await page.goto(SECTIONS[from].path)
+        await expectAt(page, from)
         await page.getByRole('button', { name: 'Close', exact: true }).click()
         await expect(
           page.getByText('Comfy Agent can now build workflows inside ComfyUI.')
         ).toBeHidden()
+        await expect(page.getByTestId('workshop-hero')).toBeVisible()
+        const way = wayTo(page, from, to)
+        await way.scrollIntoViewIfNeeded()
         const observation = await observeHubNavigation(page)
 
-        await page.getByTestId(`catalogue-tab-${to}`).click()
-        await expect(page).toHaveURL(`/hub/${to}/`)
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-          `ComfyUI ${to}`
-        )
-        await expect(page.getByTestId(`catalogue-tab-${to}`)).toHaveAttribute(
-          'aria-current',
-          'page'
-        )
+        await way.click()
+        await expectAt(page, to)
         await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
           'href',
-          `https://comfy.org/hub/${to}/`
+          `https://comfy.org${SECTIONS[to].path}`
         )
 
         await page.goBack()
-        await expect(page).toHaveURL(`/hub/${from}/`)
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-          `ComfyUI ${from}`
-        )
-        await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
-          'aria-current',
-          'page'
-        )
+        await expectAt(page, from)
         await page.goForward()
-        await expect(page).toHaveURL(`/hub/${to}/`)
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-          `ComfyUI ${to}`
-        )
-        await expect(page.getByTestId(`catalogue-tab-${to}`)).toHaveAttribute(
-          'aria-current',
-          'page'
-        )
+        await expectAt(page, to)
 
         const { frames, ...changes } = await observation.finish()
         expect(frames).toBeGreaterThan(0)
         expect(changes).toEqual({
           bannerReappeared: false,
-          tabsDisappeared: false,
           loaderAppeared: false,
-          headerMoved: false,
-          tabsMoved: false
+          headerMoved: false
         })
         expect(errors).toEqual([])
         await page.reload()
-        await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-          `ComfyUI ${to}`
-        )
-        await expect(page.getByTestId(`catalogue-tab-${to}`)).toHaveAttribute(
-          'aria-current',
-          'page'
-        )
+        await expectAt(page, to)
       })
     }
   })
 }
 
-for (const { width, from, to } of [
-  { width: 1440, from: 'workflows', to: 'models' },
-  { width: 1440, from: 'workflows', to: 'apps' },
-  { width: 390, from: 'models', to: 'workflows' }
-] as const) {
-  test(`${from} to ${to} at ${width}px leaves the tabs where the reader clicked them`, async ({
-    page
-  }) => {
-    await page.setViewportSize({ width, height: 900 })
-    await page.goto(`/hub/${from}/`)
-    await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
-      'aria-current',
-      'page'
-    )
-    await page.getByRole('button', { name: 'Close', exact: true }).click()
-
-    const toolbar = page.getByTestId('workshop-toolbar')
-    const tabs = page.getByTestId('catalogue-tabs')
-    await expect(page.getByTestId('workshop-model-card').first()).toBeVisible()
-    // Far enough down that the toolbar has left the page and stuck under the
-    // header, which is the state the reader is in when a tab is a jump.
-    const stuck = await toolbar.evaluate((element) =>
-      Number.parseFloat(getComputedStyle(element).top)
-    )
-    await page.evaluate(() => window.scrollBy(0, 1200))
-    await expect
-      .poll(async () => (await toolbar.boundingBox())?.y)
-      .toBeCloseTo(stuck, 0)
-    const pinned = (await tabs.boundingBox())?.y
-    expect(pinned).toBeDefined()
-
-    await page.getByTestId(`catalogue-tab-${to}`).click()
-    await expect(page).toHaveURL(`/hub/${to}/`)
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      `ComfyUI ${to}`
-    )
-
-    // The listing swaps under a control the reader is pointing at, so the
-    // control holds its place and the new listing starts beneath it. Landing
-    // at the top of the page would drop the tabs out from under the pointer.
-    await expect
-      .poll(async () => (await tabs.boundingBox())?.y)
-      .toBeCloseTo(pinned ?? 0, 0)
-    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
-
-    // A pinned toolbar reads the same anywhere further down the new listing,
-    // so pinned alone would also pass for a scroll measured against the page
-    // the reader left — and the two sections hold their toolbar at different
-    // heights. The page sits at the first scroll that pins it, so handing a
-    // few pixels back puts the toolbar into the flow again.
-    const landed = await toolbar.evaluate((element) =>
-      Number.parseFloat(getComputedStyle(element).top)
-    )
-    await page.evaluate(() => window.scrollBy(0, -4))
-    await expect
-      .poll(async () => (await toolbar.boundingBox())?.y)
-      .toBeGreaterThan(landed + 2)
-  })
-}
-
-test('switching tabs from the top of the page stays at the top', async ({
-  page
-}) => {
-  await page.goto('/hub/workflows/')
-  await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
-    'aria-current',
-    'page'
-  )
-  await page.getByTestId('catalogue-tab-models').click()
-  await expect(page).toHaveURL('/hub/models/')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'ComfyUI models'
-  )
-  expect(await page.evaluate(() => window.scrollY)).toBe(0)
-})
-
-// Inside a category the tabs give up the whole row to the category's own title,
-// so the way to another hub section starts by leaving the category.
+// A use case is a category on models, and a category hides the hub link behind
+// its own way back, so the way to the Hub starts by leaving the category.
 async function leaveCategory(page: Page) {
-  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
   await page.getByTestId('section-back').click()
-  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+  await expect(page.getByTestId('section-back')).toHaveCount(0)
 }
 
-async function expectTabs(page: Page) {
-  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
-}
-
-for (const { section, destination, query, filter, reachTabs } of [
+for (const { section, query, filter, reachHubLink } of [
   {
-    section: 'models',
-    destination: 'workflows',
+    section: 'models' as const,
     query: 'kling',
-    // A use case is a category on models, so the tabs are not on the page.
     filter: 'useCase=generate-images',
-    reachTabs: leaveCategory
+    reachHubLink: leaveCategory
   },
   {
-    section: 'workflows',
-    destination: 'models',
+    section: 'workflows' as const,
     query: 'material',
-    // A workflow category filter opens no category, so the tabs stay.
     filter: 'category=product',
-    reachTabs: expectTabs
+    reachHubLink: async () => {}
   }
 ]) {
-  test(`the active ${section} tab resets its URL filters, including history`, async ({
+  test(`leaving filtered ${section} through the Hub does not carry its filters back`, async ({
     page
   }) => {
     const filtered = `/hub/${section}/?q=${query}&${filter}`
-    await page.goto(filtered)
     const search = page.getByTestId('workshop-search')
     const count = page.getByTestId('workshop-filter-count')
+    await page.goto(filtered)
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
-    await reachTabs(page)
-    // On models the back link already cleared the filters; what the tab click
-    // still has to do is reset the address.
-    await page.getByTestId(`catalogue-tab-${section}`).click()
-    await expect(page).toHaveURL(`/hub/${section}/`)
-    await expect(search).toHaveValue('')
-    await expect(count).toHaveCount(0)
-    await page.goBack()
-    await expect(page).toHaveURL(filtered)
-    await expect(search).toHaveValue(query)
-    await expect(count).toHaveText('1')
-    await page.goForward()
-    await expect(page).toHaveURL(`/hub/${section}/`)
-    await expect(search).toHaveValue('')
-    await expect(count).toHaveCount(0)
-  })
 
-  test(`switching from filtered ${section} does not carry filters to ${destination}`, async ({
-    page
-  }) => {
-    const filtered = `/hub/${section}/?q=${query}&${filter}`
-    const search = page.getByTestId('workshop-search')
-    const count = page.getByTestId('workshop-filter-count')
-    await page.goto(filtered)
-    await expect(search).toHaveValue(query)
-    await expect(count).toHaveText('1')
-    await reachTabs(page)
-    await page.getByTestId(`catalogue-tab-${destination}`).click()
-    await expect(page).toHaveURL(`/hub/${destination}/`)
+    await reachHubLink(page)
+    await page.getByTestId('hub-back').click()
+    await expectAt(page, 'explore')
+    await page.getByTestId(`explore-door-${section}`).click()
+
+    await expect(page).toHaveURL(`/hub/${section}/`)
     await expect(search).toHaveValue('')
     await expect(count).toHaveCount(0)
+    await page.goBack()
     await page.goBack()
     await expect(page).toHaveURL(filtered)
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
-    await page.goForward()
-    await expect(page).toHaveURL(`/hub/${destination}/`)
-    await expect(search).toHaveValue('')
-    await expect(count).toHaveCount(0)
   })
 }
 
@@ -380,11 +228,11 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await toggle.click()
   const menu = page.getByRole('dialog', { name: 'Menu' })
   await expect(menu).toBeVisible()
-  await menu.getByRole('link', { name: /^Hub\b/ }).click()
-  await expect(page).toHaveURL('/hub/models/')
+  await menu.getByRole('link', { name: /^Hub/ }).click()
+  await expect(page).toHaveURL('/hub/')
   await expect(menu).toBeHidden()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'ComfyUI models'
+    'Find your starting point.'
   )
   await waitForIsland(page, toggle)
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
@@ -395,7 +243,7 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
 
-test('keeps the current listing visible until a cold destination is ready', async ({
+test('keeps the Hub visible until a cold section is ready', async ({
   page,
   context
 }) => {
@@ -406,87 +254,65 @@ test('keeps the current listing visible until a cold destination is ready', asyn
     await release.promise
     await route.fallback()
   })
-  await page.goto('/hub/models/')
-  await expect(page.getByTestId('catalogue-tab-models')).toHaveAttribute(
-    'aria-current',
-    'page'
-  )
-  await page.getByTestId('catalogue-tab-workflows').click()
+  await page.goto('/hub/')
+  await expectAt(page, 'explore')
+  await page.getByTestId('explore-door-workflows').click()
   await requested.promise
   try {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'ComfyUI models'
+      SECTIONS.explore.heading
     )
-    await expect(page.getByTestId('catalogue-tab-models')).toHaveAttribute(
-      'aria-current',
-      'page'
-    )
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('explore-catalogue')).toBeVisible()
   } finally {
     release.resolve()
   }
-  await expect(page).toHaveURL('/hub/workflows/')
+  await expectAt(page, 'workflows')
   await expect(page.getByTestId('workflow-catalogue')).toBeVisible()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'ComfyUI workflows'
-  )
 })
 
-// The tabs and the search share one row. Inside a category the tabs are gone,
-// and the cap the search wears outside one has to go with them or the width
-// they held goes nowhere. The cap is read off the field rather than measured:
-// outside a category the shared row already holds the field under 480px, so a
-// measurement there cannot tell a dropped cap from a crowded row. Inside one,
-// the box says the width really went to the field and not nowhere.
-const SEARCH_CAP = '480px'
+// With no section tabs, the search owns the toolbar row, inside a category and
+// out of it. The cap is read off the field, and the box shows the width really
+// went to the field.
 const NO_CAP = 'none'
-const WIDER_THAN_CAP = 480
+const WIDER_THAN_OLD_CAP = 480
 
 function searchField(page: Page) {
   return page.getByTestId('workshop-search-field')
 }
 
-async function expectSearchCap(page: Page, cap: string) {
+async function expectSearchFillsRow(page: Page) {
   const field = searchField(page)
   await expect(field).toBeVisible()
-  await expect(field).toHaveCSS('max-width', cap)
-}
-
-async function searchWidth(page: Page) {
-  const box = await searchField(page).boundingBox()
+  await expect(field).toHaveCSS('max-width', NO_CAP)
+  const box = await field.boundingBox()
   if (!box) throw new Error('The search field has no box')
-  return box.width
+  expect(box.width).toBeGreaterThan(WIDER_THAN_OLD_CAP)
 }
 
-test('a models category hands the search the width its tabs held', async ({
-  page
-}) => {
-  await page.goto('/hub/models/')
-  await expectSearchCap(page, SEARCH_CAP)
-  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+for (const { section, openCategory } of [
+  {
+    section: 'models',
+    openCategory: (page: Page) =>
+      page.goto('/hub/models/?useCase=generate-images')
+  },
+  {
+    section: 'workflows',
+    openCategory: (page: Page) =>
+      page.getByRole('button', { name: 'Browse all workflows' }).click()
+  }
+] as const) {
+  test(`the ${section} search fills the toolbar row in and out of a category`, async ({
+    page
+  }) => {
+    await page.goto(`/hub/${section}/`)
+    await expectSearchFillsRow(page)
 
-  await page.goto('/hub/models/?useCase=generate-images')
-  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
-  await expectSearchCap(page, NO_CAP)
-  expect(await searchWidth(page)).toBeGreaterThan(WIDER_THAN_CAP)
+    await openCategory(page)
+    await expect(page.getByTestId('section-back')).toBeVisible()
+    await expectSearchFillsRow(page)
 
-  await page.getByTestId('section-back').click()
-  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
-  await expectSearchCap(page, SEARCH_CAP)
-})
-
-test('browsing all workflows hands the search the width its tabs held', async ({
-  page
-}) => {
-  await page.goto('/hub/workflows/')
-  await expectSearchCap(page, SEARCH_CAP)
-
-  await page.getByRole('button', { name: 'Browse all workflows' }).click()
-  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
-  await expectSearchCap(page, NO_CAP)
-  expect(await searchWidth(page)).toBeGreaterThan(WIDER_THAN_CAP)
-
-  await page.getByTestId('section-back').click()
-  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
-  await expectSearchCap(page, SEARCH_CAP)
-})
+    await page.getByTestId('section-back').click()
+    await expect(page.getByTestId('section-back')).toHaveCount(0)
+    await expectSearchFillsRow(page)
+  })
+}

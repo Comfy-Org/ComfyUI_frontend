@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { cn } from '@comfyorg/tailwind-utils'
 import {
   computed,
   nextTick,
@@ -155,10 +154,6 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 // the catalogue's name twice.
 const emit = defineEmits<{ section: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
-// Inside a category the tabs give up the row, and the search takes it.
-const searchClass = computed(() =>
-  cn('min-w-0 flex-1', !inSection.value && 'sm:max-w-120')
-)
 
 // Keep the launch-requested video models in the set, then let the same curated
 // order used by the rows decide where every selected model appears.
@@ -251,16 +246,15 @@ watch(browseAll, (on) => on && resetFilters())
         data-testid="workshop-toolbar"
         class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
       >
-        <slot name="tabs" />
         <div
-          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
+          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
         >
           <WorkshopSearchField
             v-model="query"
             :models
             :locale
             compact
-            :class="searchClass"
+            class="min-w-0 flex-1"
           />
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">

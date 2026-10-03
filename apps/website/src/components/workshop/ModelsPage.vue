@@ -22,13 +22,11 @@ import {
   useWorkshopWorkflowsEnabled
 } from '../../scripts/posthog'
 
-import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { HubSection } from '../../lib/workshop/hub-section'
+import HubEyebrow from './HubEyebrow.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
-import {
-  workshopEyebrowClass,
-  workshopHeadingClass
-} from './workshopHeadingClasses'
+import { workshopHeadingClass } from './workshopHeadingClasses'
 
 const { t } = translationsFor('en')
 const {
@@ -40,7 +38,7 @@ const {
   slug?: string
   workflowId?: string
   heading?: string
-  section?: CatalogueTab
+  section?: HubSection
 }>()
 
 const loadingLabel = t('workshop.load.pending')
@@ -71,11 +69,9 @@ const gateAllows = computed(() => {
   return section === 'apps' ? appsEnabled.value : undefined
 })
 const catalogueView = computed(() => {
-  if (!mounted.value || (section !== 'models' && !settled.value))
-    return 'loading'
-  return section === 'models' || (enabled.value && gateAllows.value)
-    ? 'granted'
-    : 'denied'
+  const isPublic = section === 'models' || section === 'explore'
+  if (!mounted.value || (!isPublic && !settled.value)) return 'loading'
+  return isPublic || (enabled.value && gateAllows.value) ? 'granted' : 'denied'
 })
 // Inside a category the category's own title carries the page, so the hub's
 // eyebrow and heading give up their space to it. They stay in the document
@@ -240,9 +236,7 @@ const Content = shallowRef(createContent())
         data-testid="workshop-heading"
         :class="inSection ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3'"
       >
-        <p :class="workshopEyebrowClass">
-          {{ t('workshop.catalogue.eyebrow') }}
-        </p>
+        <HubEyebrow :section />
         <h1 :class="workshopHeadingClass">{{ heading }}</h1>
       </div>
     </div>

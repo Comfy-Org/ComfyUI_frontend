@@ -28,17 +28,13 @@ test('workflow launch groups lead to the existing shared form', async ({
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/hub/models/')
-  await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
-  await page.getByTestId('catalogue-tab-workflows').click()
+  await page.goto('/hub/')
+  await page.getByTestId('explore-door-workflows').click()
   await expect(page).toHaveURL('/hub/workflows/')
   await expect(
     page.getByRole('heading', { level: 1, name: 'ComfyUI workflows' })
   ).toBeVisible()
-  await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
-    'aria-current',
-    'page'
-  )
+  await expect(page.getByTestId('hub-back')).toHaveAttribute('href', '/hub/')
   const catalogue = page.getByTestId('workflow-catalogue')
   await expect(catalogue.getByRole('heading', { level: 2 })).toHaveText([
     'Turn an image into a video',
@@ -146,10 +142,9 @@ test('workflow launch groups lead to the existing shared form', async ({
   }
   await shelf.click()
   await expect(page).toHaveURL('/hub/workflows/?category=product')
-  await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
-    'aria-current',
-    'page'
-  )
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'ComfyUI workflows' })
+  ).toBeVisible()
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   const filtered = page.getByTestId('workflow-search-results')
   await expect(
@@ -215,9 +210,10 @@ test('withholds workflow discovery and direct pages when the workflow flag is of
   context
 }) => {
   await mockWorkflowVisibility(context, false)
+  await page.goto('/hub/')
+  await expect(page.getByTestId('explore-door-models')).toBeVisible()
+  await expect(page.getByTestId('explore-door-workflows')).toHaveCount(0)
   await page.goto('/hub/models/')
-  await expect(page.getByTestId('workshop-search')).toBeVisible()
-  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
   await page.getByTestId('workshop-search').fill('Change a material')
   await expect(
     page.getByRole('link', { name: /Change a material/ })
@@ -287,9 +283,9 @@ test('workflow search and category filters share the mobile controls @mobile', a
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/hub/models/')
-  await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
-  await page.getByTestId('catalogue-tab-workflows').click()
+  await page.goto('/hub/')
+  await page.getByTestId('explore-door-workflows').click()
+  await expect(page).toHaveURL('/hub/workflows/')
   await page.getByTestId('workshop-filter').click()
   await page.getByRole('button', { name: 'Upscale & restore 6' }).click()
   await page.getByRole('button', { name: 'Show 6 workflows' }).click()
@@ -323,7 +319,9 @@ test('workflow search and category filters share the mobile controls @mobile', a
   await expect(
     page.getByText('No workflows match your search and filters.')
   ).toBeVisible()
-  await page.getByTestId('catalogue-tab-models').click()
+  await page.getByTestId('hub-back').click()
+  await page.getByTestId('explore-door-models').click()
+  await expect(page).toHaveURL('/hub/models/')
   await expect(page.getByTestId('workflow-catalogue')).toHaveCount(0)
   await expect(page.getByTestId('workshop-search-button')).toHaveText(
     'Search models…'
@@ -337,9 +335,8 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/hub/models/')
-  await expect(page.getByTestId('catalogue-tab-workflows')).toBeInViewport()
-  await page.getByTestId('catalogue-tab-workflows').click()
+  await page.goto('/hub/')
+  await page.getByTestId('explore-door-workflows').click()
   const outcomes = page
     .getByTestId('workflow-catalogue')
     .getByTestId('workshop-model-card')
@@ -463,9 +460,9 @@ for (const { width, half, path } of tabletToolbars) {
     await page.setViewportSize({ width, height: 900 })
     await page.goto(path)
     const toolbar = page.getByTestId('workshop-toolbar')
-    await expect(toolbar.getByTestId('catalogue-tabs')).toBeVisible()
+    await expect(toolbar.getByTestId('workshop-search')).toBeVisible()
+    await toolbar.scrollIntoViewIfNeeded()
     for (const control of [
-      toolbar.getByTestId('catalogue-tabs'),
       toolbar.getByTestId('workshop-search'),
       toolbar.getByTestId('workshop-filter'),
       toolbar.getByTestId('workshop-sort')
@@ -550,64 +547,49 @@ test('keeps the workflow form inside a phone screen @mobile', async ({
   expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewportWidth)
 })
 
-test('@mobile keeps the catalogue tabs in place from one hub page to the next', async ({
+test('@mobile keeps the way back to the Hub in place from one section to the next', async ({
   page,
   context
 }) => {
   await mockWorkflowVisibility(context, true)
   await page.goto('/hub/models/')
-  const models = page.getByTestId('catalogue-tab-models')
-  const workflows = page.getByTestId('catalogue-tab-workflows')
-  await expect(workflows).toBeVisible()
-  // Stuck under the header is where a reader meets the tabs on a phone, and
-  // the position a tab has to hold is the one it is clicked in.
-  await page.evaluate(() => window.scrollBy(0, 1200))
-  await expect
-    .poll(async () => (await workflows.boundingBox())?.y)
-    .toBeLessThan(200)
-  const before = await workflows.boundingBox()
+  const back = page.getByTestId('hub-back')
+  // The heading block eases in, so the link is measured once it has landed.
+  const settledY = async () => {
+    await back.evaluate((link) =>
+      Promise.all(
+        link.parentElement?.getAnimations().map((motion) => motion.finished) ??
+          []
+      )
+    )
+    return (await back.boundingBox())?.y
+  }
+  await expect(back).toBeVisible()
+  const before = await settledY()
 
-  // A reader taps the tab where they can see it. Playwright scrolls a target
-  // into view first, and on a toolbar still settling it sometimes scrolls a
-  // pinned one — which is the state under test. Only that scrolling is turned
-  // off: every other check it makes before tapping, the hit test included,
-  // still runs, and a tab out of the viewport now fails rather than being
-  // fetched into it.
-  //
-  // The tabs sit in the same place on both pages and mark themselves current
-  // as soon as they render, so neither tells the page apart from the one it
-  // replaced. The address does, and the place they come to rest is reached
-  // after it — a measurement taken before either is of the page being left.
-  await workflows.click({ scroll: 'none' })
+  await back.click()
+  await page.getByTestId('explore-door-workflows').click()
   await expect(page).toHaveURL('/hub/workflows/')
-  await expect(workflows).toHaveAttribute('aria-current', 'page')
-  await expect
-    .poll(async () => (await workflows.boundingBox())?.y)
-    .toBeCloseTo(before?.y ?? 0, 0)
-
-  await models.click({ scroll: 'none' })
-  await expect(page).toHaveURL('/hub/models/')
-  await expect(models).toHaveAttribute('aria-current', 'page')
-  await expect
-    .poll(async () => (await models.boundingBox())?.y)
-    .toBeCloseTo(before?.y ?? 0, 0)
+  await expect(back).toBeVisible()
+  expect(await settledY()).toBeCloseTo(before ?? 0, 0)
 })
 
-test('@mobile stretches the catalogue tabs across the toolbar on a phone', async ({
+test('@mobile fits every Hub door on a phone without sideways scrolling', async ({
   page,
   context
 }) => {
   await mockWorkflowVisibility(context, true)
-  await page.goto('/hub/models/')
-  const toolbar = page.getByTestId('workshop-toolbar')
-  const tabs = toolbar.getByTestId('catalogue-tabs')
-  await expect(tabs).toBeVisible()
+  await page.goto('/hub/')
+  const doors = page.getByTestId('explore-doors').getByRole('link')
 
-  const [bar, group] = await Promise.all([
-    toolbar.boundingBox(),
-    tabs.boundingBox()
-  ])
-  expect(Math.abs((bar?.width ?? 0) - (group?.width ?? 0))).toBeLessThan(12)
+  await expect(doors).toHaveText([/Workflows/, /Models/])
+  const viewport = page.viewportSize()?.width ?? 0
+  for (const door of await doors.all()) {
+    await door.scrollIntoViewIfNeeded()
+    await expect(door).toBeInViewport({ ratio: 1 })
+    const box = await door.boundingBox()
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewport)
+  }
 })
 
 test('the examples below the form read and mark themselves like a model page', async ({

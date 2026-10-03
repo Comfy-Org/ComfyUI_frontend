@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
@@ -47,10 +46,6 @@ const filterMenu =
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 const emit = defineEmits<{ section: [boolean] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
-// Browsing them all, the tabs give up the row and the search takes it.
-const searchClass = computed(() =>
-  cn('min-w-0 flex-1', !browseAll.value && 'sm:max-w-120')
-)
 watch(browseAll, () => {
   clear()
   void nextTick(() => window.scrollTo({ top: 0 }))
@@ -203,9 +198,8 @@ function leaveSection() {
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="workshop-toolbar"
     >
-      <slot name="tabs" />
       <div
-        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
+        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
       >
         <WorkshopSearchField
           v-model="query"
@@ -213,7 +207,7 @@ function leaveSection() {
           :locale
           kind="workflows"
           compact
-          :class="searchClass"
+          class="min-w-0 flex-1"
         />
         <WorkshopFilterMenu
           ref="filterMenu"

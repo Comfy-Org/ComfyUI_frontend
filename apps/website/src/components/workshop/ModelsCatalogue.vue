@@ -10,9 +10,9 @@ import type {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { translationsFor } from '../../i18n/translations'
+import BuildApiBand from './BuildApiBand.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
-import CatalogueTabs from './CatalogueTabs.vue'
-import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { HubSection } from '../../lib/workshop/hub-section'
 import type { WorkshopPageType } from '../../scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
@@ -21,14 +21,17 @@ import {
 } from '../../scripts/posthog'
 import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
 import { ac } from '../../lib/workshop/catalogue-apps'
+import { upcomingApps } from '../../lib/workshop/coming-soon-apps'
 import {
   loadAppCatalogue,
+  loadExploreCatalogue,
   loadWorkflowCatalogue
 } from '../../lib/workshop/catalogue-components'
 import { isWorkshopModelShown } from '../../scripts/workshop-model-flags'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
 const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
+const ExploreCatalogue = defineAsyncComponent(loadExploreCatalogue)
 
 const {
   models,
@@ -39,7 +42,7 @@ const {
   models: readonly WorkshopModel[]
   initialSearch?: string
   locale?: Locale
-  section?: CatalogueTab
+  section?: HubSection
 }>()
 const { t } = translationsFor(locale)
 
@@ -78,33 +81,29 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
     image: app.thumbnail?.url ?? app.thumbnailUrl
   }))
 )
-const availableTabs = computed<readonly CatalogueTab[]>(() => [
-  'models',
-  ...(workflows.value.length || section === 'workflows'
-    ? (['workflows'] as const)
-    : []),
-  ...((appsEnabled.value && apps.value.length) || section === 'apps'
-    ? (['apps'] as const)
-    : [])
-])
 
 // Each tab says what its own listing is for, in Eric's words.
 const SUBTITLE_KEY = {
+  explore: 'workshop.explore.subtitle',
   models: 'workshop.hero.subtitle',
   workflows: 'workshop.catalogue.workflowsSubtitle',
   apps: 'workshop.catalogue.appsSubtitle'
-} as const satisfies Record<CatalogueTab, TranslationKey>
+} as const satisfies Record<HubSection, TranslationKey>
 
 whenever(
   () => mounted.value && enabled.value,
   () => {
     const catalogues = {
+      explore: {
+        model_count:
+          routerModels.value.length + workflows.value.length + apps.value.length
+      },
       models: { model_count: routerModels.value.length, page_type: 'model' },
       workflows: { model_count: workflows.value.length, page_type: 'workflow' },
       apps: { model_count: apps.value.length, page_type: 'app' }
     } as const satisfies Record<
-      CatalogueTab,
-      { model_count: number; page_type: WorkshopPageType }
+      HubSection,
+      { model_count: number; page_type?: WorkshopPageType }
     >
     captureWorkshopEvent({
       name: 'catalogue_viewed',
@@ -137,24 +136,23 @@ whenever(
       </p>
     </div>
   </div>
-  <WorkshopModelsGrid
-    v-if="section === 'models'"
-    v-model:browse-all="browseAll"
+  <ExploreCatalogue
+    v-if="section === 'explore'"
+    :apps="appsEnabled ? appCards : []"
+    :workflows
     :models="routerModels"
-    :initial-search
     :locale
-    @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        v-if="availableTabs.length > 1 && !inSection"
-        :tabs="availableTabs"
-        :model-value="section"
-        :locale
-        links
-      />
-    </template>
-  </WorkshopModelsGrid>
+  />
+  <template v-else-if="section === 'models'">
+    <BuildApiBand v-if="!inSection" :locale />
+    <WorkshopModelsGrid
+      v-model:browse-all="browseAll"
+      :models="routerModels"
+      :initial-search
+      :locale
+      @section="inSection = $event"
+    />
+  </template>
   <WorkflowCatalogue
     v-else-if="section === 'workflows'"
     v-model:browse-all="browseAll"
@@ -162,32 +160,13 @@ whenever(
     :initial-search
     :locale
     @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        v-if="!inSection"
-        :tabs="availableTabs"
-        :model-value="section"
-        :locale
-        links
-      />
-    </template>
-  </WorkflowCatalogue>
+  />
   <AppCatalogue
     v-else
     v-model:browse-all="browseAll"
     :apps="appCards"
+    :upcoming="upcomingApps(locale)"
     :locale
     @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        v-if="!inSection"
-        :tabs="availableTabs"
-        :model-value="section"
-        :locale
-        links
-      />
-    </template>
-  </AppCatalogue>
+  />
 </template>
