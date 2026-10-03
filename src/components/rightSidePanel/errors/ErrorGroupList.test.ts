@@ -22,6 +22,7 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 
@@ -156,6 +157,10 @@ function createCanvasFixture(pinia: Pinia, graph = ROOT_GRAPH) {
     read_only: false,
     subgraph: undefined,
     canvas: canvasElement,
+    // Focus framing reads the applied CSS viewport off `ds`, so the fixture
+    // needs a `DragAndScale` matching the element's 900x700 viewport.
+    dpr: 1,
+    ds: createTestDragAndScale(900, 700),
     animateToBounds: vi.fn()
   })
   canvas.setGraph = vi.fn((nextGraph) => {
