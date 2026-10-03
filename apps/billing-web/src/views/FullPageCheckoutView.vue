@@ -38,6 +38,7 @@ const {
   viewPlansLink,
   openedByScript,
   close,
+  abandon,
   retryLoad,
   onPaymentPhase,
   savedMethods,
@@ -154,6 +155,7 @@ const endingPlan = computed<EndingPlan | undefined>(() => {
 
 function goBack() {
   reportReturnClicked('back')
+  abandon('back')
   window.location.assign(returnLink.value)
 }
 

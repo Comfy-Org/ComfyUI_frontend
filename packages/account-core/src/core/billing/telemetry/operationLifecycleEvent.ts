@@ -24,6 +24,24 @@ export function toBillingTelemetryEvent(
     presentation: event.presentation,
     resumed: event.resumed
   } as const
+  if (
+    event.name === BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.redirectStarted ||
+    event.name === BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.returned
+  ) {
+    return {
+      ...friction,
+      stage:
+        event.name === BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT.returned
+          ? 'returned'
+          : 'redirect_started',
+      destination: event.destination,
+      step: event.step,
+      navigation: event.navigation,
+      ...(event.method_kind === undefined
+        ? {}
+        : { method_kind: event.method_kind })
+    }
+  }
   const shared = {
     operation: 'operation',
     billing_client: 'sdk',
@@ -34,9 +52,9 @@ export function toBillingTelemetryEvent(
     ...(paymentIntentSource === undefined
       ? {}
       : { payment_intent_source: paymentIntentSource }),
-    ...(event.duration_ms === undefined
-      ? {}
-      : { duration_ms: event.duration_ms })
+    ...('duration_ms' in event && event.duration_ms !== undefined
+      ? { duration_ms: event.duration_ms }
+      : {})
   } as const
 
   switch (event.name) {

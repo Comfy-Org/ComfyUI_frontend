@@ -1,4 +1,8 @@
-import { tryOnScopeDispose, useIntervalFn } from '@vueuse/core'
+import {
+  tryOnScopeDispose,
+  useEventListener,
+  useIntervalFn
+} from '@vueuse/core'
 import { computed, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
@@ -42,6 +46,8 @@ import {
   reduceCheckoutPage,
   settledPlanSource
 } from '@/checkout/checkoutPage'
+import { methodKindOf } from '@/checkout/checkoutJourney'
+import { endingOf } from '@/checkout/endingScreen'
 import { pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
@@ -63,6 +69,7 @@ import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
+import type { BillingEntryState } from '@/entry/billingEntry'
 import { useBillingWebSession } from '@/session/billingWebSession'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import {
@@ -160,6 +167,13 @@ function railOf(
   } as const
 }
 
+/** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
+function arrivalPage({ entry, error }: BillingEntryState): CheckoutPage {
+  return error.value === undefined && entry.value?.plan !== undefined
+    ? RESOLVING
+    : UNREADABLE_LINK
+}
+
 /**
  * The full-page checkout's effects around one `CheckoutPage` state: the
  * reconciliation with whatever operation the workspace is already waiting
@@ -191,11 +205,8 @@ export function useFullPageCheckout() {
   const journey = useCheckoutJourney('full_page')
   journey.enter()
 
-  /** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
   const page = shallowRef<CheckoutPage>(
-    unreadableLink.value === undefined && entry.value?.plan !== undefined
-      ? RESOLVING
-      : UNREADABLE_LINK
+    arrivalPage({ entry, error: unreadableLink })
   )
 
   /** Busy from the Pay click until the attempt resolves, whatever the lifecycle's promise does. */
@@ -211,11 +222,19 @@ export function useFullPageCheckout() {
    * reopens only a challenge that stays on this page (below), and anything
    * else waits for Complete verification.
    */
+  let handedToHostedStep = false
   const checkout = useCheckout({
-    openUrl: (url) => window.location.assign(url),
+    openUrl: (url) => {
+      handedToHostedStep = true
+      window.location.assign(url)
+    },
     navigationMode: 'redirect',
     challengePort,
-    autoContinue: () => submitting.value
+    autoContinue: () => submitting.value,
+    methodKind: () =>
+      page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
+        ? methodKindOf(page.value.attempt.redirectMethod)
+        : undefined
   })
   const attempts = createSubscriptionCheckoutTelemetry({ ui: 'full_page' })
 
@@ -583,6 +602,46 @@ export function useFullPageCheckout() {
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
 
+  watch(
+    () => endingOf(page.value)?.kind,
+    (kind) => {
+      if (kind === undefined) {
+        journey.resumed()
+        return
+      }
+      const current = page.value
+      journey.ended(
+        kind,
+        current.kind === 'terminal' ? current.attribution : undefined
+      )
+    },
+    { immediate: true }
+  )
+
+  /**
+   * A page handed to a method's own site by the challenge of the operation
+   * its Pay issued has not been abandoned.
+   */
+  function leftForPayment() {
+    const current = page.value
+    if (current.kind !== 'capture' || current.attempt.kind !== 'sent')
+      return false
+    const { redirectMethod, operation } = current.attempt
+    const challenge = operation?.challenge?.status
+    return (
+      redirectMethod !== undefined &&
+      operation?.presentation === 'embedded' &&
+      (challenge === 'required' || challenge === 'in_progress')
+    )
+  }
+
+  /** A hosted handoff covers only the page exit it caused, not one after coming Back. */
+  useEventListener(window, 'pagehide', () => {
+    const handedOff = handedToHostedStep
+    handedToHostedStep = false
+    if (!handedOff && !leftForPayment()) journey.abandoned('page_exit')
+  })
+
   /**
    * The live catalog, on the Team tab when the link asked for a team plan:
    * one the quote named without its stop, or a link that carries a stop.
@@ -797,6 +856,7 @@ export function useFullPageCheckout() {
     viewPlansLink,
     openedByScript,
     close,
+    abandon: journey.abandoned,
     retryLoad,
     onPaymentPhase,
     savedMethods: saved.methods,

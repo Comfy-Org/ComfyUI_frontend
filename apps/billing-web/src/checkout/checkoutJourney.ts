@@ -119,7 +119,7 @@ type PromoPhase = Extract<CheckoutJourneyPhaseEvent, { phase: 'promo' }>
 export type PaymentRail = MethodSelectedPhase['rail']
 export type PromoResult = PromoPhase['result']
 
-function methodKindOf(
+export function methodKindOf(
   methodType: string | undefined
 ): MethodSelectedPhase['method_kind'] {
   if (methodType === undefined || methodType === '') return undefined

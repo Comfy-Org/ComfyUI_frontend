@@ -1557,11 +1557,15 @@ describe('createBillingOperationLifecycle', () => {
 describe('payment friction telemetry', () => {
   function frictionOf(telemetry: BillingOperationTelemetryEvent[]) {
     return telemetry
-      .filter((event) => event.name.startsWith('billing.checkout.'))
-      .map(({ name, presentation, decline_reason }) =>
-        decline_reason === undefined
-          ? { name, presentation }
-          : { name, presentation, decline_reason }
+      .filter((event) => event.name.startsWith('billing.checkout.challenge'))
+      .map((event) =>
+        'decline_reason' in event && event.decline_reason !== undefined
+          ? {
+              name: event.name,
+              presentation: event.presentation,
+              decline_reason: event.decline_reason
+            }
+          : { name: event.name, presentation: event.presentation }
       )
   }
 
@@ -1774,6 +1778,161 @@ describe('payment friction telemetry', () => {
 
     expect(frictionOf(telemetry)).toEqual([
       { name: 'billing.checkout.challenge_required', presentation: 'embedded' }
+    ])
+  })
+})
+
+describe('hosted redirect telemetry', () => {
+  const PAYMENT_PAGE = 'https://billing.example/continue'
+
+  function redirectsOf(telemetry: BillingOperationTelemetryEvent[]) {
+    return telemetry.filter(
+      (event) =>
+        event.name === 'billing.checkout.redirect_started' ||
+        event.name === 'billing.checkout.returned'
+    )
+  }
+
+  it('reports the hosted step the host opened, where it leads and how', async () => {
+    const { lifecycle, telemetry } = harness({
+      destination: 'billing_web',
+      answers: [
+        httpOk(
+          opStatus({
+            phase: 'awaiting_payment_method',
+            action_url: PAYMENT_PAGE
+          })
+        )
+      ]
+    })
+    await lifecycle.begin(
+      'subscription',
+      issued({ operationId: 'op-1', actionUrl: PAYMENT_PAGE })
+    )
+    await flush()
+
+    lifecycle.reportHostedStepOpened('op-1', 'redirect', 'alipay')
+
+    expect(redirectsOf(telemetry)).toEqual([
+      {
+        name: 'billing.checkout.redirect_started',
+        billing_op_id: 'op-1',
+        operation_type: 'subscription',
+        presentation: 'hosted',
+        resumed: false,
+        destination: 'billing_web',
+        step: 'payment_method',
+        navigation: 'redirect',
+        method_kind: 'alipay'
+      }
+    ])
+  })
+
+  it.for([
+    {
+      server: { authentication_state: 'requires_action' },
+      step: 'authentication'
+    },
+    { server: { phase: 'awaiting_invoice_payment' }, step: 'invoice_payment' },
+    { server: { phase: 'in_progress' }, step: 'checkout' }
+  ] as const)(
+    'names the hosted step $step from what the server waits on',
+    async ({ server, step }) => {
+      const { lifecycle, telemetry } = harness({
+        answers: [httpOk(opStatus({ ...server, action_url: PAYMENT_PAGE }))]
+      })
+      await lifecycle.begin('topup', issued())
+      await flush()
+
+      lifecycle.reportHostedStepOpened('op-1', 'new_tab')
+
+      expect(redirectsOf(telemetry)).toEqual([
+        expect.objectContaining({ step, destination: 'stripe' })
+      ])
+    }
+  )
+
+  it('reports the return once when the page the redirect left recovers the operation', async () => {
+    const storage = memoryStorage()
+    const left = harness({
+      storage,
+      answers: [
+        httpOk(
+          opStatus({
+            phase: 'awaiting_payment_method',
+            action_url: PAYMENT_PAGE
+          })
+        )
+      ]
+    })
+    await left.lifecycle.begin(
+      'subscription',
+      issued({ operationId: 'op-1', actionUrl: PAYMENT_PAGE })
+    )
+    await flush()
+    left.lifecycle.reportHostedStepOpened('op-1', 'redirect', 'alipay')
+    left.lifecycle.dispose()
+
+    const pending = statusSnapshot({
+      pending_billing_op_id: 'op-1',
+      pending_billing_op_type: 'subscription'
+    })
+    const back = harness({ storage, status: pending })
+    await back.lifecycle.recover()
+    const reloaded = harness({ storage, status: pending })
+    await reloaded.lifecycle.recover()
+
+    expect(redirectsOf(back.telemetry)).toEqual([
+      {
+        name: 'billing.checkout.returned',
+        billing_op_id: 'op-1',
+        operation_type: 'subscription',
+        presentation: 'hosted',
+        resumed: true,
+        destination: 'stripe',
+        step: 'payment_method',
+        navigation: 'redirect',
+        method_kind: 'alipay'
+      }
+    ])
+    expect(redirectsOf(reloaded.telemetry)).toEqual([])
+  })
+
+  it('reports the return once when the customer comes back to this tab from a new one', async () => {
+    const { lifecycle, telemetry } = harness({
+      answers: [httpOk(opStatus({ action_url: PAYMENT_PAGE }))]
+    })
+    await lifecycle.begin('topup', issued())
+    await flush()
+    lifecycle.reportHostedStepOpened('op-1', 'new_tab')
+
+    lifecycle.wake()
+    lifecycle.wake()
+
+    expect(redirectsOf(telemetry)).toEqual([
+      expect.objectContaining({
+        name: 'billing.checkout.redirect_started',
+        navigation: 'new_tab'
+      }),
+      expect.objectContaining({
+        name: 'billing.checkout.returned',
+        navigation: 'new_tab'
+      })
+    ])
+  })
+
+  it('reports no return for a page that redirected away and was never reloaded', async () => {
+    const { lifecycle, telemetry } = harness({
+      answers: [httpOk(opStatus({ action_url: PAYMENT_PAGE }))]
+    })
+    await lifecycle.begin('topup', issued())
+    await flush()
+    lifecycle.reportHostedStepOpened('op-1', 'redirect')
+
+    lifecycle.wake()
+
+    expect(redirectsOf(telemetry).map((event) => event.name)).toEqual([
+      'billing.checkout.redirect_started'
     ])
   })
 })
