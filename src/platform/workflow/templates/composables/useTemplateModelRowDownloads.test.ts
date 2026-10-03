@@ -234,7 +234,7 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
-  it('maps Desktop2 native events and derives fractions only from valid bytes', async () => {
+  it('maps Desktop2 native events and prefers byte counters for fractions', async () => {
     const { downloads, emitDesktop } = createDownloadHarness()
     const active = model('active.safetensors')
     downloads.request(active)
@@ -263,13 +263,14 @@ describe('useTemplateModelRowDownloads', () => {
       progress: 0.75,
       status: 'paused'
     })
+    // Without byte counters the host's own figure is the only one there is.
     expect(downloads.stateFor(active)).toEqual({
       status: 'downloading',
       attempt: 1,
       activity: 'paused',
       receivedBytes: null,
       totalBytes: null,
-      fraction: null
+      fraction: 0.75
     })
 
     emitDesktop({
@@ -279,6 +280,42 @@ describe('useTemplateModelRowDownloads', () => {
       status: 'completed'
     })
     expect(downloads.stateFor(active)).toEqual({ status: 'done', attempt: 1 })
+  })
+
+  it.for([
+    { name: 'out of range', progress: 42 },
+    { name: 'negative', progress: -1 },
+    { name: 'not finite', progress: Number.NaN }
+  ])('reports no fraction when the host figure is $name', ({ progress }) => {
+    const active = model('scale.safetensors')
+    const { downloads, emitDesktop } = createDownloadHarness()
+    downloads.request(active)
+
+    emitDesktop({
+      url: active.url,
+      filename: active.name,
+      progress,
+      status: 'downloading'
+    })
+
+    expect(downloads.stateFor(active)).toMatchObject({ fraction: null })
+  })
+
+  it('prefers byte counters over the host figure', () => {
+    const active = model('bytes-win.safetensors')
+    const { downloads, emitDesktop } = createDownloadHarness()
+    downloads.request(active)
+
+    emitDesktop({
+      url: active.url,
+      filename: active.name,
+      progress: 0.9,
+      receivedBytes: 256,
+      totalBytes: 1024,
+      status: 'downloading'
+    })
+
+    expect(downloads.stateFor(active)).toMatchObject({ fraction: 0.25 })
   })
 
   it('correlates Desktop2 progress by URL, filename, and available directory', async () => {

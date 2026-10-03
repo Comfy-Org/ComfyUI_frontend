@@ -83,6 +83,18 @@ function validByteCount(value: number | undefined): number | null {
     : null
 }
 
+/**
+ * `ComfyDownloadProgress.progress` has no documented scale, but the template
+ * input store reads the same field as a 0..1 fraction and renders it as a
+ * percentage, so that is the reading used here. Only in range, and only as a
+ * fallback: byte counters are exact where they exist.
+ */
+function reportedFraction(progress: number): number | null {
+  return Number.isFinite(progress) && progress >= 0 && progress <= 1
+    ? progress
+    : null
+}
+
 function downloadFraction(
   receivedBytes: number | null,
   totalBytes: number | null
@@ -119,7 +131,9 @@ function desktopProgressEvent(
         activity: progress.status === 'paused' ? 'paused' : 'active',
         receivedBytes,
         totalBytes,
-        fraction: downloadFraction(receivedBytes, totalBytes)
+        fraction:
+          downloadFraction(receivedBytes, totalBytes) ??
+          reportedFraction(progress.progress)
       }
     }
     case 'completed':
