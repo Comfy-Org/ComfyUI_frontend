@@ -7,6 +7,8 @@ import { TestIds } from '@e2e/fixtures/selectors'
 export class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
+  public readonly panelHeader: Locator
+  public readonly closeButton: Locator
 
   constructor(
     public readonly page: Page,
@@ -16,6 +18,9 @@ export class SidebarTab {
     this.selectedTabButton = this.tabButton.and(
       page.locator('.side-bar-button-selected')
     )
+    const panel = page.locator('.sidebar-content-container')
+    this.panelHeader = panel.locator('.comfy-vue-side-bar-header')
+    this.closeButton = panel.getByTestId(TestIds.sidebar.closeButton)
   }
 
   async open() {
@@ -89,15 +94,23 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly essentialsTab: Locator
   public readonly sortButton: Locator
   public readonly nodePreview: Locator
+  public readonly nodePreviewInputs: Locator
+  public readonly nodePreviewBody: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
-    this.searchInput = page.getByPlaceholder('Search...')
     this.sidebarContent = page.locator('.sidebar-content-container')
+    this.searchInput = this.sidebarContent.getByPlaceholder('Search Nodes...')
     this.allTab = this.getTab('All nodes')
     this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
     this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
+    this.nodePreviewInputs = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewInputs
+    )
+    this.nodePreviewBody = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewBody
+    )
   }
 
   getTab(name: string) {
@@ -337,9 +350,6 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
 
-  // --- Panel chrome ---
-  public readonly panelHeader: Locator
-
   // --- Loading ---
   public readonly skeletonLoaders: Locator
 
@@ -398,7 +408,6 @@ export class AssetsSidebarTab extends SidebarTab {
     this.backToAssetsButton = page.getByRole('button', {
       name: 'Back to all assets'
     })
-    this.panelHeader = page.locator('.comfy-vue-side-bar-header')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )

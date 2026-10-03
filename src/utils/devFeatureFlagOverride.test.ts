@@ -4,14 +4,8 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 describe('getDevOverride', () => {
   it('returns undefined when localStorage is unavailable', () => {
-    const originalLocalStorage = globalThis.localStorage
-    // @ts-expect-error - intentionally removing for test
-    delete globalThis.localStorage
-    try {
-      expect(getDevOverride('some_flag')).toBeUndefined()
-    } finally {
-      globalThis.localStorage = originalLocalStorage
-    }
+    vi.stubGlobal('localStorage', undefined)
+    expect(getDevOverride('some_flag')).toBeUndefined()
   })
 
   it('returns undefined when no override is set', () => {

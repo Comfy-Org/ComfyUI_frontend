@@ -1,6 +1,7 @@
 import type { Locale } from '../config/locales'
 import { resolveLocale } from '../config/locales'
-import { externalLinks } from '../config/routes'
+import { externalLinks, getRoutes } from '../config/routes'
+import { translationsFor } from '../i18n/translations'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
@@ -25,8 +26,10 @@ export interface Crumb {
   url?: string
 }
 
+export const DEFAULT_OG_IMAGE = 'https://media.comfy.org/website/comfy.webp'
+
 const sameAs = [
-  externalLinks.github,
+  externalLinks.githubOrg,
   externalLinks.x,
   externalLinks.youtube,
   externalLinks.discord,
@@ -83,7 +86,8 @@ function buildGraph(...nodes: (JsonLdNode | null | undefined)[]): JsonLdGraph {
   }
 }
 
-function organizationNode(siteUrl: string): JsonLdNode {
+function organizationNode(siteUrl: string, locale: Locale): JsonLdNode {
+  const { t } = translationsFor(locale)
   return {
     '@type': 'Organization',
     '@id': organizationId(siteUrl),
@@ -95,6 +99,13 @@ function organizationNode(siteUrl: string): JsonLdNode {
       width: 512,
       height: 512
     },
+    description: t('hero.subtitle'),
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: 'support@comfy.org',
+      url: absoluteUrl(new URL(siteUrl), getRoutes().contact)
+    },
     sameAs
   }
 }
@@ -104,6 +115,7 @@ function websiteNode(siteUrl: string): JsonLdNode {
     '@type': 'WebSite',
     '@id': websiteId(siteUrl),
     name: 'Comfy',
+    alternateName: ['Comfy Org', 'comfy.org'],
     url: siteUrl,
     publisher: { '@id': organizationId(siteUrl) }
   }
@@ -188,6 +200,10 @@ export function articleNode(input: ArticleInput): JsonLdNode {
   }
 }
 
+export function webPageName(title: string): string {
+  return title.replace(/ [-·] Comfy$/, '')
+}
+
 interface WebPageInput {
   siteUrl: string
   locale: Locale
@@ -233,7 +249,12 @@ export interface SoftwareAppInput {
   softwareVersion?: string
   license?: string
   codeRepository?: string
-  authorName?: string
+  author?: {
+    type: 'Person' | 'Organization'
+    name: string
+    url?: string
+    sameAs?: string[]
+  }
   isFree?: boolean
   sameAs?: string[]
   mainEntityOfPage?: string
@@ -244,9 +265,12 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
   const orgRef = { '@id': organizationId(input.siteUrl) }
   const author = input.firstParty
     ? orgRef
-    : input.authorName
-      ? { '@type': 'Person', name: input.authorName }
-      : undefined
+    : input.author && {
+        '@type': input.author.type,
+        name: input.author.name,
+        url: input.author.url,
+        sameAs: input.author.sameAs
+      }
   return {
     '@type': 'SoftwareApplication',
     '@id': input.id,
@@ -337,14 +361,22 @@ export function comfyUiSourceCodeNode(siteUrl: string): JsonLdNode {
 interface OfferInput {
   name: string
   price: string | number
+  cycle: 'monthly' | 'yearly'
   url?: string
 }
+
+const billingPeriod = {
+  monthly: { unitCode: 'MON', billingDuration: 'P1M' },
+  yearly: { unitCode: 'ANN', billingDuration: 'P1Y' }
+} as const
 
 export interface ProductInput {
   siteUrl: string
   id: string
   name: string
   url: string
+  image: string
+  description: string
   offers: OfferInput[]
 }
 
@@ -354,19 +386,22 @@ export function productNode(input: ProductInput): JsonLdNode {
     '@id': input.id,
     name: input.name,
     url: input.url,
+    image: input.image,
+    description: input.description,
     brand: { '@id': organizationId(input.siteUrl) },
     offers: input.offers.map((offer) => ({
       '@type': 'Offer',
       name: offer.name,
       price: offer.price,
       priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
       url: offer.url,
       seller: { '@id': organizationId(input.siteUrl) },
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
         price: offer.price,
         priceCurrency: 'USD',
-        unitText: 'MONTH'
+        ...billingPeriod[offer.cycle]
       }
     }))
   }
@@ -417,15 +452,19 @@ export interface VideoObjectInput {
   thumbnailUrl: string
   /** Self-hosted media URL; omit for embed-only videos (set embedUrl instead). */
   contentUrl?: string
-  /** ISO 8601 date; required by VideoObjectInput but callers without a
-   * verified upload date should still omit `uploadDate` from the node —
-   * see videoObjectNode's `uploadDate` handling below. */
-  uploadDate?: string
+  /** ISO 8601 date or datetime. */
+  uploadDate: string
   locale: Locale
   embedUrl?: string
   /** ISO 8601 duration (e.g. "PT4M32S"); omit when unverified rather than
    * estimating — see data/customerVideos.ts `isoDuration`. */
   duration?: string
+}
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
+export function isoDateTime(value: string): string {
+  return DATE_ONLY.test(value) ? `${value}T00:00:00+00:00` : value
 }
 
 export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
@@ -437,7 +476,7 @@ export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
     thumbnailUrl: input.thumbnailUrl,
     contentUrl: input.contentUrl,
     embedUrl: input.embedUrl,
-    uploadDate: input.uploadDate,
+    uploadDate: isoDateTime(input.uploadDate),
     duration: input.duration,
     inLanguage: input.locale,
     publisher: { '@id': organizationId(input.siteUrl) },
@@ -468,7 +507,7 @@ export function buildPageGraph(
   }
   const hasCrumbs = Boolean(page.crumbs && page.crumbs.length > 0)
   return buildGraph(
-    organizationNode(ctx.siteUrl),
+    organizationNode(ctx.siteUrl, ctx.locale),
     websiteNode(ctx.siteUrl),
     webPageNode(input, type),
     hasCrumbs ? breadcrumbNode(page.url, page.crumbs!) : undefined,

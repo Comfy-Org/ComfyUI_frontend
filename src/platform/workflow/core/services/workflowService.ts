@@ -22,7 +22,7 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -132,7 +132,10 @@ function queueWorkflowLoad<T>(
   const settledResult = result
     .catch((error) => {
       // Keep fire-and-forget load failures observable.
-      reportError(error, { errorType: 'workflow_load_failure' })
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'workflow_load_failure'
+      })
       return undefined
     })
     .finally(() => {
@@ -378,9 +381,9 @@ export const useWorkflowService = () => {
    * Open a workflow in the current workspace
    * @param workflow The workflow to open
    * @param options The options for opening the workflow
-   * @returns false when the graph load reported failure (the error
-   * dialog was shown and the workflow never painted) or when the open
-   * was skipped because the workflow is mid-close; true otherwise
+   * @returns false when the graph load reported failure (the error dialog was
+   * shown and the workflow never painted) or when the open was skipped because
+   * the workflow is mid-close; true otherwise
    */
   /**
    * A failed replacement load leaves the shared root graph cleaned or
@@ -411,10 +414,28 @@ export const useWorkflowService = () => {
     return workflowStore.activeWorkflow
   }
 
+  // A superseded open leaves the workflow as it found it. A saved file drops
+  // what it fetched, including a draft's modified mark, so a later save cannot
+  // write an empty graph; a temporary one has no remote copy to refetch, so it
+  // keeps its content, as closing it does.
+  function discardSupersededLoad(
+    workflow: ComfyWorkflow,
+    wasModified: boolean
+  ): void {
+    if (workflow.isTemporary) return
+    workflow.unload()
+    workflow.isModified = wasModified
+  }
+
   const openWorkflow = (
     workflow: ComfyWorkflow,
-    options: { force?: boolean; navigationIntentId?: number } = {}
+    options: {
+      force?: boolean
+      navigationIntentId?: number
+      isCurrent?: () => boolean
+    } = {}
   ): Promise<boolean> => {
+    if (options.isCurrent?.() === false) return Promise.resolve(false)
     if (closingWorkflowCounts.has(closingKey(workflow)))
       return Promise.resolve(false)
     if (
@@ -430,9 +451,19 @@ export const useWorkflowService = () => {
       useSubgraphNavigationStore().beginWorkflowNavigation()
     return queueWorkflowLoad(async () => {
       try {
+        if (options.isCurrent?.() === false) {
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
+        }
         const loadFromRemote = !workflow.isLoaded
+        const wasModified = workflow.isModified
         if (loadFromRemote) {
           await workflow.load()
+        }
+        if (options.isCurrent?.() === false) {
+          if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
         }
 
         const loaded = await app.loadGraphData(
@@ -811,6 +842,7 @@ export const useWorkflowService = () => {
           'insertWorkflow aborted: canvas or graph was replaced while the workflow loaded'
         ),
         {
+          surface: 'graph',
           errorType: 'workflow_insert_aborted_canvas_changed',
           level: 'warning',
           tags: {

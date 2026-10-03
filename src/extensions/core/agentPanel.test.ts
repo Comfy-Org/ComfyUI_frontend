@@ -73,9 +73,7 @@ function beginFirstRunScreenHandoff(): void {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
@@ -158,6 +156,12 @@ const notOffered = async () =>
   vi.mocked(
     (await import('@/platform/telemetry')).useTelemetry()!
       .trackAgentConsentNotOffered
+  )
+
+const offerExited = async () =>
+  vi.mocked(
+    (await import('@/platform/telemetry')).useTelemetry()!
+      .trackAgentConsentOfferExited
   )
 
 async function loadEntryAndSetup(): Promise<void> {
@@ -288,6 +292,12 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(agentStore.isVisible).toBe(true)
+    if (user)
+      expect(await offerExited()).toHaveBeenCalledWith({
+        exit: 'activation_opened_panel',
+        stage: 'offer',
+        retry_armed: false
+      })
   })
 
   it('waits for the general onboarding decision before activation', async () => {
@@ -801,6 +811,339 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
 
       expect(await notOffered()).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('names the exit when the offer ends without naming a surface', () => {
+    const rerunFlagGate = async (): Promise<void> => {
+      agentFlagEnabled.value = false
+      await nextTick()
+      agentFlagEnabled.value = true
+      await nextTick()
+    }
+
+    it.for([
+      {
+        exit: 'consent_unresolved',
+        arrange: () => {
+          Object.assign(consentStore, { isChecking: true })
+        }
+      },
+      {
+        exit: 'consent_already_accepted',
+        arrange: () => {
+          Object.assign(consentStore, { accepted: true })
+        }
+      },
+      {
+        exit: 'workspace_unresolved',
+        arrange: () => {
+          Object.assign(workspaceStore, { activeWorkspaceId: null })
+        }
+      },
+      {
+        exit: 'workspace_switching',
+        arrange: () => {
+          Object.assign(workspaceStore, { isSwitching: true })
+        }
+      },
+      {
+        // The one-shot key silences `agent_consent_not_offered` outright, so
+        // this is the case that most needs its own event rather than a reason.
+        exit: 'already_offered',
+        arrange: () => {
+          localStorage.setItem(AUTO_SHOWN_KEY, 'true')
+        }
+      }
+    ] as const)(
+      'reports $exit once however often the offer re-runs',
+      async ({ exit, arrange }) => {
+        agentFlagEnabled.value = true
+        Object.assign(consentStore, { accepted: false, isChecking: false })
+        arrange()
+
+        await loadEntryAndSetup()
+        await rerunFlagGate()
+        await flush()
+
+        expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+          exit,
+          stage: 'offer',
+          retry_armed: false
+        })
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+        expect(await notOffered()).not.toHaveBeenCalled()
+      }
+    )
+
+    it('reports a signed-out offer separately from an unresolved account', async () => {
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      const { useCurrentUser } =
+        await import('@/composables/auth/useCurrentUser')
+      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => false)
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'signed_out',
+        stage: 'offer',
+        retry_armed: false
+      })
+    })
+
+    it('reports an account that went missing after the consent read succeeded', async () => {
+      // `isLoggedIn` true with no resolved id is the API-key rail before its
+      // user is known - the only way these two conditions come apart, and the
+      // reason they are separate values rather than one.
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      const { useCurrentUser } =
+        await import('@/composables/auth/useCurrentUser')
+      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => true)
+      let decide = (_: boolean) => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      currentUser.value = null
+      decide(true)
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'account_unresolved',
+        stage: 'offer',
+        retry_armed: false
+      })
+    })
+
+    it('reports an offer refused because another attempt is still in flight', async () => {
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      let finish = () => {}
+      const pending = new Promise<void>((resolve) => {
+        finish = resolve
+      })
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async () => {
+          await pending
+        }
+      )
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      )
+      await rerunFlagGate()
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'offer_in_flight',
+        stage: 'offer',
+        retry_armed: false
+      })
+      finish()
+      await pending
+    })
+
+    it('reports an offer skipped because the card has already been on screen', async () => {
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      openDialog(CONSENT_DIALOG_KEY)
+      await flush()
+      closeDialog(CONSENT_DIALOG_KEY)
+      await rerunFlagGate()
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledWith({
+        exit: 'card_already_seen',
+        stage: 'offer',
+        retry_armed: false
+      })
+    })
+
+    it.for([
+      {
+        exit: 'consent_already_accepted',
+        stage: 'load',
+        arrange: () => {
+          vi.mocked(consentStore.load).mockResolvedValue(true)
+        }
+      },
+      {
+        exit: 'consent_read_failed',
+        stage: 'load',
+        arrange: () => {
+          vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
+        }
+      },
+      {
+        exit: 'startup_probe_failed',
+        stage: 'startup',
+        arrange: () => {
+          const rejected = Promise.reject<boolean>(new Error('startup blew up'))
+          // Marked handled here so the rejection is not unhandled during the
+          // window before the extension attaches its own catch.
+          rejected.catch(() => {})
+          startupDecision = rejected
+        }
+      }
+    ] as const)(
+      'reports $exit at the $stage stage',
+      async ({ exit, stage, arrange }) => {
+        agentFlagEnabled.value = true
+        Object.assign(consentStore, { accepted: false, isChecking: false })
+        arrange()
+
+        await loadEntryAndSetup()
+        await flush()
+
+        expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+          exit,
+          stage,
+          retry_armed: false
+        })
+      }
+    )
+
+    it('reports why an undecided boot was also ineligible', async () => {
+      // `boot_undecided` is gated on eligibility, so this combination used to
+      // forfeit the offer and report nothing at all.
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      let decide = (_: boolean) => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      Object.assign(consentStore, { isChecking: true })
+      decide(false)
+      await flush()
+
+      expect(await notOffered()).not.toHaveBeenCalled()
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'consent_unresolved',
+        stage: 'startup',
+        retry_armed: false
+      })
+    })
+
+    it('marks the exit that loses a held offer as still having a retry armed', async () => {
+      // This is gc-17's silent loss, made visible: a dialog holds the offer,
+      // the screen clears, and the retry's consent read fails. Before #18975
+      // the offer was gone for the page load; after it the hold survives - and
+      // either way the only telemetry was a first `dialog_open`, because the
+      // reason is deduplicated per page load.
+      agentFlagEnabled.value = true
+      openDialog()
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'dialog_open'
+      })
+      expect(await offerExited()).not.toHaveBeenCalled()
+
+      vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+      closeDialog()
+      await flush()
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledOnce()
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: true
+      })
+    })
+
+    it('reports the same exit again when its retry state changes', async () => {
+      agentFlagEnabled.value = true
+      openDialog()
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      await flush()
+
+      vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+      closeDialog()
+      await flush()
+      await flush()
+
+      Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await flush()
+      await flush()
+
+      vi.mocked(consentStore.load).mockRejectedValueOnce(new Error('offline'))
+      Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-c' })
+      Object.assign(consentStore, { identity: 'account-a/workspace-c' })
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledTimes(2)
+      expect(await offerExited()).toHaveBeenNthCalledWith(1, {
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: true
+      })
+      expect(await offerExited()).toHaveBeenNthCalledWith(2, {
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: false
+      })
+    })
+
+    it('reports nothing for an unflagged page load', async () => {
+      // Not because the reporter is gated on the flag - it is not - but because
+      // `loadConsentIfEligible` returns on an off flag before reaching any
+      // reported exit. That is the whole mechanism keeping this event off the
+      // population outside the rollout, so it is asserted rather than assumed.
+      agentFlagEnabled.value = false
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(await offerExited()).not.toHaveBeenCalled()
+      expect(consentStore.load).not.toHaveBeenCalled()
+    })
+
+    it('still reports why the offer ended when the flag goes off mid-flight', async () => {
+      // The flag was on when the offer started, so this attempt is already
+      // under way and its ending is real. A reporter gated on the current flag
+      // value would hide exactly this case, which is why it is not.
+      agentFlagEnabled.value = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      let fail = (_: Error) => {}
+      vi.mocked(consentStore.load).mockReturnValueOnce(
+        new Promise<boolean>((_, reject) => {
+          fail = reject
+        })
+      )
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalled())
+      agentFlagEnabled.value = false
+      await nextTick()
+      await flush()
+      fail(new Error('offline'))
+      await flush()
+
+      expect(agentStore.enabled).toBe(false)
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'consent_read_failed',
+        stage: 'load',
+        retry_armed: false
+      })
     })
   })
 

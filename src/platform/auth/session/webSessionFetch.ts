@@ -1,6 +1,20 @@
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
-import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { SessionTokenResult } from '@comfyorg/account-core/sessionTokenMint'
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 import type { WebSession } from '@comfyorg/account-core/webSession'
+
+/** A workspace-token mint failure whose message is localized user-facing copy. */
+export class WebSessionTokenError extends SessionTokenError {
+  override readonly cause: SessionTokenError
+
+  constructor(original: SessionTokenError, message: string) {
+    super(original.failure)
+    this.message = message
+    this.name = 'WebSessionTokenError'
+    this.cause = original
+  }
+}
 
 /** The user, session epoch and workspace one request was started for. */
 export interface WebSessionRequestScope {
@@ -12,16 +26,12 @@ export interface WebSessionRequestScope {
 
 export interface WebSessionFetchPorts {
   /** A fresh session for the same user and epoch, or undefined to abandon. */
-  readonly reread: (
+  readonly refresh: (
     scope: WebSessionRequestScope
   ) => Promise<WebSessionRequestScope | undefined>
   readonly workspaceDenied: (workspaceId: string) => void
+  readonly authorize: RequestAuthorizer
 }
-
-const authorize = createRequestAuthorizer({
-  getWorkspaceToken: () =>
-    Promise.reject(new Error('The cloud app sends no resource requests yet'))
-})
 
 async function refusalCode(response: Response): Promise<string | undefined> {
   if (response.status !== 403) return undefined
@@ -45,7 +55,7 @@ export async function fetchOnWebSession(
   ports: WebSessionFetchPorts
 ): Promise<Response> {
   const send = async (current: WebSessionRequestScope) => {
-    const { headers, credentials } = await authorize(
+    const { headers, credentials } = await ports.authorize(
       { kind: 'session', session: current.session },
       {
         target: 'ingest',
@@ -66,7 +76,7 @@ export async function fetchOnWebSession(
   if (code !== 'csrf_invalid' || init.body instanceof ReadableStream) {
     return response
   }
-  const fresh = await ports.reread(scope)
+  const fresh = await ports.refresh(scope)
   return fresh ? send(fresh) : response
 }
 
@@ -81,6 +91,18 @@ export interface WebSessionRequests {
     init: RequestInit,
     scope: WebSessionRequestScope
   ) => Promise<Response>
+  /** The web session's token for this scope's workspace; never rejects. */
+  readonly workspaceToken: (
+    scope: WebSessionRequestScope
+  ) => Promise<SessionTokenResult>
+  /** Mints past the cached token, for a token the server just refused; never rejects. */
+  readonly remintWorkspaceToken: (
+    scope: WebSessionRequestScope
+  ) => Promise<SessionTokenResult>
+  /** Bearer headers for a service other than ingest; mints on first use. Rejects with WebSessionTokenError. */
+  readonly authorizeResource: (
+    scope: WebSessionRequestScope
+  ) => Promise<Readonly<Record<string, string>>>
 }
 
 let provided: WebSessionRequests | undefined
@@ -97,4 +119,27 @@ export function provideWebSessionRequests(
 
 export function webSessionRequests(): WebSessionRequests | undefined {
   return provided
+}
+
+export type WebSessionSend = (
+  url: string,
+  init: RequestInit
+) => Promise<Response>
+
+/** Sends on the signed-in session, or undefined when this tab is not on it. */
+export async function webSessionSend(): Promise<WebSessionSend | undefined> {
+  const requests = webSessionRequests()
+  if (!requests) return undefined
+  const scope = await requests.scope()
+  return scope && ((url, init) => requests.send(url, init, scope))
+}
+
+/** Undefined unless the session is on and this tab is signed in on it. */
+export async function webSessionResourceHeader(): Promise<
+  Readonly<Record<string, string>> | undefined
+> {
+  const requests = provided
+  if (!requests) return undefined
+  const scope = await requests.scope()
+  return scope && requests.authorizeResource(scope)
 }

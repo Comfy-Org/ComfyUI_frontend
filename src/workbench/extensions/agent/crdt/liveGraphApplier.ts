@@ -6,6 +6,7 @@ import {
 import * as Y from 'yjs'
 import { z } from 'zod'
 
+import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeFlags, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
@@ -466,6 +467,7 @@ export class LiveGraphApplier {
       fn()
     } catch (error) {
       reportError(error, {
+        surface: 'agent',
         errorType: 'agent_graph_apply_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
         context: { actor: context.actor, opIds: [...context.opIds] }
@@ -482,6 +484,7 @@ export class LiveGraphApplier {
     if (this.reported.has(key)) return
     this.reported.add(key)
     reportError(new Error(message), {
+      surface: 'agent',
       errorType,
       tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
       context
@@ -504,6 +507,7 @@ export class LiveGraphApplier {
       if (this.reported.has(`definition:${definition.id}`)) continue
       this.reported.add(`definition:${definition.id}`)
       reportError(failure, {
+        surface: 'agent',
         errorType: 'agent_subgraph_definitions_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
         context: { graphId: graph.id, definitionId: definition.id }
@@ -770,12 +774,7 @@ export class LiveGraphApplier {
       link.originSlot,
       'positional'
     )
-    const targetSlot = resolveSlot(
-      target.inputs.map((input) => input.name),
-      readDocSlotName(doc, link.target, 'inputs', link.targetSlot),
-      link.targetSlot,
-      'none'
-    )
+    const targetSlot = resolveTargetSlot(target, doc, link)
     if (originSlot < 0 || targetSlot < 0) {
       if (graph.links.has(link.id)) graph.removeLink(link.id)
       return 'unresolved'
@@ -870,6 +869,29 @@ function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {
       Object.assign(node, { [key]: value })
     }
   }
+}
+
+/**
+ * The live input index a document link targets. A dynamic input slot the host
+ * grew has no live counterpart until the node's autogrow group is grown to it,
+ * so grow it rather than drop a link the document holds against a slot it
+ * legitimately owns. `growAutogrowInput` refuses a name outside the node's own
+ * groups, leaving a slot the live node really lacks unresolved as before.
+ */
+function resolveTargetSlot(
+  target: LGraphNode,
+  doc: Y.Doc,
+  link: DocLink
+): number {
+  const docName = readDocSlotName(doc, link.target, 'inputs', link.targetSlot)
+  const resolved = resolveSlot(
+    target.inputs.map((input) => input.name),
+    docName,
+    link.targetSlot,
+    'none'
+  )
+  if (resolved >= 0 || docName === undefined) return resolved
+  return growAutogrowInput(target, docName) ?? resolved
 }
 
 /**

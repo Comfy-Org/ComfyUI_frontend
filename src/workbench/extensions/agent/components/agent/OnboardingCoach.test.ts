@@ -12,9 +12,7 @@ import type { CoachStep } from '../../composables/agent/useOnboarding'
 import OnboardingCoach from './OnboardingCoach.vue'
 
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const telemetry = () => vi.mocked(useTelemetry())!
 
@@ -440,6 +438,7 @@ describe('OnboardingCoach', () => {
 
       await vi.advanceTimersByTimeAsync(1_000)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'failure_locating_agent_coach_target',
         level: 'warning',
         context: { target: '#never-a', step: 1 }
@@ -479,6 +478,7 @@ describe('OnboardingCoach', () => {
       await vi.advanceTimersByTimeAsync(8_000)
 
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
         errorType: 'failure_locating_agent_coach_target',
         level: 'warning',
         context: { target: '#never-e', step: 2 }

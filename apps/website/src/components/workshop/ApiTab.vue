@@ -24,10 +24,11 @@ import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
 import type { Locale } from '../../i18n/translations'
 import { useTablist } from '../../composables/useTablist'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import type { CodeLang } from '../../lib/highlight'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
+import SectionHeading from './SectionHeading.vue'
 
 const {
   contract,
@@ -42,6 +43,9 @@ const {
   locale?: Locale
   modelSlug?: string
 }>()
+const { t } = translationsFor(locale)
+
+const emit = defineEmits<{ copy: [language: SnippetLanguage]; getKey: [] }>()
 
 const apiKeyHref = computed(() =>
   workspaceLinkedHref(
@@ -207,22 +211,23 @@ const facts = computed(() => [
   ...(contract
     ? [
         {
-          label: t('workshop.api.needsEndpoint', locale),
+          label: t('workshop.api.needsEndpoint'),
           value: `POST /v2/models/${contract.id}`,
-          mono: true
+          mono: true,
+          copyLabel: t('workshop.api.copyEndpoint')
         }
       ]
     : []),
   {
-    label: t('workshop.api.needsKey', locale),
+    label: t('workshop.api.needsKey'),
     value: 'COMFY_API_KEY',
     mono: true
   },
   ...(showLocalFilesFact.value
     ? [
         {
-          label: t('workshop.api.needsFiles', locale),
-          value: t('workshop.api.filesRead', locale)
+          label: t('workshop.api.needsFiles'),
+          value: t('workshop.api.filesRead')
         }
       ]
     : [])
@@ -231,14 +236,11 @@ const facts = computed(() => [
 
 <template>
   <section class="flex flex-col gap-6" data-testid="api-tab">
-    <div class="flex flex-col gap-2">
-      <h2 class="text-2xl font-bold text-primary-comfy-canvas">
-        {{ t('workshop.api.heading', locale) }}
-      </h2>
-      <p class="text-sm text-primary-warm-gray">
-        {{ t('workshop.api.body', locale) }}
-      </p>
-    </div>
+    <SectionHeading
+      class="lg:max-w-[calc(100%-25.75rem)]"
+      :title="t('workshop.api.heading')"
+      :subtitle="t('workshop.api.body')"
+    />
 
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
       <div
@@ -251,11 +253,12 @@ const facts = computed(() => [
           rel="noopener noreferrer"
           class="w-full justify-center"
           data-testid="api-get-key"
+          @click="emit('getKey')"
         >
-          {{ t('workshop.api.getKey', locale) }}
+          {{ t('workshop.api.getKey') }}
         </Button>
         <ApiFacts
-          :where="t('workshop.api.runsOnRouter', locale)"
+          :where="t('workshop.api.runsOnRouter')"
           :rows="facts"
           :locale="locale"
         />
@@ -271,7 +274,7 @@ const facts = computed(() => [
           >
             <div
               role="tablist"
-              :aria-label="t('workshop.api.heading', locale)"
+              :aria-label="t('workshop.api.heading')"
               class="flex gap-1"
               @keydown="onLanguageKeydown"
             >
@@ -300,8 +303,9 @@ const facts = computed(() => [
             </div>
             <CopyTextButton
               :value="snippet"
-              :label="t('workshop.api.copy', locale)"
-              :copied-label="t('workshop.api.copied', locale)"
+              :label="t('workshop.api.copy')"
+              :copied-label="t('workshop.api.copied')"
+              @click="emit('copy', language)"
             />
           </div>
           <p
@@ -313,8 +317,7 @@ const facts = computed(() => [
               t(
                 language === 'curl'
                   ? 'workshop.api.filesOmitted'
-                  : 'workshop.api.localFiles',
-                locale
+                  : 'workshop.api.localFiles'
               )
             }}
           </p>
@@ -336,8 +339,7 @@ const facts = computed(() => [
             t(
               unavailable
                 ? 'workshop.api.mappingUnavailable'
-                : 'workshop.api.inputInvalid',
-              locale
+                : 'workshop.api.inputInvalid'
             )
           }}
         </p>
@@ -349,7 +351,7 @@ const facts = computed(() => [
           class="inline-flex min-h-11 items-center gap-2 self-start text-sm font-medium text-primary-comfy-yellow hover:text-primary-warm-white"
           data-testid="api-docs"
         >
-          {{ t('workshop.api.docs', locale) }}
+          {{ t('workshop.api.docs') }}
           <span aria-hidden="true">↗</span>
         </a>
       </div>

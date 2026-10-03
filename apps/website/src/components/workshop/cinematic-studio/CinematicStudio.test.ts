@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
@@ -14,6 +14,7 @@ import type {
   RouterRenderResult
 } from '../../../config/router-render'
 import {
+  refreshWorkshopCredits,
   useTopUpWatch,
   useWorkshopCredits
 } from '../../../config/workshop-credits'
@@ -23,22 +24,32 @@ import { useWorkshopSession } from '../../../config/workshop-session-state'
 import { appModels } from '../../../config/workshop-app-content'
 import { prepareModelPage } from '../../../routes/models/model-page'
 import {
+  captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
-  useWorkshopAppsEnabled
+  useWorkshopAppsEnabled,
+  useWorkshopFlag
 } from '../../../scripts/posthog'
-import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
+import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
+import { t, translationsFor } from '../../../i18n/translations'
+import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import { runnableCinematicModels } from '../../../lib/workshop/cinematic-studio/models'
+import {
+  runnableCinematicModels,
+  runnableCinematicVideoModels
+} from '../../../lib/workshop/cinematic-studio/models'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
+
+const { t: tc } = translationsFor('en')
 
 vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/router-render'), { spy: true })
+vi.mock(import('../../../lib/workshop/cinematic-studio/colors'), { spy: true })
 
 const deploy = vi.hoisted(() => ({ env: '' }))
 vi.mock(import('astro:env/client'), () => ({
@@ -51,10 +62,30 @@ vi.mock(import('astro:env/client'), () => ({
 
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 const [first, second] = models
+const videoModels = runnableCinematicVideoModels(getRouterWorkshopModelDetail)
+
+/** What a take sent: the studio's own form, and the files attached to it. */
+function sent(call: Parameters<typeof router_render>) {
+  const values = call[2].form?.values ?? {}
+  const references: File[] = []
+  const collect = (value: unknown): void => {
+    if (value instanceof File) references.push(value)
+    else if (Array.isArray(value)) value.forEach(collect)
+    else if (value && typeof value === 'object')
+      Object.values(value).forEach(collect)
+  }
+  collect(values)
+  return { values, prompt: String(values.prompt ?? ''), references }
+}
 
 const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn<typeof fetch>() }))
 
+/** A still left on the provider's storage, which sends no CORS header. */
+const PROVIDER_LINK =
+  'https://ark-content-generation-v2-ap-southeast-1.tos-ap-southeast-1.volces.com/seedream/shot.jpeg'
+
 async function servePageData(input: RequestInfo | URL) {
+  if (String(input) === PROVIDER_LINK) throw new TypeError('Failed to fetch')
   if (String(input).startsWith('blob:'))
     return new Response(new Blob(['shot'], { type: 'image/png' }))
   const slug = decodeURIComponent(String(input).split('/')[2])
@@ -70,6 +101,13 @@ function rendered(slug: string): RouterRenderResult {
     requestId: 'request-1',
     deadlineCollections: 0,
     outputs: [{ kind: 'image', url: 'blob:shot', fileName: 'shot.png' }]
+  }
+}
+
+function renderedAtProvider(slug: string): RouterRenderResult {
+  return {
+    ...rendered(slug),
+    outputs: [{ kind: 'image', url: PROVIDER_LINK, fileName: 'shot.jpeg' }]
   }
 }
 
@@ -93,6 +131,11 @@ async function chooseTakes(
   user: ReturnType<typeof userEvent.setup>,
   takes: number
 ) {
+  const more = screen.queryByRole('button', { name: 'More takes' })
+  if (more) {
+    for (let count = 1; count < takes; count++) await user.click(more)
+    return
+  }
   await user.click(screen.getByRole('button', { name: /^Takes: / }))
   await user.click(
     await screen.findByRole('menuitemradio', { name: `×${takes}` })
@@ -108,6 +151,7 @@ describe('CinematicStudio', () => {
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => true))
+    vi.mocked(useWorkshopFlag).mockReturnValue(computed(() => true))
     const session = useWorkshopSession()
     session.session = computed(() => signedIn.value)
     vi.mocked(session.ensureFresh).mockResolvedValue({
@@ -119,12 +163,16 @@ describe('CinematicStudio', () => {
       credits: 100
     }))
     signedIn.value = credential
+    vi.mocked(sampleImageColors).mockImplementation(async (file: File) => {
+      if (file.name === 'bad.png') throw new Error('Unsupported image')
+      return ['#102030', '#405060']
+    })
     vi.mocked(router_render)
       .mockReset()
       .mockRejectedValue(new WorkshopRouterError('client'))
     vi.stubGlobal('fetch', fetchData)
     fetchData.mockImplementation(servePageData)
-    window.history.replaceState(null, '', '/models/apps/cinematic-studio/')
+    window.history.replaceState(null, '', '/hub/apps/cinematic-studio/')
   })
 
   it('waits for a scene before it can generate', async () => {
@@ -148,9 +196,11 @@ describe('CinematicStudio', () => {
     expect(router_render).toHaveBeenCalledTimes(2)
     const [slug, parameters, options] = vi.mocked(router_render).mock.calls[0]
     expect(slug).toBe(first.slug)
-    expect(parameters).toMatchObject({
-      aspect_ratio: '21:9',
-      resolution: 2048,
+    // The shot's own form: the exact frame size, no watermark, no example.
+    expect(parameters).toEqual({})
+    expect(sent(vi.mocked(router_render).mock.calls[0]).values).toMatchObject({
+      size: '1920x1080',
+      watermark: false,
       prompt: expect.stringMatching(
         /^Medium shot\. A diner at dawn .*Shot on large format cinema camera/
       )
@@ -164,7 +214,7 @@ describe('CinematicStudio', () => {
       'src',
       'blob:shot'
     )
-    expect(screen.getByText(`${first.name} · 21:9`)).toBeInTheDocument()
+    expect(screen.getByText(`${first.name} · 16:9`)).toBeInTheDocument()
   })
 
   it('sends the aspect and AI prompt setting chosen in the composer', async () => {
@@ -172,18 +222,19 @@ describe('CinematicStudio', () => {
     const user = renderStudio()
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
-    await user.click(screen.getByRole('button', { name: 'Aspect ratio: 21:9' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: /16:9/ }))
+    // Seedream 5.0 Pro, the first model, has no 21:9 size, so it opens on 16:9.
+    await user.click(screen.getByRole('button', { name: 'Aspect ratio: 16:9' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /1:1/ }))
     await user.click(screen.getByRole('switch', { name: 'AI prompt' }))
     await user.click(generateButton())
 
     await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(1))
     expect(
-      screen.getByRole('button', { name: 'Aspect ratio: 16:9' })
+      screen.getByRole('button', { name: 'Aspect ratio: 1:1' })
     ).toBeInTheDocument()
-    const [, parameters] = vi.mocked(router_render).mock.calls[0]
-    expect(parameters).toMatchObject({ aspect_ratio: '16:9' })
-    expect(parameters?.prompt).not.toContain('Cinematic film still')
+    const shot = sent(vi.mocked(router_render).mock.calls[0])
+    expect(shot.values).toMatchObject({ size: '2048x2048' })
+    expect(shot.prompt).not.toContain('Cinematic film still')
   })
 
   it('runs the shot on the model picked in the composer', async () => {
@@ -235,12 +286,61 @@ describe('CinematicStudio', () => {
     expect(notice).toHaveTextContent('request-9')
     await user.click(
       within(notice).getByRole('button', {
-        name: tc('cinematic.state.tryOn', 'en', { model: second.name })
+        name: tc(
+          'cinematic.state.tryOn',
+          { model: second.name },
+          { locale: 'en' }
+        )
       })
     )
 
     await screen.findByAltText(/A diner at dawn/)
     expect(vi.mocked(router_render).mock.calls[1][0]).toBe(second.slug)
+  })
+
+  it('settles the frame when a failed take switches to a narrower model', async () => {
+    // Nano Banana Pro makes 21:9, so the studio opens on it; Seedream 5.0 Pro
+    // does not, and `switch-model` sets the model and generates in one handler.
+    const wide = models.find((model) => model.aspects?.includes('21:9'))!
+    const narrow = models.find((model) => !model.aspects?.includes('21:9'))!
+    vi.mocked(router_render)
+      .mockRejectedValueOnce(new WorkshopRouterError('provider', 'request-9'))
+      .mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([wide, narrow])
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    expect(
+      screen.getByRole('button', { name: 'Aspect ratio: 21:9' })
+    ).toBeInTheDocument()
+    await user.click(generateButton())
+
+    const notice = await screen.findByRole('status')
+    await user.click(
+      within(notice).getByRole('button', {
+        name: tc(
+          'cinematic.state.tryOn',
+          { model: narrow.name },
+          { locale: 'en' }
+        )
+      })
+    )
+
+    await screen.findByAltText(/A diner at dawn/)
+    const calls = vi.mocked(router_render).mock.calls
+    expect(calls[1][0]).toBe(narrow.slug)
+    // The take must fall to the nearest frame the new model can make, not carry
+    // 21:9 over from the model that failed.
+    expect(sent(calls[1]).values).toMatchObject({ size: '1920x1080' })
+    const chosen = screen.getByRole('button', { name: 'Aspect ratio: 16:9' })
+    expect(chosen).toBeInTheDocument()
+    // The menu follows the model too, so 21:9 is no longer on offer.
+    await user.click(chosen)
+    expect(
+      await screen.findByRole('menuitemradio', { name: /16:9/ })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('menuitemradio', { name: /21:9/ })
+    ).not.toBeInTheDocument()
   })
 
   it('sends a take blocked by content policy back to the scene', async () => {
@@ -285,6 +385,209 @@ describe('CinematicStudio', () => {
     expect(screen.queryByText(t('workshop.output.nsfw'))).toBeNull()
   })
 
+  it.for([
+    {
+      name: 'a finished take',
+      render: async (slug: string) => rendered(slug),
+      outcome: {
+        status: 'succeeded',
+        request_id: 'request-1',
+        output_count: 1
+      }
+    },
+    {
+      name: 'a failed take',
+      render: async () => {
+        throw new WorkshopRouterError('provider', 'request-9')
+      },
+      outcome: { status: 'failed', reason: 'provider', request_id: 'request-9' }
+    }
+  ])(
+    'records $name as an app run, apart from model pages',
+    async ({ render: renderTake, outcome }) => {
+      vi.mocked(router_render).mockImplementation(renderTake)
+      const user = renderStudio()
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      const app = {
+        model_slug: first.slug,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        render_engine: 'router',
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id
+      }
+      await vi.waitFor(() =>
+        expect(captureWorkshopEvent).toHaveBeenCalledWith({
+          name: 'run_finished',
+          properties: expect.objectContaining({ ...app, ...outcome })
+        })
+      )
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_started',
+        properties: expect.objectContaining(app)
+      })
+    }
+  )
+
+  it.for([
+    {
+      name: 'a cancelled take',
+      prepare: () =>
+        vi
+          .mocked(router_render)
+          .mockImplementation(
+            (_slug, _parameters, options) =>
+              new Promise((_resolve, reject) =>
+                options.signal?.addEventListener('abort', () =>
+                  reject(options.signal?.reason)
+                )
+              )
+          ),
+      act: async (user: ReturnType<typeof userEvent.setup>) =>
+        user.click(await screen.findByRole('button', { name: 'Cancel' })),
+      outcome: { status: 'cancelled' }
+    },
+    {
+      name: 'a take whose model cannot load',
+      prepare: () =>
+        fetchData.mockImplementation(async (input) =>
+          String(input).startsWith('blob:')
+            ? servePageData(input)
+            : new Response('unavailable', { status: 500 })
+        ),
+      act: async () => {},
+      outcome: {
+        status: 'failed',
+        reason: 'unavailable',
+        failure_stage: 'input_preparation'
+      }
+    }
+  ])('records $name as an app run', async ({ prepare, act, outcome }) => {
+    prepare()
+    const user = renderStudio()
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await act(user)
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          model_slug: first.slug,
+          page_type: 'app',
+          app_slug: CINEMATIC_STUDIO_APP_SLUG,
+          ...outcome
+        })
+      })
+    )
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.filter(([event]) => event.name === 'run_finished')
+    ).toHaveLength(1)
+  })
+
+  it.for([
+    { name: 'arrives', page: servePageData },
+    {
+      name: 'fails',
+      page: async () => new Response('unavailable', { status: 500 })
+    }
+  ])(
+    'records no run for a take cancelled before its model page $name',
+    async ({ page }) => {
+      const requested = Promise.withResolvers<void>()
+      const cancelled = Promise.withResolvers<void>()
+      fetchData.mockImplementation(async (input) => {
+        if (String(input).startsWith('blob:')) return servePageData(input)
+        requested.resolve()
+        await cancelled.promise
+        return page(input)
+      })
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const user = renderStudio()
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await requested.promise
+      await user.click(await screen.findByRole('button', { name: 'Cancel' }))
+      vi.mocked(refreshWorkshopCredits).mockClear()
+      cancelled.resolve()
+
+      await vi.waitFor(() =>
+        expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
+      )
+      expect(router_render).not.toHaveBeenCalled()
+      expect(
+        vi
+          .mocked(captureWorkshopEvent)
+          .mock.calls.filter(([event]) => event.name.startsWith('run_'))
+      ).toEqual([])
+    }
+  )
+
+  it('records a take download as an app download', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+
+    const download = await screen.findByRole('link', {
+      name: tc('cinematic.stage.download')
+    })
+    const stayOnPage = (event: Event) => event.preventDefault()
+    window.addEventListener('click', stayOnPage, { capture: true })
+    onTestFinished(() =>
+      window.removeEventListener('click', stayOnPage, { capture: true })
+    )
+    await user.click(download)
+
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'output_download_clicked',
+      properties: {
+        model_slug: first.slug,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        output_kind: 'image'
+      }
+    })
+  })
+
+  it('records each app page once, however often it is picked', async () => {
+    render(CinematicStudioPage, { props: { apps: appModels, models } })
+    const user = userEvent.setup()
+    const pick = async (name: string) => {
+      await user.click(
+        await screen.findByRole('button', { name: /^Layout to review/ })
+      )
+      await user.click(await screen.findByRole('menuitemradio', { name }))
+    }
+
+    await pick('Re-shoot a video')
+    await pick('Cinematic Studio')
+    await pick('Re-shoot a video')
+
+    const viewed = (slug: string) => ({
+      name: 'model_viewed',
+      properties: { model_slug: slug, page_type: 'app', app_slug: slug }
+    })
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.filter(([event]) => event.name === 'model_viewed')
+        .map(([event]) => event)
+    ).toEqual([viewed(CINEMATIC_STUDIO_APP_SLUG), viewed('apps/reshoot')])
+    expect(appModels.find((app) => app.appId === 'studio')?.slug).toBe(
+      CINEMATIC_STUDIO_APP_SLUG
+    )
+  })
+
   it('does not offer to generate when no model can run', () => {
     renderStudio([])
 
@@ -317,7 +620,7 @@ describe('CinematicStudio', () => {
       screen.getByRole('button', { name: tc('cinematic.firstRun.desert') })
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('button', { name: 'Shot: Extreme wide' })
+      screen.getByRole('button', { name: 'Framing: Extreme wide' })
     ).toBeInTheDocument()
   })
 
@@ -345,7 +648,7 @@ describe('CinematicStudio', () => {
         .getAllByRole('button')
         .map((segment) => segment.getAttribute('aria-label'))
     ).toEqual([
-      'Shot: Medium',
+      'Framing: Medium',
       'Light: Neon',
       expect.stringMatching(/^Film: /),
       'Look: Western',
@@ -353,7 +656,7 @@ describe('CinematicStudio', () => {
     ])
     await user.click(generateButton())
     await screen.findByAltText(/A diner at dawn/)
-    expect(vi.mocked(router_render).mock.calls[0][1]?.prompt).toContain(
+    expect(sent(vi.mocked(router_render).mock.calls[0]).prompt).toContain(
       'Neon light'
     )
   })
@@ -380,8 +683,7 @@ describe('CinematicStudio', () => {
     )
 
   it.for([
-    { kind: 'cast', label: 'Character', action: 'Add a character reference' },
-    { kind: 'palette', label: 'Palette', action: 'Add a palette reference' }
+    { kind: 'cast', label: 'Character', action: 'Add a character reference' }
   ])(
     'names an attached $label reference in the composer menu and removes it from there',
     async ({ kind, label, action }) => {
@@ -411,20 +713,40 @@ describe('CinematicStudio', () => {
     }
   )
 
-  it('counts both references on the composer + once both are attached', async () => {
+  it('offers no palette reference in the composer menu', async () => {
     const user = renderStudio()
-    const file = new File(['ref'], 'ref.png', { type: 'image/png' })
 
-    await user.upload(screen.getByTestId('cinematic-reference-cast'), file)
-    await user.upload(screen.getByTestId('cinematic-reference-palette'), file)
+    await openReferenceMenu(user)
 
     expect(
-      within(
-        screen.getByRole('button', {
-          name: tc('cinematic.composer.references')
-        })
-      ).getByText('2')
+      await screen.findByRole('menuitem', { name: /^Character/ })
     ).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /^Palette/ })).toBeNull()
+  })
+
+  it('sends the colors of a Grade picture as words, in place of the preset', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+
+    await user.click(screen.getByRole('button', { name: /^Grade:/ }))
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Grade' })).getByRole('radio', {
+        name: 'Teal and orange'
+      })
+    )
+    await user.click(screen.getByRole('button', { name: /^Grade:/ }))
+    await user.upload(
+      screen.getByTestId('cinematic-grade-image-input'),
+      new File(['ref'], 'colors.png', { type: 'image/png' })
+    )
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+
+    await screen.findByAltText(/A diner at dawn/)
+    const shot = sent(vi.mocked(router_render).mock.calls[0])
+    expect(shot.prompt).not.toContain('teal and orange grade')
+    expect(shot.prompt).toContain('dominant colors #102030, #405060')
+    expect(shot.references).toEqual([])
   })
 
   it('keeps the camera picker open across columns until clicked away', async () => {
@@ -476,10 +798,10 @@ describe('CinematicStudio', () => {
     await user.click(generateButton())
 
     await screen.findByAltText(/A diner at dawn/)
-    const [slug, parameters] = vi.mocked(router_render).mock.calls[0]
-    expect(slug).toBe(first.referenceSlug)
-    expect(parameters?.reference_images).toEqual([face])
-    expect(parameters?.prompt).toContain(
+    const call = vi.mocked(router_render).mock.calls[0]
+    expect(call[0]).toBe(first.referenceSlug)
+    expect(sent(call).references).toEqual([face])
+    expect(sent(call).prompt).toContain(
       'Keep the character from reference image 1.'
     )
   })
@@ -509,9 +831,13 @@ describe('CinematicStudio', () => {
     expect(generateButton()).toBeDisabled()
     expect(
       screen.getByText(
-        tc('cinematic.references.unsupported', 'en', {
-          model: dropsReferences.name
-        })
+        tc(
+          'cinematic.references.unsupported',
+          {
+            model: dropsReferences.name
+          },
+          { locale: 'en' }
+        )
       )
     ).toBeInTheDocument()
     expect(router_render).not.toHaveBeenCalled()
@@ -545,7 +871,9 @@ describe('CinematicStudio', () => {
         async (slug, parameters, options) => {
           if (first.length >= 2) return rendered(slug)
           const prepared = {
-            ...resolveModelRouterRender(options.model, parameters),
+            ...resolveModelRouterRender(options.model, parameters, {
+              form: options.form
+            }),
             body: { take: first.length }
           }
           await options.onPrepared?.(prepared)
@@ -567,7 +895,9 @@ describe('CinematicStudio', () => {
       await user.type(await screen.findByLabelText('Scene'), 'A diner at dawn')
       await chooseTakes(user, 2)
       await user.click(generateButton())
-      await user.click(await screen.findByRole('radio', { name: 'B' }))
+      await user.click(
+        await screen.findByRole('button', { name: 'Shot 1, take B' })
+      )
       await user.click(
         within(await screen.findByRole('status')).getByRole('button', {
           name: t('workshop.error.retry')
@@ -650,6 +980,12 @@ describe('CinematicStudio', () => {
     }
   )
 
+  it('introduces the app under its title in the side panel', () => {
+    render(CinematicStudioPanel, { props: { models } })
+
+    expect(screen.getByText(tc('cinematic.lead'))).toBeVisible()
+  })
+
   it('does not generate again once the scene is cleared', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
@@ -689,7 +1025,7 @@ describe('CinematicStudio', () => {
 
   it('moves focus into a picker and back to its chip on Escape', async () => {
     const user = renderStudio()
-    const chip = screen.getByRole('button', { name: /^Shot:/ })
+    const chip = screen.getByRole('button', { name: /^Framing:/ })
 
     await user.click(chip)
     expect(screen.getByRole('radio', { name: 'Medium' })).toHaveFocus()
@@ -715,11 +1051,9 @@ describe('CinematicStudio', () => {
     )
 
     await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
-    const [, parameters] = vi.mocked(router_render).mock.calls[1]
-    expect(parameters?.reference_images).toEqual([expect.any(File)])
-    expect(parameters?.prompt).toContain(
-      'Keep the character from reference image 1.'
-    )
+    const rerun = sent(vi.mocked(router_render).mock.calls[1])
+    expect(rerun.references).toEqual([expect.any(File)])
+    expect(rerun.prompt).toContain('Keep the character from reference image 1.')
   })
 
   it('keeps the scene unreferenced when a take can no longer be read', async () => {
@@ -742,16 +1076,11 @@ describe('CinematicStudio', () => {
     )
 
     await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
-    const [, parameters] = vi.mocked(router_render).mock.calls[1]
-    expect(parameters?.reference_images).toBeUndefined()
+    expect(sent(vi.mocked(router_render).mock.calls[1]).references).toEqual([])
   })
 
   it('renders sample frames in demo mode without calling the Router', async () => {
-    window.history.replaceState(
-      null,
-      '',
-      '/models/apps/cinematic-studio/?demo=1'
-    )
+    window.history.replaceState(null, '', '/hub/apps/cinematic-studio/?demo=1')
     signedIn.value = undefined
     const user = renderStudio()
 
@@ -785,21 +1114,155 @@ describe('CinematicStudio', () => {
     }
   )
 
+  it.for([
+    { app: 'reshoot', flag: false, open: false },
+    { app: 'reshoot', flag: true, open: true },
+    { app: 'studio', flag: false, open: true }
+  ] as const)(
+    'opens $app only while its PostHog flag allows it (flag $flag)',
+    async ({ app, flag, open }) => {
+      vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+        computed(() => name !== 'workshop-reshoot-app-enabled' || flag)
+      )
+      render(CinematicStudioPage, {
+        props: { apps: appModels, models, initialApp: app }
+      })
+
+      await vi.waitFor(() => {
+        expect(
+          screen.queryAllByText(tc('cinematic.unavailable.title'))
+        ).toHaveLength(open ? 0 : 1)
+        expect(
+          screen.queryAllByTestId(app === 'reshoot' ? 'reshoot' : 'cinematic')
+        ).toHaveLength(open ? 1 : 0)
+      })
+    }
+  )
+
+  it('shoots a clip on the first video model in video mode', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    await user.type(
+      screen.getByLabelText('Scene'),
+      'A lighthouse keeper climbs'
+    )
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+    const call = vi.mocked(router_render).mock.calls[0]
+    expect(call[0]).toBe(videoModels[0].slug)
+    expect(sent(call).values).toMatchObject({
+      duration: 5,
+      resolution: '720p',
+      generate_audio: false
+    })
+    expect(sent(call).prompt).toContain('continuous motion')
+  })
+
+  it('shoots a clip on a video model that picks its own frame', async () => {
+    // Wan 3.0 and Gemini Omni Flash 1.1 list no frames because the operation
+    // chooses one, so an empty list here has to read as unrestricted -- the
+    // opposite of an empty list on the image path, where it means the model can
+    // make none. Seedance 2.5 Edit also lists none but wants a source video, so
+    // pick the one that is otherwise ready to run.
+    const ownFrame = videoModels.find(
+      (option) =>
+        option.video &&
+        !option.video.aspects.length &&
+        !option.video.sourceVideo
+    )!
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([...models, ownFrame])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    await user.type(
+      screen.getByLabelText('Scene'),
+      'A lighthouse keeper climbs'
+    )
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+    expect(vi.mocked(router_render).mock.calls[0][0]).toBe(ownFrame.slug)
+  })
+
+  it('animates a finished still on the image-to-video operation', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await user.click(
+      await screen.findByRole('button', { name: 'Animate image' })
+    )
+    await user.click(generateButton())
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+    const call = vi.mocked(router_render).mock.calls[1]
+    expect(call[0]).toBe(videoModels[0].firstFrameSlug)
+    expect(sent(call).references).toEqual([expect.any(File)])
+  })
+
+  describe('reusing a still the page cannot read', () => {
+    async function shootAtProvider() {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        renderedAtProvider(slug)
+      )
+      const user = renderStudio([...models, ...videoModels])
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await screen.findByAltText(/A diner at dawn/)
+      return user
+    }
+
+    it('animates it by handing its link to the video model', async () => {
+      const user = await shootAtProvider()
+      await user.click(screen.getByRole('button', { name: 'Animate image' }))
+      await user.click(generateButton())
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+      const call = vi.mocked(router_render).mock.calls[1]
+      expect(call[0]).toBe(videoModels[0].firstFrameSlug)
+      expect(JSON.stringify(sent(call).values)).toContain(PROVIDER_LINK)
+    })
+
+    it('says so when the next model needs the picture itself', async () => {
+      const user = await shootAtProvider()
+      await user.click(screen.getByRole('button', { name: 'Use as reference' }))
+      expect(
+        await screen.findByText(/needs the picture itself/)
+      ).toBeInTheDocument()
+      expect(generateButton()).toBeDisabled()
+    })
+
+    it('offers it as a reference only for another still', async () => {
+      const user = await shootAtProvider()
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+      expect(
+        screen.queryByRole('button', { name: 'Use as reference' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Animate image' })
+      ).toBeInTheDocument()
+    })
+  })
+
   describe('credits', () => {
     const priced: readonly CinematicModel[] = models.map((model) =>
       model.slug === first.slug
         ? {
             ...model,
             prices: {
-              '21:9 2K 0': { min: 6, max: 6 },
-              '21:9 1K 0': { min: 3, max: 3 }
+              '16:9 2K 0': { min: 6, max: 6 },
+              '16:9 1K 0': { min: 3, max: 3 }
             }
           }
         : model
     )
     const estimate = () => screen.findByTestId('cinematic-estimate')
     const credits = (amount: number) =>
-      tc('cinematic.credits.estimate', 'en', { credits: amount })
+      tc('cinematic.credits.estimate', { credits: amount }, { locale: 'en' })
 
     async function shootTakes(
       user: ReturnType<typeof userEvent.setup>,
@@ -971,9 +1434,13 @@ describe('CinematicStudio', () => {
       },
       {
         role: 'member' as const,
-        body: t('workshop.error.memberNoCredits', 'en', {
-          workspace: 'Studio Team'
-        }),
+        body: t(
+          'workshop.error.memberNoCredits',
+          {
+            workspace: 'Studio Team'
+          },
+          { locale: 'en' }
+        ),
         action: t('workshop.run.switchPersonal'),
         other: t('workshop.run.buyCredits')
       }
@@ -1013,7 +1480,11 @@ describe('CinematicStudio', () => {
 
       const summary = await screen.findByTestId('cinematic-credit-summary')
       expect(summary).toHaveTextContent(
-        tc('cinematic.credits.skipped', 'en', { failed: 1, total: 4 })
+        tc(
+          'cinematic.credits.skipped',
+          { failed: 1, total: 4 },
+          { locale: 'en' }
+        )
       )
       expect(
         within(summary).getByRole('button', {
@@ -1100,15 +1571,15 @@ describe('CinematicStudio', () => {
     }
   )
 
-  it('leads back to the Apps tab of the catalogue', async () => {
+  it('leads back to the apps page of the hub', async () => {
     render(CinematicStudioPage, { props: { apps: appModels, models } })
 
     expect(
       await screen.findByRole('link', { name: tc('cinematic.backToApps') })
-    ).toHaveAttribute('href', '/models/?type=apps')
+    ).toHaveAttribute('href', '/hub/apps/')
   })
 
-  it('shows every setting in the side panel, with Format last before the run button', async () => {
+  it('heads the side panel as a new shot, with Shot then Format and no field labels', async () => {
     render(CinematicStudioPage, { props: { apps: appModels, models } })
 
     const panel = await screen.findByRole('complementary', {
@@ -1117,9 +1588,14 @@ describe('CinematicStudio', () => {
     expect(within(panel).queryByTestId('cinematic-advanced')).toBeNull()
     expect(
       within(panel)
-        .getAllByRole('heading', { level: 2 })
+        .getAllByRole('heading')
         .map((heading) => heading.textContent.trim())
-    ).toEqual(['Model', 'Shot', 'References', 'Format'])
+    ).toEqual(['New shot'])
+    expect(
+      within(panel)
+        .getAllByRole('region')
+        .map((region) => region.getAttribute('aria-label'))
+    ).toEqual(['Shot', 'Format'])
   })
 
   it('opens a direction part from its row in the side panel shot list', async () => {
@@ -1248,7 +1724,7 @@ describe('CinematicStudio', () => {
       }
 
       await pick('Re-shoot a video')
-      expect(window.location.pathname).toBe('/models/apps/reshoot/')
+      expect(window.location.pathname).toBe('/hub/apps/reshoot/')
       expect(window.location.search).toBe('?ux=d')
       await pick('Cinematic Studio')
 
@@ -1256,11 +1732,7 @@ describe('CinematicStudio', () => {
     })
 
     it('swaps to the Re-shoot app, which has a single layout', async () => {
-      window.history.replaceState(
-        null,
-        '',
-        '/models/apps/cinematic-studio/?ux=d'
-      )
+      window.history.replaceState(null, '', '/hub/apps/cinematic-studio/?ux=d')
       render(CinematicStudioPage, { props: { apps: appModels, models } })
       const user = userEvent.setup()
 
@@ -1275,7 +1747,7 @@ describe('CinematicStudio', () => {
         screen.getByRole('complementary', { name: 'Your clip' })
       ).toBeInTheDocument()
       expect(panel()).toBeNull()
-      expect(window.location.pathname).toBe('/models/apps/reshoot/')
+      expect(window.location.pathname).toBe('/hub/apps/reshoot/')
       expect(window.location.search).toBe('?ux=d')
       expect(document.title).toBe('Re-shoot a video - Comfy')
     })
@@ -1284,7 +1756,7 @@ describe('CinematicStudio', () => {
       window.history.replaceState(
         null,
         '',
-        '/models/apps/cinematic-studio/?ux=hub'
+        '/hub/apps/cinematic-studio/?ux=hub'
       )
       render(CinematicStudioPage, { props: { apps: appModels, models } })
 
@@ -1295,18 +1767,14 @@ describe('CinematicStudio', () => {
       const [firstApp, secondApp] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
-      ).toHaveAttribute('href', '/models/apps/cinematic-studio')
+      ).toHaveAttribute('href', '/hub/apps/cinematic-studio/')
       expect(
         within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
-      ).toHaveAttribute('href', '/models/apps/reshoot')
+      ).toHaveAttribute('href', '/hub/apps/reshoot/')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {
-      window.history.replaceState(
-        null,
-        '',
-        '/models/apps/cinematic-studio/?ux=d'
-      )
+      window.history.replaceState(null, '', '/hub/apps/cinematic-studio/?ux=d')
       vi.mocked(router_render).mockImplementation(async (slug) =>
         rendered(slug)
       )
@@ -1314,8 +1782,10 @@ describe('CinematicStudio', () => {
       const user = userEvent.setup()
 
       await user.click(await screen.findByRole('button', { name: /^Model:/ }))
+      const menu = await screen.findByRole('menu')
+      expect(within(menu).queryByText('Model')).toBeNull()
       await user.click(
-        await screen.findByRole('menuitemradio', {
+        within(menu).getByRole('menuitemradio', {
           name: new RegExp(second.name)
         })
       )
@@ -1325,6 +1795,167 @@ describe('CinematicStudio', () => {
       await screen.findByAltText(/A diner at dawn/)
       expect(vi.mocked(router_render).mock.calls[0][0]).toBe(second.slug)
       expect(panel()).toBeInTheDocument()
+    })
+  })
+
+  describe('side panel direction', () => {
+    const renderPanel = () => {
+      render(CinematicStudioPanel, { props: { models } })
+      return userEvent.setup()
+    }
+    const gradeRow = () => screen.getByRole('button', { name: /^Grade/ })
+
+    it('offers no character picture in video mode, where a clip drops it', async () => {
+      render(CinematicStudioPanel, {
+        props: { models: [...models, ...videoModels] }
+      })
+      const user = userEvent.setup()
+      const character = () =>
+        screen.queryByRole('button', { name: /character reference/i })
+
+      expect(character()).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+
+      expect(character()).toBeNull()
+    })
+
+    it('matches the grade to an uploaded image in place of a palette reference', async () => {
+      const user = renderPanel()
+      expect(
+        screen.queryByRole('button', { name: /Add a palette reference/ })
+      ).toBeNull()
+
+      await user.click(gradeRow())
+      const [firstOption] = within(
+        screen.getByRole('radiogroup', { name: 'Grade' })
+      ).getAllByRole('radio')
+      expect(firstOption).toHaveAccessibleName(
+        tc('cinematic.grade.fromImageAction')
+      )
+      await user.upload(
+        screen.getByTestId('cinematic-grade-image-input'),
+        new File(['ref'], 'colors.png', { type: 'image/png' })
+      )
+
+      expect(gradeRow()).toHaveTextContent(tc('cinematic.grade.yourPalette'))
+      expect(screen.queryByRole('region', { name: 'Colors' })).toBeNull()
+      const picker = screen.getByRole('dialog', { name: 'Grade' })
+      expect(
+        within(picker).getByRole('radio', {
+          name: tc('cinematic.grade.fromImageAction')
+        })
+      ).toHaveAttribute('aria-checked', 'true')
+
+      await user.click(
+        within(picker).getByRole('button', { name: tc('cinematic.grade.edit') })
+      )
+      await user.click(
+        within(picker).getByRole('button', { name: 'Remove color 1' })
+      )
+      expect(within(picker).getByLabelText('Color 1: #405060')).toBeVisible()
+      await user.click(
+        within(picker).getByRole('button', { name: tc('cinematic.grade.done') })
+      )
+
+      await user.click(
+        within(picker).getByRole('radio', { name: 'Teal and orange' })
+      )
+
+      expect(gradeRow()).toHaveTextContent('Teal and orange')
+      await user.click(gradeRow())
+      expect(
+        screen.getByRole('radio', {
+          name: tc('cinematic.grade.fromImageAction')
+        })
+      ).toHaveAttribute('aria-checked', 'false')
+    })
+
+    it('keeps the grade as it was when a picture has no colors to read', async () => {
+      const user = renderPanel()
+
+      await user.click(gradeRow())
+      await user.upload(
+        screen.getByTestId('cinematic-grade-image-input'),
+        new File(['x'], 'bad.png', { type: 'image/png' })
+      )
+
+      expect(
+        await screen.findByText("Couldn't read colors from that image.")
+      ).toBeInTheDocument()
+      expect(gradeRow()).not.toHaveTextContent(
+        tc('cinematic.grade.yourPalette')
+      )
+    })
+
+    it('lists the camera settings beside the body as separate chips', async () => {
+      const user = renderPanel()
+
+      await user.click(screen.getByRole('button', { name: /^Camera/ }))
+      await user.click(screen.getByRole('radio', { name: '85mm' }))
+
+      expect(
+        within(screen.getByTestId('camera-specs')).getByText('85mm')
+      ).toBeInTheDocument()
+    })
+
+    it('steps the number of takes between one and the maximum', async () => {
+      const user = renderPanel()
+      const fewer = screen.getByRole('button', { name: 'Fewer takes' })
+      const more = screen.getByRole('button', { name: 'More takes' })
+      const count = screen.getByTestId('cinematic-takes')
+
+      expect(fewer).toBeDisabled()
+      for (let step = 1; step < MAX_TAKES; step++) await user.click(more)
+      expect(count).toHaveTextContent(String(MAX_TAKES))
+      expect(more).toBeDisabled()
+
+      await user.click(fewer)
+      expect(count).toHaveTextContent(String(MAX_TAKES - 1))
+    })
+
+    it('attaches the character reference straight from the scene box', async () => {
+      const user = renderPanel()
+      const action = tc('cinematic.reference.castAction')
+
+      await user.upload(
+        screen.getByTestId('cinematic-reference-cast'),
+        new File(['ref'], 'face.png', { type: 'image/png' })
+      )
+      expect(
+        screen.getByRole('button', { name: `${action}: face.png` })
+      ).toBeInTheDocument()
+
+      await user.click(
+        screen.getByRole('button', {
+          name: `${tc('cinematic.reference.remove')}: ${tc('cinematic.reference.cast')}`
+        })
+      )
+      expect(screen.getByRole('button', { name: action })).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', {
+          name: tc('cinematic.composer.references')
+        })
+      ).toBeNull()
+    })
+
+    it('offers the starting frame beside the scene in video mode', async () => {
+      render(CinematicStudioPanel, {
+        props: { models: [...models, ...videoModels] }
+      })
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+
+      expect(
+        screen.getByRole('button', {
+          name: tc('cinematic.video.addFirstFrame')
+        })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', {
+          name: tc('cinematic.section.references')
+        })
+      ).toBeNull()
     })
   })
 })

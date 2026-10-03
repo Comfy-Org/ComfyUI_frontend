@@ -1,3 +1,5 @@
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -115,15 +117,19 @@ export const useSessionCookie = () => {
     return ownerUid
   }
 
+  const isApiKeyOnWebSession = () =>
+    useFeatureFlags().flags.unifiedWebSessionEnabled &&
+    useCurrentUser().isApiKeyLogin.value
+
   const ensureSessionCookie = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || isApiKeyOnWebSession()) return
     const webSession = useCloudWebSessionStore()
     if (webSession.start()) return webSession.whenReady()
     await establishSession(currentOwnerUidOrThrow(), false)
   }
 
   const createSession = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || isApiKeyOnWebSession()) return
     if (useCloudWebSessionStore().start()) return
     try {
       await establishSession(currentOwnerUidOrThrow(), true)
@@ -131,6 +137,7 @@ export const useSessionCookie = () => {
       // The session cookie is the only credential <img>/media loads carry, so
       // a swallowed creation failure means images break with no other signal.
       reportError(error, {
+        surface: 'auth',
         errorType: 'session_cookie_creation_failure',
         level: 'warning'
       })
@@ -179,6 +186,7 @@ export const useSessionCookie = () => {
       // other signal. The caught error carries the server's message, which can
       // name the user, so a fixed error is reported in its place.
       reportError(new Error('Session cookie deletion failed'), {
+        surface: 'auth',
         errorType: 'auth_session_cookie_delete_failed',
         tags: {
           failure_kind: 'caught_unexpected',

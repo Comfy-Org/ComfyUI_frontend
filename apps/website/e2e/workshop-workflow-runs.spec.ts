@@ -10,8 +10,14 @@ import type {
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { test } from './fixtures/modelsAccount'
+import { hubWorkflowHref } from '../src/config/hub-models'
 
 const workflowId = 'workflows/remove-background'
+// `character-turnaround` is the simplest workflow carrying a `randomize` seed:
+// its only required input is the image, and its seed schema spans 0 to
+// 4_294_967_295, so a stubbed Math.random maps to a known integer.
+const seedWorkflowId = 'workflows/character-turnaround'
+const seedMaximum = 4_294_967_295
 const runId = 'd982ea52-a2d8-4212-ad8a-ff3030ce42bf'
 const uploadId = '8b9a8b50-9fd5-4bbe-a03a-2a387f09713b'
 const path = '/api/jobs/' + runId
@@ -22,8 +28,9 @@ const creditRefusal = {
   status: 429,
   json: {
     error: {
-      type: 'PAYMENT_REQUIRED',
-      message: 'Insufficient credits to queue workflows'
+      type: 'FREE_TIER_EXHAUSTED',
+      message:
+        "You've used all your free generations. Upgrade to keep creating."
     }
   }
 }
@@ -149,9 +156,10 @@ async function signInAndRun(
   await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
 }
 
-async function signInAndSubmit(
+async function signInAndFill(
   page: Page,
-  account: { email: string; password: string }
+  account: { email: string; password: string },
+  model = workflowId
 ) {
   await page.goto('/login/')
   await page.getByRole('button', { name: 'Use email instead' }).click()
@@ -160,7 +168,7 @@ async function signInAndSubmit(
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL('/')
   await page.clock.install()
-  await page.goto(`/models/${workflowId}/`)
+  await page.goto(hubWorkflowHref(model))
   await expect(page.getByTestId('workflow-run')).toBeEnabled()
   await page.getByTestId('field-image-upload').setInputFiles({
     name: 'photo.webp',
@@ -170,6 +178,14 @@ async function signInAndSubmit(
   await expect(
     page.getByRole('button', { name: 'Replace photo.webp' })
   ).toBeVisible()
+}
+
+async function signInAndSubmit(
+  page: Page,
+  account: { email: string; password: string },
+  model = workflowId
+) {
+  await signInAndFill(page, account, model)
   await page.getByTestId('workflow-run').click()
 }
 
@@ -196,6 +212,16 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   expect(cloud.uploads).toHaveLength(1)
   expect(submissions()).toHaveLength(1)
   await page.getByRole('tab', { name: 'API', exact: true }).click()
+  const sdkSnippet = page.getByTestId('workflow-api-snippet')
+  await expect(sdkSnippet).toContainText('from comfy_sdk import Comfy')
+  await expect(sdkSnippet).toContainText(
+    'job = client.run(workflow, api_key=api_key)'
+  )
+  await page.getByRole('tab', { name: 'TypeScript', exact: true }).click()
+  await expect(sdkSnippet).toContainText(
+    "import { Comfy } from '@comfyorg/sdk'"
+  )
+  await page.getByRole('tab', { name: 'cURL', exact: true }).click()
   // The address a run is posted to, before the snippet that posts to it.
   await expect(page.getByTestId('workflow-api-endpoint')).toContainText(
     '/api/prompt'
@@ -309,7 +335,7 @@ test('the credit chip shows a charge Cloud books after the run finishes', async 
   await expect(chip).toHaveAccessibleName(showing(483_200))
 })
 
-test('a Cloud credit refusal turns Run into Add credits', async ({
+test('a Cloud credit refusal opens Add credits without retrying', async ({
   page,
   context,
   modelsAccount
@@ -329,11 +355,18 @@ test('a Cloud credit refusal turns Run into Add credits', async ({
   await signInAndSubmit(page, modelsAccount)
 
   const primary = page.getByTestId('workflow-run')
+  const dialog = page.getByTestId('buy-credits-dialog')
+  await expect(dialog).toBeVisible()
   await expect(primary).toHaveText('Add credits')
   await expect(primary).toHaveAttribute('data-gate', 'noCredits')
   await expect(page.getByRole('button', { name: 'Run' })).toHaveCount(0)
+  await page.getByTestId('buy-credits-cancel').click()
+  await expect(dialog).toHaveCount(0)
+  await page.getByRole('tab', { name: 'Details' }).click()
+  await page.getByRole('tab', { name: 'Playground' }).click()
+  await expect(dialog).toHaveCount(0)
   await primary.click()
-  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(dialog).toBeVisible()
   expect(
     cloud.commands.filter((command) => command.path === '/api/prompt')
   ).toHaveLength(1)
@@ -408,4 +441,59 @@ test('a run the page stops hearing about holds the panel still', async ({
   await expect(page.getByTestId('workflow-run-footer')).toContainText(
     'It may still be running on Cloud and using credits.'
   )
+})
+
+// `withRandomizedInputs` rewrites the submitted body, so cover the drawn value
+// arriving at Cloud rather than only the draw itself. `workflowCloudRequest`
+// writes each app input onto the nodes its binding names, so the seed is read
+// back off the posted graph. `character-turnaround` binds seed to nodes 5 and 7,
+// whose template values are 54321 and 12345 -- a draw that never happened shows
+// up as those, so the assertions below discriminate.
+const seedNodeIds = ['5', '7']
+
+function submittedSeeds(
+  commands: Array<{ method: string; path: string; body: unknown }>
+) {
+  return commands
+    .filter(
+      (command) => command.method === 'POST' && command.path === '/api/prompt'
+    )
+    .map((command) => {
+      const { prompt } = command.body as {
+        prompt: Record<string, { inputs: Record<string, unknown> }>
+      }
+      return seedNodeIds.map((nodeId) => prompt[nodeId]?.inputs.seed)
+    })
+}
+
+test('an empty seed travels to Cloud as a freshly drawn integer', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  await page.addInitScript(() => {
+    Math.random = () => 0.25
+  })
+  await signInAndSubmit(page, modelsAccount, seedWorkflowId)
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
+  const drawn = Math.floor(0.25 * (seedMaximum + 1))
+  expect(submittedSeeds(cloud.commands)).toEqual([[drawn, drawn]])
+})
+
+test('a seed typed under Advanced is sent unchanged', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  await page.addInitScript(() => {
+    Math.random = () => 0.25
+  })
+  await signInAndFill(page, modelsAccount, seedWorkflowId)
+  await page.getByTestId('playground-advanced').locator('summary').click()
+  await page.getByTestId('field-seed').fill('7')
+  await page.getByTestId('workflow-run').click()
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
+  expect(submittedSeeds(cloud.commands)).toEqual([[7, 7]])
 })

@@ -17,7 +17,9 @@ import { useBillingClient, useCheckout } from '@comfyorg/account-ui/billing'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
+import { useBillingEntry } from '@/entry/billingEntry'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
+import { createResubscribeTelemetry } from '@/telemetry/resubscribeTelemetry'
 
 const emit = defineEmits<{
   /** The subscription changed on the server; readers over it are stale. */
@@ -25,7 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { coded } = useHostedCopy()
+const { coded, refusal } = useHostedCopy()
 const { capabilities, commands } = useBillingClient<
   'capabilities' | 'commands'
 >(undefined)
@@ -36,6 +38,8 @@ const checkout = useCheckout({
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
+const { entry } = useBillingEntry()
+const resubscribeAttempts = createResubscribeTelemetry()
 
 const allowed = ref<BillingCapabilities | undefined>()
 const confirmingCancel = ref(false)
@@ -64,7 +68,7 @@ async function settle(
   try {
     const result = await run()
     if (result.status === 'error') {
-      failure.value = coded('failure', result.code)
+      failure.value = refusal(result)
       return
     }
     if (result.value.phase !== 'succeeded') {
@@ -103,7 +107,7 @@ async function cancelSubscription() {
 
 async function resubscribe() {
   await settle(
-    () => checkout.resubscribe(),
+    () => resubscribeAttempts.run(entry.value, () => checkout.resubscribe()),
     t('hosted.subscription.resubscribed')
   )
 }

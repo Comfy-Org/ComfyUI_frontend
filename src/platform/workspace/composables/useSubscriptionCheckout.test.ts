@@ -19,6 +19,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import {
   clearCheckoutJourney,
+  getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -198,6 +199,7 @@ const {
   mockPlans,
   mockResubscribe,
   mockToastAdd,
+  mockToastRemove,
   mockToastRemoveGroup,
   mockListSavedPaymentMethods,
   mockShowDowngradeToPersonalDialog,
@@ -224,6 +226,7 @@ const {
     mockPlans: { value: [] as Plan[] },
     mockResubscribe: vi.fn(),
     mockToastAdd: vi.fn(),
+    mockToastRemove: vi.fn(),
     mockToastRemoveGroup: vi.fn(),
     mockListSavedPaymentMethods: vi.fn(),
     mockShowDowngradeToPersonalDialog: vi.fn(),
@@ -410,7 +413,11 @@ vi.mock(import('@/config/comfyApi'), () => ({
 vi.mock<unknown>(
   import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
-    useToast: () => ({ add: mockToastAdd, removeGroup: mockToastRemoveGroup })
+    useToast: () => ({
+      add: mockToastAdd,
+      remove: mockToastRemove,
+      removeGroup: mockToastRemoveGroup
+    })
   })
 )
 
@@ -484,6 +491,12 @@ describe('useSubscriptionCheckout', () => {
       { global: { plugins: [i18n] } }
     )
     return checkout
+  }
+
+  function activeJourneyId(): string {
+    const journey = getActiveCheckoutJourney()
+    assert.exists(journey)
+    return journey.journey_id
   }
 
   async function setupWithApprovedPreview(
@@ -1457,7 +1470,8 @@ describe('useSubscriptionCheckout', () => {
     it.for([
       ['SUBSCRIPTION_PAYMENT_REQUIRED', null],
       ['OUTSTANDING_PAYMENT_REQUIRED', null],
-      ['TRANSITION_NOT_ALLOWED', 'payment_failed']
+      ['TRANSITION_NOT_ALLOWED', 'payment_failed'],
+      ['TRANSITION_NOT_ALLOWED', 'paused']
     ] as const)(
       'routes %s previews to the billing portal',
       async ([code, status]) => {
@@ -1643,6 +1657,7 @@ describe('useSubscriptionCheckout', () => {
         'Update your payment method before changing plans'
       )
       expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       expect(globalThis.location.href).toBe(
@@ -1668,6 +1683,7 @@ describe('useSubscriptionCheckout', () => {
       )
 
       expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -1675,17 +1691,32 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('opens the Stripe custom-domain portal returned in production', async () => {
+      const portalUrl =
+        'https://checkout.comfy.org/p/session?secret=live_portal_session'
+      mockGetPaymentPortalUrl.mockResolvedValueOnce({ url: portalUrl })
+
+      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+      expect(mockOpen).toHaveBeenCalledWith(portalUrl, '_blank')
+    })
+
     it.for([
       undefined,
       '',
       'javascript:alert(1)',
-      'https://billing.stripe.com.evil.test/portal'
+      'https://billing.stripe.com.evil.test/portal',
+      'https://checkout.comfy.org.evil.test/portal'
     ])('rejects an unsafe billing portal URL: %s', async (url) => {
       mockGetPaymentPortalUrl.mockResolvedValueOnce({ url })
       await submitRejectedPreview(
         'SUBSCRIPTION_PAYMENT_REQUIRED',
         'Update your payment method before changing plans'
       )
+      // The load-bearing half of "rejected": a look-alike origin must not be
+      // handed to a tab either. Asserting only the unchanged location and the
+      // toast would still pass if the URL were opened alongside them.
+      expect(mockOpen).not.toHaveBeenCalled()
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
@@ -1822,6 +1853,7 @@ describe('useSubscriptionCheckout', () => {
 
         expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
         expect(mockReportError).toHaveBeenCalledWith(portalError, {
+          surface: 'workspace',
           errorType: 'billing_portal_open_failure'
         })
         expect(mockToastAdd).toHaveBeenCalledWith(
@@ -2155,9 +2187,9 @@ describe('useSubscriptionCheckout', () => {
     })
 
     describe('hosted billing handoff', () => {
-      it('opens billing-web with the plan slug and closes without subscribing', async () => {
+      it('opens billing-web with the plan slug, click-time source and checkout journey, and closes without subscribing', async () => {
         mockOpenHostedBillingTab.mockReturnValue(true)
-        const checkout = await setup()
+        const checkout = await setup('subscribe_to_run')
 
         await checkout.handleSubscribeClick({
           tierKey: 'standard',
@@ -2165,7 +2197,9 @@ describe('useSubscriptionCheckout', () => {
         })
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
-          plan: 'standard-yearly'
+          plan: 'standard-yearly',
+          source: 'subscribe_to_run',
+          journeyId: activeJourneyId()
         })
         expect(mockPreviewSubscribe).not.toHaveBeenCalled()
         expect(emit).toHaveBeenCalledWith('close', false)
@@ -2181,7 +2215,8 @@ describe('useSubscriptionCheckout', () => {
         })
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
-          plan: 'standard-yearly'
+          plan: 'standard-yearly',
+          journeyId: activeJourneyId()
         })
         expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
         expect(checkout.checkoutStep.value).toBe('preview')
@@ -2197,7 +2232,8 @@ describe('useSubscriptionCheckout', () => {
         })
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
-          plan: 'standard-yearly'
+          plan: 'standard-yearly',
+          journeyId: activeJourneyId()
         })
 
         await pending
@@ -2792,9 +2828,9 @@ describe('useSubscriptionCheckout', () => {
     })
 
     describe('hosted billing handoff', () => {
-      it('opens billing-web with the team plan slug and credit stop, and closes without subscribing', async () => {
+      it('opens billing-web with the team plan slug, credit stop, click-time source and checkout journey, and closes without subscribing', async () => {
         mockOpenHostedBillingTab.mockReturnValue(true)
-        const checkout = await setup()
+        const checkout = await setup('team_members_panel')
 
         await checkout.handleSubscribeTeamClick({
           stop: teamStop,
@@ -2804,7 +2840,9 @@ describe('useSubscriptionCheckout', () => {
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
           plan: 'team_per_credit_annual',
-          teamCreditStopId: 'team_1400'
+          teamCreditStopId: 'team_1400',
+          source: 'team_members_panel',
+          journeyId: activeJourneyId()
         })
         expect(mockPreviewSubscribe).not.toHaveBeenCalled()
         expect(emit).toHaveBeenCalledWith('close', false)
@@ -2822,7 +2860,8 @@ describe('useSubscriptionCheckout', () => {
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
           plan: 'team_per_credit_monthly',
-          teamCreditStopId: 'team_1400'
+          teamCreditStopId: 'team_1400',
+          journeyId: activeJourneyId()
         })
         expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
         expect(checkout.checkoutStep.value).toBe('preview')
@@ -3005,7 +3044,8 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'monthly',
         returnUrl: 'https://app.test/subscribe',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
-        confirmReactivation: false
+        confirmReactivation: false,
+        attemptStartedAt: expect.any(Number)
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
@@ -4322,7 +4362,8 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
         returnUrl: 'https://app.test/subscribe',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
-        confirmReactivation: false
+        confirmReactivation: false,
+        attemptStartedAt: expect.any(Number)
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
@@ -4954,6 +4995,31 @@ describe('useSubscriptionCheckout', () => {
       ).not.toHaveBeenCalled()
     })
 
+    it('clears the error toasts of earlier attempts once a retry succeeds', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockRejectedValueOnce(
+        new Error('Your bank declined this payment.')
+      )
+      await checkout.handleConfirmTransition()
+      const declineToast = mockToastAdd.mock.calls
+        .map(([message]) => message)
+        .find(
+          (message) => message.detail === 'Your bank declined this payment.'
+        )
+      expect(declineToast).toBeDefined()
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-3'
+      })
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockToastRemove).toHaveBeenCalledWith(declineToast)
+    })
+
     it('counts the conversion and announces a subscribe the server charged for', async () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
@@ -5507,13 +5573,15 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleResubscribe', () => {
-    it('opens billing-web with the subscription intent and closes without resubscribing', async () => {
+    it('opens billing-web with the subscription intent and click-time source, and closes without resubscribing', async () => {
       mockOpenHostedBillingTab.mockReturnValue(true)
-      const checkout = await setup()
+      const checkout = await setup('settings_billing_panel')
 
       await checkout.handleResubscribe()
 
-      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription')
+      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription', {
+        source: 'settings_billing_panel'
+      })
       expect(mockResubscribe).not.toHaveBeenCalled()
       expect(emit).toHaveBeenCalledWith('close', false)
     })
@@ -5530,7 +5598,9 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleResubscribe()
 
-      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription')
+      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription', {
+        source: 'subscribe_to_run'
+      })
       expect(mockResubscribe).toHaveBeenCalled()
       expect(emit).toHaveBeenCalledWith('close', true)
     })

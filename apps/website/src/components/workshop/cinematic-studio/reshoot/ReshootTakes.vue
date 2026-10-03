@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { CircleStop, Crosshair, LoaderCircle } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ReshootTake } from '../../../../composables/useReshootDemo'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import type { ReshootTake } from '../../../../composables/useReshoot'
 import type { Locale } from '../../../../i18n/translations'
 import { takeLabel } from './take-label'
 
@@ -17,6 +17,7 @@ const {
   selected: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ select: [id: string] }>()
 
@@ -31,13 +32,13 @@ const tileClass = (id: string) =>
 
 <template>
   <nav
-    :aria-label="rc('reshoot.takes', locale)"
+    :aria-label="t('reshoot.takes')"
     class="flex max-w-full items-center gap-2 overflow-x-auto p-1"
   >
     <button
       type="button"
       :aria-current="selected === 'aim'"
-      :aria-label="rc('reshoot.take.aim', locale)"
+      :aria-label="t('reshoot.take.aim')"
       :class="cn(tileClass('aim'), 'text-primary-warm-white')"
       @click="emit('select', 'aim')"
     >

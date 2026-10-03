@@ -1,5 +1,11 @@
+import type {
+  CheckoutEntryFlow,
+  CheckoutJourneyPhaseEvent,
+  SubscriptionCheckoutType
+} from '@comfyorg/account-core/billing'
 import { useToast } from 'primevue/usetoast'
-import { computed, onScopeDispose, ref } from 'vue'
+import type { ToastMessageOptions } from 'primevue/toast'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -14,12 +20,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type {
-  CheckoutEntryFlow,
-  CheckoutJourneyPhaseEvent,
-  PaymentIntentSource,
-  SubscriptionCheckoutType
-} from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -34,6 +35,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
@@ -103,11 +105,16 @@ type PreviewVariant =
   | 'personal-new'
   | null
 
+const BILLING_PORTAL_ORIGINS = new Set([
+  'https://billing.stripe.com',
+  'https://checkout.comfy.org'
+])
+
 function parseBillingPortalUrl(url: unknown): URL | null {
   if (typeof url !== 'string') return null
   try {
     const portalUrl = new URL(url)
-    return portalUrl.origin === 'https://billing.stripe.com' ? portalUrl : null
+    return BILLING_PORTAL_ORIGINS.has(portalUrl.origin) ? portalUrl : null
   } catch {
     return null
   }
@@ -592,7 +599,9 @@ export function useSubscriptionCheckout(
           readRail === null
             ? await workspaceApi.getBillingStatus()
             : await readOnRail(readRail.readStatus)
-        requiresRecovery = status?.billing_status === 'payment_failed'
+        requiresRecovery =
+          status?.billing_status === 'payment_failed' ||
+          status?.billing_status === 'paused'
       } catch {
         return null
       }
@@ -640,6 +649,7 @@ export function useSubscriptionCheckout(
     } catch (portalError) {
       if (!isCurrent()) return null
       reportError(portalError, {
+        surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
       showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
@@ -861,7 +871,7 @@ export function useSubscriptionCheckout(
     loadingTier.value = tierKey
     selectedTierKey.value = tierKey
     selectedBillingCycle.value = billingCycle
-    enterCheckoutJourney(`${tierKey}:${billingCycle}`)
+    const enteredJourney = enterCheckoutJourney(`${tierKey}:${billingCycle}`)
 
     try {
       let planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -881,7 +891,13 @@ export function useSubscriptionCheckout(
         await showTeamToPersonalDowngrade(planSlug, tierKey)
         return
       }
-      if (openHostedBillingTab('checkout', { plan: planSlug })) {
+      if (
+        openHostedBillingTab('checkout', {
+          plan: planSlug,
+          source: paymentIntentSource,
+          journeyId: enteredJourney?.journey_id
+        })
+      ) {
         emit('close', false)
         return
       }
@@ -974,13 +990,17 @@ export function useSubscriptionCheckout(
     selectedTierKey.value = null
     previewData.value = null
     quoteIsCurrent.value = false
-    enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
+    const enteredJourney = enterCheckoutJourney(
+      `team:${payload.stop.id}:${payload.billingCycle}`
+    )
 
     if (
       payload.stop.id &&
       openHostedBillingTab('checkout', {
         plan: getTeamPlanSlug(payload.billingCycle),
-        teamCreditStopId: payload.stop.id
+        teamCreditStopId: payload.stop.id,
+        source: paymentIntentSource,
+        journeyId: enteredJourney?.journey_id
       })
     ) {
       emit('close', false)
@@ -1186,7 +1206,8 @@ export function useSubscriptionCheckout(
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
           ? previewData.value.proration_at
-          : undefined
+          : undefined,
+        attemptStartedAt
       })
 
       if (response) {
@@ -1241,16 +1262,27 @@ export function useSubscriptionCheckout(
     }
   }
 
+  // A refused attempt's toast stays until dismissed; a later attempt that
+  // succeeds takes them down rather than leaving a decline over the success.
+  const attemptErrorToasts: ToastMessageOptions[] = []
+
   function showSubscribeError(error: unknown) {
-    toast.add({
+    const message: ToastMessageOptions = {
       severity: 'error',
       summary: t('g.error'),
       detail:
         error instanceof Error
           ? error.message
           : t('subscription.subscribeFailed')
-    })
+    }
+    attemptErrorToasts.push(message)
+    toast.add(message)
   }
+
+  watch(checkoutStep, (step) => {
+    if (step !== 'success') return
+    for (const message of attemptErrorToasts.splice(0)) toast.remove(message)
+  })
 
   async function recoverStaleQuote(error: unknown): Promise<boolean> {
     if (!hasErrorCode(error, 'SUBSCRIPTION_QUOTE_STALE')) return false
@@ -1469,6 +1501,7 @@ export function useSubscriptionCheckout(
       ...(errorCode && { error_code: errorCode }),
       duration_ms: Date.now() - context.attemptStartedAt
     })
+    if (error instanceof SettledOperationError) return
     telemetry?.trackBillingEvent({
       operation: 'operation',
       stage: 'failed',
@@ -1520,18 +1553,20 @@ export function useSubscriptionCheckout(
           billing_op_id: response.billing_op_id,
           duration_ms: durationMs
         })
-        telemetry?.trackBillingEvent({
-          operation: 'operation',
-          stage: 'succeeded',
-          outcome: 'success',
-          operation_type: 'subscription',
-          tier: context.tier,
-          cycle: context.cycle,
-          checkout_type: context.checkoutType,
-          payment_intent_source: paymentIntentSource,
-          billing_op_id: response.billing_op_id,
-          duration_ms: durationMs
-        })
+        if (!response.operationObserved) {
+          telemetry?.trackBillingEvent({
+            operation: 'operation',
+            stage: 'succeeded',
+            outcome: 'success',
+            operation_type: 'subscription',
+            tier: context.tier,
+            cycle: context.cycle,
+            checkout_type: context.checkoutType,
+            payment_intent_source: paymentIntentSource,
+            billing_op_id: response.billing_op_id,
+            duration_ms: durationMs
+          })
+        }
         if (response.requiredPayment) {
           telemetry?.trackMonthlySubscriptionSucceeded({
             tier: context.tier,
@@ -1755,7 +1790,8 @@ export function useSubscriptionCheckout(
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
           ? previewData.value.proration_at
-          : undefined
+          : undefined,
+        attemptStartedAt
       })
 
       if (response) {
@@ -1820,7 +1856,7 @@ export function useSubscriptionCheckout(
   async function handleResubscribe() {
     if (!canReactivatePlan.value) return
 
-    if (openHostedBillingTab('subscription')) {
+    if (openHostedBillingTab('subscription', { source: paymentIntentSource })) {
       emit('close', false)
       return
     }

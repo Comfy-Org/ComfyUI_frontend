@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { ChevronDown } from '@lucide/vue'
 import { computed } from 'vue'
 
@@ -16,8 +17,11 @@ import {
 import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
+import { videoTags } from '../../../lib/workshop/cinematic-studio/video'
+import type { ShotBlock } from '../../../composables/useCinematicShot'
+import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicDirectionSegments from './CinematicDirectionSegments.vue'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 import CinematicFormatSegments from './CinematicFormatSegments.vue'
@@ -26,10 +30,17 @@ import CinematicMenu from './CinematicMenu.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
 import CinematicReferenceMenu from './CinematicReferenceMenu.vue'
 import CinematicTooltip from './CinematicTooltip.vue'
+import CinematicVideoSegments from './CinematicVideoSegments.vue'
 import type { PickerKey } from './picker-key'
+import type { ReferenceKind } from './reference-kind'
 
 const {
   models,
+  aspects,
+  slots,
+  colors = [],
+  blocked,
+  video,
   direction,
   gate,
   workspaceName,
@@ -41,6 +52,15 @@ const {
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
+  /** The frames the chosen model can make; every frame when absent. */
+  aspects?: readonly AspectRatio[]
+  /** The files the shot can take, listed in the References menu. */
+  slots?: readonly ReferenceKind[]
+  /** The visitor's own palette, shown on the Grade segment. */
+  colors?: readonly string[]
+  blocked?: ShotBlock
+  /** Present in video mode: what the running operation lets a shot choose. */
+  video?: CinematicVideoCapabilities
   direction: Direction
   gate: StudioGate
   workspaceName?: string
@@ -51,6 +71,7 @@ const {
   openPopover?: PickerKey
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   open: [key: PickerKey]
@@ -64,44 +85,45 @@ const takes = defineModel<number>('takes', { required: true })
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
 const enhance = defineModel<boolean>('enhance', { required: true })
-const cast = defineModel<File | undefined>('cast')
-const palette = defineModel<File | undefined>('palette')
+const cast = defineModel<StudioImage | undefined>('cast')
+const firstFrame = defineModel<StudioImage | undefined>('firstFrame')
+const lastFrame = defineModel<StudioImage | undefined>('lastFrame')
+const sourceVideo = defineModel<StudioImage | undefined>('sourceVideo')
+const duration = defineModel<number | undefined>('duration')
+const videoResolution = defineModel<string | undefined>('videoResolution')
+const audio = defineModel<boolean>('audio', { default: false })
 
 const modelOptions = computed(() =>
   models.map((model) => ({
     id: model.slug,
     label: model.name,
     logo: model.logo,
-    meta: model.degraded ? tc('cinematic.model.degraded', locale) : undefined
+    meta: model.degraded
+      ? t('cinematic.model.degraded')
+      : videoTags(model.video, t('cinematic.video.audioTag'))
   }))
 )
 const model = computed(() =>
   models.find((candidate) => candidate.slug === modelSlug.value)
 )
 
-const bodyLabel = computed(() =>
-  tc(directionOption('body', direction).label, locale)
-)
+const bodyLabel = computed(() => t(directionOption('body', direction).label))
 const cameraSummary = computed(
   () =>
-    `${tc('cinematic.section.camera', locale)}: ${cameraGroups
-      .map((group) => tc(directionOption(group.part, direction).label, locale))
+    `${t('cinematic.section.camera')}: ${cameraGroups
+      .map((group) => t(directionOption(group.part, direction).label))
       .join(' · ')}`
 )
 const focalLabel = computed(() => {
   const focal = directionOption('focal', direction)
-  return focal.id === 'auto' ? undefined : tc(focal.label, locale)
+  return focal.id === 'auto' ? undefined : t(focal.label)
 })
 const cameraLabel = computed(
   () =>
-    `${tc('cinematic.section.camera', locale)}: ${focalLabel.value ?? bodyLabel.value}`
+    `${t('cinematic.section.camera')}: ${focalLabel.value ?? bodyLabel.value}`
 )
 const blockedNote = computed(() =>
-  (cast.value || palette.value) && !model.value?.referenceSlug
-    ? tc('cinematic.references.unsupported', locale, {
-        model: model.value?.name ?? ''
-      })
-    : undefined
+  blocked ? t(blocked.key, { model: blocked.model }) : undefined
 )
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0 && !blockedNote.value
@@ -123,28 +145,32 @@ const chipClass = (key: PickerKey) =>
   <div
     class="flex w-full flex-col overflow-hidden rounded-3xl border border-transparency-white-t8 bg-primary-comfy-ink-light shadow-[0_20px_60px_rgb(0_0_0/0.35)]"
     role="group"
-    :aria-label="tc('cinematic.composer.label', locale)"
+    :aria-label="t('cinematic.composer.label')"
   >
     <div class="flex flex-wrap items-start gap-x-2.5 gap-y-1 px-4 pt-3.5 pb-3">
       <CinematicReferenceMenu
         v-model:cast="cast"
-        v-model:palette="palette"
+        v-model:first-frame="firstFrame"
+        v-model:last-frame="lastFrame"
+        v-model:source-video="sourceVideo"
+        :shown="slots"
         :locale
       />
       <label for="cinematic-scene" class="sr-only">
-        {{ tc('cinematic.section.scene', locale) }}
+        {{ t('cinematic.section.scene') }}
       </label>
       <textarea
         id="cinematic-scene"
         v-model="scene"
         rows="1"
-        :placeholder="tc('cinematic.scene.placeholder', locale)"
+        :placeholder="t('cinematic.scene.placeholder')"
         class="field-sizing-content max-h-[calc(4lh+0.375rem)] min-h-9 flex-1 resize-none bg-transparent pt-1.5 text-base/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
         @keydown.enter.meta.prevent="generateFromKeyboard"
         @keydown.enter.ctrl.prevent="generateFromKeyboard"
       />
       <CinematicEnhanceSwitch
         v-model="enhance"
+        :video="!!video"
         :locale
         class="h-9 shrink-0 text-primary-comfy-canvas max-sm:order-first max-sm:h-6 max-sm:basis-full max-sm:justify-end"
       />
@@ -159,7 +185,7 @@ const chipClass = (key: PickerKey) =>
         <CinematicMenu
           v-model="modelSlug"
           :options="modelOptions"
-          :heading="tc('cinematic.model.heading', locale)"
+          :heading="t('cinematic.model.heading')"
           tooltip
           trigger-class="h-9 shrink-0 gap-2 rounded-xl px-3 text-[13px] whitespace-nowrap text-primary-warm-white hover:bg-transparency-white-t8"
         >
@@ -194,14 +220,26 @@ const chipClass = (key: PickerKey) =>
         </CinematicTooltip>
         <CinematicDirectionSegments
           :direction
+          :colors
           :open="openPopover"
           :locale
           @open="emit('open', $event)"
         />
+        <CinematicVideoSegments
+          v-if="video"
+          v-model:aspect="aspect"
+          v-model:duration="duration"
+          v-model:resolution="videoResolution"
+          v-model:audio="audio"
+          :video
+          :locale
+        />
         <CinematicFormatSegments
+          v-else
           v-model:aspect="aspect"
           v-model:resolution="resolution"
           v-model:takes="takes"
+          :aspects
           :locale
         />
       </div>

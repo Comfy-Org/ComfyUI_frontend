@@ -59,6 +59,7 @@ export function registerMinimapDecorationLayer(
 ): MinimapDecorationLayer {
   if (layers.has(id)) {
     reportError(new Error(`Minimap decoration layer exists: ${id}`), {
+      surface: 'graph',
       errorType: 'minimap_decoration_layer_duplicate'
     })
     return { replace() {}, dispose() {} }

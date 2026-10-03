@@ -2,7 +2,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useDialogService } from '@/services/dialogService'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -169,6 +169,7 @@ describe('CreditsTile', () => {
             endDate: null,
             isCancelled: false,
             hasFunds: true,
+            agentHasFunds: true,
             ...state.subscription
           }
         : null
@@ -398,6 +399,40 @@ describe('CreditsTile', () => {
     }
     const { container } = renderTile()
     expect(container.textContent).toContain('253,200 left of 253,200')
+  })
+
+  it('shows no credit pool total or allowance bar when the duration is unknown', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: null,
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 120000,
+      cloudCreditBalanceMicros: 120000
+    }
+    const { container } = renderTile()
+    expect(container.textContent).not.toContain('left of')
+    expect(container.textContent).not.toContain('Used after')
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
+  it('still flags an exhausted allowance when the duration is unknown', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: null,
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain("You're out of credits")
+    expect(container.textContent).not.toContain('left of')
   })
 
   it('formats the renewal date in the local timezone, not UTC', () => {
@@ -789,6 +824,43 @@ describe('CreditsTile', () => {
       expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
     )
     expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
+  })
+
+  it('closes a confirmed legacy top-up with one succeeded event measured from its start', async () => {
+    const confirmedAtMs = Date.parse('2024-06-15T12:30:00Z')
+    vi.spyOn(Date, 'now').mockReturnValue(confirmedAtMs)
+    activeProSubscription()
+    state.type = 'legacy'
+    localStorage.setItem(
+      'pending_topup_timestamp',
+      String(confirmedAtMs - 90_000)
+    )
+    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
+      events: [
+        {
+          event_type: 'credit_added',
+          createdAt: new Date(confirmedAtMs - 1000).toISOString()
+        }
+      ]
+    })
+
+    renderTile()
+
+    await waitFor(() =>
+      expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
+    )
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
+      [
+        {
+          operation: 'topup',
+          stage: 'succeeded',
+          outcome: 'success',
+          duration_ms: 90_000
+        }
+      ]
+    ])
   })
 
   it('refreshes and reconciles a pending legacy top-up when telemetry is unavailable', async () => {

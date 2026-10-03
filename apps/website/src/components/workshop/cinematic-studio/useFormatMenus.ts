@@ -11,22 +11,32 @@ import {
   RESOLUTIONS
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../i18n/translations'
 
 /** Menu options and string-valued models for the aspect, resolution and takes menus. */
 export function useFormatMenus(
   aspect: ModelRef<AspectRatio>,
   resolution: ModelRef<Resolution>,
   takes: ModelRef<number>,
-  locale: () => Locale
+  locale: () => Locale,
+  /**
+   * The frames the chosen model can make. `undefined` leaves every frame on
+   * offer; an empty list is a model that can make none, which is not the same
+   * thing and must not fall back to offering all of them.
+   */
+  aspects: () => readonly AspectRatio[] | undefined = () => undefined
 ) {
-  const aspectOptions = computed(() =>
-    ASPECT_RATIOS.map((ratio) => ({
+  const aspectOptions = computed(() => {
+    const { t } = translationsFor(locale())
+    const supported = aspects()
+    return ASPECT_RATIOS.filter(
+      (ratio) => !supported || supported.includes(ratio.id)
+    ).map((ratio) => ({
       id: ratio.id,
       label: ratio.id,
-      meta: tc(ratio.label, locale())
+      meta: t(ratio.label)
     }))
-  )
+  })
   const resolutionOptions = RESOLUTIONS.map((option) => ({
     id: option.id,
     label: option.id

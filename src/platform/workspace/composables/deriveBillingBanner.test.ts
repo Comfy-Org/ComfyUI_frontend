@@ -16,7 +16,10 @@ const funded: BillingBannerInputs = {
   isCancelled: false,
   endDate: null,
   canManage: true,
+  isPlanEnded: false,
+  planEndedDismissed: false,
   outOfCreditsDismissed: false,
+  planChangeDismissed: false,
   hasScheduledChange: false
 }
 
@@ -45,7 +48,18 @@ describe('deriveBillingBanner', () => {
 
   it('keeps team billing-control notices out of personal plans', () => {
     expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
-    expect(derive({ ...paused, isTeamPlan: false })).toBeNull()
+  })
+
+  it('shows paused to personal workspaces on a known tier', () => {
+    expect(
+      derive({ ...paused, isTeamPlan: false, isKnownPersonalTier: true })
+    ).toBe('paused')
+  })
+
+  it('denies paused to an unrecognized tier', () => {
+    expect(
+      derive({ ...paused, isTeamPlan: false, isKnownPersonalTier: false })
+    ).toBeNull()
   })
 
   it('shows payment failed to personal workspace owners', () => {
@@ -111,8 +125,8 @@ describe('deriveBillingBanner', () => {
     expect(derive({ ...paymentFailed, hasFunds: false })).toBe('paymentFailed')
   })
 
-  it('hides payment failed from members, who get the run-lock modal instead', () => {
-    expect(derive({ ...paymentFailed, canManage: false })).toBeNull()
+  it('shows payment failed to members too, since their runs are blocked', () => {
+    expect(derive({ ...paymentFailed, canManage: false })).toBe('paymentFailed')
   })
 
   it('prioritizes paused above everything, for owners and members', () => {
@@ -142,14 +156,45 @@ describe('deriveBillingBanner', () => {
     ).toBeNull()
   })
 
-  it('hides the ending banner from members', () => {
+  it('shows the ending banner to members too', () => {
     expect(
       derive({
         isCancelled: true,
         endDate: '2026-08-01T00:00:00Z',
         canManage: false
       })
-    ).toBeNull()
+    ).toBe('ending')
+  })
+
+  describe('plan ended', () => {
+    const ended: Partial<BillingBannerInputs> = {
+      isPlanEnded: true,
+      canAccessSubscriptionFeatures: false,
+      billingStatus: 'inactive'
+    }
+
+    it('shows for team and Enterprise, owners and members alike', () => {
+      expect(derive(ended)).toBe('planEnded')
+      expect(derive({ ...ended, canManage: false })).toBe('planEnded')
+      expect(derive({ ...ended, isTeamPlan: false, isEnterprise: true })).toBe(
+        'planEnded'
+      )
+    })
+
+    it('ships without the billing control flag', () => {
+      expect(derive({ ...ended, billingControlEnabled: false })).toBe(
+        'planEnded'
+      )
+    })
+
+    it('ranks below payment recovery and above out of credits', () => {
+      expect(derive({ ...ended, ...paused })).toBe('paused')
+      expect(derive({ ...ended, hasFunds: false })).toBe('planEnded')
+    })
+
+    it('stays hidden once dismissed', () => {
+      expect(derive({ ...ended, planEndedDismissed: true })).toBeNull()
+    })
   })
 
   it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
@@ -165,10 +210,14 @@ describe('deriveBillingBanner', () => {
     expect(derive({ hasScheduledChange: true })).toBe('planChange')
   })
 
-  it('shows the plan change banner to members, since it has no action', () => {
-    expect(derive({ hasScheduledChange: true, canManage: false })).toBe(
-      'planChange'
-    )
+  it('keeps the plan change banner owner-only', () => {
+    expect(derive({ hasScheduledChange: true, canManage: false })).toBeNull()
+  })
+
+  it('hides a dismissed plan change banner', () => {
+    expect(
+      derive({ hasScheduledChange: true, planChangeDismissed: true })
+    ).toBeNull()
   })
 
   it('keeps recovery notices ahead of a scheduled change', () => {
@@ -188,7 +237,7 @@ describe('deriveBillingBanner', () => {
     ).toBe('ending')
   })
 
-  it('shows no plan change banner to a member whose plan is cancelled', () => {
+  it('shows a member the ending notice, not the plan change, once cancelled', () => {
     expect(
       derive({
         hasScheduledChange: true,
@@ -196,7 +245,7 @@ describe('deriveBillingBanner', () => {
         endDate: '2026-08-01T00:00:00Z',
         canManage: false
       })
-    ).toBeNull()
+    ).toBe('ending')
   })
 
   it('keeps out-of-credits ahead of a scheduled change', () => {
@@ -244,7 +293,7 @@ describe('deriveBillingBanner', () => {
       ).toBe('ending')
     })
 
-    it('hides the notice from members even inside the window', () => {
+    it('shows the notice to members inside the window', () => {
       expect(
         derive(
           {
@@ -255,7 +304,7 @@ describe('deriveBillingBanner', () => {
           },
           NOW
         )
-      ).toBeNull()
+      ).toBe('ending')
     })
 
     it('needs a populated end date, like the self-serve notice', () => {

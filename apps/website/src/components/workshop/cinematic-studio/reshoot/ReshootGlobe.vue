@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
@@ -11,10 +12,10 @@ import type {
 import { clampAxis } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import {
   GLOBE_FLATTEN,
+  distanceScale,
   globePoint,
   zoneArcs
 } from '../../../../lib/workshop/cinematic-studio/reshoot-globe'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 
 const {
@@ -28,11 +29,14 @@ const {
   disabled?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ aim: [patch: Partial<ReshootCamera>] }>()
 
-const SIZE = 264
-const R = SIZE * 0.4
+// Room around the shell for a camera drawn out at 1.5 radii (the farthest
+// distance) with its badge, as the node's picker draws it.
+const SIZE = 300
+const R = 88
 const C = SIZE / 2
 const MERIDIANS = [0, 30, 60].map((deg) => R * Math.cos((deg * Math.PI) / 180))
 const PARALLELS = [-40, 40].map((deg) => {
@@ -47,7 +51,13 @@ const STROKE: Readonly<Record<ReshootZone, string>> = {
 }
 
 const SUBJECT = { w: 52, h: 32 }
-const marker = computed(() => globePoint(camera.azimuth, camera.elevation, R))
+const marker = computed(() =>
+  globePoint(
+    camera.azimuth,
+    camera.elevation,
+    R * distanceScale(camera.distance)
+  )
+)
 const mirrored = computed(() => marker.value.x > 0)
 const cone = computed(() => {
   const { x, y } = marker.value
@@ -56,7 +66,7 @@ const cone = computed(() => {
 })
 const label = computed(
   () =>
-    `${rc('reshoot.aim.globe', locale)}: ${camera.azimuth}°, ${camera.elevation}°`
+    `${t('reshoot.aim.globe')}: ${camera.azimuth}°, ${camera.elevation}°, ${camera.distance.toFixed(2)}`
 )
 
 const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
@@ -117,6 +127,28 @@ const NUDGES = [
   }
 ] as const
 
+/** Scroll or pinch moves the camera in and out, as on the preview. */
+function dolly(step: number) {
+  emit('aim', {
+    distance: Number(
+      clampAxis('distance', camera.distance + step * 0.05).toFixed(2)
+    )
+  })
+}
+
+function zoom(event: WheelEvent) {
+  if (disabled) return
+  event.preventDefault()
+  dolly(Math.sign(event.deltaY))
+}
+
+const DOLLY_KEYS: Readonly<Record<string, number>> = {
+  '+': -1,
+  '=': -1,
+  '-': 1,
+  _: 1
+}
+
 const KEYS: Readonly<Record<string, [number, number]>> = {
   ArrowLeft: [-5, 0],
   ArrowRight: [5, 0],
@@ -125,8 +157,15 @@ const KEYS: Readonly<Record<string, [number, number]>> = {
 }
 
 function key(event: KeyboardEvent) {
+  if (disabled) return
+  const inOut = DOLLY_KEYS[event.key]
+  if (inOut !== undefined) {
+    event.preventDefault()
+    dolly(inOut)
+    return
+  }
   const step = KEYS[event.key]
-  if (!step || disabled) return
+  if (!step) return
   event.preventDefault()
   nudge(...step)
 }
@@ -151,6 +190,7 @@ function key(event: KeyboardEvent) {
     @pointerup="dragFrom = undefined"
     @pointercancel="dragFrom = undefined"
     @keydown="key"
+    @wheel="zoom"
   >
     <svg
       :width="SIZE"
@@ -236,7 +276,7 @@ function key(event: KeyboardEvent) {
       type="button"
       tabindex="-1"
       :disabled
-      :aria-label="rc(nudgeButton.label, locale)"
+      :aria-label="t(nudgeButton.label)"
       :class="
         cn(
           'absolute grid size-7 place-items-center rounded-full text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white disabled:pointer-events-none',

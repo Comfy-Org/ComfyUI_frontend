@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -13,10 +14,12 @@ import type { Locale } from '../../../i18n/translations'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
+import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPicker from './CinematicPicker.vue'
 import CinematicStage from './CinematicStage.vue'
 import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
+import { referenceSlots } from './reference-kind'
 
 const {
   models,
@@ -27,18 +30,35 @@ const {
   showCredits?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const {
   studio,
+  mode,
+  modeModels,
+  hasVideo,
+  model,
+  video,
+  duration,
+  videoResolution,
+  audio,
+  firstFrame,
+  lastFrame,
+  sourceVideo,
+  blocked,
+  animate,
+  useAsReference: useTake,
   modelSlug,
   scene,
   enhance,
   direction,
   aspect,
+  aspects,
   resolution,
   takes,
   cast,
-  palette,
+  colors,
+  mainColor,
   estimate,
   memberWorkspace,
   choose,
@@ -79,12 +99,17 @@ function start(shot: StarterShot) {
   focusScene()
 }
 
+const takeError = ref(false)
+
 async function useAsReference(url: string, name: string) {
-  const blob = await fetch(url)
-    .then((response) => (response.ok ? response.blob() : undefined))
-    .catch(() => undefined)
-  if (blob)
-    cast.value = new File([blob], name, { type: blob.type || 'image/png' })
+  takeError.value = !(await useTake(url, name))
+}
+
+const canAnimate = models.some((option) => !!option.firstFrameSlug)
+async function animateTake(url: string, name: string) {
+  closePopover()
+  takeError.value = !(await animate(url, name))
+  if (!takeError.value) focusScene()
 }
 
 function generate() {
@@ -107,6 +132,8 @@ function generateOn(slug: string) {
     <CinematicStage
       :reel="studio.reel.value"
       :models
+      :can-animate="canAnimate"
+      :can-reference="mode === 'image'"
       :locale
       :starter
       :member-workspace="memberWorkspace"
@@ -115,6 +142,7 @@ function generateOn(slug: string) {
       @again="generate"
       @retry="studio.retry"
       @reference="useAsReference"
+      @animate="animateTake"
       @switch-model="generateOn"
       @edit-scene="focusScene"
     />
@@ -131,6 +159,8 @@ function generateOn(slug: string) {
         <CinematicPicker
           v-if="popover"
           :key="popover"
+          v-model:colors="colors"
+          v-model:main-color="mainColor"
           :groups="pickerGroups(popover)"
           :direction
           :title="popoverTitle(popover, locale)"
@@ -138,6 +168,20 @@ function generateOn(slug: string) {
           :class="popoverClass"
           @choose="choose"
           @close="closePopover"
+        />
+        <p
+          v-if="takeError"
+          role="status"
+          class="mb-2 text-xs text-primary-comfy-canvas"
+        >
+          {{ t('cinematic.references.unreadable') }}
+        </p>
+        <CinematicModeSwitch
+          v-if="hasVideo"
+          v-model="mode"
+          :disabled="studio.rendering.value"
+          :locale
+          class="mb-3 w-fit"
         />
         <CinematicComposer
           v-model:scene="scene"
@@ -147,8 +191,18 @@ function generateOn(slug: string) {
           v-model:resolution="resolution"
           v-model:enhance="enhance"
           v-model:cast="cast"
-          v-model:palette="palette"
-          :models
+          v-model:first-frame="firstFrame"
+          v-model:last-frame="lastFrame"
+          v-model:source-video="sourceVideo"
+          v-model:duration="duration"
+          v-model:video-resolution="videoResolution"
+          v-model:audio="audio"
+          :models="modeModels"
+          :aspects
+          :slots="referenceSlots(model, !!firstFrame)"
+          :colors
+          :blocked
+          :video
           :direction
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"
