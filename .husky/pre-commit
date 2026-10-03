@@ -1,6 +1,65 @@
 #!/usr/bin/env bash
 set -e
 
-pnpm exec lint-staged
+merge_head=$(git rev-parse -q --verify MERGE_HEAD || true)
+if [ -n "$merge_head" ]; then
+  # A merge stages every upstream path absent from the stale first parent, so
+  # the default staged diff would lint all of upstream. Lint what this commit
+  # contributes on top of the branch being merged in instead: the branch's own
+  # changes plus every conflict resolution, and nothing upstream already has.
+  # "$merge_base..HEAD" looks equivalent and is not - it omits a resolution in
+  # a file the local branch never touched, so the hook would commit that
+  # resolution without formatting, linting or typechecking it.
+  lint_target=$(git diff --diff-filter=ACMR --name-only --cached "$merge_head")
+
+  # --diff also disables lint-staged's stash, which must never rewrite a live
+  # merge index after a failed hook. The stash is also what hides unstaged
+  # edits, so without it a --fix task reads the worktree copy of a file and
+  # lint-staged stages that result. Refuse rather than commit unstaged work.
+  unstaged=$(git diff --name-only | while IFS= read -r file; do
+    if printf '%s\n' "$lint_target" | grep -qxF -- "$file"; then
+      printf '%s\n' "$file"
+    fi
+  done)
+  if [ -n "$unstaged" ]; then
+    printf 'pre-commit: unstaged changes in files this merge commits:\n' >&2
+    printf '%s\n' "$unstaged" >&2
+    printf 'Stage or stash them first, or the commit would include them.\n' >&2
+    exit 1
+  fi
+
+  # With no stash there is also no revert, and lint-staged stages its tasks'
+  # output even when a later task fails. So a --write or --fix task that ran
+  # before a failing typecheck would leave its rewrite in the merge index of a
+  # commit git then rejects. Copy the index file aside and put it back by hand:
+  # restoring the index leaves MERGE_HEAD and the merge's conflict state alone,
+  # which is exactly what a stash pop does not. A copy and not a
+  # write-tree/read-tree pair, because a tree carries only the index's entries -
+  # it drops the resolve-undo data that records each conflict's three stages, so
+  # a developer's `git checkout -m` to redo a resolution would afterwards exit 0
+  # and silently do nothing. The refusal above is what makes the worktree half
+  # lossless - every lint target is already identical in the index and the
+  # worktree, so checking them out can only undo a task's write.
+  index_file=${GIT_INDEX_FILE:-$(git rev-parse --git-path index)}
+  pre_hook_index=$(mktemp "${TMPDIR:-/tmp}/pre-commit-index.XXXXXX")
+  trap 'rm -f "$pre_hook_index"' EXIT
+  cp -p "$index_file" "$pre_hook_index"
+
+  # --diff="..." and not --diff "...": the value starts with a dash, and the
+  # option takes an optional argument, so the space form is read as a bare
+  # --diff followed by an unknown --cached option.
+  lint_status=0
+  pnpm exec lint-staged --diff="--cached $merge_head" || lint_status=$?
+  if [ "$lint_status" -ne 0 ]; then
+    cp -p "$pre_hook_index" "$index_file"
+    if [ -n "$lint_target" ]; then
+      printf '%s\n' "$lint_target" | git checkout-index -f --stdin
+    fi
+    printf 'pre-commit: restored the merge index and worktree; merge kept.\n' >&2
+    exit "$lint_status"
+  fi
+else
+  pnpm exec lint-staged
+fi
 pnpm exec tsx scripts/check-unused-i18n-keys.ts
 pnpm exec tsx scripts/check-frozen-dirs.ts

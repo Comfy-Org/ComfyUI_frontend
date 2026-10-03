@@ -18,6 +18,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { Load3DHelper } from '@e2e/tests/load3d/Load3DHelper'
 
@@ -277,7 +278,7 @@ class Load3dAgentHarness {
   private async mockAgentApi(): Promise<void> {
     const { page } = this
     await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+      route.fulfill(jsonRoute(emptyAgentThreadPage()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) =>
       route.fulfill(jsonRoute([]))
