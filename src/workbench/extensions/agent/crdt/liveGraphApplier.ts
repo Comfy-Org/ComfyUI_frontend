@@ -956,22 +956,21 @@ function isLinkPresent(
 }
 
 /**
- * Ordinary node widget values by document name; a positional list is read in
- * serializable-widget order.
- *
- * Document order is kept. An alias addresses a position, and a widget setter
- * can mount widgets mid-frame (a dynamic combo mounts its sub-widgets from its
- * own setter), so an alias replayed before its selector would resolve against
- * a shorter list — but the host writes a node's keys in ascending position
- * order and a `Y.Map` keeps each key's first-insertion position even across a
- * delete and re-set, so a selector's key always precedes the aliases past it.
+ * Ordinary node widget values by document name, overflow aliases last in
+ * position order so a setter that mounts widgets runs before the aliases
+ * that address them; a positional list is read in serializable-widget order.
  */
 function ordinaryWidgetEntries(
   node: LGraphNode,
   widgets: NonNullable<DocNode['widgets']>
 ): [string, unknown][] {
-  if (!Array.isArray(widgets)) return Object.entries(widgets)
-  return serializableWidgets(node).map((widget, index): [string, unknown] => [
+  if (!Array.isArray(widgets)) {
+    return Object.entries(widgets).sort(
+      ([a], [b]) =>
+        (overflowWidgetIndex(a) ?? -1) - (overflowWidgetIndex(b) ?? -1)
+    )
+  }
+  return serializableWidgets(node).map((widget, index) => [
     widget.name,
     widgets[index]
   ])

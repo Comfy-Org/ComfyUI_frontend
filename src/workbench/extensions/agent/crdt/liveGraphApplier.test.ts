@@ -469,6 +469,44 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('applies aliases after selectors in a replacement widget map', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestGrowingWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['creative']
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => {
+      const node = nodesMap(doc).get('1')
+      if (!(node instanceof Y.Map)) throw new Error('node storage')
+      node.set(
+        'widgets',
+        new Y.Map([
+          ['_extra_1', 90],
+          ['mode', 'faithful']
+        ])
+      )
+    })
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'faithful' },
+      { name: 'mode.detail', value: 90 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('holds an alias frame against a pending local write to its widget', () => {
     const asked: [string, string][] = []
     const { graph, doc, applyCollected, applyEdit } = setup(
