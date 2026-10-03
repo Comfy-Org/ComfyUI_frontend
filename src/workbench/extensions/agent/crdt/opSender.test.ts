@@ -283,6 +283,27 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('mints past every stamp in a multi-operation admission', () => {
+    sender.admit([addNode(1), addNode(2), addNode(3)])
+    sender.admit([addNode(4)])
+    sender.flush()
+
+    expect(
+      sender.pendingOps().flatMap(({ ops }) => ops.map((op) => op.base_version))
+    ).toEqual([41, 42, 43, 44])
+  })
+
+  it('mints from the observed sequence once the document advances past this actor', () => {
+    sender.admit([addNode(1)])
+    observedSequence = 90
+    sender.admit([addNode(2)])
+    sender.flush()
+
+    expect(
+      sender.pendingOps().flatMap(({ ops }) => ops.map((op) => op.base_version))
+    ).toEqual([41, 90])
+  })
+
   it('serializes batches: the next sends only after the result settles the first', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
