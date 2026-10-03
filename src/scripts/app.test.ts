@@ -888,6 +888,45 @@ describe('ComfyApp', () => {
       expect(runMissingModelPipeline).toHaveBeenCalledOnce()
     })
 
+    it('does not configure the graph when superseded between its two pre-commit gates', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const configure = vi.spyOn(graph, 'configure')
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      // The gates at `beforeLoadGraph` and at `configure` are not adjacent:
+      // `validateWorkflow`, this hook and `nodeReplacementStore.load()` all
+      // await between them, so a load that owned the graph at the first gate
+      // can lose it before reaching the second.
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenReturnOnce(olderLoadBlocked)
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+      )
+      await app.loadGraphData(createWorkflowGraphData(), false)
+      configure.mockClear()
+      releaseOlderLoad()
+      await expect(olderLoad).resolves.toBeUndefined()
+
+      // Configuring here would overwrite the graph the newer load committed
+      // with this load's older workflow.
+      expect(configure).not.toHaveBeenCalled()
+    })
+
     it('lets an older valid load commit when its newer replacement fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
