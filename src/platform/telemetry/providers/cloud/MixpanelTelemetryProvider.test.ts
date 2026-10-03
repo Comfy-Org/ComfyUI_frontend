@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+
 const mockMixpanel = vi.hoisted(() => ({
   init: vi.fn(),
   track: vi.fn(),
@@ -8,28 +10,18 @@ const mockMixpanel = vi.hoisted(() => ({
   people: { set: vi.fn() }
 }))
 
-vi.mock('mixpanel-browser', () => ({
+vi.mock<unknown>(import('mixpanel-browser'), () => ({
   default: mockMixpanel
 }))
 
-const mockOnUserResolved = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ onUserResolved: mockOnUserResolved })
-}))
-
-const topupMocks = vi.hoisted(() => ({
-  startTopupTracking: vi.fn(),
-  clearTopupTracking: vi.fn(),
-  checkForCompletedTopup: vi.fn().mockReturnValue(true)
-}))
-vi.mock('@/platform/telemetry/topupTracker', () => topupMocks)
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
+vi.mock(import('@/platform/telemetry/utils/surveyNormalization'), () => ({
   normalizeSurveyResponses: mockNormalizeSurveyResponses
 }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: { value: null }
 }))
 
@@ -58,13 +50,8 @@ const waitForMixpanelInit = () =>
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
 
-beforeEach(() => {
-  localStorage.clear()
-})
-
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     delete (window as unknown as ConfigWindow).__CONFIG__
   })
 
@@ -88,7 +75,6 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
 
 describe('MixpanelTelemetryProvider — with configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -269,10 +255,8 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
 
-    expect(mockOnUserResolved).toHaveBeenCalled()
-    const callback = mockOnUserResolved.mock.calls[0]?.[0] as (user: {
-      id?: string
-    }) => void
+    expect(useCurrentUser().onUserResolved).toHaveBeenCalled()
+    const callback = vi.mocked(useCurrentUser().onUserResolved).mock.calls[0][0]
     callback({ id: 'user-42' })
 
     expect(mockMixpanel.identify).toHaveBeenCalledWith('user-42')
@@ -281,7 +265,6 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
 describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -451,7 +434,8 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       trigger_source: 'button',
       view_mode: 'graph',
       is_app_mode: false,
-      dock_state: 'floating'
+      dock_state: 'floating',
+      agent_panel_open: false
     }
 
     provider.trackRunButton(properties)
@@ -532,25 +516,5 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
         is_app_mode: true
       }
     )
-  })
-})
-
-describe('MixpanelTelemetryProvider — topup delegation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    delete (window as unknown as ConfigWindow).__CONFIG__
-  })
-
-  it('forwards topup lifecycle calls to the topupTracker utility', () => {
-    const provider = new MixpanelTelemetryProvider()
-
-    provider.startTopupTracking()
-    provider.clearTopupTracking()
-    const result = provider.checkForCompletedTopup([])
-
-    expect(topupMocks.startTopupTracking).toHaveBeenCalled()
-    expect(topupMocks.clearTopupTracking).toHaveBeenCalled()
-    expect(topupMocks.checkForCompletedTopup).toHaveBeenCalledWith([])
-    expect(result).toBe(true)
   })
 })

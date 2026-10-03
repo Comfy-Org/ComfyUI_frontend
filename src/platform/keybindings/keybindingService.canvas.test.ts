@@ -1,22 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => [])
-  }))
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: vi.fn(() => ({
-    dialogStack: []
-  }))
-}))
 
 function createTestKeyboardEvent(
   key: string,
@@ -26,6 +16,7 @@ function createTestKeyboardEvent(
     altKey?: boolean
     metaKey?: boolean
     shiftKey?: boolean
+    repeat?: boolean
   } = {}
 ): KeyboardEvent {
   const {
@@ -33,7 +24,8 @@ function createTestKeyboardEvent(
     ctrlKey = false,
     altKey = false,
     metaKey = false,
-    shiftKey = false
+    shiftKey = false,
+    repeat = false
   } = options
 
   const event = new KeyboardEvent('keydown', {
@@ -42,6 +34,7 @@ function createTestKeyboardEvent(
     altKey,
     metaKey,
     shiftKey,
+    repeat,
     bubbles: true,
     cancelable: true
   })
@@ -52,23 +45,21 @@ function createTestKeyboardEvent(
   return event
 }
 
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => [])
+  useDialogStore().dialogStack = []
+})
+
 describe('keybindingService - Canvas Keybindings', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
   let canvasContainer: HTMLDivElement
   let canvasChild: HTMLCanvasElement
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const commandStore = useCommandStore()
     commandStore.execute = vi.fn()
 
-    vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: []
-    } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-      typeof useDialogStore
-    >)
+    Object.assign(useDialogStore(), { dialogStack: [] })
 
     canvasContainer = document.createElement('div')
     canvasContainer.id = 'graph-canvas-container'
@@ -76,6 +67,7 @@ describe('keybindingService - Canvas Keybindings', () => {
     canvasContainer.appendChild(canvasChild)
     document.body.appendChild(canvasContainer)
 
+    registerCoreKeybindingCommands()
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
@@ -217,5 +209,83 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
     outsideDiv.remove()
+  })
+
+  describe('keybinding whose command is no longer registered', () => {
+    beforeEach(() => {
+      useKeybindingStore().addUserKeybinding(
+        new KeybindingImpl({
+          commandId: 'Test.RemovedExtensionCommand',
+          combo: { key: 'F9' },
+          targetElementId: 'graph-canvas-container'
+        })
+      )
+    })
+
+    it('is ignored by keybindHandler and leaves the key unconsumed', async () => {
+      const event = createTestKeyboardEvent('F9', { target: canvasChild })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+    })
+
+    it('is ignored by executeCanvasKeybinding so litegraph can handle the key', () => {
+      const event = createTestKeyboardEvent('F9', { target: canvasChild })
+
+      expect(keybindingService.executeCanvasKeybinding(event)).toBe(false)
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('executeCanvasKeybinding', () => {
+    beforeEach(() => {
+      useCommandStore().registerCommand({
+        id: 'Test.CanvasCommand',
+        function: () => {}
+      })
+      useKeybindingStore().addUserKeybinding(
+        new KeybindingImpl({
+          commandId: 'Test.CanvasCommand',
+          combo: { key: 'F9' },
+          targetElementId: 'graph-canvas-container'
+        })
+      )
+    })
+
+    it('executes a canvas-targeted command and consumes the key', () => {
+      const event = createTestKeyboardEvent('F9', { target: canvasChild })
+
+      expect(keybindingService.executeCanvasKeybinding(event)).toBe(true)
+      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+        'Test.CanvasCommand'
+      )
+      expect(event.preventDefault).toHaveBeenCalled()
+    })
+
+    it('ignores key repeats', () => {
+      const event = createTestKeyboardEvent('F9', {
+        target: canvasChild,
+        repeat: true
+      })
+
+      expect(keybindingService.executeCanvasKeybinding(event)).toBe(false)
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    })
+
+    it('leaves non-canvas keybindings to the window handler', () => {
+      useKeybindingStore().addUserKeybinding(
+        new KeybindingImpl({
+          commandId: 'Test.CanvasCommand',
+          combo: { key: 'F10' }
+        })
+      )
+      const event = createTestKeyboardEvent('F10', { target: canvasChild })
+
+      expect(keybindingService.executeCanvasKeybinding(event)).toBe(false)
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    })
   })
 })

@@ -3,19 +3,22 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCommandStore } from '@/stores/commandStore'
+import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 
 import type { MenuOption } from './useMoreOptionsMenu'
+
+type ImageMenuAvailability = Record<CoreMediaMenuActionKind, boolean>
+
+const DEFAULT_IMAGE_MENU_AVAILABILITY: ImageMenuAvailability = {
+  input: true,
+  preview: true
+}
 
 function canPasteImage(node?: LGraphNode): boolean {
   return typeof node?.pasteFiles === 'function'
 }
 
 async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
-  if (!navigator.clipboard?.read) {
-    console.warn('Clipboard API not available')
-    return
-  }
-
   try {
     const clipboardItems = await navigator.clipboard.read()
     for (const item of clipboardItems) {
@@ -48,8 +51,9 @@ export function useImageMenuOptions() {
   }
 
   const openImage = (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
+    const images = node.imgs
+    if (!images?.length) return
+    const img = images.at(node.imageIndex ?? 0)
     if (!img) return
     const url = new URL(img.src)
     url.searchParams.delete('preview')
@@ -57,8 +61,9 @@ export function useImageMenuOptions() {
   }
 
   const copyImage = async (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
+    const images = node.imgs
+    if (!images?.length) return
+    const img = images.at(node.imageIndex ?? 0)
     if (!img) return
 
     const canvas = document.createElement('canvas')
@@ -79,12 +84,6 @@ export function useImageMenuOptions() {
         return
       }
 
-      // Check if clipboard API is available
-      if (!navigator.clipboard?.write) {
-        console.warn('Clipboard API not available')
-        return
-      }
-
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': blob })
       ])
@@ -94,8 +93,9 @@ export function useImageMenuOptions() {
   }
 
   const saveImage = (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
+    const images = node.imgs
+    if (!images?.length) return
+    const img = images.at(node.imageIndex ?? 0)
     if (!img) return
 
     try {
@@ -107,14 +107,21 @@ export function useImageMenuOptions() {
     }
   }
 
-  const getImageMenuOptions = (node: LGraphNode): MenuOption[] => {
-    const hasImages = !!node?.imgs?.length
+  const getImageMenuOptions = (
+    node: LGraphNode,
+    availability: ImageMenuAvailability = DEFAULT_IMAGE_MENU_AVAILABILITY
+  ): MenuOption[] => {
+    const hasImages = !!node.imgs?.length
     const canPaste = canPasteImage(node)
-    if (!hasImages && !canPaste) return []
+    if (
+      (!hasImages || !availability.preview) &&
+      (!canPaste || !availability.input)
+    )
+      return []
 
     const options: MenuOption[] = []
 
-    if (hasImages) {
+    if (hasImages && availability.preview) {
       options.push(
         {
           label: t('contextMenu.Open Image'),
@@ -134,7 +141,7 @@ export function useImageMenuOptions() {
       )
     }
 
-    if (canPaste) {
+    if (canPaste && availability.input) {
       options.push({
         label: t('contextMenu.Paste Image'),
         icon: 'icon-[lucide--clipboard-paste]',
@@ -142,7 +149,7 @@ export function useImageMenuOptions() {
       })
     }
 
-    if (hasImages) {
+    if (hasImages && availability.preview) {
       options.push({
         label: t('contextMenu.Save Image'),
         icon: 'icon-[lucide--download]',

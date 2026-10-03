@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import {
+  transformInputSpecV1ToV2,
+  transformInputSpecV2ToV1,
+  transformNodeDefV1ToV2
+} from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -199,11 +203,10 @@ describe('NodeDef Migration', () => {
     expect(result.inputs['customInput'].default).toBe('custom value')
   })
 
-  it('should not transform hidden fields', () => {
+  it('should map CHART option type to chartType', () => {
     const plainObject = {
-      hidden: {
-        someHiddenValue: 42,
-        anotherHiddenValue: { nested: 'object' }
+      optional: {
+        chartInput: ['CHART', { type: 'bar', data: { labels: [] } }]
       }
     } as ComfyNodeDefV1['input']
 
@@ -221,8 +224,69 @@ describe('NodeDef Migration', () => {
     }
 
     const result = transformNodeDefV1ToV2(nodeDef)
+    const chartInput = result.inputs['chartInput']
+    expect(chartInput.type).toBe('CHART')
+    expect(chartInput).toMatchObject({ chartType: 'bar', data: { labels: [] } })
+  })
 
-    // @ts-expect-error fixme ts strict error
+  it('should default a dynamic combo with no supplied options to an empty options array', () => {
+    // Synthetic subgraph-blueprint nodedefs (subgraphStore.ts) promote a
+    // boundary input's type into a bare [type, undefined] tuple.
+    const result = transformInputSpecV1ToV2(
+      ['COMFY_DYNAMICCOMBO_V3', undefined],
+      { name: 'model' }
+    )
+
+    expect(result.type).toBe('COMFY_DYNAMICCOMBO_V3')
+    expect(result.options).toEqual([])
+  })
+
+  it('should transform an input spec without options', () => {
+    const result = transformInputSpecV1ToV2(['PREVIEW_3D'], { name: 'image' })
+
+    expect(result).toEqual({
+      type: 'PREVIEW_3D',
+      name: 'image',
+      isOptional: false
+    })
+  })
+
+  it('should preserve chartType across a V2 to V1 round trip', () => {
+    const inputSpec = transformInputSpecV1ToV2(['CHART', { type: 'bar' }], {
+      name: 'chartInput'
+    })
+
+    const result = transformInputSpecV1ToV2(
+      transformInputSpecV2ToV1(inputSpec),
+      { name: 'chartInput' }
+    )
+
+    expect(result.chartType).toBe('bar')
+  })
+
+  it('should not transform hidden fields', () => {
+    const plainObject: NonNullable<ComfyNodeDefV1['input']> = {
+      hidden: {
+        someHiddenValue: 42,
+        anotherHiddenValue: { nested: 'object' }
+      }
+    }
+
+    const nodeDef: ComfyNodeDefV1 = {
+      name: 'TestNode',
+      display_name: 'Test Node',
+      category: 'Testing',
+      python_module: 'test_module',
+      description: 'A test node',
+      input: plainObject,
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false
+    }
+
+    const result = transformNodeDefV1ToV2(nodeDef)
+
     expect(result.hidden).toEqual(plainObject.hidden)
     expect(result.hidden?.someHiddenValue).toBe(42)
     expect(result.hidden?.anotherHiddenValue).toEqual({ nested: 'object' })

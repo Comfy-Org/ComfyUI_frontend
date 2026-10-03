@@ -1,7 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { useNodeDragAndDrop } from './useNodeDragAndDrop'
 
 function createNode(overrides: Record<string, unknown> = {}): LGraphNode {
@@ -19,25 +20,30 @@ function createDragEvent(options: {
   files?: File[]
   types?: string[]
   uri?: string
+  assetInfo?: string
 }): DragEvent {
-  const { items = [], files = [], types = [], uri = '' } = options
+  const {
+    items = [],
+    files = [],
+    types = [],
+    uri = '',
+    assetInfo = ''
+  } = options
+  const data: Record<string, string> = {
+    'text/uri-list': uri,
+    [MIME_ASSET_INFO]: assetInfo
+  }
   return fromAny<DragEvent, unknown>({
     dataTransfer: {
       items: fromAny<DataTransferItemList, unknown>(items),
       files: fromAny<FileList, unknown>(files),
       types,
-      getData: vi.fn((format: string) =>
-        format === 'text/uri-list' ? uri : ''
-      )
+      getData: vi.fn((format: string) => data[format] ?? '')
     }
   })
 }
 
 describe('useNodeDragAndDrop', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('onDragOver detects file items by default', () => {
     const node = createNode()
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
@@ -140,6 +146,32 @@ describe('useNodeDragAndDrop', () => {
     expect(onDrop).toHaveBeenCalledTimes(1)
     expect(onDrop.mock.calls[0][0][0]).toBeInstanceOf(File)
     expect(onDrop.mock.calls[0][0][0].name).toBe('uri.png')
+  })
+
+  it('onDragDrop names a fetched asset-card file after its asset-info filename', async () => {
+    const onDrop = vi.fn().mockResolvedValue([])
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      fromAny<Response, unknown>({
+        ok: true,
+        blob: vi
+          .fn()
+          .mockResolvedValue(new Blob(['uri'], { type: 'audio/wav' }))
+      })
+    )
+
+    const node = createNode()
+    useNodeDragAndDrop(node, { onDrop })
+
+    const result = await node.onDragDrop?.(
+      createDragEvent({
+        uri: `${location.origin}/api/assets/asset-1/content`,
+        types: ['text/uri-list', MIME_ASSET_INFO],
+        assetInfo: JSON.stringify({ filename: 'clip.wav' })
+      })
+    )
+
+    expect(result).toBe(true)
+    expect(onDrop.mock.calls[0][0][0].name).toBe('clip.wav')
   })
 
   it('onDragDrop returns false for cross-origin uri drops', async () => {

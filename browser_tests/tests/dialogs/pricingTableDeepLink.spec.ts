@@ -6,7 +6,6 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   ErrorResponse,
-  Plan,
   PreviewSubscribeResponse,
   SubscribeResponse,
   TeamCreditStops
@@ -23,6 +22,8 @@ import {
   cloudAppFixture as test,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -41,50 +42,41 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const SELF_EMAIL = 'e2e@test.comfy.org'
 
-// consolidated_billing_enabled routes personal workspaces to the unified
-// pricing table asserted here; without it they fall back to the legacy table.
 const BOOT_FEATURES = {
-  team_workspaces_enabled: true,
-  consolidated_billing_enabled: true,
   billing_control_enabled: true
 } satisfies RemoteConfig
-// Disable the experimental Asset API: with it on (cloud default) the unmocked
-// asset endpoints 403 and workflow restore throws uncaught, aborting the
-// GraphCanvas onMounted chain before the deep-link loader.
 const BOOT_SETTINGS = {
-  'Comfy.Assets.UseAssetAPI': false,
   'Comfy.TutorialCompleted': true
 }
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 5,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400,
+  maxSeats: 5
+})
 
-const STANDARD_ANNUAL_PLAN = {
+const STANDARD_ANNUAL_PLAN = createPlan({
   slug: 'standard-annual',
   tier: 'STANDARD',
   duration: 'ANNUAL',
-  price_cents: 19_200,
-  credits_cents: 4_200,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 19_200,
-    total_credits_cents: 4_200
-  }
-} satisfies Plan
+  priceCents: 19_200,
+  monthlyCredits: 4_200
+})
+
+const PRO_ANNUAL_PLAN = createPlan({
+  slug: 'pro-annual',
+  tier: 'PRO',
+  duration: 'ANNUAL',
+  priceCents: 96_000,
+  monthlyCredits: 21_100
+})
+
+const PERSONAL_ANNUAL_PLANS = {
+  plans: [STANDARD_ANNUAL_PLAN, CREATOR_ANNUAL_PLAN, PRO_ANNUAL_PLAN]
+} satisfies BillingPlansResponse
 
 const ACTIVE_TEAM_STATUS = {
   is_active: true,
@@ -99,7 +91,10 @@ const ACTIVE_TEAM_STATUS = {
     id: 'team_700',
     credits_monthly: 147_700,
     stop_usd: 700
-  }
+  },
+  scheduled_change: null,
+  max_seats: 5,
+  occupied_seats: 1
 } satisfies BillingStatusResponse
 
 const ACTIVE_STANDARD_STATUS = {
@@ -111,7 +106,10 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
-  team_credit_stop: null
+  team_credit_stop: null,
+  scheduled_change: null,
+  max_seats: 1,
+  occupied_seats: 1
 } satisfies BillingStatusResponse
 
 const ACTIVE_CREATOR_STATUS = {
@@ -192,6 +190,48 @@ const TEAM_SUBSCRIBED_RESPONSE = {
   effective_at: '2026-07-21T00:00:00Z'
 } satisfies SubscribeResponse
 
+const TEAM_ANNUAL_PLAN = createPlan({
+  slug: 'team_per_credit_annual',
+  tier: 'TEAM',
+  duration: 'ANNUAL',
+  priceCents: 756_000,
+  monthlyCredits: 147_700,
+  maxSeats: 100
+})
+
+const TEAM_MONTHLY_PLAN = createPlan({
+  slug: 'team_per_credit_monthly',
+  tier: 'TEAM',
+  duration: 'MONTHLY',
+  priceCents: 39_000,
+  monthlyCredits: 84_400,
+  maxSeats: 100
+})
+
+const NEW_TEAM_ANNUAL_SUBSCRIPTION = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 756_000,
+  cost_next_period_cents: 756_000,
+  credits_today_cents: TEAM_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: TEAM_ANNUAL_PLAN.credits_cents,
+  new_plan: TEAM_ANNUAL_PLAN
+} satisfies PreviewSubscribeResponse
+
+const NEW_TEAM_MONTHLY_SUBSCRIPTION = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 39_000,
+  cost_next_period_cents: 39_000,
+  credits_today_cents: TEAM_MONTHLY_PLAN.credits_cents,
+  credits_next_period_cents: TEAM_MONTHLY_PLAN.credits_cents,
+  new_plan: TEAM_MONTHLY_PLAN
+} satisfies PreviewSubscribeResponse
+
 const NEW_CREATOR_SUBSCRIPTION = {
   allowed: true,
   transition_type: 'new_subscription',
@@ -199,8 +239,8 @@ const NEW_CREATOR_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -212,7 +252,7 @@ const SCHEDULED_CREATOR_DOWNGRADE = {
   cost_today_cents: 0,
   cost_next_period_cents: 33_600,
   credits_today_cents: 0,
-  credits_next_period_cents: 7_400,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: {
     ...CREATOR_ANNUAL_PLAN,
     seat_summary: CREATOR_ANNUAL_PLAN.seat_summary
@@ -232,8 +272,9 @@ const IMMEDIATE_CREATOR_UPGRADE = {
   is_immediate: true,
   cost_today_cents: 14_400,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 3_200,
-  credits_next_period_cents: 7_400,
+  credits_today_cents:
+    CREATOR_ANNUAL_PLAN.credits_cents - STANDARD_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   current_plan: {
     slug: STANDARD_ANNUAL_PLAN.slug,
     tier: STANDARD_ANNUAL_PLAN.tier,
@@ -264,6 +305,22 @@ const PAYMENT_METHOD_REQUIRED_RESPONSE = {
   status: 'needs_payment_method',
   payment_method_url: 'https://pay.test/method'
 } satisfies SubscribeResponse
+
+const RETRIED_SUBSCRIPTION_OPERATION_ID = 'retried-subscription'
+const RETRIED_SUBSCRIPTION_ACTION_URL =
+  'https://verify.example/retried-subscription'
+
+const RETRIED_SUBSCRIPTION_RESPONSE = {
+  billing_op_id: RETRIED_SUBSCRIPTION_OPERATION_ID,
+  status: 'needs_payment_method',
+  payment_method_url: 'https://pay.test/retried-subscription'
+} satisfies SubscribeResponse
+
+const RETRIED_SUBSCRIPTION_OPERATION = {
+  id: RETRIED_SUBSCRIPTION_OPERATION_ID,
+  status: 'pending',
+  started_at: '2026-07-30T00:00:00Z'
+} satisfies BillingOpStatusResponse
 
 const UNEXPECTED_OPERATION_RESPONSE = {
   id: PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id,
@@ -297,13 +354,20 @@ const TRANSIENT_STATUS_ERROR = {
 
 // The deep-link loader runs at the tail of GraphCanvas onMounted, so the boot
 // chain must not throw before it: a missing settings subpath, prompt exec_info,
-// or queue status each abort that chain.
+// queue status, or an unmocked asset endpoint each abort that chain.
 async function mockGraphBootExtras(page: Page) {
   // Boot only reads these; fall back on any write so an unexpected POST/PUT
   // surfaces instead of being masked by a blanket 200.
   await page.route('**/api/settings/**', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     return route.fulfill(jsonRoute({}))
+  })
+  // Cloud always has assets enabled, so the unmocked asset endpoints would 403
+  // and workflow restore would throw uncaught. One glob covers every shape boot
+  // asks for: `/api/assets`, `?query`, `/seed`, `/<id>`.
+  await page.route('**/api/assets**', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    return route.fulfill(jsonRoute({ assets: [], total: 0, has_more: false }))
   })
   await page.route('**/api/prompt', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
@@ -325,7 +389,10 @@ async function setupCloudApp(
     settings: BOOT_SETTINGS
   })
   await mockGraphBootExtras(page)
-  await mockBilling(page)
+  await mockBilling(page, {
+    workspaceId: ws.id,
+    billingCapabilities: createWorkspaceBillingCapabilities(ws)
+  })
   await mockWorkspace(page, ws, members)
   await bootCloud(page)
 }
@@ -504,6 +571,25 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&]pricing=/)
   })
 
+  test('shows the yearly credit allotment on the personal plan cards, not the catalog cents', async ({
+    page
+  }) => {
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(jsonRoute(PERSONAL_ANNUAL_PLANS))
+    )
+
+    await page.goto(`${APP_URL}/?pricing=1`)
+
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
+    for (const credits of ['50,400', '88,800', '253,200']) {
+      await expect(page.getByText(credits, { exact: true })).toBeVisible()
+    }
+    for (const catalogFigure of ['23,887', '42,086', '50,402', '88,801']) {
+      await expect(page.getByText(catalogFigure, { exact: true })).toBeHidden()
+    }
+  })
+
   test('opens on the Team tab for ?pricing=team', async ({ page }) => {
     await setupCloudApp(page, workspace('personal', 'owner'), [])
 
@@ -574,6 +660,80 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&](pricing|cycle)=/)
   })
 
+  test('restores pending checkout when retrying a timed-out operation', async ({
+    page
+  }) => {
+    const subscribeRequests: Request[] = []
+    const operationPollRequests: Request[] = []
+    await page.addInitScript(() => {
+      window.open = () => window
+    })
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+    await page.route('**/api/billing/status', (route) =>
+      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+    )
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(
+        jsonRoute({
+          plans: [CREATOR_ANNUAL_PLAN]
+        } satisfies BillingPlansResponse)
+      )
+    )
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_CREATOR_SUBSCRIPTION))
+    )
+    await page.route('**/api/billing/subscribe', (route) => {
+      subscribeRequests.push(route.request())
+      return route.fulfill(jsonRoute(RETRIED_SUBSCRIPTION_RESPONSE))
+    })
+    await page.route(
+      `**/api/billing/ops/${RETRIED_SUBSCRIPTION_OPERATION_ID}`,
+      (route) => {
+        operationPollRequests.push(route.request())
+        return route.fulfill(
+          jsonRoute({
+            ...RETRIED_SUBSCRIPTION_OPERATION,
+            ...(subscribeRequests.length > 1 && {
+              action_url: RETRIED_SUBSCRIPTION_ACTION_URL
+            })
+          } satisfies BillingOpStatusResponse)
+        )
+      }
+    )
+
+    await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
+
+    const subscribeButton = page.getByRole('button', {
+      name: 'Subscribe to Creator'
+    })
+    const backButton = page.getByRole('button', { name: 'Back', exact: true })
+    await cloudAppExpect(subscribeButton).toBeVisible()
+    await page.clock.install({ time: new Date('2026-07-30T00:00:00Z') })
+    await subscribeButton.click()
+    await expect.poll(() => subscribeRequests.length).toBe(1)
+    await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+    await expect(backButton).toBeDisabled()
+
+    await page.clock.fastForward(23 * 60 * 60_000 + 1)
+
+    await expect(backButton).toBeEnabled()
+    await expect(
+      page.getByText('Subscription verification timed out', { exact: true })
+    ).toBeVisible()
+    const pollCountAfterTimeout = operationPollRequests.length
+
+    await subscribeButton.click()
+
+    await expect.poll(() => subscribeRequests.length).toBe(2)
+    await expect(backButton).toBeDisabled()
+    await expect
+      .poll(() => operationPollRequests.length)
+      .toBeGreaterThan(pollCountAfterTimeout)
+    await expect(
+      page.getByRole('button', { name: 'Complete verification' })
+    ).toBeVisible()
+  })
+
   test('cleans orphaned pricing params without opening the table', async ({
     page
   }) => {
@@ -617,6 +777,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
     )
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_TEAM_ANNUAL_SUBSCRIPTION))
+    )
     await page.route('**/api/billing/subscribe', (route) => {
       subscribeRequests.push(route.request())
       return route.fulfill(jsonRoute(TEAM_SUBSCRIBED_RESPONSE))
@@ -634,7 +797,11 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       confirmationDialog.getByText('$630', { exact: true }).last()
     ).toBeVisible()
     await expect(
-      confirmationDialog.getByText('1,772,400', { exact: true })
+      // `.last()`: the yearly figure now also renders in the embedded
+      // PricingTableWorkspace behind the dialog (previously it showed the
+      // monthly amount), so scope to the confirm summary like the `$630`
+      // assertion above.
+      confirmationDialog.getByText('1,772,400', { exact: true }).last()
     ).toBeVisible()
     expect(subscribeRequests).toHaveLength(0)
     await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
@@ -663,6 +830,10 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     ])
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
+    )
+
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_TEAM_MONTHLY_SUBSCRIPTION))
     )
 
     await page.goto(`${APP_URL}/?pricing=team&stop=team_400&cycle=monthly`)
@@ -757,9 +928,9 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
       await expect(
         successView.getByText('Creator', { exact: true })
       ).toBeVisible()
-      await expect(successView.getByText('$28', { exact: true })).toBeVisible()
+      await expect(successView.getByText('$336', { exact: true })).toBeVisible()
       await expect(
-        successView.getByText('7,400 / month', { exact: true })
+        successView.getByText('88,800 / year', { exact: true })
       ).toBeVisible()
       await expect(
         successView.getByRole('button', { name: 'Close' })

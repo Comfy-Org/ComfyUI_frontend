@@ -5,8 +5,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ButtonVariants } from './button.variants'
-import { buttonVariants } from './button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
 
 interface Props extends PrimitiveProps {
   variant?: ButtonVariants['variant']
@@ -29,9 +29,13 @@ const {
     :as
     :as-child
     :disabled="disabled || loading"
+    :aria-busy="loading || undefined"
     :class="cn(buttonVariants({ variant, size }), customClass)"
   >
-    <i v-if="loading" class="pi pi-spin pi-spinner" />
-    <slot v-if="!loading" />
+    <i v-if="loading" class="pi pi-spin pi-spinner" aria-hidden="true" />
+    <template v-if="loading">
+      <span class="sr-only"><slot /></span>
+    </template>
+    <slot v-else />
   </Primitive>
 </template>

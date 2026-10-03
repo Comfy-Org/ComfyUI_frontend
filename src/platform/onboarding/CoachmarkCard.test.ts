@@ -1,10 +1,8 @@
-import { cleanup, render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
 import CoachmarkCard from './CoachmarkCard.vue'
-
-afterEach(cleanup)
 
 describe('CoachmarkCard', () => {
   it('renders the title, message and subtitle', () => {

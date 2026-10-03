@@ -7,15 +7,20 @@ import { TestIds } from '@e2e/fixtures/selectors'
 export class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
+  public readonly panelHeader: Locator
+  public readonly closeButton: Locator
 
   constructor(
     public readonly page: Page,
     public readonly tabId: string
   ) {
-    this.tabButton = page.locator(`.${tabId}-tab-button`)
-    this.selectedTabButton = page.locator(
-      `.${tabId}-tab-button.side-bar-button-selected`
+    this.tabButton = page.getByTestId(TestIds.sidebar.tabButton(tabId))
+    this.selectedTabButton = this.tabButton.and(
+      page.locator('.side-bar-button-selected')
     )
+    const panel = page.locator('.sidebar-content-container')
+    this.panelHeader = panel.locator('.comfy-vue-side-bar-header')
+    this.closeButton = panel.getByTestId(TestIds.sidebar.closeButton)
   }
 
   async open() {
@@ -25,9 +30,6 @@ export class SidebarTab {
     await this.tabButton.click()
   }
   async close() {
-    if (!this.tabButton.isVisible()) {
-      return
-    }
     await this.tabButton.click()
   }
 }
@@ -54,10 +56,6 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   override async close() {
-    if (!this.tabButton.isVisible()) {
-      return
-    }
-
     await this.tabButton.click()
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }
@@ -96,15 +94,23 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly essentialsTab: Locator
   public readonly sortButton: Locator
   public readonly nodePreview: Locator
+  public readonly nodePreviewInputs: Locator
+  public readonly nodePreviewBody: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
-    this.searchInput = page.getByPlaceholder('Search...')
     this.sidebarContent = page.locator('.sidebar-content-container')
+    this.searchInput = this.sidebarContent.getByPlaceholder('Search Nodes...')
     this.allTab = this.getTab('All nodes')
     this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
     this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
+    this.nodePreviewInputs = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewInputs
+    )
+    this.nodePreviewBody = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewBody
+    )
   }
 
   getTab(name: string) {
@@ -198,7 +204,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
     await this.page.waitForFunction(
       () =>
         !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy,
+          .isBusy,
       undefined,
       { timeout: 3000 }
     )
@@ -300,8 +306,11 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
   public readonly filterButton: Locator
+  public readonly filterSearchInput: Locator
 
-  // --- Filter menu checkboxes (cloud-only, shown inside filter popover) ---
+  // --- Filter menu (cloud-only) ---
+  public readonly mediaTypeFilterMenuItem: Locator
+  public readonly dateFilterMenuItem: Locator
   public readonly filterImageCheckbox: Locator
   public readonly filterVideoCheckbox: Locator
   public readonly filterAudioCheckbox: Locator
@@ -328,6 +337,9 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- List view items ---
   public readonly listViewItems: Locator
 
+  // --- Output stacks (a job's extra outputs) ---
+  public readonly stackToggles: Locator
+
   // --- Selection footer ---
   public readonly selectionFooter: Locator
   public readonly selectionCountButton: Locator
@@ -337,9 +349,6 @@ export class AssetsSidebarTab extends SidebarTab {
 
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
-
-  // --- Panel chrome ---
-  public readonly panelHeader: Locator
 
   // --- Loading ---
   public readonly skeletonLoaders: Locator
@@ -354,10 +363,21 @@ export class AssetsSidebarTab extends SidebarTab {
     this.searchInput = page.getByPlaceholder('Search Assets...')
     this.settingsButton = page.getByRole('button', { name: 'View settings' })
     this.filterButton = page.getByRole('button', { name: 'Filter by' })
-    this.filterImageCheckbox = page.getByRole('checkbox', { name: 'Image' })
-    this.filterVideoCheckbox = page.getByRole('checkbox', { name: 'Video' })
-    this.filterAudioCheckbox = page.getByRole('checkbox', { name: 'Audio' })
-    this.filter3DCheckbox = page.getByRole('checkbox', { name: '3D' })
+    this.filterSearchInput = page.getByRole('textbox', { name: 'Filter by' })
+    this.mediaTypeFilterMenuItem = page.getByRole('menuitem', {
+      name: /Media type/
+    })
+    this.dateFilterMenuItem = page.getByRole('menuitem', { name: 'Date' })
+    this.filterImageCheckbox = page.getByRole('menuitemcheckbox', {
+      name: 'Image'
+    })
+    this.filterVideoCheckbox = page.getByRole('menuitemcheckbox', {
+      name: 'Video'
+    })
+    this.filterAudioCheckbox = page.getByRole('menuitemcheckbox', {
+      name: 'Audio'
+    })
+    this.filter3DCheckbox = page.getByRole('menuitemcheckbox', { name: '3D' })
     this.listViewOption = page.getByText('List view')
     this.gridSmallOption = page.getByText('Grid (small)')
     this.gridLargeOption = page.getByText('Grid (large)')
@@ -377,6 +397,9 @@ export class AssetsSidebarTab extends SidebarTab {
     this.listViewItems = page.locator(
       '.sidebar-content-container [role="button"][tabindex="0"]'
     )
+    this.stackToggles = page
+      .locator('.sidebar-content-container')
+      .getByRole('button', { name: 'See more outputs' })
     this.selectionFooter = page.getByTestId('assets-selection-bar')
     this.selectionCountButton = page.getByText(/\d+ selected/)
     this.deselectAllButton = page.getByTestId('assets-deselect-selected')
@@ -385,7 +408,6 @@ export class AssetsSidebarTab extends SidebarTab {
     this.backToAssetsButton = page.getByRole('button', {
       name: 'Back to all assets'
     })
-    this.panelHeader = page.locator('.comfy-vue-side-bar-header')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )
@@ -396,8 +418,18 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   filterCheckbox(filter: MediaFilterKind | MediaFilterLabel) {
-    return this.page.getByRole('checkbox', {
+    return this.page.getByRole('menuitemcheckbox', {
       name: getMediaFilterLabel(filter)
+    })
+  }
+
+  dateFilterOption(label: string) {
+    return this.page.getByRole('menuitemradio', { name: label })
+  }
+
+  removeFilterButton(label: string) {
+    return this.page.getByRole('button', {
+      name: `Remove ${label} filter`
     })
   }
 
@@ -449,34 +481,90 @@ export class AssetsSidebarTab extends SidebarTab {
     await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true')
   }
 
+  /**
+   * Expand a job's output stack and wait for its extra outputs to render.
+   *
+   * The panel groups a job's outputs into one card and hides the rest behind
+   * this control, so a nested output is unreachable until it is expanded.
+   * Resolves the children through the same path the UI uses, so a spec must
+   * also route the job's assets endpoint.
+   */
+  async expandOutputStack(index = 0) {
+    const before = await this.listViewItems.count()
+    await this.stackToggles.nth(index).click()
+    await expect
+      .poll(async () => this.listViewItems.count())
+      .toBeGreaterThan(before)
+  }
+
+  /** A list row by its rendered filename, which is how a user identifies it. */
+  listRowByName(name: string): Locator {
+    return this.listViewItems.filter({ hasText: name })
+  }
+
   async openSettingsMenu() {
     await this.dismissToasts()
     await this.settingsButton.click()
-    // Wait for popover content to render
-    await this.listViewOption
-      .or(this.gridSmallOption)
-      .or(this.gridLargeOption)
-      .first()
-      .waitFor({ state: 'visible', timeout: 3000 })
+    await expect(
+      this.listViewOption
+        .or(this.gridSmallOption)
+        .or(this.gridLargeOption)
+        .first()
+    ).toBeVisible()
+  }
+
+  /**
+   * Dismiss the view-settings popover. Choosing a view mode leaves it open, and
+   * it overlays the asset rows, so anything that clicks a row must close it
+   * first or the click lands on the popover.
+   */
+  async closeSettingsMenu() {
+    if (!(await this.gridLargeOption.isVisible())) return
+    // Escape does not dismiss this popover; toggling its trigger does.
+    await this.settingsButton.click()
+    await expect(this.gridLargeOption).toBeHidden()
   }
 
   async openFilterMenu() {
     await this.dismissToasts()
     await this.filterButton.click()
-    await this.filterCheckbox('Image').waitFor({
-      state: 'visible',
-      timeout: 3000
-    })
+    await expect(this.mediaTypeFilterMenuItem).toBeVisible()
+  }
+
+  async closeFilterMenu() {
+    for (let depth = 0; depth < 2; depth++) {
+      if ((await this.filterButton.getAttribute('aria-expanded')) !== 'true') {
+        return
+      }
+      await this.page.keyboard.press('Escape')
+    }
+    await expect(this.filterButton).toHaveAttribute('aria-expanded', 'false')
+  }
+
+  async openMediaTypeFilterMenu() {
+    if (await this.filterCheckbox('Image').isVisible()) {
+      return
+    }
+    await this.mediaTypeFilterMenuItem.click()
+    await expect(this.filterCheckbox('Image')).toBeVisible()
   }
 
   async toggleMediaTypeFilter(
     filter: MediaFilterKind | MediaFilterLabel
   ): Promise<void> {
+    await this.openMediaTypeFilterMenu()
     const checkbox = this.filterCheckbox(filter)
     const before = await checkbox.getAttribute('aria-checked')
     await checkbox.click()
     const expected = before === 'true' ? 'false' : 'true'
     await expect(checkbox).toHaveAttribute('aria-checked', expected)
+  }
+
+  async selectDateFilter(label: string): Promise<void> {
+    if (!(await this.dateFilterOption(label).isVisible())) {
+      await this.dateFilterMenuItem.click()
+    }
+    await this.dateFilterOption(label).click()
   }
 
   async getAssetCardOrder(): Promise<string[]> {

@@ -1,0 +1,438 @@
+{
+  "recordedAt": {
+    "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
+    "pin": "9d9f4bedfc9f0321c19faf71855e228c93bd0dc9"
+  },
+  "schema": 3,
+  "corpus": {
+    "count": 85,
+    "nodeTypesSha256": "977dc06da1996bf022129a59abf55d0508c5d7224473b7aa3b73b5797325671b"
+  },
+  "nodes": {
+    "ApplyCLIPSeg+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BatchCount+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "CLIPTextEncodeSDXL+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "ConditioningCombineMultiple+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
+    },
+    "ConsoleDebug+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DebugTensorShape+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "DisplayAny": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "DrawText+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FluxAttentionSeeker+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FluxBlocksBuster+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FluxSamplerParams+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
+    },
+    "GetImageSize+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "GuidanceTimestepping+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageApplyLUT+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchMultiple+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchToList+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImageCASharpening+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageColorMatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageColorMatchAdobe+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageComposite+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageCompositeFromMaskBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageCrop+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageDesaturate+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "ImageEnhanceDifference+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageExpandBatch+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "ImageFlip+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "ImageFromBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageHistogramMatch+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "ImageListToBatch+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImagePosterize+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImagePreviewFromLatent+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "ImageRandomTransform+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageRemoveAlpha+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImageRemoveBackground+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageResize+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageSeamCarving+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageSmartSharpen+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageTile+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageToDevice+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "ImageUntile+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "InjectLatentNoise+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "KSamplerVariationsStochastic+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "KSamplerVariationsWithNoise+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LoadCLIPSegModels+": {
+      "connectFirst": "NO_INPUTS",
+      "connectLast": "NO_INPUTS",
+      "disconnect": "NO_INPUTS"
+    },
+    "LorasForFluxParams+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskBlur+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "MaskBoundingBox+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskExpandBatch+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "MaskFix+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFlip+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "MaskFromBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFromColor+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFromList+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFromRGBCMYBW+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFromSegmentation+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskPreview+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "MaskSmooth+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ModelCompile+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
+    },
+    "ModelSamplingSD3Advanced+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "NoiseFromImage+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PixelOEPixelize+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PlotParameters+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "RemBGSession+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
+    },
+    "RemoveLatentMask+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SamplerSelectHelper+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SchedulerSelectHelper+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SD3AttentionSeekerLG+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SD3AttentionSeekerT5+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SD3NegativeConditioning+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SDXLEmptyLatentSizePicker+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleComparison+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "SimpleCondition+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMath+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMathBoolean+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SimpleMathCondition+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMathDual+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMathFloat+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SimpleMathInt+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SimpleMathPercent+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SimpleMathSlider+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMathSliderLowRes+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TextEncodeForSamplerParams+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "TransitionMask+": {
+      "connectFirst": [],
+      "connectLast": "NO_PRODUCER",
+      "disconnect": []
+    },
+    "TransparentBGSession+": {
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": [],
+      "disconnect": []
+    }
+  }
+}

@@ -25,8 +25,8 @@ describe('isAutoReloadFrozen', () => {
   it.for([
     [null, null],
     ['awaiting_payment_method', 'active'],
-    ['pending_payment', 'scheduled'],
-    ['paid', 'scheduled']
+    ['pending_payment', 'active'],
+    ['paid', 'active']
   ] as const)(
     'keeps non-terminal billing status %s / subscription status %s interactive',
     ([billingStatus, subscriptionStatus]) => {

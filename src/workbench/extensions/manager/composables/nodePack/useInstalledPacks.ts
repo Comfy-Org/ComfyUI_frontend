@@ -63,7 +63,7 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
       if (id) {
         result.push({
           id,
-          version: pack.ver ?? ''
+          version: pack.ver
         })
       }
     }

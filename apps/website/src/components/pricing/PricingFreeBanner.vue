@@ -1,0 +1,43 @@
+<script setup lang="ts">
+import type { AnchorHTMLAttributes } from 'vue'
+
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
+import BrandButton from '../common/BrandButton.vue'
+
+const { locale = 'en' } = defineProps<{
+  titleKey: TranslationKey
+  subtitleKey: TranslationKey
+  cta: {
+    labelKey: TranslationKey
+    href: string
+    target?: AnchorHTMLAttributes['target']
+  }
+  locale?: Locale
+}>()
+const { t } = translationsFor(locale)
+</script>
+
+<template>
+  <div
+    class="mb-4 flex flex-col gap-4 rounded-3xl bg-primary-comfy-ink-light px-8 py-6 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div>
+      <p class="text-lg font-bold text-primary-comfy-canvas">
+        {{ t(titleKey) }}
+      </p>
+      <p class="mt-1 text-sm text-primary-comfy-canvas">
+        {{ t(subtitleKey) }}
+      </p>
+    </div>
+    <BrandButton
+      :href="cta.href"
+      :target="cta.target"
+      variant="outline"
+      size="xs"
+      class="shrink-0 self-start sm:self-auto"
+    >
+      {{ t(cta.labelKey) }}
+    </BrandButton>
+  </div>
+</template>

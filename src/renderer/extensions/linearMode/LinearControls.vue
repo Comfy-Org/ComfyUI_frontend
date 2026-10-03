@@ -14,6 +14,7 @@ import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isCloud } from '@/platform/distribution/types'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -23,7 +24,7 @@ import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErr
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
 import { useCommandStore } from '@/stores/commandStore'
-import { useQueueSettingsStore } from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -32,7 +33,10 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
-const { canRunWorkflows } = useBillingContext()
+const { canRunWorkflows, showsSubscribeToRunPrompt } = useBillingContext()
+const showsCloudSubscribePrompt = computed(
+  () => isCloud && showsSubscribeToRunPrompt.value
+)
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -179,7 +183,10 @@ function replayAppModeTour() {
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div v-coachmark="COACH_IDS.appRunButton">
-          <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
+          <SubscribeToRunButton
+            v-if="showsCloudSubscribePrompt"
+            class="mt-4 w-full"
+          />
           <div v-else class="mt-4 flex">
             <PartnerNodesList mobile />
             <Popover side="top" @open-auto-focus.prevent>
@@ -243,7 +250,10 @@ function replayAppModeTour() {
             :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
             class="h-7 min-w-40"
           />
-          <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
+          <SubscribeToRunButton
+            v-if="showsCloudSubscribePrompt"
+            class="mt-4 w-full"
+          />
           <Button
             v-else
             variant="primary"

@@ -4,14 +4,26 @@
  */
 
 export const TestIds = {
+  app: {
+    loadingOverlay: 'app-loading-overlay'
+  },
+  agent: {
+    conversationScroll: 'agent-conversation-scroll',
+    activityTrace: 'agent-activity-trace'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
+    topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
+    nodePreviewInputs: 'node-preview-inputs',
+    nodePreviewBody: 'node-preview-body',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
-    modeToggle: 'mode-toggle'
+    closeButton: 'sidebar-close-button',
+    modeToggle: 'mode-toggle',
+    tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
     folder: 'tree-folder',
@@ -65,6 +77,8 @@ export const TestIds = {
     missingModelReferenceCount: 'missing-model-reference-count',
     missingModelUnsupportedSection:
       'missing-model-import-not-supported-section',
+    missingModelGatedAccess: 'missing-model-gated-access',
+    missingModelGatedHint: 'missing-model-gated-hint',
     missingModelDownload: 'missing-model-download',
     missingModelActions: 'missing-model-actions',
     missingModelDownloadAll: 'missing-model-download-all',
@@ -104,9 +118,20 @@ export const TestIds = {
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
+    workflowTab: 'workflow-tab',
+    closeWorkflowButton: 'close-workflow-button',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
-    freeTierQuota: 'free-tier-quota'
+    actionBarCard: 'action-bar-card',
+    freeTierQuota: 'free-tier-quota',
+    queueInlineProgress: 'queue-inline-progress',
+    queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
+  },
+  partnerNodes: {
+    signInToRunButton: 'partner-sign-in-to-run-button',
+    runGateCaption: 'partner-run-gate-caption',
+    educationCard: 'partner-nodes-education-card',
+    educationCardDismiss: 'partner-nodes-education-dismiss'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -114,11 +139,16 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors',
-    selectionContextStrip: 'selection-context-strip'
+    tabIcon: 'panel-tab-icon',
+    selectionContextStrip: 'selection-context-strip',
+    errorsSummaryHero: 'errors-summary-hero',
+    errorsSummaryFilters: 'errors-summary-filters',
+    blockedLastRunIndicator: 'blocked-last-run-indicator'
   },
   assets: {
     browserModal: 'asset-browser-modal',
-    card: 'asset-card'
+    card: 'asset-card',
+    videoPreview: 'media-asset-video'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
@@ -162,10 +192,11 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    layoutFieldLabel: 'widget-layout-field-label',
+    formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
     increment: 'increment',
     valueControl: 'value-control',
-    domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
     selectDefaultSearchInput: 'widget-select-default-search-input',
     selectDefaultViewport: 'widget-select-default-viewport'
@@ -258,6 +289,7 @@ export const TestIds = {
   queue: {
     jobHistorySidebar: 'job-history-sidebar',
     progressOverlay: 'queue-progress-overlay',
+    progressNodeFill: 'queue-progress-node-fill',
     overlayToggle: 'queue-overlay-toggle',
     dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
@@ -286,6 +318,7 @@ export const TestIds = {
   },
   load3d: {
     categoryMenu: 'load3d-category-menu',
+    gizmoModeMenu: 'gizmo-mode-menu',
     recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {

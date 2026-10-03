@@ -5,9 +5,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { affiliateBrandAssets } from '../../data/affiliateBrandAssets'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const assets = affiliateBrandAssets.map((asset) =>
   asset.id === 'icon' ? { ...asset, preview: '/icons/comfyicon.svg' } : asset
@@ -15,12 +16,12 @@ const assets = affiliateBrandAssets.map((asset) =>
 </script>
 
 <template>
-  <section id="logos" class="max-w-9xl mx-auto px-6 py-10 lg:px-20 lg:py-12">
+  <section id="logos" class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-12">
     <SectionHeader align="start" max-width="xl">
-      {{ t('brand.logos.heading', locale) }}
+      {{ t('brand.logos.heading') }}
       <template #subtitle>
-        <p class="text-primary-warm-gray mt-4 max-w-2xl text-sm leading-[1.45]">
-          {{ t('brand.logos.subheading', locale) }}
+        <p class="mt-4 max-w-2xl text-sm/[1.45] text-primary-warm-gray">
+          {{ t('brand.logos.subheading') }}
         </p>
       </template>
     </SectionHeader>
@@ -34,7 +35,7 @@ const assets = affiliateBrandAssets.map((asset) =>
         <div class="flex flex-1 items-center justify-center p-8">
           <img
             :src="asset.preview"
-            :alt="asset.title[locale]"
+            :alt="asset.title[locale] || asset.title.en"
             :class="
               cn(
                 'object-contain',
@@ -50,7 +51,7 @@ const assets = affiliateBrandAssets.map((asset) =>
         <p
           class="pb-8 text-center text-[21px] font-medium tracking-[1.05px] text-primary-comfy-canvas"
         >
-          {{ asset.title[locale] }}
+          {{ asset.title[locale] || asset.title.en }}
         </p>
       </li>
     </ul>

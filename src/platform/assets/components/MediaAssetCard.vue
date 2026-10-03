@@ -4,7 +4,6 @@
     reaching the panel's empty-space deselection handler.
   -->
   <div
-    ref="cardContainerRef"
     :class="
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
@@ -24,7 +23,7 @@
     <!-- Top Area: Media Preview -->
     <div
       class="relative aspect-square overflow-hidden p-0"
-      @click.stop="fileKind !== 'video' && emit('select')"
+      @click.stop="handlePreviewClick"
       @dblclick.stop="fileKind === 'image' && handleZoomClick()"
     >
       <!-- Loading State -->
@@ -39,10 +38,11 @@
         v-else-if="asset && adaptedAsset"
         :asset="adaptedAsset"
         :context="{ type: assetType }"
+        :show-native-controls="
+          fileKind === 'video' ? showNativeVideoControls : undefined
+        "
         class="absolute inset-0"
         @download="handleDownload"
-        @video-playing-state-changed="isVideoPlaying = $event"
-        @video-controls-changed="showVideoControls = $event"
         @image-loaded="handleImageLoaded"
       />
 
@@ -82,8 +82,16 @@
 
       <!-- Action buttons overlay (top-right) -->
       <div
-        v-if="showActionsOverlay"
-        class="absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2"
+        v-if="asset && !loading && !isDeleting"
+        :class="
+          cn(
+            'absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2',
+            'pointer-events-none opacity-0 transition-opacity',
+            'group-hover:pointer-events-auto group-hover:opacity-100',
+            'group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100',
+            'touch:pointer-events-auto touch:opacity-100'
+          )
+        "
       >
         <IconGroup background-class="bg-white">
           <Button
@@ -156,13 +164,11 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -173,7 +179,8 @@ import {
 } from '@/utils/formatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
-import { getAssetUrl } from '../utils/assetUrlUtil'
+import { startAssetDrag } from '../utils/assetDragUtil'
+import { getAssetFileUrl, getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
@@ -181,7 +188,7 @@ import {
   resolveDisplayImageDimensions
 } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
+import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -201,12 +208,20 @@ function getTopComponent(kind: PreviewKind) {
   return mediaComponents.top[kind] || mediaComponents.top.other
 }
 
-const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
+const {
+  asset,
+  loading,
+  selected,
+  showOutputCount,
+  outputCount,
+  showNativeVideoControls = true
+} = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
+  showNativeVideoControls?: boolean
 }>()
 
 const assetsStore = useAssetsStore()
@@ -226,15 +241,8 @@ const emit = defineEmits<{
   'context-menu': [event: MouseEvent, asset: AssetItem]
 }>()
 
-const cardContainerRef = ref<HTMLElement>()
-
-const isVideoPlaying = ref(false)
-const showVideoControls = ref(false)
-
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
-
-const isHovered = useElementHover(cardContainerRef)
 
 const actions = useMediaAssetActions()
 
@@ -270,12 +278,17 @@ const adaptedAsset = computed(() => {
     src:
       fileKind.value === '3D'
         ? getAssetUrl(asset)
-        : asset.thumbnail_url || asset.preview_url || '',
+        : asset.thumbnail_url ||
+          asset.preview_url ||
+          (fileKind.value === 'video' || fileKind.value === 'audio'
+            ? getAssetFileUrl(asset, { disposition: 'inline' })
+            : ''),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,
+    updated_at: asset.updated_at,
     duration: asset.user_metadata?.duration
       ? Number(asset.user_metadata.duration)
       : undefined,
@@ -285,9 +298,7 @@ const adaptedAsset = computed(() => {
 
 provide(MediaAssetKey, {
   asset: toRef(() => adaptedAsset.value),
-  context: toRef(() => ({ type: assetType.value })),
-  isVideoPlaying,
-  showVideoControls
+  context: toRef(() => ({ type: assetType.value }))
 })
 
 const formattedDuration = computed(() => {
@@ -328,10 +339,11 @@ const metaInfo = computed(() => {
   return parts.join(' ')
 })
 
-const showActionsOverlay = computed(() => {
-  if (loading || !asset || isDeleting.value) return false
-  return isHovered.value || selected || isVideoPlaying.value
-})
+function handlePreviewClick(event: MouseEvent) {
+  const hasSelectionModifier = event.shiftKey || event.metaKey || event.ctrlKey
+  if (fileKind.value === 'video' && !hasSelectionModifier) return
+  emit('select')
+}
 
 const handleZoomClick = () => {
   if (asset && canInspect.value) {
@@ -358,31 +370,6 @@ function handleDownload() {
 }
 
 function dragStart(e: DragEvent) {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault()
-    return
-  }
-
-  if (!asset?.preview_url) return
-
-  const { dataTransfer } = e
-  if (!dataTransfer) return
-
-  const { filename, subfolder, type, display_name } =
-    getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
-  if (filename) {
-    const outputString = JSON.stringify({
-      filename,
-      subfolder,
-      type,
-      display_name
-    })
-    dataTransfer.items.add(outputString, MIME_ASSET_INFO)
-  }
-
-  const url = URL.parse(asset.preview_url, location.href)
-  if (!url) return
-
-  dataTransfer.items.add(url.toString(), 'text/uri-list')
+  startAssetDrag(e, asset)
 }
 </script>

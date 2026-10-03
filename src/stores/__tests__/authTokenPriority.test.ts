@@ -1,19 +1,14 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as vuefire from 'vuefire'
 
 import { useAuthStore } from '@/stores/authStore'
-import { createTestingPinia } from '@pinia/testing'
-
-const { mockFeatureFlags } = vi.hoisted(() => ({
-  mockFeatureFlags: {
-    teamWorkspacesEnabled: false,
-    unifiedCloudAuthEnabled: false
-  }
-}))
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
@@ -22,104 +17,20 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
   }
 }))
 
-const mockWorkspaceAuthHeader = vi.fn().mockReturnValue(null)
-const mockGetWorkspaceToken = vi.fn().mockReturnValue(undefined)
-const mockClearWorkspaceContext = vi.fn()
-const mockMintAtLogin = vi.fn().mockResolvedValue(false)
-let mockUnifiedToken: string | null = null
-const mockResetForIdentityChange = vi.fn()
-let mockActiveWorkspaceId: string | null = null
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({
-    getWorkspaceAuthHeader: mockWorkspaceAuthHeader,
-    getWorkspaceToken: mockGetWorkspaceToken,
-    getUnifiedToken: () => mockUnifiedToken ?? undefined,
-    clearWorkspaceContext: mockClearWorkspaceContext,
-    mintAtLogin: mockMintAtLogin,
-    get unifiedToken() {
-      return mockUnifiedToken
-    }
-  })
-}))
+vi.mock(import('firebase/auth'))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId
-    },
-    resetForIdentityChange: mockResetForIdentityChange
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: mockFeatureFlags
-  })
-}))
-
-vi.mock('vuefire', () => ({
-  useFirebaseAuth: vi.fn()
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key }),
-  createI18n: () => ({ global: { t: (key: string) => key } })
-}))
-
-vi.mock('firebase/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof firebaseAuth>()
-  return {
-    ...actual,
-    signInWithEmailAndPassword: vi.fn(),
-    createUserWithEmailAndPassword: vi.fn(),
-    signOut: vi.fn(),
-    onAuthStateChanged: vi.fn(),
-    onIdTokenChanged: vi.fn(),
-    signInWithPopup: vi.fn(),
-    GoogleAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    GithubAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    getAdditionalUserInfo: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined)
-  }
-})
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackAuth: vi.fn() })
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: vi.fn() })
-}))
-
-vi.mock('@/services/dialogService')
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
-
-const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
-vi.mock('@/stores/apiKeyAuthStore', () => ({
-  useApiKeyAuthStore: () => ({
-    getAuthHeader: mockApiKeyGetAuthHeader,
-    getApiKey: vi.fn(),
-    currentUser: null,
-    isAuthenticated: false,
-    storeApiKey: vi.fn(),
-    clearStoredApiKey: vi.fn()
-  })
-}))
+vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 type MockUser = Omit<User, 'getIdToken'> & { getIdToken: Mock }
 
 describe('auth token priority chain', () => {
   let store: ReturnType<typeof useAuthStore>
   let authStateCallback: (user: User | null) => void
-
-  const mockAuth: Record<string, unknown> = {}
 
   const mockUser: MockUser = {
     uid: 'test-user-id',
@@ -128,40 +39,58 @@ describe('auth token priority chain', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.resetAllMocks()
-
-    mockFeatureFlags.teamWorkspacesEnabled = false
-    mockFeatureFlags.unifiedCloudAuthEnabled = false
-    mockUnifiedToken = null
-    mockActiveWorkspaceId = null
-    mockWorkspaceAuthHeader.mockReturnValue(null)
-    mockGetWorkspaceToken.mockReturnValue(undefined)
-    mockMintAtLogin.mockResolvedValue(false)
-    mockApiKeyGetAuthHeader.mockReturnValue(null)
-    mockUser.getIdToken.mockResolvedValue('firebase-token')
-
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      mockAuth as unknown as ReturnType<typeof vuefire.useFirebaseAuth>
-    )
-
+    mockDistributionTypes.isCloud = true
+    stubFirebaseAuthHarness()
+    const authStateObservers: Array<(user: User | null) => void> = []
+    authStateCallback = (user) =>
+      authStateObservers.forEach((observer) => observer(user))
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
-        authStateCallback = callback as (user: User | null) => void
-        ;(callback as (user: User | null) => void)(mockUser)
+        const observer = callback as (user: User | null) => void
+        authStateObservers.push(observer)
+        observer(mockUser)
         return vi.fn()
       }
     )
-
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAuthStore()
+    useWorkspaceAuthStore().destroy()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    useTeamWorkspaceStore().initState = 'ready'
+    vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
+      null
+    )
+    vi.mocked(useWorkspaceAuthStore().getWorkspaceToken).mockReturnValue(
+      undefined
+    )
+    vi.mocked(
+      useWorkspaceAuthStore().ensureWorkspaceAuthHeader
+    ).mockResolvedValue(null)
+    vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken).mockResolvedValue(
+      null
+    )
+    vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
+    vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mockImplementation(
+      () => {}
+    )
+    vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockImplementation(
+      () => useWorkspaceAuthStore().unifiedToken ?? undefined
+    )
+    vi.mocked(
+      useTeamWorkspaceStore().resetForIdentityChange
+    ).mockImplementation(() => {})
+    vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
+    vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
+    Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
+    mockUser.getIdToken.mockResolvedValue('firebase-token')
   })
 
   describe('getAuthHeader priority', () => {
-    it('returns workspace auth header when workspace is active and feature enabled', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-      mockWorkspaceAuthHeader.mockReturnValue({
-        Authorization: 'Bearer workspace-token'
-      })
+    it('returns workspace auth header when workspace is active', async () => {
+      vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
+        {
+          Authorization: 'Bearer workspace-token'
+        }
+      )
 
       const header = await store.getAuthHeader()
 
@@ -171,8 +100,9 @@ describe('auth token priority chain', () => {
     })
 
     it('returns Firebase token when workspace is not active but user is authenticated', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-      mockWorkspaceAuthHeader.mockReturnValue(null)
+      vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
+        null
+      )
 
       const header = await store.getAuthHeader()
 
@@ -181,9 +111,45 @@ describe('auth token priority chain', () => {
       })
     })
 
+    it('ignores workspace auth header outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
+        {
+          Authorization: 'Bearer workspace-token'
+        }
+      )
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({
+        Authorization: 'Bearer firebase-token'
+      })
+    })
+
+    it('keeps generic authentication user-scoped outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
+      vi.mocked(
+        useWorkspaceAuthStore().ensureWorkspaceAuthHeader
+      ).mockResolvedValue({
+        Authorization: 'Bearer workspace-token'
+      })
+
+      const header = await store.getAuthHeader()
+
+      expect(
+        vi.mocked(useWorkspaceAuthStore().ensureWorkspaceAuthHeader)
+      ).not.toHaveBeenCalled()
+      expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
+    })
+
     it('returns API key when neither workspace nor Firebase are available', async () => {
       authStateCallback(null)
-      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
 
       const header = await store.getAuthHeader()
 
@@ -197,25 +163,13 @@ describe('auth token priority chain', () => {
 
       expect(header).toBeNull()
     })
-
-    it('skips workspace header when team_workspaces feature is disabled', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = false
-      mockWorkspaceAuthHeader.mockReturnValue({
-        Authorization: 'Bearer workspace-token'
-      })
-
-      const header = await store.getAuthHeader()
-
-      expect(header).toEqual({
-        Authorization: 'Bearer firebase-token'
-      })
-    })
   })
 
   describe('getAuthToken priority', () => {
-    it('returns workspace token when workspace is active and feature enabled', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-      mockGetWorkspaceToken.mockReturnValue('workspace-raw-token')
+    it('returns workspace token when workspace is active', async () => {
+      vi.mocked(useWorkspaceAuthStore().getWorkspaceToken).mockReturnValue(
+        'workspace-raw-token'
+      )
 
       const token = await store.getAuthToken()
 
@@ -223,32 +177,218 @@ describe('auth token priority chain', () => {
     })
 
     it('returns Firebase token when workspace token is not available', async () => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-      mockGetWorkspaceToken.mockReturnValue(undefined)
+      vi.mocked(useWorkspaceAuthStore().getWorkspaceToken).mockReturnValue(
+        undefined
+      )
 
       const token = await store.getAuthToken()
 
       expect(token).toBe('firebase-token')
+    })
+
+    it('keeps generic tokens user-scoped outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
+      vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken).mockResolvedValue(
+        'workspace-raw-token'
+      )
+
+      const token = await store.getAuthToken()
+
+      expect(
+        vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
+      ).not.toHaveBeenCalled()
+      expect(token).toBe('firebase-token')
+    })
+  })
+
+  describe('explicit workspace authentication', () => {
+    it('sends the stored API key for workspace calls in an API-key session', async () => {
+      mockDistributionTypes.isCloud = false
+      authStateCallback(null)
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'comfyui-test'
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual({
+        'X-API-KEY': 'comfyui-test'
+      })
+      expect(
+        vi.mocked(useWorkspaceAuthStore().ensureWorkspaceAuthHeader)
+      ).not.toHaveBeenCalled()
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
+      ).not.toHaveBeenCalled()
+    })
+
+    it('prefers the Firebase session over a stored API key for workspace calls', async () => {
+      mockDistributionTypes.isCloud = false
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'comfyui-test'
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
+      vi.mocked(
+        useWorkspaceAuthStore().ensureWorkspaceAuthHeader
+      ).mockResolvedValue({
+        Authorization: 'Bearer workspace-token'
+      })
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer workspace-token'
+      })
+    })
+
+    it('uses selected workspace authentication outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
+      vi.mocked(
+        useWorkspaceAuthStore().ensureWorkspaceAuthHeader
+      ).mockResolvedValue({
+        Authorization: 'Bearer workspace-token'
+      })
+      vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken).mockResolvedValue(
+        'workspace-raw-token'
+      )
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer workspace-token'
+      })
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe(
+        'workspace-raw-token'
+      )
+      expect(
+        vi.mocked(useWorkspaceAuthStore().ensureWorkspaceAuthHeader)
+      ).toHaveBeenCalledWith('workspace-123')
+      expect(
+        vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
+      ).toHaveBeenCalledWith('workspace-123')
+    })
+
+    it('waits for workspace initialization before queue authentication', async () => {
+      mockDistributionTypes.isCloud = false
+      useTeamWorkspaceStore().initState = 'uninitialized'
+      vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
+        async () => {
+          Object.assign(useTeamWorkspaceStore(), {
+            activeWorkspaceId: 'workspace-123'
+          })
+          useTeamWorkspaceStore().initState = 'ready'
+        }
+      )
+      vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken).mockResolvedValue(
+        'workspace-raw-token'
+      )
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer firebase-token'
+      })
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe(
+        'workspace-raw-token'
+      )
+      expect(
+        vi.mocked(useTeamWorkspaceStore().initialize)
+      ).toHaveBeenCalledOnce()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
+      ).toHaveBeenCalledWith('workspace-123')
+    })
+
+    it('waits for an in-flight workspace selection before queue authentication', async () => {
+      mockDistributionTypes.isCloud = false
+      useTeamWorkspaceStore().initState = 'loading'
+      vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
+        async () => {
+          Object.assign(useTeamWorkspaceStore(), {
+            activeWorkspaceId: 'workspace-123'
+          })
+          useTeamWorkspaceStore().initState = 'ready'
+        }
+      )
+      vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken).mockResolvedValue(
+        'workspace-raw-token'
+      )
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe(
+        'workspace-raw-token'
+      )
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('fails queue authentication closed after workspace initialization errors', async () => {
+      mockDistributionTypes.isCloud = false
+      useTeamWorkspaceStore().initState = 'uninitialized'
+      vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(
+        new Error('Network error')
+      )
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
+      ).not.toHaveBeenCalled()
+    })
+
+    it('retries queue authentication after a previous initialization error', async () => {
+      mockDistributionTypes.isCloud = false
+      useTeamWorkspaceStore().initState = 'error'
+      vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
+        async () => {
+          Object.assign(useTeamWorkspaceStore(), {
+            activeWorkspaceId: 'workspace-123'
+          })
+          useTeamWorkspaceStore().initState = 'ready'
+        }
+      )
+      vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken).mockResolvedValue(
+        'workspace-raw-token'
+      )
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe(
+        'workspace-raw-token'
+      )
+      expect(
+        vi.mocked(useTeamWorkspaceStore().initialize)
+      ).toHaveBeenCalledOnce()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
+      ).toHaveBeenCalledWith('workspace-123')
     })
   })
 
   describe('unified login mint wiring', () => {
     it('mints the unified Cloud JWT when a cloud user signs in', () => {
       // beforeEach signs in mockUser via the onAuthStateChanged callback.
-      expect(mockMintAtLogin).toHaveBeenCalled()
+      expect(vi.mocked(useWorkspaceAuthStore().mintAtLogin)).toHaveBeenCalled()
     })
 
     it('does not mint on sign-out', () => {
-      mockMintAtLogin.mockClear()
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockClear()
       authStateCallback(null)
-      expect(mockMintAtLogin).not.toHaveBeenCalled()
-      expect(mockClearWorkspaceContext).toHaveBeenCalled()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext)
+      ).toHaveBeenCalled()
     })
 
     it('clears account-scoped state before minting for a different user', () => {
-      mockClearWorkspaceContext.mockClear()
-      mockResetForIdentityChange.mockClear()
-      mockMintAtLogin.mockClear()
+      vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mockClear()
+      vi.mocked(useTeamWorkspaceStore().resetForIdentityChange).mockClear()
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockClear()
       const nextUser = {
         ...mockUser,
         uid: 'different-user-id',
@@ -257,61 +397,120 @@ describe('auth token priority chain', () => {
 
       authStateCallback(nextUser)
 
-      expect(mockClearWorkspaceContext).toHaveBeenCalledOnce()
-      expect(mockResetForIdentityChange).toHaveBeenCalledOnce()
-      expect(mockMintAtLogin).toHaveBeenCalledOnce()
       expect(
-        mockClearWorkspaceContext.mock.invocationCallOrder[0]
-      ).toBeLessThan(mockMintAtLogin.mock.invocationCallOrder[0])
+        vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext)
+      ).toHaveBeenCalledOnce()
+      expect(
+        vi.mocked(useTeamWorkspaceStore().resetForIdentityChange)
+      ).toHaveBeenCalledOnce()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledOnce()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mock
+          .invocationCallOrder[0]
+      ).toBeLessThan(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin).mock
+          .invocationCallOrder[0]
+      )
     })
 
     it('keeps account-scoped state for a repeated callback with the same uid', () => {
-      mockClearWorkspaceContext.mockClear()
-      mockResetForIdentityChange.mockClear()
+      vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mockClear()
+      vi.mocked(useTeamWorkspaceStore().resetForIdentityChange).mockClear()
 
-      authStateCallback({ ...mockUser } as MockUser)
+      authStateCallback({ ...mockUser })
 
-      expect(mockClearWorkspaceContext).not.toHaveBeenCalled()
-      expect(mockResetForIdentityChange).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext)
+      ).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useTeamWorkspaceStore().resetForIdentityChange)
+      ).not.toHaveBeenCalled()
     })
   })
 
   describe('unified cloud auth (flag ON)', () => {
     beforeEach(() => {
-      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
     })
 
     it('getAuthHeader returns only the unified Cloud JWT, never Firebase or API key', async () => {
-      mockUnifiedToken = 'unified-jwt'
+      useWorkspaceAuthStore().unifiedToken = 'unified-jwt'
       // Even with the legacy sources available, the unified branch wins.
-      mockFeatureFlags.teamWorkspacesEnabled = true
-      mockWorkspaceAuthHeader.mockReturnValue({
-        Authorization: 'Bearer workspace-token'
+      vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
+        {
+          Authorization: 'Bearer workspace-token'
+        }
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
       })
-      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
 
       const header = await store.getAuthHeader()
 
       expect(header).toEqual({ Authorization: 'Bearer unified-jwt' })
-      expect(mockWorkspaceAuthHeader).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader)
+      ).not.toHaveBeenCalled()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
-      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useApiKeyAuthStore().getAuthHeader)
+      ).not.toHaveBeenCalled()
     })
 
-    it('getAuthHeader returns null when the unified token is empty and does not fall back', async () => {
-      mockUnifiedToken = null
-      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
+    it('getAuthHeader returns null when signed out even if the unified token is stale', async () => {
+      authStateCallback(null)
+      useWorkspaceAuthStore().unifiedToken = null
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
 
       const header = await store.getAuthHeader()
 
       expect(header).toBeNull()
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
-      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useApiKeyAuthStore().getAuthHeader)
+      ).not.toHaveBeenCalled()
+    })
+
+    it('getAuthHeader falls back to the Firebase token when the unified mint fails', async () => {
+      useWorkspaceAuthStore().unifiedToken = null
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
+      expect(
+        vi.mocked(useApiKeyAuthStore().getAuthHeader)
+      ).not.toHaveBeenCalled()
+    })
+
+    it('getAuthHeader falls back to the Firebase token when the unified mint rejects outright', async () => {
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockRejectedValueOnce(
+        new Error('mint request failed')
+      )
+      authStateCallback({ ...mockUser, uid: 'header-reject-user' })
+      useWorkspaceAuthStore().unifiedToken = null
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
+      expect(
+        vi.mocked(useApiKeyAuthStore().getAuthHeader)
+      ).not.toHaveBeenCalled()
     })
 
     it('getAuthToken returns the unified Cloud JWT, never the Firebase token', async () => {
-      mockUnifiedToken = 'unified-jwt'
-      mockGetWorkspaceToken.mockReturnValue('workspace-raw-token')
+      useWorkspaceAuthStore().unifiedToken = 'unified-jwt'
+      vi.mocked(useWorkspaceAuthStore().getWorkspaceToken).mockReturnValue(
+        'workspace-raw-token'
+      )
 
       const token = await store.getAuthToken()
 
@@ -320,12 +519,296 @@ describe('auth token priority chain', () => {
     })
 
     it('getAuthToken returns undefined when the unified token is empty and does not fall back', async () => {
-      mockUnifiedToken = null
+      useWorkspaceAuthStore().unifiedToken = null
 
       const token = await store.getAuthToken()
 
       expect(token).toBeUndefined()
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('getAuthToken resolves instead of throwing when the unified mint rejects outright', async () => {
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockRejectedValueOnce(
+        new Error('mint request failed')
+      )
+      authStateCallback({ ...mockUser, uid: 'token-reject-user' })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      await expect(store.getAuthToken()).resolves.toBeUndefined()
+    })
+
+    it('getAuthHeader awaits an in-flight unified mint instead of racing it', async () => {
+      let resolveMint: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'header-race-user' })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      let settled = false
+      const headerPromise = store.getAuthHeader().then((header) => {
+        settled = true
+        return header
+      })
+      await Promise.resolve()
+      expect(settled).toBe(false)
+
+      resolveMint(false)
+      const header = await headerPromise
+
+      expect(settled).toBe(true)
+      expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
+    })
+
+    it('getWorkspaceAuthHeader awaits an in-flight unified mint instead of racing it', async () => {
+      let resolveMint: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'workspace-header-race-user' })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      let settled = false
+      const headerPromise = store.getWorkspaceAuthHeader().then((header) => {
+        settled = true
+        return header
+      })
+      await Promise.resolve()
+      expect(settled).toBe(false)
+
+      useWorkspaceAuthStore().unifiedToken = 'minted-workspace-jwt'
+      resolveMint(true)
+      const header = await headerPromise
+
+      expect(settled).toBe(true)
+      expect(header).toEqual({
+        Authorization: 'Bearer minted-workspace-jwt'
+      })
+    })
+
+    it('getAuthToken awaits an in-flight unified mint instead of racing it', async () => {
+      let resolveMint: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'token-race-user' })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      let settled = false
+      const tokenPromise = store.getAuthToken().then((token) => {
+        settled = true
+        return token
+      })
+      await Promise.resolve()
+      expect(settled).toBe(false)
+
+      resolveMint(false)
+      const token = await tokenPromise
+
+      expect(settled).toBe(true)
+      expect(token).toBeUndefined()
+    })
+
+    it('shares a single in-flight mint across concurrent getAuthHeader callers', async () => {
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockClear()
+      let resolveMint: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'concurrent-user' })
+      useWorkspaceAuthStore().unifiedToken = null
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(1)
+
+      const header1Promise = store.getAuthHeader()
+      const header2Promise = store.getAuthHeader()
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(1)
+
+      resolveMint(false)
+      const [header1, header2] = await Promise.all([
+        header1Promise,
+        header2Promise
+      ])
+
+      expect(header1).toEqual({ Authorization: 'Bearer firebase-token' })
+      expect(header2).toEqual({ Authorization: 'Bearer firebase-token' })
+    })
+
+    it('retries the unified mint after a failed attempt but dedupes once it succeeds', async () => {
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockClear()
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValueOnce(
+        false
+      )
+      authStateCallback({ ...mockUser, uid: 'retry-user' })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      const header1 = await store.getAuthHeader()
+
+      expect(header1).toEqual({ Authorization: 'Bearer firebase-token' })
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(1)
+
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValueOnce(true)
+      useWorkspaceAuthStore().unifiedToken = 'retry-jwt'
+      const header2 = await store.getAuthHeader()
+
+      expect(header2).toEqual({ Authorization: 'Bearer retry-jwt' })
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(2)
+
+      const header3 = await store.getAuthHeader()
+
+      expect(header3).toEqual({ Authorization: 'Bearer retry-jwt' })
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not let a stale mint from a previous identity clobber the new identity', async () => {
+      let resolveA: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveA = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'user-a' })
+
+      let resolveB: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveB = resolve
+        })
+      )
+      authStateCallback({
+        ...mockUser,
+        uid: 'user-b',
+        email: 'b@example.com'
+      })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      const headerPromise = store.getAuthHeader()
+
+      resolveA(true)
+      await Promise.resolve()
+
+      useWorkspaceAuthStore().unifiedToken = 'b-token'
+      resolveB(true)
+      const header = await headerPromise
+
+      expect(header).toEqual({ Authorization: 'Bearer b-token' })
+      expect(
+        vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext)
+      ).toHaveBeenCalledTimes(2)
+    })
+
+    it('fails closed when an A-started getAuthHeader call outlives an A->B switch', async () => {
+      let resolveA: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveA = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'user-a' })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      // Started while A is current and A's mint is still in flight.
+      const headerPromise = store.getAuthHeader()
+
+      let resolveB: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveB = resolve
+        })
+      )
+      authStateCallback({
+        ...mockUser,
+        uid: 'user-b',
+        email: 'b@example.com'
+      })
+
+      // B's mint commits while A's original call is still waiting.
+      useWorkspaceAuthStore().unifiedToken = 'b-token'
+      resolveB(true)
+      await Promise.resolve()
+
+      // A's stale mint only resolves (failed) after the switch.
+      resolveA(false)
+      const header = await headerPromise
+
+      expect(header).toBeNull()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('fails closed when an A-started getAuthToken call outlives an A->B switch', async () => {
+      let resolveA: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveA = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'user-a' })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      // Started while A is current and A's mint is still in flight.
+      const tokenPromise = store.getAuthToken()
+
+      let resolveB: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveB = resolve
+        })
+      )
+      authStateCallback({
+        ...mockUser,
+        uid: 'user-b',
+        email: 'b@example.com'
+      })
+
+      // B's mint commits while A's original call is still waiting.
+      useWorkspaceAuthStore().unifiedToken = 'b-token'
+      resolveB(true)
+      await Promise.resolve()
+
+      // A's stale mint only resolves (failed) after the switch.
+      resolveA(false)
+      const token = await tokenPromise
+
+      expect(token).toBeUndefined()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('returns immediately on sign-out instead of waiting on an abandoned mint', async () => {
+      let resolveMint: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'signing-out-user' })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      authStateCallback(null)
+
+      const header = await store.getAuthHeader()
+      const token = await store.getAuthToken()
+
+      expect(header).toBeNull()
+      expect(token).toBeUndefined()
+
+      resolveMint(false)
     })
   })
 })

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ExportControls from '@/components/load3d/controls/ExportControls.vue'
@@ -28,10 +28,6 @@ function renderComponent(
 }
 
 describe('ExportControls', () => {
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
-
   it('renders the trigger button without exposing the format list initially', () => {
     renderComponent()
 

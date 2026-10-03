@@ -1,31 +1,33 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { getActivePinia } from 'pinia'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
 import { useAutoReload } from '@/platform/workspace/composables/useAutoReload'
 import type { AutoReloadConfig } from '@/platform/workspace/composables/useAutoReload'
-
-const dialogMocks = vi.hoisted(() => ({
-  showAutoReloadDialog: vi.fn()
-}))
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogService } from '@/services/dialogService'
 
 const mockCanAccess = ref(true)
 const mockAccessFrozen = ref(false)
 
-vi.mock('@/platform/workspace/composables/useAutoReloadAccess', () => ({
-  useAutoReloadAccess: () => ({
-    canConfigureNow: () => mockCanAccess.value && !mockAccessFrozen.value
-  })
+vi.mock(import('@/platform/workspace/composables/useAutoReloadAccess'), () => ({
+  useAutoReloadAccess: () => {
+    const canConfigureNow = () => mockCanAccess.value && !mockAccessFrozen.value
+    return {
+      canAccess: computed(() => mockCanAccess.value),
+      isFrozen: computed(() => mockAccessFrozen.value),
+      canConfigure: computed(canConfigureNow),
+      canConfigureNow
+    }
+  }
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => dialogMocks
-}))
+vi.mock(import('@/services/dialogService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -36,17 +38,13 @@ const i18n = createI18n({
 const autoReload = useAutoReload()
 
 function renderSection(frozen = false, workspaceId = 'workspace-a') {
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    initialState: {
-      teamWorkspace: { activeWorkspaceId: workspaceId }
-    }
+  Object.assign(useTeamWorkspaceStore(), {
+    activeWorkspaceId: workspaceId
   })
-  const result = render(AutoReloadSection, {
+  return render(AutoReloadSection, {
     props: { frozen },
-    global: { plugins: [pinia, i18n] }
+    global: { plugins: [getActivePinia()!, i18n] }
   })
-  return { ...result, pinia }
 }
 
 function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
@@ -63,7 +61,6 @@ function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
 
 describe('AutoReloadSection', () => {
   beforeEach(() => {
-    dialogMocks.showAutoReloadDialog.mockReset()
     mockCanAccess.value = true
     mockAccessFrozen.value = false
     autoReload.scopeToWorkspace('workspace-a')
@@ -82,8 +79,11 @@ describe('AutoReloadSection', () => {
 
     await user.click(screen.getByRole('button', { name: 'Set up auto-reload' }))
 
-    expect(dialogMocks.showAutoReloadDialog).toHaveBeenCalledOnce()
-    const [options] = dialogMocks.showAutoReloadDialog.mock.calls[0]
+    expect(
+      vi.mocked(useDialogService().showAutoReloadDialog)
+    ).toHaveBeenCalledOnce()
+    const [options] = vi.mocked(useDialogService().showAutoReloadDialog).mock
+      .calls[0]
     expect(options.workspaceId).toBe('workspace-a')
     expect(options.canOpen()).toBe(true)
 
@@ -96,7 +96,8 @@ describe('AutoReloadSection', () => {
     const section = renderSection()
 
     await user.click(screen.getByRole('button', { name: 'Set up auto-reload' }))
-    const [options] = dialogMocks.showAutoReloadDialog.mock.calls[0]
+    const [options] = vi.mocked(useDialogService().showAutoReloadDialog).mock
+      .calls[0]
     expect(options.canOpen()).toBe(true)
 
     section.unmount()
@@ -114,7 +115,9 @@ describe('AutoReloadSection', () => {
     expect(screen.queryByText('Monthly budget')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Edit' }))
-    expect(dialogMocks.showAutoReloadDialog).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useDialogService().showAutoReloadDialog)
+    ).toHaveBeenCalledOnce()
   })
 
   it('renders healthy monthly budget progress', () => {
@@ -208,7 +211,9 @@ describe('AutoReloadSection', () => {
     ).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Edit' }))
-    expect(dialogMocks.showAutoReloadDialog).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(useDialogService().showAutoReloadDialog)
+    ).not.toHaveBeenCalled()
   })
 
   it('clears temporary settings when the workspace changes while settings are closed', async () => {

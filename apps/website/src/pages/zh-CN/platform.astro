@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
+import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
+import HeroSection from '../../templates/platform/HeroSection.vue'
+import ProductsSection from '../../templates/platform/ProductsSection.vue'
+---
+
+<BaseLayout
+  title={Astro.locals.t('platform.meta.title')}
+  description={Astro.locals.t('platform.meta.description')}
+>
+  <HeroSection locale="zh-CN" client:load />
+  <ProductsSection locale="zh-CN" client:visible />
+  <SocialProofBarSection />
+  <ClosingCtaSection
+    locale="zh-CN"
+    heading-after-badge={Astro.locals.t('platform.closing.headingAfterBadge')}
+    client:visible
+  />
+  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
+</BaseLayout>

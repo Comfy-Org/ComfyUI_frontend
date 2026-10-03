@@ -1,90 +1,86 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen, within } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
-const folderAsset = vi.hoisted(
-  () =>
-    ({
-      id: 'multi-output',
-      name: 'multi-output.png',
-      tags: ['output'],
-      user_metadata: {
-        jobId: 'multi-output-job',
-        nodeId: '1',
-        subfolder: '',
-        outputCount: 2
-      }
-    }) satisfies AssetItem
+beforeEach(() => {
+  const store = useAssetsStore()
+  store.outputAssets = {
+    items: [],
+    hasMore: false,
+    isLoading: false,
+    loadMore: vi.fn(async () => false),
+    loadNew: vi.fn(async () => {}),
+    invalidate: vi.fn(async () => {})
+  }
+  vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
+  vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
+})
+
+const folderAsset = vi.hoisted(() => ({
+  id: 'multi-output',
+  name: 'multi-output.png',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+  tags: ['output'],
+  user_metadata: {
+    jobId: 'multi-output-job',
+    nodeId: '1',
+    subfolder: '',
+    outputCount: 2
+  }
+}))
+
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetGridSelection'),
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useAssetGridSelection: () => ({ marqueeStyle: ref(null) })
+    }
+  }
 )
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
-  const { ref } = await import('vue')
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetSelection'),
+  async () => {
+    const { ref } = await import('vue')
 
-  return {
-    useAssetsApi: () => ({
-      media: ref([folderAsset]),
-      loading: ref(false),
-      error: ref(null),
-      fetchMediaList: vi.fn().mockResolvedValue([folderAsset]),
-      loadMore: vi.fn(),
-      hasMore: ref(false),
-      isLoadingMore: ref(false)
-    })
+    return {
+      useAssetSelection: () => ({
+        isSelected: vi.fn(() => false),
+        selectedIds: ref(new Set<string>()),
+        handleAssetClick: vi.fn(),
+        selectAll: vi.fn(),
+        setSelectedIds: vi.fn(),
+        hasSelection: ref(false),
+        clearSelection: vi.fn(),
+        getSelectedAssets: vi.fn(() => []),
+        reconcileSelection: vi.fn(),
+        getOutputCount: vi.fn(() => 2),
+        getTotalOutputCount: vi.fn(() => 0),
+        activate: vi.fn(),
+        deactivate: vi.fn()
+      })
+    }
   }
-})
+)
 
-vi.mock('@/platform/assets/composables/useAssetGridSelection', async () => {
-  const { ref } = await import('vue')
-  return {
-    useAssetGridSelection: () => ({ marqueeStyle: ref(null) })
-  }
-})
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
-vi.mock('@/platform/assets/composables/useAssetSelection', async () => {
-  const { ref } = await import('vue')
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
-  return {
-    useAssetSelection: () => ({
-      isSelected: vi.fn().mockReturnValue(false),
-      selectedIds: ref(new Set<string>()),
-      handleAssetClick: vi.fn(),
-      selectAll: vi.fn(),
-      setSelectedIds: vi.fn(),
-      hasSelection: ref(false),
-      clearSelection: vi.fn(),
-      getSelectedAssets: vi.fn().mockReturnValue([]),
-      reconcileSelection: vi.fn(),
-      getOutputCount: vi.fn().mockReturnValue(2),
-      getTotalOutputCount: vi.fn().mockReturnValue(0),
-      activate: vi.fn(),
-      deactivate: vi.fn()
-    })
-  }
-})
-
-vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => ({
-    downloadAssets: vi.fn(),
-    deleteAssets: vi.fn(),
-    addMultipleToWorkflow: vi.fn(),
-    openMultipleWorkflows: vi.fn(),
-    exportMultipleWorkflows: vi.fn()
+vi.mock<unknown>(
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
+  () => ({
+    useToast: () => ({ add: vi.fn() })
   })
-}))
-
-vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveOutputAssetItems: vi.fn().mockResolvedValue([folderAsset])
-}))
-
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -95,6 +91,7 @@ const i18n = createI18n({
       g: { copyJobId: 'Copy Job ID' },
       sideToolbar: {
         backToAssets: 'Back to all assets',
+        closeSidebar: 'Close sidebar',
         mediaAssets: { title: 'Media Assets' },
         labels: { generated: 'Generated', imported: 'Imported' }
       }
@@ -118,18 +115,16 @@ const assetsGridStub = {
   props: ['assets'],
   emits: ['output-count-click'],
   template: `
-    <button
-      aria-label="Enter output folder"
-      @click="$emit('output-count-click', assets[0])"
-    />
+    <div data-testid="assets-grid">
+      <button
+        aria-label="Enter output folder"
+        @click="$emit('output-count-click', assets[0])"
+      />
+    </div>
   `
 }
 
-const buttonStub = {
-  template: '<button><slot /></button>'
-}
-
-function renderTab() {
+function renderTab({ realTemplate = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
@@ -137,23 +132,35 @@ function renderTab() {
         tooltip: {}
       },
       stubs: {
-        SidebarTabTemplate: sidebarTabTemplateStub,
+        ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
         AssetsSidebarGridView: assetsGridStub,
         AssetsSidebarListView: true,
-        Button: buttonStub,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
         MediaLightbox: true,
-        MediaAssetContextMenu: true,
-        NoResultsPlaceholder: true,
-        Skeleton: true
+        MediaAssetContextMenu: true
       }
     }
   })
 }
 
+beforeEach(() => {
+  useAssetsStore().outputAssets.items = [folderAsset]
+  useAssetsStore().outputAssets.hasMore = false
+})
+
+it('keeps pagination mounted when more assets can be loaded', () => {
+  useAssetsStore().outputAssets.items = []
+  useAssetsStore().outputAssets.hasMore = true
+
+  renderTab()
+
+  expect(screen.getByTestId('assets-grid')).toBeVisible()
+})
+
 describe('AssetsSidebarTab folder navigation', () => {
   it('places accessible folder actions beside the job ID', async () => {
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
     renderTab()
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })
@@ -180,5 +187,34 @@ describe('AssetsSidebarTab folder navigation', () => {
       screen.queryByRole('button', { name: 'Back to all assets' })
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
+  })
+})
+
+it('shows the sidebar close button when mounted as a sidebar tab', () => {
+  renderTab({ realTemplate: true })
+
+  expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeVisible()
+})
+
+describe('AssetsSidebarTab tab panel', () => {
+  it('labels the asset list with the selected tab', async () => {
+    renderTab()
+
+    expect(
+      screen.getByRole('tabpanel', { name: 'Generated' })
+    ).toContainElement(screen.getByTestId('assets-grid'))
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Imported' }))
+
+    expect(screen.getByRole('tabpanel', { name: 'Imported' })).toBeVisible()
+  })
+
+  it('keeps the panel in the tab order', () => {
+    renderTab()
+
+    expect(screen.getByRole('tabpanel', { name: 'Generated' })).toHaveAttribute(
+      'tabindex',
+      '0'
+    )
   })
 })

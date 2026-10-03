@@ -3,32 +3,32 @@
     data-testid="job-history-sidebar"
     :title="$t('queue.jobHistory')"
   >
-    <template #alt-title>
-      <div class="ml-auto flex shrink-0 items-center">
-        <JobHistoryActionsMenu @clear-history="onClearHistory" />
-      </div>
+    <template #tool-buttons>
+      <JobHistoryActionsMenu @clear-history="onClearHistory" />
     </template>
     <template #header>
-      <div class="flex flex-col gap-2 pb-1">
-        <div class="px-3 py-2">
-          <JobFilterTabs
-            :selected-job-tab="selectedJobTab"
-            :has-failed-jobs="hasFailedJobs"
-            @update:selected-job-tab="onUpdateSelectedJobTab"
-          />
-        </div>
-        <JobFilterActions
-          v-model:selected-workflow-filter="selectedWorkflowFilter"
-          v-model:selected-sort-mode="selectedSortMode"
-          v-model:search-query="searchQuery"
-          class="px-3"
-          :hide-show-assets-action="true"
-          :show-search="true"
-          :search-placeholder="t('sideToolbar.queueProgressOverlay.searchJobs')"
-        />
+      <div class="overflow-x-auto px-4 pt-2 pb-px">
+        <TabList
+          :aria-label="$t('queue.jobHistory')"
+          :model-value="selectedJobTab"
+          @update:model-value="onUpdateSelectedJobTab"
+        >
+          <Tab v-for="tab in visibleJobTabs" :key="tab" :value="tab">
+            {{ t(jobTabLabelKeys[tab]) }}
+          </Tab>
+        </TabList>
       </div>
+      <JobFilterActions
+        v-model:selected-workflow-filter="selectedWorkflowFilter"
+        v-model:selected-sort-mode="selectedSortMode"
+        v-model:search-query="searchQuery"
+        class="px-4 py-2"
+        :hide-show-assets-action="true"
+        :show-search="true"
+        :search-placeholder="t('g.searchPlaceholder', { subject: t('g.jobs') })"
+      />
       <div
-        class="flex items-center justify-between px-3 pb-1 text-xs leading-none text-text-primary"
+        class="flex items-center justify-between px-4 pb-2 text-xs leading-none text-text-primary"
       >
         <span class="text-text-secondary">{{ activeQueueSummary }}</span>
         <div class="flex items-center gap-2">
@@ -51,14 +51,21 @@
     </template>
     <template #body>
       <div class="flex h-full min-h-0 flex-col">
-        <JobAssetsList
-          class="min-h-0 flex-1"
-          :displayed-job-groups="displayedJobGroups"
-          @cancel-item="onCancelItem"
-          @delete-item="onDeleteItem"
-          @view-item="onViewItem"
-          @menu="onMenuItem"
-        />
+        <div
+          :id="`tabpanel-${selectedJobTab}`"
+          role="tabpanel"
+          :aria-labelledby="`tab-${selectedJobTab}`"
+          class="flex min-h-0 flex-1 flex-col"
+        >
+          <JobAssetsList
+            class="scrollbar-custom min-h-0 flex-1"
+            :displayed-job-groups="displayedJobGroups"
+            @cancel-item="onCancelItem"
+            @delete-item="onDeleteItem"
+            @view-item="onViewItem"
+            @menu="onMenuItem"
+          />
+        </div>
         <JobContextMenu
           ref="jobContextMenuRef"
           :entries="jobMenuEntries"
@@ -77,26 +84,31 @@
 import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
-import JobFilterTabs from '@/components/queue/job/JobFilterTabs.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
+import { getVisibleJobTabs, jobTabLabelKeys } from '@/composables/queue/jobTabs'
+import type { JobTab } from '@/composables/queue/jobTabs'
 import { useJobList } from '@/composables/queue/useJobList'
-import type { JobListItem, JobTab } from '@/composables/queue/useJobList'
+import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { is3DResult } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -129,6 +141,8 @@ const {
   filteredTasks,
   groupedJobItems
 } = useJobList()
+
+const visibleJobTabs = computed(() => getVisibleJobTabs(hasFailedJobs.value))
 
 const displayedJobGroups = computed(() => groupedJobItems.value)
 const runningCount = computed(() => queueStore.runningTasks.length)
@@ -180,7 +194,7 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   trackFeatureUsed()
   const previewOutput = item.taskRef?.previewOutput
 
-  if (previewOutput?.is3D) {
+  if (previewOutput && is3DResult(previewOutput)) {
     dialogStore.showDialog({
       key: 'asset-3d-viewer',
       title: item.title,
@@ -188,12 +202,7 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
       props: {
         modelUrl: previewOutput.url || ''
       },
-      dialogComponentProps: {
-        renderer: 'reka',
-        size: 'full',
-        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
-        maximizable: true
-      }
+      dialogComponentProps: LOAD3D_VIEWER_DIALOG_PROPS
     })
     return
   }

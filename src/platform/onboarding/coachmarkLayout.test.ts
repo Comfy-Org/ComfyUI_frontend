@@ -3,11 +3,21 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   CARD_GAP,
   clampSpotlight,
+  hitRegionPath,
   noTargetCardLeft,
-  topSafeInset
+  topSafeInset,
+  unionRect
 } from './coachmarkLayout'
 
 const VIEWPORT = { width: 1000, height: 800 }
+
+describe('unionRect', () => {
+  it('spans both rects when they sit side by side', () => {
+    expect(
+      unionRect(new DOMRect(100, 100, 24, 24), new DOMRect(124, 101, 80, 22))
+    ).toEqual(new DOMRect(100, 100, 104, 24))
+  })
+})
 
 describe('clampSpotlight', () => {
   it('grows the target rect by the pad on every side', () => {
@@ -58,6 +68,26 @@ describe('topSafeInset', () => {
 
   it('falls back to the card gap alone when the token is unset', () => {
     expect(topSafeInset()).toBe(CARD_GAP)
+  })
+})
+
+describe('hitRegionPath', () => {
+  it('blocks the whole viewport when no hole is exposed', () => {
+    expect(hitRegionPath(VIEWPORT, null)).toBe('M0 0H1000V800H0Z')
+  })
+
+  it('cuts a closed subpath around the hole, so input reaches the page there', () => {
+    const path = hitRegionPath(VIEWPORT, {
+      x: 100,
+      y: 200,
+      width: 50,
+      height: 40
+    })
+
+    expect(
+      path,
+      'an unclosed or mis-signed subpath leaves the target unreachable under the scrim'
+    ).toBe('M0 0H1000V800H0ZM100 200h50v40h-50Z')
   })
 })
 

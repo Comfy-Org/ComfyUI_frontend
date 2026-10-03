@@ -1,5 +1,8 @@
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
+import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, until } from '@vueuse/core'
 
 import {
   KEY_TO_TIER,
@@ -7,6 +10,7 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
@@ -23,6 +27,7 @@ import type {
 } from './types'
 import { useBillingRouting } from './useBillingRouting'
 import { useLegacyBilling } from './useLegacyBilling'
+import type { WorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 // Legacy per-member team plans use a hyphenated `team-{tier}-{cycle}` slug; the
@@ -31,6 +36,8 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 // new sub is never misrouted even before its credit stop is populated.
 const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
 const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
+
+class BillingRoutingUnavailableError extends Error {}
 
 function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
   const normalizedSlug = planSlug?.toLowerCase()
@@ -46,7 +53,8 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  * actions use workspace billing independently so legacy Stripe workspaces can
  * migrate plans while balance, top-up, and subscription management stay legacy.
  *
- * - Team workspaces disabled (OSS/Desktop): legacy billing via /customers/*
+ * - Workspace not loaded yet (`unknown`): no billing call is made until it is
+ * - OSS/Desktop: workspace billing once the Cloud-backed workspace loads
  * - Unified pricing: plan catalog and checkout via /api/billing/*
  * - Other state and actions: legacy or workspace billing selected by rail
  *
@@ -55,6 +63,8 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  *
  * @example
  * ```typescript
+ * import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+ *
  * const {
  *   type,
  *   subscription,
@@ -72,10 +82,10 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  *   console.log(`Tier: ${subscription.value.tier}`)
  * }
  *
- * // Check balance
+ * // Check balance (the *Micros fields are cents - see BalanceInfo)
  * if (balance.value) {
- *   const dollars = balance.value.amountMicros / 1_000_000
- *   console.log(`Balance: $${dollars.toFixed(2)}`)
+ *   const credits = formatCreditsFromCents({ cents: balance.value.amountMicros })
+ *   console.log(`Balance: ${credits} credits`)
  * }
  * ```
  */
@@ -86,9 +96,7 @@ function useBillingContextInternal(): BillingContext {
   const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
     null
   )
-  const workspaceBillingRef = shallowRef<
-    (BillingState & BillingActions) | null
-  >(null)
+  const workspaceBillingRef = shallowRef<WorkspaceBilling | null>(null)
 
   const getLegacyBilling = () => {
     if (!legacyBillingRef.value) {
@@ -109,7 +117,7 @@ function useBillingContextInternal(): BillingContext {
   const error = ref<string | null>(null)
 
   const activeContext = computed(() =>
-    type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
+    type.value === 'workspace' ? getWorkspaceBilling() : getLegacyBilling()
   )
   const checkoutContext = computed(() =>
     shouldUseUnifiedPricing.value ? getWorkspaceBilling() : activeContext.value
@@ -138,8 +146,13 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentTeamCreditStop)
   )
 
-  const isActiveSubscription = computed(() =>
-    toValue(activeContext.value.isActiveSubscription)
+  const maxSeats = computed(() => toValue(activeContext.value.maxSeats))
+  const occupiedSeats = computed(() =>
+    toValue(activeContext.value.occupiedSeats)
+  )
+
+  const canAccessSubscriptionFeatures = computed(() =>
+    toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
@@ -148,16 +161,21 @@ function useBillingContextInternal(): BillingContext {
 
   const canRunWorkflows = computed(
     () =>
-      isActiveSubscription.value &&
+      canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
-        !freeTierQuota.quotaEnabled.value ||
+        !isCloud ||
+        !isAuthenticatedConfigLoaded.value ||
         freeTierQuota.freeTierExecutionPermitted.value)
+  )
+
+  const showsSubscribeToRunPrompt = computed(
+    () => isInitialized.value && !canRunWorkflows.value
   )
 
   const isLegacyTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
-      isActiveSubscription.value &&
+      canAccessSubscriptionFeatures.value &&
       !isFreeTier.value &&
       currentTeamCreditStop.value === null &&
       (currentPlanSlug.value
@@ -168,9 +186,9 @@ function useBillingContextInternal(): BillingContext {
 
   // Plan identity, independent of subscription health: the per-credit Team plan
   // carries a credit stop, the retired seat-based ones a `team-` slug. Kept off
-  // isActiveSubscription on purpose — paused and payment_failed both force
-  // is_active=false, which is exactly when callers still need to know this is a
-  // team plan.
+  // canAccessSubscriptionFeatures on purpose — paused and payment_failed
+  // both force is_active=false, which is exactly when callers still need
+  // to know this is a team plan.
   const isTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
@@ -186,9 +204,12 @@ function useBillingContextInternal(): BillingContext {
   )
   const tier = computed(() => toValue(activeContext.value.tier))
   const renewalDate = computed(() => toValue(activeContext.value.renewalDate))
+  const renewalInvoice = computed(() =>
+    toValue(activeContext.value.renewalInvoice)
+  )
 
   function getMaxSeats(tierKey: TierKey): number {
-    if (type.value === 'legacy') return 1
+    if (type.value !== 'workspace') return 1
 
     const apiTier = KEY_TO_TIER[tierKey]
     const plan = plans.value.find(
@@ -228,9 +249,7 @@ function useBillingContextInternal(): BillingContext {
     error.value = null
   }
 
-  // type flips when the team-workspaces or consolidated-billing flag resolves
-  // from authenticated config, swapping the active backend. Reset then reinit
-  // on every workspace-id or type change.
+  // Reset and reinitialize when the active workspace or billing backend changes.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
     async ([newWorkspaceId]) => {
@@ -246,8 +265,34 @@ function useBillingContextInternal(): BillingContext {
     { immediate: true }
   )
 
+  const ROUTING_WAIT_TIMEOUT_MS = 10_000
+
+  // Resolves false so the caller stops: after reporting once on timeout (as
+  // legacy actions did on failure), or silently when the user switched
+  // workspace during the wait.
+  async function whenRoutingKnown(): Promise<boolean> {
+    if (type.value !== 'unknown') return true
+    const workspaceId = store.activeWorkspace?.id
+    try {
+      await until(type).not.toBe('unknown', {
+        timeout: ROUTING_WAIT_TIMEOUT_MS,
+        throwOnTimeout: true
+      })
+      const currentId = store.activeWorkspace?.id
+      return !workspaceId || currentId === workspaceId
+    } catch {
+      useErrorHandling().toastErrorHandler(
+        new BillingRoutingUnavailableError(
+          t('auth.webSession.token.unavailable')
+        )
+      )
+      return false
+    }
+  }
+
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
+    if (!(await whenRoutingKnown())) return
 
     const adapter = activeContext.value
     isLoading.value = true
@@ -266,15 +311,22 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
+  // Passive reads do nothing while unknown; the watcher above re-initializes
+  // once the workspace type loads.
   async function fetchStatus(): Promise<void> {
+    if (type.value === 'unknown') return
     return activeContext.value.fetchStatus()
   }
 
   async function fetchBalance(): Promise<void> {
+    if (type.value === 'unknown') return
     return activeContext.value.fetchBalance()
   }
 
+  // Reconcile and the checkout-operation read run once after a Stripe redirect
+  // and are never retried, so they wait instead of skipping.
   async function reconcileSubscriptionSuccess(): Promise<void> {
+    if (!(await whenRoutingKnown())) return
     const checkout = checkoutContext.value
     await checkout.fetchStatus()
 
@@ -283,7 +335,24 @@ function useBillingContextInternal(): BillingContext {
     await account.fetchBalance()
   }
 
+  /**
+   * Reads the checkout rail's status, which resumes any operation the server
+   * reports pending. True once that operation was adopted, so a caller
+   * watching for a payment taken elsewhere can hand off to its own polling.
+   */
+  async function readCheckoutOperation(): Promise<boolean> {
+    if (!(await whenRoutingKnown())) return false
+    const checkout = checkoutContext.value
+    const workspace = workspaceBillingRef.value
+    if (workspace === null || checkout !== workspace) {
+      await checkout.fetchStatus()
+      return false
+    }
+    return workspace.readAndAdoptPendingOperation()
+  }
+
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
+    if (!(await whenRoutingKnown())) return
     return checkoutContext.value.subscribe(planSlug, options)
   }
 
@@ -291,19 +360,25 @@ function useBillingContextInternal(): BillingContext {
     planSlug: string,
     options?: PreviewSubscribeOptions
   ) {
+    if (!(await whenRoutingKnown())) return null
     return checkoutContext.value.previewSubscribe(planSlug, options)
   }
 
   async function manageSubscription() {
+    if (!(await whenRoutingKnown())) return
     return activeContext.value.manageSubscription()
   }
 
-  async function cancelSubscription() {
-    return activeContext.value.cancelSubscription()
+  async function cancelSubscription(isScopeCurrent?: () => boolean) {
+    if (!(await whenRoutingKnown())) return
+    return activeContext.value.cancelSubscription(isScopeCurrent)
   }
 
-  async function resubscribe() {
-    return activeContext.value.resubscribe()
+  async function resubscribe(
+    options?: Parameters<BillingActions['resubscribe']>[0]
+  ) {
+    if (!(await whenRoutingKnown())) return
+    return activeContext.value.resubscribe(options)
   }
 
   async function topup(amountCents: number) {
@@ -316,19 +391,27 @@ function useBillingContextInternal(): BillingContext {
         'Top-up amount must be a positive whole-dollar cent value'
       )
     }
+    if (!(await whenRoutingKnown())) return
     return activeContext.value.topup(amountCents)
   }
 
   async function fetchPlans() {
+    if (type.value === 'unknown') return
     return checkoutContext.value.fetchPlans()
   }
 
   async function requireActiveSubscription() {
+    if (!(await whenRoutingKnown())) return
     return activeContext.value.requireActiveSubscription()
   }
 
   function showSubscriptionDialog(options?: SubscriptionDialogOptions) {
-    return activeContext.value.showSubscriptionDialog(options)
+    if (type.value !== 'unknown') {
+      return activeContext.value.showSubscriptionDialog(options)
+    }
+    void whenRoutingKnown().then((known) => {
+      if (known) activeContext.value.showSubscriptionDialog(options)
+    })
   }
 
   return {
@@ -340,9 +423,12 @@ function useBillingContextInternal(): BillingContext {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
-    isActiveSubscription,
+    showsSubscribeToRunPrompt,
+    canAccessSubscriptionFeatures,
     canRunWorkflows,
     isFreeTier,
     isLegacyTeamPlan,
@@ -351,12 +437,14 @@ function useBillingContextInternal(): BillingContext {
     subscriptionStatus,
     tier,
     renewalDate,
+    renewalInvoice,
     getMaxSeats,
 
     initialize,
     fetchStatus,
     fetchBalance,
     reconcileSubscriptionSuccess,
+    readCheckoutOperation,
     subscribe,
     previewSubscribe,
     manageSubscription,

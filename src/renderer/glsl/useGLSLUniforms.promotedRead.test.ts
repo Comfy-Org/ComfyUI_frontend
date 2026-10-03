@@ -1,6 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { computed } from 'vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@/components/curve/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -17,7 +16,7 @@ import type { UUID } from '@/utils/uuid'
  * Regression guard for the GLSL live preview breaking on *promoted* subgraph
  * widget edits (QA 2026-07-20, Terry Jia; fixed by #13875).
  *
- * Under ADR 0009 link-only promotion, a promoted proxy widget's live value is
+ * Under ADR-SUBGRAPH-PROMOTION-0009 link-only promotion, a promoted proxy widget's live value is
  * stored at the host widget key (`hostWidgetId`), while the uniform source is
  * still discovered from the interior source node. `useGLSLUniforms` must read
  * the host key so edits to the promoted curve/range proxy reach the renderer.
@@ -60,10 +59,6 @@ function runUniforms(sources: UniformSources) {
 }
 
 describe('useGLSLUniforms reads promoted widget values from the host key', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('curveValues reflects the edited host curve, not the stale interior curve', () => {
     const staleCurve: CurveData = {
       points: [

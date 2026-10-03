@@ -1,13 +1,10 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import Badge from 'primevue/badge'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { createApp } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'
@@ -31,22 +28,12 @@ describe('TreeExplorerTreeNode', () => {
 
   const mockHandleEditLabel = vi.fn()
 
-  beforeAll(() => {
-    const app = createApp({})
-    app.use(PrimeVue)
-    vi.useFakeTimers()
-  })
-
-  afterAll(() => {
-    vi.useRealTimers()
-  })
-
   it('renders correctly', () => {
     render(TreeExplorerTreeNode, {
       props: { node: mockNode },
       global: {
         components: { EditableText, Badge },
-        plugins: [createTestingPinia(), i18n],
+        plugins: [getActivePinia()!, i18n],
         provide: {
           [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
         }
@@ -70,8 +57,8 @@ describe('TreeExplorerTreeNode', () => {
         }
       },
       global: {
-        components: { EditableText, Badge, InputText },
-        plugins: [createTestingPinia(), i18n, PrimeVue],
+        components: { EditableText, Badge },
+        plugins: [getActivePinia()!, i18n],
         provide: {
           [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
         }
@@ -92,9 +79,9 @@ describe('TreeExplorerTreeNode', () => {
         }
       },
       global: {
-        components: { EditableText, Badge, InputText },
+        components: { EditableText, Badge },
         provide: { [InjectKeyHandleEditLabelFunction]: handleEditLabelMock },
-        plugins: [createTestingPinia(), i18n, PrimeVue]
+        plugins: [getActivePinia()!, i18n]
       }
     })
 

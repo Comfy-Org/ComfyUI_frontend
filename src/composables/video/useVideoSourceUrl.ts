@@ -1,6 +1,8 @@
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onScopeDispose, ref, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -38,14 +40,13 @@ export function useVideoSourceUrl(
   const widgetValueStore = useWidgetValueStore()
   const { nodeToNodeLocatorId } = useWorkflowStore()
 
-  const videoUrl = ref<string | undefined>()
+  const resolvedUrl = ref<string | undefined>()
 
   function resolveSourceNode(): LGraphNode | undefined {
     const current = node.value
     if (!current) return undefined
 
-    const slot =
-      current.inputs?.findIndex((input) => input.name === inputName) ?? -1
+    const slot = current.inputs.findIndex((input) => input.name === inputName)
     if (slot < 0) return current
 
     let upstream = current.getInputNode(slot)
@@ -63,7 +64,7 @@ export function useVideoSourceUrl(
   }
 
   function sourceFileWidgetValue(source: LGraphNode): unknown {
-    const graphId = source.graph?.rootGraph?.id
+    const graphId = source.graph?.rootGraph.id
     return (
       (graphId
         ? widgetValueStore.getWidget(widgetId(graphId, source.id, 'file'))
@@ -94,22 +95,82 @@ export function useVideoSourceUrl(
       : (outputUrl ?? fileUrl)
   }
 
-  function updateVideoUrl() {
-    videoUrl.value = resolveVideoUrl()
+  function updateVideoUrl(reExecuted = false) {
+    const next = resolveVideoUrl()
+    if (next !== undefined && next === resolvedUrl.value) {
+      if (reExecuted) retry()
+      return
+    }
+    resolvedUrl.value = next
   }
 
-  watch(() => {
-    const source = resolveSourceNode()
-    if (!source) return undefined
-    const locatorId = nodeToNodeLocatorId(source)
-    return [
-      nodeOutputStore.nodeOutputs[locatorId],
-      nodeOutputStore.nodePreviewImages[locatorId],
-      sourceFileWidgetValue(source)
-    ]
-  }, updateVideoUrl)
+  const connectionVersion = ref(0)
+  let scopeDisposed = false
+  let listeningNode: LGraphNode | undefined
+  let installedCallback: LGraphNode['onConnectionsChange']
+  let previousCallback: LGraphNode['onConnectionsChange']
 
-  onMounted(updateVideoUrl)
+  function detachConnectionListener() {
+    if (
+      listeningNode &&
+      listeningNode.onConnectionsChange === installedCallback
+    ) {
+      listeningNode.onConnectionsChange = previousCallback
+    }
+    listeningNode = undefined
+    installedCallback = undefined
+    previousCallback = undefined
+  }
 
-  return { videoUrl }
+  function attachConnectionListener() {
+    const current = node.value
+    if (!current || current === listeningNode) return
+    detachConnectionListener()
+    previousCallback = current.onConnectionsChange
+    installedCallback = useChainCallback(previousCallback, () => {
+      if (!scopeDisposed) connectionVersion.value++
+    })
+    current.onConnectionsChange = installedCallback
+    listeningNode = current
+  }
+
+  onScopeDispose(() => {
+    scopeDisposed = true
+    detachConnectionListener()
+  })
+
+  watch(node, attachConnectionListener)
+
+  watch(
+    () => {
+      void connectionVersion.value
+      const source = resolveSourceNode()
+      if (!source) return []
+      const locatorId = nodeToNodeLocatorId(source)
+      return [
+        nodeOutputStore.nodeOutputs[locatorId],
+        nodeOutputStore.nodePreviewImages[locatorId],
+        sourceFileWidgetValue(source)
+      ]
+    },
+    (newDeps, oldDeps) => {
+      const outputs = newDeps[0]
+      const reExecuted = outputs !== undefined && outputs !== oldDeps[0]
+      updateVideoUrl(reExecuted)
+    }
+  )
+
+  onMounted(() => {
+    attachConnectionListener()
+    updateVideoUrl()
+  })
+
+  const {
+    src: videoUrl,
+    status,
+    onError,
+    retry
+  } = useRetryableMediaSrc(resolvedUrl)
+
+  return { videoUrl, status, onError, retry }
 }

@@ -1,5 +1,6 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import userEvent from '@testing-library/user-event'
 import { FocusScope } from 'reka-ui'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -31,7 +32,7 @@ const options = [
 ]
 
 function renderInParent(
-  multiSelectProps: Record<string, unknown> = {},
+  multiSelectProps: Partial<ComponentProps<typeof MultiSelect>> = {},
   modelValue: { name: string; value: string }[] = []
 ) {
   const parentEscapeCount = { value: 0 }
@@ -101,15 +102,30 @@ describe('MultiSelect', () => {
     unmount()
   })
 
+  it('opens above a dialog even when the caller passes its own contentStyle z-index', async () => {
+    openModal = document.createElement('div')
+    ZIndex.set('modal', openModal, 3702)
+    const dialogZIndex = Number(openModal.style.zIndex)
+    const user = userEvent.setup()
+    const { unmount } = renderInParent({ contentStyle: { zIndex: 3000 } })
+
+    await user.click(screen.getByRole('button'))
+    await nextTick()
+
+    const content = findContentElement()
+    expect(content).not.toBeNull()
+    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+
+    unmount()
+  })
+
   it('keeps open-state border styling available while the dropdown is open', async () => {
     const user = userEvent.setup()
     const { unmount } = renderInParent()
 
     const trigger = screen.getByRole('button')
 
-    expect(trigger).toHaveClass(
-      'data-[state=open]:border-node-component-border'
-    )
+    expect(trigger).toHaveClass('data-[state=open]:border-border-default')
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
     await user.click(trigger)
@@ -179,6 +195,44 @@ describe('MultiSelect', () => {
 
       unmount()
     })
+  })
+
+  it('shows selected option labels in the trigger', () => {
+    const { unmount } = renderInParent({}, [
+      { name: 'Option A', value: 'a' },
+      { name: 'Option B', value: 'b' }
+    ])
+
+    expect(screen.getByText('Option A, Option B')).toBeInTheDocument()
+
+    unmount()
+  })
+
+  it('renders the value slot with the selected options instead of the joined labels', () => {
+    const Parent = {
+      template: `
+        <MultiSelect v-model="sel" :options="options">
+          <template #value="{ selected }">
+            <span v-for="item in selected" :key="item.value" data-testid="chip">
+              {{ item.name }}
+            </span>
+          </template>
+        </MultiSelect>`,
+      components: { MultiSelect },
+      setup: () => ({
+        sel: ref([options[0], options[2]]),
+        options
+      })
+    }
+
+    const { unmount } = render(Parent, { global: { plugins: [i18n] } })
+
+    expect(
+      screen.getAllByTestId('chip').map((chip) => chip.textContent.trim())
+    ).toEqual(['Option A', 'Option C'])
+    expect(screen.queryByText('Option A, Option C')).not.toBeInTheDocument()
+
+    unmount()
   })
 
   it('lets the user type in the search box when nested in a trapped focus scope', async () => {

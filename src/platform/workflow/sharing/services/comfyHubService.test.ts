@@ -1,13 +1,9 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { api } from '@/scripts/api'
 
-const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockGlobalFetch = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const { useComfyHubService } = await import('./comfyHubService')
 
@@ -29,16 +25,11 @@ function mockUploadResponse(ok = true, status = 200): Response {
 
 describe('useComfyHubService', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     vi.stubGlobal('fetch', mockGlobalFetch)
   })
 
-  afterAll(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('requests upload url and returns token payload', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         upload_url: 'https://upload.example.com/object',
         public_url: 'https://cdn.example.com/object',
@@ -52,7 +43,7 @@ describe('useComfyHubService', () => {
       contentType: 'image/png'
     })
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/hub/assets/upload-url', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/hub/assets/upload-url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -91,7 +82,7 @@ describe('useComfyHubService', () => {
   })
 
   it('creates profile with workspace_id JSON body', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         id: 'profile-1',
         username: 'builder',
@@ -111,7 +102,7 @@ describe('useComfyHubService', () => {
       avatarToken: 'avatar-token'
     })
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/hub/profiles', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/hub/profiles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -132,7 +123,7 @@ describe('useComfyHubService', () => {
   })
 
   it('publishes workflow with mapped thumbnail enum', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         share_id: 'share-1',
         workflow_id: 'workflow-1',
@@ -152,8 +143,10 @@ describe('useComfyHubService', () => {
       sampleImageTokensOrUrls: ['sample-1']
     })
 
-    const [, options] = mockFetchApi.mock.calls[0]
-    const body = JSON.parse(options.body as string)
+    const [, options] = vi.mocked(api.fetchApi).mock.calls[0]
+    assert.exists(options)
+    assert(typeof options.body === 'string')
+    const body = JSON.parse(options.body)
     expect(body).toMatchObject({
       username: 'builder',
       name: 'My Flow',
@@ -164,7 +157,7 @@ describe('useComfyHubService', () => {
       thumbnail_comparison_token_or_url: 'thumb-compare-token',
       sample_image_tokens_or_urls: ['sample-1']
     })
-    expect(mockFetchApi).toHaveBeenCalledWith('/hub/workflows', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/hub/workflows', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -172,7 +165,7 @@ describe('useComfyHubService', () => {
   })
 
   it('fetches tag labels from /hub/labels?type=tag', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         labels: [
           { name: 'video', display_name: 'Video', type: 'tag' },
@@ -184,12 +177,12 @@ describe('useComfyHubService', () => {
     const service = useComfyHubService()
     const tags = await service.fetchTagLabels()
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/hub/labels?type=tag')
+    expect(api.fetchApi).toHaveBeenCalledWith('/hub/labels?type=tag')
     expect(tags).toEqual(['Video', 'Text to Image'])
   })
 
   it('fetches current profile from /hub/profiles/me', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         id: 'profile-1',
         username: 'builder',
@@ -203,7 +196,7 @@ describe('useComfyHubService', () => {
     const service = useComfyHubService()
     const profile = await service.getMyProfile()
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/hub/profiles/me')
+    expect(api.fetchApi).toHaveBeenCalledWith('/hub/profiles/me')
     expect(profile).toEqual({
       username: 'builder',
       name: 'Builder',

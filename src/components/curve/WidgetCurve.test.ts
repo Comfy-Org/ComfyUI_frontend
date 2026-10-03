@@ -1,11 +1,15 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+import type { CurveData } from './types'
+import WidgetCurve from './WidgetCurve.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -25,7 +29,7 @@ const upstreamHolder = vi.hoisted(() => ({
   ref: null as { value: unknown } | null
 }))
 
-vi.mock('@/composables/useUpstreamValue', async () => {
+vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
   const { ref } = await import('vue')
   return {
     useUpstreamValue: () => {
@@ -35,17 +39,6 @@ vi.mock('@/composables/useUpstreamValue', async () => {
     singleValueExtractor: () => () => undefined
   }
 })
-
-const outputsHolder = vi.hoisted(() => ({
-  nodeOutputs: {} as Record<string, unknown>
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => outputsHolder
-}))
-
-import WidgetCurve from './WidgetCurve.vue'
-import type { CurveData } from './types'
 
 const CurveEditorStub = defineComponent({
   name: 'CurveEditor',
@@ -65,25 +58,6 @@ const CurveEditorStub = defineComponent({
       @click="$emit('update:modelValue', [[0,0],[0.5,1],[1,0]])"
     />
   `
-})
-
-const SelectStub = defineComponent({
-  name: 'Select',
-  props: { modelValue: { type: String, default: '' } },
-  emits: ['update:modelValue'],
-  template: `
-    <div data-testid="interp-select" :data-value="modelValue">
-      <button
-        data-testid="select-linear"
-        @click="$emit('update:modelValue', 'linear')"
-      >linear</button>
-      <slot />
-    </div>
-  `
-})
-const Passthrough = defineComponent({
-  name: 'SelectPassthrough',
-  template: '<slot />'
 })
 
 function makeWidget(
@@ -129,12 +103,7 @@ function renderWidget(
     global: {
       plugins: [i18n],
       stubs: {
-        CurveEditor: CurveEditorStub,
-        Select: SelectStub,
-        SelectContent: Passthrough,
-        SelectTrigger: Passthrough,
-        SelectValue: Passthrough,
-        SelectItem: Passthrough
+        CurveEditor: CurveEditorStub
       }
     }
   })
@@ -144,7 +113,7 @@ function renderWidget(
 describe('WidgetCurve', () => {
   beforeEach(() => {
     upstreamHolder.ref = null
-    outputsHolder.nodeOutputs = {}
+    useNodeOutputStore().nodeOutputs = {}
   })
 
   describe('Point forwarding', () => {
@@ -195,18 +164,19 @@ describe('WidgetCurve', () => {
   describe('Interpolation select', () => {
     it('shows the Select when not disabled', () => {
       renderWidget(makeWidget())
-      expect(screen.getByTestId('interp-select')).toBeInTheDocument()
+      expect(screen.getByRole('combobox')).toBeInTheDocument()
     })
 
     it('hides the Select when disabled', () => {
       renderWidget(makeWidget({ options: { disabled: true } }))
-      expect(screen.queryByTestId('interp-select')).toBeNull()
+      expect(screen.queryByRole('combobox')).toBeNull()
     })
 
     it('updates interpolation in v-model when Select emits a change', async () => {
       const { value } = renderWidget(makeWidget())
       const user = userEvent.setup()
-      await user.click(screen.getByTestId('select-linear'))
+      await user.click(screen.getByRole('combobox'))
+      await user.click(await screen.findByRole('option', { name: 'Linear' }))
       expect(value.value.interpolation).toBe('linear')
     })
 
@@ -221,7 +191,8 @@ describe('WidgetCurve', () => {
       }
       const { value } = renderWidget(makeWidget(), original)
       const user = userEvent.setup()
-      await user.click(screen.getByTestId('select-linear'))
+      await user.click(screen.getByRole('combobox'))
+      await user.click(await screen.findByRole('option', { name: 'Linear' }))
       expect(value.value.points).toEqual(original.points)
     })
   })

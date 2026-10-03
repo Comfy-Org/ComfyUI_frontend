@@ -1,12 +1,10 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
 // Mock the api
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     listUserDataFullInfo: vi.fn(),
     getUserData: vi.fn(),
@@ -20,9 +18,7 @@ describe('useUserFileStore', () => {
   let store: ReturnType<typeof useUserFileStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useUserFileStore()
-    vi.resetAllMocks()
   })
 
   it('should initialize with empty files', () => {

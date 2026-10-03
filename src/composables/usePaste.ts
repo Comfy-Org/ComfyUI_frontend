@@ -1,7 +1,8 @@
 import { useEventListener } from '@vueuse/core'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -9,6 +10,7 @@ import {
   createNode,
   isAudioNode,
   isImageNode,
+  isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
@@ -42,19 +44,51 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
 
 function pasteClipboardItems(data: DataTransfer): boolean {
   const rawData = data.getData('text/html')
-  const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+  const match = rawData.match(
+    /^<meta charset="utf-8"><div><span data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
+  )?.[1]
   if (!match) return false
+
+  let parsed: unknown
   try {
-    // Decode UTF-8 safe base64
     const binaryString = atob(match)
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
     const decodedData = new TextDecoder().decode(bytes)
-    useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
-    return true
+    parsed = JSON.parse(decodedData)
   } catch (err) {
-    console.error(err)
+    useErrorHandling().toastErrorHandler(err)
+    return true
   }
-  return false
+
+  const clipboardItems = zClipboardItems.safeParse(parsed)
+  if (!clipboardItems.success) {
+    useErrorHandling().toastErrorHandler(clipboardItems.error)
+    return true
+  }
+
+  try {
+    useCanvasStore().getCanvas()._deserializeItems(clipboardItems.data, {})
+  } catch (err) {
+    useErrorHandling().toastErrorHandler(err)
+  }
+  return true
+}
+
+function isWorkflow(
+  value: unknown
+): value is Parameters<typeof app.loadGraphData>[0] {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'version' in value &&
+    (typeof value.version === 'number' || typeof value.version === 'string') &&
+    'nodes' in value &&
+    Array.isArray(value.nodes) &&
+    'extra' in value &&
+    typeof value.extra === 'object' &&
+    value.extra !== null &&
+    !Array.isArray(value.extra)
+  )
 }
 
 function pasteItemsOnNode(
@@ -182,6 +216,10 @@ export const usePaste = () => {
   const canvasStore = useCanvasStore()
 
   useEventListener(document, 'paste', async (e) => {
+    // An editor claims the paste it handles by cancelling it. Its target is not
+    // always editable: a caret inside an uneditable chip makes the chip the
+    // target, which shouldIgnoreCopyPaste would hand to the canvas.
+    if (e.defaultPrevented) return
     if (shouldIgnoreCopyPaste(e.target)) {
       // Default system copy
       return
@@ -191,15 +229,18 @@ export const usePaste = () => {
     if (workspaceStore.shiftDown) return
 
     const { canvas } = canvasStore
-    if (!canvas) return
+    if (!canvas || isSelectOnly(canvas)) return
 
     let data: DataTransfer | string | null = e.clipboardData
-    if (!data) throw new Error('No clipboard data on clipboard event')
+    if (!data) {
+      console.error('No clipboard data on clipboard event')
+      return
+    }
     data = cloneDataTransfer(data)
 
     const { items } = data
 
-    const currentNode = canvas.current_node as LGraphNode
+    const currentNode = canvas.current_node
     const isNodeSelected = currentNode?.is_selected
 
     const isImageNodeSelected = isNodeSelected && isImageNode(currentNode)
@@ -219,13 +260,13 @@ export const usePaste = () => {
     // Look for image paste data
     for (const item of items) {
       if (item.type.startsWith('image/')) {
-        await pasteImageNode(canvas as LGraphCanvas, items, imageNode)
+        await pasteImageNode(canvas, items, imageNode)
         return
       } else if (item.type.startsWith('video/')) {
-        await pasteVideoNode(canvas as LGraphCanvas, items, videoNode)
+        await pasteVideoNode(canvas, items, videoNode)
         return
       } else if (item.type.startsWith('audio/')) {
-        await pasteAudioNode(canvas as LGraphCanvas, items, audioNode)
+        await pasteAudioNode(canvas, items, audioNode)
         return
       }
     }
@@ -236,21 +277,21 @@ export const usePaste = () => {
 
     // No image found. Look for node data
     data = data.getData('text/plain')
-    let workflow: ComfyWorkflowJSON | null
+    let workflow: unknown
     try {
       data = data.slice(data.indexOf('{'))
       workflow = JSON.parse(data)
-    } catch (err) {
+    } catch {
       try {
         data = data.slice(data.indexOf('workflow\n'))
         data = data.slice(data.indexOf('{'))
         workflow = JSON.parse(data)
-      } catch (error) {
+      } catch {
         workflow = null
       }
     }
 
-    if (workflow && workflow.version && workflow.nodes && workflow.extra) {
+    if (isWorkflow(workflow)) {
       await app.loadGraphData(workflow)
     } else {
       if (

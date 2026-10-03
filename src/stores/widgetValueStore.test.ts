@@ -1,14 +1,16 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 
 import type { UUID } from '@/utils/uuid'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
-import { useWidgetValueStore } from './widgetValueStore'
+import { stripGraphPrefix, useWidgetValueStore } from './widgetValueStore'
 
 function state<T>(
   type: string,
@@ -18,20 +20,38 @@ function state<T>(
   return { type, value, options: {}, ...extra }
 }
 
+function visibility(
+  surfaces: WidgetVisibilityComponent['surfaces'],
+  suppression: WidgetVisibilityComponent['suppression'] = {
+    byExtension: false,
+    byConnection: false
+  }
+): WidgetVisibilityComponent {
+  return { surfaces, suppression }
+}
+
 describe('useWidgetValueStore', () => {
   const graphA = 'graph-a' as UUID
   const graphB = 'graph-b' as UUID
   const seedA = widgetId(graphA, toNodeId('node-1'), 'seed')
   const seedB = widgetId(graphB, toNodeId('node-1'), 'seed')
 
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('widgetState.value access', () => {
     it('getWidget returns undefined for unregistered widget', () => {
       const store = useWidgetValueStore()
       expect(store.getWidget(seedA)).toBeUndefined()
+    })
+
+    it('does not create state while reading missing widgets', () => {
+      const store = useWidgetValueStore()
+      const onMutation = vi.fn()
+      store.$subscribe(onMutation, { flush: 'sync' })
+
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([])
+
+      expect(onMutation).not.toHaveBeenCalled()
     })
 
     it('widgetState.value can be read and written directly', () => {
@@ -102,14 +122,24 @@ describe('useWidgetValueStore', () => {
       expect(registered.y).toBe(42)
     })
 
-    it('registerWidget is idempotent and does not overwrite existing state', () => {
+    it('refreshes metadata without overwriting the current value', () => {
       const store = useWidgetValueStore()
       const first = store.registerWidget(seedA, state('number', 11))!
       first.value = 99
 
-      const second = store.registerWidget(seedA, state('number', 11))!
+      const second = store.registerWidget(
+        seedA,
+        state('number', 11, {
+          label: 'Updated seed',
+          options: { min: 4 },
+          disabled: true
+        })
+      )!
       expect(second).toBe(first)
       expect(second.value).toBe(99)
+      expect(second.label).toBe('Updated seed')
+      expect(second.options).toEqual({ min: 4 })
+      expect(second.disabled).toBe(true)
     })
 
     it('replaces a stale entry when the widget type changes', () => {
@@ -125,6 +155,93 @@ describe('useWidgetValueStore', () => {
       expect(reconciled.type).toBe('string')
       expect(reconciled.value).toBe('hello')
       expect(store.getWidget(seedA)?.type).toBe('string')
+    })
+
+    it('keeps the incumbent value on a same-type re-registration without announcing the init value', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 20))
+      const intents: GraphIntentEvent[] = []
+      const unsubscribe = onGraphIntent((event) => intents.push(event))
+
+      const registered = store.registerWidget(seedA, state('number', 10))!
+      unsubscribe()
+
+      expect(registered.value).toBe(20)
+      expect(intents).toEqual([])
+    })
+
+    it('does not accept caller-owned identity during re-registration', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 5))
+      const stale = state('number', 10, { name: 'wrong' })
+      Object.assign(stale, { nodeId: toNodeId('wrong') })
+
+      const registered = store.registerWidget(seedA, stale)!
+
+      expect(registered.nodeId).toBe(toNodeId('node-1'))
+      expect(registered.name).toBe('wrong')
+    })
+
+    it('clears omitted render state when a widget id is recycled', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 5), {
+        hasLayoutSize: true,
+        tooltip: 'old'
+      })
+
+      store.registerWidget(seedA, state('string', 'new'))
+
+      expect(store.getWidgetRenderState(seedA)).toEqual({})
+    })
+
+    it('refreshes byExtension and preserves byConnection on re-registration', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 5),
+        {},
+        visibility(
+          { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          { byExtension: true, byConnection: true }
+        )
+      )
+
+      store.registerWidget(
+        seedA,
+        state('number', 10),
+        {},
+        visibility({ canvas: 'never', vueNode: 'never', panel: 'never' })
+      )
+
+      expect(store.getWidgetVisibility(seedA)).toEqual({
+        surfaces: { canvas: 'never', vueNode: 'never', panel: 'never' },
+        suppression: { byExtension: false, byConnection: true }
+      })
+    })
+
+    it('resets visibility when the widget type changes', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 5),
+        {},
+        visibility(
+          { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          { byExtension: true, byConnection: true }
+        )
+      )
+
+      store.registerWidget(
+        seedA,
+        state('string', 'new'),
+        {},
+        visibility({ canvas: 'never', vueNode: 'never', panel: 'never' })
+      )
+
+      expect(store.getWidgetVisibility(seedA)).toEqual({
+        surfaces: { canvas: 'never', vueNode: 'never', panel: 'never' },
+        suppression: { byExtension: false, byConnection: false }
+      })
     })
 
     it('registers a widget with all properties', () => {
@@ -157,7 +274,7 @@ describe('useWidgetValueStore', () => {
       expect(registered?.value).toBe(100)
     })
 
-    it('getNodeWidgets returns all widgets for a node', () => {
+    it('getNodeWidgets returns widgets in registration order', () => {
       const store = useWidgetValueStore()
       store.registerWidget(
         widgetId(graphA, toNodeId('node-1'), 'seed'),
@@ -173,12 +290,220 @@ describe('useWidgetValueStore', () => {
       )
 
       const widgets = store.getNodeWidgets(graphA, toNodeId('node-1'))
-      expect(widgets).toHaveLength(2)
-      expect(widgets.map((w) => w.name).sort()).toEqual(['seed', 'steps'])
+      expect(widgets.map((w) => w.name)).toEqual(['seed', 'steps'])
+    })
+
+    it('getNodeWidgetIds returns the explicit node widget order', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      const cfg = widgetId(graphA, toNodeId('node-1'), 'cfg')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(steps, state('number', 20))
+      store.registerWidget(cfg, state('number', 7))
+
+      store.setNodeWidgetOrder(graphA, toNodeId('node-1'), [cfg, seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        cfg,
+        seed,
+        steps
+      ])
+      expect(
+        store.getNodeWidgets(graphA, toNodeId('node-1')).map((w) => w.name)
+      ).toEqual(['cfg', 'seed', 'steps'])
+    })
+
+    it('ignores widget IDs from other nodes when setting order', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const other = widgetId(graphA, toNodeId('node-2'), 'cfg')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(other, state('number', 7))
+
+      store.setNodeWidgetOrder(graphA, toNodeId('node-1'), [other, seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
+    })
+
+    it('replaces order using retained widget state', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(steps, state('number', 20))
+      store.removeNodeWidgetOrder(seed)
+
+      store.replaceNodeWidgetOrder(graphA, toNodeId('node-1'), [seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
+      expect(store.getWidget(steps)?.value).toBe(20)
+    })
+  })
+
+  describe('widget rename', () => {
+    it('moves state, render state, and visibility together', () => {
+      const store = useWidgetValueStore()
+      const renamed = widgetId(graphA, toNodeId('node-1'), 'renamed')
+      const registered = store.registerWidget(
+        seedA,
+        state('number', 1),
+        { tooltip: 'seed' },
+        visibility(
+          { canvas: 'shown', vueNode: 'shown', panel: 'never' },
+          { byExtension: true, byConnection: false }
+        )
+      )
+      const render = store.getWidgetRenderState(seedA)
+      const component = store.getWidgetVisibility(seedA)
+
+      expect(store.renameWidget(seedA, renamed)).toBe(registered)
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getWidgetVisibility(seedA)).toBeUndefined()
+      expect(store.getWidget(renamed)).toBe(registered)
+      expect(store.getWidgetRenderState(renamed)).toBe(render)
+      expect(store.getWidgetVisibility(renamed)).toBe(component)
+    })
+
+    it('announces subsequent changes under the new name', () => {
+      const store = useWidgetValueStore()
+      const renamed = widgetId(graphA, toNodeId('node-1'), 'renamed')
+      const intents: GraphIntentEvent[] = []
+      store.registerWidget(seedA, state('number', 1))
+      const unsubscribe = onGraphIntent((event) => intents.push(event))
+
+      const widget = store.renameWidget(seedA, renamed)!
+      widget.value = 2
+      unsubscribe()
+
+      expect(intents).toEqual([
+        {
+          type: 'set_widget',
+          source: 'local',
+          graphId: graphA,
+          nodeId: toNodeId('node-1'),
+          name: 'renamed',
+          value: 2,
+          previous: 1
+        }
+      ])
+    })
+
+    it('rejects an occupied destination without changing either widget', () => {
+      const store = useWidgetValueStore()
+      const nodeId = toNodeId('node-1')
+      const steps = widgetId(graphA, nodeId, 'steps')
+      const seedState = store.registerWidget(seedA, state('number', 1), {
+        tooltip: 'seed'
+      })
+      const stepsState = store.registerWidget(steps, state('number', 20), {
+        tooltip: 'steps'
+      })
+      const seedRenderState = store.getWidgetRenderState(seedA)
+      const stepsRenderState = store.getWidgetRenderState(steps)
+
+      expect(store.renameWidget(seedA, steps)).toBeUndefined()
+      expect(store.getWidget(seedA)).toBe(seedState)
+      expect(store.getWidget(steps)).toBe(stepsState)
+      expect(store.getWidgetRenderState(seedA)).toBe(seedRenderState)
+      expect(store.getWidgetRenderState(steps)).toBe(stepsRenderState)
+      expect(store.getNodeWidgetIds(graphA, nodeId)).toEqual([seedA, steps])
+    })
+
+    it.for([
+      {
+        name: 'an invalid destination',
+        oldId: seedA,
+        newId: widgetId('', toNodeId('node-1'), 'renamed')
+      },
+      {
+        name: 'a destination in another graph',
+        oldId: seedA,
+        newId: widgetId(graphB, toNodeId('node-1'), 'renamed')
+      },
+      {
+        name: 'a destination on another node',
+        oldId: seedA,
+        newId: widgetId(graphA, toNodeId('node-2'), 'renamed')
+      },
+      {
+        name: 'a missing source',
+        oldId: widgetId(graphA, toNodeId('node-1'), 'missing'),
+        newId: widgetId(graphA, toNodeId('node-1'), 'renamed')
+      }
+    ])('leaves sibling state unchanged for $name', ({ oldId, newId }) => {
+      const store = useWidgetValueStore()
+      const nodeId = toNodeId('node-1')
+      const seedState = store.registerWidget(seedA, state('number', 1), {
+        tooltip: 'seed'
+      })
+      const seedRenderState = store.getWidgetRenderState(seedA)
+
+      expect(store.renameWidget(oldId, newId)).toBeUndefined()
+      expect(store.getWidget(seedA)).toBe(seedState)
+      expect(store.getWidgetRenderState(seedA)).toBe(seedRenderState)
+      expect(store.getNodeWidgetIds(graphA, nodeId)).toEqual([seedA])
     })
   })
 
   describe('value mutation', () => {
+    it('announces each effective write once, direct or through setValue', () => {
+      const store = useWidgetValueStore()
+      const widget = store.registerWidget(seedA, state('number', 100))!
+      const values: unknown[][] = []
+      const unsubscribe = onGraphIntent((event) => {
+        if (event.type === 'set_widget')
+          values.push([event.previous, event.value])
+      })
+
+      widget.value = 200
+      store.setValue(seedA, 300)
+      store.setValue(seedA, 300)
+      unsubscribe()
+      widget.value = 400
+
+      expect(values).toEqual([
+        [100, 200],
+        [200, 300]
+      ])
+    })
+
+    it('announces a nested write from a listener after the outer one', () => {
+      const store = useWidgetValueStore()
+      const widget = store.registerWidget(seedA, state('number', 100))!
+      const values: unknown[] = []
+      const unsubscribe = onGraphIntent((event) => {
+        if (event.type !== 'set_widget') return
+        values.push(event.value)
+        if (event.value === 200) widget.value = 201
+      })
+
+      store.setValue(seedA, 200)
+      unsubscribe()
+
+      expect(values).toEqual([200, 201])
+    })
+
+    it('stops announcing replaced and deleted widget state', () => {
+      const store = useWidgetValueStore()
+      const replaced = store.registerWidget(seedA, state('number', 1))!
+      const current = store.registerWidget(seedA, state('string', 'two'))!
+      const values: unknown[][] = []
+      const unsubscribe = onGraphIntent((event) => {
+        if (event.type === 'set_widget')
+          values.push([event.previous, event.value])
+      })
+
+      replaced.value = 3
+      current.value = 'three'
+      store.deleteWidget(seedA)
+      current.value = 'four'
+      unsubscribe()
+
+      expect(values).toEqual([['two', 'three']])
+    })
+
     it('setValue updates registered widgets and reports missing widgets', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))
@@ -190,13 +515,90 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
-    it('deleteWidget removes registered widgets', () => {
+    it('updateOptions preserves existing options and reports missing widgets', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, { options: { min: 0, max: 10 } })
+      )
+
+      expect(store.updateOptions(seedA, { advanced: true })).toBe(true)
+      expect(store.getWidget(seedA)?.options).toEqual({
+        min: 0,
+        max: 10,
+        advanced: true
+      })
+      expect(
+        store.updateOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
+      ).toBe(false)
+    })
+
+    it('setOptions replaces options and resets omitted visibility tiers', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 100, {
+          options: { min: 0, hideInPanel: true, advanced: true }
+        })
+      )
+
+      expect(store.setOptions(seedA, { max: 10 })).toBe(true)
+      expect(store.getWidget(seedA)?.options).toEqual({ max: 10 })
+      expect(store.getWidgetVisibility(seedA)?.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+      expect(
+        store.setOptions(widgetId(graphA, toNodeId('missing'), 'seed'), {})
+      ).toBe(false)
+    })
+
+    it('maps legacy option updates to the visibility component', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 100))
 
+      expect(
+        store.updateOptions(seedA, {
+          hidden: true,
+          hideInPanel: true,
+          advanced: true
+        })
+      ).toBe(true)
+      expect(store.getWidgetVisibility(seedA)).toEqual({
+        surfaces: { canvas: 'shown', vueNode: 'advanced', panel: 'never' },
+        suppression: { byExtension: true, byConnection: false }
+      })
+    })
+
+    it('deleteWidget removes registered widgets from node order', () => {
+      const store = useWidgetValueStore()
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      store.registerWidget(seedA, state('number', 100))
+      store.registerWidget(steps, state('number', 20))
+
       expect(store.deleteWidget(seedA)).toBe(true)
       expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getWidgetVisibility(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        steps
+      ])
       expect(store.deleteWidget(seedA)).toBe(false)
+    })
+
+    it('removeNodeWidgetOrder drops the id from order but keeps its value', () => {
+      const store = useWidgetValueStore()
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      store.registerWidget(seedA, state('number', 100))
+      store.registerWidget(steps, state('number', 20))
+
+      store.removeNodeWidgetOrder(seedA)
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        steps
+      ])
+      expect(store.getWidget(seedA)?.value).toBe(100)
     })
   })
 
@@ -239,7 +641,24 @@ describe('useWidgetValueStore', () => {
       store.clearGraph(graphA)
 
       expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getWidgetVisibility(seedA)).toBeUndefined()
       expect(store.getWidget(seedB)?.value).toBe(2)
+    })
+
+    it('clearNode removes only the target node values, render state, and order', () => {
+      const store = useWidgetValueStore()
+      const sibling = widgetId(graphA, toNodeId('node-2'), 'seed')
+      store.registerWidget(seedA, state('number', 1), { hasLayoutSize: true })
+      store.registerWidget(sibling, state('number', 2))
+
+      store.clearNode(graphA, toNodeId('node-1'))
+
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getWidgetVisibility(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([])
+      expect(store.getWidget(sibling)?.value).toBe(2)
     })
   })
 
@@ -248,7 +667,7 @@ describe('useWidgetValueStore', () => {
     // header, preview, button). Such an id cannot be keyed; the store must
     // decline it rather than throw and blank every widget on the node.
     const malformedIds = [
-      widgetId(graphA, toNodeId('node-1'), '') as WidgetId, // empty name
+      widgetId(graphA, toNodeId('node-1'), ''), // empty name
       'no-colons' as WidgetId,
       `${graphA}:node-1` as WidgetId, // missing name segment
       `${graphA}:node-1:seed:extra` as WidgetId, // extra segment
@@ -266,10 +685,11 @@ describe('useWidgetValueStore', () => {
       }
     })
 
-    it('getWidget / setValue / deleteWidget tolerate un-keyable ids', () => {
+    it('read, update, and delete operations tolerate un-keyable ids', () => {
       const store = useWidgetValueStore()
       for (const id of malformedIds) {
         expect(store.getWidget(id)).toBeUndefined()
+        expect(store.getWidgetRenderState(id)).toBeUndefined()
         expect(store.setValue(id, 1)).toBe(false)
         expect(store.deleteWidget(id)).toBe(false)
       }
@@ -289,5 +709,44 @@ describe('useWidgetValueStore', () => {
       expect(store.setValue(seedA, 8)).toBe(true)
       expect(store.getWidget(seedA)?.value).toBe(8)
     })
+  })
+})
+
+describe('stripGraphPrefix', () => {
+  const uuidA = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+  const uuidB = '11111111-2222-3333-4444-555555555555'
+
+  it('returns a bare id unchanged', () => {
+    expect(stripGraphPrefix('42')).toBe('42')
+  })
+
+  it('strips a single subgraph-uuid scope prefix', () => {
+    expect(stripGraphPrefix(`${uuidA}:42`)).toBe('42')
+  })
+
+  it('strips chained scope prefixes for nested subgraphs', () => {
+    expect(stripGraphPrefix(`${uuidA}:${uuidB}:42`)).toBe('42')
+  })
+
+  // PM-1580: `insert_workflow`'s remapped node ids (comfy-multi-player
+  // `remap.ts`'s `derivedId`, e.g. `insert:<opId>:root:node:<originalId>`)
+  // carry colons that have nothing to do with subgraph scoping. Widget
+  // registration (`attachNodeToStores`/`setNodeId`) always keys on the full
+  // id, never a stripped one, so collapsing it here made every widget
+  // lookup for such a node come back empty — nodes materialized with the
+  // right position/type/links but rendered with no widgets at all.
+  it('leaves a non-scoped id carrying colons for an unrelated reason intact', () => {
+    const derived = 'insert:insert-workflow-op-id-padded-to-32c:root:node:9'
+    expect(stripGraphPrefix(derived)).toBe(derived)
+  })
+
+  it('does not collapse two different non-scoped ids that share a trailing segment', () => {
+    const a = 'insert:first-op-padded-to-32-characters0:root:node:9'
+    const b = 'insert:second-op-padded-to-32-characters:root:node:9'
+    expect(stripGraphPrefix(a)).not.toBe(stripGraphPrefix(b))
+  })
+
+  it('returns null for an empty id', () => {
+    expect(stripGraphPrefix('')).toBeNull()
   })
 })

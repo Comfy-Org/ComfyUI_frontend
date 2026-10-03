@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Interrupt"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Open Layer Editor for Selected Node"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Load Default Workflow"
   },
@@ -227,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "New Blank Workflow"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Replay Onboarding"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
@@ -274,9 +280,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Set Subgraph Search Aliases"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Experimental: Enable AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Canvas Performance"

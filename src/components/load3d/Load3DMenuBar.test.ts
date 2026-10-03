@@ -1,6 +1,15 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  createSharedComposable,
+  useDocumentVisibility,
+  useElementSize,
+  useStorage
+} from '@vueuse/core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
+import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -12,6 +21,27 @@ import type {
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
+let mockedTopBarWidth: Ref<number>
+
+vi.mock(import('@vueuse/core'), { spy: true })
+
+beforeEach(() => {
+  mockedTopBarWidth = ref(0)
+  vi.mocked(createSharedComposable).mockImplementation(
+    (composable) => composable
+  )
+  vi.mocked(useDocumentVisibility).mockImplementation(() => ref('visible'))
+  vi.mocked(useElementSize).mockImplementation(() =>
+    fromPartial({
+      width: mockedTopBarWidth,
+      height: ref(40)
+    })
+  )
+  vi.mocked(useStorage).mockImplementation((_key, defaultValue) =>
+    ref(defaultValue)
+  )
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -232,11 +262,62 @@ describe('Load3DMenuBar', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('shows the category label as text when the bar is wide', () => {
+    mockedTopBarWidth = ref(600)
+    renderMenuBar()
+
+    expect(screen.getByTestId('load3d-category-menu')).toHaveTextContent(
+      'Scene'
+    )
+  })
+
+  it('collapses the category trigger to an icon when the bar is narrow', () => {
+    mockedTopBarWidth = ref(300)
+    renderMenuBar()
+
+    const trigger = screen.getByTestId('load3d-category-menu')
+    expect(trigger).not.toHaveTextContent('Scene')
+    expect(trigger).toHaveAccessibleName('Scene')
+  })
+
+  it('still lists labeled categories in the menu when the bar is narrow', async () => {
+    mockedTopBarWidth = ref(300)
+    const { user } = renderMenuBar()
+
+    await openCategoryMenu(user)
+
+    expect(screen.getByRole('button', { name: 'Gizmo' })).toBeInTheDocument()
+  })
+
   it('hides scene controls when sceneConfig is undefined', () => {
     renderMenuBar({ sceneConfig: undefined })
 
     expect(
       screen.queryByRole('button', { name: 'Show grid' })
     ).not.toBeInTheDocument()
+  })
+
+  it('shows the animation strip only when the model has animations', async () => {
+    const { rerender } = renderMenuBar()
+    expect(
+      screen.queryByTestId('load3d-animation-strip')
+    ).not.toBeInTheDocument()
+
+    await rerender({ animations: [{ name: 'idle', index: 0 }] })
+
+    expect(screen.getByTestId('load3d-animation-strip')).toBeInTheDocument()
+  })
+
+  it('forwards play toggles from the animation strip', async () => {
+    const onUpdatePlaying = vi.fn()
+    const { user } = renderMenuBar({
+      animations: [{ name: 'idle', index: 0 }],
+      playing: false,
+      'onUpdate:playing': onUpdatePlaying
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Play' }))
+
+    expect(onUpdatePlaying).toHaveBeenCalledWith(true)
   })
 })

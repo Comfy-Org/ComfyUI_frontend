@@ -61,21 +61,34 @@ ComfyUI migrated to TypeScript and Vite, but thousands of extensions rely on the
 ### How the Shim Works
 
 **Production Build:**
-During production build, a custom Vite plugin:
+During production build, a custom Vite plugin
+(`build/plugins/comfyAPIPlugin.ts`) processes files under `src/scripts/` and
+`src/extensions/core/`:
 
-- Binds all module exports to `window.comfyAPI`
-- Generates shim files that re-export from this global object
+- Appends assignments binding every top-level export to
+  `window.comfyAPI.<moduleName>`, where `moduleName` is the source file's
+  basename without its extension
+- Emits a sibling `.js` shim file that re-reads those exports off the global
 
 ```javascript
-// Original source: /scripts/api.ts
-export const api = { }
+// Original source: src/scripts/api.ts
+export const api = {}
 
-// Generated shim: /scripts/api.js
-export * from window.comfyAPI.modules['/scripts/api.js']
+// Appended to the bundled module:
+window.comfyAPI = window.comfyAPI || {}
+window.comfyAPI.api = window.comfyAPI.api || {}
+window.comfyAPI.api.api = api
+
+// Generated shim: scripts/api.js
+export const api = window.comfyAPI.api.api
 
 // Extension imports work unchanged:
 import { api } from '/scripts/api.js'
 ```
+
+Only `export const|let|var|function|class|async function` declarations are
+detected. Re-exports (`export { x } from './y'`) and default exports are not
+bound to `window.comfyAPI`.
 
 **Why Dev Server Can't Support This:**
 
@@ -129,7 +142,7 @@ Note: Watch mode provides faster rebuilds than full builds, but still no hot rel
 For cloud extensions, modify `.env`:
 
 ```
-DEV_SERVER_COMFYUI_URL=http://stagingcloud.comfy.org/
+DEV_SERVER_COMFYUI_URL=https://stagingcloud.comfy.org/
 ```
 
 ## Key Points

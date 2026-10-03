@@ -3,14 +3,24 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false
   },
   "include": [
+    ".astro/types.d.ts",
     "src/**/*",
     "e2e/**/*",
+    "acceptance/**/*",
     "scripts/**/*",
     "astro.config.ts",
     "playwright.config.ts",
+    "playwright.acceptance.config.ts",
     "vitest.config.ts"
   ],
   "exclude": ["src/**/*.stories.ts"],

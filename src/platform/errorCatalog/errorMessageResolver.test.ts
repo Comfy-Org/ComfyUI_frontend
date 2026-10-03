@@ -6,7 +6,7 @@ import {
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
-import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
@@ -177,6 +177,27 @@ describe('errorMessageResolver', () => {
 
     expect(result.displayDetails).toContain(nodeDisplayName)
     expect(result.displayDetails).not.toMatch(/&(?:amp|lt|gt);/)
+  })
+
+  it('preserves slashes and ampersands in received values for value_not_in_list', () => {
+    expect(
+      te('errorCatalog.validationErrors.value_not_in_list.detailsWithValue')
+    ).toBe(true)
+    const receivedValue =
+      "Wan22_FunReward/Wan2.2-Fun-A14B-InP-HIGH-MPS_resized_dynamic_avg_rank_21_bf16.safetensors & Bob's model"
+    const result = resolveRunErrorMessage({
+      kind: 'node_validation',
+      error: nodeValidationError('value_not_in_list', 'lora_0', 'lora_0', {
+        received_value: receivedValue
+      }),
+      nodeDisplayName: 'WanVideo Lora Select Multi'
+    })
+    const htmlEntityPattern = /&(?:#x?[0-9a-f]+|[a-z]+);/i
+
+    expect(result.displayDetails).toContain(receivedValue)
+    expect(result.displayDetails).not.toMatch(htmlEntityPattern)
+    expect(result.toastMessage).toContain(receivedValue)
+    expect(result.toastMessage).not.toMatch(htmlEntityPattern)
   })
 
   it('uses catalog fallbacks when required_input_missing lacks node or input labels', () => {
@@ -600,6 +621,41 @@ describe('errorMessageResolver', () => {
       displayTitle: 'Prompt has no outputs',
       displayMessage:
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+    })
+  })
+
+  it('resolves agent API failures with catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'agent_api_failed',
+          message: 'The agent request failed',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Comfy Agent error',
+      displayMessage: 'Comfy Agent hit a server error.'
+    })
+  })
+
+  it('resolves an agent transport failure to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'apply_failed',
+          message: 'An agent edit could not be applied',
+          details: 'op_rejected: unknown_widget at seed'
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Agent edit failed',
+      displayMessage:
+        'An agent edit could not be applied to the workflow document.'
     })
   })
 

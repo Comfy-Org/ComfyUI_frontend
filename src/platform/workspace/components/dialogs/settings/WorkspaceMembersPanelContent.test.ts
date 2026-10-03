@@ -1,50 +1,105 @@
-import { render } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceMembersPanelContent from './WorkspaceMembersPanelContent.vue'
 
-const { mockFetchMembers, mockFetchPendingInvites } = vi.hoisted(() => ({
-  mockFetchMembers: vi.fn(),
-  mockFetchPendingInvites: vi.fn()
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    fetchMembers: mockFetchMembers,
-    fetchPendingInvites: mockFetchPendingInvites
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({ workspaceRole: ref('owner') })
-}))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 const stubs = {
   MembersPanelContent: { template: '<div data-testid="members-body" />' }
 }
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function renderComponent() {
+  return render(WorkspaceMembersPanelContent, {
+    global: { stubs, plugins: [i18n] }
+  })
+}
+
 describe('WorkspaceMembersPanelContent', () => {
+  let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
+
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockFetchMembers.mockResolvedValue(undefined)
-    mockFetchPendingInvites.mockResolvedValue(undefined)
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    workspaceUI.workspaceRole = computed(() => 'owner')
+    const ownerPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...ownerPermissions,
+      canViewPendingInvites: true
+    }))
+    workspaceStore = useTeamWorkspaceStore()
+    vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])
+    vi.mocked(workspaceStore.fetchPendingInvites).mockResolvedValue([])
   })
 
   it('fetches members and pending invites on mount', () => {
-    render(WorkspaceMembersPanelContent, { global: { stubs } })
-    expect(mockFetchMembers).toHaveBeenCalled()
-    expect(mockFetchPendingInvites).toHaveBeenCalled()
+    renderComponent()
+    expect(workspaceStore.fetchMembers).toHaveBeenCalled()
+    expect(workspaceStore.fetchPendingInvites).toHaveBeenCalled()
   })
 
-  it('settles rejected loading requests', async () => {
-    mockFetchMembers.mockRejectedValueOnce(new Error('members failed'))
-    mockFetchPendingInvites.mockRejectedValueOnce(new Error('invites failed'))
+  it('surfaces a retryable error when a fetch fails, and clears it on retry', async () => {
+    vi.mocked(workspaceStore.fetchMembers).mockRejectedValueOnce(
+      new Error('members failed')
+    )
 
-    render(WorkspaceMembersPanelContent, { global: { stubs } })
+    renderComponent()
+
+    expect(
+      await screen.findByText('workspacePanel.members.loadFailed')
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('members-body')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'g.retry' }))
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText('workspacePanel.members.loadFailed')
+      ).not.toBeInTheDocument()
+    )
+    expect(workspaceStore.fetchMembers).toHaveBeenCalledTimes(2)
+  })
+
+  it('skips the invites fetch for members who cannot view pending invites', async () => {
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const permissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...permissions,
+      canViewPendingInvites: false
+    }))
+    vi.mocked(workspaceStore.fetchPendingInvites).mockRejectedValue(
+      new Error('403')
+    )
+
+    renderComponent()
     await Promise.resolve()
 
-    expect(mockFetchMembers).toHaveBeenCalled()
-    expect(mockFetchPendingInvites).toHaveBeenCalled()
+    expect(workspaceStore.fetchMembers).toHaveBeenCalled()
+    expect(workspaceStore.fetchPendingInvites).not.toHaveBeenCalled()
+    expect(
+      screen.queryByText('workspacePanel.members.loadFailed')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows no error state when both fetches succeed', async () => {
+    renderComponent()
+    await Promise.resolve()
+
+    expect(
+      screen.queryByText('workspacePanel.members.loadFailed')
+    ).not.toBeInTheDocument()
   })
 })

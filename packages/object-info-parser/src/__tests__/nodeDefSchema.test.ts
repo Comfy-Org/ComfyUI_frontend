@@ -31,7 +31,12 @@ describe('validateNodeDef', () => {
     [{ ckpt_name: ['foo', { default: 1 }] }, ['foo', { default: 1 }]],
     [{ ckpt_name: ['foo', { bar: 1 }] }, ['foo', { bar: 1 }]],
     [{ ckpt_name: ['INT', { bar: 1 }] }, ['INT', { bar: 1 }]],
-    [{ ckpt_name: [[1, 2, 3], { bar: 1 }] }, [[1, 2, 3], { bar: 1 }]]
+    [
+      { ckpt_name: ['INT', { default: 0, display: 'color' }] },
+      ['INT', { default: 0, display: 'color' }]
+    ],
+    [{ ckpt_name: [[1, 2, 3], { bar: 1 }] }, [[1, 2, 3], { bar: 1 }]],
+    [{ ckpt_name: ['IMAGE'] }, ['IMAGE']]
   ])(
     'validateComfyNodeDef with various input spec formats',
     ([inputSpec, expected]) => {
@@ -51,8 +56,9 @@ describe('validateNodeDef', () => {
     [{ ckpt_name: { 'model1.safetensors': 'foo' } }],
     [{ ckpt_name: ['*', ''] }],
     [{ ckpt_name: ['foo', { default: 1 }, { default: 2 }] }],
-    [{ ckpt_name: ['INT', { default: '124' }] }]
-  ])('validateComfyNodeDef rejects invalid input specs', (inputSpec) => {
+    [{ ckpt_name: ['INT', { default: '124' }] }],
+    [{ ckpt_name: ['FLOAT', { display: 'color' }] }]
+  ])('validateComfyNodeDef rejects invalid input specs', ([inputSpec]) => {
     it(`rejects input spec format: ${JSON.stringify(inputSpec)}`, () => {
       expect(
         validateComfyNodeDef({

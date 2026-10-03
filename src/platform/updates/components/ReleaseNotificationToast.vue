@@ -6,10 +6,10 @@
       :subtitle="latestRelease?.version"
       :position
     >
-      <div
+      <SanitizedHtml
         class="pl-14 text-sm leading-[1.21] font-normal text-muted-foreground"
-        v-html="formattedContent"
-      ></div>
+        :html="formattedContent"
+      />
 
       <template #footer-start>
         <a
@@ -52,9 +52,11 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NotificationPopup from '@/components/common/NotificationPopup.vue'
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { isDesktop } from '@/platform/distribution/types'
 import { formatVersionAnchor } from '@/utils/formatUtil'
@@ -70,6 +72,7 @@ const { position = 'bottom-left' } = defineProps<{
 const { buildDocsUrl } = useExternalLink()
 const { toastErrorHandler } = useErrorHandling()
 const releaseStore = useReleaseStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const { t } = useI18n()
 
 // Local state for dismissed status
@@ -81,8 +84,13 @@ const latestRelease = computed<ReleaseNote | null>(() => {
 })
 
 // Show toast when new version available and not dismissed
+// Node selection mode keeps the canvas clear of everything but the graph and
+// its own banner, so this popup steps aside for the duration and returns after.
 const shouldShow = computed(
-  () => releaseStore.shouldShowToast && !isDismissed.value
+  () =>
+    releaseStore.shouldShowToast &&
+    !isDismissed.value &&
+    !agentNodeSelectionStore.isActive
 )
 
 // Generate changelog URL with version anchor (language-aware)

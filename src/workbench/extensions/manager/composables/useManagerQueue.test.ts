@@ -1,20 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
 
+import { app } from '@/scripts/app'
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
-// Mock the app API
-vi.mock('@/scripts/app', () => ({
-  app: {
-    api: {
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      clientId: 'test-client-id'
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 type ManagerTaskHistory = Record<
   string,
@@ -30,6 +22,7 @@ describe('useManagerQueue', () => {
   >
 
   const createManagerQueue = () => {
+    app.api.clientId = 'test-client-id'
     taskHistory = ref<ManagerTaskHistory>({})
     taskQueue = ref<ManagerTaskQueue>({
       history: {},
@@ -41,14 +34,6 @@ describe('useManagerQueue', () => {
 
     return useManagerQueue(taskHistory, taskQueue, installedPacks)
   }
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
 
   describe('initialization', () => {
     it('should initialize with empty state', () => {

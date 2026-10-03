@@ -1,7 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getActivePinia } from 'pinia'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,22 +11,21 @@ import AutoReloadDialogContent from '@/platform/workspace/components/dialogs/Aut
 import { useAutoReload } from '@/platform/workspace/composables/useAutoReload'
 import type { AutoReloadConfig } from '@/platform/workspace/composables/useAutoReload'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-
-const dialogStoreMocks = vi.hoisted(() => ({
-  closeDialog: vi.fn()
-}))
+import { useDialogStore } from '@/stores/dialogStore'
 
 const mockCanAccess = ref(true)
 const mockAccessFrozen = ref(false)
 
-vi.mock('@/platform/workspace/composables/useAutoReloadAccess', () => ({
-  useAutoReloadAccess: () => ({
-    canConfigure: computed(() => mockCanAccess.value && !mockAccessFrozen.value)
-  })
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => dialogStoreMocks
+vi.mock(import('@/platform/workspace/composables/useAutoReloadAccess'), () => ({
+  useAutoReloadAccess: () => {
+    const canConfigureNow = () => mockCanAccess.value && !mockAccessFrozen.value
+    return {
+      canAccess: computed(() => mockCanAccess.value),
+      isFrozen: computed(() => mockAccessFrozen.value),
+      canConfigure: computed(canConfigureNow),
+      canConfigureNow
+    }
+  }
 }))
 
 const autoReload = useAutoReload()
@@ -38,17 +37,13 @@ function renderDialog(locale = 'en', workspaceId = 'workspace-a') {
     fallbackLocale: 'en',
     messages: { en: enMessages }
   })
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    initialState: {
-      teamWorkspace: { activeWorkspaceId: 'workspace-a' }
-    }
+  Object.assign(useTeamWorkspaceStore(), {
+    activeWorkspaceId: 'workspace-a'
   })
-  const result = render(AutoReloadDialogContent, {
+  return render(AutoReloadDialogContent, {
     props: { workspaceId },
-    global: { plugins: [pinia, i18n] }
+    global: { plugins: [getActivePinia()!, i18n] }
   })
-  return { ...result, pinia }
 }
 
 function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
@@ -65,7 +60,6 @@ function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
 
 describe('AutoReloadDialogContent', () => {
   beforeEach(() => {
-    dialogStoreMocks.closeDialog.mockReset()
     mockCanAccess.value = true
     mockAccessFrozen.value = false
     autoReload.scopeToWorkspace('workspace-a')
@@ -100,7 +94,7 @@ describe('AutoReloadDialogContent', () => {
       reloadCredits: usdToCredits(5),
       monthlyBudgetCents: null
     })
-    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'auto-reload'
     })
   })
@@ -300,7 +294,7 @@ describe('AutoReloadDialogContent', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect({ ...autoReload.config }).toEqual(before)
-    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'auto-reload'
     })
   })
@@ -320,7 +314,7 @@ describe('AutoReloadDialogContent', () => {
       enabled: true,
       thresholdCredits: 3000
     })
-    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'auto-reload'
     })
   })
@@ -349,13 +343,15 @@ describe('AutoReloadDialogContent', () => {
 
   it('clears temporary settings and closes when the workspace changes', async () => {
     setConfig({ configured: true, enabled: true })
-    const { pinia } = renderDialog()
+    renderDialog()
 
-    useTeamWorkspaceStore(pinia).activeWorkspaceId = 'workspace-b'
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-b'
+    })
     await nextTick()
 
     expect(autoReload.config.configured).toBe(false)
-    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'auto-reload'
     })
   })
@@ -363,12 +359,12 @@ describe('AutoReloadDialogContent', () => {
   it('closes and rejects saving when access is revoked', async () => {
     const user = userEvent.setup()
     renderDialog()
-    dialogStoreMocks.closeDialog.mockClear()
+    vi.mocked(useDialogStore().closeDialog).mockClear()
 
     mockCanAccess.value = false
     await nextTick()
 
-    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'auto-reload'
     })
     await user.click(screen.getByRole('button', { name: 'Update' }))
@@ -378,12 +374,12 @@ describe('AutoReloadDialogContent', () => {
   it('closes and rejects saving when billing becomes frozen', async () => {
     const user = userEvent.setup()
     renderDialog()
-    dialogStoreMocks.closeDialog.mockClear()
+    vi.mocked(useDialogStore().closeDialog).mockClear()
 
     mockAccessFrozen.value = true
     await nextTick()
 
-    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'auto-reload'
     })
     await user.click(screen.getByRole('button', { name: 'Update' }))
@@ -394,7 +390,7 @@ describe('AutoReloadDialogContent', () => {
     const user = userEvent.setup()
     renderDialog('en', 'workspace-b')
 
-    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'auto-reload'
     })
     await user.click(screen.getByRole('button', { name: 'Update' }))

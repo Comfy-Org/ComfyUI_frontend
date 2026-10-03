@@ -17,7 +17,7 @@ const dragState = vi.hoisted(() => ({
   } | null
 }))
 
-vi.mock('@/composables/useLoad3dDrag', () => ({
+vi.mock(import('@/composables/useLoad3dDrag'), () => ({
   useLoad3dDrag: (options: unknown) => {
     dragState.capturedOptions = options as typeof dragState.capturedOptions
     return {
@@ -27,18 +27,6 @@ vi.mock('@/composables/useLoad3dDrag', () => ({
       handleDragLeave: dragState.handleDragLeave,
       handleDrop: dragState.handleDrop
     }
-  }
-}))
-
-vi.mock('@/components/common/LoadingOverlay.vue', () => ({
-  default: {
-    name: 'LoadingOverlayStub',
-    props: ['loading', 'loadingMessage'],
-    template: `
-      <div data-testid="loading-overlay">
-        <span v-if="loading">{{ loadingMessage }}</span>
-      </div>
-    `
   }
 }))
 
@@ -74,15 +62,12 @@ describe('Load3DScene', () => {
   beforeEach(() => {
     dragState.isDragging = ref(false)
     dragState.dragMessage = ref('')
-    dragState.handleDragOver.mockReset()
-    dragState.handleDragLeave.mockReset()
-    dragState.handleDrop.mockReset()
     dragState.capturedOptions = null
   })
 
-  it('renders the loading overlay child', () => {
+  it('hides the loading overlay when not loading', () => {
     renderComponent()
-    expect(screen.getByTestId('loading-overlay')).toBeInTheDocument()
+    expect(screen.queryByTestId('loading-overlay')).not.toBeInTheDocument()
   })
 
   it('forwards loading + loadingMessage props to the overlay', () => {

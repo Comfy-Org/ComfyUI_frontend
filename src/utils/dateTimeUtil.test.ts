@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   dateKey,
@@ -37,7 +37,7 @@ function withStrictMillisecondParser<T>(
     }
   }
 
-  vi.stubGlobal('Date', StrictDate as DateConstructor)
+  vi.stubGlobal('Date', StrictDate)
 
   try {
     return run(normalizedValues)
@@ -150,15 +150,6 @@ describe('dateKey', () => {
 })
 
 describe('isToday', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2024, 5, 15, 14, 0, 0))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('returns true for a timestamp on the same day', () => {
     const ts = new Date(2024, 5, 15, 8, 0, 0).getTime()
     expect(isToday(ts)).toBe(true)
@@ -176,15 +167,6 @@ describe('isToday', () => {
 })
 
 describe('isYesterday', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2024, 5, 15, 14, 0, 0))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('returns true for a timestamp yesterday', () => {
     const ts = new Date(2024, 5, 14, 10, 0, 0).getTime()
     expect(isYesterday(ts)).toBe(true)
@@ -220,5 +202,19 @@ describe('formatClockTime', () => {
     const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
 
     expect(formatClockTime(ts, 'en-US', 'en-u-hc-h23')).toBe('14:05:06')
+  })
+
+  it('takes the hour cycle from the system when no preference is given', () => {
+    const RealDateTimeFormat = Intl.DateTimeFormat
+    const systemLocale = 'en-US-u-hc-h23'
+    const appLocale = 'en-US-u-hc-h12-nu-arab'
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(
+      function (locales, options) {
+        return new RealDateTimeFormat(locales ?? systemLocale, options)
+      }
+    )
+    const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
+
+    expect(formatClockTime(ts, appLocale)).toBe('١٤:٠٥:٠٦')
   })
 })

@@ -3,7 +3,7 @@
     <Button
       variant="textonly"
       class="w-full"
-      @click="handleViewModeChange('list')"
+      @click="handleViewModeChange(MEDIA_ASSET_VIEW_MODE.list)"
     >
       <span class="flex items-center gap-2">
         <i class="icon-[lucide--table-of-contents] size-4" />
@@ -11,14 +11,14 @@
       </span>
       <i
         class="ml-auto icon-[lucide--check] size-4"
-        :class="viewMode !== 'list' && 'opacity-0'"
+        :class="viewMode !== MEDIA_ASSET_VIEW_MODE.list && 'opacity-0'"
       />
     </Button>
 
     <Button
       variant="textonly"
       class="w-full"
-      @click="handleViewModeChange('grid-small')"
+      @click="handleViewModeChange(MEDIA_ASSET_VIEW_MODE.gridSmall)"
     >
       <span class="flex items-center gap-2">
         <i class="icon-[lucide--grid-3x3] size-4" />
@@ -26,14 +26,14 @@
       </span>
       <i
         class="ml-auto icon-[lucide--check] size-4"
-        :class="viewMode !== 'grid-small' && 'opacity-0'"
+        :class="viewMode !== MEDIA_ASSET_VIEW_MODE.gridSmall && 'opacity-0'"
       />
     </Button>
 
     <Button
       variant="textonly"
       class="w-full"
-      @click="handleViewModeChange('grid')"
+      @click="handleViewModeChange(MEDIA_ASSET_VIEW_MODE.grid)"
     >
       <span class="flex items-center gap-2">
         <i class="icon-[lucide--layout-grid] size-4" />
@@ -41,7 +41,7 @@
       </span>
       <i
         class="ml-auto icon-[lucide--check] size-4"
-        :class="viewMode !== 'grid' && 'opacity-0'"
+        :class="viewMode !== MEDIA_ASSET_VIEW_MODE.grid && 'opacity-0'"
       />
     </Button>
 
@@ -120,6 +120,7 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 
+import { MEDIA_ASSET_VIEW_MODE } from './mediaAssetViewOptions'
 import type { MediaAssetViewMode } from './mediaAssetViewOptions'
 
 export type SortBy = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
