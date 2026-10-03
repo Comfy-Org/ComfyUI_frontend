@@ -1,7 +1,14 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { onScopeDispose, ref, watch } from 'vue'
 
+import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
+// oxlint-disable-next-line comfy/no-restricted-paths -- the store owns the lifetime of graph-activity decorations, including pruning removed nodes while the panel is closed.
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { RootGraphId } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import type { TurnId } from '../../schemas/agentApiSchema'
@@ -29,6 +36,71 @@ export const useAgentGraphActivityStore = defineStore(
     const turnOpen = ref(false)
     const currentTurnId = ref<TurnId | null>(null)
     let settleTimer: ReturnType<typeof setTimeout> | undefined
+    const settingStore = useSettingStore()
+    const canvasStore = useCanvasStore()
+    const minimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+
+    watch(
+      state,
+      (activity, previousActivity) => {
+        if (activity.phase === 'idle') {
+          minimapLayer.replace([])
+          return
+        }
+        const rootGraphId = toRootGraphId(activity.rootGraphId)
+        minimapLayer.replace(
+          activity.nodeIds.map((nodeId) => ({
+            target: {
+              rootGraphId,
+              owningGraphId: toOwningGraphId(activity.rootGraphId),
+              nodeId
+            },
+            enter: 'pop'
+          }))
+        )
+        if (
+          activity.phase === 'running' &&
+          previousActivity?.phase !== 'running' &&
+          !settingStore.get('Comfy.Minimap.Visible')
+        )
+          void settingStore
+            .set('Comfy.Minimap.Visible', true)
+            .catch((error: unknown) =>
+              reportError(error, {
+                surface: 'graph',
+                errorType: 'minimap_visibility_setting_failed'
+              })
+            )
+      },
+      { immediate: true }
+    )
+    watch(
+      () => canvasStore.currentGraph,
+      (graph, _previous, onCleanup) => {
+        if (!graph?.events) return
+        const graphs = new Set([graph, graph.rootGraph])
+        const onNodeRemoved: EventListener = (event) => {
+          if (!(event instanceof CustomEvent)) return
+          const nodeId = parseNodeId(String(event.detail.node?.id))
+          if (nodeId) removeNodes([nodeId])
+        }
+        for (const graphToWatch of graphs)
+          graphToWatch.events.addEventListener('node:removed', onNodeRemoved)
+        onCleanup(() => {
+          for (const graphToWatch of graphs)
+            graphToWatch.events.removeEventListener(
+              'node:removed',
+              onNodeRemoved
+            )
+        })
+      },
+      { immediate: true }
+    )
+    onScopeDispose(() => {
+      if (settleTimer !== undefined) clearTimeout(settleTimer)
+      settleTimer = undefined
+      minimapLayer.dispose()
+    })
 
     function startTurn(turnId: TurnId | null = null): void {
       if (turnOpen.value && currentTurnId.value === turnId) return

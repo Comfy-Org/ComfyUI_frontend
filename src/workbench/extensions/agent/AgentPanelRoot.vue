@@ -27,7 +27,6 @@ import type {
   AgentRunApprovalDecision,
   AgentStopMethod
 } from '@/platform/telemetry/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -41,7 +40,6 @@ import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -57,10 +55,9 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@/types/nodeId'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
@@ -393,49 +390,6 @@ const agentTabGraph: ComfyWorkflowJSON = {
 
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
-const settingStore = useSettingStore()
-watch(
-  () => canvasStore.canvas?.graph,
-  (graph, _previous, onCleanup) => {
-    if (!graph?.events) return
-    const events = graph.events as EventTarget
-    const onNodeRemoved: EventListener = (event) => {
-      if (!(event instanceof CustomEvent)) return
-      const nodeId = parseNodeId(String(event.detail.node?.id))
-      if (nodeId) graphActivity.removeNodes([nodeId])
-    }
-    events.addEventListener('node:removed', onNodeRemoved)
-    onCleanup(() => events.removeEventListener('node:removed', onNodeRemoved))
-  },
-  { immediate: true }
-)
-const agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
-watch(
-  () => graphActivity.state,
-  (activity) => {
-    if (activity.phase === 'idle') {
-      agentMinimapLayer.replace([])
-      return
-    }
-    const rootGraphId = toRootGraphId(activity.rootGraphId)
-    agentMinimapLayer.replace(
-      activity.nodeIds.map((nodeId) => ({
-        target: {
-          rootGraphId,
-          owningGraphId: toOwningGraphId(activity.rootGraphId),
-          nodeId
-        },
-        enter: 'pop'
-      }))
-    )
-    if (
-      activity.phase === 'running' &&
-      !settingStore.get('Comfy.Minimap.Visible')
-    )
-      void settingStore.set('Comfy.Minimap.Visible', true)
-  },
-  { immediate: true }
-)
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
@@ -1230,6 +1184,10 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  // The activity layer outlives the panel. If the panel disappears before its
+  // status watcher observes idle, leave the report dismissible rather than
+  // pinning it in the running phase for the rest of the app session.
+  if (!agentPanelStore.isVisible) graphActivity.finishTurn()
   releaseCoachCompletionWaiters()
   if (
     (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
@@ -1243,7 +1201,6 @@ onBeforeUnmount(() => {
   ++activeTabGeneration
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
-  agentMinimapLayer.dispose()
   // PM-1575: the store singleton outlives this component. Without resetting
   // the gate here, a remount's own setCanvasSyncGate() call is the only
   // thing standing between the old (now torn-down) follower's gate and a

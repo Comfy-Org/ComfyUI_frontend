@@ -30,7 +30,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -51,6 +51,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@/platform/telemetry/reportError'
+import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegistry'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -4499,6 +4500,46 @@ describe('AgentPanelRoot lifecycle', () => {
 
     expect(activity.$state.editingTabPath).toBeNull()
     expect(activity.$state.creatingTab).toBe(false)
+  })
+
+  it('keeps one live minimap layer across overlapping panel mounts', async () => {
+    const firstPanel = render(AgentPanelRoot, {
+      global: { plugins: [i18n] }
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const activity = useAgentGraphActivityStore()
+    const scope = {
+      rootGraphId: toRootGraphId('graph-1'),
+      owningGraphId: toOwningGraphId('graph-1')
+    }
+
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: scope.rootGraphId },
+      [toNodeId(501)]
+    )
+    await nextTick()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Minimap decoration layer exists: agent.graph-activity'
+      }),
+      expect.anything()
+    )
+    expect(getMinimapDecorations(scope)).toMatchObject([
+      { target: { ...scope, nodeId: '501' } }
+    ])
+
+    firstPanel.unmount()
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: scope.rootGraphId },
+      [toNodeId(502)]
+    )
+    await nextTick()
+
+    expect(getMinimapDecorations(scope)).toMatchObject([
+      { target: { ...scope, nodeId: '501' } },
+      { target: { ...scope, nodeId: '502' } }
+    ])
   })
 })
 
