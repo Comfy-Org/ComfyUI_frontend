@@ -1838,7 +1838,7 @@
     "closeDialog": "关闭对话框",
     "collapseAll": "全部折叠",
     "color": "颜色",
-    "comfy": "舒适",
+    "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 徽标",
     "comfyPackageOutdated": "已安装的 {name} 版本 {installedVersion} 低于所需版本 {requiredVersion}。",
