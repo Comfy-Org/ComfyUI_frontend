@@ -155,6 +155,7 @@ export class LoaderManager implements LoaderManagerInterface {
       this.adapterRef.current = result.adapter
       this.adapterRef.capabilities = result.capabilities
       await this.modelManager.setupModel(result.object)
+      if (loadId !== this.currentLoadId) return 'cancelled'
     }
     this.eventManager.emitEvent('modelLoadingEnd', null)
     return result ? 'loaded' : 'empty'
