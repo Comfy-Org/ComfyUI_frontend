@@ -5,7 +5,16 @@ import { escapeRegExp } from 'es-toolkit'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
+import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+type AgentAttachmentOutcome =
+  | 'attached'
+  | 'refused'
+  | 'workflowError'
+  | 'ignored'
+
+const HAND_OVER_TIMEOUT = 5_000
 
 export class AgentPanel {
   public readonly root: Locator
@@ -111,6 +120,73 @@ export class AgentPanel {
     return this.attachmentChips.and(
       this.page.locator(`[data-attachment-name="${escaped}"]`)
     )
+  }
+
+  async dropFile(dragDrop: DragDropHelper, fileName: string): Promise<void> {
+    const box = await this.root.boundingBox()
+    if (!box) throw new Error('Agent panel is not visible')
+    await dragDrop.dragAndDropFile(fileName, {
+      preserveNativePropagation: true,
+      dropPosition: { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    })
+  }
+
+  async dropGeneratedFile(
+    dragDrop: DragDropHelper,
+    generatedFile: { name: string; type: string; byteLength: number }
+  ): Promise<void> {
+    const box = await this.root.boundingBox()
+    if (!box) throw new Error('Agent panel is not visible')
+    await dragDrop.dragAndDropGeneratedFile(generatedFile, {
+      preserveNativePropagation: true,
+      dropPosition: { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    })
+  }
+
+  async handOverAttachment(
+    fileName: string,
+    route: () => Promise<void>
+  ): Promise<AgentAttachmentOutcome> {
+    await route()
+    const toastReading = (messages: string[]): Locator =>
+      this.page.locator('.p-toast-message:visible').filter({
+        hasText: new RegExp(messages.map(escapeRegExp).join('|'))
+      })
+    const attachmentRefusals = [
+      enMessages.agent.attachmentTooLarge
+        .replace('{name}', fileName)
+        .split('{limit}')[0]
+        .trimEnd(),
+      enMessages.agent.attachmentUploadFailed.replace('{name}', fileName)
+    ]
+
+    return await Promise.any([
+      this.attachmentChip(fileName)
+        .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+        .then(() => 'attached' as const),
+      toastReading(attachmentRefusals)
+        .first()
+        .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+        .then(() => 'refused' as const),
+      toastReading([
+        enMessages.toastMessages.fileLoadError.replace('{fileName}', fileName)
+      ])
+        .first()
+        .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+        .then(() => 'workflowError' as const)
+    ]).catch(() => 'ignored' as const)
+  }
+
+  async removeAllAttachments(): Promise<void> {
+    const remove = this.composerAssetSection.getByRole('button', {
+      name: enMessages.agent.remove,
+      exact: true
+    })
+    while ((await remove.count()) > 0) await remove.first().click()
+    await expect(this.attachmentChips).toHaveCount(0)
+    await expect(this.page.locator('.p-toast-message:visible')).toHaveCount(0, {
+      timeout: 10_000
+    })
   }
 
   async open(timeout?: number): Promise<Locator> {
