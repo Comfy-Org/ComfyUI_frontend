@@ -490,6 +490,64 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('counts pre-confirmation updates as applied without persisting the target', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    const update = {
+      workflowId: 'wf-1',
+      seq: 42,
+      actor: 'agent',
+      update: new Uint8Array()
+    }
+
+    dispatchFrame('doc_update', update)
+
+    expect(status().outcomes.applied).toBe(1)
+    expect(persistedRecord()).toBeNull()
+    unmount()
+  })
+
+  it('does not restore an unconfirmed target after receiving updates and remounting', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 42,
+      actor: 'agent',
+      update: new Uint8Array()
+    })
+    setup.unmount()
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(status().workflowId).toBeNull()
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it.for(['doc_reset', 'schema_error'])(
+    'updates after %s cannot renew the binding until a subscribe confirms again',
+    (event) => {
+      const { unmount } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true })
+      const stampedAt = persistedRecord()?.expiresAt
+      expect(stampedAt).toBeTypeOf('number')
+      dispatchFrame(event, { workflowId: 'wf-1' })
+
+      vi.advanceTimersByTime(3 * 60 * 1000)
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 42,
+        actor: 'agent',
+        update: new Uint8Array()
+      })
+
+      expect(persistedRecord()?.expiresAt).toBe(stampedAt)
+
+      dispatchFrame('doc_subscribed', { ok: true })
+      expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
+      unmount()
+    }
+  )
+
   it('FE-1902: a remount with no in-memory binding rebinds from sessionStorage', () => {
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
