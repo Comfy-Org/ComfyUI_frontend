@@ -23,9 +23,9 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
-  MODEL_TYPE_TAG_PREFIX,
   getAssetCategories,
-  getAssetFilename
+  getAssetFilename,
+  isModelTypeCovered
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
@@ -498,12 +498,7 @@ function createAssetService() {
         .get(folder.split('/')[0])
         ?.filter(
           (asset) =>
-            asset.tags.every(
-              (tag) =>
-                !modelTypeMode ||
-                !tag.startsWith(MODEL_TYPE_TAG_PREFIX) ||
-                tag === MODEL_TYPE_TAG_PREFIX
-            ) &&
+            !(modelTypeMode && isModelTypeCovered(asset)) &&
             asset.tags.some(
               (tag) => tag === folder || tag.startsWith(`${folder}/`)
             )
