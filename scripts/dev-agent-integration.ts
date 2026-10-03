@@ -89,8 +89,6 @@ async function run(options: Options): Promise<number> {
     )
     if (startupResult !== null) return await supervisor.stop(startupResult)
     const frontendUrl = `http://127.0.0.1:${options.frontendPort}`
-    const frontendEnv = { ...process.env }
-    delete frontendEnv.DEV_AGENT_DATA_DIR
     const frontend = spawnGroup(
       'pnpm',
       [
@@ -106,7 +104,14 @@ async function run(options: Options): Promise<number> {
       ],
       PROJECT_ROOT,
       {
-        ...frontendEnv,
+        ...process.env,
+        // This launcher pins one token into both children, so the static source
+        // is the right one here and discovery must not also be in play — the
+        // two are mutually exclusive and the config refuses both. Empty rather
+        // than deleted: `vite.config.mts` runs `dotenvConfig()`, which fills
+        // any key *absent* from the environment, so deleting an inherited
+        // export would just let a `.env` entry take its place.
+        DEV_AGENT_DATA_DIR: '',
         DEV_AGENT_SESSION_TOKEN: token,
         DEV_AGENT_URL: agentUrl,
         DEV_SERVER_COMFYUI_URL: options.comfyUrl,

@@ -79,6 +79,23 @@ describe('dev agent proxy transport', () => {
     ).toThrow('two sources for the same credential')
   })
 
+  // How scripts/dev-agent-integration.ts keeps its own static token
+  // authoritative: it pins DEV_AGENT_DATA_DIR empty in Vite's environment, so
+  // neither an inherited export nor a .env entry that dotenv would fill in can
+  // turn the launcher's supported path into a two-source error. Empty has to
+  // read as unset — including ahead of the directory check below, which an
+  // empty path would otherwise fail.
+  it('treats an empty data directory as no discovery source at all', () => {
+    const { proxy } = createDevAgentConfig({
+      DEV_AGENT_URL: 'http://127.0.0.1:6286',
+      DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+      DEV_AGENT_DATA_DIR: ''
+    })
+    expect(proxy).toMatchObject({
+      headers: { Authorization: 'Bearer test-session-token' }
+    })
+  })
+
   it('rejects an unavailable discovery directory at configuration time', () => {
     expect(() =>
       createDevAgentConfig({
