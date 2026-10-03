@@ -1,24 +1,28 @@
-// @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-// jsdom lacks ResizeObserver, which the asset-preview import chain references.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  }
-})
-
 import { i18n } from '@/i18n'
+
+import type { AgentMessages } from '../../../schemas/agentApiSchema'
+import { toTurnId } from '../../../schemas/agentApiSchema'
+import { normalizeAgentTranscript } from '../../../services/agent/agentTranscript'
 
 import UserMessage from './UserMessage.vue'
 
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+const clipboard = vi.hoisted(() => ({
+  text: '',
+  copy: vi.fn((value: string) => {
+    clipboard.text = value
+  })
+}))
+
+beforeEach(() => {
+  clipboard.text = ''
+  clipboard.copy.mockClear()
+})
 
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   createSharedComposable: (composable: () => unknown) => composable,
@@ -27,6 +31,11 @@ vi.mock<unknown>(import('@vueuse/core'), () => ({
     copied: ref(false),
     isSupported: ref(true),
     text: ref('')
+  }),
+  useClipboardItems: () => ({
+    copy: vi.fn(),
+    copied: ref(false),
+    isSupported: ref(false)
   }),
   useDocumentVisibility: () => ref('visible'),
   useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
@@ -50,7 +59,12 @@ function renderMessage(props: ComponentProps<typeof UserMessage>) {
   })
 }
 
-function stubbedAssets(): { url: string; filename: string; kind: string }[] {
+function stubbedAssets(): {
+  url: string
+  filename: string
+  kind: string
+  label?: string
+}[] {
   return JSON.parse(
     screen.getByTestId('reply-asset-group').dataset.assets ?? '[]'
   )
@@ -159,11 +173,95 @@ describe('UserMessage', () => {
         url: expect.stringContaining(
           '/view?filename=upload_clip.mp4&type=input'
         ),
-        filename: 'clip.mp4',
-        kind: 'video'
+        filename: 'upload_clip.mp4',
+        kind: 'video',
+        label: 'clip.mp4'
       }
     ])
     expect(screen.getByText('use these')).toBeInTheDocument()
+  })
+
+  // Dragging a non-first batch output (e.g. "layer 2" of a multi-output job)
+  // into the composer attaches it with `ref` set to the bare output filename
+  // (no content hash — see outputAssetUtil.ts's deliberate omission) and a
+  // correct `previewUrl` captured at drop time. splitAttachments must prefer
+  // that previewUrl over reconstructing `/view?...&type=input`, which does
+  // not resolve to the dragged output.
+  it('shows the dragged batch output, not a type=input lookup, for a non-first output asset', () => {
+    renderMessage({
+      text: 'use this one',
+      attachments: [
+        {
+          name: 'ComfyUI_00002_.png',
+          ref: 'ComfyUI_00002_.png',
+          previewUrl: 'blob:comfy/correct-batch-output-2'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: 'blob:comfy/correct-batch-output-2',
+        filename: 'ComfyUI_00002_.png',
+        kind: 'image'
+      }
+    ])
+  })
+
+  /** PM-1643 / PM-717: persisted kind classifies an extensionless ref. */
+  it.for(['image', 'video', 'audio'])(
+    'previews a rehydrated %s asset whose ref has no extension',
+    (kind) => {
+      const bareDigest = 'a'.repeat(64)
+      const persisted: AgentMessages[number] = {
+        id: 'row-1',
+        thread_id: 'thread-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn-a',
+        content: {
+          text: 'upscale this',
+          attachments: [bareDigest],
+          attachment_refs: [{ name: bareDigest, id: 'asset-9', kind }]
+        }
+      }
+      const { userAttachments } = normalizeAgentTranscript([persisted])
+
+      renderMessage({
+        text: 'upscale this',
+        attachments: userAttachments.get(toTurnId('turn-a'))
+      })
+
+      const grid = screen.queryByTestId('reply-asset-group')
+      expect(JSON.parse(grid?.dataset.assets ?? '[]')).toEqual([
+        expect.objectContaining({ kind })
+      ])
+    }
+  )
+
+  it('uses the resolved kind for both a renamed grid asset and its lightbox identity', () => {
+    renderMessage({
+      text: '',
+      attachments: [
+        {
+          name: 'renamed-video.mp4',
+          ref: 'stored-image.png',
+          kind: 'video'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: expect.stringContaining(
+          '/view?filename=stored-image.png&type=input'
+        ),
+        filename: 'stored-image.png',
+        kind: 'video',
+        label: 'renamed-video.mp4'
+      }
+    ])
   })
 
   it('keeps non-media attachments as compact tiles beside the grid', () => {
@@ -180,8 +278,9 @@ describe('UserMessage', () => {
         url: expect.stringContaining(
           '/view?filename=upload_song.mp3&type=input'
         ),
-        filename: 'song.mp3',
-        kind: 'audio'
+        filename: 'upload_song.mp3',
+        kind: 'audio',
+        label: 'song.mp3'
       }
     ])
     expect(screen.getByText('notes.md')).toBeInTheDocument()
@@ -201,6 +300,36 @@ describe('UserMessage', () => {
 
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
   })
+
+  it('copies a reference-only message with readable workflow names', async () => {
+    renderMessage({
+      text: '',
+      workflowReferences: [{ id: 'wf', name: 'Portrait', textOffset: 0 }]
+    })
+    await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
+    expect(clipboard.text).toBe('@[Workflow: Portrait]')
+  })
+
+  it.for([true, false])(
+    'respects Edit eligibility for a workflow-reference-only message: %s',
+    async (editable) => {
+      const workflowReferences = [{ id: 'wf', name: 'Portrait', textOffset: 0 }]
+      const { emitted } = renderMessage({
+        text: '',
+        workflowReferences,
+        editable
+      })
+      if (!editable) {
+        expect(
+          screen.queryByRole('button', { name: t('g.edit') })
+        ).not.toBeInTheDocument()
+        return
+      }
+
+      await userEvent.click(screen.getByRole('button', { name: t('g.edit') }))
+      expect(emitted().edit).toEqual([[{ text: '', workflowReferences }]])
+    }
+  )
 
   it('reaches and triggers the copy action by keyboard alone', async () => {
     const user = userEvent.setup()
@@ -236,9 +365,10 @@ describe('UserMessage', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers no copy action on an attachment-only message', () => {
+  it('copies the filename on an attachment-only message', async () => {
     renderMessage({ text: '', attachments: [{ name: 'clip.bin' }] })
 
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
+    expect(clipboard.text).toBe('@[File: clip.bin]')
   })
 })

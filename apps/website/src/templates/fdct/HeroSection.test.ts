@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -9,7 +8,9 @@ describe('fdct HeroSection', () => {
   it('renders the split hero with an autoplaying, looping hero video', () => {
     render(HeroSection)
 
-    const video = screen.getByLabelText(t('fdct.hero.title', 'en'))
+    const video = screen.getByLabelText(
+      t('fdct.hero.title', {}, { locale: 'en' })
+    )
     if (!(video instanceof HTMLVideoElement)) {
       throw new Error('hero label is not on a <video>')
     }

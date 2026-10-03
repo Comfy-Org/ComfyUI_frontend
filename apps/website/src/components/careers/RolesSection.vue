@@ -6,7 +6,7 @@ import type { Department } from '../../data/roles'
 import type { Locale } from '../../i18n/translations'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { scrollTo } from '../../scripts/smoothScroll'
 import CategoryNav from '../common/CategoryNav.vue'
 import SectionLabel from '../common/SectionLabel.vue'
@@ -15,6 +15,7 @@ const { locale = 'en', departments = [] } = defineProps<{
   locale?: Locale
   departments?: readonly Department[]
 }>()
+const { t } = translationsFor(locale)
 
 const visibleDepartments = computed(() =>
   departments.filter((d) => d.roles.length > 0)
@@ -95,7 +96,7 @@ function scrollToDepartment(deptKey: string) {
             <h2
               class="text-3xl font-light text-primary-comfy-canvas md:text-4xl"
             >
-              {{ t('careers.roles.heading', locale) }}
+              {{ t('careers.roles.heading') }}
             </h2>
             <CategoryNav
               v-if="hasRoles"
@@ -113,7 +114,7 @@ function scrollToDepartment(deptKey: string) {
             class="text-base text-primary-warm-gray md:text-lg"
             data-testid="careers-roles-empty"
           >
-            {{ t('careers.roles.empty', locale) }}
+            {{ t('careers.roles.empty') }}
           </p>
 
           <div
@@ -157,10 +158,10 @@ function scrollToDepartment(deptKey: string) {
                 {{ role.location }}
               </span>
               <span
-                class="bg-primary-comfy-yellow/0 group-hover:bg-primary-comfy-yellow relative grid size-7 shrink-0 place-items-center rounded-sm transition-colors duration-300 ease-out"
+                class="relative grid size-7 shrink-0 place-items-center rounded-sm bg-primary-comfy-yellow/0 transition-colors duration-300 ease-out group-hover:bg-primary-comfy-yellow"
               >
                 <span
-                  class="bg-primary-comfy-yellow size-5 transition-colors duration-300 ease-out group-hover:bg-primary-comfy-ink"
+                  class="size-5 bg-primary-comfy-yellow transition-colors duration-300 ease-out group-hover:bg-primary-comfy-ink"
                   style="
                     mask: url('/icons/arrow-up-right.svg') center / contain
                       no-repeat;

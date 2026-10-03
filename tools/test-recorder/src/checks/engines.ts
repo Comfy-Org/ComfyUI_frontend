@@ -10,7 +10,7 @@ interface Engines {
 function findRepoRoot(start = process.cwd()): string | undefined {
   let dir = start
   const { root } = parse(dir)
-  while (true) {
+  for (;;) {
     const candidate = join(dir, 'package.json')
     if (existsSync(candidate)) {
       try {

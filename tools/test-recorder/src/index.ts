@@ -10,7 +10,8 @@ intro(pc.bgCyan(pc.black(' 🎭 ComfyUI Test Recorder ')))
 
 try {
   switch (command) {
-    case 'record': {
+    case 'record':
+    case 'recorder': {
       const { parseFlags } = await import('./cli/flags')
       const { flags } = parseFlags(args.slice(1), [
         'distribution',
@@ -208,7 +209,7 @@ try {
 Usage: comfy-test <command>
 
 Commands:
-  record [--distribution <id>] [--backend <url>] [--workflow <name>]
+  record (alias: recorder) [--distribution <id>] [--backend <url>] [--workflow <name>]
          [--tags <a,b>] [--feature-flags <specs>] [--use-case <id>]
          [--description <text>] [--name <slug>] [--pr <number>]
               Record a browser test; supplied answers skip setup prompts
@@ -219,9 +220,10 @@ Commands:
   pr          Open a pull request for a generated test
   check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]
               Check environment prerequisites (defaults to cloud)
-  agent-replay [--case <id>] [--url <dev server>] [--headed] [--video] [--help]
+  agent-replay [--case <id>] [--spec <path>] [--url <dev server>] [--headed] [--video] [--help]
               Replay the recorded agent conversations as tests against a
-              running dev server (see .claude/skills/agent-integration-replay)
+              running dev server; --spec replays them through another spec
+              (see .claude/skills/agent-integration-replay)
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path
   tags        List test tags with their meanings

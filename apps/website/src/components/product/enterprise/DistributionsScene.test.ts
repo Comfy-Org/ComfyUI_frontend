@@ -1,5 +1,4 @@
-// @vitest-environment happy-dom
-/* eslint-disable testing-library/no-container, testing-library/no-node-access --
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access --
  * The scene is a decorative aria-hidden SVG with no accessible roles or text;
  * its structure and animation can only be asserted through the DOM. */
 import { render } from '@testing-library/vue'

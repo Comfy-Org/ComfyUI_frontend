@@ -22,7 +22,7 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -85,6 +85,26 @@ function closingKey(workflow: ComfyWorkflow): ComfyWorkflow {
   return toRaw(workflow)
 }
 
+/**
+ * The id to fall back to when incoming workflow data carries none.
+ *
+ * Deliberately takes `ComfyWorkflow` rather than `LoadedComfyWorkflow`:
+ * `LoadedComfyWorkflow` declares `activeState` non-null, but it is produced by
+ * an unchecked `this as this & LoadedComfyWorkflow` cast over a getter that
+ * still returns `this.changeTracker?.activeState ?? null`. Reading through the
+ * nullable base contract is what makes the optional chain honest rather than
+ * redundant. Returning `undefined` is safe: `ensureWorkflowId` generates a
+ * fresh UUID for an absent or invalid fallback.
+ *
+ * Without this, activation threw `TypeError: Cannot read properties of null
+ * (reading 'id')` (SEN-5, Sentry CLOUD-FRONTEND-PROD-1MB) — and it threw even
+ * when the incoming data already had a valid id, because the argument is
+ * evaluated before `ensureWorkflowId` can ignore it.
+ */
+function activeStateFallbackId(workflow: ComfyWorkflow): string | undefined {
+  return workflow.activeState?.id
+}
+
 /** @internal Test-only: clears the module-level load queue between tests. */
 export function resetWorkflowLoadQueueForTests(): {
   pendingLoads: number
@@ -112,7 +132,10 @@ function queueWorkflowLoad<T>(
   const settledResult = result
     .catch((error) => {
       // Keep fire-and-forget load failures observable.
-      reportError(error, { errorType: 'workflow_load_failure' })
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'workflow_load_failure'
+      })
       return undefined
     })
     .finally(() => {
@@ -358,9 +381,9 @@ export const useWorkflowService = () => {
    * Open a workflow in the current workspace
    * @param workflow The workflow to open
    * @param options The options for opening the workflow
-   * @returns false when the graph load reported failure (the error
-   * dialog was shown and the workflow never painted) or when the open
-   * was skipped because the workflow is mid-close; true otherwise
+   * @returns false when the graph load reported failure (the error dialog was
+   * shown and the workflow never painted) or when the open was skipped because
+   * the workflow is mid-close; true otherwise
    */
   /**
    * A failed replacement load leaves the shared root graph cleaned or
@@ -391,10 +414,28 @@ export const useWorkflowService = () => {
     return workflowStore.activeWorkflow
   }
 
+  // A superseded open leaves the workflow as it found it. A saved file drops
+  // what it fetched, including a draft's modified mark, so a later save cannot
+  // write an empty graph; a temporary one has no remote copy to refetch, so it
+  // keeps its content, as closing it does.
+  function discardSupersededLoad(
+    workflow: ComfyWorkflow,
+    wasModified: boolean
+  ): void {
+    if (workflow.isTemporary) return
+    workflow.unload()
+    workflow.isModified = wasModified
+  }
+
   const openWorkflow = (
     workflow: ComfyWorkflow,
-    options: { force?: boolean; navigationIntentId?: number } = {}
+    options: {
+      force?: boolean
+      navigationIntentId?: number
+      isCurrent?: () => boolean
+    } = {}
   ): Promise<boolean> => {
+    if (options.isCurrent?.() === false) return Promise.resolve(false)
     if (closingWorkflowCounts.has(closingKey(workflow)))
       return Promise.resolve(false)
     if (
@@ -410,9 +451,19 @@ export const useWorkflowService = () => {
       useSubgraphNavigationStore().beginWorkflowNavigation()
     return queueWorkflowLoad(async () => {
       try {
+        if (options.isCurrent?.() === false) {
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
+        }
         const loadFromRemote = !workflow.isLoaded
+        const wasModified = workflow.isModified
         if (loadFromRemote) {
           await workflow.load()
+        }
+        if (options.isCurrent?.() === false) {
+          if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
         }
 
         const loaded = await app.loadGraphData(
@@ -734,7 +785,10 @@ export const useWorkflowService = () => {
           }
           loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
           loadedWorkflow.changeTracker.reset(
-            ensureWorkflowId(workflowData, loadedWorkflow.activeState.id)
+            ensureWorkflowId(
+              workflowData,
+              activeStateFallbackId(loadedWorkflow)
+            )
           )
           loadedWorkflow.changeTracker.restore()
           return
@@ -766,7 +820,7 @@ export const useWorkflowService = () => {
     }
     loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
     loadedWorkflow.changeTracker.reset(
-      ensureWorkflowId(workflowData, loadedWorkflow.activeState.id)
+      ensureWorkflowId(workflowData, activeStateFallbackId(loadedWorkflow))
     )
     loadedWorkflow.changeTracker.restore()
   }
@@ -782,8 +836,24 @@ export const useWorkflowService = () => {
     const graph = canvas.graph
     const loadedWorkflow = await workflow.load()
     if (app.canvas !== canvas || canvas.graph !== graph) {
-      console.warn(
-        '[workflowService] insertWorkflow aborted: canvas or graph was replaced while the workflow loaded'
+      const replacementKind = app.canvas !== canvas ? 'canvas' : 'graph'
+      reportError(
+        new Error(
+          'insertWorkflow aborted: canvas or graph was replaced while the workflow loaded'
+        ),
+        {
+          surface: 'graph',
+          errorType: 'workflow_insert_aborted_canvas_changed',
+          level: 'warning',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'workflow',
+            operation: 'insert',
+            outcome: 'degraded',
+            assert_mode: 'soft'
+          },
+          context: { replacement_kind: replacementKind }
+        }
       )
       return
     }

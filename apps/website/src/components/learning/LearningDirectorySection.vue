@@ -45,7 +45,7 @@ const rows = computed(() =>
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-20">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-20">
     <div class="flex flex-col gap-10 lg:flex-row lg:gap-16">
       <!-- Sidebar -->
       <aside class="lg:w-72 lg:shrink-0">

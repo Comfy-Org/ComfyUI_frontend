@@ -14,7 +14,7 @@ import {
   filterWorkshopModels
 } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const {
   models,
@@ -25,6 +25,7 @@ const {
   locale?: Locale
   detailRoutesAvailable?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const query = ref('')
 const output = ref<WorkshopOutputFilter>('all')
@@ -67,22 +68,22 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
 <template>
   <header class="mb-10">
     <p
-      class="text-primary-comfy-yellow mb-5 text-sm font-medium tracking-widest uppercase"
+      class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
     >
-      {{ t('workshop.hero.eyebrow', locale) }}
+      {{ t('workshop.hero.eyebrow') }}
     </p>
     <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
-      {{ t('workshop.hero.heading', locale) }}
+      {{ t('workshop.hero.heading') }}
     </h1>
     <p class="mt-4 max-w-3xl text-lg text-primary-comfy-canvas/70">
-      {{ t('workshop.hero.subtitle', locale) }}
+      {{ t('workshop.hero.subtitle') }}
     </p>
   </header>
 
   <div class="mb-8 flex flex-col gap-4">
     <div class="flex flex-col gap-3 sm:flex-row">
       <label class="relative min-w-0 flex-1">
-        <span class="sr-only">{{ t('workshop.search.label', locale) }}</span>
+        <span class="sr-only">{{ t('workshop.search.label') }}</span>
         <Search
           aria-hidden="true"
           class="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-primary-comfy-canvas/50"
@@ -90,18 +91,18 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
         <input
           v-model="query"
           type="search"
-          :placeholder="t('workshop.search.placeholder', locale)"
-          class="focus:border-primary-comfy-yellow h-12 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 pr-4 pl-12 text-primary-comfy-canvas outline-none placeholder:text-primary-comfy-canvas/40"
+          :placeholder="t('workshop.search.placeholder')"
+          class="h-12 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 pr-4 pl-12 text-primary-comfy-canvas outline-none placeholder:text-primary-comfy-canvas/40 focus:border-primary-comfy-yellow"
         />
       </label>
       <label>
-        <span class="sr-only">{{ t('workshop.provider.label', locale) }}</span>
+        <span class="sr-only">{{ t('workshop.provider.label') }}</span>
         <select
           v-model="provider"
-          class="focus:border-primary-comfy-yellow h-12 min-w-48 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink px-4 text-primary-comfy-canvas outline-none"
+          class="h-12 min-w-48 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink px-4 text-primary-comfy-canvas outline-none focus:border-primary-comfy-yellow"
         >
           <option value="all">
-            {{ t('workshop.provider.all', locale) }}
+            {{ t('workshop.provider.all') }}
           </option>
           <option v-for="name in providers" :key="name" :value="name">
             {{ name }}
@@ -124,7 +125,7 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
         "
         @click="output = option"
       >
-        {{ t(outputLabelKeys[option], locale) }}
+        {{ t(outputLabelKeys[option]) }}
         <span class="ml-1 tabular-nums opacity-70">{{ counts[option] }}</span>
       </button>
     </div>
@@ -132,10 +133,9 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
 
   <p class="mb-5 text-sm text-primary-comfy-canvas/60" aria-live="polite">
     {{
-      t(
-        visibleModels.length === 1 ? 'workshop.result' : 'workshop.results',
-        locale
-      ).replace('{count}', String(visibleModels.length))
+      t(visibleModels.length === 1 ? 'workshop.result' : 'workshop.results', {
+        count: visibleModels.length
+      })
     }}
   </p>
 
@@ -152,11 +152,11 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
       :class="
         cn(
           detailRoutesAvailable &&
-            'group hover:border-primary-comfy-yellow/60 transition hover:-translate-y-0.5 hover:bg-primary-comfy-canvas/8'
+            'group transition hover:-translate-y-0.5 hover:border-primary-comfy-yellow/60 hover:bg-primary-comfy-canvas/8'
         )
       "
     >
-      <p class="text-primary-comfy-yellow text-xs tracking-wider uppercase">
+      <p class="text-xs tracking-wider text-primary-comfy-yellow uppercase">
         {{ model.provider }}
       </p>
       <h2 class="mt-2 text-xl font-semibold text-primary-comfy-canvas">
@@ -178,7 +178,7 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
         <ChevronRight
           v-if="detailRoutesAvailable"
           aria-hidden="true"
-          class="group-hover:text-primary-comfy-yellow size-5 shrink-0 text-primary-comfy-canvas/50 transition-transform group-hover:translate-x-1"
+          class="size-5 shrink-0 text-primary-comfy-canvas/50 transition-transform group-hover:translate-x-1 group-hover:text-primary-comfy-yellow"
         />
       </div>
     </component>
@@ -187,10 +187,10 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
   <button
     v-if="displayedModels.length < visibleModels.length"
     type="button"
-    class="hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow mx-auto mt-8 block rounded-full border border-primary-comfy-canvas/15 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors"
+    class="mx-auto mt-8 block rounded-full border border-primary-comfy-canvas/15 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
     @click="visibleLimit += WORKSHOP_PAGE_SIZE"
   >
-    {{ t('workshop.showMore', locale) }}
+    {{ t('workshop.showMore') }}
   </button>
 
   <div
@@ -198,7 +198,7 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
     class="rounded-2xl border border-primary-comfy-canvas/10 p-12"
   >
     <p class="text-center text-primary-comfy-canvas/60">
-      {{ t('workshop.empty', locale) }}
+      {{ t('workshop.empty.message') }}
     </p>
   </div>
 </template>

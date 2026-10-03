@@ -3,18 +3,24 @@ import { useSlots } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
 import SplitReveal from './SplitReveal.vue'
+import {
+  workshopEyebrowClass,
+  workshopHeadingClass
+} from './workshopHeadingClasses'
 
+// The copy arrives resolved, so the hero belongs to whichever catalogue renders
+// it rather than to one section's translation table.
 const {
-  headingKey = 'workshop.hero.heading',
-  subtitleKey,
-  locale = 'en'
+  eyebrow,
+  heading,
+  subtitle,
+  subtitleSpace = []
 } = defineProps<{
-  headingKey?: TranslationKey
-  subtitleKey?: TranslationKey
-  locale?: Locale
+  eyebrow?: string
+  heading: string
+  subtitle?: string
+  subtitleSpace?: readonly string[]
 }>()
 
 const slots = useSlots()
@@ -24,23 +30,40 @@ const slots = useSlots()
   <header
     :class="
       cn(
-        'lg:short:-mt-10 lg:short:pt-10 relative isolate -mx-6 -mt-16 overflow-hidden px-6 pt-16 max-sm:-mt-10 max-sm:pt-10 lg:-mx-8 lg:-mt-24 lg:px-8 lg:pt-24',
-        slots.default ? 'mb-8 max-sm:mb-5' : 'mb-6 pb-2 max-sm:mb-4 max-sm:pb-0'
+        'relative isolate -mx-6 -mt-8 overflow-hidden px-6 pt-8 max-sm:-mt-5 max-sm:pt-5 lg:-mx-8 lg:-mt-12 lg:px-8 lg:pt-12',
+        slots.default
+          ? 'mb-8 max-sm:mb-5'
+          : 'mb-6 pb-2 max-sm:mb-4 max-sm:pb-0 sm:short:pb-0'
       )
     "
     data-testid="workshop-hero"
   >
-    <p
-      class="text-primary-comfy-yellow mb-5 text-sm font-medium tracking-widest uppercase max-sm:mb-2"
-    >
-      <SplitReveal :text="t('workshop.hero.eyebrow', locale)" />
-    </p>
-    <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
-      <SplitReveal :text="t(headingKey, locale)" :delay="90" />
+    <slot name="eyebrow">
+      <p v-if="eyebrow" :class="workshopEyebrowClass">
+        <SplitReveal :text="eyebrow" />
+      </p>
+    </slot>
+    <h1 :class="workshopHeadingClass">
+      <SplitReveal :text="heading" :delay="90" />
     </h1>
-    <p v-if="subtitleKey" class="mt-4 text-lg text-primary-comfy-canvas/70">
-      <SplitReveal :text="t(subtitleKey, locale)" :delay="260" :stagger="50" />
-    </p>
+    <div
+      class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 sm:short:mt-3"
+    >
+      <p v-if="subtitle" class="grid text-lg text-primary-comfy-canvas/70">
+        <span
+          v-for="text in subtitleSpace"
+          :key="text"
+          class="invisible col-start-1 row-start-1"
+          aria-hidden="true"
+          data-testid="hero-subtitle-space"
+          >{{ text }}</span
+        >
+        <span class="col-start-1 row-start-1">
+          <SplitReveal :text="subtitle" :delay="260" :stagger="50" />
+        </span>
+      </p>
+      <slot name="aside" />
+    </div>
 
     <slot />
   </header>

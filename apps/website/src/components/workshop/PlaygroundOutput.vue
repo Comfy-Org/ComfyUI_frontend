@@ -17,17 +17,13 @@ import Button from '@/components/ui/button/Button.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import OutputTransport from './OutputTransport.vue'
 import type { Modality } from '../../config/models-catalogue'
-import type {
-  RunFailure,
-  RunOutput,
-  RunRecord,
-  RunState
-} from '../../config/workshop-run'
+import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { downloadOutput } from '../../config/workshop-output-download'
+import { failureLabelKey } from '../../lib/workshop/failure-label'
+import { outputLabels } from '../../lib/workshop/output-labels'
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const {
   state,
@@ -35,7 +31,11 @@ const {
   modality,
   earlier = [],
   attachments = [],
+  retryDisabled = false,
+  refreshable = false,
   memberWorkspace,
+  cancelledMessage,
+  policyMessage,
   locale = 'en'
 } = defineProps<{
   state: RunState
@@ -43,9 +43,20 @@ const {
   modality?: Modality
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
+  retryDisabled?: boolean
+  refreshable?: boolean
   memberWorkspace?: string
+  /**
+   * What a run stopped on purpose is called here. A model's run is abandoned
+   * by the page and may still be billed; a workflow's is cancelled by Cloud
+   * and is over. The same status, two different things to say.
+   */
+  cancelledMessage?: string
+  /** Why this page's provider blocks content, when its rule is known. */
+  policyMessage?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const revealed = defineModel<boolean>('revealed', { default: false })
 
@@ -53,6 +64,11 @@ const emit = defineEmits<{
   retry: []
   useInCode: []
   switchPersonal: []
+  buyCredits: []
+  download: [kind: RunOutput['kind']]
+  refresh: [url: string]
+  delivery: [url: string, status: 'succeeded' | 'failed' | 'cancelled']
+  playbackStarted: [url: string]
 }>()
 
 const elapsed = computed(() =>
@@ -65,44 +81,50 @@ const expandTrigger = useTemplateRef<HTMLButtonElement>('expandTrigger')
 const mediaControlClass =
   'focus-visible:ring-primary-comfy-yellow/50 grid size-8 cursor-pointer place-items-center rounded-lg bg-primary-comfy-ink/70 text-primary-warm-white backdrop-blur-sm transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-2'
 
-const failureKey: Record<RunFailure, TranslationKey> = {
-  validation: 'workshop.error.validation',
-  provider: 'workshop.error.provider',
-  rateLimit: 'workshop.error.rateLimit',
-  policy: 'workshop.error.policy',
-  noCredits: 'workshop.error.noCredits',
-  unavailable: 'workshop.error.unavailable',
-  timeout: 'workshop.error.timeout'
-}
+const hasUnreadableFile = computed(
+  () =>
+    state.status === 'failed' &&
+    Object.values(state.fieldErrors).includes('fileUnreadable')
+)
 
 const statusMessage = computed(() => {
-  if (
-    state.status === 'failed' &&
-    state.reason === 'noCredits' &&
-    memberWorkspace !== undefined
-  )
-    return t('workshop.error.memberNoCredits', locale).replace(
-      '{workspace}',
-      memberWorkspace
-    )
-  if (state.status === 'failed') return t(failureKey[state.reason], locale)
-  if (state.status === 'running') return t('workshop.run.running', locale)
+  if (state.status === 'failed') return failureMessage(state)
+  if (state.status === 'running')
+    return state.label ?? t('workshop.run.running')
   if (state.status === 'cancelled')
-    return t('workshop.output.cancelled', locale)
+    return cancelledMessage ?? t('workshop.output.cancelled')
   if (state.status === 'succeeded')
     return t(
-      now >= state.expiresAt
-        ? 'workshop.output.expired'
-        : 'workshop.output.complete',
-      locale
+      expired.value ? 'workshop.output.expired' : 'workshop.output.complete'
     )
   return ''
 })
 
+function failureMessage(failure: Extract<RunState, { status: 'failed' }>) {
+  if (failure.reason === 'noCredits' && memberWorkspace !== undefined)
+    return t('workshop.error.memberNoCredits', {
+      workspace: memberWorkspace
+    })
+  if (failure.reason === 'policy' && policyMessage) return policyMessage
+  return t(failureTranslationKey(failure))
+}
+
+function failureTranslationKey(
+  failure: Extract<RunState, { status: 'failed' }>
+): TranslationKey {
+  if (hasUnreadableFile.value) return 'workshop.error.fileUnreadable'
+  if (
+    failure.reason === 'validation' &&
+    !Object.keys(failure.fieldErrors).length
+  )
+    return 'workshop.error.inputRejected'
+  return failureLabelKey[failure.reason]
+}
+
 const selected = ref(0)
 // Earlier outputs from this visit stay reachable; the latest is the default.
 const viewing = ref<RunRecord>()
-const selectedAttachment = ref<RunOutput>()
+const selectedFile = ref(0)
 const latest = computed(() =>
   state.status === 'succeeded' || state.status === 'example'
     ? state.output
@@ -112,7 +134,16 @@ const primary = computed(() => viewing.value?.output ?? latest.value)
 const currentAttachments = computed(
   () => viewing.value?.attachments ?? attachments
 )
-const shown = computed(() => selectedAttachment.value ?? primary.value)
+const files = computed(() =>
+  primary.value ? [primary.value, ...currentAttachments.value] : []
+)
+const shown = computed(() => files.value[selectedFile.value] ?? primary.value)
+const expired = computed(() =>
+  shown.value?.expiresAt === undefined
+    ? isExpired(state, now)
+    : now >= shown.value.expiresAt
+)
+const fileLabels = computed(() => outputLabels(files.value))
 
 // Only a result the visitor produced opens full screen; the example is a
 // sample of what the model makes, not their picture to inspect.
@@ -127,38 +158,128 @@ const outputs = computed(() =>
     : []
 )
 const currentUrl = computed(() => outputs.value[selected.value] ?? '')
-const failedDownloadUrl = ref<string>()
+// The media element is keyed on this URL, so leaving it destroys an element
+// that can no longer report. Whoever is waiting on that URL must hear it was
+// abandoned, or the wait ends as a media timeout the visitor caused.
+watch(currentUrl, (_, previous) => {
+  if (previous) emit('delivery', previous, 'cancelled')
+})
+const failedDownload = ref<{ url: string; action: 'refresh' | 'open' }>()
 const downloadNeedsLink = computed(
-  () => failedDownloadUrl.value === currentUrl.value
+  () =>
+    failedDownload.value?.url === currentUrl.value &&
+    failedDownload.value?.action === 'open'
 )
+const downloadNeedsRefresh = computed(
+  () =>
+    (failedDownload.value?.url === currentUrl.value &&
+      failedDownload.value?.action === 'refresh') ||
+    (shown.value?.download !== undefined &&
+      now >= shown.value.download.expiresAt)
+)
+const downloadLabel = computed(() => {
+  if (downloadNeedsRefresh.value) return 'workshop.output.refreshLink'
+  return downloadNeedsLink.value
+    ? 'workshop.output.openOriginal'
+    : 'workshop.output.download'
+})
+watch(shown, () => {
+  failedDownload.value = undefined
+})
 async function download(event: MouseEvent) {
-  if (downloadNeedsLink.value) return
-  event.preventDefault()
   if (!shown.value) return
-  const url = currentUrl.value
-  if (!(await downloadOutput(url, shown.value.fileName)))
-    failedDownloadUrl.value = url
+  if (downloadNeedsRefresh.value) {
+    event.preventDefault()
+    emit('refresh', shown.value.url)
+    return
+  }
+  emit('download', shown.value.kind)
+  if (downloadNeedsLink.value || shown.value.download) return
+  event.preventDefault()
+  await downloadMedia(currentUrl.value, shown.value.fileName)
 }
-watch(latest, () => {
-  viewing.value = undefined
-})
-watch(primary, () => {
-  selectedAttachment.value = undefined
-})
 
+async function downloadMedia(url: string, fileName: string) {
+  let unavailable = false
+  if (
+    !(await downloadOutput(url, fileName, {
+      onUnavailable: refreshable
+        ? () => {
+            unavailable = true
+          }
+        : undefined
+    }))
+  ) {
+    failedDownload.value = { url, action: unavailable ? 'refresh' : 'open' }
+    if (unavailable && currentUrl.value === url) emit('refresh', url)
+  }
+}
+watch(
+  () => latest.value?.id ?? latest.value?.url,
+  () => {
+    viewing.value = undefined
+  }
+)
+watch(
+  () => primary.value?.id ?? primary.value?.url,
+  () => {
+    selectedFile.value = 0
+  }
+)
+
+// The router reports the latest run's rating on the run, not always on the
+// output, so anything showing that run has to consult both.
+const latestIsSensitive = computed(
+  () =>
+    (state.status === 'succeeded' && state.nsfw) || latest.value?.nsfw === true
+)
 // Earlier runs carry their own flag, so switching away from the latest output
 // must not drop the gate.
 const shownIsSensitive = computed(() =>
   viewing.value
     ? viewing.value.output.nsfw === true || shown.value?.nsfw === true
-    : (state.status === 'succeeded' && state.nsfw) || shown.value?.nsfw === true
+    : latestIsSensitive.value || shown.value?.nsfw === true
 )
 const blurred = computed(() => shownIsSensitive.value && !revealed.value)
-watch(shown, () => {
-  selected.value = 0
-  revealed.value = false
-  expanded.value = false
-})
+watch(
+  () => shown.value?.id ?? shown.value?.url,
+  () => {
+    selected.value = 0
+    revealed.value = false
+    expanded.value = false
+  }
+)
+
+// Oldest first, so the strip reads in the order the runs happened and the
+// newest result is the last stop, selected by default.
+interface RunStop {
+  readonly record?: RunRecord
+  readonly output: RunOutput
+  readonly nsfw: boolean
+  readonly name: string
+  readonly testId: string
+}
+
+const runStops = computed<RunStop[]>(() =>
+  latest.value === undefined
+    ? []
+    : [
+        ...[...earlier].reverse().map((record, index) => ({
+          record,
+          output: record.output,
+          nsfw: record.output.nsfw === true,
+          name: t('workshop.output.earlierRun', { number: index + 1 }),
+          testId: `earlier-run-${index}`
+        })),
+        {
+          record: undefined,
+          output: latest.value,
+          nsfw: latestIsSensitive.value,
+          name: t('workshop.output.latest'),
+          testId: 'earlier-latest'
+        }
+      ]
+)
 
 const earlierClass = (active: boolean) =>
   cn(
@@ -171,7 +292,12 @@ const earlierClass = (active: boolean) =>
 
 <template>
   <section
-    class="bg-transparency-white-t4 flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8"
+    :class="
+      cn(
+        'flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4',
+        !shown && 'min-h-96'
+      )
+    "
     data-testid="playground-output"
     :data-state="state.status"
   >
@@ -179,14 +305,29 @@ const earlierClass = (active: boolean) =>
     <header
       class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
-      <span>{{ t('workshop.output.title', locale) }}</span>
-      <span
-        v-if="state.status === 'running'"
-        class="text-primary-warm-white tabular-nums"
-        data-testid="run-elapsed"
+      <span class="shrink-0">{{ t('workshop.output.title') }}</span>
+      <div
+        v-if="currentAttachments.length && !blurred"
+        role="group"
+        :aria-label="t('workshop.output.files')"
+        class="flex min-w-0 items-center gap-2 overflow-x-auto"
+        data-testid="output-files"
       >
-        {{ elapsed }}
-      </span>
+        <button
+          v-for="(output, index) in files"
+          :key="output.url"
+          type="button"
+          :aria-pressed="shown === output"
+          :title="output.fileName"
+          :class="cn(earlierClass(shown === output), 'size-auto px-2.5 py-1')"
+          @click="selectedFile = index"
+        >
+          {{ t(fileLabels[index].key)
+          }}{{
+            fileLabels[index].ordinal ? ` ${fileLabels[index].ordinal}` : ''
+          }}
+        </button>
+      </div>
     </header>
 
     <!-- Idle -->
@@ -201,7 +342,7 @@ const earlierClass = (active: boolean) =>
         <ImageIcon class="size-5" />
       </span>
       <p class="text-sm text-primary-warm-gray">
-        {{ t('workshop.output.placeholder', locale) }}
+        {{ t('workshop.output.placeholder') }}
       </p>
     </div>
 
@@ -211,34 +352,48 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <Loader2
-        class="text-primary-comfy-yellow size-8 animate-spin"
+        v-if="!state.stalled"
+        class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
         aria-hidden="true"
+        data-testid="run-spinner"
       />
-      <p class="text-sm text-primary-warm-white">
-        {{ t('workshop.run.running', locale) }}
+      <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
+        {{ state.label ?? t('workshop.run.running') }}
+        <span
+          v-if="!state.stalled"
+          class="text-primary-warm-gray tabular-nums"
+          data-testid="run-elapsed"
+        >
+          {{ elapsed }}
+        </span>
       </p>
       <p
-        v-if="modality === 'video'"
+        v-if="modality === 'video' && state.label === undefined"
         class="max-w-xs text-xs text-primary-warm-gray"
       >
-        {{ t('workshop.run.videoHint', locale) }}
+        {{ t('workshop.run.videoHint') }}
       </p>
     </div>
 
     <!-- Expired -->
     <div
-      v-else-if="isExpired(state, now)"
+      v-else-if="expired"
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
       data-testid="run-expired"
     >
       <p class="text-sm text-primary-comfy-canvas">
-        {{ t('workshop.output.expired', locale) }}
+        {{ t('workshop.output.expired') }}
       </p>
       <p class="max-w-sm text-xs text-primary-warm-gray">
-        {{ t('workshop.output.expiredHint', locale) }}
+        {{ t('workshop.output.expiredHint') }}
       </p>
-      <Button variant="outline" size="sm" @click="emit('retry')">
-        {{ t('workshop.output.runAgain', locale) }}
+      <Button
+        variant="outline"
+        size="sm"
+        :disabled="retryDisabled"
+        @click="emit('retry')"
+      >
+        {{ t('workshop.output.runAgain') }}
       </Button>
     </div>
 
@@ -248,10 +403,15 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <p class="text-sm text-primary-comfy-canvas">
-        {{ t('workshop.output.cancelled', locale) }}
+        {{ statusMessage }}
       </p>
-      <Button variant="outline" size="sm" @click="emit('retry')">
-        {{ t('workshop.output.runAgain', locale) }}
+      <Button
+        variant="outline"
+        size="sm"
+        :disabled="retryDisabled"
+        @click="emit('retry')"
+      >
+        {{ t('workshop.output.runAgain') }}
       </Button>
     </div>
 
@@ -262,7 +422,7 @@ const earlierClass = (active: boolean) =>
       data-testid="run-error"
       :data-reason="state.reason"
     >
-      <p class="text-primary-comfy-red text-sm">
+      <p class="text-sm text-primary-comfy-red">
         {{ statusMessage }}
       </p>
       <Button
@@ -271,26 +431,26 @@ const earlierClass = (active: boolean) =>
         size="sm"
         @click="emit('switchPersonal')"
       >
-        {{ t('workshop.run.switchPersonal', locale) }}
+        {{ t('workshop.run.switchPersonal') }}
       </Button>
       <Button
         v-else-if="state.reason === 'noCredits'"
-        as="a"
-        :href="WORKSHOP_CREDITS_URL"
-        target="_blank"
-        rel="noopener noreferrer"
         variant="outline"
         size="sm"
+        @click="emit('buyCredits')"
       >
-        {{ t('nav.buyCredits', locale) }}
+        {{ t('nav.buyCredits') }}
       </Button>
       <Button
-        v-else-if="state.reason !== 'validation'"
+        v-else-if="
+          !hasUnreadableFile && !['validation', 'policy'].includes(state.reason)
+        "
         variant="outline"
         size="sm"
+        :disabled="retryDisabled"
         @click="emit('retry')"
       >
-        {{ t('workshop.error.retry', locale) }}
+        {{ t('workshop.error.retry') }}
       </Button>
     </div>
 
@@ -298,29 +458,34 @@ const earlierClass = (active: boolean) =>
     <template v-else-if="shown">
       <div
         class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
+        data-testid="output-media"
       >
         <div
           :key="currentUrl"
           :class="blurred ? 'blur-2xl select-none' : ''"
-          class="animate-soft-in size-full transition-[filter]"
+          class="size-full animate-soft-in transition-all"
         >
           <VideoPlayer
             v-if="currentUrl && shown.kind === 'video' && !blurred"
             :src="currentUrl"
             :locale
-            :aria-label="t('workshop.output.title', locale)"
-            class="size-full"
+            :aria-label="shown.alt ?? t('workshop.output.title')"
+            class="size-full rounded-none border-0"
             fit="contain"
             controls-on-hover
             autoplay
             loop
             no-cors
+            @loaded="emit('delivery', $event, 'succeeded')"
+            @failed="emit('delivery', $event, 'failed')"
           />
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
             :src="currentUrl"
-            :alt="t('workshop.output.title', locale)"
+            :alt="shown.alt ?? t('workshop.output.title')"
             class="size-full object-contain"
+            @load="emit('delivery', currentUrl, 'succeeded')"
+            @error="emit('delivery', currentUrl, 'failed')"
           />
           <pre
             v-else-if="shown.kind === 'text' && !blurred"
@@ -334,7 +499,7 @@ const earlierClass = (active: boolean) =>
             <span
               v-for="bar in 32"
               :key="bar"
-              class="bg-primary-comfy-yellow/70 w-1.5 rounded-full"
+              class="w-1.5 rounded-full bg-primary-comfy-yellow/70"
               :style="{ height: `${20 + ((bar * 37) % 60)}%` }"
             />
           </div>
@@ -353,14 +518,14 @@ const earlierClass = (active: boolean) =>
           class="absolute top-3 right-3 z-20 inline-flex h-6 items-center rounded-lg bg-black/40 px-2 text-2xs font-bold tracking-wider text-white uppercase backdrop-blur-md"
           data-testid="output-example"
         >
-          {{ t('workshop.output.example', locale) }}
+          {{ t('workshop.output.example') }}
         </span>
 
         <button
           v-if="currentUrl && !blurred && expandable"
           ref="expandTrigger"
           type="button"
-          :aria-label="t('workshop.output.expand', locale)"
+          :aria-label="t('workshop.output.expand')"
           :class="cn(mediaControlClass, 'absolute right-3 bottom-3')"
           data-testid="output-expand"
           @click="expanded = true"
@@ -373,6 +538,10 @@ const earlierClass = (active: boolean) =>
           :src="currentUrl"
           :locale
           class="absolute inset-x-0 bottom-0"
+          @loaded="emit('delivery', $event, 'succeeded')"
+          @failed="emit('delivery', $event, 'failed')"
+          @playback-started="emit('playbackStarted', $event)"
+          @cancelled="emit('delivery', $event, 'cancelled')"
         />
         <button
           v-if="blurred"
@@ -382,12 +551,12 @@ const earlierClass = (active: boolean) =>
           @click="revealed = true"
         >
           <span class="text-sm text-primary-warm-white">
-            {{ t('workshop.output.nsfw', locale) }}
+            {{ t('workshop.output.nsfw') }}
           </span>
           <span
-            class="text-primary-comfy-yellow text-xs font-bold tracking-wider uppercase"
+            class="text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase"
           >
-            {{ t('workshop.output.reveal', locale) }}
+            {{ t('workshop.output.reveal') }}
           </span>
         </button>
       </div>
@@ -401,12 +570,7 @@ const earlierClass = (active: boolean) =>
           v-for="(url, index) in outputs"
           :key="index"
           type="button"
-          :aria-label="
-            t('workshop.output.select', locale).replace(
-              '{n}',
-              String(index + 1)
-            )
-          "
+          :aria-label="t('workshop.output.select', { n: index + 1 })"
           :aria-pressed="index === selected"
           :data-testid="`output-thumb-${index}`"
           :class="
@@ -420,7 +584,7 @@ const earlierClass = (active: boolean) =>
           @click="selected = index"
         >
           <video
-            v-if="shown.kind === 'video'"
+            v-if="shown?.kind === 'video'"
             :src="url"
             class="size-full object-cover"
             muted
@@ -438,67 +602,41 @@ const earlierClass = (active: boolean) =>
       </div>
 
       <div
-        v-if="currentAttachments.length && !blurred"
-        class="flex flex-wrap gap-2 border-t border-transparency-white-t8 px-4 py-3"
-      >
-        <button
-          v-for="output in [primary, ...currentAttachments]"
-          :key="output?.url"
-          type="button"
-          :aria-pressed="shown === output"
-          :class="
-            cn(earlierClass(shown === output), 'size-auto px-3 py-2 break-all')
-          "
-          @click="selectedAttachment = output"
-        >
-          {{ output?.fileName }}
-        </button>
-      </div>
-
-      <div
         v-if="earlier.length && state.status === 'succeeded'"
+        role="group"
+        :aria-label="t('workshop.output.earlier')"
         class="flex items-center gap-2 overflow-x-auto border-t border-transparency-white-t8 px-4 py-3"
         data-testid="earlier-runs"
       >
-        <span
-          class="shrink-0 text-2xs font-bold tracking-wider text-primary-warm-gray uppercase"
-        >
-          {{ t('workshop.output.earlier', locale) }}
-        </span>
         <button
+          v-for="stop in runStops"
+          :key="stop.testId"
           type="button"
-          :aria-pressed="!viewing"
-          :class="cn(earlierClass(!viewing), 'w-auto px-3')"
-          data-testid="earlier-latest"
-          @click="viewing = undefined"
-        >
-          {{ t('workshop.output.latest', locale) }}
-        </button>
-        <button
-          v-for="(run, index) in earlier"
-          :key="index"
-          type="button"
-          :aria-pressed="viewing === run"
-          :aria-label="`${t('workshop.output.earlier', locale)} ${index + 1}`"
-          :class="earlierClass(viewing === run)"
-          :data-testid="`earlier-run-${index}`"
-          @click="viewing = run"
+          :aria-pressed="viewing === stop.record"
+          :aria-label="stop.name"
+          :class="earlierClass(viewing === stop.record)"
+          :data-testid="stop.testId"
+          @click="viewing = stop.record"
         >
           <video
-            v-if="run.output.kind === 'video'"
-            :src="run.output.url"
-            :class="cn('size-full object-cover', run.output.nsfw && 'blur-md')"
+            v-if="stop.output.kind === 'video'"
+            :src="stop.output.url"
+            :class="cn('size-full object-cover', stop.nsfw && 'blur-md')"
             muted
             playsinline
             preload="metadata"
           />
           <img
-            v-else-if="run.output.kind === 'image'"
-            :src="run.output.url"
+            v-else-if="stop.output.kind === 'image'"
+            :src="stop.output.url"
             alt=""
-            :class="cn('size-full object-cover', run.output.nsfw && 'blur-md')"
+            :class="cn('size-full object-cover', stop.nsfw && 'blur-md')"
           />
-          <span v-else>{{ index + 2 }}</span>
+          <FileIcon
+            v-else
+            class="size-5 text-primary-warm-gray"
+            aria-hidden="true"
+          />
         </button>
       </div>
 
@@ -507,19 +645,7 @@ const earlierClass = (active: boolean) =>
         role="status"
         class="px-5 py-2 text-xs text-primary-warm-gray"
       >
-        {{ t('workshop.output.truncated', locale) }}
-      </p>
-      <p
-        class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
-        :data-testid="
-          state.status === 'example' ? 'output-example-hint' : undefined
-        "
-      >
-        {{
-          state.status === 'example'
-            ? t('workshop.output.exampleHint', locale)
-            : t('workshop.output.expires', locale)
-        }}
+        {{ t('workshop.output.truncated') }}
       </p>
       <div
         v-if="state.status === 'succeeded'"
@@ -530,7 +656,7 @@ const earlierClass = (active: boolean) =>
           role="status"
           class="w-full text-xs text-primary-warm-gray"
         >
-          {{ t('workshop.output.downloadFallback', locale) }}
+          {{ t('workshop.output.downloadFallback') }}
         </p>
         <Button
           variant="outline"
@@ -539,13 +665,15 @@ const earlierClass = (active: boolean) =>
           data-testid="output-use-in-code"
           @click="emit('useInCode')"
         >
-          {{ t('workshop.output.useInCode', locale) }}
+          {{ t('workshop.output.useInCode') }}
         </Button>
         <Button
           v-if="currentUrl && !blurred"
           as="a"
-          :href="currentUrl"
-          :download="downloadNeedsLink ? undefined : shown.fileName"
+          :href="shown.download?.url ?? currentUrl"
+          :download="
+            downloadNeedsLink || shown.download ? undefined : shown.fileName
+          "
           :prepend-icon="downloadNeedsLink ? ExternalLink : Download"
           target="_blank"
           rel="noopener"
@@ -554,14 +682,7 @@ const earlierClass = (active: boolean) =>
           data-testid="output-download"
           @click="download"
         >
-          {{
-            t(
-              downloadNeedsLink
-                ? 'workshop.output.openOriginal'
-                : 'workshop.output.download',
-              locale
-            )
-          }}
+          {{ t(downloadLabel) }}
         </Button>
       </div>
     </template>
@@ -577,11 +698,11 @@ const earlierClass = (active: boolean) =>
           @close-auto-focus.prevent="expandTrigger?.focus()"
         >
           <DialogTitle class="sr-only">{{
-            t('workshop.output.title', locale)
+            t('workshop.output.title')
           }}</DialogTitle>
           <button
             type="button"
-            :aria-label="t('workshop.output.collapse', locale)"
+            :aria-label="t('workshop.output.collapse')"
             :class="cn(mediaControlClass, 'absolute top-6 right-6')"
             data-testid="output-collapse"
             @click="expanded = false"
@@ -590,7 +711,7 @@ const earlierClass = (active: boolean) =>
           </button>
           <img
             :src="currentUrl"
-            :alt="t('workshop.output.title', locale)"
+            :alt="shown?.alt ?? t('workshop.output.title')"
             class="max-h-full max-w-full rounded-2xl object-contain"
           />
         </DialogContent>

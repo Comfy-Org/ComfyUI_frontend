@@ -12,7 +12,11 @@ export class AgentRequestResponseQueue {
 
   constructor(
     private readonly scenarios: readonly AgentRequestResponseScenario[]
-  ) {}
+  ) {
+    if (scenarios.length === 0) {
+      throw new Error('Agent request queue requires at least one scenario')
+    }
+  }
 
   take(request: PostMessageInput): readonly AgentResponseStep[] {
     const requestNumber = this.nextScenarioIndex + 1

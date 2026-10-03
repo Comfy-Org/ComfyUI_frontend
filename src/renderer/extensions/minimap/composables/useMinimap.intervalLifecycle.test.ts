@@ -14,13 +14,15 @@ import type {
   LGraphNode,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
+import { createMockLinks } from '@/utils/__tests__/litegraphTestUtils'
 import {
-  createMockCanvas2DContext,
-  createMockLinks,
+  createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 const mockNodes = fromPartial<LGraphNode[]>([
   {
@@ -69,29 +71,16 @@ const mockCanvas = fromPartial<LGraphCanvas>({
   setDirty: vi.fn()
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
-  }
-}))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: {
-      get graph() {
-        return mockGraph
-      }
-    }
-  }
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 
 const POLL_MS = 100
 
 beforeEach(() => {
+  app.canvas.graph = mockGraph
+  vi.mocked(api.apiURL).mockReturnValue('http://localhost:8188')
   useCanvasStore().canvas = fromPartial(mockCanvas)
   vi.mocked(useSettingStore().get).mockReturnValue(true)
   vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
@@ -139,7 +128,7 @@ describe('useMinimap change-detection interval', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    context = createMockCanvas2DContext()
+    context = createMockCanvasRenderingContext2D()
     mockNodes[0].pos = [0, 0]
   })
 

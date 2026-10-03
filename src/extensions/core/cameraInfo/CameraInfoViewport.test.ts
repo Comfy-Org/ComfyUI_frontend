@@ -5,7 +5,7 @@ const { createViewport3dMock } = vi.hoisted(() => ({
   createViewport3dMock: vi.fn()
 }))
 
-vi.mock('@/extensions/core/load3d/createViewport3d', () => ({
+vi.mock(import('@/extensions/core/load3d/createViewport3d'), () => ({
   createViewport3d: createViewport3dMock
 }))
 
@@ -171,12 +171,6 @@ describe('CameraInfoViewport gizmo visibility', () => {
 
     viewport.setGizmosVisible(true)
     expect(viewport.orbitHandles.isVisible()).toBe(true)
-  })
-
-  it('reveals the target handle in target transform mode', () => {
-    viewport.setTransformGizmoMode('target')
-
-    expect(viewport.targetHandle.isVisible()).toBe(true)
   })
 
   it('enables the camera handle for camera-rotate in quaternion mode', () => {

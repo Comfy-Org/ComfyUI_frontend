@@ -6,7 +6,10 @@ import type {
 } from '../i18n/translations'
 
 import { externalLinks } from '../config/routes'
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
+import { categoryPath } from './learningPaths'
+
+export { categoryPath, tutorialPath } from './learningPaths'
 
 export type LearningCategory = 'basics' | 'vfx' | 'animations' | 'ads'
 
@@ -62,10 +65,10 @@ export const learningCategories: readonly LearningCategory[] = [
 ]
 
 export const categoryLabelKeys: Record<LearningCategory, TranslationKey> = {
-  basics: 'learning.categories.basics',
-  vfx: 'learning.categories.vfx',
-  animations: 'learning.categories.animations',
-  ads: 'learning.categories.ads'
+  basics: 'learning.categories.basics.label',
+  vfx: 'learning.categories.vfx.label',
+  animations: 'learning.categories.animations.label',
+  ads: 'learning.categories.ads.label'
 }
 
 export const categoryBlurbKeys: Record<LearningCategory, TranslationKey> = {
@@ -111,35 +114,42 @@ const categoryMetaDescriptionKeys: Record<LearningCategory, TranslationKey> = {
 export const learningHeading = (
   locale: Locale,
   category?: LearningCategory
-): string =>
-  t(category ? categoryHeadingKeys[category] : 'learning.title', locale)
+): string => {
+  const { t } = translationsFor(locale)
+  return t(category ? categoryHeadingKeys[category] : 'learning.title')
+}
 
 /** Visible lead-in for a directory page. */
 export const learningDescription = (
   locale: Locale,
   category?: LearningCategory
-): string =>
-  t(category ? categoryDescriptionKeys[category] : 'learning.tagline', locale)
+): string => {
+  const { t } = translationsFor(locale)
+  return t(category ? categoryDescriptionKeys[category] : 'learning.tagline')
+}
 
 /** Document / social title for a directory page. */
 export const learningMetaTitle = (
   locale: Locale,
   category?: LearningCategory
-): string =>
-  t(category ? categoryMetaTitleKeys[category] : 'learning.metaTitle', locale)
+): string => {
+  const { t } = translationsFor(locale)
+  return t(category ? categoryMetaTitleKeys[category] : 'learning.metaTitle')
+}
 
 /** Meta description for a directory page, written for the SERP rather than
  * reusing the visible lead-in. */
 export const learningMetaDescription = (
   locale: Locale,
   category?: LearningCategory
-): string =>
-  t(
+): string => {
+  const { t } = translationsFor(locale)
+  return t(
     category
       ? categoryMetaDescriptionKeys[category]
-      : 'learning.metaDescription',
-    locale
+      : 'learning.metaDescription'
   )
+}
 
 /** Meta keywords for the root directory page only. */
 export const learningKeywords = (
@@ -861,14 +871,6 @@ export const getTutorialByCategoryAndSlug = (
 export const youtubeEmbedUrl = (id: string): string =>
   `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0`
 
-/** Canonical path for a category's directory page (wrap with localizeHref for zh-CN). */
-export const categoryPath = (category: LearningCategory): string =>
-  `/learning/${category}`
-
-/** Canonical path for a tutorial's detail page (wrap with localizeHref for zh-CN). */
-export const tutorialPath = (tutorial: LearningTutorial): string =>
-  `${categoryPath(tutorial.category)}/${tutorial.slug}`
-
 export interface LearningCrumb {
   name: string
   path: string
@@ -881,28 +883,32 @@ export interface LearningCrumb {
 export const learningCrumbs = (
   locale: Locale,
   category?: LearningCategory
-): LearningCrumb[] => [
-  { name: t('breadcrumb.home', locale), path: '/' },
-  { name: t('learning.title', locale), path: '/learning' },
-  ...(category
-    ? [
-        {
-          name: t(categoryLabelKeys[category], locale),
-          path: categoryPath(category)
-        }
-      ]
-    : [])
-]
+): LearningCrumb[] => {
+  const { t } = translationsFor(locale)
+  return [
+    { name: t('breadcrumb.home'), path: '/' },
+    { name: t('learning.title'), path: '/learning/' },
+    ...(category
+      ? [
+          {
+            name: t(categoryLabelKeys[category]),
+            path: categoryPath(category)
+          }
+        ]
+      : [])
+  ]
+}
 
 /** Authored description when present, otherwise a per-locale SEO template. */
 export const tutorialDescription = (
   tutorial: LearningTutorial,
   locale: Locale
 ): string => {
+  const { t } = translationsFor(locale)
   if (tutorial.description)
     return tutorial.description[locale] || tutorial.description.en
   const title = tutorial.title[locale] || tutorial.title.en
-  const label = t(categoryLabelKeys[tutorial.category], locale)
+  const label = t(categoryLabelKeys[tutorial.category])
   return locale === 'zh-CN'
     ? `观看《${title}》教程：一个可亲自体验的 ComfyUI ${label} 实战工作流。`
     : `Watch the ${title} tutorial: a hands-on ComfyUI ${label} workflow you can try yourself.`

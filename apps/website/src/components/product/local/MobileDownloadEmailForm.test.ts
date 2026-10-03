@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -184,7 +183,7 @@ describe('MobileDownloadEmailForm', () => {
     expect(successRegion.textContent).toMatch(
       /link is sent to someone@example\.com/i
     )
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(successRegion)
   })
 

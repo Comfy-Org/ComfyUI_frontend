@@ -1,15 +1,34 @@
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
+import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
 
-const PASTED_IMAGE_EXPIRY_MS = 2000
 const UPLOAD_TIMEOUT_MS = 120_000
+const BYTES_PER_MB = 1024 * 1024
+
+function buildUploadErrorMessage(resp: Response) {
+  if (resp.status === 413) {
+    const maxUploadSize = api.getServerFeature<number>(
+      ServerFeatureFlag.MAX_UPLOAD_SIZE
+    )
+    return typeof maxUploadSize === 'number' && maxUploadSize > 0
+      ? t('g.uploadFileTooLargeWithLimit', {
+          limit: Math.round(maxUploadSize / BYTES_PER_MB)
+        })
+      : t('g.uploadFileTooLarge')
+  }
+
+  return t('g.uploadFailed', {
+    reason: resp.statusText || `HTTP ${resp.status}`
+  })
+}
 
 interface ImageUploadFormFields {
   /**
@@ -21,12 +40,10 @@ interface ImageUploadFormFields {
 
 const uploadFile = async (
   file: File,
-  isPasted: boolean,
   formFields: Partial<ImageUploadFormFields> = {}
 ) => {
   const body = new FormData()
   body.append('image', file)
-  if (isPasted) body.append('subfolder', 'pasted')
   if (formFields.type) body.append('type', formFields.type)
 
   const resp = await api.fetchApi('/upload/image', {
@@ -36,14 +53,14 @@ const uploadFile = async (
   })
 
   if (resp.status !== 200) {
-    useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+    useToastStore().addAlert(buildUploadErrorMessage(resp))
     return
   }
 
   const data = await resp.json()
 
   // Update AssetsStore input assets when files are uploaded to input folder
-  if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
+  if (formFields.type === 'input' || !formFields.type) {
     await useAssetsStore().inputAssets.invalidate()
   }
 
@@ -77,13 +94,9 @@ export const useNodeImageUpload = (
 ) => {
   const { fileFilter, onUploadComplete, allow_batch, accept } = options
 
-  const isPastedFile = (file: File): boolean =>
-    file.name === 'image.png' &&
-    file.lastModified - Date.now() < PASTED_IMAGE_EXPIRY_MS
-
   const handleUpload = async (file: File) => {
     try {
-      const path = await uploadFile(file, isPastedFile(file), {
+      const path = await uploadFile(file, {
         type: options.folder
       })
       if (!path) return

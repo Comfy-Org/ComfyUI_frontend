@@ -9,8 +9,9 @@ const mocks = vi.hoisted(() => ({
   successor: vi.fn(),
   price: vi.fn()
 }))
-vi.mock(import('../../config/workshop-router-content'), () => ({
-  getRouterWorkshopModelDetail: mocks.lookup
+vi.mock(import('../../config/workshop-page-content'), () => ({
+  getWorkshopPageDetail: mocks.lookup,
+  workshopPages: []
 }))
 vi.mock(import('../../config/workshop-related'), () => ({
   relatedModels: mocks.related
@@ -18,9 +19,9 @@ vi.mock(import('../../config/workshop-related'), () => ({
 vi.mock(import('../../config/workshop-node-pricing'), () => ({
   estimateWorkshopNodePrice: mocks.price
 }))
-vi.mock(import('../../config/models-catalogue'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  getWorkshopModel: mocks.successor
+vi.mock(import('../../config/workshop-browse-content'), () => ({
+  getWorkshopModel: mocks.successor,
+  workshopModels: []
 }))
 
 const model: WorkshopModelDetail = {
@@ -54,7 +55,7 @@ describe('Models route preparation', () => {
     expect(mocks.related).not.toHaveBeenCalled()
   })
 
-  it('does not invent a price or successor, and encodes capability links', async () => {
+  it('does not invent a price or successor, and encodes capability searches', async () => {
     const page = await prepareModelPage(model.slug)
     expect(page).toMatchObject({
       kind: 'page',
@@ -63,9 +64,64 @@ describe('Models route preparation', () => {
       relatedHeading: 'More models'
     })
     if (page.kind !== 'page') throw new Error('Expected canonical page')
-    expect(
-      new URLSearchParams(page.tags[0].search).getAll('capability')
-    ).toEqual(['Image & text'])
+    expect(new URLSearchParams(page.tags[0].search).get('q')).toBe(
+      'Image & text'
+    )
+  })
+
+  it.for([
+    ['zero tags', [], [], [], 0],
+    [
+      'exactly three tags',
+      ['One', 'Two', 'Three'],
+      ['One', 'Two', 'Three'],
+      [],
+      0
+    ],
+    [
+      'more than three tags',
+      ['One', 'Two', 'Three', 'Four'],
+      ['One', 'Two', 'Three'],
+      ['Four'],
+      1
+    ]
+  ] as const)(
+    'splits %s for the visible row and overflow control',
+    async ([, capabilities, shown, rest, restTagCount]) => {
+      mocks.lookup.mockReturnValue({ ...model, capabilities })
+
+      const page = await prepareModelPage(model.slug)
+
+      if (page.kind !== 'page') throw new Error('Expected canonical page')
+      expect(page.shownTags.map((tag) => tag.label)).toEqual(shown)
+      expect(page.restTags.map((tag) => tag.label)).toEqual(rest)
+      expect(page.restTagCount).toBe(restTagCount)
+    }
+  )
+
+  it('shows only capability tags, in their original order', async () => {
+    mocks.lookup.mockReturnValue({
+      ...model,
+      name: 'FLUX 2 Max Text-to-Image',
+      provider: 'Black Forest Labs',
+      capabilities: [
+        'bfl',
+        'flux',
+        'high-detail',
+        'flux-2',
+        'text-to-image',
+        'premium'
+      ]
+    })
+
+    const page = await prepareModelPage(model.slug)
+
+    if (page.kind !== 'page') throw new Error('Expected canonical page')
+    expect(page.tags.map((tag) => tag.label)).toEqual([
+      'high-detail',
+      'text-to-image',
+      'premium'
+    ])
   })
 
   it('uses a provider heading only when every related card has that provider', async () => {
@@ -91,10 +147,20 @@ describe('Models route preparation', () => {
       kind: 'page',
       successor,
       priceEstimate: '4–8 credits',
-      modalityLabel: { image: '图像' }
+      useCaseLabel: '生成图像'
     })
     expect(mocks.successor).toHaveBeenCalledWith('new-model')
   })
+
+  it.for(['old-alias', model.slug])(
+    'fails the build when %s resolves to a model with no page',
+    async (slug) => {
+      mocks.lookup.mockReturnValue({ ...model, href: undefined })
+      await expect(prepareModelPage(slug)).rejects.toThrow(
+        `Models route ${slug} resolved to ${model.slug}, which has no page`
+      )
+    }
+  )
 
   it('fails an unknown or missing route explicitly', async () => {
     mocks.lookup.mockReturnValue(undefined)

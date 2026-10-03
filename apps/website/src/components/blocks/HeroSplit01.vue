@@ -4,7 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import BrandButton from '../common/BrandButton.vue'
 import ProductHeroBadge from '../common/ProductHeroBadge.vue'
@@ -91,13 +91,14 @@ const {
   ctaWrapperClass?: HTMLAttributes['class']
   beta?: boolean
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
   <section
     :class="
       cn(
-        'max-w-9xl relative mx-auto flex flex-col items-center gap-12 px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:items-center lg:gap-16 lg:px-16',
+        'relative mx-auto flex max-w-9xl flex-col items-center gap-12 px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:items-center lg:gap-16 lg:px-16',
         imagePosition === 'right' ? 'lg:flex-row' : 'lg:flex-row-reverse',
         className
       )
@@ -113,7 +114,7 @@ const {
             :show-logo="badgeShowLogo"
           />
           <Badge v-if="beta" variant="accent" size="xs">
-            {{ t('nav.badgeBeta', locale) }}
+            {{ t('nav.badgeBeta') }}
           </Badge>
         </slot>
       </div>
@@ -155,7 +156,7 @@ const {
           :key="feature"
           class="flex items-start gap-3 text-base text-primary-comfy-canvas"
         >
-          <CheckIcon class="text-primary-comfy-yellow mt-1 size-5 shrink-0" />
+          <CheckIcon class="mt-1 size-5 shrink-0 text-primary-comfy-yellow" />
           {{ feature }}
         </li>
       </ul>

@@ -1,20 +1,13 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
+import {
+  setAllIntersecting,
+  stubIntersectionObserver
+} from '../../test/fakeIntersectionObserver'
 import WorkshopModelCard from './WorkshopModelCard.vue'
-
-let reduceMotion = false
-let motionQuery = new EventTarget()
-
-function setMotionPreference(reduced: boolean) {
-  reduceMotion = reduced
-  const event = new Event('change')
-  Object.defineProperty(event, 'matches', { value: reduced })
-  motionQuery.dispatchEvent(event)
-}
 
 const base: WorkshopModel = {
   slug: 'flux',
@@ -29,29 +22,14 @@ const base: WorkshopModel = {
 }
 
 describe('WorkshopModelCard', () => {
-  beforeEach(() => {
-    reduceMotion = false
-    motionQuery = new EventTarget()
-    Object.defineProperties(motionQuery, {
-      matches: { configurable: true, get: () => reduceMotion },
-      media: {
-        configurable: true,
-        value: '(prefers-reduced-motion: reduce)'
-      }
-    })
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn(() => motionQuery)
-    )
-  })
-
   it('links the name, provider badge and task to the model page', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
     expect(link.getAttribute('href')).toBe('/models/flux/')
-    expect(screen.getByText('Flux')).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'Black Forest Labs' })).toBeTruthy()
     expect(screen.getByTestId('model-card-name').textContent).toBe('Flux')
+    expect(screen.getByTestId('model-card-provider')).toHaveTextContent(
+      'Black Forest Labs'
+    )
     expect(screen.getByTestId('model-card-task').textContent).toBe(
       'Image to Image'
     )
@@ -62,12 +40,29 @@ describe('WorkshopModelCard', () => {
     expect(screen.queryByLabelText('Flux')).toBeNull()
   })
 
+  // The artwork is decorative: the mark says who made this and the heading
+  // says what it is, so a reader hears each of them once.
+  it('names the card link by its provider and then the model', () => {
+    render(WorkshopModelCard, {
+      props: {
+        model: {
+          ...base,
+          thumbnail: { kind: 'image', url: 'https://assets.example/flux' }
+        }
+      }
+    })
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+      /^Black Forest Labs Flux Image to Image/
+    )
+    expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
+  })
+
   it.for([
-    { locale: 'en', label: 'Incomplete', action: 'View details' },
-    { locale: 'zh-CN', label: '尚未完善', action: '查看详情' }
+    { locale: 'en', label: 'Incomplete' },
+    { locale: 'zh-CN', label: '尚未完善' }
   ] as const)(
     'labels incomplete models in $locale without disabling the page link',
-    ({ locale, label, action }) => {
+    ({ locale, label }) => {
       render(WorkshopModelCard, {
         props: {
           model: { ...base, incompleteReason: 'missing-input-schema' },
@@ -80,8 +75,6 @@ describe('WorkshopModelCard', () => {
           .getByRole('link', { name: new RegExp(label) })
           .getAttribute('href')
       ).toBe(base.href)
-      expect(screen.getByText(action)).toBeTruthy()
-      expect(screen.queryByText('Try now')).toBeNull()
     }
   )
 
@@ -95,12 +88,11 @@ describe('WorkshopModelCard', () => {
     expect(screen.getByTestId('model-card-task').textContent).toBe('Image')
   })
 
-  it('autoplays moving thumbnails after the card mounts', async () => {
+  it('keeps an offscreen video unloaded while retaining the accessible model link', async () => {
     render(WorkshopModelCard, {
       props: {
         model: {
           ...base,
-          thumbnailUrl: 'https://assets.example/preview.mp4',
           thumbnail: {
             url: 'https://assets.example/preview.mp4',
             kind: 'video'
@@ -108,17 +100,54 @@ describe('WorkshopModelCard', () => {
         }
       }
     })
-
     await nextTick()
-
-    const video = screen.getByLabelText<HTMLVideoElement>('Flux')
-    expect(video.getAttribute('src')).toBe('https://assets.example/preview.mp4')
-    expect(video.autoplay).toBe(true)
-    expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
+    const video = screen.getByTestId<HTMLVideoElement>('model-card-media')
+    expect(video).not.toHaveAttribute('src')
+    expect(video.paused).toBe(true)
+    // The artwork is decorative; the name a reader hears comes from the link.
+    expect(screen.getByRole('link', { name: /Flux/ })).toHaveAttribute(
+      'href',
+      base.href
+    )
+    expect(screen.queryByLabelText('Flux')).toBeNull()
   })
 
-  it('does not autoplay video thumbnails when reduced motion is preferred', async () => {
-    setMotionPreference(true)
+  // Artwork that repeats the name gives a screen reader the model twice. The
+  // card's name lives on the link; the picture is decorative, whichever kind it
+  // is, so it carries no accessible name of its own.
+  it.for(['image', 'video'] as const)(
+    'keeps %s artwork out of the accessible name',
+    (kind) => {
+      render(WorkshopModelCard, {
+        props: {
+          model: {
+            ...base,
+            thumbnail: { kind, url: 'https://assets.example/a' }
+          }
+        }
+      })
+
+      expect(
+        screen.queryAllByRole('img', { name: /./ }),
+        'Artwork that names itself is read out before the card it decorates'
+      ).toHaveLength(0)
+      expect(
+        screen.getByRole('link', { name: /Black Forest Labs/ })
+      ).toBeVisible()
+      expect(screen.queryByLabelText('Flux')).toBeNull()
+      if (kind === 'video')
+        expect(screen.getByTestId('model-card-media')).toHaveAttribute(
+          'aria-hidden',
+          'true'
+        )
+      expect(
+        screen.getByRole('link', { name: /Flux/ }).getAttribute('href')
+      ).toBe(base.href)
+    }
+  )
+
+  it('attaches the video source once the card is on screen', async () => {
+    stubIntersectionObserver()
     render(WorkshopModelCard, {
       props: {
         model: {
@@ -130,33 +159,11 @@ describe('WorkshopModelCard', () => {
         }
       }
     })
-
-    await nextTick()
-
-    expect(screen.getByLabelText<HTMLVideoElement>('Flux').autoplay).toBe(false)
-  })
-
-  it('pauses an autoplaying thumbnail when reduced motion is enabled', async () => {
-    render(WorkshopModelCard, {
-      props: {
-        model: {
-          ...base,
-          thumbnail: {
-            url: 'https://assets.example/preview.mp4',
-            kind: 'video'
-          }
-        }
-      }
-    })
-    await nextTick()
-    const video = screen.getByLabelText<HTMLVideoElement>('Flux')
-    const pause = vi.spyOn(video, 'pause')
-
-    setMotionPreference(true)
-    await nextTick()
-
-    expect(video.autoplay).toBe(false)
-    expect(pause).toHaveBeenCalledOnce()
+    await setAllIntersecting(true)
+    expect(screen.getByTestId('model-card-media')).toHaveAttribute(
+      'src',
+      'https://assets.example/preview.mp4'
+    )
   })
 
   it.for(['image', 'video'] as const)(
@@ -185,7 +192,7 @@ describe('WorkshopModelCard', () => {
   )
 
   it.for([false, true])(
-    'keeps incomplete status alongside the ribbon (hub: %s)',
+    'keeps incomplete status alongside the variant label (hub: %s)',
     (providerBadge) => {
       render(WorkshopModelCard, {
         props: {
@@ -202,7 +209,6 @@ describe('WorkshopModelCard', () => {
       expect(screen.getByTestId('model-thumbnail-label').textContent).toBe(
         'Pro'
       )
-      expect(screen.getByText('View details')).toBeTruthy()
     }
   )
 
@@ -218,5 +224,31 @@ describe('WorkshopModelCard', () => {
   ])('leaves fallback and unlabelled artwork unmarked', (card) => {
     render(WorkshopModelCard, { props: { model: card } })
     expect(screen.queryByTestId('model-thumbnail-label')).toBeNull()
+  })
+
+  it.for([
+    {
+      kind: 'a workflow, whose name is a sentence',
+      model: {
+        type: 'CLOUD',
+        workflowId: 'workflows/upscale-a-video',
+        slug: 'workflows/upscale-a-video',
+        name: 'Upscale a video',
+        href: '/models/workflows/upscale-a-video/',
+        workflowCount: 1,
+        capabilities: [],
+        models: ['Topaz'],
+        modality: 'video'
+      },
+      shown: 'Upscale a video'
+    },
+    {
+      kind: 'a model, whose name repeats its task as a suffix',
+      model: { ...base, name: 'Flux Image-to-Image' },
+      shown: 'Flux'
+    }
+  ] as const)('shows the whole name of $kind', ({ model, shown }) => {
+    render(WorkshopModelCard, { props: { model } })
+    expect(screen.getByTestId('model-card-name').textContent).toBe(shown)
   })
 })

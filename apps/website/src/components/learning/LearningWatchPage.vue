@@ -11,7 +11,7 @@ import {
   tutorialDescription,
   tutorialPath
 } from '../../data/learningTutorials'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import WatchAuthorCard from '../blocks/WatchAuthorCard.vue'
 import WatchRelatedStrip from '../blocks/WatchRelatedStrip.vue'
 import WatchPageLayout from '../blocks/WatchPageLayout.vue'
@@ -25,6 +25,7 @@ const { tutorial, locale = 'en' } = defineProps<{
   tutorial: LearningTutorial
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const breadcrumbs = [
   ...learningCrumbs(locale, tutorial.category).map((crumb) => ({
@@ -44,7 +45,7 @@ const chapters = categoryChapters(tutorial).map((item) => ({
 const recommended = recommendedFor(tutorial).map((item) => ({
   id: item.id,
   title: item.title[locale] || item.title.en,
-  tag: t(categoryLabelKeys[item.category], locale),
+  tag: t(categoryLabelKeys[item.category]),
   href: localizeHref(tutorialPath(item), locale),
   poster: item.poster
 }))
@@ -53,18 +54,18 @@ const recommended = recommendedFor(tutorial).map((item) => ({
 <template>
   <WatchPageLayout
     :breadcrumbs
-    :breadcrumbs-label="t('ui.breadcrumb', locale)"
-    :eyebrow="t('learning.watch.nowWatching', locale)"
+    :breadcrumbs-label="t('ui.breadcrumb')"
+    :eyebrow="t('learning.watch.nowWatching')"
     :title="tutorial.title[locale] || tutorial.title.en"
     :description="tutorialDescription(tutorial, locale)"
-    :read-more-label="t('ui.readMore', locale)"
-    :read-less-label="t('ui.readLess', locale)"
+    :read-more-label="t('ui.readMore')"
+    :read-less-label="t('ui.readLess')"
   >
     <LearningVideoEmbed
       v-if="tutorial.youtubeId"
       :key="tutorial.id"
       :youtube-id="tutorial.youtubeId"
-      :title="tutorial.title[locale] ?? tutorial.title.en"
+      :title="tutorial.title[locale] || tutorial.title.en"
       class="w-full"
     />
     <VideoPlayer
@@ -92,7 +93,7 @@ const recommended = recommendedFor(tutorial).map((item) => ({
       <ul class="flex flex-wrap items-center gap-2">
         <li v-for="tag in tutorial.tags" :key="tag">
           <Badge variant="subtle" class="px-4 py-2 text-sm font-light">
-            {{ t(tag, locale) }}
+            {{ t(tag) }}
           </Badge>
         </li>
       </ul>
@@ -104,20 +105,20 @@ const recommended = recommendedFor(tutorial).map((item) => ({
         :target="tutorial.newTab ? '_blank' : undefined"
         :rel="tutorial.newTab ? 'noopener noreferrer' : undefined"
       >
-        {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', locale) }}
+        {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow') }}
       </Button>
     </template>
 
     <template v-if="chapters.length" #chapters>
       <WatchRelatedStrip
-        :heading="t('learning.watch.watchMore', locale)"
+        :heading="t('learning.watch.watchMore')"
         :items="chapters"
       />
     </template>
 
     <template v-if="recommended.length" #sidebar>
       <h2 class="font-medium text-primary-warm-gray">
-        {{ t('learning.watch.recommended', locale) }}
+        {{ t('learning.watch.recommended') }}
       </h2>
       <div class="mt-4 flex flex-col gap-10">
         <WatchRecommendedCard

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type Load3d from './Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
@@ -9,24 +11,18 @@ const { contextMenuMock } = vi.hoisted(() => ({
   contextMenuMock: vi.fn()
 }))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, vars?: Record<string, unknown>) =>
-    vars ? `${key}:${JSON.stringify(vars)}` : key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
-  const actual = await importOriginal()
-  class MockContextMenu {
-    constructor(...args: unknown[]) {
-      contextMenuMock(...args)
-    }
+vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+
+class MockContextMenu {
+  constructor(...args: unknown[]) {
+    contextMenuMock(...args)
   }
-  // Replace ContextMenu in-place on the real LiteGraph singleton so consumers
-  // that import other members keep getting the real implementations.
-  ;(actual.LiteGraph as unknown as { ContextMenu: unknown }).ContextMenu =
-    MockContextMenu
-  return actual
-})
+}
+
+;(LiteGraph as unknown as { ContextMenu: unknown }).ContextMenu =
+  MockContextMenu
 
 function makeLoad3d(
   exportImpl: (format: string) => Promise<void> = vi
@@ -113,10 +109,13 @@ describe('createExportMenuItems', () => {
         expect(useToastStore().add).toHaveBeenCalledWith(
           expect.objectContaining({
             severity: 'success',
-            summary: `toastMessages.exportSuccess:${JSON.stringify({ format: label })}`
+            summary: 'toastMessages.exportSuccess'
           })
         )
       )
+      expect(t).toHaveBeenCalledWith('toastMessages.exportSuccess', {
+        format: label
+      })
       expect(useToastStore().addAlert).not.toHaveBeenCalled()
     }
   )
@@ -139,9 +138,12 @@ describe('createExportMenuItems', () => {
 
     await vi.waitFor(() =>
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        `toastMessages.failedToExportModel:${JSON.stringify({ format: 'GLB' })}`
+        'toastMessages.failedToExportModel'
       )
     )
+    expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
+      format: 'GLB'
+    })
     expect(consoleError).toHaveBeenCalledWith(
       'Export failed:',
       expect.any(Error)

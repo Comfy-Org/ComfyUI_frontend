@@ -42,10 +42,15 @@ async function renameInlineFolder(comfyPage: ComfyPage, newName: string) {
 }
 
 test.describe('Node library sidebar', () => {
+  test.use({
+    initialSettings: {
+      'Comfy.NodeLibrary.NewDesign': false,
+      [bookmarksSettingId]: [],
+      [bookmarksCustomizationSettingId]: {}
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
-    await comfyPage.settings.setSetting(bookmarksSettingId, [])
-    await comfyPage.settings.setSetting(bookmarksCustomizationSettingId, {})
     // Open the sidebar
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.open()
@@ -170,7 +175,7 @@ test.describe('Node library sidebar', () => {
 
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
 
@@ -288,9 +293,10 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page.getByLabel('Customize').click()
 
     // Click a color option multiple times
-    const customColorOption = comfyPage.page.locator(
-      '.p-togglebutton-content > .pi-palette'
-    )
+    const customColorOption = comfyPage.page.getByRole('button', {
+      name: 'Custom',
+      exact: true
+    })
     await customColorOption.click()
     await customColorOption.click()
 
@@ -337,7 +343,7 @@ test.describe('Node library sidebar', () => {
     await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
     await comfyPage.nextFrame()

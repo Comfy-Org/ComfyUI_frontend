@@ -21,7 +21,10 @@
         <div
           :class="
             cn(
-              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+              'z-10 flex items-stretch',
+              row.showsControl
+                ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
+                : 'col-span-full',
               row.widget.slotMetadata?.linked && 'opacity-100'
             )
           "
@@ -31,6 +34,7 @@
             :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
             :slot-data="{
               name: row.widget.simplified.name,
+              label: row.widget.simplified.label,
               type: row.widget.slotMetadata.type,
               boundingRect: [0, 0, 0, 0]
             }"
@@ -39,7 +43,7 @@
             :index="row.widget.slotMetadata.index"
             :socketless="row.widget.simplified.spec?.socketless"
             :standalone="row.standalone"
-            dot-only
+            :dot-only="row.showsControl"
           />
         </div>
         <AppInput
@@ -142,7 +146,8 @@ const gridTemplateRows = computed(() =>
 const layoutKey = computed(() =>
   renderedRows.value
     .map(
-      ({ widget }) => `${widget.renderKey}:${widget.slotMetadata?.index ?? ''}`
+      ({ widget, showsControl }) =>
+        `${widget.renderKey}:${widget.slotMetadata?.index ?? ''}:${showsControl}`
     )
     .join('|')
 )

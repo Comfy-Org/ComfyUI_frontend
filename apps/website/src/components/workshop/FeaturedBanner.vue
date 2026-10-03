@@ -1,42 +1,76 @@
 <script setup lang="ts">
-import { useElementHover, useEventListener, useRafFn } from '@vueuse/core'
+import {
+  useDocumentVisibility,
+  useElementHover,
+  useElementVisibility,
+  useEventListener,
+  useRafFn
+} from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { taskLabelFor } from '../../lib/workshop/task-label'
+import { translationsFor } from '../../i18n/translations'
+
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import FeaturedBannerPagination from './FeaturedBannerPagination.vue'
+
+/**
+ * One thing worth opening, whatever kind of thing the catalogue holds. The
+ * shape lives here rather than beside the projections that build it, so a
+ * catalogue with nothing to do with models can render the banner without
+ * pulling the model catalogue in behind it.
+ */
+export interface FeaturedSlide {
+  readonly key: string
+  readonly href: string
+  readonly title: string
+  /** What it is or what it makes, in the badge that leads the slide. */
+  readonly kind: string
+  readonly tags: readonly string[]
+  readonly summary: string | undefined
+  readonly media: { url: string; kind: 'image' | 'video' } | undefined
+  readonly docsHref: string | undefined
+  readonly cta?: string
+}
 
 const AUTOPLAY_MS = 7000
-const CAPABILITY_LIMIT = 3
 
-const { models, locale = 'en' } = defineProps<{
-  models: readonly WorkshopModel[]
+const {
+  slides,
+  locale = 'en',
+  autoplay = true
+} = defineProps<{
+  slides: readonly FeaturedSlide[]
   locale?: Locale
+  autoplay?: boolean
 }>()
-
-const slides = computed(() =>
-  models.map((model) => ({
-    model,
-    task: taskLabelFor(model, locale),
-    capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
-  }))
-)
+const { t } = translationsFor(locale)
 
 const activeIndex = ref(0)
-const active = computed(
-  () => slides.value[Math.min(activeIndex.value, slides.value.length - 1)]
+const active = computed<FeaturedSlide | undefined>(
+  () => slides[Math.min(activeIndex.value, slides.length - 1)]
 )
 
 function goTo(index: number) {
-  activeIndex.value = (index + slides.value.length) % slides.value.length
+  activeIndex.value = (index + slides.length) % slides.length
 }
 
 const banner = useTemplateRef<HTMLElement>('banner')
 const hovered = useElementHover(banner)
+// Starts true so the server-rendered first slide carries its video source and
+// the browser requests the frame during parse; the observer corrects it once
+// hydrated. Rotation does not care: it runs on requestAnimationFrame, which
+// only exists in the browser.
+const onScreen = useElementVisibility(banner, { initialValue: true })
+const visibility = useDocumentVisibility()
+const video = useTemplateRef<HTMLVideoElement>('video')
+// The video fills the banner, so the banner's observer is its observer.
+const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
+  visible: () => onScreen.value
+})
 
 // Clicking a bar leaves it focused, so pausing on any focus would stop the
 // rotation for good. Only a keyboard visitor, who needs the time, stops it.
@@ -50,7 +84,10 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 
 const rotating = computed(
   () =>
-    slides.value.length > 1 &&
+    autoplay &&
+    slides.length > 1 &&
+    onScreen.value &&
+    visibility.value === 'visible' &&
     !hovered.value &&
     !readingByKeyboard.value &&
     !prefersReducedMotion()
@@ -71,7 +108,9 @@ watch(rotating, (on) => (on ? resume() : pause()), { immediate: true })
 watch(activeIndex, () => (elapsed.value = 0))
 
 const fill = computed(() =>
-  prefersReducedMotion() ? 1 : Math.min(elapsed.value / AUTOPLAY_MS, 1)
+  !autoplay || prefersReducedMotion()
+    ? 1
+    : Math.min(elapsed.value / AUTOPLAY_MS, 1)
 )
 </script>
 
@@ -79,101 +118,110 @@ const fill = computed(() =>
   <section
     v-if="active"
     ref="banner"
-    :aria-label="t('workshop.sections.featured', locale)"
-    class="rounded-4.5xl relative isolate overflow-hidden border border-transparency-white-t8"
+    :aria-label="t('workshop.sections.featured')"
+    class="relative isolate overflow-hidden rounded-3xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
-    <a
-      :href="active.model.href"
-      class="short:h-76 group block h-84"
+    <!-- The floor is the tallest slide, a name that needs two lines, so the
+      frame is the same on every tab while a name that fits keeps to one. -->
+    <div
+      class="group relative flex min-h-72 short:min-h-60 sm:short:min-h-65"
       data-testid="featured-slide"
     >
+      <a
+        :href="active.href"
+        tabindex="-1"
+        aria-hidden="true"
+        class="absolute inset-0"
+        data-testid="featured-slide-link"
+      ></a>
       <video
-        v-if="active.model.thumbnail?.kind === 'video'"
-        :key="active.model.slug"
-        :src="active.model.thumbnail.url"
-        class="absolute inset-0 size-full object-cover"
+        v-if="active.media?.kind === 'video'"
+        :key="active.key"
+        ref="video"
+        :src="previewSrc"
+        class="pointer-events-none absolute inset-0 size-full object-cover"
         aria-hidden="true"
         muted
         loop
         playsinline
-        :autoplay="!prefersReducedMotion()"
-        preload="auto"
+        preload="metadata"
         data-testid="featured-video"
       />
       <img
-        v-else-if="active.model.thumbnailUrl"
-        :key="active.model.slug"
-        :src="active.model.thumbnailUrl"
+        v-else-if="active.media"
+        :key="active.key"
+        :src="active.media.url"
         alt=""
-        class="absolute inset-0 size-full object-cover"
+        class="pointer-events-none absolute inset-0 size-full object-cover"
         decoding="async"
       />
       <div
-        class="from-page via-page/85 to-page/20 sm:via-page/80 absolute inset-0 bg-linear-to-t sm:bg-linear-to-r sm:to-transparent"
+        class="pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20 sm:bg-linear-to-r sm:via-page/75 sm:to-transparent"
         aria-hidden="true"
       />
 
       <div
-        class="sm:short:gap-3 relative flex h-full flex-col justify-end gap-4 p-6 pb-16 sm:max-w-2xl sm:justify-center lg:p-8 lg:pb-16"
+        class="pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-3 px-7 pt-7 pb-16 max-sm:px-5 max-sm:pt-5 sm:max-w-2xl sm:justify-center lg:px-9 lg:pt-8"
       >
         <div class="flex flex-wrap items-center gap-2">
-          <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
-            {{ active.task }}
+          <Badge
+            variant="subtle"
+            size="md"
+            class="text-primary-comfy-canvas backdrop-blur-md"
+          >
+            {{ active.kind }}
           </Badge>
           <Badge
-            v-for="capability in active.capabilities"
+            v-for="capability in active.tags"
             :key="capability"
             variant="subtle"
             size="md"
-            class="text-content-secondary max-sm:hidden"
+            class="text-content-secondary backdrop-blur-md max-sm:hidden"
           >
             {{ capability }}
           </Badge>
         </div>
 
-        <h2 class="text-4xl font-bold text-primary-warm-white">
-          {{ active.model.name }}
+        <h2
+          class="line-clamp-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+        >
+          {{ active.title }}
         </h2>
 
         <p
-          v-if="active.model.summary"
-          class="text-content-secondary line-clamp-2 max-w-prose"
+          v-if="active.summary"
+          class="line-clamp-1 max-w-prose shrink-0 text-content-secondary short:hidden"
         >
-          {{ active.model.summary }}
+          {{ active.summary }}
         </p>
 
-        <Button as="span" class="w-fit">
-          {{ t('workshop.hub.tryNow', locale) }}
-        </Button>
+        <div class="pointer-events-auto flex w-fit items-center gap-3">
+          <Button as="a" :href="active.href" class="w-fit">
+            {{ active.cta ?? t('workshop.hub.tryNow') }}
+          </Button>
+          <Button
+            v-if="active.docsHref"
+            as="a"
+            variant="outline"
+            :href="active.docsHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-fit"
+            data-testid="featured-docs-link"
+          >
+            {{ t('workshop.hub.docs') }}
+          </Button>
+        </div>
       </div>
-    </a>
-
-    <div
-      v-if="slides.length > 1"
-      class="absolute bottom-5 left-8 flex gap-2 lg:left-12"
-      data-testid="featured-pagination"
-    >
-      <button
-        v-for="(slide, index) in slides"
-        :key="slide.model.slug"
-        type="button"
-        :aria-label="slide.model.name"
-        :aria-current="index === activeIndex ? 'true' : undefined"
-        class="focus-visible:ring-primary-comfy-yellow/50 group w-12 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3"
-        @click="goTo(index)"
-      >
-        <span
-          class="block h-1 overflow-hidden rounded-full bg-transparency-white-t20 group-hover:bg-primary-warm-gray"
-        >
-          <span
-            class="block h-full rounded-full bg-primary-warm-white"
-            :style="{
-              width: index === activeIndex ? `${fill * 100}%` : '0%'
-            }"
-          />
-        </span>
-      </button>
     </div>
+
+    <FeaturedBannerPagination
+      v-if="slides.length > 1"
+      :slides
+      :active-index="activeIndex"
+      :fill
+      @go="goTo"
+    />
   </section>
 </template>

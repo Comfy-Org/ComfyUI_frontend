@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { workshopDialogueTurns } from '../../config/workshop-dialogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const {
   name,
@@ -18,6 +18,7 @@ const {
   locale?: Locale
   describedBy?: string
 }>()
+const { t } = translationsFor(locale)
 const value = defineModel<string>({ required: true })
 const turns = computed(
   () => workshopDialogueTurns(value.value) ?? [{ text: '', voice_id: '' }]
@@ -66,17 +67,12 @@ function remove(index: number) {
       class="flex min-w-0 flex-col gap-2 rounded-2xl border border-transparency-white-t20 p-4"
     >
       <legend class="px-1 text-xs font-bold text-primary-warm-white">
-        {{
-          t('workshop.dialogue.turn', locale).replace(
-            '{number}',
-            String(index + 1)
-          )
-        }}
+        {{ t('workshop.dialogue.turn', { number: index + 1 }) }}
       </legend>
       <label
         :for="`${name}-${index}-text`"
         class="text-xs text-primary-warm-gray"
-        >{{ t('workshop.dialogue.text', locale) }}</label
+        >{{ t('workshop.dialogue.text') }}</label
       >
       <textarea
         :id="`${name}-${index}-text`"
@@ -89,7 +85,7 @@ function remove(index: number) {
       <label
         :for="`${name}-${index}-voice`"
         class="text-xs text-primary-warm-gray"
-        >{{ t('workshop.dialogue.voice', locale) }}</label
+        >{{ t('workshop.dialogue.voice') }}</label
       >
       <input
         :id="`${name}-${index}-voice`"
@@ -102,19 +98,19 @@ function remove(index: number) {
       <button
         v-if="turns.length > 1"
         type="button"
-        class="focus-visible:outline-primary-comfy-yellow self-start rounded-lg px-2 py-1 text-xs text-primary-warm-white underline"
+        class="self-start rounded-lg px-2 py-1 text-xs text-primary-warm-white underline focus-visible:outline-primary-comfy-yellow"
         @click="remove(index)"
       >
-        {{ t('workshop.dialogue.remove', locale) }}
+        {{ t('workshop.dialogue.remove') }}
       </button>
     </fieldset>
     <button
       type="button"
       :disabled
-      class="focus-visible:outline-primary-comfy-yellow self-start rounded-lg border border-transparency-white-t20 px-4 py-2 text-sm text-primary-warm-white disabled:opacity-50"
+      class="self-start rounded-lg border border-transparency-white-t20 px-4 py-2 text-sm text-primary-warm-white focus-visible:outline-primary-comfy-yellow disabled:opacity-50"
       @click="add"
     >
-      {{ t('workshop.dialogue.add', locale) }}
+      {{ t('workshop.dialogue.add') }}
     </button>
   </div>
 </template>

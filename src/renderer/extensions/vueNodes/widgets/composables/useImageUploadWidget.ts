@@ -3,7 +3,8 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
@@ -20,11 +21,16 @@ import {
 const isImageFile = (file: File) => file.type.startsWith('image/')
 const isVideoFile = (file: File) => file.type.startsWith('video/')
 
+type ImageUploadComboWidget = Omit<IComboWidget, 'value' | 'callback'> & {
+  value: string | number | string[]
+  callback?: (value: string | number | string[]) => void
+}
+
 const findFileComboWidget = (
   node: LGraphNode,
   inputName: string
-): IComboWidget | undefined =>
-  node.widgets?.find((w): w is IComboWidget => w.name === inputName)
+): ImageUploadComboWidget | undefined =>
+  node.widgets?.find((w): w is ImageUploadComboWidget => w.name === inputName)
 
 export const useImageUploadWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
@@ -89,7 +95,6 @@ export const useImageUploadWidget = () => {
         const newValue = allow_batch ? annotated : annotated[0]
         const oldValue = fileComboWidget.value
 
-        // @ts-expect-error litegraph combo value type does not support arrays yet
         fileComboWidget.value = newValue
         fileComboWidget.callback?.(newValue)
         node.onWidgetChanged?.(
@@ -110,7 +115,7 @@ export const useImageUploadWidget = () => {
       () => openFileSelection(),
       {
         serialize: false,
-        canvasOnly: true
+        surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
       }
     )
     uploadWidget.label = t('g.choose_file_to_upload')
@@ -121,6 +126,7 @@ export const useImageUploadWidget = () => {
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
+      showPreview({ block: false })
       node.graph?.setDirtyCanvas(true)
     }
 

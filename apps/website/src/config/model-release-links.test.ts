@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { modelReleaseSlides } from '../data/modelRelease'
-import { workshopModels } from './models-catalogue'
+import { workshopModels } from './workshop-browse-content'
 import { modelReleaseLinks } from './model-release-links'
 
 describe('homepage Models destinations', () => {
@@ -16,7 +16,7 @@ describe('homepage Models destinations', () => {
       expect(workshopModels.some((model) => model.href === href)).toBe(true)
     }
     expect(links['seedance-2-5']).toBe(
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
     expect(links['wan-animate-2']).toBeUndefined()
   })

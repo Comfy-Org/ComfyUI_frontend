@@ -19,7 +19,6 @@ import {
   otherCustomerVideoStories
 } from '../../data/customerVideos'
 import { fetchTranscript } from '../../lib/videoTranscript'
-import { t } from '../../i18n/translations'
 import {
   absoluteUrl,
   jsonLdId,
@@ -32,6 +31,7 @@ interface Props {
 }
 
 const { story } = Astro.props
+const { t } = Astro.locals
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -57,7 +57,7 @@ const video = videoObjectNode({
 // Only two watch pages exist today, so "next" is always the other one.
 const [nextStory] = otherCustomerVideoStories(story.slug)
 const relatedStoryHref = story.relatedStorySlug
-  ? `/customers/${story.relatedStorySlug}`
+  ? `/customers/${story.relatedStorySlug}/`
   : undefined
 
 // Caption fetch happens at build time, from wherever the site is built —
@@ -67,8 +67,8 @@ const transcript = story.captions[0]
   ? await fetchTranscript(story.captions[0].src)
   : []
 
-const homeLabel = t('breadcrumb.home', locale)
-const collectionLabel = t('nav.customerStories', locale)
+const homeLabel = t('breadcrumb.home')
+const collectionLabel = t('nav.customerStories')
 ---
 
 <BaseLayout
@@ -86,10 +86,10 @@ const collectionLabel = t('nav.customerStories', locale)
   <BreadcrumbBar
     crumbs={[
       { label: homeLabel, href: '/' },
-      { label: collectionLabel, href: '/customers' },
+      { label: collectionLabel, href: routes.customers },
       { label: story.title }
     ]}
-    label={t('ui.breadcrumb', locale)}
+    label={t('ui.breadcrumb')}
   />
   <CustomerWatchPage
     story={story}
@@ -98,15 +98,13 @@ const collectionLabel = t('nav.customerStories', locale)
     locale={locale}
     client:load
   />
-  {
-    nextStory && (
-      <WhatsNextSection
-        title={nextStory.title}
-        image={nextStory.poster}
-        href={customerVideoPath(nextStory.slug)}
-        locale={locale}
-        ctaLabel={t('customers.video.watchStory', locale)}
-      />
-    )
-  }
+  {nextStory && (
+    <WhatsNextSection
+      title={nextStory.title}
+      image={nextStory.poster}
+      href={customerVideoPath(nextStory.slug)}
+      locale={locale}
+      ctaLabel={t('customers.video.watchStory')}
+    />
+  )}
 </BaseLayout>

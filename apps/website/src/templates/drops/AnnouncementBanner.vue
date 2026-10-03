@@ -6,7 +6,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import Button from '@/components/ui/button/Button.vue'
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { useBannerDismissal } from '../../composables/useBannerDismissal'
@@ -32,6 +32,7 @@ const {
   /** Hides the close control for a banner that isn't meant to be dismissed. */
   dismissible?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const { isVisible, close, persistHidden } = useBannerDismissal(version)
 </script>
@@ -44,7 +45,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
           data-slot="announcement-banner"
           :class="
             cn(
-              'after:bg-transparency-white-t4 relative flex items-center gap-x-6 px-6 py-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px sm:px-3.5',
+              'relative flex items-center gap-x-6 px-6 py-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-transparency-white-t4 sm:px-3.5',
               centered ? 'justify-center text-center' : 'sm:before:flex-1'
             )
           "
@@ -59,7 +60,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
             "
           >
             <p
-              class="ppformula-text-center text-sm text-primary-warm-white md:text-base/6"
+              class="inline-block text-sm text-primary-warm-white md:text-base/6"
             >
               {{ data.title }}
               <span v-if="data.description" class="text-primary-warm-white/80">
@@ -84,7 +85,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
           <div v-if="dismissible" class="flex flex-1 justify-end">
             <IconButton
               type="button"
-              :aria-label="t('nav.close', locale)"
+              :aria-label="t('nav.close')"
               @click="close"
             >
               <X class="size-5" aria-hidden="true" />

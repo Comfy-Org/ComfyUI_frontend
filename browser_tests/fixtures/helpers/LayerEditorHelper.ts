@@ -40,9 +40,7 @@ class LayerEditorHelper {
         path: assetPath('image32x32.webp')
       }
     })
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.vueNodes.waitForNodes()
 
     const saveImageNodes =
       await comfyPage.nodeOps.getNodeRefsByType('SaveImage')

@@ -5,19 +5,20 @@
 // carry VideoObject JSON-LD for the recording, upcoming ones an Event node and
 // an add-to-calendar action. Locale comes from the page's URL.
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import EventsDirectorySection from './EventsDirectorySection.vue'
 import EventVideoDialog from './EventVideoDialog.vue'
 import PastEventsSection from './PastEventsSection.vue'
-import UpcomingEventsSection from './UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
 import type { ComfyEvent } from '../../data/events'
 import {
   eventJsonLdNode,
+  eventOgImage,
+  eventVideoThumbnail,
   eventVideoId,
   pastEvents,
   toCalendarEvent,
   youtubeWatchHref
 } from '../../data/events'
-import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
   absoluteUrl,
@@ -31,6 +32,7 @@ interface Props {
 }
 
 const { event } = Astro.props
+const { t } = Astro.locals
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -43,6 +45,7 @@ const description = event.description[locale] || event.description.en
 // Same build-time clock as the derived lists, so the page body always agrees
 // with the section rendered behind the dialog.
 const isPast = pastEvents.includes(event)
+const ogImage = eventOgImage(event)
 
 const videoJsonLd: JsonLdNode | undefined =
   isPast && event.recordingVideoId && event.media
@@ -52,7 +55,7 @@ const videoJsonLd: JsonLdNode | undefined =
         pageUrl: url,
         name: title,
         description,
-        thumbnailUrl: event.media.src,
+        thumbnailUrl: eventVideoThumbnail(event),
         contentUrl:
           youtubeWatchHref(event.recordingVideoId)[locale] ||
           youtubeWatchHref(event.recordingVideoId).en,
@@ -70,12 +73,12 @@ const mainEntityId = videoJsonLd?.['@id'] ?? eventJsonLd?.['@id']
 
 const breadcrumbs = [
   {
-    name: t('breadcrumb.home', locale),
+    name: t('breadcrumb.home'),
     url: absoluteUrl(Astro.site, localizeHref('/', locale))
   },
   {
-    name: t('breadcrumb.events', locale),
-    url: absoluteUrl(Astro.site, localizeHref('/events', locale))
+    name: t('breadcrumb.events'),
+    url: absoluteUrl(Astro.site, localizeHref('/events/', locale))
   },
   { name: title }
 ]
@@ -84,18 +87,17 @@ const breadcrumbs = [
 <BaseLayout
   title={`${title} - Comfy`}
   description={description}
-  ogImage={event.media?.src}
+  ogImage={ogImage}
+  ogImageAlt={ogImage && (event.media?.alt[locale] || event.media?.alt.en)}
   mainEntityId={typeof mainEntityId === 'string' ? mainEntityId : undefined}
   breadcrumbs={breadcrumbs}
   extraJsonLd={[videoJsonLd, eventJsonLd]}
 >
-  {
-    isPast ? (
-      <PastEventsSection locale={locale} />
-    ) : (
-      <UpcomingEventsSection locale={locale} client:visible />
-    )
-  }
+  {isPast ? (
+    <PastEventsSection locale={locale} client:visible />
+  ) : (
+    <EventsDirectorySection locale={locale} client:visible />
+  )}
   <EventVideoDialog
     title={title}
     description={description}

@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -11,7 +10,7 @@ describe('HeroSection', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.hero.heading', 'en')
+        name: t('platform.hero.heading', {}, { locale: 'en' })
       })
     ).toBeTruthy()
     expect(screen.getByText(/fastest way from ComfyUI workflow/)).toBeTruthy()

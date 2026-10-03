@@ -16,14 +16,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const webSocketTest = mergeTests(test, webSocketFixture)
 
 test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   test('Should show Find on GitHub and Copy buttons in error card', async ({
     comfyPage
@@ -52,16 +45,14 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
 })
 
 test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
+  test.use({
+    initialSettings: {
+      'Comfy.RightSidePanel.ShowErrorsTab': true,
+      'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar'
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
     await comfyPage.menu.workflowsTab.open()
   })
 

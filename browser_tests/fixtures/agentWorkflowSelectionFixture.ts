@@ -1,6 +1,7 @@
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
@@ -16,10 +17,18 @@ type WorkflowSelection = {
 }
 
 export const workflowSelectionTest = base.extend<{
+  nodeDefinitions: Record<string, ComfyNodeDef> | undefined
   workflowSelection: WorkflowSelection
 }>({
-  workflowSelection: async ({ page }, use) => {
-    await bootAgentApp(page, true)
+  nodeDefinitions: [undefined, { option: true }],
+  workflowSelection: async ({ page, nodeDefinitions }, use) => {
+    if (nodeDefinitions)
+      await page.route('**/api/object_info', (route) =>
+        route.fulfill(jsonRoute(nodeDefinitions))
+      )
+    await bootAgentApp(page, true, {
+      objectInfo: nodeDefinitions ? 'server' : undefined
+    })
     const workflows: CloudWorkflowEntry[] = []
     const savedFiles: UserDataFullInfo[] = []
     const savedContent = new Map<string, string>()
@@ -29,6 +38,16 @@ export const workflowSelectionTest = base.extend<{
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
+    function forgetSavedWorkflow(path: string): void {
+      const name = path.slice('workflows/'.length, -'.json'.length)
+      savedContent.delete(path)
+      const fileIndex = savedFiles.findIndex((file) => file.path === path)
+      if (fileIndex !== -1) savedFiles.splice(fileIndex, 1)
+      const workflowIndex = workflows.findIndex(
+        (workflow) => workflow.name === name
+      )
+      if (workflowIndex !== -1) workflows.splice(workflowIndex, 1)
+    }
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -96,6 +115,18 @@ export const workflowSelectionTest = base.extend<{
       savedFiles.push(file)
       savedContent.set(path, route.request().postData() ?? '{}')
       return route.fulfill(jsonRoute(file))
+    })
+    await page.route('**/api/userdata/*', (route) => {
+      const path = decodeURIComponent(
+        new URL(route.request().url()).pathname.split('/userdata/')[1]
+      )
+      if (
+        route.request().method() !== 'DELETE' ||
+        !path.startsWith('workflows/')
+      )
+        return route.fallback()
+      forgetSavedWorkflow(path)
+      return route.fulfill({ status: 204 })
     })
     await use({
       savedPaths,
