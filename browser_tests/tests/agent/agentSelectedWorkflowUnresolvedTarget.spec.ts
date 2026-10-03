@@ -89,7 +89,7 @@ const EMPTY_THREADS: AgentThreadListResponse = {
 test(
   'does not tell the server no workflow is selected while the composer names one',
   { tag: ['@cloud', '@agent'] },
-  async ({ page, agentFlagEnabled }, testInfo) => {
+  async ({ page, agentFlagEnabled }) => {
     test.setTimeout(90_000)
 
     await page.route('**/api/workflows**', (route) =>
@@ -188,6 +188,11 @@ test(
     })
 
     await test.step('no turn described the selected tab to the server as no tab at all', () => {
+      // The defect, stated independently of how it is currently prevented: a
+      // turn may never claim nothing is selected while the composer names a
+      // tab. This survives the residual mint decision - if an unresolvable
+      // target later sends `current_tab_unbound` instead of being refused,
+      // this assertion still holds and is still the thing PM-1847 is about.
       const unselected = posted.filter(
         (body) =>
           body.workflow_id === undefined &&
@@ -198,18 +203,17 @@ test(
         unselected,
         'a turn carrying none of workflow_id/current_tab/current_tab_unbound is read as "nothing selected" and answered generically (PM-1847)'
       ).toEqual([])
+      // The mechanism this revision chooses for the ambiguous case: refuse the
+      // send outright rather than post a differently-shaped turn.
+      expect(
+        posted,
+        'an ambiguous target is refused, so no turn is posted at all'
+      ).toEqual([])
     })
 
     await test.step('the workflow the user chose is still the chosen one', async () => {
       await expect(panel.workflowPicker).toHaveText('Portrait')
       await expect(topbar.getActiveTab()).toContainText('Portrait')
-    })
-
-    await testInfo.attach('pm-1847-unresolved-target-notice', {
-      body: await page.screenshot({
-        path: testInfo.outputPath('pm-1847-unresolved-target-notice.png')
-      }),
-      contentType: 'image/png'
     })
   }
 )
