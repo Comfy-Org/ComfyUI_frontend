@@ -1,10 +1,10 @@
 import type { APIRoute, GetStaticPaths } from 'astro'
 
-import { workshopModels } from '../../config/workshop-browse-content'
+import { workshopPages } from '../../config/workshop-page-content'
 import { prepareModelPage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () =>
-  workshopModels.map((model) => ({ params: { slug: model.slug } }))
+  workshopPages.map((model) => ({ params: { slug: model.slug } }))
 
 export const GET: APIRoute = async ({ params }) => {
   const page = await prepareModelPage(params.slug)

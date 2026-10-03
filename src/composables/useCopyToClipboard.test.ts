@@ -4,7 +4,7 @@ const mockWriteText = vi.fn()
 const mockToastAdd = vi.fn()
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     useToast: vi.fn(() => ({
@@ -13,9 +13,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 

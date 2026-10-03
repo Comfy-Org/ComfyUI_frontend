@@ -16,27 +16,21 @@ import {
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
+  authenticatedRemoteConfigState,
   cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
-  remoteConfigState
+  remoteConfigState,
+  sessionAgentGrant,
+  sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
-const telemetry = vi.hoisted(() => ({
-  enabled: true,
-  trackFeatureFlagEvaluation: vi.fn()
-}))
-const mockTrackFeatureFlagEvaluation = telemetry.trackFeatureFlagEvaluation
-
 // Mock the API module
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getServerFeature: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
   getSessionOverride: vi.fn()
@@ -48,12 +42,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    telemetry.enabled
-      ? { trackFeatureFlagEvaluation: telemetry.trackFeatureFlagEvaluation }
-      : null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
@@ -536,11 +525,13 @@ describe('useFeatureFlags', () => {
   describe('legacyBillingMigrationEnabled', () => {
     beforeEach(() => {
       vi.mocked(distributionTypes).isCloud = true
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfigState.value = 'authenticated'
     })
 
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
+      authenticatedRemoteConfigState.value = 'unloaded'
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       cachedLegacyBillingMigrationEnabled.value = undefined
@@ -630,13 +621,13 @@ describe('useFeatureFlags', () => {
     it('resolveFlag falls through to server when no override is set', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.ASSET_RENAME_ENABLED) return true
+          if (path === ServerFeatureFlag.ASSET_DELETION_ENABLED) return true
           return defaultValue
         }
       )
 
       const { flags } = useFeatureFlags()
-      expect(flags.assetRenameEnabled).toBe(true)
+      expect(flags.assetDeletionEnabled).toBe(true)
     })
 
     it('direct server flags delegate override to api.getServerFeature', () => {
@@ -713,6 +704,7 @@ describe('useFeatureFlags', () => {
 
     it('prefers authenticated remoteConfig over the server feature fallback', () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {
         billing_control_enabled: false,
         v1_payment_recovery: true
@@ -726,6 +718,7 @@ describe('useFeatureFlags', () => {
 
     it('falls back to api.getServerFeature when authenticated config omits the flag', () => {
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {}
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
@@ -845,7 +838,6 @@ describe('useFeatureFlags', () => {
 
   describe('feature flag telemetry', () => {
     afterEach(() => {
-      telemetry.enabled = true
       vi.mocked(distributionTypes).isCloud = false
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
@@ -854,6 +846,7 @@ describe('useFeatureFlags', () => {
     it('synchronizes resolved values when their sources change', async () => {
       vi.mocked(distributionTypes).isCloud = true
       remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {
         partner_node_governance_enabled: false,
         unified_cloud_auth: false,
@@ -865,28 +858,30 @@ describe('useFeatureFlags', () => {
 
       const stop = startFeatureFlagTelemetry()
       onTestFinished(stop)
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         false
       )
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         false
       )
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.CHURNKEY_APP_ID,
         'app_test'
       )
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         'assets',
         true
       )
 
-      mockTrackFeatureFlagEvaluation.mockClear()
+      const currentTelemetry = useTelemetry()
+      if (!currentTelemetry) throw new Error('Expected telemetry mock')
+      vi.mocked(currentTelemetry.trackFeatureFlagEvaluation).mockClear()
       remoteConfig.value = { partner_node_governance_enabled: true }
       await nextTick()
 
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         true
       )
@@ -899,17 +894,19 @@ describe('useFeatureFlags', () => {
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
 
-      expect(mockTrackFeatureFlagEvaluation).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).not.toHaveBeenCalled()
     })
 
     it('is a no-op without a telemetry dispatcher', () => {
-      telemetry.enabled = false
+      const trackFeatureFlagEvaluation =
+        useTelemetry()?.trackFeatureFlagEvaluation
+      vi.mocked(useTelemetry).mockReturnValue(null)
       vi.mocked(api.getServerFeature).mockReturnValue(false)
 
       const stop = startFeatureFlagTelemetry()
       onTestFinished(stop)
 
-      expect(mockTrackFeatureFlagEvaluation).not.toHaveBeenCalled()
+      expect(trackFeatureFlagEvaluation).not.toHaveBeenCalled()
     })
   })
 
@@ -942,6 +939,158 @@ describe('useFeatureFlags', () => {
 
       expect(useFeatureFlags().flags.unifiedCloudAuthEnabled).toBe(false)
     })
+  })
+
+  describe('unifiedWebSessionEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(distributionTypes).isCloud = true
+      authenticatedRemoteConfigState.value = 'authenticated'
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+    })
+
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      authenticatedRemoteConfigState.value = 'unloaded'
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+    })
+
+    it.for([
+      {
+        name: 'is off when /api/features lacks the flag',
+        state: 'authenticated',
+        config: {},
+        expected: false
+      },
+      {
+        name: 'is off when remote config failed to load',
+        state: 'error',
+        config: {},
+        expected: false
+      },
+      {
+        name: 'is on when the server sends true',
+        state: 'authenticated',
+        config: { unified_web_session: true },
+        expected: true
+      }
+    ] as const)('$name', ({ state, config, expected }) => {
+      remoteConfigState.value = state
+      authenticatedRemoteConfigState.value =
+        state === 'authenticated' ? 'authenticated' : state
+      remoteConfig.value = config
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(expected)
+    })
+
+    it('ignores the server-feature fallback when /api/features lacks the flag', () => {
+      remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : defaultValue
+      )
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
+    })
+
+    it.for(['"true"', '"false"', '1'])(
+      'is off for the malformed override value %s',
+      (rawValue) => {
+        remoteConfigState.value = 'authenticated'
+        localStorage.setItem(
+          `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
+          rawValue
+        )
+
+        expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
+      }
+    )
+
+    it('lets a false ff: override turn off a server true', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = { unified_web_session: true }
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
+        'false'
+      )
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
+    })
+
+    it('lets a false ?ff= override beat a true ff: override and server value', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = { unified_web_session: true }
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
+        'true'
+      )
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION ? false : undefined
+      )
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
+    })
+
+    it('honours the ff: localStorage dev override', () => {
+      remoteConfigState.value = 'authenticated'
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
+        'true'
+      )
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(true)
+    })
+
+    it('honours the ?ff= session override', () => {
+      remoteConfigState.value = 'authenticated'
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : undefined
+      )
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(true)
+    })
+
+    it('is off outside the cloud distribution', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = { unified_web_session: true }
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
+    })
+
+    it.for([
+      {
+        name: 'unified_cloud_auth on does not turn it on',
+        config: { unified_cloud_auth: true },
+        expected: {
+          unifiedCloudAuthEnabled: true,
+          unifiedWebSessionEnabled: false
+        }
+      },
+      {
+        name: 'it turns on without unified_cloud_auth and leaves that flag off',
+        config: { unified_cloud_auth: false, unified_web_session: true },
+        expected: {
+          unifiedCloudAuthEnabled: false,
+          unifiedWebSessionEnabled: true
+        }
+      }
+    ])(
+      'is independent of unified_cloud_auth: $name',
+      ({ config, expected }) => {
+        remoteConfigState.value = 'authenticated'
+        remoteConfig.value = config
+
+        const { flags } = useFeatureFlags()
+        expect({
+          unifiedCloudAuthEnabled: flags.unifiedCloudAuthEnabled,
+          unifiedWebSessionEnabled: flags.unifiedWebSessionEnabled
+        }).toEqual(expected)
+      }
+    )
   })
 
   describe('session override precedence', () => {
@@ -1016,6 +1165,111 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.billingControlEnabled).toBe(true)
+    })
+  })
+  describe('agentInAppExperienceEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+      sessionAgentGrant.value = undefined
+      sessionAgentGrantValidUntil.value = undefined
+    })
+
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'unloaded'
+      remoteConfig.value = {}
+      sessionAgentGrant.value = undefined
+      sessionAgentGrantValidUntil.value = undefined
+    })
+
+    it('is false off-cloud even when the authenticated config grants it', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
+      remoteConfig.value = { 'agent-in-app-experience': true }
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('is false during the anonymous window even when the config already grants it', () => {
+      remoteConfigState.value = 'anonymous'
+      authenticatedRemoteConfigState.value = 'unloaded'
+      remoteConfig.value = { 'agent-in-app-experience': true }
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('is true once the authenticated config grants it', () => {
+      remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
+      remoteConfig.value = { 'agent-in-app-experience': true }
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(true)
+    })
+
+    it('is false when the authenticated config omits the key', () => {
+      remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
+      remoteConfig.value = {}
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('keeps this session granted when a later refresh fails transiently', () => {
+      remoteConfigState.value = 'authenticated'
+      authenticatedRemoteConfigState.value = 'authenticated'
+      remoteConfig.value = { 'agent-in-app-experience': true }
+      sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() + 60_000
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(true)
+
+      remoteConfigState.value = 'error'
+      authenticatedRemoteConfigState.value = 'error'
+
+      expect(flags.agentInAppExperienceEnabled).toBe(true)
+    })
+
+    it('expires the transient session grant after its bounded fallback window', () => {
+      remoteConfigState.value = 'error'
+      sessionAgentGrant.value = true
+      sessionAgentGrantValidUntil.value = Date.now() - 1
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('drops the grant when the session itself is gone', () => {
+      remoteConfigState.value = 'error'
+      remoteConfig.value = {}
+      sessionAgentGrant.value = undefined
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('treats an explicitly revoked grant as off during a refresh failure', () => {
+      remoteConfigState.value = 'error'
+      sessionAgentGrant.value = false
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(false)
+    })
+
+    it('honours a session override ahead of the cloud and auth guards', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE ? true : undefined
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentInAppExperienceEnabled).toBe(true)
     })
   })
 })

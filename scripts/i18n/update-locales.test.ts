@@ -139,7 +139,7 @@ describe('locale file update', () => {
       stable: 'translated keep me'
     })
     expect(translatedCount).toBe(5)
-    expect(Object.keys(output)).toEqual([...Object.keys(output)].sort())
+    expect(Object.keys(output)).toEqual(Object.keys(output).sort())
   })
 
   it('retranslates existing translations that were corrupted or blanked', async () => {

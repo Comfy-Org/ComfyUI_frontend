@@ -23,6 +23,9 @@ export interface UseCanvasSelectionOptions {
   isPaused?: MaybeRefOrGetter<boolean>
   scope?: MaybeRefOrGetter<string | null>
   dismissedSignature?: Ref<string | null>
+  retainStagedNode?: (node: SelectedNode) => boolean
+  /** User additions from canvas tracking or a mention, never draft restoration. */
+  onNodesAdded?: () => void
 }
 
 function signature(scope: string | null, nodes: SelectedNode[]): string {
@@ -37,6 +40,26 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
   let lastLiveSig: string | null = null
 
   let stopSelectionWatch: WatchStopHandle | undefined
+
+  function retainOffSelectionNodes(nodes: SelectedNode[]): SelectedNode[] {
+    if (!options.retainStagedNode) return nodes
+    const selectedKeys = new Set(nodes.map(selectedNodeKey))
+    return [
+      ...staged.value.filter(
+        (node) =>
+          options.retainStagedNode?.(node) &&
+          !selectedKeys.has(selectedNodeKey(node))
+      ),
+      ...nodes
+    ]
+  }
+
+  function stageUserSelection(nodes: SelectedNode[]): void {
+    const previousKeys = new Set(staged.value.map(selectedNodeKey))
+    if (nodes.some((node) => !previousKeys.has(selectedNodeKey(node))))
+      options.onNodesAdded?.()
+    staged.value = nodes
+  }
 
   watch(
     () => toValue(options.enabled ?? true),
@@ -71,7 +94,8 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
             return
           }
           if (!isTracking) return
-          if (nodes.length === 0) {
+          const projectedNodes = retainOffSelectionNodes(nodes)
+          if (projectedNodes.length === 0) {
             staged.value = []
             consumedSig.value = null
             stagedSig.value = null
@@ -79,14 +103,14 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
             lastLiveSig = null
             return
           }
-          const sig = signature(scope, nodes)
+          const sig = signature(scope, projectedNodes)
           lastLiveSig = sig
           if (sig !== dismissedSig.value) dismissedSig.value = null
           if (sig === dismissedSig.value) return
           if (sig === consumedSig.value || sig === stagedSig.value) return
           consumedSig.value = null
           stagedSig.value = sig
-          staged.value = [...nodes]
+          stageUserSelection(projectedNodes)
         },
         { immediate: true, deep: true, flush: 'sync' }
       )
@@ -123,7 +147,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
       staged.value.some((tag) => selectedNodeKey(tag) === selectedNodeKey(node))
     )
       return
-    staged.value = [...staged.value, node]
+    stageUserSelection([...staged.value, node])
   }
 
   function replace(nodes: SelectedNode[]): void {

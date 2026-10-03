@@ -25,9 +25,9 @@
         >
           <i
             v-if="!isPlaying"
-            class="text-secondary icon-[lucide--play] size-4"
+            class="icon-[lucide--play] size-4 text-muted-foreground"
           />
-          <i v-else class="text-secondary icon-[lucide--pause] size-4" />
+          <i v-else class="icon-[lucide--pause] size-4 text-muted-foreground" />
         </Button>
 
         <!-- Time Display -->
@@ -66,13 +66,16 @@
         >
           <i
             v-if="showVolumeTwo"
-            class="text-secondary icon-[lucide--volume-2] size-4"
+            class="icon-[lucide--volume-2] size-4 text-muted-foreground"
           />
           <i
             v-else-if="showVolumeOne"
-            class="text-secondary icon-[lucide--volume-1] size-4"
+            class="icon-[lucide--volume-1] size-4 text-muted-foreground"
           />
-          <i v-else class="text-secondary icon-[lucide--volume-x] size-4" />
+          <i
+            v-else
+            class="icon-[lucide--volume-x] size-4 text-muted-foreground"
+          />
         </Button>
 
         <!-- Download Button -->
@@ -85,7 +88,7 @@
           class="size-6 hover:bg-interface-menu-component-surface-hovered"
           @click="handleDownload"
         >
-          <i class="text-secondary icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download] size-4 text-muted-foreground" />
         </Button>
 
         <!-- Options Button -->
@@ -97,7 +100,9 @@
           class="size-6 rounded-sm"
           @click="toggleOptionsMenu"
         >
-          <i class="text-secondary icon-[lucide--more-vertical] size-4" />
+          <i
+            class="icon-[lucide--more-vertical] size-4 text-muted-foreground"
+          />
         </Button>
       </div>
 
@@ -118,7 +123,7 @@
               item.label
             }}</label>
             <Slider
-              :model-value="volume * 10"
+              :model-value="[volume * 10]"
               :min="0"
               :max="10"
               :step="1"
@@ -144,7 +149,6 @@
 </template>
 
 <script setup lang="ts">
-import Slider from 'primevue/slider'
 import TieredMenu from 'primevue/tieredmenu'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -154,6 +158,7 @@ import { useToast } from 'primevue/usetoast'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
+import Slider from '@/components/ui/slider/Slider.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { formatTime } from '@/utils/formatUtil'
@@ -260,8 +265,8 @@ const setPlaybackSpeed = (speed: number) => {
   }
 }
 
-const handleVolumeChange = (value: number | number[]) => {
-  const numValue = Array.isArray(value) ? value[0] : value
+const handleVolumeChange = (value: number[] | undefined) => {
+  const numValue = value?.[0] ?? 0
   volume.value = numValue / 10
   if (audioRef.value) {
     audioRef.value.volume = volume.value

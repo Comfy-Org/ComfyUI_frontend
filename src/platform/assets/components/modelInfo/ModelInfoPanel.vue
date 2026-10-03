@@ -44,7 +44,7 @@
           :href="sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
+          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
         >
           <img
             v-if="sourceName === 'Civitai'"
@@ -325,7 +325,7 @@ const debouncedFlushMetadata = useDebounceFn(() => {
   if (isImmutable.value) return
   assetsStore.updateAssetMetadata(
     asset,
-    { ...(asset.user_metadata ?? {}), ...pendingUpdates.value },
+    { ...asset.user_metadata, ...pendingUpdates.value },
     cacheKey
   )
 }, 500)

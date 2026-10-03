@@ -16,20 +16,20 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasEventDetail } from '@/lib/litegraph/src/types/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toGroupId } from '@/types/groupId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 function createMockPositionable(): Positionable {
   return fromPartial<Positionable>({ id: toGroupId(1), pos: [0, 0] })
 }
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
+vi.mock(import('@/scripts/app'))
 
 describe('ColorPickerButton', () => {
   const i18n = createI18n({
@@ -37,6 +37,7 @@ describe('ColorPickerButton', () => {
     locale: 'en',
     messages: {
       en: {
+        g: { color: 'Color' },
         color: {
           noColor: 'No Color',
           red: 'Red',
@@ -83,6 +84,24 @@ describe('ColorPickerButton', () => {
 
     await user.click(button)
     expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
+  })
+
+  it('clears the color when the active swatch is selected again', async () => {
+    const group = new LGraphGroup()
+    setCanvasSelection([group])
+    const { user } = renderComponent()
+    const pickerButton = screen.getByRole('button', { name: 'Color' })
+
+    await user.click(pickerButton)
+    await user.click(screen.getByRole('button', { name: 'Red' }))
+    expect(group.color).toBe(LGraphCanvas.node_colors.red.groupcolor)
+
+    await user.click(pickerButton)
+    const redSwatch = screen.getByRole('button', { name: 'Red' })
+    expect(redSwatch).toHaveAttribute('aria-pressed', 'true')
+    await user.click(redSwatch)
+
+    expect(group.color).toBeUndefined()
   })
 
   it.for([

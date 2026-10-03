@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -19,7 +20,7 @@ import {
   setWidgetHiddenInPanel
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 export interface WidgetRenderState {
@@ -38,13 +39,6 @@ interface WidgetEntity {
   state: WidgetState
   render: WidgetRenderState
   visibility: WidgetVisibilityComponent
-}
-
-interface WidgetValueChange {
-  widgetId: WidgetId
-  value: WidgetValue
-  oldValue: WidgetValue
-  context?: RemoteMutationContext
 }
 
 function setNodeScoped<T>(
@@ -72,8 +66,32 @@ function clearNodeScoped<T>(
   if (nodeMap.size === 0) graphMap.delete(graphId)
 }
 
+/**
+ * Strips one or more leading `<subgraphUuid>:` scope prefixes (nested
+ * subgraphs chain them), leaving the innermost local id.
+ *
+ * Only a genuine UUID segment counts as a scope prefix. A bare `NodeId` can
+ * itself legally contain colons for reasons that have nothing to do with
+ * subgraph scoping — e.g. `insert_workflow`'s remapped ids
+ * (`insert:<opId>:root:node:<originalId>`, comfy-multi-player's `remap.ts`).
+ * The old unconditional "strip to the last colon" collapsed such an id down
+ * to its trailing segment, which is not how it was registered, so every
+ * widget lookup keyed on it came back empty (PM-1580: agent-inserted nodes
+ * materialize with correct positions/types/links but render with no
+ * widgets). Stopping as soon as the next segment fails the UUID check keeps
+ * the rest of a non-scoped id intact.
+ */
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
-  return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
+  let rest = String(scopedId)
+  let separatorIndex = rest.indexOf(':')
+  while (
+    separatorIndex !== -1 &&
+    isUuidShapedSubgraphId(rest.slice(0, separatorIndex))
+  ) {
+    rest = rest.slice(separatorIndex + 1)
+    separatorIndex = rest.indexOf(':')
+  }
+  return parseNodeId(rest)
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
@@ -83,38 +101,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     UUID,
     Map<NodeId, WidgetRestorationState>
   >()
-
-  const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
-  const valueMutationContexts = new WeakMap<
-    WidgetState,
-    RemoteMutationContext
-  >()
-
-  /**
-   * Widgets whose value last changed without a `RemoteMutationContext` -
-   * a human edit, or any other write that bypassed `setValue`'s context
-   * param. A CRDT catch-up reconcile reads its doc snapshot on its own
-   * schedule and must not replay a value over one of these: the snapshot
-   * predates the edit by definition, and clobbering it silently discards
-   * work in progress (PM-1303/PM-1310 "hypothesis C"). `setValue` clears an
-   * id once its own context-carrying write lands, whether or not that write
-   * changes the value.
-   */
-  const locallyDirtyWidgets = new Set<WidgetId>()
-
-  /**
-   * Depth counter for {@link withLocalDirtyTrackingSuppressed} and the
-   * {@link beginLocalDirtyTrackingSuppression}/
-   * {@link endLocalDirtyTrackingSuppression} pair. A context-less write made
-   * while this is above zero is a structural replay - e.g.
-   * `agentNodeMaterializer`'s `node.configure()` catch-up (which legitimately
-   * re-applies a stale positional snapshot before immediately correcting it),
-   * or any workflow load's `LGraphNode.configure()` re-applying a tab's own
-   * locally-saved (possibly pre-edit) snapshot onto widgets already aliased
-   * to newer canonical state - rather than a human edit, so it must not arm
-   * the one-shot stale-reconcile guard.
-   */
-  let dirtyTrackingSuppressed = 0
 
   function observeValue<TValue extends WidgetValue>(
     state: WidgetState<TValue>,
@@ -131,53 +117,16 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         value = nextValue
         const widgetId = createWidgetId(graphId, state.nodeId, state.name)
         if (getWidget(widgetId) !== state) return
-        const context = valueMutationContexts.get(state)
-        valueMutationContexts.delete(state)
-        if (!context && dirtyTrackingSuppressed === 0) {
-          locallyDirtyWidgets.add(widgetId)
-        }
-        for (const listener of valueChangeListeners) {
-          listener({ widgetId, value, oldValue, context })
-        }
+        emitGraphIntent({
+          type: 'set_widget',
+          graphId,
+          nodeId: state.nodeId,
+          name: state.name,
+          value,
+          previous: oldValue
+        })
       }
     })
-  }
-
-  /**
-   * Runs `fn` with local-dirty tracking suppressed: every context-less write
-   * inside it is treated as a structural adapter replay, never as a human
-   * edit that needs {@link isLocallyDirty} protection. Reentrant-safe.
-   */
-  function withLocalDirtyTrackingSuppressed<T>(fn: () => T): T {
-    beginLocalDirtyTrackingSuppression()
-    try {
-      return fn()
-    } finally {
-      endLocalDirtyTrackingSuppression()
-    }
-  }
-
-  /**
-   * Opens a local-dirty-tracking-suppressed window without a matching
-   * synchronous callback, for a caller that must pair with
-   * {@link endLocalDirtyTrackingSuppression} across an async boundary (e.g.
-   * an extension's `beforeLoadGraph`/`afterConfigureGraph` hooks around a
-   * workflow load). Reentrant: nests with any other suppression in effect.
-   */
-  function beginLocalDirtyTrackingSuppression(): void {
-    dirtyTrackingSuppressed++
-  }
-
-  /** Closes one suppression opened by {@link beginLocalDirtyTrackingSuppression}. */
-  function endLocalDirtyTrackingSuppression(): void {
-    dirtyTrackingSuppressed = Math.max(0, dirtyTrackingSuppressed - 1)
-  }
-
-  function onValueChange(
-    listener: (change: WidgetValueChange) => void
-  ): () => void {
-    valueChangeListeners.add(listener)
-    return () => valueChangeListeners.delete(listener)
   }
 
   function setNodeWidgetRestoration(
@@ -274,9 +223,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgetId: WidgetId,
     init: WidgetStateInit<TValue, TType, TOptions>,
     renderState?: WidgetRenderState,
-    visibility?: WidgetVisibilityComponent,
-    context?: RemoteMutationContext
+    visibility?: WidgetVisibilityComponent
   ): WidgetState<TValue, TType, TOptions> | undefined
+  // fallow-ignore-next-line complexity -- existing overload implementation moved upward after this PR removes obsolete mutation-context bookkeeping.
   function registerWidget(
     widgetId: WidgetId,
     init: WidgetStateInit,
@@ -284,8 +233,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     visibility: WidgetVisibilityComponent = deriveWidgetVisibility({
       type: init.type,
       options: init.options
-    }),
-    _context?: RemoteMutationContext
+    })
   ): WidgetState | undefined {
     if (!isWidgetId(widgetId)) {
       console.warn(
@@ -305,11 +253,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     // widget type at an old address, overwrite). Without it a text widget
     // rendered as the prior int type until the next full reload (#13073, #13773).
     if (existing && existing.state.type === init.type) {
-      const value = existing.state.value
-      Object.assign(existing.state, init, {
+      Object.assign(existing.state, {
+        ...init,
         name: init.name ?? storageName,
         nodeId,
-        value,
+        value: existing.state.value,
         y: init.y ?? existing.state.y
       })
       Object.assign(existing.render, renderState)
@@ -365,39 +313,40 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return graphWidgets.value.get(graphId)?.get(widgetId)?.visibility
   }
 
-  function setValue(
-    widgetId: WidgetId,
-    value: WidgetState['value'],
-    context?: RemoteMutationContext
-  ): boolean {
+  function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
-    if (context) valueMutationContexts.set(state, context)
-    try {
-      state.value = value
-    } finally {
-      valueMutationContexts.delete(state)
-    }
-    // Setting the same value `state.value` already holds short-circuits
-    // `observeValue`'s setter before it can clear the id, so clear it here
-    // too: this write is still an authoritative context-carrying one.
-    if (context) locallyDirtyWidgets.delete(widgetId)
+    state.value = value
     return true
-  }
-
-  /**
-   * Whether `widgetId`'s live value was last set without a
-   * `RemoteMutationContext`, i.e. a local edit a doc snapshot reconcile has
-   * not yet reflected. See {@link locallyDirtyWidgets}.
-   */
-  function isLocallyDirty(widgetId: WidgetId): boolean {
-    return locallyDirtyWidgets.has(widgetId)
   }
 
   function setLabel(widgetId: WidgetId, label: string): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
     state.label = label
+    return true
+  }
+
+  function setOptions(
+    widgetId: WidgetId,
+    options: WidgetState['options']
+  ): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    const visibility = getWidgetVisibility(widgetId)
+    const hidden = state.options.hidden
+    state.options = options
+    if (hidden !== undefined) state.options.hidden = hidden
+    if (visibility) {
+      const nextVisibility = deriveWidgetVisibility({
+        type: state.type,
+        advanced: visibility.surfaces.canvas === 'advanced',
+        options: state.options
+      })
+      Object.assign(visibility.surfaces, nextVisibility.surfaces)
+      visibility.suppression.byExtension =
+        nextVisibility.suppression.byExtension
+    }
     return true
   }
 
@@ -428,7 +377,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const { graphId } = parseWidgetId(widgetId)
     removeNodeWidgetOrder(widgetId)
-    locallyDirtyWidgets.delete(widgetId)
     return graphWidgets.value.get(graphId)?.delete(widgetId) ?? false
   }
 
@@ -550,24 +498,18 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (discardValues) {
       for (const widgetId of order) {
         graphWidgets.value.get(graphId)?.delete(widgetId)
-        locallyDirtyWidgets.delete(widgetId)
       }
     }
     graphOrders.delete(localNodeId)
   }
 
-  function clearNode(
-    graphId: UUID,
-    nodeId: NodeId,
-    _context?: RemoteMutationContext
-  ): void {
+  function clearNode(graphId: UUID, nodeId: NodeId): void {
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgets = graphWidgets.value.get(graphId)
     if (widgets) {
       for (const [id, entity] of widgets) {
         if (entity.state.nodeId !== nodeId) continue
         widgets.delete(id)
-        locallyDirtyWidgets.delete(id)
       }
       if (widgets.size === 0) graphWidgets.value.delete(graphId)
     }
@@ -578,9 +520,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearGraph(graphId: UUID): void {
-    for (const id of graphWidgets.value.get(graphId)?.keys() ?? []) {
-      locallyDirtyWidgets.delete(id)
-    }
     graphWidgets.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
@@ -594,13 +533,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getWidgetRenderState,
     getWidgetVisibility,
-    onValueChange,
     setValue,
-    isLocallyDirty,
-    withLocalDirtyTrackingSuppressed,
-    beginLocalDirtyTrackingSuppression,
-    endLocalDirtyTrackingSuppression,
     setLabel,
+    setOptions,
     updateOptions,
     deleteWidget,
     renameWidget,

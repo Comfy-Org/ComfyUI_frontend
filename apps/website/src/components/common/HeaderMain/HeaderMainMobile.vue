@@ -6,7 +6,7 @@ import { getMainNavigation } from '../../../data/mainNavigation'
 import { getRoutes } from '../../../config/routes.ts'
 import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
 import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
+import { translationsFor } from '../../../i18n/translations.ts'
 import NavLinkContent from './NavLinkContent.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
@@ -21,6 +21,7 @@ const { locale = 'en', workshopInBuild = false } = defineProps<{
   locale?: Locale
   workshopInBuild?: boolean
 }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 const mainNavigation = computed(() =>
   getMainNavigation(locale, workshopInBuild)
@@ -53,7 +54,7 @@ onUnmounted(() => {
   <div>
     <Sheet v-model:open="isOpen">
       <SheetTrigger
-        :aria-label="t('nav.toggleMenu', locale)"
+        :aria-label="t('nav.toggleMenu')"
         class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90"
       >
         <BreadthumbIcon class="h-3 w-5 text-primary-comfy-ink" />
@@ -61,12 +62,12 @@ onUnmounted(() => {
       <SheetContent
         side="right"
         class="flex size-full flex-col px-6 py-5 sm:max-w-none"
-        :close-label="t('nav.close', locale)"
+        :close-label="t('nav.close')"
       >
         <SheetHeader class="sr-only">
-          <SheetTitle>{{ t('nav.menu', locale) }}</SheetTitle>
+          <SheetTitle>{{ t('nav.menu') }}</SheetTitle>
           <SheetDescription>
-            {{ t('nav.mobileMenuDescription', locale) }}
+            {{ t('nav.mobileMenuDescription') }}
           </SheetDescription>
         </SheetHeader>
 
@@ -76,7 +77,7 @@ onUnmounted(() => {
             class="inline-flex w-auto shrink-0 focus-visible:border-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           >
             <img src="/icons/logomark.svg" alt="" class="h-11 w-auto" />
-            <span class="sr-only">{{ t('nav.home', locale) }}</span>
+            <span class="sr-only">{{ t('nav.home') }}</span>
           </a>
         </div>
 
@@ -89,7 +90,7 @@ onUnmounted(() => {
                 activeItem ? 'opacity-0' : ''
               )
             "
-            :aria-label="t('nav.menu', locale)"
+            :aria-label="t('nav.menu')"
             :inert="activeItem ? true : undefined"
           >
             <ul class="flex flex-col gap-y-8">
@@ -130,7 +131,7 @@ onUnmounted(() => {
                 <template #prepend>
                   <ChevronLeft />
                 </template>
-                {{ t('nav.back', locale) }}
+                {{ t('nav.back') }}
               </Button>
 
               <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">

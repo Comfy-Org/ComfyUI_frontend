@@ -277,18 +277,18 @@ export class WorkflowHelper {
   async openNewTabThenReturn(): Promise<void> {
     const { topbar } = this.comfyPage.menu
     const originalTabIndex = (await topbar.getTabNames()).length - 1
-    await expect(topbar.getTab(originalTabIndex)).toHaveClass(
-      /p-togglebutton-checked/
-    )
+    await expect(
+      topbar.getTab(originalTabIndex).and(topbar.getActiveTab())
+    ).toBeVisible()
     await topbar.newWorkflowButton.click()
     await expect
       .poll(() => topbar.getTabNames())
       .toHaveLength(originalTabIndex + 2)
     await expect.poll(() => this.getGraphNodeIds()).toEqual([])
     await topbar.getTab(originalTabIndex).click()
-    await expect(topbar.getTab(originalTabIndex)).toHaveClass(
-      /p-togglebutton-checked/
-    )
+    await expect(
+      topbar.getTab(originalTabIndex).and(topbar.getActiveTab())
+    ).toBeVisible()
     await this.waitForWorkflowIdle()
   }
 

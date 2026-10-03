@@ -82,6 +82,26 @@ describe('projectBillingPlans', () => {
     expect(projected?.plans).toHaveLength(1)
   })
 
+  it('reads the raw credit grant back as a number when the server sends one', () => {
+    const withGrant: BillingPlansData = {
+      ...DECODED,
+      plans: [{ ...DECODED.plans[0], credits: 7_400n }]
+    }
+
+    expect(projectBillingPlans(withGrant)?.plans[0].credits).toBe(7_400)
+  })
+
+  it('refuses a catalog with a credit grant a number cannot hold exactly', () => {
+    const tooLarge: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        { ...DECODED.plans[0], credits: BigInt(Number.MAX_SAFE_INTEGER) + 1n }
+      ]
+    }
+
+    expect(projectBillingPlans(tooLarge)).toBeUndefined()
+  })
+
   it('refuses a catalog with a price a number cannot hold exactly', () => {
     const tooLarge: BillingPlansData = {
       ...DECODED,

@@ -1,4 +1,3 @@
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import type {
   CheckoutAssignmentStatus,
   CheckoutEntryFlow,
@@ -6,7 +5,15 @@ import type {
   CheckoutJourneyArm,
   CheckoutJourneyContext,
   CheckoutUiMode
-} from '@/platform/telemetry/types'
+} from '@comfyorg/account-core/billing'
+import {
+  isBillingSource,
+  isContractIdentifier
+} from '@comfyorg/billing-contract'
+
+import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/paymentIntentSource'
 
 /**
  * One lifecycle owner for a checkout journey's frozen entry context and
@@ -25,31 +32,69 @@ const CHECKOUT_JOURNEY_STORAGE_KEY = 'comfy.checkout.journey'
 const EMBEDDED_CHECKOUT_FLAG_KEY: `${ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED}` =
   'embedded_checked_enabled'
 
-const ENTRY_FLOWS: ReadonlySet<CheckoutEntryFlow> = new Set([
-  'initial_subscription',
-  'paid_upgrade',
-  'topup',
-  'other',
-  'unknown'
-])
-const ENTRY_SOURCES: ReadonlySet<CheckoutEntrySource> = new Set([
-  'pricing',
-  'deep_link',
-  'recovery',
-  'settings_billing',
-  'other',
-  'unknown'
-])
+const ENTRY_FLOWS = {
+  initial_subscription: true,
+  paid_upgrade: true,
+  topup: true,
+  other: true,
+  unknown: true
+} satisfies Record<CheckoutEntryFlow, true>
+const ENTRY_SOURCES = {
+  pricing: true,
+  deep_link: true,
+  recovery: true,
+  settings_billing: true,
+  other: true,
+  unknown: true,
+  agent_paywall: true
+} satisfies Record<CheckoutEntrySource, true>
 
-const toEntryFlow = (value: unknown): CheckoutEntryFlow =>
-  ENTRY_FLOWS.has(value as CheckoutEntryFlow)
-    ? (value as CheckoutEntryFlow)
-    : 'unknown'
+function isAllowlisted<T extends string>(
+  allowlist: Record<T, true>,
+  value: unknown
+): value is T {
+  return typeof value === 'string' && Object.hasOwn(allowlist, value)
+}
 
-const toEntrySource = (value: unknown): CheckoutEntrySource =>
-  ENTRY_SOURCES.has(value as CheckoutEntrySource)
-    ? (value as CheckoutEntrySource)
-    : 'unknown'
+function toEntryFlow(value: unknown): CheckoutEntryFlow {
+  return isAllowlisted(ENTRY_FLOWS, value) ? value : 'unknown'
+}
+
+function toEntrySource(value: unknown): CheckoutEntrySource {
+  return isAllowlisted(ENTRY_SOURCES, value) ? value : 'unknown'
+}
+
+const PAYMENT_INTENT_ENTRY_SOURCES: Partial<
+  Record<PaymentIntentSource, CheckoutEntrySource>
+> = {
+  agent_paywall: 'agent_paywall'
+}
+
+function isMappedPaymentIntentSource(
+  value: string
+): value is keyof typeof PAYMENT_INTENT_ENTRY_SOURCES {
+  return Object.hasOwn(PAYMENT_INTENT_ENTRY_SOURCES, value)
+}
+
+/**
+ * Entry source for a journey opened with `paymentIntentSource`.
+ *
+ * Takes a `string` rather than a `PaymentIntentSource` because this function
+ * owns the runtime hardening: its callers read the value from a Vue prop and a
+ * composable argument, neither of which TypeScript enforces at runtime. Own-key
+ * narrowing is what makes that safe — a bare lookup would resolve an inherited
+ * `Object.prototype` member (`'constructor'`, `'toString'`) truthy, so
+ * `?? fallback` would not fire and a non-`CheckoutEntrySource` value would
+ * reach the record, storage and every downstream phase.
+ */
+export function resolveEntrySource(
+  paymentIntentSource: string | undefined,
+  fallback: CheckoutEntrySource
+): CheckoutEntrySource {
+  if (paymentIntentSource === undefined) return fallback
+  if (!isMappedPaymentIntentSource(paymentIntentSource)) return fallback
+  return PAYMENT_INTENT_ENTRY_SOURCES[paymentIntentSource] ?? fallback
+}
 
 export interface CheckoutJourneyRecord {
   journey_id: string
@@ -59,6 +104,11 @@ export interface CheckoutJourneyRecord {
   workspace_id: string
   entry_flow: CheckoutEntryFlow
   entry_source: CheckoutEntrySource
+  /**
+   * The source the customer entered from, as the one source list names it.
+   * Absent on a record written before it was kept, or opened with no source.
+   */
+  payment_intent_source?: PaymentIntentSource
   /**
    * Stable key for the intended purchase within the flow (e.g. tier:cycle).
    * A change of intent starts a new journey rather than resuming.
@@ -82,6 +132,7 @@ interface CheckoutJourneyIdentity {
 export interface StartCheckoutJourneyInput extends CheckoutJourneyIdentity {
   entryFlow: CheckoutEntryFlow
   entrySource: CheckoutEntrySource
+  paymentIntentSource?: PaymentIntentSource
   assignment: CheckoutAssignment
   /** Stable key for the intended purchase (e.g. tier:cycle); a change starts a new journey. */
   intent?: string
@@ -136,6 +187,9 @@ export function createCheckoutJourneyRecord(
     workspace_id: input.workspaceId,
     entry_flow: input.entryFlow,
     entry_source: input.entrySource,
+    ...(input.paymentIntentSource !== undefined && {
+      payment_intent_source: input.paymentIntentSource
+    }),
     ...(input.intent !== undefined && { intent: input.intent }),
     assignment_status: input.assignment.status,
     ...(input.assignment.status === 'resolved' && {
@@ -209,16 +263,7 @@ export function resolveCheckoutJourney(
     return { status: 'active', record: existing, resumed: true }
   }
 
-  // A different rail's operation is in flight and still owns the single journey
-  // slot — its poller gates the terminal clear on this record's billing_op_id.
-  // A single storage slot can't isolate two concurrent rails, so the bound
-  // journey keeps the slot and this rail goes uninstrumented until it resolves.
-  // See ADR-BILLING-CHECKOUT-0031.
-  if (
-    live &&
-    existing.billing_op_id !== undefined &&
-    existing.entry_flow !== input.entryFlow
-  ) {
+  if (live && existing.billing_op_id !== undefined) {
     return { status: 'blocked' }
   }
 
@@ -229,6 +274,21 @@ export function resolveCheckoutJourney(
 
 export function getActiveCheckoutJourney(): CheckoutJourneyRecord | null {
   return loadCheckoutJourney()
+}
+
+/**
+ * The source of the journey bound to `billingOpId`, for an operation event
+ * emitted by a tab that did not start it (a poll recovered after reload).
+ */
+export function getCheckoutJourneyPaymentIntentSource(
+  billingOpId: string
+): PaymentIntentSource | undefined {
+  const journey = loadCheckoutJourney()
+  if (journey?.billing_op_id !== billingOpId) return undefined
+  return (
+    journey.payment_intent_source ??
+    paymentIntentSourceForJourneyEntry(journey.entry_source)
+  )
 }
 
 export function bindOperationToCheckoutJourney(
@@ -271,7 +331,7 @@ export function clearCheckoutJourney(): void {
 
 let fallbackJourneyIdCounter = 0
 
-function createJourneyId(): string {
+export function createJourneyId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
@@ -392,11 +452,12 @@ function readPersistedJourney(): CheckoutJourneyRecord | null {
   }
 }
 
-const UI_MODES: ReadonlySet<CheckoutUiMode> = new Set([
-  'embedded',
-  'hosted',
-  'unknown'
-])
+const UI_MODES = {
+  embedded: true,
+  full_page: true,
+  hosted: true,
+  unknown: true
+} satisfies Record<CheckoutUiMode, true>
 
 type PersistedJourneyIdentity = Pick<
   CheckoutJourneyRecord,
@@ -410,8 +471,10 @@ function readIdentity(
     candidate
   // A non-finite started_at_ms would make every expiry comparison false, so an
   // immortal journey could be persisted by hand; an unparseable entered_at
-  // would reach telemetry as the journey's declared UTC entry time.
+  // would reach telemetry as the journey's declared UTC entry time; a
+  // journey_id the billing contract refuses would stop the hosted handoff.
   return typeof journey_id === 'string' &&
+    isContractIdentifier(journey_id) &&
     typeof entered_at === 'string' &&
     !Number.isNaN(Date.parse(entered_at)) &&
     typeof started_at_ms === 'number' &&
@@ -450,12 +513,12 @@ function readAssignment(
 }
 
 function readOptionalFields(candidate: Record<string, unknown>) {
-  const { intent, ui_mode, billing_op_id } = candidate
+  const { intent, ui_mode, billing_op_id, payment_intent_source } = candidate
   return {
+    ...(typeof payment_intent_source === 'string' &&
+      isBillingSource(payment_intent_source) && { payment_intent_source }),
     ...(typeof intent === 'string' && { intent }),
-    ...(UI_MODES.has(ui_mode as CheckoutUiMode) && {
-      ui_mode: ui_mode as CheckoutUiMode
-    }),
+    ...(isAllowlisted(UI_MODES, ui_mode) && { ui_mode }),
     ...(typeof billing_op_id === 'string' && { billing_op_id })
   }
 }

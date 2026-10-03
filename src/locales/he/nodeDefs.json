@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "עבד את הסרטון הסופי ב־1080p של טיוטת Seedance 2.5. הסרטון הסופי שומר על הסצנה והתנועה של הטיוטה, ועושה שימוש חוזר בפרומפט, בהפניות, במשך, ביחס הממדים ובהגדרת השמע שלה.",
+    "display_name": "ByteDance Seedance 2.5 מטיוטה לסרטון סופי",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "פלט ה־draft_task_id של צומת Seedance 2.5 שהורץ עם מודל Seedance 2.5 Draft, או מזהה משימת טיוטה שהודבק. הגדר את בקרת ה־seed של צומת זה לקבוע, אחרת ההרצה הבאה תיצור טיוטה חדשה במקום להשתמש מחדש בזו שבדקת. ניתן לעבד טיוטה במשך 7 ימים לאחר יצירתה."
+      },
+      "watermark": {
+        "name": "סימן מים",
+        "tooltip": "האם להוסיף סימן מים לסרטון."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "יצירת וידאו באמצעות Seedance 2.0 מתמונה של הפריים הראשון ואופציונלית גם מהפריים האחרון.",
     "display_name": "ByteDance Seedance 2.0 מהפריים הראשון-לאחרון לווידאו",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "duration"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חבר אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הסרטון הסופי ב־1080p."
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "הקטנה אוטומטית"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חבר אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הסרטון הסופי ב־1080p."
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; Seedance 2.0 לאיכות מרבית ול-4K; Fast למיטוב מהירות; Mini ליצירה המהירה והזולה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "משך"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חבר אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הסרטון הסופי ב־1080p."
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "פירוק תמונה לפלטת רקע ועד 16 שכבות שקופות הניתנות להזזה, כל אחת עם סדר ערימה, תיבת גבול, שם ותיאור.",
-    "display_name": "ByteDance Seedream 5.0 Pro הפרדת שכבות",
+    "display_name": "ByteDance Seedream 5.0 Pro הפרדת שכבות (מדור קודם)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "מסמך שכבות מוכן לעריכה עבור Create Layered Image: פלטת הבסיס וכל אלמנט כשכבה משלו, חתוכה הדוק, במיקום האמיתי ובסדר הערימה. חבר ישירות, או הרחב עם Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "פרק תמונה ללוח רקע ולעד 16 שכבות שקופות שניתן למקם מחדש, שלכל אחת מהן סדר שכבות, תיבה תוחמת, שם ותיאור.",
+    "display_name": "ByteDance Seedream 5.0 הפרדת שכבות",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "גודל"
+      },
+      "model_watermark": {
+        "name": "סימן מים"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "תמונת הבסיס (לוח הרקע) שעליה נערמות השכבות."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "השקיפות של תמונת הבסיס (1 = שקוף, בהתאם למוסכמת LoadImage); כרגע תמיד אטומה לחלוטין."
+      },
+      "2": {
+        "name": "שכבות",
+        "tooltip": "שכבות שקופות המסודרות מלמטה למעלה. מצב קנבס מלא: ממוקמות על קנבס שחור בגודל הבסיס, במיקום התיבה התוחמת שלהן. מצב גודל מינימלי: נחתכות לתיבה התוחמת שלהן, מעוגנות בפינה השמאלית העליונה ומרופדות לגודל השכבה הגדולה ביותר."
+      },
+      "3": {
+        "name": "מסכות",
+        "tooltip": "שקיפות לכל שכבה, מיושרת לפי אינדקס עם אצוות השכבות (1 = שקוף, בהתאם למוסכמת LoadImage). להרכבה בסגנון ImageCompositeMasked, הוסף תחילה InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "תיבת מיקום אחת לכל שכבה, מיושרת לפי אינדקס עם אצוות השכבות (הזן את שתיהן, יחד עם המסכות, אל Layers From Bounding Boxes כדי לבנות מחדש את מיקום כל שכבה): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. ‏content_rect = [left, top, width, height] הוא אזור התוכן של השכבה בתוך המסגרת שלה; הוא ממוקם על הקנבס במיקום התיבה בתוספת היסט זה."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "מסמך שכבות מוכן לעריכה עבור Create Layered Image: לוח הבסיס וכל רכיב כשכבה נפרדת בעלת שם, חתוכה באופן הדוק, במיקומה ובסדר השכבות האמיתיים שלה. חבר ישירות, או הרחב באמצעות Add Layer."
       }
     }
   },
@@ -7676,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "הנפשת תמונה לכדי וידאו עם דיאלוג וקול מסונכרנים באמצעות HeyGen Video 1.0. התמונה משמשת כפריים הראשון.",
+    "display_name": "HeyGen Video 1.0 תמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "יצירת וידאו עם דיאלוג וקול מסונכרנים מפרומפט טקסט באמצעות HeyGen Video 1.0. אפשר לחבר עד 12 תמונות, סרטוני וידאו וקטעי שמע להפניה, ולציין אותם בפרומפט כ-{'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 הפניה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "הנפש כל תמונה של אדם לסרטון מדבר מסונכרן שפתיים (HeyGen Avatar IV). ניתן להניע באמצעות תסריט טקסט או אודיו משלך.",
     "display_name": "HeyGen Talking Photo",
@@ -7955,6 +8103,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "עורך או משלב עד 5 תמונות ייחוס, בהנחיית פרומפט טקסט, באמצעות מודל Hunyuan Image של Tencent.",
+    "display_name": "Tencent HY Image: עריכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "יוצר תמונות מפרומפט טקסט באמצעות מודל Hunyuan Image של Tencent.",
+    "display_name": "Tencent HY Image: טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -8208,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "עריכה או שילוב של עד 5 תמונות בהנחיית פרומפט טקסט באמצעות Ideogram 4.5. התמונה כולה מרונדרת מחדש, וניתן לשנות את גודלה או את יחס הגובה-רוחב שלה; כדי להשאיר פיקסלים שלא נגעו בהם ללא שינוי, השתמשו ב-Ideogram 4.5 Precise Edit.",
+    "display_name": "Ideogram 4.5 עריכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "יוצר תמונות באמצעות P-Image, מודל טקסט-לתמונה מהיר של Ideogram. טיפוגרפיה חזקה ופוטוריאליזם; תומך ב־Ideogram 4.0 structured JSON captions לטקסט, צבעים ופריסה מדויקים.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8247,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "הפרומפט שממנו התמונה נוצרה בפועל (הכיתוב המובנה המשוכתב כאשר prompt_upsampling הופעל, אחרת הפרומפט שלכם). ניתן להזינו שוב עם prompt_upsampling ב־OFF ואותו seed כדי לשחזר את התמונה."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "עריכת תמונה בהנחיית פרומפט טקסט באמצעות העריכה המדויקת של Ideogram 4.5: רק מה שהפרומפט מבקש משתנה, פיקסלים שלא נגעו בהם נשארים זהים, והפלט שומר על גודל תמונה 1 (תמונות מעל ~4 MP מוקטנות תחילה). ניתן לקבל עד 4 תמונות להפניה.",
+    "display_name": "Ideogram 4.5 עריכה מדויקת",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "יצירת תמונות מפרומפט טקסט באמצעות Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "הכיתוב המובנה שממנו נוצרה התמונה. הזינו אותו שוב כאשר magic_prompt מוגדר ל-'off' ובאותו זרע כדי לשחזר את התמונה."
       }
     }
   },
@@ -8410,12 +8739,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "ממיר בין sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG) ו-HDR PQ ‏(Rec.2020 PQ). Linear 1.0 משתמש באותה נקודת לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניט. פלט ליניארי והמרות מליניארי ל-HDR משמרים ערכים מורחבים ללא מיפוי גוונים. פלט SDR והמרה מ-PQ ל-HLG ממפים גוונים של בהירות עודפת לאורך האצווה ומכווצים צבעים שמחוץ לטווח הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת dtype של שלב הביניים. אלפא ישרה אינה עוברת המרת צבע.",
+    "description": "המר בין sRGB, ‏Rec.709 ליניארי, HDR (Rec.2020 HLG), ‏HDR PQ (Rec.2020 PQ), ‏HDR LogC3 ו־HDR ACEScct. ‏LogC3 משתמש בעקומת EI 800 עם צבעי יסוד Rec.709 ובקודים המוגבלים לטווח [0, 1]. ‏ACEScct משתמש בצבעי יסוד AP1 ובלבן D60, עם התאמת Bradford ל־D65. המר LogC3 או ACEScct לליניארי לצורך שמירה כ־EXR. ‏1.0 ליניארי משתמש באותו לבן ייחוס של 203 ניטים כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניטים. פלטים ליניאריים ו־ACEScct שומרים על ערכים מורחבים. המרות מליניארי ל־HDR שומרות על ההדגשות ללא מיפוי גוונים; פלטי HLG ו־PQ חותכים ערוצים שליליים. פלט SDR והמרת PQ ל־HLG ממפים את עודף הבהיקות בגוונים על פני האצווה ודוחסים צבעים שמחוץ למכלול הצבעים. ההמרות מחושבות ב־float32 ומחזירות את ההתקן ואת סוג הנתונים של תוצאת הביניים. אלפא ישירה אינה עוברת המרת צבע.",
     "display_name": "המרת מרחב הצבע של תמונה",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "מרחב הצבע של פיקסלי הפלט. הגדר את צומת השמירה לאותו מרחב צבע."
+        "tooltip": "מרחב הצבע של פיקסלי הפלט. יש להגדיר את צומת השמירה לאותו מרחב צבע. יש להמיר LogC3 או ACEScct לליניארי לפני שמירת EXR, או ל-sRGB/HDR/HDR PQ לפני שמירת וידאו."
       },
       "image": {
         "name": "image"
@@ -16812,7 +17141,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "מידת ההסקה שהמודל מבצע לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; ל-GPT-4.1 אין יכולת הסקה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
+        "tooltip": "מידת ההנמקה שהמודל מבצע לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-6 Sol/Luna ו-GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, סדרת o low-high; ל-GPT-4.1 אין הנמקה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
       },
       "truncation": {
         "name": "truncation",
@@ -16972,40 +17301,6 @@
       "file": {
         "name": "file",
         "tooltip": "קבצי קלט להוספה כהקשר עבור המודל. כרגע מתקבלים רק קבצי טקסט (.txt) ו-PDF (.pdf)."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "יצירת וידאו ואודיו ב-OpenAI.\n\nהודעת הפסקה: OpenAI תפסיק להפעיל את Sora v2 API בספטמבר 2026. צומת זה יוסר מ-ComfyUI באותו מועד.",
-    "display_name": "OpenAI Sora - וידאו (מופסק)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "טקסט מנחה; ניתן להשאיר ריק אם יש תמונת קלט."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר לזרע."
-      },
-      "size": {
-        "name": "size"
       }
     },
     "outputs": {
@@ -18366,6 +18661,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "מידת ההסקה שהמודל מבצע לפני הציור. רמות גבוהות יותר משפרות את רמת הפירוט וצורכות יותר אסימונים. בשימוש רק במודלי Arrow 2."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
@@ -18404,6 +18703,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "תיאור טקסטואלי של פלט ה-SVG הרצוי."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "מידת ההסקה שהמודל מבצע לפני הציור. רמות גבוהות יותר משפרות את רמת הפירוט וצורכות יותר אסימונים. בשימוש רק במודלי Arrow 2."
       },
       "reference_images": {
         "name": "reference_images",
@@ -18445,6 +18748,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "הפעל Qwen Image DiffSynth ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "image"
       },
@@ -18456,6 +18762,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "strength"
@@ -19075,7 +19384,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל לשימוש ביצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
+        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד מחייבים style_id או style_references; ‏recraftv4_1_flash הוא המודל המהיר והזול ביותר ואינו תומך בסגנונות כלל."
       },
       "model_size": {
         "name": "גודל"
@@ -23799,6 +24108,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "קידוד טקסט לעריכת תמונה Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "תמונות ייחוס אופציונליות, הנצפות על ידי מקודד הטקסט ומתווספות לרצף ה-latent כפריימים נקיים. תמונות מאוחרות יותר משנות את גודלן כך שיתאים לתמונה הראשונה, וה-latent שנדגם צריך להתאים לגודלה."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "ללא VAE, התמונות מתנות את מקודד הטקסט רק באמצעות מגדל הראייה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "קידוד טקסט Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24301,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "מחליף את הנחיית המערכת בתבנית הצ'אט של המודל. מתעלמים ממנה כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
       "thinking": {
         "name": "מצב_חשיבה",
         "tooltip": "הפעל במצב חשיבה אם המודל תומך בכך."
@@ -23984,6 +24321,10 @@
     "outputs": {
       "0": {
         "name": "טקסט_שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }
@@ -24034,6 +24375,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "מחליף את הנחיית המערכת בתבנית הצ'אט של המודל. מתעלמים ממנה כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
       "thinking": {
         "name": "מצב חשיבה",
         "tooltip": "הפעל במצב חשיבה אם המודל תומך בכך."
@@ -24050,6 +24395,10 @@
     "outputs": {
       "0": {
         "name": "טקסט שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }
@@ -28628,6 +28977,10 @@
       "positive": {
         "name": "positive"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "ממלא את פריימי הריפוד של התניית התמונה בתמונה זו במקום באפור, וכך מעגן את הזהות בלי לקבע פריימים (ריפוד נגד סחיפה בסגנון SVI, המשמש מודלים כגון ID-V2V)."
+      },
       "start_image": {
         "name": "תמונת התחלה"
       },
@@ -29608,8 +29961,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "הפעלת Z-Image Fun ControlNet",
+    "description": "מחיל Z-Image או Qwen Image 2.1 Fun ControlNet שנטען באמצעות Load Model Patch.",
+    "display_name": "החלת Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "תמונה"
       },
@@ -29624,6 +29981,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "עוצמה"
