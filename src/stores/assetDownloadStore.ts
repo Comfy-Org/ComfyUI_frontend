@@ -44,8 +44,11 @@ function isDownloadFinished(status: AssetDownloadStatus) {
   return finishedStatuses.has(status)
 }
 
-function isDownloadRecheckable(status: AssetDownloadStatus) {
-  return recheckableStatuses.has(status)
+function isDownloadRecheckable(download: AssetDownload) {
+  return (
+    recheckableStatuses.has(download.status) ||
+    download.needsCancellationReconciliation === true
+  )
 }
 
 export interface AssetDownload {
@@ -60,6 +63,7 @@ export interface AssetDownload {
   error?: string
   modelType?: string
   acknowledged?: boolean
+  needsCancellationReconciliation?: boolean
 }
 
 interface CompletedDownload {
@@ -69,6 +73,7 @@ interface CompletedDownload {
 }
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
+const CANCELLATION_PENDING_RETENTION_MS = 5 * 60_000
 
 function generateDownloadTrackingPlaceholder(
   taskId: TaskId,
@@ -88,11 +93,16 @@ function generateDownloadTrackingPlaceholder(
 }
 
 function shouldIgnoreDownloadUpdate(
-  currentStatus: AssetDownloadStatus | undefined,
+  current: AssetDownload | undefined,
   nextStatus: TaskStatus
 ): boolean {
+  const currentStatus = current?.status
   if (currentStatus === 'completed') return true
-  if (currentStatus === 'cancelled') return nextStatus !== 'completed'
+  if (currentStatus === 'cancelled') {
+    return current?.needsCancellationReconciliation
+      ? !reconcilableTaskStatuses.has(nextStatus)
+      : nextStatus !== 'completed'
+  }
   if (currentStatus === 'cancellation_pending') {
     return !reconcilableTaskStatuses.has(nextStatus)
   }
@@ -144,9 +154,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     )
   )
   const recheckableDownloads = computed(() =>
-    downloadList.value.filter((download) =>
-      isDownloadRecheckable(download.status)
-    )
+    downloadList.value.filter(isDownloadRecheckable)
   )
   const hasRecheckableDownloads = computed(
     () => recheckableDownloads.value.length > 0
@@ -177,7 +185,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     const data = e.detail
     const existing = downloads.value.get(data.task_id)
 
-    if (shouldIgnoreDownloadUpdate(existing?.status, data.status)) return
+    if (shouldIgnoreDownloadUpdate(existing, data.status)) return
 
     const download: AssetDownload = {
       taskId: data.task_id,
@@ -212,6 +220,14 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     if (staleDownloads.length === 0) return
 
     async function pollSingleDownload(download: AssetDownload) {
+      if (
+        download.status === 'cancellation_pending' &&
+        Date.now() - download.lastUpdate >= CANCELLATION_PENDING_RETENTION_MS
+      ) {
+        download.status = 'cancelled'
+        download.needsCancellationReconciliation = true
+      }
+
       const result = await taskService.getTask(download.taskId)
       if (!result.ok) return
       if (downloads.value.get(download.taskId) !== download) return
@@ -220,6 +236,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       if (!reconcilableTaskStatuses.has(task.status)) return
       if (task.status === 'cancelled') {
         download.status = 'cancelled'
+        download.needsCancellationReconciliation = false
         download.lastUpdate = Date.now()
         return
       }
@@ -275,6 +292,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         return result
       }
       current.status = 'cancellation_pending'
+      current.needsCancellationReconciliation = false
       current.lastUpdate = Date.now()
       return result
     } finally {
