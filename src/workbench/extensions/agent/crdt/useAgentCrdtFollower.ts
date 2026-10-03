@@ -98,9 +98,10 @@ function reportAgentProjection(
 ): void {
   const actor = update.actor ?? 'agent-remote'
   if (!actor.startsWith('agent:')) return
+  const opIds = update.opIds?.filter((id) => id.length > 0) ?? []
   useTelemetry()?.trackAgentGraphProjection({
-    op_id: update.opIds?.[0] ?? null,
-    op_count: update.opIds?.length ?? 0,
+    op_id: opIds[0] ?? null,
+    op_count: opIds.length,
     sequence: update.seq,
     stage: applied ? 'applied' : 'received_no_graph',
     added_count: nodes.added.length,
