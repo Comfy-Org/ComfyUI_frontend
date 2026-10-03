@@ -20,6 +20,7 @@ import { toNodeId } from '@/types/nodeId'
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
+import { changesForRejectedOps } from './rejectedOpChanges'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -50,6 +51,50 @@ class TestOverflowWidgets extends LGraphNode {
   }
 }
 
+/** Mounts a sub-widget from its own setter, the way `dynamicComboWidget` does. */
+class TestGrowingWidgets extends LGraphNode {
+  constructor() {
+    super('Test Growing Widgets')
+    const mode = this.addWidget('combo', 'mode', 'creative', () => {}, {
+      values: ['creative', 'faithful']
+    })
+    let selected: unknown = 'creative'
+    Object.defineProperty(mode, 'value', {
+      configurable: true,
+      get: () => selected,
+      set: (next: unknown) => {
+        selected = next
+        const mounted = this.widgets?.some(({ name }) => name === 'mode.detail')
+        if (next === 'faithful' && mounted !== true) {
+          this.addWidget('number', 'mode.detail', 80, () => {})
+        }
+      }
+    })
+    this.serialize_widgets = true
+  }
+}
+
+/** A live widget whose own name is alias-shaped, at a position that is not its index. */
+class TestAliasNamedWidget extends LGraphNode {
+  constructor() {
+    super('Test Alias Named Widget')
+    this.addWidget('number', 'first', 1, () => {})
+    this.addWidget('number', 'second', 2, () => {})
+    this.addWidget('number', '_extra_1', 3, () => {})
+    this.serialize_widgets = true
+  }
+}
+
+/** A live widget named after an `Object.prototype` member. */
+class TestPrototypeNamedWidget extends LGraphNode {
+  constructor() {
+    super('Test Prototype Named Widget')
+    this.addWidget('number', 'known', 1, () => {})
+    this.addWidget('number', 'constructor', 2, () => {})
+    this.serialize_widgets = true
+  }
+}
+
 /** Keeps the definition's output names through `configure`, as `ComfyNode` does. */
 class TestDefinedSource extends LGraphNode {
   constructor() {
@@ -73,6 +118,9 @@ const CATALOG: WidgetCatalog = {
     TestSource: { widget_order: ['steps'] },
     TestDefinedSource: { widget_order: [] },
     TestOverflowWidgets: { widget_order: ['known'] },
+    TestGrowingWidgets: { widget_order: ['mode'] },
+    TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
+    TestPrototypeNamedWidget: { widget_order: ['known'] },
     TestSink: { widget_order: [] }
   }
 }
@@ -121,6 +169,12 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
+  LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
+  LiteGraph.registerNodeType('TestAliasNamedWidget', TestAliasNamedWidget)
+  LiteGraph.registerNodeType(
+    'TestPrototypeNamedWidget',
+    TestPrototypeNamedWidget
+  )
   LiteGraph.registerNodeType('TestSink', TestSink)
 })
 
@@ -239,6 +293,199 @@ describe('LiveGraphApplier', () => {
       setDocWidget('overflow', 8)
     })
     expect(overflowWidget()).toBe(8)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('carries an overflow value to a widget the node mounts during configure', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestGrowingWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['faithful', 90]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    // A freshly constructed node has only `mode`, so sizing the restoration
+    // array by the live widget list would drop `_extra_1` and leave the
+    // sub-widget `mode`'s setter mounts on its default.
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'faithful' },
+      { name: 'mode.detail', value: 90 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('applies an alias to a widget the same frame mounts', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestGrowingWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['creative']
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+
+    // `mode` already holds its key's position in the document map, so the
+    // alias is replayed after the setter that mounts the widget it addresses.
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('_extra_1', 90)
+      widgets.set('mode', 'faithful')
+    })
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'faithful' },
+      { name: 'mode.detail', value: 90 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('holds an alias frame against a pending local write to its widget', () => {
+    const asked: [string, string][] = []
+    const { graph, doc, applyCollected, applyEdit } = setup(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'TestOverflowWidgets',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [11, 42]
+          }
+        ],
+        links: []
+      },
+      {
+        // `LocalWidgetWrites` keys the hold by the name the local op carried.
+        holdsLocalWrite: (nodeId, widget) => {
+          asked.push([nodeId, widget])
+          return widget === 'overflow'
+        }
+      }
+    )
+    applyCollected()
+
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('_extra_1', 99)
+    })
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.find(({ name }) => name === 'overflow')?.value
+    ).toBe(42)
+    expect(asked).toContainEqual(['1', 'overflow'])
+  })
+
+  it('reverts a rejected write that the document stores under an alias', () => {
+    const { graph, doc, applier, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestOverflowWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 42]
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+    const widget = graph
+      .getNodeById(toNodeId(1))
+      ?.widgets?.find(({ name }) => name === 'overflow')
+    if (!widget) throw new Error('overflow widget')
+    widget.value = 99
+
+    // The op names the live widget; the document stores it as `_extra_1`.
+    applier.applyChanges(
+      doc,
+      changesForRejectedOps(doc, [
+        fromPartial<Op>({ op: 'set_widget', node_id: 1, widget: 'overflow' })
+      ]),
+      CONTEXT
+    )
+
+    expect(widget.value).toBe(42)
+  })
+
+  it('leaves an alias-shaped live widget addressing its own document entry', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestAliasNamedWidget',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [1, 2, 3]
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+
+    // `_extra_1` is this node's widget at index 2, not an alias for index 1.
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('_extra_1', 7)
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map(({ value }) => value)
+    ).toEqual([1, 2, 7])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('does not treat a prototype-named widget as present in the document', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPrototypeNamedWidget',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [1, 2]
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+
+    // `'constructor' in document` is true for every plain object; only an own
+    // key means the document really addresses the widget by name.
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('_extra_1', 7)
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map(({ value }) => value)
+    ).toEqual([1, 7])
     expect(reportError).not.toHaveBeenCalled()
   })
 

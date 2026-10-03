@@ -343,6 +343,17 @@ function documentWidget(
     : serializableWidgets(node)[overflowIndex]
 }
 
+/** The live widget an overflow alias addresses, if the node has that position. */
+function overflowWidget(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  const overflowIndex = overflowWidgetIndex(name)
+  return overflowIndex === null
+    ? undefined
+    : serializableWidgets(node).at(overflowIndex)
+}
+
 /**
  * Is `name` an overflow alias for a live widget the same document node also
  * addresses by its real name? The host mints one key per `widgets_values`
@@ -350,11 +361,14 @@ function documentWidget(
  * position an earlier mint had to alias.
  *
  * `positionalWidgetValues` already resolves that collision in favour of the
- * named entry, because `widget.name in widgets` is tried first. A later frame
- * has to resolve it the same way or the live value depends on entry order —
- * and a partial frame carrying only the alias would overwrite the named
- * value, since `syncWidgets` filters the unchanged named entry out. The check
- * therefore reads the node's WHOLE document map, not the changed subset.
+ * named entry, because the widget's own name is tried first. A later frame has
+ * to resolve it the same way or the live value depends on entry order — and a
+ * partial frame carrying only the alias would overwrite the named value, since
+ * `syncWidgets` filters the unchanged named entry out. The check therefore
+ * reads the node's WHOLE document map, not the changed subset.
+ *
+ * A live widget whose own name is alias-shaped owns its entry outright; the
+ * alias namespace is the host's, but nothing reserves it on the live node.
  */
 function supersededOverflowAlias(
   node: LGraphNode,
@@ -362,14 +376,34 @@ function supersededOverflowAlias(
   document: DocNode['widgets']
 ): boolean {
   if (document === undefined || Array.isArray(document)) return false
-  const overflowIndex = overflowWidgetIndex(name)
-  if (overflowIndex === null) return false
-  const positional = serializableWidgets(node).at(overflowIndex)
-  return (
-    positional !== undefined &&
-    positional.name !== name &&
-    positional.name in document
-  )
+  if (node.widgets?.some((widget) => widget.name === name)) return false
+  const positional = overflowWidget(node, name)
+  return positional !== undefined && Object.hasOwn(document, positional.name)
+}
+
+/**
+ * How many positions the document addresses on this node: every serializable
+ * widget it has now, plus any overflow alias beyond them.
+ *
+ * The extra length is what carries a dynamic combo's sub-widget value through
+ * node creation. A freshly constructed node has only its selector, so sizing
+ * the array by the live widget list alone drops `_extra_1` and the sub-widget
+ * silently falls back to its default — the same document would then produce
+ * different live state depending on whether the frame created or updated the
+ * node. `configure`'s restore loop walks `this.widgets` with a live iterator,
+ * so a widget the selector's setter mounts mid-restore still receives the
+ * position it was serialized at.
+ */
+function addressedPositionCount(
+  live: readonly IBaseWidget[],
+  widgets: Readonly<Record<string, unknown>>
+): number {
+  let count = live.length
+  for (const name of Object.keys(widgets)) {
+    const index = overflowWidgetIndex(name)
+    if (index !== null && index >= count) count = index + 1
+  }
+  return count
 }
 
 /**
@@ -388,11 +422,18 @@ function positionalWidgetValues(
       (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
     )
   }
-  return serializableWidgets(node).map((widget, index): WidgetValue => {
+  const live = serializableWidgets(node)
+  const length = addressedPositionCount(live, widgets)
+  return Array.from({ length }, (_unused, index): WidgetValue => {
+    const widget = live.at(index)
     const name =
-      widget.name in widgets ? widget.name : `_extra_${String(index)}`
+      widget && Object.hasOwn(widgets, widget.name)
+        ? widget.name
+        : `_extra_${String(index)}`
     const value = widgets[name]
-    return name in widgets && isWidgetValue(value) ? value : widget.value
+    return Object.hasOwn(widgets, name) && isWidgetValue(value)
+      ? value
+      : widget?.value
   })
 }
 
@@ -680,7 +721,7 @@ export class LiveGraphApplier {
     this.applyWidgets(
       node,
       Object.fromEntries(
-        Object.entries(widgets).filter(([name]) => names.has(name))
+        Object.entries(widgets).filter(([name]) => changed(node, name, names))
       ),
       widgets
     )
@@ -704,20 +745,41 @@ export class LiveGraphApplier {
     }
     for (const [name, value] of ordinaryWidgetEntries(node, widgets)) {
       if (value === undefined || !isWidgetValue(value)) continue
-      if (supersededOverflowAlias(node, name, documentWidgets)) continue
-      if (this.holdsLocalWrite(node, name, value)) continue
-      const widget = documentWidget(node, name)
-      if (!widget) {
-        this.reportOnce(
-          `widget:${String(node.id)}:${name}`,
-          `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
-          'agent_graph_widget_missing',
-          { nodeId: node.id, type: node.type, name }
-        )
-        continue
-      }
-      this.setWidgetValue(node, widget, value)
+      const widget = this.targetWidget(node, name, value, documentWidgets)
+      if (widget) this.setWidgetValue(node, widget, value)
     }
+  }
+
+  /**
+   * The live widget a document entry writes, or nothing when the entry is
+   * superseded by its named sibling, held behind a pending local write, or
+   * addresses no widget at all — which is reported once.
+   */
+  private targetWidget(
+    node: LGraphNode,
+    name: string,
+    value: WidgetValue,
+    documentWidgets: DocNode['widgets']
+  ): IBaseWidget | undefined {
+    if (supersededOverflowAlias(node, name, documentWidgets)) return undefined
+    if (this.holdsLocalWrite(node, name, value)) return undefined
+    const widget = documentWidget(node, name)
+    if (!widget) {
+      this.reportOnce(
+        `widget:${String(node.id)}:${name}`,
+        `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
+        'agent_graph_widget_missing',
+        { nodeId: node.id, type: node.type, name }
+      )
+      return undefined
+    }
+    // `LocalWidgetWrites` keys a pending edit by the name the local
+    // `set_widget` carried, which is the widget's real name — an alias key
+    // never matches it, so the hold has to be re-asked under the resolved
+    // name or a frame rewinds an edit the user is still making.
+    if (widget.name !== name && this.holdsLocalWrite(node, widget.name, value))
+      return undefined
+    return widget
   }
 
   private applyHostWidgets(
@@ -885,7 +947,17 @@ function isLinkPresent(
   )
 }
 
-/** Ordinary node widget values by document name; a positional list is read in serializable-widget order. */
+/**
+ * Ordinary node widget values by document name; a positional list is read in
+ * serializable-widget order.
+ *
+ * Document order is kept. An alias addresses a position, and a widget setter
+ * can mount widgets mid-frame (a dynamic combo mounts its sub-widgets from its
+ * own setter), so an alias replayed before its selector would resolve against
+ * a shorter list — but the host writes a node's keys in ascending position
+ * order and a `Y.Map` keeps each key's first-insertion position even across a
+ * delete and re-set, so a selector's key always precedes the aliases past it.
+ */
 function ordinaryWidgetEntries(
   node: LGraphNode,
   widgets: NonNullable<DocNode['widgets']>
@@ -895,6 +967,24 @@ function ordinaryWidgetEntries(
     widget.name,
     widgets[index]
   ])
+}
+
+/**
+ * Does the frame's changed-name set cover this document key? The set is keyed
+ * by document name on an ordinary frame, but `changesForRejectedOps` builds it
+ * from the rejected op's widget name — the widget's real name, never the
+ * `_extra_N` key that register is actually stored under. Without the mapping,
+ * reverting a rejected write to an overflow-positioned widget restores
+ * nothing and the live graph keeps the value the host refused.
+ */
+function changed(
+  node: LGraphNode,
+  name: string,
+  names: ReadonlySet<string>
+): boolean {
+  if (names.has(name)) return true
+  const positional = overflowWidget(node, name)
+  return positional !== undefined && names.has(positional.name)
 }
 
 /** Host widget values by promoted-input name; a positional list is read in promoted-input order. */
