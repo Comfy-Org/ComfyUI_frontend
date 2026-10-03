@@ -129,12 +129,10 @@ export async function checkRouterProviderDrift(
 
   const missingCatalogLinks = ROUTER_COMFY_ONLY_PREVIEW.filter(
     ({ name, docsUrl }) =>
-      !catalogMarkdown.includes(
-        `[${name}](${docsUrl.slice(DOCS_ORIGIN.length)})`
-      )
+      !catalogMarkdown.includes(`[${name}](${new URL(docsUrl).pathname})`)
   ).map(({ name }) => name)
-  const previewPathsInCoverage = ROUTER_COMFY_ONLY_PREVIEW.map(({ docsUrl }) =>
-    docsUrl.slice(DOCS_ORIGIN.length)
+  const previewPathsInCoverage = ROUTER_COMFY_ONLY_PREVIEW.map(
+    ({ docsUrl }) => new URL(docsUrl).pathname
   ).filter((path) => coverageMarkdown.includes(path))
   assert.deepEqual(missingCatalogLinks, [])
   assert.deepEqual(previewPathsInCoverage, [])

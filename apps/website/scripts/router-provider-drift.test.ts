@@ -93,7 +93,7 @@ it('reads the provider coverage table from Markdown', () => {
 it('detects drift with controlled published-source fixtures', async () => {
   const coverageRows = ROUTER_PROVIDER_COVERAGE.map(
     ({ docsName, docsUrl, name }) =>
-      `| [${docsName ?? name}](${docsUrl.slice(DOCS_ORIGIN.length)}) | ✓ |`
+      `| [${docsName ?? name}](${new URL(docsUrl).pathname}) | ✓ |`
   ).join('\n')
   const coverage = `
 ## Provider coverage
@@ -102,10 +102,10 @@ it('detects drift with controlled published-source fixtures', async () => {
 ${coverageRows}
 `
   const catalog = ROUTER_COMFY_ONLY_PREVIEW.map(
-    ({ docsUrl, name }) => `[${name}](${docsUrl.slice(DOCS_ORIGIN.length)})`
+    ({ docsUrl, name }) => `[${name}](${new URL(docsUrl).pathname})`
   ).join('\n')
   const fetchImpl = vi.fn<typeof fetch>(async (input) => {
-    const url = String(input)
+    const url = input instanceof Request ? input.url : String(input)
     if (url.endsWith('/providers.md')) return new Response(coverage)
     if (url.endsWith('/models.md')) return new Response(catalog)
     const row = ROUTER_PROVIDER_COVERAGE.find(({ modelId }) =>
@@ -124,10 +124,57 @@ ${coverageRows}
     checkRouterProviderDrift({ fetchImpl, sleep: async () => {} })
   ).resolves.toBeUndefined()
 
-  fetchImpl.mockImplementationOnce(async () =>
-    Promise.resolve(new Response(coverage.replace('Model / provider', 'Drift')))
+  const [driftedRow] = ROUTER_PROVIDER_COVERAGE
+  const driftedProviderFetch = vi.fn<typeof fetch>(async (input) =>
+    (input instanceof Request ? input.url : String(input)).endsWith(
+      `/${driftedRow.modelId}.json`
+    )
+      ? new Response(
+          JSON.stringify({
+            'x-comfy-router-alt-providers': [
+              ...driftedRow.providers,
+              'drift-provider'
+            ].map((provider) => ({ provider }))
+          })
+        )
+      : fetchImpl(input)
   )
   await expect(
-    checkRouterProviderDrift({ fetchImpl, sleep: async () => {} })
-  ).rejects.toThrow()
+    checkRouterProviderDrift({
+      fetchImpl: driftedProviderFetch,
+      sleep: async () => {}
+    })
+  ).rejects.toThrow(/drift-provider/)
+
+  const driftedDocsFetch = vi.fn<typeof fetch>(async (input) => {
+    const url = input instanceof Request ? input.url : String(input)
+    return url.endsWith('/providers.md')
+      ? new Response(
+          coverage.replace(
+            new URL(driftedRow.docsUrl).pathname,
+            `${new URL(driftedRow.docsUrl).pathname}-drift`
+          )
+        )
+      : fetchImpl(input)
+  })
+  await expect(
+    checkRouterProviderDrift({
+      fetchImpl: driftedDocsFetch,
+      sleep: async () => {}
+    })
+  ).rejects.toThrow(/-drift/)
+
+  const [previewRow] = ROUTER_COMFY_ONLY_PREVIEW
+  const driftedCatalogFetch = vi.fn<typeof fetch>(async (input) => {
+    const url = input instanceof Request ? input.url : String(input)
+    return url.endsWith('/models.md')
+      ? new Response(catalog.replace(`[${previewRow.name}]`, '[Drift]'))
+      : fetchImpl(input)
+  })
+  await expect(
+    checkRouterProviderDrift({
+      fetchImpl: driftedCatalogFetch,
+      sleep: async () => {}
+    })
+  ).rejects.toThrow(new RegExp(previewRow.name))
 })
