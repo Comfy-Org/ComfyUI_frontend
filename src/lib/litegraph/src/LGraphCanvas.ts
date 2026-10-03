@@ -2538,10 +2538,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Set the width of the line for isPointInStroke checks
       const { lineWidth } = this.ctx
       this.ctx.lineWidth = this.connections_width + 7
-      const dpi = Math.max(window.devicePixelRatio, 1)
+      const dpi = this.dpr
 
       // Try layout store for segment hit testing first (more precise)
-      const hitSegment = layoutStore.queryLinkSegmentAtPoint({ x, y }, this.ctx)
+      const hitSegment = layoutStore.queryLinkSegmentAtPoint(
+        { x, y },
+        this.ctx,
+        dpi
+      )
 
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
