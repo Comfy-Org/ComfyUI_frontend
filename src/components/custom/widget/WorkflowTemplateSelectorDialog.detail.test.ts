@@ -134,7 +134,11 @@ const mocks = vi.hoisted(() => ({
     () => ({ status: 'idle', attempt: 0 })
   ),
   trackTemplateLibraryClosed: vi.fn(),
-  reportError: vi.fn()
+  reportError: vi.fn(),
+  modelDownloadNeedsFolderPaths: vi.fn(() => true),
+  loadFolderPathsOnce: vi.fn(async () => ({
+    checkpoints: ['/models/checkpoints']
+  }))
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -147,7 +151,12 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
-  isModelDownloadable: mocks.isModelDownloadable
+  isModelDownloadable: mocks.isModelDownloadable,
+  modelDownloadNeedsFolderPaths: mocks.modelDownloadNeedsFolderPaths
+}))
+
+vi.mock(import('@/platform/missingModel/folderPathCache'), () => ({
+  loadFolderPathsOnce: mocks.loadFolderPathsOnce
 }))
 
 vi.mock(

@@ -13,8 +13,7 @@ const {
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  setupPending = false,
-  modelDownloadsAvailable = false
+  modelSetupState = 'none'
 } = defineProps<{
   title: string
   description: string
@@ -22,8 +21,12 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  setupPending?: boolean
-  modelDownloadsAvailable?: boolean
+  /**
+   * 'resolving' until the parent knows what is missing, then 'downloadable'
+   * only if something is. Availability is never known while resolving, so the
+   * two cannot be combined.
+   */
+  modelSetupState?: 'none' | 'resolving' | 'downloadable'
 }>()
 
 const emit = defineEmits<{
@@ -37,9 +40,7 @@ const detailRoot = ref<HTMLElement | null>(null)
 const detailId = useId()
 const cloudTitleId = `${detailId}-cloud-title`
 const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
-const offerDownloadAndOpen = computed(
-  () => setupPending || modelDownloadsAvailable
-)
+const offerDownloadAndOpen = computed(() => modelSetupState !== 'none')
 
 defineExpose({
   focus: () => detailRoot.value?.focus()
@@ -149,7 +150,7 @@ defineExpose({
         variant="inverted"
         size="sm"
         :loading="openPending"
-        :disabled="offerDownloadAndOpen && setupPending"
+        :disabled="modelSetupState === 'resolving'"
         @click="
           offerDownloadAndOpen
             ? emit('download-models-and-open')

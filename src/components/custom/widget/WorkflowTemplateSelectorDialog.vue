@@ -408,8 +408,7 @@
         :cloud-url="activeDetailCloudUrl"
         :is-partner-node="activeDetail.template.openSource === false"
         :open-pending="openPending"
-        :setup-pending="activeDetail.modelSetup.pending"
-        :model-downloads-available="activeDetailModelDownloadsAvailable"
+        :model-setup-state="activeDetailModelSetupState"
         @open-template="onOpenTemplate"
         @download-models-and-open="onDownloadModelsAndOpen"
         @download-model="onDownloadModel"
@@ -470,7 +469,11 @@ import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { isModelDownloadable } from '@/platform/missingModel/missingModelDownload'
+import { loadFolderPathsOnce } from '@/platform/missingModel/folderPathCache'
+import {
+  isModelDownloadable,
+  modelDownloadNeedsFolderPaths
+} from '@/platform/missingModel/missingModelDownload'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
@@ -502,7 +505,6 @@ import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
-import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { formatSize } from '@/utils/formatUtil'
@@ -1099,15 +1101,17 @@ function isModelDownloadCandidate(
   return state.status === 'idle' || state.status === 'failed'
 }
 
-const activeDetailModelDownloadsAvailable = computed(() => {
+const activeDetailModelSetupState = computed<
+  'none' | 'resolving' | 'downloadable'
+>(() => {
   const setup = activeDetail.value?.modelSetup
-  return Boolean(
-    setup &&
-    !setup.pending &&
-    setup.result.rows.some((row) =>
-      isModelDownloadCandidate(row, setup.rowDownloads)
-    )
+  if (!setup) return 'none'
+  if (setup.pending) return 'resolving'
+  return setup.result.rows.some((row) =>
+    isModelDownloadCandidate(row, setup.rowDownloads)
   )
+    ? 'downloadable'
+    : 'none'
 })
 
 function applyTemplateModelMetadata(
@@ -1195,15 +1199,19 @@ async function showModelSetupIfNeeded(
   )
   if (requirements.length === 0) return false
 
-  const availability = await resolveModelAvailability(
-    requirements.map(({ model }) => model)
-  )
+  // Only the Electron path needs real directories, and resolving them here
+  // rather than mid-dispatch keeps a download from depending on a lookup that
+  // can finish after this view is gone.
+  const [availability, folderPaths] = await Promise.all([
+    resolveModelAvailability(requirements.map(({ model }) => model)),
+    modelDownloadNeedsFolderPaths()
+      ? loadFolderPathsOnce().catch(() => ({}))
+      : Promise.resolve({})
+  ])
   if (generation !== detailGeneration) return true
   if (!availability.some(({ status }) => status === 'missing')) return false
 
-  const rowDownloads = useTemplateModelRowDownloads({
-    loadFolderPaths: () => api.getFolderPaths()
-  })
+  const rowDownloads = useTemplateModelRowDownloads({ folderPaths })
   activeDetail.value = {
     template,
     prepared: markRaw(prepared),
