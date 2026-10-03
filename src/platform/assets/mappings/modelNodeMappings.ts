@@ -25,8 +25,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // LLM/Llama-3.2-3B-Instruct, LLM/Florence-2-large-PromptGen-v2.0
   // (id widgets); sam3, sharp, BEN, BiRefNet/pth (node/widget names don't
   // exist); depthanything, CogVideo/GGUF, checkpoints/dynamicrafter/*,
-  // transparent-background (asset names not accepted by the node's enum);
-  // interpolation, clip, onnx (empty or unreachable dirs).
+  // transparent-background, sam2 (asset names not accepted by the node's
+  // enum); interpolation, clip, onnx (empty or unreachable dirs).
 
   // ---- ComfyUI core loaders ----
   ['checkpoints', 'CheckpointLoaderSimple', 'ckpt_name'],
@@ -55,8 +55,7 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['chatterbox/chatterbox_multilingual', 'FL_ChatterboxMultilingualTTS', ''],
   ['chatterbox/chatterbox_vc', 'FL_ChatterboxVC', ''],
 
-  // ---- SAM / SAM2 (comfyui-segment-anything-2, comfyui-impact-pack) ----
-  ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
+  // ---- SAM (comfyui-impact-pack) ----
   ['sams', 'SAMLoader', 'model_name'],
 
   // ---- DepthAnything (comfyui-depthanythingv3) ----
