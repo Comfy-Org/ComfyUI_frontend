@@ -108,6 +108,19 @@ describe('useSocialSignIn when a closed popup’s result arrives late', () => {
     }
   )
 
+  it('never revives a refused attempt when a later popup starts', async () => {
+    const { signIn } = mount()
+    await signIn.signInWithGoogle()
+    vi.mocked(actions.signInWithGoogle).mockResolvedValueOnce(undefined)
+    await signIn.signInWithGoogle()
+    const refused = vi.mocked(actions.signInWithGoogle).mock.calls[1]?.[0]
+      ?.popup
+
+    await signIn.signInWithGithub()
+
+    expect(refused?.keepLateResult?.()).toBe(false)
+  })
+
   it('wants a late result only while the page is open', async () => {
     const { signIn, unmount } = mount()
     await signIn.signInWithGoogle()

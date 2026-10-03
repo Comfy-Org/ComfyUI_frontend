@@ -464,6 +464,38 @@ describe('popup sign-in with the popup watched', () => {
     await expect(outcome).resolves.toBe(testCredential)
   })
 
+  it('starts and guards the popup while session restore remains pending', async () => {
+    const restore = deferred<void>()
+    sdk.resolvedAuth.authStateReady = () => restore.promise
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const first = identity.signInWithGoogle()
+
+    expect(sdk.signInWithPopup).toHaveBeenCalledOnce()
+    await expect(identity.signInWithGitHub()).rejects.toMatchObject({
+      code: 'auth/cancelled-popup-request'
+    })
+    expect(sdk.signInWithPopup).toHaveBeenCalledOnce()
+    restore.resolve()
+    popup.resolve(testCredential)
+    await expect(first).resolves.toBe(testCredential)
+  })
+
+  it('finishes sign-in and allows retry when the host start observer throws', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const first = identity.signInWithGoogle({
+      onStarted: () => {
+        throw new Error('Host observer failed')
+      }
+    })
+    popup.resolve(testCredential)
+
+    await expect(first).resolves.toBe(testCredential)
+    sdk.signInWithPopup.mockResolvedValueOnce(testCredential)
+    await expect(identity.signInWithGitHub()).resolves.toBe(testCredential)
+  })
+
   it('keeps the first popup completing and permits another provider after it settles', async () => {
     const popup = pendingPopup()
     const identity = await watchedIdentity()

@@ -25,13 +25,14 @@ export function useSocialSignIn(options: {
     alive = false
   })
   let latest = 0
+  let attemptsIssued = 0
 
   /** `undefined` from the provider means useAuthActions already toasted the failure. */
   async function signInWith(
     provider: SocialSignIn,
     resumed?: Promise<UserCredential>
   ): Promise<void> {
-    const attempt = latest + 1
+    const attempt = ++attemptsIssued
     if (resumed) latest = attempt
     const wanted = () => alive && attempt === latest
     const signedIn = await provider({

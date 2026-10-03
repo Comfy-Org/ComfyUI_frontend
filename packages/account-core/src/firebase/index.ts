@@ -284,10 +284,15 @@ export function createFirebaseIdentity(
         pendingPopup = undefined
       }
       void pendingPopup.then(clearPending, clearPending)
-      options?.onStarted?.()
+      try {
+        options?.onStarted?.()
+      } catch {
+        // A host observer must not interrupt the Firebase operation.
+      }
       return pendingPopup
     }
     if (!config.watchPopupSignIn) return signIn()
+    // Observe restore separately; the popup starts synchronously below.
     // Read once the session has restored, so a restore landing after the
     // popup opened is not taken for someone else signing in.
     let userAtStart: string | null | undefined = null
