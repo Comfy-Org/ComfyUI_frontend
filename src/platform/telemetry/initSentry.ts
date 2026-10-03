@@ -1,7 +1,7 @@
 import type { App } from 'vue'
 import { browserApiErrorsIntegration, init as sentryInit } from '@sentry/vue'
 
-import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
+import { prepareSentryEvent } from './vueDirectiveErrorDiagnostics'
 
 export function initSentry({
   app,
@@ -23,7 +23,7 @@ export function initSentry({
     tracesSampleRate: isCloud ? 1.0 : 0,
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,
-    beforeSend: sentryThirdPartyErrorFilter,
+    beforeSend: prepareSentryEvent,
     // Only set these for non-cloud builds
     ...(isCloud
       ? {

@@ -16,9 +16,9 @@ vi.mock(import('@sentry/vue'), () => ({
 }))
 
 import { initSentry } from './initSentry'
-import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
+import { prepareSentryEvent } from './vueDirectiveErrorDiagnostics'
 
-it('installs the third-party error filter', () => {
+it('installs the Sentry event preparation pipeline', () => {
   initSentry({
     app: createApp({}),
     dsn: 'https://public@example.invalid/1',
@@ -27,6 +27,6 @@ it('installs the third-party error filter', () => {
   })
 
   expect(sentryInit).toHaveBeenCalledWith(
-    expect.objectContaining({ beforeSend: sentryThirdPartyErrorFilter })
+    expect.objectContaining({ beforeSend: prepareSentryEvent })
   )
 })
