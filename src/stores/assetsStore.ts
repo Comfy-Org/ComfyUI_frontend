@@ -349,6 +349,15 @@ export const useAssetsStore = defineStore('assets', () => {
     }
     return hasAsset()
   }
+  api.addEventListener('assets.seed.completed', async ({ detail }) => {
+    if (detail.enriched > detail.created || detail.phase === 'full') {
+      await outputAssets.value.invalidate()
+      await inputAssets.value.invalidate()
+    } else if (detail.created) {
+      await outputAssets.value.loadNew()
+      await inputAssets.value.loadNew()
+    }
+  })
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup

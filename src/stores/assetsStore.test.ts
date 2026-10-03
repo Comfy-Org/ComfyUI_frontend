@@ -1375,3 +1375,50 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
     })
   })
 })
+
+describe('assetsStore - assets.seed.completed', () => {
+  const seed = { created: 0, elapsed: 0, enriched: 0, skipped: 0, total: 0 }
+
+  it.for([
+    { case: 'full phase', detail: { phase: 'full' }, call: 'invalidate' },
+    {
+      case: 'enrichment outpaces creation',
+      detail: { phase: 'enrich', created: 1, enriched: 2 },
+      call: 'invalidate'
+    },
+    {
+      case: 'only new assets',
+      detail: { phase: 'fast', created: 2, enriched: 1 },
+      call: 'loadNew'
+    },
+    { case: 'nothing changed', detail: { phase: 'fast' }, call: undefined }
+  ] as const)('$case → $call', async ({ detail, call }) => {
+    const store = useAssetsStore()
+    const pagedList = () => ({
+      items: [],
+      hasMore: false,
+      isLoading: false,
+      loadMore: vi.fn(async () => false),
+      loadNew: vi.fn(async () => {}),
+      invalidate: vi.fn(async () => {})
+    })
+    const lists = [pagedList(), pagedList()]
+    ;[store.inputAssets, store.outputAssets] = lists
+    const handler = vi
+      .mocked(api.addEventListener)
+      .mock.calls.findLast(([type]) => type === 'assets.seed.completed')?.[1]
+    if (typeof handler !== 'function') throw new Error('no listener')
+
+    await handler(
+      new CustomEvent('assets.seed.completed', {
+        detail: { ...seed, ...detail }
+      })
+    )
+
+    for (const list of lists) {
+      for (const method of ['invalidate', 'loadNew'] as const) {
+        expect(list[method]).toHaveBeenCalledTimes(method === call ? 1 : 0)
+      }
+    }
+  })
+})
