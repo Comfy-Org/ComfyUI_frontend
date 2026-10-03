@@ -38,6 +38,7 @@
           :asset="item"
           :interactive="true"
           :focused="item.id === focusedAssetId"
+          :require-node-provider
           @focus="$emit('assetFocus', $event)"
           @select="$emit('assetSelect', $event)"
           @deleted="$emit('assetDeleted', $event)"
@@ -57,12 +58,19 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
-const { assets, focusedAssetId, emptyTitle, emptyMessage } = defineProps<{
+const {
+  assets,
+  focusedAssetId,
+  emptyTitle,
+  emptyMessage,
+  requireNodeProvider
+} = defineProps<{
   assets: AssetDisplayItem[]
   loading?: boolean
   focusedAssetId?: string | null
   emptyTitle?: string
   emptyMessage?: string
+  requireNodeProvider?: boolean
 }>()
 
 defineEmits<{
