@@ -27,12 +27,32 @@ import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 
 const bridgeState = vi.hoisted(() => {
+  const liveSubscriptions = new Map<object, Set<string>>()
+  let maxLiveSubscriptions = 0
+  const countLiveSubscriptions = () =>
+    [...liveSubscriptions.values()].reduce(
+      (count, workflows) => count + workflows.size,
+      0
+    )
+
   class FakeBridge extends EventTarget {
-    subscribe = vi.fn()
-    unsubscribe = vi.fn()
+    subscribe = vi.fn((workflowId: string) => {
+      // A bridge retargets its single subscription; concurrency is measured
+      // across bridge instances, not across its historical workflow ids.
+      liveSubscriptions.set(this, new Set([workflowId]))
+      maxLiveSubscriptions = Math.max(
+        maxLiveSubscriptions,
+        countLiveSubscriptions()
+      )
+    })
+    unsubscribe = vi.fn(() => {
+      liveSubscriptions.delete(this)
+    })
     resubscribe = vi.fn()
     reconcile = vi.fn()
-    destroy = vi.fn()
+    destroy = vi.fn(() => {
+      liveSubscriptions.delete(this)
+    })
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
@@ -45,7 +65,14 @@ const bridgeState = vi.hoisted(() => {
   }
   return {
     FakeBridge,
-    current: null as InstanceType<typeof FakeBridge> | null
+    current: null as InstanceType<typeof FakeBridge> | null,
+    get maxLiveSubscriptions() {
+      return maxLiveSubscriptions
+    },
+    resetLiveSubscriptions() {
+      liveSubscriptions.clear()
+      maxLiveSubscriptions = 0
+    }
   }
 })
 
@@ -245,6 +272,7 @@ describe('useAgentCrdtFollower', () => {
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
+    bridgeState.resetLiveSubscriptions()
     clientState.transport = null
     projectionState.applyFrame
       .mockReset()
@@ -529,6 +557,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_update', { workflowId: 'wf-b', seq: 2 })
     expect(projectionState.applyFrame).toHaveBeenCalledTimes(2)
     remounted.unmount()
+    expect(bridgeState.maxLiveSubscriptions).toBeLessThanOrEqual(1)
   })
 
   it('FE-1902: persists a binding only once the server confirms it', () => {
