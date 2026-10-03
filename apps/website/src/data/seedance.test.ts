@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '../i18n/translations'
-import { t, translationKeys } from '../i18n/translations'
+import en from '../locales/en/main.json' with { type: 'json' }
+import zhCN from '../locales/zh-CN/main.json' with { type: 'json' }
 import { seedancePage } from './seedance'
 
 const LOCALES = ['en', 'zh-CN'] as const satisfies readonly Locale[]
@@ -10,6 +11,12 @@ const LOCALES = ['en', 'zh-CN'] as const satisfies readonly Locale[]
 // it — the gallery prompts included, since they are reproduced verbatim and the
 // clips render whatever they asked for.
 const RESOLUTION_CLAIM = /4\s*k\b/i
+
+function stringsIn(value: unknown): string[] {
+  if (typeof value === 'string') return [value]
+  if (typeof value !== 'object' || value === null) return []
+  return Object.values(value).flatMap(stringsIn)
+}
 
 function pageCopy(locale: Locale): { label: string; text: string }[] {
   return [
@@ -96,13 +103,10 @@ describe('seedance 2.5 landing copy', () => {
   })
 
   it('claims no 4K output in any seedance translation', () => {
-    const offenders = translationKeys
-      .filter((key) => key.startsWith('seedance.'))
-      .flatMap((key) =>
-        LOCALES.filter((locale) => RESOLUTION_CLAIM.test(t(key, locale))).map(
-          (locale) => `${key} (${locale})`
-        )
-      )
+    const offenders = [
+      ...stringsIn(en.seedance).map((text) => ({ locale: 'en', text })),
+      ...stringsIn(zhCN.seedance).map((text) => ({ locale: 'zh-CN', text }))
+    ].filter(({ text }) => RESOLUTION_CLAIM.test(text))
 
     expect(offenders).toEqual([])
   })

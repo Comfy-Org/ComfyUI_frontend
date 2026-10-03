@@ -3,7 +3,7 @@ import { defineAsyncComponent, onMounted, ref } from 'vue'
 
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { platformCtas } from './ctas'
 import ClosingCtaColumnField from './ClosingCtaColumnField.vue'
 import PlatformHeroBadge from './PlatformHeroBadge.vue'
@@ -25,6 +25,7 @@ const {
   subtitle?: string
   visual?: 'columns' | 'shader'
 }>()
+const { t } = translationsFor(locale)
 
 const ctas = platformCtas(locale)
 const primaryCta = primaryHref
@@ -55,12 +56,12 @@ onMounted(() => {
       class="relative z-10 min-h-96 justify-center"
       :heading="
         badgeOnly
-          ? t('platform.hero.badge', locale)
+          ? t('platform.hero.badge')
           : headingLead
-            ? `${headingLead} ${t('platform.hero.badge', locale)}`
+            ? `${headingLead} ${t('platform.hero.badge')}`
             : headingAfterBadge
-              ? `${t('platform.hero.badge', locale)} ${headingAfterBadge}`
-              : t('platform.closing.heading', locale)
+              ? `${t('platform.hero.badge')} ${headingAfterBadge}`
+              : t('platform.closing.heading')
       "
       :subtitle
       :subtitle-class="badgeOnly ? 'mt-6' : undefined"
@@ -70,7 +71,7 @@ onMounted(() => {
       <template #heading>
         <template v-if="visual === 'columns'">
           <span v-if="!badgeOnly" class="block">
-            {{ headingLead ?? t('platform.closing.headingLead', locale) }}
+            {{ headingLead ?? t('platform.closing.headingLead') }}
           </span>
           <PlatformHeroBadge
             :class="badgeOnly ? 'mx-auto md:my-2' : 'mx-auto -my-2 scale-75'"
@@ -100,7 +101,7 @@ onMounted(() => {
           </span>
         </template>
         <template v-else>
-          {{ t('platform.closing.heading', locale) }}
+          {{ t('platform.closing.heading') }}
         </template>
       </template>
     </CtaCenter01>

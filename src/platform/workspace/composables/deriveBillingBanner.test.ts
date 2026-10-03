@@ -48,7 +48,18 @@ describe('deriveBillingBanner', () => {
 
   it('keeps team billing-control notices out of personal plans', () => {
     expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
-    expect(derive({ ...paused, isTeamPlan: false })).toBeNull()
+  })
+
+  it('shows paused to personal workspaces on a known tier', () => {
+    expect(
+      derive({ ...paused, isTeamPlan: false, isKnownPersonalTier: true })
+    ).toBe('paused')
+  })
+
+  it('denies paused to an unrecognized tier', () => {
+    expect(
+      derive({ ...paused, isTeamPlan: false, isKnownPersonalTier: false })
+    ).toBeNull()
   })
 
   it('shows payment failed to personal workspace owners', () => {

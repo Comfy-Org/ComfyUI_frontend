@@ -3,11 +3,12 @@ import { useMediaQuery } from '@vueuse/core'
 
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { platformCtas } from './ctas'
 import ServerlessJsonApiGpuAnimation from './ServerlessJsonApiGpuAnimation.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const ctas = platformCtas(locale)
 const desktop = useMediaQuery('(min-width: 1024px)', { ssrWidth: 1024 })
@@ -17,9 +18,9 @@ const desktop = useMediaQuery('(min-width: 1024px)', { ssrWidth: 1024 })
   <HeroSplit01
     :locale="locale"
     compact
-    :title="t('platform.serverlessHero.heading', locale)"
+    :title="t('platform.serverlessHero.heading')"
     title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-normal md:text-4xl/tight lg:text-5xl/tight"
-    :subtitle="t('platform.serverlessHero.subtitle', locale)"
+    :subtitle="t('platform.serverlessHero.subtitle')"
     :primary-cta="{
       ...ctas.getStarted,
       href: 'https://platform.comfy.org/?onboarding=comfyapi'

@@ -4,7 +4,7 @@ import { computed } from 'vue'
 
 import { Coins as CreditsIcon } from '@lucide/vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const {
   locale = 'en',
@@ -17,12 +17,13 @@ const {
   estimateCount?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const estimate = computed(() => {
   if (!estimateKey) return undefined
   return estimateCount
-    ? t(estimateKey, locale, { count: estimateCount })
-    : t(estimateKey, locale)
+    ? t(estimateKey, { count: estimateCount })
+    : t(estimateKey)
 })
 </script>
 

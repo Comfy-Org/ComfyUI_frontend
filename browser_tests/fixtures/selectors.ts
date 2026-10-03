@@ -8,7 +8,8 @@ export const TestIds = {
     loadingOverlay: 'app-loading-overlay'
   },
   agent: {
-    conversationScroll: 'agent-conversation-scroll'
+    conversationScroll: 'agent-conversation-scroll',
+    activityTrace: 'agent-activity-trace'
   },
   sidebar: {
     toolbar: 'side-toolbar',
@@ -16,8 +17,11 @@ export const TestIds = {
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
+    nodePreviewInputs: 'node-preview-inputs',
+    nodePreviewBody: 'node-preview-body',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
+    closeButton: 'sidebar-close-button',
     modeToggle: 'mode-toggle',
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },

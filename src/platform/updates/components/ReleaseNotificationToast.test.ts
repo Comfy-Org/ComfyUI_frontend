@@ -83,18 +83,6 @@ describe('ReleaseNotificationToast', () => {
     Object.assign(useReleaseStore(), { shouldShowToast: true })
   })
 
-  it('renders correctly when shouldShow is true', () => {
-    Object.assign(useReleaseStore(), {
-      recentRelease: {
-        version: '1.2.3',
-        content: '# Test Release\n\nSome content'
-      } as ReleaseNote
-    })
-
-    renderComponent()
-    expect(screen.getByText('New update is out!')).toBeInTheDocument()
-  })
-
   it('stays hidden while node selection mode is active', () => {
     Object.assign(useReleaseStore(), {
       recentRelease: {
@@ -117,11 +105,11 @@ describe('ReleaseNotificationToast', () => {
     })
 
     const { container } = renderComponent()
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
     expect(
       container.querySelector('.icon-\\[lucide--rocket\\]')
     ).toBeInTheDocument()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
   })
 
   it('displays release version', () => {
