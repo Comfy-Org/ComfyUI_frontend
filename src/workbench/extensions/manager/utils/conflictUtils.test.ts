@@ -7,7 +7,9 @@ import type {
 import {
   consolidateConflictsByPackage,
   createBannedConflict,
+  createFlaggedConflict,
   createPendingConflict,
+  deriveStatusFlags,
   evaluateCompatibility
 } from '@/workbench/extensions/manager/utils/conflictUtils'
 
@@ -20,7 +22,7 @@ describe('conflictUtils', () => {
       accelerator: 'mps'
     }
 
-    it('emits conflicts in canonical order when all six checks fail', () => {
+    it('emits conflicts in canonical order when all seven checks fail', () => {
       const conflicts = evaluateCompatibility(
         {
           supported_comfyui_version: '>=1.0.0',
@@ -28,6 +30,7 @@ describe('conflictUtils', () => {
           supported_os: ['Linux'],
           supported_accelerators: ['CUDA'],
           isBanned: true,
+          isFlagged: true,
           isPending: true
         },
         incompatibleEnv
@@ -39,6 +42,7 @@ describe('conflictUtils', () => {
         'os',
         'accelerator',
         'banned',
+        'flagged',
         'pending'
       ])
     })
@@ -49,6 +53,7 @@ describe('conflictUtils', () => {
         supported_comfyui_frontend_version: undefined,
         supported_os: undefined,
         supported_accelerators: undefined,
+        isFlagged: false,
         isPending: false
       }
 
@@ -71,6 +76,35 @@ describe('conflictUtils', () => {
       ])
     })
 
+    it('adds a flagged conflict only when isFlagged is true', () => {
+      const compatibleInput = {
+        supported_comfyui_version: undefined,
+        supported_comfyui_frontend_version: undefined,
+        supported_os: undefined,
+        supported_accelerators: undefined,
+        isBanned: false,
+        isPending: false
+      }
+
+      const withoutFlag = evaluateCompatibility(
+        { ...compatibleInput, isFlagged: false },
+        incompatibleEnv
+      )
+      expect(withoutFlag).toEqual([])
+
+      const withFlag = evaluateCompatibility(
+        { ...compatibleInput, isFlagged: true },
+        incompatibleEnv
+      )
+      expect(withFlag).toEqual([
+        {
+          type: 'flagged',
+          current_value: 'installed',
+          required_value: 'not_flagged'
+        }
+      ])
+    })
+
     it('reports no conflicts for an unconstrained package when the system environment has not loaded yet', () => {
       // Version checks treat a nil current version as compatible; OS/accelerator
       // checks treat a nil supported list as "all supported". Together these mean
@@ -83,6 +117,7 @@ describe('conflictUtils', () => {
           supported_os: undefined,
           supported_accelerators: undefined,
           isBanned: false,
+          isFlagged: false,
           isPending: false
         },
         {
@@ -107,6 +142,7 @@ describe('conflictUtils', () => {
           supported_os: ['Linux'],
           supported_accelerators: ['CUDA'],
           isBanned: false,
+          isFlagged: false,
           isPending: false
         },
         {
@@ -139,6 +175,59 @@ describe('conflictUtils', () => {
     it('should return null when isBanned is undefined', () => {
       const result = createBannedConflict(undefined)
       expect(result).toBeNull()
+    })
+  })
+
+  describe('createFlaggedConflict', () => {
+    it('should return flagged conflict when isFlagged is true', () => {
+      const result = createFlaggedConflict(true)
+      expect(result).toEqual({
+        type: 'flagged',
+        current_value: 'installed',
+        required_value: 'not_flagged'
+      })
+    })
+
+    it('should return null when isFlagged is false', () => {
+      expect(createFlaggedConflict(false)).toBeNull()
+    })
+
+    it('should return null when isFlagged is undefined', () => {
+      expect(createFlaggedConflict(undefined)).toBeNull()
+    })
+  })
+
+  describe('deriveStatusFlags', () => {
+    it.for([
+      [
+        'NodeStatusBanned',
+        { isBanned: true, isFlagged: false, isPending: false }
+      ],
+      [
+        'NodeVersionStatusBanned',
+        { isBanned: true, isFlagged: false, isPending: false }
+      ],
+      [
+        'NodeVersionStatusFlagged',
+        { isBanned: false, isFlagged: true, isPending: false }
+      ],
+      [
+        'NodeVersionStatusPending',
+        { isBanned: false, isFlagged: false, isPending: true }
+      ],
+      [
+        'NodeVersionStatusActive',
+        { isBanned: false, isFlagged: false, isPending: false }
+      ],
+      [undefined, { isBanned: false, isFlagged: false, isPending: false }]
+    ] as const)('maps %s to its status flags', ([status, expected]) => {
+      expect(deriveStatusFlags(status)).toEqual(expected)
+    })
+
+    it('does not treat a flagged version as banned', () => {
+      // Flagged means "findings raised, not adjudicated" and must stay
+      // distinguishable from a rejected version.
+      expect(deriveStatusFlags('NodeVersionStatusFlagged').isBanned).toBe(false)
     })
   })
 
