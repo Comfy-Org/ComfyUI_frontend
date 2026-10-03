@@ -467,6 +467,25 @@ ossTest.describe(
   { tag: '@ui' },
   () => {
     ossTest(
+      'excludes explicit temp inputs while reporting missing permanent media',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_temp_annotation'
+        )
+
+        const rows = comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)
+        await expect(rows).toHaveCount(1)
+        await expect(
+          rows.getByRole('button', {
+            name: 'Missing permanent image - image',
+            exact: true
+          })
+        ).toBeVisible()
+      }
+    )
+
+    ossTest(
       'resolves annotated output media from job history',
       async ({ comfyPage, jobsRoutes }) => {
         await jobsRoutes.mockJobsHistory(outputHistoryJobs())
@@ -800,6 +819,25 @@ cloudOutputTest.describe(
     cloudOutputTest.beforeEach(async ({ comfyPage }) => {
       await closeTemplatesDialogIfOpen(comfyPage)
     })
+
+    cloudOutputTest(
+      'excludes explicit temp inputs while reporting missing permanent media',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_temp_annotation'
+        )
+
+        const rows = comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)
+        await expect(rows).toHaveCount(1)
+        await expect(
+          rows.getByRole('button', {
+            name: 'Missing permanent image - image',
+            exact: true
+          })
+        ).toBeVisible()
+      }
+    )
 
     cloudOutputTest(
       'resolves compact annotated output media from output assets',
