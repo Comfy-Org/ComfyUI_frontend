@@ -1,13 +1,14 @@
 import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import { dialogContentVariants } from '@/components/ui/dialog/dialog.variants'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
- * Settings dialog migration regression net: `useSettingsDialog().show()` must
- * open the Reka-renderer path with sizing that matches the previous
- * `BaseModalLayout size="sm"` (960px × 80vh). Catches accidental reverts of
- * the Phase 3 renderer flip.
+ * Settings dialog regression net: `useSettingsDialog().show()` must open the
+ * Reka-renderer path at the 1280px design width, capped to the workspace a
+ * docked Agent panel leaves. Catches accidental reverts of the Phase 3
+ * renderer flip and of the workspace-inset cap.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -48,6 +49,19 @@ describe('useSettingsDialog', () => {
     isCloudRef.value = false
   })
 
+  const RESERVES_INSET = /var\(--workspace-inset-right,_?0px\)/
+
+  const resolveAgainstVariant = (args: {
+    dialogComponentProps: { size: DialogContentSize; contentClass: string }
+  }): string =>
+    cn(
+      dialogContentVariants({
+        size: args.dialogComponentProps.size,
+        maximized: false
+      }),
+      args.dialogComponentProps.contentClass
+    )
+
   const maxWidthCapsFromLastShow = (): string[] =>
     String(showDialog.mock.lastCall?.[0].dialogComponentProps.contentClass)
       .split(' ')
@@ -72,19 +86,14 @@ describe('useSettingsDialog', () => {
 
     const caps = maxWidthCapsFromLastShow()
     expect(caps).not.toHaveLength(0)
-    expect(
-      caps.filter((cap) => !cap.includes('var(--workspace-inset-right,0px)'))
-    ).toEqual([])
+    expect(caps.filter((cap) => !RESERVES_INSET.test(cap))).toEqual([])
   })
 
   it("show() keeps both caps after cn() resolves them against the 'full' variant", () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
 
-    const resolved = cn(
-      dialogContentVariants({ size: 'full', maximized: false }),
-      args.dialogComponentProps.contentClass
-    )
+    const resolved = resolveAgainstVariant(args)
     const survivingCaps = resolved
       .split(' ')
       .filter((utility) => /(^|:)max-w-\[/.test(utility))
@@ -93,10 +102,22 @@ describe('useSettingsDialog', () => {
     expect(survivingCaps.some((cap) => !cap.startsWith('sm:'))).toBe(true)
     expect(
       survivingCaps.filter(
-        (cap) =>
-          !cap.includes('1280px') ||
-          !cap.includes('var(--workspace-inset-right,0px)')
+        (cap) => !cap.includes('1280px') || !RESERVES_INSET.test(cap)
       )
+    ).toEqual([])
+  })
+
+  it('show() keeps the workspace-aware centering that the cap is sized for', () => {
+    useSettingsDialog().show()
+    const [args] = showDialog.mock.calls[0]
+
+    const horizontalPlacement = resolveAgainstVariant(args)
+      .split(' ')
+      .filter((utility) => /(^|:)left-/.test(utility))
+
+    expect(horizontalPlacement).not.toHaveLength(0)
+    expect(
+      horizontalPlacement.filter((utility) => !RESERVES_INSET.test(utility))
     ).toEqual([])
   })
 
