@@ -674,6 +674,25 @@ describe('ComfyApp', () => {
         expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
       })
 
+      it('matches the workflow name to its workflow object on undo', async () => {
+        const workflow = new ComfyWorkflow({
+          path: 'workflows/camera.json',
+          modified: 0,
+          size: 0
+        })
+
+        await app.loadGraphData(createWorkflowGraphData(), true, true, 'camera')
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          false,
+          workflow
+        )
+        revealCanvas()
+
+        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+      })
+
       it('is dropped when a different anonymous graph loads', async () => {
         await app.loadGraphData(createWorkflowGraphData(), true, true)
         await app.loadGraphData(createWorkflowGraphData(), true, false)

@@ -16,7 +16,7 @@ import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { setBackendNodeText, st, t } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { appendJsonExt, normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
@@ -1544,10 +1544,19 @@ export class ComfyApp {
           loadId,
           this.committedGraphLoadSequence
         )
+        const workflowPath =
+          typeof workflow === 'string'
+            ? ComfyWorkflow.basePath + appendJsonExt(workflow)
+            : workflow?.path
+        const pendingWorkflow = this.pendingCamera?.workflow
+        const pendingWorkflowPath =
+          typeof pendingWorkflow === 'string'
+            ? ComfyWorkflow.basePath + appendJsonExt(pendingWorkflow)
+            : pendingWorkflow?.path
         const preservesPendingCamera =
           !restore_view &&
-          workflow !== null &&
-          workflow === this.pendingCamera?.workflow
+          workflowPath !== undefined &&
+          workflowPath === pendingWorkflowPath
         if (!preservesPendingCamera) {
           canvasScheduler.cancel('graph-load-camera')
           this.pendingCamera = restore_view
