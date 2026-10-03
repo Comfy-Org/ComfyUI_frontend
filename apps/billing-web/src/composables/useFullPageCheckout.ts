@@ -44,8 +44,7 @@ import {
   needsConsent,
   railAcceptsPay,
   reduceCheckoutPage,
-  settledPlanSource,
-  submitPhaseOf
+  settledPlanSource
 } from '@/checkout/checkoutPage'
 import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
@@ -606,7 +605,10 @@ export function useFullPageCheckout() {
   watch(
     () => endingOf(page.value)?.kind,
     (kind) => {
-      if (kind === undefined) return
+      if (kind === undefined) {
+        journey.resumed()
+        return
+      }
       const current = page.value
       journey.ended(
         kind,
@@ -616,13 +618,21 @@ export function useFullPageCheckout() {
     { immediate: true }
   )
 
-  /** A page handed to a hosted step or a method's own site has not been abandoned. */
+  /**
+   * A page handed to a hosted step, or to a method's own site by the
+   * challenge of the operation its Pay issued, has not been abandoned.
+   */
   function leftForPayment() {
+    if (handedToHostedStep) return true
     const current = page.value
+    if (current.kind !== 'capture' || current.attempt.kind !== 'sent')
+      return false
+    const { redirectMethod, operation } = current.attempt
+    const challenge = operation?.challenge?.status
     return (
-      handedToHostedStep ||
-      (current.kind === 'capture' &&
-        submitPhaseOf(current).kind === 'redirecting')
+      redirectMethod !== undefined &&
+      operation?.presentation === 'embedded' &&
+      (challenge === 'required' || challenge === 'in_progress')
     )
   }
 
