@@ -57,7 +57,9 @@ export type CapabilityRolloutDefaults = z.infer<
  * clients can compare it as one.
  */
 const CapabilitiesBodySchema = z.object({
-  capabilities: zBillingCapabilities,
+  capabilities: zBillingCapabilities.extend({
+    can_revert_scheduled_change: z.boolean().default(false)
+  }),
   expires_at: z.string(),
   resolved_for: zBillingCapabilityScope,
   revision: z.number(),

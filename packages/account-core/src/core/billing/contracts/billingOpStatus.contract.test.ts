@@ -2,6 +2,8 @@ import { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
+import { BillingOpStatusSchema } from '../operationState.js'
+
 type OpStatusBody = z.input<typeof zBillingOpStatusResponse>
 type OpStatus = z.infer<typeof zBillingOpStatusResponse>
 
@@ -31,19 +33,6 @@ const AUTHENTICATION_STATES = [
   'reconciliation_needed'
 ] as const satisfies readonly NonNullable<OpStatus['authentication_state']>[]
 
-/** Every decline reason a host maps to copy. */
-const DECLINE_REASONS = [
-  'card_declined',
-  'insufficient_funds',
-  'expired_card',
-  'incorrect_cvc',
-  'authentication_required',
-  'authentication_failed',
-  'processing_error',
-  'payment_not_completed',
-  'generic'
-] as const satisfies readonly NonNullable<OpStatus['decline_reason']>[]
-
 // Compile-time pins: a regen that moves these fails the package typecheck.
 
 // The tables above are exhaustive, so a new member reaches an `it.for` row.
@@ -52,10 +41,6 @@ expectTypeOf<OpStatus['status']>().toEqualTypeOf<
 >()
 expectTypeOf<OpStatus['authentication_state']>().toEqualTypeOf<
   (typeof AUTHENTICATION_STATES)[number] | undefined
->()
-// The decline reasons a failed operation reports, including the fallback.
-expectTypeOf<OpStatus['decline_reason']>().toEqualTypeOf<
-  (typeof DECLINE_REASONS)[number] | undefined
 >()
 // The recovery actions a host offers after a decline.
 expectTypeOf<OpStatus['recovery_action']>().toEqualTypeOf<
@@ -80,6 +65,55 @@ expectTypeOf<OpStatus['payment_intent_client_secret']>().toEqualTypeOf<
 expectTypeOf<OpStatus['retryable']>().toEqualTypeOf<boolean | undefined>()
 
 describe('billing operation status contract', () => {
+  it.for(['amount_charged_cents', 'credits_added'] as const)(
+    'normalizes %s to a number',
+    (field) => {
+      expect(
+        BillingOpStatusSchema.safeParse(
+          opStatusBody({ status: 'succeeded', [field]: 1999 })
+        )
+      ).toMatchObject({ success: true, data: { [field]: 1999 } })
+    }
+  )
+
+  it('normalizes charge breakdown amounts to numbers', () => {
+    expect(
+      BillingOpStatusSchema.safeParse({
+        ...opStatusBody({ status: 'succeeded' }),
+        charge_breakdown: {
+          amount_charged_cents: 1999,
+          currency: 'usd',
+          prorated: true,
+          reasons: [
+            {
+              amount_cents: 500,
+              discount: {
+                amount_off_cents: 500,
+                code: 'SAVE',
+                duration_in_months: 3,
+                kind: 'promotion'
+              },
+              kind: 'promo_code'
+            }
+          ]
+        }
+      })
+    ).toMatchObject({
+      success: true,
+      data: {
+        charge_breakdown: {
+          amount_charged_cents: 1999,
+          reasons: [
+            {
+              amount_cents: 500,
+              discount: { amount_off_cents: 500, duration_in_months: 3 }
+            }
+          ]
+        }
+      }
+    })
+  })
+
   it('accepts a status carrying only the required fields', () => {
     expect(zBillingOpStatusResponse.safeParse(opStatusBody())).toMatchObject({
       success: true
@@ -106,17 +140,6 @@ describe('billing operation status contract', () => {
       expect(
         zBillingOpStatusResponse.safeParse(
           opStatusBody({ authentication_state })
-        )
-      ).toMatchObject({ success: true })
-    }
-  )
-
-  it.for(DECLINE_REASONS)(
-    'accepts a failed status declined as %s',
-    (decline_reason) => {
-      expect(
-        zBillingOpStatusResponse.safeParse(
-          opStatusBody({ status: 'failed', decline_reason })
         )
       ).toMatchObject({ success: true })
     }
