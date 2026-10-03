@@ -77,6 +77,7 @@ export const useSubgraphNavigationStore = defineStore(
      * flag resets even when the tab is backgrounded.
      */
     let isWorkflowSwitching = false
+    let viewportRestoreSequence = 0
     // ── Helpers ──────────────────────────────────────────────────────
 
     /** Build a workflow-scoped cache key. */
@@ -152,6 +153,9 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     function restoreViewport(graphId: string): void {
+      const restoreSequence = ++viewportRestoreSequence
+      canvasScheduler.cancel('subgraph-navigation-fit')
+
       const canvas = currentCanvas()
       if (!canvas) return
 
@@ -168,9 +172,12 @@ export const useSubgraphNavigationStore = defineStore(
       // fit measures it, which a synchronous fit would read too early.
       canvasScheduler.schedule({
         key: 'subgraph-navigation-fit',
-        isCurrent: () => getActiveGraphId() === graphId,
+        isCurrent: () =>
+          restoreSequence === viewportRestoreSequence &&
+          getActiveGraphId() === graphId,
         run: () => {
           requestAnimationFrame(() => {
+            if (restoreSequence !== viewportRestoreSequence) return
             if (getActiveGraphId() !== graphId) return
             if (!canvas.graph?.nodes.length) return
             canvas.ds.setViewportSize(

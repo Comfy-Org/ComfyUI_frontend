@@ -259,6 +259,33 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockGraph._nodes = []
     })
 
+    it('does not let an earlier first-visit frame overwrite a later cache restore', () => {
+      const store = useSubgraphNavigationStore()
+      store.viewportCache.delete(':root')
+
+      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
+      mockGraph._nodes = mockGraph.nodes
+
+      store.restoreViewport('root')
+
+      mockCanvas.subgraph = { id: 'sub-b' } as never
+      store.viewportCache.set(':sub-b', { scale: 2, offset: [20, 30] })
+      store.restoreViewport('sub-b')
+
+      mockCanvas.subgraph = undefined
+      store.viewportCache.set(':root', { scale: 3, offset: [40, 50] })
+      store.restoreViewport('root')
+      flushAnimationFrames()
+
+      expect(mockFitView).not.toHaveBeenCalled()
+      expect(mockCanvas.ds.scale).toBe(3)
+      expect(mockCanvas.ds.offset).toEqual([40, 50])
+
+      mockGraph.nodes = []
+      mockGraph._nodes = []
+    })
+
     it('skips a queued fit if the active graph changes while hidden', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
