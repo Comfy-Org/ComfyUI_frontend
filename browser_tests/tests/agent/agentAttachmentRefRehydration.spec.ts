@@ -238,6 +238,7 @@ test(
     )
     if (storedThreadId === null)
       throw new Error('Expected the accepted turn to persist its thread ID')
+    expect(storedThreadId).toBe(accepted.thread_id)
     attachmentThreadId = storedThreadId
 
     const openHistory = () =>
