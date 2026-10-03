@@ -379,6 +379,7 @@ export function dynamicGroupWidget(
             validateSavedRowCount(value, requested)
           } catch (error) {
             removeRow(0)
+            publish()
             throw error
           }
         }

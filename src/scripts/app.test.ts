@@ -1817,6 +1817,10 @@ describe('ComfyApp', () => {
       'restores submitted DynamicGroup rows in encounter order: %j',
       async ({ indices, nested }) => {
         const graph = new LGraph()
+        const previousSingletonGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        })
         Reflect.set(app, 'rootGraphInternal', graph)
         Reflect.set(singletonApp, 'rootGraphInternal', graph)
         const nodeType = 'test/ApiDynamicGroup'

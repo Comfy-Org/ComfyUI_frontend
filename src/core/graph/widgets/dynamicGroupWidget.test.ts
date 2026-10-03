@@ -3,7 +3,7 @@ import type { AxiosResponse } from 'axios'
 import { useLinkStore } from '@/stores/linkStore'
 import { api } from '@/scripts/api'
 
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -68,7 +68,25 @@ afterEach(() => {
 })
 
 describe('DynamicGroup widgets', () => {
-  it('restores a registered node whose only input is a one-row group', async () => {
+  const forcedSibling: NonNullable<ComfyNodeDef['input']>['required'] = {
+    forced: ['INT', { forceInput: true }],
+    before: ['STRING', { default: 'before' }]
+  }
+  it.for([
+    { name: 'group alone', siblings: {}, count: 1, expected: [1, 0.9, 1] },
+    {
+      name: 'empty group with a forced sibling',
+      siblings: forcedSibling,
+      count: 0,
+      expected: ['before', 0]
+    },
+    {
+      name: 'one row with a forced sibling',
+      siblings: forcedSibling,
+      count: 1,
+      expected: ['before', 1, 0.9, 1]
+    }
+  ])('round-trips $name', async ({ siblings, count, expected }) => {
     LiteGraph.namedValuesRestore = false
     const name = 'RegisteredDynamicGroupRestore'
     await useLitegraphService().registerNodeDef(name, {
@@ -81,6 +99,7 @@ describe('DynamicGroup widgets', () => {
       output: [],
       input: {
         required: {
+          ...siblings,
           rows: [
             'COMFY_DYNAMICGROUP_V3',
             {
@@ -103,15 +122,15 @@ describe('DynamicGroup widgets', () => {
       graph.add(source)
       graph.add(restored)
       const controller = source.widgets?.find((w) => w.name === 'rows')
-      if (!controller) throw new Error('Missing controller')
-      controller.value = 1
+      assert.exists(controller)
+      controller.value = count
       const saved = source.serialize()
-      expect(saved.widgets_values).toEqual([1, 0.9, 1])
+      expect(saved.widgets_values).toEqual(expected)
 
       restored.configure(saved)
 
-      expect(restored.serialize().widgets_values).toEqual([1, 0.9, 1])
-      expect(saved.widgets_values).toEqual([1, 0.9, 1])
+      expect(restored.serialize().widgets_values).toEqual(expected)
+      expect(saved.widgets_values).toEqual(expected)
     } finally {
       LiteGraph.unregisterNodeType(name)
     }
@@ -157,6 +176,39 @@ describe('DynamicGroup widgets', () => {
     expect(() => node.configure(saved)).toThrow('Invalid saved row count')
     expect(widget('seeds').value).toBe(0)
     expect(widget('tail').value).toBe('untouched')
+  })
+
+  it('publishes the remaining row when validation rollback is rejected', () => {
+    LiteGraph.namedValuesRestore = false
+    const { node, widget } = setup()
+    useLitegraphService().addNodeInput(node, {
+      name: 'seeds',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      template: {
+        required: { seed: ['INT', { control_after_generate: true }] }
+      }
+    })
+    const saved = node.serialize()
+    saved.widgets_values = ['first', 0, 'last', 2, 12, 'fixed']
+    const store = useLinkStore()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(store, 'updateEndpoints')
+      .mockReturnValueOnce({ ok: true, value: [] })
+      .mockReturnValueOnce({
+        ok: false,
+        error: { code: 'unowned-topology', message: 'Rejected rollback' }
+      })
+
+    expect(() => node.configure(saved)).toThrow('Invalid saved row count')
+
+    expect(widget('seeds').value).toBe(1)
+    expect(widget('seeds.0').label).toBe('seeds #1')
+    const id = widget('seeds').widgetId
+    assert.exists(id)
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(1)
+    widget('seeds.0').callback?.(undefined)
+    expect(widget('seeds').value).toBe(0)
   })
 
   it('creates and serializes registered rich and custom template widgets', async () => {
