@@ -68,10 +68,10 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 type OverlayState = 'hidden' | 'active' | 'expanded'
@@ -89,8 +89,8 @@ const { t, n } = useI18n()
 const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
-const sidebarTabStore = useSidebarTabStore()
 const assetsStore = useAssetsStore()
+const sidebarTabStore = useSidebarTabStore()
 const assetSelectionStore = useAssetSelectionStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -236,31 +236,30 @@ const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
-const focusAssetInSidebar = async (item: JobListItem) => {
+let assetFocusRequest = 0
+
+const focusAssetInSidebar = async (item: JobListItem, request: number) => {
   const task = item.taskRef
   const jobId = task?.jobId
   const preview = task?.previewOutput
-  if (!jobId || !preview) return
+  if (!jobId || !preview || request !== assetFocusRequest) return
 
   const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
-  await assetsStore.updateHistory()
-  const asset = assetsStore.historyAssets.find(
-    (existingAsset) => existingAsset.id === assetId
-  )
-  if (!asset) {
-    throw new Error('Asset not found in media assets panel')
-  }
+  const found = await assetsStore.loadOutputAsset(assetId)
+  if (!found || request !== assetFocusRequest) return
+
   assetSelectionStore.setSelection([assetId])
   assetSelectionStore.setLastSelectedAssetId(assetId)
 }
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
+    const request = ++assetFocusRequest
     trackFeatureUsed()
     await openResultGallery(item)
-    await focusAssetInSidebar(item)
+    await focusAssetInSidebar(item, request)
   }
 )
 

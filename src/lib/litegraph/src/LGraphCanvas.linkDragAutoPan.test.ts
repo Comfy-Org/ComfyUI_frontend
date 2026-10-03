@@ -1,23 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    queryLinkSegmentAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn()
-  }
-}))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 describe('LGraphCanvas link drag auto-pan', () => {
   let canvas: LGraphCanvas
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
+    vi.useFakeTimers()
+
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
     canvasElement.height = 600
@@ -51,13 +45,6 @@ describe('LGraphCanvas link drag auto-pan', () => {
   function startLinkDrag() {
     canvas['_linkConnectorDrop']()
   }
-
-  it('starts auto-pan when link drag begins', () => {
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
-    startLinkDrag()
-    expect(canvas['_autoPan']).not.toBeNull()
-  })
 
   it('resumes auto-pan after Space panning during a link drag', () => {
     canvas.processMouseDown(

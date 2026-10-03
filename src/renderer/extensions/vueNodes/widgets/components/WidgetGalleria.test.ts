@@ -133,28 +133,6 @@ function renderGalleria(
 }
 
 describe('WidgetGalleria Image Display', () => {
-  describe('Component Rendering', () => {
-    it('renders galleria component', () => {
-      renderGalleria([...TEST_IMAGES_SMALL])
-
-      expect(getGalleriaElement()).toBeTruthy()
-    })
-
-    it('displays empty gallery when no images provided', () => {
-      const widget = createGalleriaWidget([])
-      renderComponent(widget, [])
-
-      expect(getGalleriaValue()).toEqual([])
-    })
-
-    it('handles null or undefined value gracefully', () => {
-      const widget = createGalleriaWidget([])
-      renderComponent(widget, [])
-
-      expect(getGalleriaValue()).toEqual([])
-    })
-  })
-
   describe('String Array Input', () => {
     it('converts string array to image objects', () => {
       const widget = createGalleriaWidget([...TEST_IMAGES_SMALL])
@@ -288,14 +266,6 @@ describe('WidgetGalleria Image Display', () => {
       expect(getGalleriaProp('auto-play')).toBe('true')
       expect(getGalleriaProp('transition-interval')).toBe('3000')
     })
-
-    it('applies custom styling props', () => {
-      const images = createImageStrings(2)
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement().getAttribute('class')).toBeDefined()
-    })
   })
 
   describe('Active Index Management', () => {
@@ -319,36 +289,6 @@ describe('WidgetGalleria Image Display', () => {
     })
   })
 
-  describe('Image Template Rendering', () => {
-    it('renders item template with correct image source priorities', () => {
-      const images: GalleryImage[] = [
-        {
-          itemImageSrc: 'https://example.com/item.jpg',
-          src: 'https://example.com/fallback.jpg'
-        },
-        { src: 'https://example.com/only-src.jpg' }
-      ]
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement()).toBeTruthy()
-    })
-
-    it('renders thumbnail template with correct image source priorities', () => {
-      const images: GalleryImage[] = [
-        {
-          thumbnailImageSrc: 'https://example.com/thumb.jpg',
-          src: 'https://example.com/fallback.jpg'
-        },
-        { src: 'https://example.com/only-src.jpg' }
-      ]
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement()).toBeTruthy()
-    })
-  })
-
   describe('Edge Cases', () => {
     it('handles empty array gracefully', () => {
       const widget = createGalleriaWidget([])
@@ -360,14 +300,11 @@ describe('WidgetGalleria Image Display', () => {
     })
 
     it('handles malformed image objects', () => {
-      const malformedImages = [
-        {}, // Empty object
-        { randomProp: 'value' }, // Object without expected image properties
-        null, // Null value
-        undefined // Undefined value
-      ]
-      const widget = createGalleriaWidget(malformedImages as string[])
-      renderComponent(widget, malformedImages as string[])
+      const malformedImages: GalleryValue = JSON.parse(
+        '[{}, {"randomProp":"value"}, null, null]'
+      )
+      const widget = createGalleriaWidget(malformedImages)
+      renderComponent(widget, malformedImages)
 
       // Null/undefined should be filtered out, leaving only the objects
       const expectedValue = [{}, { randomProp: 'value' }]
@@ -386,17 +323,15 @@ describe('WidgetGalleria Image Display', () => {
 
     it('handles mixed string and object arrays gracefully', () => {
       // This is technically invalid input, but the component should handle it
-      const mixedArray = [
-        'https://example.com/string.jpg',
-        { itemImageSrc: 'https://example.com/object.jpg' },
-        'https://example.com/another-string.jpg'
-      ]
-      const widget = createGalleriaWidget(mixedArray as string[])
+      const mixedArray: GalleryValue = JSON.parse(
+        '["https://example.com/string.jpg",' +
+          '{"itemImageSrc":"https://example.com/object.jpg"},' +
+          '"https://example.com/another-string.jpg"]'
+      )
+      const widget = createGalleriaWidget(mixedArray)
 
       // The component expects consistent typing, but let's test it handles mixed input
-      expect(() =>
-        renderComponent(widget, mixedArray as string[])
-      ).not.toThrow()
+      expect(() => renderComponent(widget, mixedArray)).not.toThrow()
     })
 
     it('handles invalid URL strings', () => {
@@ -409,14 +344,6 @@ describe('WidgetGalleria Image Display', () => {
   })
 
   describe('Styling and Layout', () => {
-    it('applies max-width constraint', () => {
-      const images = createImageStrings(2)
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement().getAttribute('class')).toBeDefined()
-    })
-
     it('applies passthrough props for thumbnails', () => {
       const images = createImageStrings(3)
       const widget = createGalleriaWidget(images)

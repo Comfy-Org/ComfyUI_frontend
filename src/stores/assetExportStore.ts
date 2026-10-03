@@ -6,7 +6,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
-import type { AssetExportWsMessage } from '@/schemas/apiSchema'
+import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { t } from '@/i18n'
 
@@ -28,6 +28,18 @@ export interface AssetExport {
 
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function stringValue(value: unknown, fallback: string): string {
+  return typeof value === 'string' ? value : fallback
+}
+
+function numberValue(value: unknown, fallback: number): number {
+  return typeof value === 'number' ? value : fallback
+}
 
 export const useAssetExportStore = defineStore('assetExport', () => {
   const exports = ref<Map<TaskId, AssetExport>>(new Map())
@@ -72,7 +84,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
       exp.downloadError = undefined
       const { url } = await assetService.getExportDownloadUrl(exp.exportName)
       const link = document.createElement('a')
-      link.href = url
+      link.href = url.startsWith('/') ? api.apiURL(url) : url
       link.download = exp.exportName
       link.style.display = 'none'
       link.target = '_blank'
@@ -100,7 +112,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
 
     if (
       (existing?.status === 'completed' || existing?.status === 'failed') &&
-      existing?.downloadTriggered
+      existing.downloadTriggered
     ) {
       return
     }
@@ -136,28 +148,32 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     if (staleExports.length === 0) return
 
     async function pollSingleExport(exp: AssetExport) {
-      try {
-        const task = await taskService.getTask(exp.taskId)
+      const result = await taskService.getTask(exp.taskId)
+      if (!result.ok) return
 
-        if (task.status === 'completed' || task.status === 'failed') {
-          const result = task.result as Record<string, unknown> | undefined
-          handleAssetExport({
-            task_id: exp.taskId,
-            export_name: (result?.export_name as string) ?? exp.exportName,
-            assets_total: (result?.assets_total as number) ?? exp.assetsTotal,
-            assets_attempted:
-              (result?.assets_attempted as number) ?? exp.assetsAttempted,
-            assets_failed:
-              (result?.assets_failed as number) ?? exp.assetsFailed,
-            bytes_total: exp.bytesTotal,
-            bytes_processed: exp.bytesTotal,
-            progress: task.status === 'completed' ? 1 : exp.progress,
-            status: task.status as 'completed' | 'failed',
-            error: task.error_message ?? (result?.error as string)
-          })
-        }
-      } catch {
-        // Task not ready or not found
+      const task = result.value
+      if (task.status === 'completed' || task.status === 'failed') {
+        const taskResult: Record<string, unknown> = isRecord(task.result)
+          ? task.result
+          : {}
+        handleAssetExport({
+          task_id: exp.taskId,
+          export_name: stringValue(taskResult.export_name, exp.exportName),
+          assets_total: numberValue(taskResult.assets_total, exp.assetsTotal),
+          assets_attempted: numberValue(
+            taskResult.assets_attempted,
+            exp.assetsAttempted
+          ),
+          assets_failed: numberValue(
+            taskResult.assets_failed,
+            exp.assetsFailed
+          ),
+          bytes_total: exp.bytesTotal,
+          bytes_processed: exp.bytesTotal,
+          progress: task.status === 'completed' ? 1 : exp.progress,
+          status: task.status,
+          error: task.error_message ?? stringValue(taskResult.error, '')
+        })
       }
     }
 

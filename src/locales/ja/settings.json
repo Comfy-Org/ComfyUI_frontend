@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "ワークフロー内のキャンバスの位置とズームレベルを保存および復元する"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "問題タブに不足しているモデルを表示",
+    "tooltip": "無効にすると、見つからないモデルファイルは問題タブに表示されず、該当ノードも強調表示されません。"
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "ライブプレビューメソッド",
     "options": {
@@ -367,8 +371,8 @@
     "tooltip": "フローティングジョブキューパネルを、アセットサイドパネルに埋め込まれた同等のジョブキューに置き換えます。無効にすると、フローティングパネルのレイアウトに戻ります。"
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "サイドパネルにエラータブを表示",
-    "tooltip": "有効にすると、右側のサイドパネルにエラータブが表示され、ワークフロー実行時のエラーを一目で確認できます。"
+    "name": "サイドパネルに問題タブを表示",
+    "tooltip": "有効にすると、右側のサイドパネルに問題タブが表示され、ブロッキングエラーや設定が必要な不足リソースが表示されます。"
   },
   "Comfy_Sidebar_Location": {
     "name": "サイドバーの位置",
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "ページ（再）ロード時にワークフローの状態を保持し、復元します"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "欠落しているモデルの警告を表示"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "問題タブに不足しているメディアを表示",
+    "tooltip": "無効にすると、見つからない入力画像、動画、音声は問題タブに表示されず、該当ノードも強調表示されません。"
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "問題タブに不足しているノードを表示",
+    "tooltip": "無効にすると、不足しているノードパックは問題タブに表示されず、該当ノードも強調表示されません。インストールされるまで、ワークフローは実行できません。"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ワークフローを保存する際にノードIDをソート"

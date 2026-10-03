@@ -1,29 +1,28 @@
 import {
+  getNodeWidgetValue,
+  setNodeWidgetValue
+} from '@/core/graph/widgets/nodeWidgetValues'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import {
   emptyCompositorWidgetValue,
   isCompositorWidgetValue
 } from '@/renderer/extensions/compositor/components/types'
 import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
+const COMPOSITOR_WIDGET = 'compositor'
 
 export function setCompositorWidgetValue(
   node: LGraphNode,
   value: CompositorWidgetValue
 ): void {
-  const widget = node.widgets?.find((w) => w.name === 'compositor')
-  if (!widget) return
-  widget.value = value
-  widget.callback?.(value)
-  if (node.widgets_values && node.widgets) {
-    const index = node.widgets.indexOf(widget)
-    if (index >= 0) node.widgets_values[index] = value
-  }
+  setNodeWidgetValue(node, COMPOSITOR_WIDGET, value)
 }
 
 export function getCompositorWidgetValue(
   node: LGraphNode
 ): CompositorWidgetValue | null {
-  const widget = node.widgets?.find((w) => w.name === 'compositor')
-  return isCompositorWidgetValue(widget?.value) ? widget.value : null
+  const value = getNodeWidgetValue(node, COMPOSITOR_WIDGET)
+  return isCompositorWidgetValue(value) ? value : null
 }
 
 export function resetCompositorStateWidgets(node: LGraphNode): void {

@@ -123,7 +123,7 @@ export function formatNumberWithSuffix(
   return `${formattedNum}${suffixes[exp]}`
 }
 
-export function formatSize(value?: number) {
+export function formatSize(value?: number | null) {
   if (value === null || value === undefined) {
     return '-'
   }
@@ -342,7 +342,7 @@ export function parseFilePath(filepath: string): {
   filename: string
   subfolder: string
 } {
-  if (!filepath?.trim()) return { filename: '', subfolder: '' }
+  if (!filepath.trim()) return { filename: '', subfolder: '' }
 
   const normalizedPath = normalizeFilePathSeparators(filepath)
     .replace(/^\//, '') // Remove leading slash
@@ -402,6 +402,13 @@ export const paramsToCacheKey = (params: unknown): string => {
 
   return String(params)
 }
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Accepts canonical UUIDs of any version or variant for legacy compatibility. */
+export const isValidUuid = (value: unknown): value is string =>
+  typeof value === 'string' && UUID_PATTERN.test(value)
 
 /**
  * Generates a RFC4122 compliant UUID v4 using the native crypto API when available
@@ -635,7 +642,7 @@ const IMAGE_EXTENSIONS = [
   'svg'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus'] as const
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus', 'm4a'] as const
 const THREE_D_EXTENSIONS = [
   'obj',
   'fbx',

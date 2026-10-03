@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 
 import {
   cleanupComplexPromotionFixtureNodeType,
   createNestedSubgraphs,
+  createTestRootGraph,
   createTestSubgraph,
+  createTestSubgraphData,
+  enableSubgraphNodeCreation,
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from './subgraphHelpers'
@@ -41,6 +44,47 @@ describe('setupComplexPromotionFixture', () => {
     expect(hostNode.graph).toBe(graph)
     expect(hostNode.subgraph).toBe(subgraph)
     expect(graph.getNodeById(hostNode.id)).toBe(hostNode)
+  })
+})
+
+describe('enableSubgraphNodeCreation', () => {
+  beforeEach(() => {
+    resetSubgraphFixtureState()
+  })
+
+  it('makes new subgraphs resolvable by type until disposed', () => {
+    const rootGraph = createTestRootGraph()
+    const dispose = enableSubgraphNodeCreation(rootGraph)
+
+    const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
+
+    expect(LiteGraph.createNode(subgraph.id)).toBeInstanceOf(SubgraphNode)
+
+    dispose()
+
+    expect(LiteGraph.createNode(subgraph.id)).toBeNull()
+
+    const laterSubgraph = rootGraph.createSubgraph(createTestSubgraphData())
+    expect(LiteGraph.createNode(laterSubgraph.id)).toBeNull()
+  })
+
+  it('only removes registrations owned by its invocation', () => {
+    const firstRoot = createTestRootGraph()
+    const secondRoot = createTestRootGraph()
+    const disposeFirst = enableSubgraphNodeCreation(firstRoot)
+    const disposeSecond = enableSubgraphNodeCreation(secondRoot)
+    const data = createTestSubgraphData()
+    firstRoot.createSubgraph(data)
+    const secondSubgraph = secondRoot.createSubgraph(data)
+
+    disposeFirst()
+
+    expect(LiteGraph.createNode(data.id)).toMatchObject({
+      subgraph: secondSubgraph
+    })
+
+    disposeSecond()
+    expect(LiteGraph.createNode(data.id)).toBeNull()
   })
 })
 

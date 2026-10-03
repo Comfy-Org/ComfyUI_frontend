@@ -3,20 +3,18 @@ import type { Locale } from '../../i18n/translations'
 
 import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
 import { affiliateHowItWorksSteps } from '../../data/affiliateHowItWorks'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const steps = affiliateHowItWorksSteps.map((step) => ({
   id: step.id,
-  label: step.label[locale],
-  description: step.description[locale]
+  label: step.label[locale] || step.label.en,
+  description: step.description[locale] || step.description.en
 }))
 </script>
 
 <template>
-  <StepsGrid01
-    :heading="t('affiliate.howItWorks.heading', locale)"
-    :steps="steps"
-  />
+  <StepsGrid01 :heading="t('affiliate.howItWorks.heading')" :steps="steps" />
 </template>

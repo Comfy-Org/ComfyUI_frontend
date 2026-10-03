@@ -1,4 +1,25 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+describe('registered LiteGraph type cleanup', { concurrent: false }, () => {
+  it('clears registrations from a singleton created after a module reset', async ({
+    onTestFinished
+  }) => {
+    vi.resetModules()
+    const { LGraphNode, LiteGraph } =
+      await import('@/lib/litegraph/src/litegraph')
+    LiteGraph.registerNodeType(
+      'test/reset-module',
+      class ResetModuleNode extends LGraphNode {}
+    )
+    expect(LiteGraph.registered_node_types['test/reset-module']).toBeDefined()
+
+    onTestFinished(() => {
+      expect(
+        LiteGraph.registered_node_types['test/reset-module']
+      ).toBeUndefined()
+    })
+  })
+})
 
 /**
  * Guards the network block installed by `vitest.setup.ts`.
@@ -9,10 +30,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
  * explains. Keep this covered so the guard cannot be dropped silently.
  */
 describe('unit test network guard', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('rejects absolute http requests instead of dialling out', async () => {
     await expect(fetch('https://example.com/thing')).rejects.toThrow(
       /Blocked a real network request/

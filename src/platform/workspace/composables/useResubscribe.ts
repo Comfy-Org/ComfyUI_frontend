@@ -17,17 +17,12 @@ export function useResubscribe() {
   const toast = useToast()
   const { resubscribe } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { permissions } = useWorkspaceUI()
+  const { canReactivatePlan } = useWorkspaceUI()
 
   const isResubscribing = ref(false)
 
   async function handleResubscribe() {
-    if (
-      shouldUseWorkspaceBilling.value &&
-      !permissions.value.canManageSubscriptionLifecycle
-    ) {
-      return
-    }
+    if (!canReactivatePlan.value) return
 
     const source = 'settings_billing_panel' as const
 

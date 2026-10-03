@@ -1,71 +1,50 @@
-import { until } from '@vueuse/core'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { until, useStorage } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
-vi.mock('@/config', () => ({
+vi.mock<unknown>(import('@/config'), () => ({
   default: {
     app_version: '1.24.0'
   }
 }))
 
-const mockUseSystemStatsStore = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/systemStatsStore', () => ({
-  useSystemStatsStore: mockUseSystemStatsStore
-}))
-
-const mockUseSettingStore = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: mockUseSettingStore
-}))
-
-// Mock useStorage and until from VueUse
-const mockDismissalStorage = ref({} as Record<string, number>)
-vi.mock('@vueuse/core', () => ({
-  useStorage: vi.fn(() => mockDismissalStorage),
-  until: vi.fn(() => Promise.resolve())
-}))
-
-type MockSystemStatsStore = {
-  systemStats: unknown
-  isInitialized: boolean
-  refetchSystemStats: ReturnType<typeof vi.fn>
-}
+const { mockDismissalStorage } = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return { mockDismissalStorage: ref({} as Record<string, number>) }
+})
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useStorage).mockReturnValue(mockDismissalStorage)
 
 describe('useVersionCompatibilityStore', () => {
   let store: ReturnType<typeof useVersionCompatibilityStore>
-  let mockSystemStatsStore: MockSystemStatsStore
-  let mockSettingStore: { get: ReturnType<typeof vi.fn> }
+  let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
+  let mockSettingStore: ReturnType<typeof useSettingStore>
 
   beforeEach(() => {
+    vi.mocked(useStorage).mockReturnValue(mockDismissalStorage)
     // Clear the mock dismissal storage
     mockDismissalStorage.value = {}
 
-    mockSystemStatsStore = {
-      systemStats: null,
-      isInitialized: false,
-      refetchSystemStats: vi.fn()
-    }
-
-    mockSettingStore = {
-      get: vi.fn(() => false) // Default to warnings enabled
-    }
-
-    mockUseSystemStatsStore.mockReturnValue(mockSystemStatsStore)
-    mockUseSettingStore.mockReturnValue(mockSettingStore)
+    mockSystemStatsStore = useSystemStatsStore()
+    vi.mocked(mockSystemStatsStore.refetchSystemStats).mockResolvedValue(null)
+    mockSettingStore = useSettingStore()
+    vi.mocked(mockSettingStore.get).mockReturnValue(false)
 
     store = useVersionCompatibilityStore()
   })
 
   describe('version compatibility detection', () => {
     it('should detect frontend is outdated when required version is higher', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.25.0',
           required_frontend_version: '1.25.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -78,12 +57,12 @@ describe('useVersionCompatibilityStore', () => {
     it('should not warn when frontend is newer than backend', async () => {
       // Frontend: 1.24.0, Backend: 1.23.0, Required: 1.23.0
       // Frontend meets required version, no warning needed
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.23.0',
           required_frontend_version: '1.23.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -94,12 +73,12 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should not detect mismatch when versions are compatible', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -110,12 +89,12 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should handle missing version information gracefully', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '',
           required_frontend_version: ''
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -126,12 +105,12 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should not detect mismatch when versions are not valid semver', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '080e6d4af809a46852d1c4b7ed85f06e8a3a72be', // git hash
           required_frontend_version: 'not-a-version' // invalid semver format
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -143,12 +122,12 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should not warn when frontend exceeds required version', async () => {
       // Frontend: 1.24.0 (from mock config)
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.22.0', // Backend is older
           required_frontend_version: '1.23.0' // Required is 1.23.0, frontend 1.24.0 meets this
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -163,12 +142,12 @@ describe('useVersionCompatibilityStore', () => {
     it('should show warning when there is a version mismatch and not dismissed', async () => {
       // No dismissals in storage
       mockDismissalStorage.value = {}
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.25.0',
           required_frontend_version: '1.25.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -183,12 +162,12 @@ describe('useVersionCompatibilityStore', () => {
         '1.24.0-1.25.0-1.25.0': futureTime
       }
 
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.25.0',
           required_frontend_version: '1.25.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -197,12 +176,12 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should not show warning when no version mismatch', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -212,36 +191,34 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should not show warning when disabled via setting', async () => {
       // Enable the disable setting
-      ;(
-        mockSettingStore as { get: ReturnType<typeof vi.fn> }
-      ).get.mockReturnValue(true)
+      vi.mocked(mockSettingStore.get).mockReturnValue(true)
 
       // Set up version mismatch that would normally show warning
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.25.0',
           required_frontend_version: '1.25.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
 
       expect(store.shouldShowWarning).toBe(false)
-      expect(
-        (mockSettingStore as { get: ReturnType<typeof vi.fn> }).get
-      ).toHaveBeenCalledWith('Comfy.VersionCompatibility.DisableWarnings')
+      expect(mockSettingStore.get).toHaveBeenCalledWith(
+        'Comfy.VersionCompatibility.DisableWarnings'
+      )
     })
   })
 
   describe('warning messages', () => {
     it('should generate outdated message when frontend is outdated', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.25.0',
           required_frontend_version: '1.25.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -254,12 +231,12 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should return null when no mismatch', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -272,12 +249,12 @@ describe('useVersionCompatibilityStore', () => {
     it('should save dismissal to reactive storage with expiration', async () => {
       const now = Date.now()
 
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.25.0',
           required_frontend_version: '1.25.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -295,12 +272,12 @@ describe('useVersionCompatibilityStore', () => {
         '1.24.0-1.25.0-1.25.0': futureTime
       }
 
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.25.0',
           required_frontend_version: '1.25.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.initialize()
@@ -314,12 +291,12 @@ describe('useVersionCompatibilityStore', () => {
         '1.24.0-1.25.0-1.25.0': pastTime
       }
 
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.25.0',
           required_frontend_version: '1.25.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.initialize()
@@ -334,12 +311,12 @@ describe('useVersionCompatibilityStore', () => {
         '1.24.0-1.25.0-1.25.0': futureTime // Different version was dismissed
       }
 
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.26.0',
           required_frontend_version: '1.26.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.initialize()
@@ -359,12 +336,12 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should not fetch system stats if already available', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.initialize()
@@ -375,7 +352,7 @@ describe('useVersionCompatibilityStore', () => {
 
   describe('comfy package version warnings', () => {
     it('should detect outdated comfy packages and skip comfyui-frontend-package', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0',
@@ -397,7 +374,7 @@ describe('useVersionCompatibilityStore', () => {
             }
           ]
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -421,7 +398,7 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should ignore packages with missing or invalid versions', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0',
@@ -438,7 +415,7 @@ describe('useVersionCompatibilityStore', () => {
             }
           ]
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -448,7 +425,7 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should detect outdated PEP 440 versions via coerce', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0',
@@ -465,7 +442,7 @@ describe('useVersionCompatibilityStore', () => {
             }
           ]
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -478,7 +455,7 @@ describe('useVersionCompatibilityStore', () => {
     it('should include outdated packages in dismissal key', async () => {
       const now = Date.now()
 
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0',
@@ -490,7 +467,7 @@ describe('useVersionCompatibilityStore', () => {
             }
           ]
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()
@@ -514,26 +491,26 @@ describe('useVersionCompatibilityStore', () => {
         required: '0.9.5'
       }
 
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0',
           comfy_package_versions: [packageA, packageB]
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
       await store.checkVersionCompatibility()
       store.dismissWarning()
       const firstKey = Object.keys(mockDismissalStorage.value)[0]
 
       mockDismissalStorage.value = {}
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.24.0',
           required_frontend_version: '1.24.0',
           comfy_package_versions: [packageB, packageA]
         }
-      }
+      })
       await store.checkVersionCompatibility()
       store.dismissWarning()
       const secondKey = Object.keys(mockDismissalStorage.value)[0]
@@ -549,12 +526,12 @@ describe('useVersionCompatibilityStore', () => {
         'still-valid-key': now + 5000
       }
 
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '1.25.0',
           required_frontend_version: '1.25.0'
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
       await store.checkVersionCompatibility()
       store.dismissWarning()
@@ -565,7 +542,7 @@ describe('useVersionCompatibilityStore', () => {
     })
 
     it('should allow dismissal when only package warnings are present', async () => {
-      mockSystemStatsStore.systemStats = {
+      mockSystemStatsStore.systemStats = fromPartial({
         system: {
           comfyui_version: '',
           required_frontend_version: '',
@@ -577,7 +554,7 @@ describe('useVersionCompatibilityStore', () => {
             }
           ]
         }
-      }
+      })
       mockSystemStatsStore.isInitialized = true
 
       await store.checkVersionCompatibility()

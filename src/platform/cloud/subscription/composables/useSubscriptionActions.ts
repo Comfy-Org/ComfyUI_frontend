@@ -1,9 +1,10 @@
-import { captureException } from '@sentry/vue'
 import { onMounted, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -27,18 +28,18 @@ export function useSubscriptionActions() {
     telemetry?.trackAddApiCreditButtonClicked({
       source: 'settings_billing_panel'
     })
-    void dialogService.showTopUpCreditsDialog()
+    void dialogService.showTopUpCreditsDialog({
+      source: paymentIntentSourceForAddCreditsClick('settings_billing_panel')
+    })
   }
 
   // A user who cannot reach support cannot tell us that they cannot reach
   // support, so this failure has to report itself.
   const reportSupportFailure = (error: unknown) => {
-    captureException(
-      error instanceof Error ? error : new Error(String(error)),
-      {
-        tags: { error_type: 'contact_support_failed' }
-      }
-    )
+    reportError(error, {
+      surface: 'billing',
+      errorType: 'contact_support_failed'
+    })
     toastErrorHandler(error)
   }
 

@@ -43,7 +43,7 @@ test.describe('FDCT page @smoke', () => {
   test('responds 200 and has the localized title', async ({ page }) => {
     const response = await page.goto('/forward-deployed-creatives')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveTitle(t('fdct.meta.title', 'en'))
+    await expect(page).toHaveTitle(t('fdct.meta.title', {}, { locale: 'en' }))
   })
 
   test('hero renders the h1 and CTA pair with decided hrefs', async ({
@@ -51,15 +51,19 @@ test.describe('FDCT page @smoke', () => {
   }) => {
     await page.goto('/forward-deployed-creatives')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      t('fdct.hero.title', 'en')
+      t('fdct.hero.title', {}, { locale: 'en' })
     )
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })
     await expect(
-      hero.getByRole('link', { name: t('fdct.hero.contactCta', 'en') })
-    ).toHaveAttribute('href', '/contact')
-    await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeVisible()
+      hero.getByRole('link', {
+        name: t('fdct.hero.contactCta', {}, { locale: 'en' })
+      })
+    ).toHaveAttribute('href', '/contact/')
+    await expect(
+      page.getByText(t('fdct.hero.eyebrow', {}, { locale: 'en' }))
+    ).toBeVisible()
   })
 
   test('builders section renders the node label, reasons, and marquee', async ({
@@ -67,15 +71,21 @@ test.describe('FDCT page @smoke', () => {
   }) => {
     await page.goto('/forward-deployed-creatives')
     await expect(
-      page.getByRole('heading', { name: t('fdct.builders.title', 'en') })
+      page.getByRole('heading', {
+        name: t('fdct.builders.title', {}, { locale: 'en' })
+      })
     ).toBeVisible()
     await expect(
       page
-        .getByText(t('fdct.builders.nodeLabel', 'en'), { exact: true })
+        .getByText(t('fdct.builders.nodeLabel', {}, { locale: 'en' }), {
+          exact: true
+        })
         .first()
     ).toBeVisible()
     for (const key of builderReasonKeys) {
-      await expect(page.getByText(t(key, 'en')).first()).toBeVisible()
+      await expect(
+        page.getByText(t(key, {}, { locale: 'en' })).first()
+      ).toBeVisible()
     }
     await expect(page.getByTestId('social-proof-desktop')).toBeVisible()
   })
@@ -85,21 +95,28 @@ test.describe('FDCT page @smoke', () => {
   }) => {
     await page.goto('/forward-deployed-creatives')
     await expect(
-      page.getByRole('heading', { name: t('fdct.howItWorks.title', 'en') })
+      page.getByRole('heading', {
+        name: t('fdct.howItWorks.title', {}, { locale: 'en' })
+      })
     ).toBeVisible()
     for (const key of howItWorksStepTitleKeys) {
       await expect(
-        page.getByRole('heading', { name: t(key, 'en'), exact: true })
+        page.getByRole('heading', {
+          name: t(key, {}, { locale: 'en' }),
+          exact: true
+        })
       ).toBeVisible()
     }
     await expect(
-      page.getByText(t('fdct.howItWorks.footnote', 'en'))
+      page.getByText(t('fdct.howItWorks.footnote', {}, { locale: 'en' }))
     ).toBeVisible()
     await expect(
-      page.getByRole('heading', { name: t('fdct.whatYouGet.title', 'en') })
+      page.getByRole('heading', {
+        name: t('fdct.whatYouGet.title', {}, { locale: 'en' })
+      })
     ).toBeVisible()
     for (const key of whatYouGetItemKeys) {
-      await expect(page.getByText(t(key, 'en'))).toBeVisible()
+      await expect(page.getByText(t(key, {}, { locale: 'en' }))).toBeVisible()
     }
   })
 
@@ -109,12 +126,12 @@ test.describe('FDCT page @smoke', () => {
     await page.goto('/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
-        name: t('fdct.technologists.title', 'en')
+        name: t('fdct.technologists.title', {}, { locale: 'en' })
       })
     })
     await expect(
       section.getByRole('heading', {
-        name: t('fdct.technologists.title', 'en')
+        name: t('fdct.technologists.title', {}, { locale: 'en' })
       })
     ).toBeVisible()
     for (const person of technologists) {
@@ -138,12 +155,15 @@ test.describe('FDCT page @smoke', () => {
 
     const section = page.locator('section', {
       has: page.getByRole('heading', {
-        name: t('fdct.technologists.title', 'en')
+        name: t('fdct.technologists.title', {}, { locale: 'en' })
       })
     })
-    const seeWork = t('fdct.technologists.seeWork', 'en').replace(
-      '{name}',
-      person.nickname ?? person.name.split(' ')[0]
+    const seeWork = t(
+      'fdct.technologists.seeWork',
+      {
+        name: person.nickname ?? person.name.split(' ')[0]
+      },
+      { locale: 'en' }
     )
     const trigger = section.getByRole('button', { name: seeWork })
     const dialog = page.getByRole('dialog')
@@ -170,7 +190,9 @@ test.describe('FDCT page @smoke', () => {
   }) => {
     await page.goto('/forward-deployed-creatives')
     const section = page.locator('section', {
-      has: page.getByRole('heading', { name: t('fdct.projects.title', 'en') })
+      has: page.getByRole('heading', {
+        name: t('fdct.projects.title', {}, { locale: 'en' })
+      })
     })
     for (const project of projects) {
       await expect(
@@ -191,7 +213,9 @@ test.describe('FDCT page @smoke', () => {
   }) => {
     await page.goto('/forward-deployed-creatives')
     await expect(
-      page.getByRole('heading', { name: t('fdct.faq.title', 'en') })
+      page.getByRole('heading', {
+        name: t('fdct.faq.title', {}, { locale: 'en' })
+      })
     ).toBeVisible()
     const faqs = fdctFaqs('en')
     for (const faq of faqs) {
@@ -214,10 +238,8 @@ test.describe('FDCT page @smoke', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) =>
-        (s.textContent ?? '').includes('FAQPage')
-      )
-      return match?.textContent ?? null
+      const match = scripts.find((s) => s.text.includes('FAQPage'))
+      return match?.text ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {
@@ -241,17 +263,19 @@ test.describe('FDCT page @smoke', () => {
     await page.goto('/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
-        name: t('fdct.bands.enterprise.label', 'en')
+        name: t('fdct.bands.enterprise.label', {}, { locale: 'en' })
       })
     })
     await expect(
       section.getByRole('heading', {
-        name: t('fdct.bands.enterprise.label', 'en')
+        name: t('fdct.bands.enterprise.label', {}, { locale: 'en' })
       })
     ).toBeVisible()
     await expect(
-      section.getByRole('link', { name: t('fdct.bands.enterprise.cta', 'en') })
-    ).toHaveAttribute('href', '/contact')
+      section.getByRole('link', {
+        name: t('fdct.bands.enterprise.cta', {}, { locale: 'en' })
+      })
+    ).toHaveAttribute('href', '/contact/')
     await expect(
       section.getByRole('heading', { name: 'FOR CREATORS' })
     ).toHaveCount(0)
@@ -259,20 +283,33 @@ test.describe('FDCT page @smoke', () => {
 })
 
 test.describe('FDCT hero @mobile', () => {
-  test('shows the enterprise eyebrow and the stacked collage', async ({
+  test('shows the uppercase eyebrow and autoplaying hero video', async ({
     page
   }) => {
     await page.goto('/forward-deployed-creatives')
-    await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeVisible()
-    await expect(page.locator('img[src*="headphones"]:visible')).toHaveCount(1)
     await expect(
-      page.locator('img[src*="abeautifulland"]:visible')
-    ).toHaveCount(1)
+      page.getByText(
+        t('fdct.hero.eyebrow', {}, { locale: 'en' }).toLocaleUpperCase('en')
+      )
+    ).toBeVisible()
+    const video = page.getByLabel(t('fdct.hero.title', {}, { locale: 'en' }))
+    await expect(video).toBeVisible()
+    await expect(video).toHaveAttribute('poster', /FDCT_V4_thumb/)
+    await expect(video).toHaveAttribute('autoplay')
+    await expect(video).toHaveAttribute('loop')
+    await expect(video).toHaveAttribute('muted')
+    await expect(
+      page.getByRole('button', {
+        name: t('player.unmute', {}, { locale: 'en' })
+      })
+    ).toBeVisible()
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })
     await expect(
-      hero.getByRole('link', { name: t('fdct.hero.contactCta', 'en') })
+      hero.getByRole('link', {
+        name: t('fdct.hero.contactCta', {}, { locale: 'en' })
+      })
     ).toBeVisible()
   })
 })
@@ -281,7 +318,9 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   test('responds 200 and has the localized title', async ({ page }) => {
     const response = await page.goto('/zh-CN/forward-deployed-creatives')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveTitle(t('fdct.meta.title', 'zh-CN'))
+    await expect(page).toHaveTitle(
+      t('fdct.meta.title', {}, { locale: 'zh-CN' })
+    )
   })
 
   test('hero renders the localized h1 and locale-prefixed contact CTA', async ({
@@ -289,14 +328,16 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   }) => {
     await page.goto('/zh-CN/forward-deployed-creatives')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      t('fdct.hero.title', 'zh-CN')
+      t('fdct.hero.title', {}, { locale: 'zh-CN' })
     )
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })
     await expect(
-      hero.getByRole('link', { name: t('fdct.hero.contactCta', 'zh-CN') })
-    ).toHaveAttribute('href', '/zh-CN/contact')
+      hero.getByRole('link', {
+        name: t('fdct.hero.contactCta', {}, { locale: 'zh-CN' })
+      })
+    ).toHaveAttribute('href', '/zh-CN/contact/')
   })
 
   test('builders section renders the localized node label and reasons', async ({
@@ -304,15 +345,21 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   }) => {
     await page.goto('/zh-CN/forward-deployed-creatives')
     await expect(
-      page.getByRole('heading', { name: t('fdct.builders.title', 'zh-CN') })
+      page.getByRole('heading', {
+        name: t('fdct.builders.title', {}, { locale: 'zh-CN' })
+      })
     ).toBeVisible()
     await expect(
       page
-        .getByText(t('fdct.builders.nodeLabel', 'zh-CN'), { exact: true })
+        .getByText(t('fdct.builders.nodeLabel', {}, { locale: 'zh-CN' }), {
+          exact: true
+        })
         .first()
     ).toBeVisible()
     for (const key of builderReasonKeys) {
-      await expect(page.getByText(t(key, 'zh-CN')).first()).toBeVisible()
+      await expect(
+        page.getByText(t(key, {}, { locale: 'zh-CN' })).first()
+      ).toBeVisible()
     }
   })
 
@@ -321,21 +368,30 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   }) => {
     await page.goto('/zh-CN/forward-deployed-creatives')
     await expect(
-      page.getByRole('heading', { name: t('fdct.howItWorks.title', 'zh-CN') })
+      page.getByRole('heading', {
+        name: t('fdct.howItWorks.title', {}, { locale: 'zh-CN' })
+      })
     ).toBeVisible()
     for (const key of howItWorksStepTitleKeys) {
       await expect(
-        page.getByRole('heading', { name: t(key, 'zh-CN'), exact: true })
+        page.getByRole('heading', {
+          name: t(key, {}, { locale: 'zh-CN' }),
+          exact: true
+        })
       ).toBeVisible()
     }
     await expect(
-      page.getByText(t('fdct.howItWorks.footnote', 'zh-CN'))
+      page.getByText(t('fdct.howItWorks.footnote', {}, { locale: 'zh-CN' }))
     ).toBeVisible()
     await expect(
-      page.getByRole('heading', { name: t('fdct.whatYouGet.title', 'zh-CN') })
+      page.getByRole('heading', {
+        name: t('fdct.whatYouGet.title', {}, { locale: 'zh-CN' })
+      })
     ).toBeVisible()
     for (const key of whatYouGetItemKeys) {
-      await expect(page.getByText(t(key, 'zh-CN'))).toBeVisible()
+      await expect(
+        page.getByText(t(key, {}, { locale: 'zh-CN' }))
+      ).toBeVisible()
     }
   })
 
@@ -345,12 +401,12 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     await page.goto('/zh-CN/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
-        name: t('fdct.technologists.title', 'zh-CN')
+        name: t('fdct.technologists.title', {}, { locale: 'zh-CN' })
       })
     })
     await expect(
       section.getByRole('heading', {
-        name: t('fdct.technologists.title', 'zh-CN')
+        name: t('fdct.technologists.title', {}, { locale: 'zh-CN' })
       })
     ).toBeVisible()
     for (const person of technologists) {
@@ -366,7 +422,7 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     await page.goto('/zh-CN/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
-        name: t('fdct.projects.title', 'zh-CN')
+        name: t('fdct.projects.title', {}, { locale: 'zh-CN' })
       })
     })
     // Titles are localized, so assert the zh-CN copy renders (not the en list).
@@ -386,7 +442,9 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
   }) => {
     await page.goto('/zh-CN/forward-deployed-creatives')
     await expect(
-      page.getByRole('heading', { name: t('fdct.faq.title', 'zh-CN') })
+      page.getByRole('heading', {
+        name: t('fdct.faq.title', {}, { locale: 'zh-CN' })
+      })
     ).toBeVisible()
     const faqs = fdctFaqs('zh-CN')
     for (const faq of faqs) {
@@ -405,18 +463,18 @@ test.describe('FDCT page (zh-CN) @smoke', () => {
     await page.goto('/zh-CN/forward-deployed-creatives')
     const section = page.locator('section', {
       has: page.getByRole('heading', {
-        name: t('fdct.bands.enterprise.label', 'zh-CN')
+        name: t('fdct.bands.enterprise.label', {}, { locale: 'zh-CN' })
       })
     })
     await expect(
       section.getByRole('heading', {
-        name: t('fdct.bands.enterprise.label', 'zh-CN')
+        name: t('fdct.bands.enterprise.label', {}, { locale: 'zh-CN' })
       })
     ).toBeVisible()
     await expect(
       section.getByRole('link', {
-        name: t('fdct.bands.enterprise.cta', 'zh-CN')
+        name: t('fdct.bands.enterprise.cta', {}, { locale: 'zh-CN' })
       })
-    ).toHaveAttribute('href', '/zh-CN/contact')
+    ).toHaveAttribute('href', '/zh-CN/contact/')
   })
 })

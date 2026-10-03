@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 
@@ -38,7 +38,7 @@ export interface EditorOutputData {
 export const useMaskEditorDataStore = defineStore('maskEditorData', () => {
   const inputData = ref<EditorInputData | null>(null)
   const outputData = ref<EditorOutputData | null>(null)
-  const sourceNode = ref<LGraphNode | null>(null)
+  const sourceNode = shallowRef<LGraphNode | null>(null)
 
   const isLoading = ref(false)
   const loadError = ref<string | null>(null)

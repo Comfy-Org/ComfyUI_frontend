@@ -1,77 +1,104 @@
+import { useDialogService } from '@/services/dialogService'
 import { describe, expect, it, vi } from 'vitest'
+
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 
-const mockDialogService = {
-  showApiNodesSignInDialog: vi.fn(),
-  showSubscriptionRequiredDialog: vi.fn(),
-  showTopUpCreditsDialog: vi.fn()
-}
+vi.mock(import('@/services/dialogService'))
 
-const mockBilling = {
-  fetchStatus: vi.fn(),
-  fetchBalance: vi.fn()
-}
-
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: vi.fn(() => mockDialogService)
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: vi.fn(() => mockBilling)
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 describe('useAccountPreconditionDialog', () => {
   it('routes a sign-in precondition to the API sign-in dialog with the node type', () => {
     useAccountPreconditionDialog().open('sign_in', { nodeType: 'ApiNode' })
 
-    expect(mockDialogService.showApiNodesSignInDialog).toHaveBeenCalledWith([
+    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([
       'ApiNode'
     ])
     expect(
-      mockDialogService.showSubscriptionRequiredDialog
+      useDialogService().showSubscriptionRequiredDialog
     ).not.toHaveBeenCalled()
-    expect(mockDialogService.showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
   })
 
   it('routes a sign-in precondition with no node type to an empty list', () => {
     useAccountPreconditionDialog().open('sign_in')
 
-    expect(mockDialogService.showApiNodesSignInDialog).toHaveBeenCalledWith([])
+    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([])
   })
 
   it('routes a subscription precondition to the subscription dialog', () => {
     useAccountPreconditionDialog().open('subscription')
 
     expect(
-      mockDialogService.showSubscriptionRequiredDialog
+      useDialogService().showSubscriptionRequiredDialog
     ).toHaveBeenCalledTimes(1)
-    expect(mockDialogService.showApiNodesSignInDialog).not.toHaveBeenCalled()
-    expect(mockDialogService.showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showApiNodesSignInDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
   })
 
   it('routes a credit precondition to the top-up dialog', () => {
     useAccountPreconditionDialog().open('credits', { nodeType: 'PartnerNode' })
 
-    expect(mockDialogService.showTopUpCreditsDialog).toHaveBeenCalledWith({
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledWith({
       isInsufficientCredits: true
     })
     expect(
-      mockDialogService.showSubscriptionRequiredDialog
+      useDialogService().showSubscriptionRequiredDialog
     ).not.toHaveBeenCalled()
   })
 
-  it('refreshes the billing snapshot on a credit precondition so exhausted-state surfaces converge', () => {
+  it('attributes a subscription precondition to subscription_required when no source is named', () => {
+    useAccountPreconditionDialog().open('subscription')
+
+    expect(
+      useDialogService().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledWith({ reason: 'subscription_required' })
+  })
+
+  it('omits a source from the top-up dialog when none is named', () => {
     useAccountPreconditionDialog().open('credits')
 
-    expect(mockBilling.fetchStatus).toHaveBeenCalledTimes(1)
-    expect(mockBilling.fetchBalance).toHaveBeenCalledTimes(1)
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledWith({
+      isInsufficientCredits: true
+    })
+  })
+
+  it('attributes a subscription precondition to the source that triggered it', () => {
+    useAccountPreconditionDialog().open('subscription', {
+      source: 'agent_paywall'
+    })
+
+    expect(
+      useDialogService().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledWith({ reason: 'agent_paywall' })
+  })
+
+  it('carries the triggering source into the top-up dialog', () => {
+    useAccountPreconditionDialog().open('credits', {
+      source: 'agent_paywall'
+    })
+
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledWith({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+  })
+
+  it('refreshes the billing snapshot on a credit precondition so exhausted-state surfaces converge', () => {
+    const billing = mockBillingContext()
+    useAccountPreconditionDialog().open('credits')
+
+    expect(billing.fetchStatus).toHaveBeenCalledTimes(1)
+    expect(billing.fetchBalance).toHaveBeenCalledTimes(1)
   })
 
   it('does not touch billing state for non-credit preconditions', () => {
+    const billing = mockBillingContext()
     useAccountPreconditionDialog().open('subscription')
 
-    expect(mockBilling.fetchStatus).not.toHaveBeenCalled()
-    expect(mockBilling.fetchBalance).not.toHaveBeenCalled()
+    expect(billing.fetchStatus).not.toHaveBeenCalled()
+    expect(billing.fetchBalance).not.toHaveBeenCalled()
   })
 })

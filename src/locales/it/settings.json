@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Salva e ripristina posizione e livello di zoom del canvas nei workflow"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Mostra i modelli mancanti nella scheda Problemi",
+    "tooltip": "Se disabilitato, i file dei modelli non trovati non vengono elencati nella scheda Problemi e i relativi nodi non vengono evidenziati."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Metodo di anteprima live",
     "options": {
@@ -367,8 +371,8 @@
     "tooltip": "Sostituisce il pannello coda lavori flottante con una coda lavori equivalente incorporata nel pannello laterale della cronologia lavori. Puoi disabilitarlo per tornare al layout flottante."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Mostra scheda errori nel pannello laterale",
-    "tooltip": "Se abilitato, una scheda errori viene visualizzata nel pannello laterale destro per mostrare a colpo d'occhio gli errori di esecuzione del workflow."
+    "name": "Mostra la scheda Problemi nel pannello laterale",
+    "tooltip": "Quando abilitata, la scheda Problemi viene visualizzata nel pannello laterale destro per mostrare errori bloccanti e risorse mancanti che richiedono configurazione."
   },
   "Comfy_Sidebar_Location": {
     "name": "Posizione della barra laterale",
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "Mantieni stato del workflow e ripristina al (ri)caricamento della pagina"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Mostra avviso modelli mancanti"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Mostra i contenuti multimediali mancanti nella scheda Problemi",
+    "tooltip": "Se disabilitato, le immagini, i video e gli audio di input non trovati non vengono elencati nella scheda Problemi e i relativi nodi non vengono evidenziati."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Mostra i nodi mancanti nella scheda Problemi",
+    "tooltip": "Se disabilitato, i pacchetti di nodi mancanti non vengono elencati nella scheda Problemi e i relativi nodi non vengono evidenziati. Il workflow non può comunque essere eseguito finché non vengono installati."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordina ID dei nodi al salvataggio del workflow"

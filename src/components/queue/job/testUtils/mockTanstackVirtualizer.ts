@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-vi.mock('@tanstack/vue-virtual', async () => {
+vi.mock<unknown>(import('@tanstack/vue-virtual'), async () => {
   const { computed } = await import('vue')
 
   return {

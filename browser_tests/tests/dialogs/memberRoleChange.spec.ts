@@ -32,11 +32,10 @@ async function openMembersTab(page: Page): Promise<Locator> {
     .click()
   const dialog = page.getByTestId('settings-dialog')
   await expect(dialog).toBeVisible()
-  await dialog.locator('nav').getByRole('button', { name: 'Workspace' }).click()
+  await dialog.locator('nav').getByRole('button', { name: 'Members' }).click()
 
   const content = dialog.getByRole('main')
-  await content.getByRole('tab', { name: /Members/ }).click()
-  await expect(content.getByText('4 of 30 members')).toBeVisible()
+  await expect(content.getByText('4 of 30 total members.')).toBeVisible()
   return content
 }
 
@@ -76,9 +75,7 @@ test.describe('Members plan gating', { tag: '@cloud' }, () => {
       name: 'Invite member'
     })
     await expect(inviteButton).toBeEnabled()
-    await expect(
-      content.getByRole('button', { name: 'Role', exact: true })
-    ).toBeVisible()
+    await expect(content.getByText('Role', { exact: true })).toBeVisible()
     await expect(
       content.getByText(MEMBER_JANE.email, { exact: true })
     ).toBeVisible()

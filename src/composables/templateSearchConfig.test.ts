@@ -122,6 +122,17 @@ describe('searchTemplates', () => {
   const buildIndex = (templates: TemplateInfo[]) =>
     createTemplateSearchIndex(templates)
 
+  it('keeps searching when two templates share a name', () => {
+    const index = buildIndex([
+      buildTemplate({ name: 'decimate', title: 'Alpha Mesh' }),
+      buildTemplate({ name: 'decimate', title: 'Beta Mesh' }),
+      buildTemplate({ name: 'h3', title: 'MiniMax H3 Video' })
+    ])
+    expect(searchTemplates(index, 'alpha')).toEqual(['decimate'])
+    expect(searchTemplates(index, 'beta')).toEqual([])
+    expect(searchTemplates(index, 'h3')).toEqual(['h3'])
+  })
+
   it('returns an empty array for a blank query without touching the index', () => {
     const index = buildIndex([buildTemplate({ name: 'a', title: 'Alpha' })])
     expect(searchTemplates(index, '   ')).toEqual([])
@@ -303,11 +314,19 @@ describe('rankByRelevanceThenUsage', () => {
     const order = (hits: SearchResult[]) =>
       rankByRelevanceThenUsage(hits).map((h) => h.id)
 
-    const stable = 'an intransitive score cluster must resolve to one order'
     const expected = order([a, b, c])
-    expect(order([c, b, a]), stable).toEqual(expected)
-    expect(order([b, a, c]), stable).toEqual(expected)
-    expect(order([c, a, b]), stable).toEqual(expected)
+    for (const permutation of [
+      [c, b, a],
+      [b, a, c],
+      [c, a, b]
+    ]) {
+      expect(
+        order(permutation),
+        `an intransitive score cluster must resolve to one order, but input order ${permutation
+          .map((h) => h.id)
+          .join('')} did not`
+      ).toEqual(expected)
+    }
   })
 
   it('breaks ties within a band by usage but not across bands', () => {

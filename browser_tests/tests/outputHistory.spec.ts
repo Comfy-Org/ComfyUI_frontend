@@ -143,7 +143,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     getWebSocket
   }) => {
     const ws = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, ws)
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const jobId = await exec.run()
 
     const job: RawJobListItem = {
       id: jobId,
@@ -162,21 +163,24 @@ test.describe('Output History', { tag: '@ui' }, () => {
             pagination: { offset: 0, limit: 200, total: 1, has_more: false }
           })
         })
-      },
-      { times: 1 }
+      }
     )
-    // Trigger queue refresh
     exec.status(1)
-    await comfyPage.nextFrame()
-
     await expect(comfyPage.appMode.cancelRunButton).toBeVisible()
+
+    exec.executionStart(jobId)
+    await expect(
+      comfyPage.appMode.outputHistory.skeletons.first()
+    ).toBeVisible()
 
     await comfyPage.page.route('**/interrupt', (route) =>
       route.fulfill({ status: 200 })
     )
     const interruptRequest = comfyPage.page.waitForRequest('**/interrupt')
     await comfyPage.appMode.cancelRunButton.click()
-    await interruptRequest
+    expect((await interruptRequest).postDataJSON()).toEqual({
+      prompt_id: jobId
+    })
   })
 
   test('Full execution lifecycle cleans up in-progress items', async ({

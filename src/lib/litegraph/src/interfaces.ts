@@ -4,9 +4,11 @@ import type { WidgetId } from '@/types/widgetId'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
 import type { SlotIndex } from '@/types/slotId'
+import type { UUID } from '@/utils/uuid'
 
 import type { ContextMenu } from './ContextMenu'
-import type { LGraphGroup, GroupId } from './LGraphGroup'
+import type { GroupId } from '@/types/groupId'
+
 import type { LGraphNode, NodeProperty } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
@@ -162,6 +164,7 @@ export interface IPinnable {
 }
 
 export interface ReadonlyLinkNetwork {
+  readonly rootGraph: { readonly id: UUID }
   readonly links: ReadonlyMap<LinkId, LLink>
   readonly reroutes: ReadonlyMap<RerouteId, Reroute>
   readonly floatingLinks: ReadonlyMap<LinkId, LLink>
@@ -181,8 +184,10 @@ export interface ReadonlyLinkNetwork {
 export interface LinkNetwork extends ReadonlyLinkNetwork {
   readonly links: Map<LinkId, LLink>
   readonly reroutes: Map<RerouteId, Reroute>
-  addFloatingLink(link: LLink): LLink
+  addFloatingLink(link: LLink): LLink | undefined
   removeReroute(id: RerouteId): unknown
+  /** Removes a reroute from the map and its stores, without chain splicing. */
+  _removeReroute(id: RerouteId): void
   removeFloatingLink(link: LLink): void
 }
 
@@ -293,11 +298,11 @@ export type Direction = 'top' | 'bottom' | 'left' | 'right'
 export type CompassCorners = 'NE' | 'SE' | 'SW' | 'NW'
 
 /**
- * A string that represents a specific data / slot type, e.g. `STRING`.
+ * A value that represents a specific data / slot type, e.g. `STRING`.
  *
- * Can be comma-delimited to specify multiple allowed types, e.g. `STRING,INT`.
+ * Multiple allowed types may be comma-delimited or stored as an array.
  */
-export type ISlotType = number | string
+export type ISlotType = number | string | string[]
 
 export interface INodeSlot extends HasBoundingRect {
   /**
@@ -327,13 +332,9 @@ export interface INodeSlot extends HasBoundingRect {
   locked?: boolean
   nameLocked?: boolean
   pos?: Point
+  slot_index?: SlotIndex
   /** @remarks Automatically calculated; not included in serialisation. */
   boundingRect: ReadOnlyRect
-  /**
-   * A list of floating link IDs that are connected to this slot.
-   * This is calculated at runtime; it is **not** serialized.
-   */
-  _floatingLinks?: Set<LLink>
   /**
    * Whether the slot has errors. It is **not** serialized.
    */
@@ -363,7 +364,13 @@ export interface IWidgetLocator {
 }
 
 export interface INodeInputSlot extends INodeSlot {
-  link: LinkId | null
+  /**
+   * @deprecated Id of the link targeting this slot, derived from the link
+   * store by a warning getter. Read via `node.isInputConnected(slot)` /
+   * `node.getInputLink(slot)`; mutate via `node.connect()` /
+   * `node.disconnectInput()`.
+   */
+  link?: LinkId | null
   widget?: IWidgetLocator
   widgetId?: WidgetId
   alwaysVisible?: boolean
@@ -372,6 +379,13 @@ export interface INodeInputSlot extends INodeSlot {
    * Internal use only; API is not finalised and may change at any time.
    */
   _widget?: IBaseWidget
+
+  /**
+   * Internal use only. Set while a promoted widget's demotion is deferred by
+   * a microtask, so a same-tick reconnect (a rewire) can cancel it instead
+   * of the widget being torn down and immediately rebuilt.
+   */
+  _pendingDemotionToken?: symbol
 }
 
 export interface IWidgetInputSlot extends INodeInputSlot {
@@ -379,9 +393,14 @@ export interface IWidgetInputSlot extends INodeInputSlot {
 }
 
 export interface INodeOutputSlot extends INodeSlot {
-  links: LinkId[] | null
+  /**
+   * @deprecated Ids of the links leaving this slot, derived from the link
+   * store by a warning getter. Read via `node.isOutputConnected(slot)` /
+   * `node.getOutputNodes(slot)`; mutate via `node.connect()` /
+   * `node.disconnectOutput()`.
+   */
+  links?: LinkId[] | null
   _data?: unknown
-  slot_index?: SlotIndex
 }
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
@@ -526,7 +545,9 @@ export interface PanelWidgetOptions {
   label?: string
   type?: string
   widget?: string
-  values?: Array<string | IContextMenuValue<unknown, unknown, unknown> | null>
+  values?:
+    | Array<string | IContextMenuValue | null>
+    | Record<string, TWidgetValue>
   callback?: PanelWidgetCallback
 }
 

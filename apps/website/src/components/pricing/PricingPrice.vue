@@ -2,7 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 import { computed } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const {
   locale = 'en',
@@ -17,16 +17,14 @@ const {
   yearlyTotal?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const billingNote = computed(() => {
   if (billingPeriod === 'yearly' && yearlyTotal) {
-    return t('pricing.period.billedYearly', locale).replace(
-      '{total}',
-      yearlyTotal
-    )
+    return t('pricing.period.billedYearly', { total: yearlyTotal })
   }
   if (billingPeriod === 'monthly') {
-    return t('pricing.period.billedMonthly', locale)
+    return t('pricing.period.billedMonthly')
   }
   return undefined
 })
@@ -42,24 +40,24 @@ const billingNote = computed(() => {
         <div class="flex items-baseline gap-2">
           <span
             v-if="originalPrice"
-            class="font-formula text-primary-warm-gray text-sm font-light line-through"
+            class="font-formula text-sm font-light text-primary-warm-gray line-through"
           >
             {{ originalPrice }}
           </span>
-          <span class="text-primary-warm-white text-sm">
+          <span class="text-sm text-primary-warm-white">
             {{ period }}
           </span>
         </div>
 
         <span
           v-if="discount"
-          class="text-primary-comfy-yellow text-sm max-sm:text-xs sm:ml-2"
+          class="text-sm text-primary-comfy-yellow max-sm:text-xs sm:ml-2"
         >
           {{ discount }}
         </span>
       </div>
     </div>
-    <p v-if="billingNote" class="text-primary-warm-gray mt-2 text-sm">
+    <p v-if="billingNote" class="mt-2 text-sm text-primary-warm-gray">
       {{ billingNote }}
     </p>
   </div>

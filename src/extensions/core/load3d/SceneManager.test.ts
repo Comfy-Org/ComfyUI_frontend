@@ -1,4 +1,5 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,29 +10,31 @@ import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 import type { EventManagerInterface } from './interfaces'
 import Load3dUtils from './Load3dUtils'
 import { SceneManager } from './SceneManager'
+import { QuadWireframeOverlay } from './quadWireframe/QuadWireframeManager'
 
 const { mockTextureLoad } = vi.hoisted(() => ({
   mockTextureLoad: vi.fn()
 }))
 
-vi.mock('./Load3dUtils', () => ({
-  default: {
+vi.mock(import('./Load3dUtils'), () => ({
+  default: fromAny({
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
-  }
+  })
 }))
 
-vi.mock('three', async (importOriginal) => {
-  const actual = await importOriginal<typeof THREE>()
-  class StubTextureLoader {
-    load = mockTextureLoad
+vi.mock(import('three'), { spy: true })
+
+beforeEach(() => {
+  function MockTextureLoader() {
+    return { load: mockTextureLoad }
   }
-  return { ...actual, TextureLoader: StubTextureLoader }
+  vi.spyOn(THREE, 'TextureLoader').mockImplementation(MockTextureLoader)
 })
 
-vi.mock('three/examples/jsm/controls/OrbitControls', () => {
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {}
-  return { OrbitControls }
+  return { OrbitControls: fromAny(OrbitControls) }
 })
 
 function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
@@ -182,6 +185,53 @@ describe('SceneManager', () => {
       expect(manager.currentBackgroundType).toBe('color')
       expect(manager.currentBackgroundColor).toBe('#282828')
       expect(manager.backgroundRenderMode).toBe('tiled')
+    })
+  })
+
+  describe('whenSplatsSorted', () => {
+    function stubSpark({ sortsFinish }: { sortsFinish: boolean }) {
+      const spark = manager.scene.children.find(
+        (child): child is SparkRenderer => child instanceof SparkRenderer
+      )!
+      const update = vi.fn(async () => {
+        spark.sorting = true
+        if (sortsFinish) {
+          setTimeout(() => {
+            spark.sorting = false
+            spark.sortDirty = false
+          }, 100)
+        }
+      })
+      Object.assign(spark, { update, sorting: false, sortDirty: false })
+      return { update }
+    }
+
+    async function settle(promise: Promise<void>, advanceMs: number) {
+      let settled = false
+      void promise.then(() => (settled = true))
+      await vi.advanceTimersByTimeAsync(advanceMs)
+      return settled
+    }
+
+    beforeEach(() => vi.useFakeTimers())
+
+    it('sorts for the capture camera and resolves only once sorting finishes', async () => {
+      const { update } = stubSpark({ sortsFinish: true })
+
+      const sorted = manager.whenSplatsSorted(camera)
+
+      expect(update).toHaveBeenCalledWith({ scene: manager.scene, camera })
+      expect(await settle(sorted, 50)).toBe(false)
+      expect(await settle(sorted, 100)).toBe(true)
+    })
+
+    it('gives up after the timeout when sorting never finishes', async () => {
+      stubSpark({ sortsFinish: false })
+
+      const sorted = manager.whenSplatsSorted(camera)
+
+      expect(await settle(sorted, 4_900)).toBe(false)
+      expect(await settle(sorted, 200)).toBe(true)
     })
   })
 
@@ -570,6 +620,26 @@ describe('SceneManager', () => {
       expect(manager.gridHelper.visible).toBe(true)
     })
 
+    it('keeps quad wireframe overlays out of the normal pass only', async () => {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshStandardMaterial()
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      manager.scene.add(mesh)
+      const overlayVisiblePerRender: boolean[] = []
+      vi.mocked(renderer.render).mockImplementation(() => {
+        overlayVisiblePerRender.push(overlay.visible)
+      })
+
+      await manager.captureScene(100, 100)
+
+      expect(overlayVisiblePerRender.at(-1)).toBe(false)
+      expect(overlayVisiblePerRender.slice(0, -1)).not.toContain(false)
+      expect(overlay.visible).toBe(true)
+    })
+
     it('rejects when the renderer throws during capture', async () => {
       vi.mocked(renderer.render).mockImplementationOnce(() => {
         throw new Error('renderer fail')
@@ -578,6 +648,30 @@ describe('SceneManager', () => {
       await expect(manager.captureScene(100, 100)).rejects.toThrow(
         'renderer fail'
       )
+    })
+
+    it('restores hidden overlays when the normal pass throws', async () => {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshStandardMaterial()
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      manager.scene.add(mesh)
+      manager.gridHelper.visible = true
+      let renders = 0
+      vi.mocked(renderer.render).mockImplementation(() => {
+        renders += 1
+        if (renders === 3) throw new Error('normal pass fail')
+      })
+
+      await expect(manager.captureScene(100, 100)).rejects.toThrow(
+        'normal pass fail'
+      )
+
+      expect(overlay.visible).toBe(true)
+      expect(manager.gridHelper.visible).toBe(true)
+      expect(mesh.material).toBeInstanceOf(THREE.MeshStandardMaterial)
     })
   })
 
@@ -623,14 +717,7 @@ function makeSceneManager(
   const view = makeView(renderer, viewSize?.width, viewSize?.height)
   const camera = cameraOverride ?? new THREE.PerspectiveCamera()
   const eventManager = makeMockEventManager()
-  const manager = new SceneManager(
-    view,
-    () => camera,
-    vi.fn() as unknown as () => InstanceType<
-      typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
-    >,
-    eventManager
-  )
+  const manager = new SceneManager(view, () => camera, vi.fn(), eventManager)
   return { manager, renderer, view, camera, eventManager }
 }
 
