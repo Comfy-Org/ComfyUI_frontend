@@ -215,7 +215,7 @@ describe('site identity', () => {
     const zhOrg = zhGraph['@graph'].find(
       (node) => node['@type'] === 'Organization'
     )
-    expect(zhOrg?.description).toBe(t('hero.subtitle', 'zh-CN'))
+    expect(zhOrg?.description).toBe(t('hero.subtitle', {}, { locale: 'zh-CN' }))
   })
 
   it('names the GitHub organization, not the ComfyUI repository', () => {

@@ -6,7 +6,6 @@ import ArcadeEmbed from '../../components/demos/ArcadeEmbed.vue'
 import DemoTranscript from '../../components/demos/DemoTranscript.vue'
 import DemoNavSection from '../../components/demos/DemoNavSection.vue'
 import { demos, getDemoBySlug, getNextDemo } from '../../config/demos'
-import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import {
   absoluteUrl,
@@ -24,10 +23,10 @@ export const getStaticPaths: GetStaticPaths = () => {
 const { slug } = Astro.params
 const demo = getDemoBySlug(slug as string)!
 const nextDemo = getNextDemo(slug as string)
-const title = t(demo.title)
-const description = t(demo.description)
+const title = Astro.locals.t(demo.title)
+const description = Astro.locals.t(demo.description)
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
@@ -63,9 +62,12 @@ const learningResource: JsonLdNode = {
   ogImage={demo.ogImage}
   mainEntityId={learningId}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     {
-      name: t('demos.breadcrumb.demos', locale),
+      name: Astro.locals.t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, '/')
+    },
+    {
+      name: Astro.locals.t('demos.breadcrumb.demos'),
       url: absoluteUrl(Astro.site, '/demos/')
     },
     { name: title }
@@ -79,7 +81,7 @@ const learningResource: JsonLdNode = {
   </Fragment>
 
   <DemoHeroSection
-    label={t(demo.category)}
+    label={Astro.locals.t(demo.category)}
     title={title}
     description={description}
     difficulty={demo.difficulty}
@@ -94,11 +96,14 @@ const learningResource: JsonLdNode = {
   />
 
   {demo.transcript && (
-    <DemoTranscript transcript={t(demo.transcript)} client:visible />
+    <DemoTranscript
+      transcript={Astro.locals.t(demo.transcript)}
+      client:visible
+    />
   )}
 
   <DemoNavSection
-    nextTitle={t(nextDemo.title)}
+    nextTitle={Astro.locals.t(nextDemo.title)}
     nextSlug={nextDemo.slug}
     nextThumbnail={nextDemo.thumbnail}
   />

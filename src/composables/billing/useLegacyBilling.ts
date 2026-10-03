@@ -1,7 +1,9 @@
 import { computed, ref } from 'vue'
 
+import { t } from '@/i18n'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { isWorkspaceBillingRequiredError } from '@/platform/remote/comfyui/errors'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingStatus,
@@ -42,8 +44,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     subscriptionStatus: legacySubscriptionStatus,
     isCancelled,
     fetchStatus: legacyFetchStatus,
+    fetchStatusDirect: legacyFetchStatusDirect,
     manageSubscription: legacyManageSubscription,
-    subscribe: legacySubscribe,
     subscribeDirect: legacySubscribeDirect,
     showSubscriptionDialog: legacyShowSubscriptionDialog
   } = useSubscription()
@@ -54,6 +56,32 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  // The backend refuses legacy calls for a workspace that moved to workspace
+  // billing. Refresh the status so the next click routes correctly and ask the
+  // user to retry; the call is not repeated here.
+  async function refreshAndAskToRetry(err: unknown): Promise<void> {
+    try {
+      await legacyFetchStatusDirect()
+    } catch {
+      // The refusal is the failure to report, not the refresh.
+    }
+    authActions.reportError(
+      new Error(t('billingOperation.subscriptionFailedDetail'), { cause: err })
+    )
+  }
+
+  async function reportFailures(action: () => Promise<unknown>): Promise<void> {
+    try {
+      await action()
+    } catch (err) {
+      if (!isWorkspaceBillingRequiredError(err)) {
+        authActions.reportError(err)
+        return
+      }
+      await refreshAndAskToRetry(err)
+    }
+  }
 
   const canAccessSubscriptionFeatures = computed(
     () => legacyCanAccessSubscriptionFeatures.value
@@ -176,7 +204,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     _options?: SubscribeOptions
   ): Promise<SubscribeResponse | void> {
     // Legacy billing uses Stripe checkout flow via useSubscription
-    await legacySubscribe()
+    await reportFailures(() => legacySubscribeDirect())
   }
 
   async function previewSubscribe(
@@ -188,11 +216,11 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function manageSubscription(): Promise<void> {
-    await legacyManageSubscription()
+    await reportFailures(() => legacyManageSubscription())
   }
 
   async function cancelSubscription(): Promise<void> {
-    await legacyManageSubscription()
+    await reportFailures(() => legacyManageSubscription())
   }
 
   async function resubscribe(options?: {
@@ -203,15 +231,22 @@ export function useLegacyBilling(): BillingState & BillingActions {
     // Tag the attempt as a resubscribe so the pending-checkout recovery in
     // useSubscription.ts can later emit the canonical resubscribe terminal
     // instead of leaving it indistinguishable from a plain subscribe.
-    await legacySubscribeDirect({
-      operation: 'resubscribe',
-      source: options?.source
-    })
+    try {
+      await legacySubscribeDirect({
+        operation: 'resubscribe',
+        source: options?.source
+      })
+    } catch (err) {
+      if (!isWorkspaceBillingRequiredError(err)) throw err
+      await refreshAndAskToRetry(err)
+    }
   }
 
   async function topup(amountCents: number): Promise<void> {
     // Facade standardizes on cents; legacy /customers/credit takes dollars.
-    await authActions.purchaseCredits(amountCents / 100)
+    await reportFailures(() =>
+      authActions.purchaseCreditsDirect(amountCents / 100)
+    )
   }
 
   async function fetchPlans(): Promise<void> {

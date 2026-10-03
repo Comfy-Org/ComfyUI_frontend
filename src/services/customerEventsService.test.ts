@@ -109,10 +109,6 @@ describe('useCustomerEventsService', () => {
       expect(service.isLoading.value).toBe(false)
       expect(service.error.value).toBeNull()
     })
-
-    it('should initialize i18n date formatter', () => {
-      expect(mockI18n.d).toBeDefined()
-    })
   })
 
   describe('getMyEvents', () => {

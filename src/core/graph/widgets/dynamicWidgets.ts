@@ -497,6 +497,7 @@ function addAutogrowGroup(
     )) {
       const link = inputLinks.get(existingInput)
       if (link && !inputLinks.has(newInput)) inputLinks.set(newInput, link)
+      if (existingInput.label) newInput.label = existingInput.label
     }
   }
 

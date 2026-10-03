@@ -724,85 +724,103 @@ describe('buildSummaryLedger discounts', () => {
 })
 
 describe('buildSummaryLedger server-reported fields', () => {
+  const discountRowsOf = (
+    discount: Partial<Discount>,
+    transition: SubscriptionPreview['transition_type'] = 'new_subscription',
+    duration: Plan['duration'] = 'MONTHLY'
+  ) =>
+    ledgerOf({
+      transition_type: transition,
+      amount_due_cents: 604_800,
+      cost_today_cents: 756_000,
+      new_plan: planOf('TEAM', duration, 756_000),
+      promotion_code: 'COMFY20',
+      discounts: [{ ...entered('COMFY20', 151_200), ...discount }]
+    }).discounts
+
   it.for<{
     name: string
     discount: Partial<Discount>
-    duration: Plan['duration']
-    transition?: SubscriptionPreview['transition_type']
     subline?: string
   }>([
     {
-      name: 'a once coupon on a monthly plan change',
-      discount: { duration: 'once' },
-      duration: 'MONTHLY',
-      transition: 'upgrade',
+      name: 'this payment only',
+      discount: { term: 'this_payment', duration: 'once' },
       subline: 'This payment only'
     },
     {
-      name: 'a once coupon on a yearly plan change',
-      discount: { duration: 'once' },
-      duration: 'ANNUAL',
-      transition: 'duration_change',
-      subline: 'First year'
-    },
-    {
-      name: 'a once coupon on a yearly plan',
-      discount: { duration: 'once' },
-      duration: 'ANNUAL',
-      subline: 'First year'
-    },
-    {
-      name: 'a once coupon on a monthly plan',
-      discount: { duration: 'once' },
-      duration: 'MONTHLY',
+      name: 'the first month',
+      discount: { term: 'first_month', duration: 'once' },
       subline: 'First month'
     },
     {
-      name: 'a repeating coupon',
-      discount: { duration: 'repeating', duration_in_months: 3 },
-      duration: 'MONTHLY',
+      name: 'the first year',
+      discount: { term: 'first_year', duration: 'once' },
+      subline: 'First year'
+    },
+    {
+      name: 'a number of months',
+      discount: {
+        term: 'months',
+        duration: 'repeating',
+        duration_in_months: 3
+      },
       subline: 'For 3 months'
     },
     {
-      name: 'a one-month repeating coupon',
-      discount: { duration: 'repeating', duration_in_months: 1 },
-      duration: 'MONTHLY',
+      name: 'a single month',
+      discount: {
+        term: 'months',
+        duration: 'repeating',
+        duration_in_months: 1
+      },
       subline: 'For 1 month'
     },
     {
-      name: 'a repeating coupon whose term the quote leaves out',
-      discount: { duration: 'repeating' },
-      duration: 'MONTHLY'
+      name: 'months the quote does not count',
+      discount: { term: 'months', duration: 'repeating' }
     },
     {
-      name: 'a forever coupon, the bare basis',
-      discount: { duration: 'forever' },
-      duration: 'ANNUAL'
+      name: 'an ongoing discount',
+      discount: { term: 'ongoing', duration: 'forever' }
     },
     {
-      name: 'a coupon whose term the server does not know',
-      discount: {},
-      duration: 'ANNUAL'
+      name: 'no term from the server',
+      discount: { duration: 'once' }
     }
   ])(
-    'bounds a discount row by its term: $name',
-    ({ discount, duration, transition = 'new_subscription', subline }) => {
-      const { discounts } = ledgerOf({
-        transition_type: transition,
-        amount_due_cents: 604_800,
-        cost_today_cents: 756_000,
-        new_plan: planOf('TEAM', duration, 756_000),
-        promotion_code: 'COMFY20',
-        discounts: [{ ...entered('COMFY20', 151_200), ...discount }]
-      })
-
-      expect(discounts).toEqual([
+    'bounds a discount row by the server-reported term: $name',
+    ({ discount, subline }) => {
+      expect(discountRowsOf(discount)).toEqual([
         {
           label: 'Promo code',
           amount: '−$1,512.00',
           ...(subline === undefined ? {} : { subline })
         }
       ])
+    }
+  )
+
+  it.for<{
+    transition: SubscriptionPreview['transition_type']
+    duration: Plan['duration']
+  }>([
+    { transition: 'new_subscription', duration: 'MONTHLY' },
+    { transition: 'upgrade', duration: 'MONTHLY' },
+    { transition: 'downgrade', duration: 'MONTHLY' },
+    { transition: 'duration_change', duration: 'ANNUAL' }
+  ])(
+    'words the term the same on a $transition to a $duration plan',
+    ({ transition, duration }) => {
+      const sublineOf = (term: Discount['term']) =>
+        discountRowsOf({ term, duration: 'once' }, transition, duration)[0]
+          .subline
+
+      expect([
+        sublineOf('this_payment'),
+        sublineOf('first_month'),
+        sublineOf('first_year')
+      ]).toEqual(['This payment only', 'First month', 'First year'])
     }
   )
 
@@ -944,6 +962,119 @@ describe('buildSummaryLedger server-reported fields', () => {
 
     expect(ledger.discounts).toHaveLength(1)
     expect(ledger).not.toHaveProperty('subtotal')
+  })
+})
+
+describe('buildSummaryLedger itemized proration', () => {
+  const ITEMIZED_UPGRADE: Partial<SubscriptionPreview> = {
+    transition_type: 'upgrade',
+    proration_at: PRICED_AT,
+    amount_due_cents: 3250,
+    cost_today_cents: 3250,
+    proration_remaining_cents: 5000,
+    proration_unused_cents: 1750,
+    renewal_at: JULY_28,
+    credits_next_period_cents: 10_000,
+    current_plan: planOf('CREATOR', 'MONTHLY', 3500),
+    new_plan: planOf('PRO', 'MONTHLY', 10_000)
+  }
+  const REMAINING = {
+    label: 'Remaining time on Pro Plan',
+    amount: '$50.00',
+    sublines: ['Credits refill to 21,100 each month']
+  }
+  const UNUSED = {
+    label: 'Unused time on Creator Plan',
+    amount: '−$17.50',
+    sublines: [],
+    credit: true
+  }
+  type Rows = Pick<
+    SummaryLedger,
+    'items' | 'subtotal' | 'discounts' | 'balance' | 'total'
+  >
+
+  it.for<{ name: string; quote: Partial<SubscriptionPreview>; rows: Rows }>([
+    {
+      name: 'both amounts reported: a remaining-time charge and an unused-time credit that add up to the total',
+      quote: {},
+      rows: { items: [REMAINING, UNUSED], discounts: [], total: '$32.50' }
+    },
+    {
+      name: 'a code on top: the Subtotal the server reported, then the discount',
+      quote: {
+        amount_due_cents: 2250,
+        subtotal_cents: 3250,
+        promotion_code: 'COMFY10',
+        discounts: [entered('COMFY10', 1000)]
+      },
+      rows: {
+        items: [REMAINING, UNUSED],
+        subtotal: '$32.50',
+        discounts: [{ label: 'Promo code', amount: '−$10.00' }],
+        total: '$22.50'
+      }
+    },
+    {
+      name: 'an account balance on top: the balance row, no Subtotal',
+      quote: {
+        amount_due_cents: 2750,
+        subtotal_cents: 3250,
+        balance_applied_cents: 500
+      },
+      rows: {
+        items: [REMAINING, UNUSED],
+        discounts: [],
+        balance: {
+          label: 'Account balance',
+          amount: '−$5.00',
+          subline: 'Credit already on your account'
+        },
+        total: '$27.50'
+      }
+    },
+    {
+      name: 'a gap to the total nothing explains: neither row',
+      quote: { amount_due_cents: 0 },
+      rows: { items: [], discounts: [], total: '$0.00' }
+    },
+    {
+      name: 'only the remaining amount reported: the single net row',
+      quote: { proration_unused_cents: undefined },
+      rows: {
+        items: [
+          {
+            label: 'Pro Plan - Prorated',
+            amount: '$32.50',
+            sublines: [
+              'Remaining time for Pro plan, less unused time from Creator plan',
+              'Credits refill to 21,100 each month'
+            ]
+          }
+        ],
+        discounts: [],
+        total: '$32.50'
+      }
+    }
+  ])('$name', ({ quote, rows }) => {
+    const { items, subtotal, discounts, balance, total } = ledgerOf({
+      ...ITEMIZED_UPGRADE,
+      ...quote
+    })
+
+    expect({ items, subtotal, discounts, balance, total }).toEqual(rows)
+  })
+
+  it('names the cadence of both plans when the change crosses cadences', () => {
+    const { items } = ledgerOf({
+      ...ITEMIZED_UPGRADE,
+      new_plan: planOf('PRO', 'ANNUAL', 100_000)
+    })
+
+    expect(items.map(({ label }) => label)).toEqual([
+      'Remaining time on Pro Yearly',
+      'Unused time on Creator Monthly'
+    ])
   })
 })
 

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -13,12 +14,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <span
       class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
     >
-      {{ t('gallery.contact.label', locale) }}
+      {{ t('gallery.contact.label') }}
     </span>
     <SafeRichText
       as="h2"
       class="mt-4 max-w-2xl text-2xl font-light whitespace-pre-line text-primary-comfy-canvas"
-      :html="t('gallery.contact.heading', locale)"
+      :html="t('gallery.contact.heading')"
     />
   </section>
 </template>

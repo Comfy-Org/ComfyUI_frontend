@@ -1,7 +1,7 @@
 import type { Locale } from '../config/locales'
 import { resolveLocale } from '../config/locales'
 import { externalLinks, getRoutes } from '../config/routes'
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
@@ -87,6 +87,7 @@ function buildGraph(...nodes: (JsonLdNode | null | undefined)[]): JsonLdGraph {
 }
 
 function organizationNode(siteUrl: string, locale: Locale): JsonLdNode {
+  const { t } = translationsFor(locale)
   return {
     '@type': 'Organization',
     '@id': organizationId(siteUrl),
@@ -98,7 +99,7 @@ function organizationNode(siteUrl: string, locale: Locale): JsonLdNode {
       width: 512,
       height: 512
     },
-    description: t('hero.subtitle', locale),
+    description: t('hero.subtitle'),
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
