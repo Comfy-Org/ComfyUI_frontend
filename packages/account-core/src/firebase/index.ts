@@ -255,12 +255,13 @@ function authResolver(config: FirebaseIdentityConfig): AuthResolver {
   return { resolve, peek: () => resolved }
 }
 
+let pendingPopup: Promise<UserCredential> | undefined
+
 export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
   const { resolve: auth, peek } = authResolver(config)
   let signInsStarted = 0
-  let pendingPopup: Promise<UserCredential> | undefined
 
   function popupSignIn(
     createProvider: () => GoogleAuthProvider | GithubAuthProvider,

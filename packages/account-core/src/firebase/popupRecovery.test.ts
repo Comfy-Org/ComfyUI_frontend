@@ -23,9 +23,13 @@ vi.mock<unknown>(import('firebase/auth'), async () => {
   return { ...sdk }
 })
 
-it.for(['signInWithGoogle', 'signInWithGitHub'] as const)(
-  'keeps a delayed Google SDK failure recoverable when %s is clicked again',
-  async (signIn, { onTestFinished }) => {
+it.for([
+  { signIn: 'signInWithGoogle', anotherIdentity: false },
+  { signIn: 'signInWithGitHub', anotherIdentity: false },
+  { signIn: 'signInWithGitHub', anotherIdentity: true }
+] as const)(
+  'keeps a delayed Google SDK failure recoverable on $signIn with another identity: $anotherIdentity',
+  async ({ signIn, anotherIdentity }, { onTestFinished }) => {
     vi.useRealTimers()
     const app = initializeApp(
       {
@@ -50,6 +54,9 @@ it.for(['signInWithGoogle', 'signInWithGitHub'] as const)(
       popupRedirectResolver: watchedPopupRedirectResolver
     })
     const identity = createFirebaseIdentity({ auth, watchPopupSignIn: true })
+    const repeatIdentity = anotherIdentity
+      ? createFirebaseIdentity({ auth, watchPopupSignIn: true })
+      : identity
     await auth.authStateReady()
 
     const first = identity.signInWithGoogle().catch((error: unknown) => error)
@@ -57,7 +64,7 @@ it.for(['signInWithGoogle', 'signInWithGitHub'] as const)(
       expect(scripts).toHaveLength(1)
     })
 
-    const repeated = identity[signIn]().catch((error: unknown) => error)
+    const repeated = repeatIdentity[signIn]().catch((error: unknown) => error)
     scripts[0]?.dispatchEvent(new Event('error'))
     await expect(first).resolves.toMatchObject({ code: 'auth/internal-error' })
     await expect(repeated).resolves.toMatchObject({
