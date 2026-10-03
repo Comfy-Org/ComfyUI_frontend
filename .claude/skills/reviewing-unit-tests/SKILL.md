@@ -85,7 +85,7 @@ Apply these repo-specific clarifications:
 - Fail helpers that do not remove repeated setup, encode domain meaning, or simplify assertions. Barely earning the abstraction is not enough.
 - For composables with reactive or singleton state, define stable mock state inside the `vi.mock()` factory. Access it per test via the composable itself. See [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md) "Mocking Composables with Reactive State".
 - This does not ban local test data builders or per-test `vi.spyOn(...)`.
-- Mock seams, not the project-owned module you are trying to exercise. Default to real collaborators and shared factories per [`docs/guidance/testing-principles.md`](../../../docs/guidance/testing-principles.md) "Doubles: real collaborators first". For store tests, prefer real Pinia plus `createTestingPinia({ stubActions: false })` per [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) and [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md).
+- Mock seams, not the project-owned module you are trying to exercise. Default to real collaborators and shared factories per [`docs/guidance/testing-principles.md`](../../../docs/guidance/testing-principles.md) "Doubles: real collaborators first". For store tests, use real stores on the testing Pinia that [`vitest.setup.ts`](../../../vitest.setup.ts) activates before each test. Flag any test that creates its own Pinia or mocks `pinia`. Audited concurrent store tests use the per-test `pinia` fixture. See [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md) and [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md).
 
 ### Over-Mocking and Replicated Logic
 
