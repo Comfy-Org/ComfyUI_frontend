@@ -4,10 +4,45 @@
  * every host. The package never calls a telemetry API itself; call sites
  * stay host-specific.
  */
+import type {
+  WebSessionBootstrapEvent,
+  WebSessionIdentityOptions
+} from './core/webSessionIdentity.js'
+
 export const SESSION_TELEMETRY_EVENT = {
   refreshSucceeded: 'auth.unified.refresh.succeeded',
-  refreshFailed: 'auth.unified.refresh.failed'
+  refreshFailed: 'auth.unified.refresh.failed',
+  bootstrap: 'session_bootstrap',
+  signedOutRemotely: 'session_signed_out_remotely'
 } as const
+
+export type WebSessionTelemetryEvent =
+  | {
+      readonly name: typeof SESSION_TELEMETRY_EVENT.bootstrap
+      readonly properties: WebSessionBootstrapEvent
+    }
+  | {
+      readonly name: typeof SESSION_TELEMETRY_EVENT.signedOutRemotely
+      readonly properties: { readonly origin: string }
+    }
+
+/** The web-session identity's telemetry hooks, routed to one host sink. */
+export function webSessionTelemetryHooks(
+  track: (event: WebSessionTelemetryEvent) => void
+): Pick<WebSessionIdentityOptions, 'onBootstrap' | 'onSignedOutRemotely'> {
+  return {
+    onBootstrap: ({ outcome, origin }) =>
+      track({
+        name: SESSION_TELEMETRY_EVENT.bootstrap,
+        properties: { outcome, origin }
+      }),
+    onSignedOutRemotely: ({ origin }) =>
+      track({
+        name: SESSION_TELEMETRY_EVENT.signedOutRemotely,
+        properties: { origin }
+      })
+  }
+}
 
 /**
  * The cloud app's `billing.operation.*` events, emitted by the billing

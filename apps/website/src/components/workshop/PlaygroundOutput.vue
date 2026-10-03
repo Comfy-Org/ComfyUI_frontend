@@ -23,7 +23,7 @@ import { downloadOutput } from '../../config/workshop-output-download'
 import { failureLabelKey } from '../../lib/workshop/failure-label'
 import { outputLabels } from '../../lib/workshop/output-labels'
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const {
   state,
@@ -56,6 +56,7 @@ const {
   policyMessage?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const revealed = defineModel<boolean>('revealed', { default: false })
 
@@ -89,24 +90,23 @@ const hasUnreadableFile = computed(
 const statusMessage = computed(() => {
   if (state.status === 'failed') return failureMessage(state)
   if (state.status === 'running')
-    return state.label ?? t('workshop.run.running', locale)
+    return state.label ?? t('workshop.run.running')
   if (state.status === 'cancelled')
-    return cancelledMessage ?? t('workshop.output.cancelled', locale)
+    return cancelledMessage ?? t('workshop.output.cancelled')
   if (state.status === 'succeeded')
     return t(
-      expired.value ? 'workshop.output.expired' : 'workshop.output.complete',
-      locale
+      expired.value ? 'workshop.output.expired' : 'workshop.output.complete'
     )
   return ''
 })
 
 function failureMessage(failure: Extract<RunState, { status: 'failed' }>) {
   if (failure.reason === 'noCredits' && memberWorkspace !== undefined)
-    return t('workshop.error.memberNoCredits', locale, {
+    return t('workshop.error.memberNoCredits', {
       workspace: memberWorkspace
     })
   if (failure.reason === 'policy' && policyMessage) return policyMessage
-  return t(failureTranslationKey(failure), locale)
+  return t(failureTranslationKey(failure))
 }
 
 function failureTranslationKey(
@@ -268,14 +268,14 @@ const runStops = computed<RunStop[]>(() =>
           record,
           output: record.output,
           nsfw: record.output.nsfw === true,
-          name: t('workshop.output.earlierRun', locale, { number: index + 1 }),
+          name: t('workshop.output.earlierRun', { number: index + 1 }),
           testId: `earlier-run-${index}`
         })),
         {
           record: undefined,
           output: latest.value,
           nsfw: latestIsSensitive.value,
-          name: t('workshop.output.latest', locale),
+          name: t('workshop.output.latest'),
           testId: 'earlier-latest'
         }
       ]
@@ -305,11 +305,11 @@ const earlierClass = (active: boolean) =>
     <header
       class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
-      <span class="shrink-0">{{ t('workshop.output.title', locale) }}</span>
+      <span class="shrink-0">{{ t('workshop.output.title') }}</span>
       <div
         v-if="currentAttachments.length && !blurred"
         role="group"
-        :aria-label="t('workshop.output.files', locale)"
+        :aria-label="t('workshop.output.files')"
         class="flex min-w-0 items-center gap-2 overflow-x-auto"
         data-testid="output-files"
       >
@@ -322,7 +322,7 @@ const earlierClass = (active: boolean) =>
           :class="cn(earlierClass(shown === output), 'size-auto px-2.5 py-1')"
           @click="selectedFile = index"
         >
-          {{ t(fileLabels[index].key, locale)
+          {{ t(fileLabels[index].key)
           }}{{
             fileLabels[index].ordinal ? ` ${fileLabels[index].ordinal}` : ''
           }}
@@ -342,7 +342,7 @@ const earlierClass = (active: boolean) =>
         <ImageIcon class="size-5" />
       </span>
       <p class="text-sm text-primary-warm-gray">
-        {{ t('workshop.output.placeholder', locale) }}
+        {{ t('workshop.output.placeholder') }}
       </p>
     </div>
 
@@ -358,7 +358,7 @@ const earlierClass = (active: boolean) =>
         data-testid="run-spinner"
       />
       <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
-        {{ state.label ?? t('workshop.run.running', locale) }}
+        {{ state.label ?? t('workshop.run.running') }}
         <span
           v-if="!state.stalled"
           class="text-primary-warm-gray tabular-nums"
@@ -371,7 +371,7 @@ const earlierClass = (active: boolean) =>
         v-if="modality === 'video' && state.label === undefined"
         class="max-w-xs text-xs text-primary-warm-gray"
       >
-        {{ t('workshop.run.videoHint', locale) }}
+        {{ t('workshop.run.videoHint') }}
       </p>
     </div>
 
@@ -382,10 +382,10 @@ const earlierClass = (active: boolean) =>
       data-testid="run-expired"
     >
       <p class="text-sm text-primary-comfy-canvas">
-        {{ t('workshop.output.expired', locale) }}
+        {{ t('workshop.output.expired') }}
       </p>
       <p class="max-w-sm text-xs text-primary-warm-gray">
-        {{ t('workshop.output.expiredHint', locale) }}
+        {{ t('workshop.output.expiredHint') }}
       </p>
       <Button
         variant="outline"
@@ -393,7 +393,7 @@ const earlierClass = (active: boolean) =>
         :disabled="retryDisabled"
         @click="emit('retry')"
       >
-        {{ t('workshop.output.runAgain', locale) }}
+        {{ t('workshop.output.runAgain') }}
       </Button>
     </div>
 
@@ -411,7 +411,7 @@ const earlierClass = (active: boolean) =>
         :disabled="retryDisabled"
         @click="emit('retry')"
       >
-        {{ t('workshop.output.runAgain', locale) }}
+        {{ t('workshop.output.runAgain') }}
       </Button>
     </div>
 
@@ -431,7 +431,7 @@ const earlierClass = (active: boolean) =>
         size="sm"
         @click="emit('switchPersonal')"
       >
-        {{ t('workshop.run.switchPersonal', locale) }}
+        {{ t('workshop.run.switchPersonal') }}
       </Button>
       <Button
         v-else-if="state.reason === 'noCredits'"
@@ -439,7 +439,7 @@ const earlierClass = (active: boolean) =>
         size="sm"
         @click="emit('buyCredits')"
       >
-        {{ t('nav.buyCredits', locale) }}
+        {{ t('nav.buyCredits') }}
       </Button>
       <Button
         v-else-if="
@@ -450,7 +450,7 @@ const earlierClass = (active: boolean) =>
         :disabled="retryDisabled"
         @click="emit('retry')"
       >
-        {{ t('workshop.error.retry', locale) }}
+        {{ t('workshop.error.retry') }}
       </Button>
     </div>
 
@@ -469,7 +469,7 @@ const earlierClass = (active: boolean) =>
             v-if="currentUrl && shown.kind === 'video' && !blurred"
             :src="currentUrl"
             :locale
-            :aria-label="shown.alt ?? t('workshop.output.title', locale)"
+            :aria-label="shown.alt ?? t('workshop.output.title')"
             class="size-full rounded-none border-0"
             fit="contain"
             controls-on-hover
@@ -482,7 +482,7 @@ const earlierClass = (active: boolean) =>
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
             :src="currentUrl"
-            :alt="shown.alt ?? t('workshop.output.title', locale)"
+            :alt="shown.alt ?? t('workshop.output.title')"
             class="size-full object-contain"
             @load="emit('delivery', currentUrl, 'succeeded')"
             @error="emit('delivery', currentUrl, 'failed')"
@@ -518,14 +518,14 @@ const earlierClass = (active: boolean) =>
           class="absolute top-3 right-3 z-20 inline-flex h-6 items-center rounded-lg bg-black/40 px-2 text-2xs font-bold tracking-wider text-white uppercase backdrop-blur-md"
           data-testid="output-example"
         >
-          {{ t('workshop.output.example', locale) }}
+          {{ t('workshop.output.example') }}
         </span>
 
         <button
           v-if="currentUrl && !blurred && expandable"
           ref="expandTrigger"
           type="button"
-          :aria-label="t('workshop.output.expand', locale)"
+          :aria-label="t('workshop.output.expand')"
           :class="cn(mediaControlClass, 'absolute right-3 bottom-3')"
           data-testid="output-expand"
           @click="expanded = true"
@@ -551,12 +551,12 @@ const earlierClass = (active: boolean) =>
           @click="revealed = true"
         >
           <span class="text-sm text-primary-warm-white">
-            {{ t('workshop.output.nsfw', locale) }}
+            {{ t('workshop.output.nsfw') }}
           </span>
           <span
             class="text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase"
           >
-            {{ t('workshop.output.reveal', locale) }}
+            {{ t('workshop.output.reveal') }}
           </span>
         </button>
       </div>
@@ -570,7 +570,7 @@ const earlierClass = (active: boolean) =>
           v-for="(url, index) in outputs"
           :key="index"
           type="button"
-          :aria-label="t('workshop.output.select', locale, { n: index + 1 })"
+          :aria-label="t('workshop.output.select', { n: index + 1 })"
           :aria-pressed="index === selected"
           :data-testid="`output-thumb-${index}`"
           :class="
@@ -604,7 +604,7 @@ const earlierClass = (active: boolean) =>
       <div
         v-if="earlier.length && state.status === 'succeeded'"
         role="group"
-        :aria-label="t('workshop.output.earlier', locale)"
+        :aria-label="t('workshop.output.earlier')"
         class="flex items-center gap-2 overflow-x-auto border-t border-transparency-white-t8 px-4 py-3"
         data-testid="earlier-runs"
       >
@@ -645,7 +645,7 @@ const earlierClass = (active: boolean) =>
         role="status"
         class="px-5 py-2 text-xs text-primary-warm-gray"
       >
-        {{ t('workshop.output.truncated', locale) }}
+        {{ t('workshop.output.truncated') }}
       </p>
       <div
         v-if="state.status === 'succeeded'"
@@ -656,7 +656,7 @@ const earlierClass = (active: boolean) =>
           role="status"
           class="w-full text-xs text-primary-warm-gray"
         >
-          {{ t('workshop.output.downloadFallback', locale) }}
+          {{ t('workshop.output.downloadFallback') }}
         </p>
         <Button
           variant="outline"
@@ -665,7 +665,7 @@ const earlierClass = (active: boolean) =>
           data-testid="output-use-in-code"
           @click="emit('useInCode')"
         >
-          {{ t('workshop.output.useInCode', locale) }}
+          {{ t('workshop.output.useInCode') }}
         </Button>
         <Button
           v-if="currentUrl && !blurred"
@@ -682,7 +682,7 @@ const earlierClass = (active: boolean) =>
           data-testid="output-download"
           @click="download"
         >
-          {{ t(downloadLabel, locale) }}
+          {{ t(downloadLabel) }}
         </Button>
       </div>
     </template>
@@ -698,11 +698,11 @@ const earlierClass = (active: boolean) =>
           @close-auto-focus.prevent="expandTrigger?.focus()"
         >
           <DialogTitle class="sr-only">{{
-            t('workshop.output.title', locale)
+            t('workshop.output.title')
           }}</DialogTitle>
           <button
             type="button"
-            :aria-label="t('workshop.output.collapse', locale)"
+            :aria-label="t('workshop.output.collapse')"
             :class="cn(mediaControlClass, 'absolute top-6 right-6')"
             data-testid="output-collapse"
             @click="expanded = false"
@@ -711,7 +711,7 @@ const earlierClass = (active: boolean) =>
           </button>
           <img
             :src="currentUrl"
-            :alt="shown?.alt ?? t('workshop.output.title', locale)"
+            :alt="shown?.alt ?? t('workshop.output.title')"
             class="max-h-full max-w-full rounded-2xl object-contain"
           />
         </DialogContent>

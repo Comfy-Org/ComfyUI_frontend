@@ -136,6 +136,8 @@
     "access": "public"
   },
   "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "build": "pnpm run clean && tsc -p tsconfig.build.json",
     "check:pack": "tsx scripts/checkPublishable.ts",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",

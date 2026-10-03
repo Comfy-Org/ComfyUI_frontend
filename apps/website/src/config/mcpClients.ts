@@ -1,5 +1,5 @@
 import type { Locale } from '../i18n/translations'
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
 import { externalLinks } from './routes'
 
 export interface McpClient {
@@ -16,47 +16,48 @@ const LOCAL_CONFIG_SNIPPET =
   '{ "mcpServers": { "comfy-mcp": { "command": "comfy-mcp" } } }'
 
 function createCloudClients(locale: Locale) {
+  const { t } = translationsFor(locale)
   return {
     'claude-desktop': {
       name: 'Claude Desktop',
-      step: t('mcp.setup.clients.claudeDesktop.step', locale),
-      manualTitle: t('mcp.setup.clients.claudeDesktop.manualTitle', locale),
+      step: t('mcp.setup.clients.claudeDesktop.step'),
+      manualTitle: t('mcp.setup.clients.claudeDesktop.manualTitle'),
       showAgentCard: false,
       video: 'https://media.comfy.org/website/mcp/setup-claude-desktop-v2.mp4'
     },
     'claude-code': {
       name: 'Claude Code Terminal',
-      step: t('mcp.setup.clients.claudeCode.step', locale),
+      step: t('mcp.setup.clients.claudeCode.step'),
       command: `claude mcp add --transport http comfy-cloud ${externalLinks.mcpEndpoint}`,
       showAgentCard: true
     },
     codex: {
       name: 'Codex',
-      step: t('mcp.setup.clients.codex.step', locale),
+      step: t('mcp.setup.clients.codex.step'),
       command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`,
       showAgentCard: false,
       video: 'https://media.comfy.org/website/mcp/setup-codex-oauth-v2.mp4'
     },
     cursor: {
       name: 'Cursor',
-      step: t('mcp.setup.clients.cursor.step', locale),
+      step: t('mcp.setup.clients.cursor.step'),
       link: {
-        label: t('mcp.setup.clients.cursor.linkLabel', locale),
+        label: t('mcp.setup.clients.cursor.linkLabel'),
         href: externalLinks.apiKeys
       },
       showAgentCard: true
     },
     openclaw: {
       name: 'OpenClaw',
-      step: t('mcp.setup.clients.openclaw.step', locale),
+      step: t('mcp.setup.clients.openclaw.step'),
       command: `openclaw skills install @comfy-org/comfy\nopenclaw mcp set comfy '{"url":"${externalLinks.mcpEndpoint}","transport":"streamable-http","auth":"oauth"}'\nopenclaw mcp login comfy`,
       showAgentCard: true
     },
     other: {
-      name: t('mcp.setup.clients.other.name', locale),
-      step: t('mcp.setup.clients.other.step', locale),
+      name: t('mcp.setup.clients.other.name'),
+      step: t('mcp.setup.clients.other.step'),
       link: {
-        label: t('mcp.setup.clients.other.linkLabel', locale),
+        label: t('mcp.setup.clients.other.linkLabel'),
         href: externalLinks.docsMcp
       },
       showAgentCard: true
@@ -65,30 +66,31 @@ function createCloudClients(locale: Locale) {
 }
 
 function createLocalClients(locale: Locale) {
+  const { t } = translationsFor(locale)
   return {
     'local-claude-code': {
       name: 'Claude Code Terminal',
-      step: t('mcp.setup.local.clients.claudeCode.step', locale),
+      step: t('mcp.setup.local.clients.claudeCode.step'),
       command: 'claude mcp add comfy-mcp -- comfy-mcp',
       showAgentCard: true
     },
     'local-claude-desktop': {
       name: 'Claude Desktop',
-      step: t('mcp.setup.local.clients.claudeDesktop.step', locale),
+      step: t('mcp.setup.local.clients.claudeDesktop.step'),
       command: LOCAL_CONFIG_SNIPPET,
       showAgentCard: true
     },
     'local-cursor': {
       name: 'Cursor',
-      step: t('mcp.setup.local.clients.cursor.step', locale),
+      step: t('mcp.setup.local.clients.cursor.step'),
       command: LOCAL_CONFIG_SNIPPET,
       showAgentCard: true
     },
     'local-other': {
-      name: t('mcp.setup.clients.other.name', locale),
-      step: t('mcp.setup.local.clients.other.step', locale),
+      name: t('mcp.setup.clients.other.name'),
+      step: t('mcp.setup.local.clients.other.step'),
       link: {
-        label: t('mcp.setup.clients.other.linkLabel', locale),
+        label: t('mcp.setup.clients.other.linkLabel'),
         href: externalLinks.docsMcpLocal
       },
       showAgentCard: true
@@ -97,14 +99,15 @@ function createLocalClients(locale: Locale) {
 }
 
 export function createMcpConnections(locale: Locale) {
+  const { t } = translationsFor(locale)
   return {
     cloud: {
-      name: t('mcp.setup.connections.cloud.name', locale),
-      tagline: t('mcp.setup.connections.cloud.tagline', locale),
+      name: t('mcp.setup.connections.cloud.name'),
+      tagline: t('mcp.setup.connections.cloud.tagline'),
       copyValue: externalLinks.mcpEndpoint,
-      manualTitle: t('mcp.setup.manual.title', locale),
-      manualDescription: t('mcp.setup.manual.description', locale),
-      agentCommand: t('mcp.setup.agent.command', locale, {
+      manualTitle: t('mcp.setup.manual.title'),
+      manualDescription: t('mcp.setup.manual.description'),
+      agentCommand: t('mcp.setup.agent.command', {
         url: externalLinks.docsMcpMd
       }),
       agentRecommended: false,
@@ -112,12 +115,12 @@ export function createMcpConnections(locale: Locale) {
       clients: createCloudClients(locale)
     },
     local: {
-      name: t('mcp.setup.connections.local.name', locale),
-      tagline: t('mcp.setup.connections.local.tagline', locale),
+      name: t('mcp.setup.connections.local.name'),
+      tagline: t('mcp.setup.connections.local.tagline'),
       copyValue: 'pip install comfy-mcp',
-      manualTitle: t('mcp.setup.local.manual.title', locale),
-      manualDescription: t('mcp.setup.local.manual.description', locale),
-      agentCommand: t('mcp.setup.local.agent.command', locale, {
+      manualTitle: t('mcp.setup.local.manual.title'),
+      manualDescription: t('mcp.setup.local.manual.description'),
+      agentCommand: t('mcp.setup.local.agent.command', {
         url: externalLinks.docsMcpLocalMd
       }),
       agentRecommended: true,

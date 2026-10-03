@@ -395,6 +395,8 @@
         "item": {
           "prorated": "{plan} - Prorated",
           "remainingTime": "Remaining time for {plan} plan, less unused time from {current} plan",
+          "remainingTimeOn": "Remaining time on {plan}",
+          "unusedTimeOn": "Unused time on {plan}",
           "billedMonthly": "{amount} /mo, billed monthly",
           "billedYearly": "Billed yearly",
           "rateMonthly": "{amount} /mo",

@@ -19,7 +19,8 @@ import type {
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 
-export type BillingType = 'legacy' | 'workspace'
+/** `unknown` until the active workspace has loaded; no billing call may be made yet. */
+export type BillingType = 'legacy' | 'workspace' | 'unknown'
 
 export interface SubscriptionInfo {
   isActive: boolean

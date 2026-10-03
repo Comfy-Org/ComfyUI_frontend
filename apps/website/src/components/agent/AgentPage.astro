@@ -5,7 +5,6 @@ import BreadcrumbBar from '../common/BreadcrumbBar.vue'
 import ProductCardsSection from '../common/ProductCardsSection.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
 import { externalLinks, getRoutes } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { tAgent } from './agentTranslations'
@@ -16,6 +15,7 @@ interface Props {
 }
 
 const { noindex = false, locale = 'en' } = Astro.props
+const { t } = Astro.locals
 
 const routes = getRoutes(locale)
 const imageRoot = 'https://media.comfy.org/website/comfy-agent'
@@ -170,9 +170,12 @@ const briefs = [
 >
   <BreadcrumbBar
     crumbs={[
-      { label: t('breadcrumb.home', locale), href: routes.home },
-      { label: t('nav.products', locale), href: '#products' },
-      { label: t('breadcrumb.agent', locale) }
+      {
+        label: t('breadcrumb.home'),
+        href: routes.home
+      },
+      { label: t('nav.products'), href: '#products' },
+      { label: t('breadcrumb.agent') }
     ]}
   />
 
