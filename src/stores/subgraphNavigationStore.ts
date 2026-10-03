@@ -168,6 +168,10 @@ export const useSubgraphNavigationStore = defineStore(
         isCurrent: () => getActiveGraphId() === graphId,
         run: () => {
           if (!canvas.graph?.nodes.length) return
+          canvas.ds.setViewportSize(
+            canvas.canvas.offsetWidth,
+            canvas.canvas.offsetHeight
+          )
           useLitegraphService().fitView()
         }
       })

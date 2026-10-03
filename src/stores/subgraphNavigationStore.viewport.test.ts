@@ -17,8 +17,9 @@ import {
   setCanvasVisible
 } from '@/utils/__tests__/canvasTestUtils'
 
-const { mockSetDirty, mockFitView } = vi.hoisted(() => ({
+const { mockSetDirty, mockSetViewportSize, mockFitView } = vi.hoisted(() => ({
   mockSetDirty: vi.fn(),
+  mockSetViewportSize: vi.fn(),
   mockFitView: vi.fn()
 }))
 
@@ -31,6 +32,7 @@ vi.mock('@/scripts/app', () => {
       scale: 1,
       offset: [0, 0],
       state: { scale: 1, offset: [0, 0] },
+      setViewportSize: mockSetViewportSize,
       fitToBounds: vi.fn(),
       visible_area: [0, 0, 1000, 1000],
       computeVisibleArea: vi.fn()
@@ -168,6 +170,24 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(mockCanvas.ds.offset).toEqual([0, 0])
       expect(mockCanvas.setDirty).not.toHaveBeenCalled()
       expect(useLitegraphService().fitView).not.toHaveBeenCalled()
+    })
+
+    it('refreshes the viewport before fitting after the canvas becomes visible', () => {
+      const store = useSubgraphNavigationStore()
+      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
+      mockGraph._nodes = mockGraph.nodes
+      setCanvasVisible(mockCanvas.canvas, false)
+
+      store.restoreViewport('root')
+      setCanvasVisible(mockCanvas.canvas, true)
+      useCanvasScheduler().flush()
+
+      expect(mockSetViewportSize).toHaveBeenCalledWith(800, 600)
+      expect(mockSetViewportSize).toHaveBeenCalledBefore(mockFitView)
+
+      mockGraph.nodes = []
+      mockGraph._nodes = []
     })
 
     it('calls fitView on cache miss when graph has nodes', () => {
