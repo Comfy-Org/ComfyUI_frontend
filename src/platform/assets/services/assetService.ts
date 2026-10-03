@@ -502,6 +502,14 @@ function createAssetService() {
       assets = buckets.get(folderSegments.join('/'))
     }
 
+    if (assets && folderSegments.length < folder.split('/').length) {
+      assets = assets.filter((asset) =>
+        asset.tags.some(
+          (tag) => tag === folder || tag.startsWith(`${folder}/`)
+        )
+      )
+    }
+
     return (assets ?? []).map((asset) => ({
       // `loader_path` is the category-relative path the loader widget expects
       // and the source for the sidebar tree. Backends that predate it (bare-tag

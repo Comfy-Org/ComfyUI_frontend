@@ -748,6 +748,28 @@ describe(assetService.getAssetModels, () => {
       { name: 'chatglm3-checkpoint.safetensors', pathIndex: 0 }
     ])
   })
+
+  it('excludes sibling categories from a hierarchical legacy lookup', async () => {
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'base',
+          name: 'base.safetensors',
+          tags: ['models', 'chatterbox/chatterbox']
+        }),
+        validAsset({
+          id: 'turbo',
+          name: 'turbo.safetensors',
+          tags: ['models', 'chatterbox/chatterbox_turbo']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('chatterbox/chatterbox')
+
+    expect(models).toEqual([{ name: 'base.safetensors', pathIndex: 0 }])
+  })
 })
 
 describe(assetService.onModelsScanned, () => {
