@@ -1,7 +1,11 @@
 import { app, ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
 
-class ClipspaceDialog extends ComfyDialog {
+/**
+ * Exported through the legacy module shim for custom node extensions.
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export class ClipspaceDialog extends ComfyDialog {
   static items: Array<
     HTMLButtonElement & {
       contextPredicate?: () => boolean

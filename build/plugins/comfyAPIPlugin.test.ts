@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { readFileSync } from 'node:fs'
 import path from 'path'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -98,5 +99,25 @@ describe('comfyAPIPlugin transform', () => {
 
     expect(result).toBeNull()
     expect(emitFile).not.toHaveBeenCalled()
+  })
+
+  it('emits the clipspace shim imported by legacy extensions', () => {
+    const id = path.join(root, 'src/extensions/core/clipspace.ts')
+    const emitFile = vi.fn()
+    const handler = comfyAPIPlugin(false).transform
+    const context = fromPartial<ThisParameterType<typeof handler>>({ emitFile })
+
+    const result = handler.call(context, readFileSync(id, 'utf8'), id)
+
+    expect(emitFile).toHaveBeenCalledExactlyOnceWith({
+      type: 'asset',
+      fileName: 'extensions/core/clipspace.js',
+      source: expect.stringContaining(
+        'export const ClipspaceDialog = window.comfyAPI.clipspace.ClipspaceDialog;'
+      )
+    })
+    expect(result?.code).toContain(
+      'window.comfyAPI.clipspace.ClipspaceDialog = ClipspaceDialog;'
+    )
   })
 })
