@@ -358,8 +358,19 @@ describe('ComfyApp', () => {
 
   it('resizes both canvas layers in device pixels and redraws immediately', () => {
     vi.stubGlobal('devicePixelRatio', 2)
-    const foreground = createTestCanvasElement({ cssSize: [400, 300] })
-    const background = createTestCanvasElement({ cssSize: [400, 300] })
+    // Both layers start off the expected result. The fixture's default backing
+    // store is 800x600, which is exactly 400x300 CSS at DPR 2, so leaving it
+    // would satisfy the dimension assertions even if a layer were never sized.
+    const foreground = createTestCanvasElement({
+      width: 1,
+      height: 1,
+      cssSize: [400, 300]
+    })
+    const background = createTestCanvasElement({
+      width: 1,
+      height: 1,
+      cssSize: [400, 300]
+    })
     const ds = createTestDragAndScale()
     const setViewportSize = vi.spyOn(ds, 'setViewportSize')
     Reflect.set(mockCanvas, 'bgcanvas', background)
