@@ -9,6 +9,11 @@ on:
 
 permissions:
   contents: read
+  issues: write
+
+env:
+  ISSUE_LABEL: 'area:testing'
+  ISSUE_TITLE: 'Router provider coverage has drifted from published sources'
 
 concurrency:
   group: ${{ github.workflow }}
@@ -23,11 +28,66 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: '.nvmrc'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-frontend
       - name: Compare checked-in coverage with published sources
         run: pnpm --filter @comfyorg/website exec tsx scripts/routerProviderDrift.ts
+      - name: File or update the drift issue
+        if: failure()
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const title = process.env.ISSUE_TITLE
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            const body = `The scheduled [Router Provider Drift](${runUrl}) check failed. The checked-in Router provider coverage may no longer match the published documentation or schemas, or a published source may be unavailable. See the run for the exact failure. This issue is maintained by \`.github/workflows/router-provider-drift.yaml\` and closes itself after a passing run.`
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: process.env.ISSUE_LABEL,
+              per_page: 100
+            })
+            const existing = openIssues.find((issue) => issue.title === title)
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body
+              })
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: [process.env.ISSUE_LABEL]
+              })
+            }
+      - name: Close the drift issue after recovery
+        if: success()
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: process.env.ISSUE_LABEL,
+              per_page: 100
+            })
+            const existing = openIssues.find((issue) => issue.title === process.env.ISSUE_TITLE)
+            if (!existing) return
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: existing.number,
+              body: 'Router provider coverage matches the published sources again. Closing.'
+            })
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: existing.number,
+              state: 'closed'
+            })

@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict'
-import { pathToFileURL } from 'node:url'
+
+import { z } from 'zod'
 
 import {
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE,
   ROUTER_SERVING_PROVIDERS
 } from '../src/config/router-providers'
+import { isDirectExecution } from './script-entry-point'
 
 const DOCS_ORIGIN = 'https://docs.comfy.org'
 const ROUTER_DOCS = `${DOCS_ORIGIN}/development/comfy-router`
@@ -15,11 +17,21 @@ const ROUTER_SCHEMAS =
   'https://raw.githubusercontent.com/Comfy-Org/docs/main/router-schemas'
 
 interface FetchTextOptions {
-  attempts?: number
   fetchImpl?: typeof fetch
   sleep?: (milliseconds: number) => Promise<void>
-  timeoutMs?: number
 }
+
+const FETCH_ATTEMPTS = 3
+const FETCH_TIMEOUT_MS = 4_000
+const alternateProvidersSchema = z
+  .object({
+    'x-comfy-router-alt-providers': z
+      .array(z.object({ provider: z.string() }))
+      .default([])
+  })
+  .transform((schema) =>
+    schema['x-comfy-router-alt-providers'].map(({ provider }) => provider)
+  )
 
 interface DocsCoverageRow {
   name: string
@@ -30,40 +42,29 @@ interface DocsCoverageRow {
 export async function fetchText(
   url: string,
   {
-    attempts = 3,
     fetchImpl = fetch,
     sleep = (milliseconds) =>
-      new Promise((resolve) => setTimeout(resolve, milliseconds)),
-    timeoutMs = 4_000
+      new Promise((resolve) => setTimeout(resolve, milliseconds))
   }: FetchTextOptions = {}
 ): Promise<string> {
   let lastError: unknown
-  for (let attempt = 0; attempt < attempts; attempt++) {
+  for (let attempt = 0; attempt < FETCH_ATTEMPTS; attempt++) {
     try {
       const response = await fetchImpl(url, {
-        signal: AbortSignal.timeout(timeoutMs)
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
       })
       if (!response.ok) throw new Error(`${url} responded ${response.status}`)
       return await response.text()
     } catch (error) {
       lastError = error
-      if (attempt + 1 < attempts) await sleep(250 * 2 ** attempt)
+      if (attempt + 1 < FETCH_ATTEMPTS) await sleep(250 * 2 ** attempt)
     }
   }
   throw new Error(`Could not fetch ${url}`, { cause: lastError })
 }
 
 export function alternateProviders(spec: string): string[] {
-  const parsed: unknown = JSON.parse(spec)
-  assert.ok(parsed && typeof parsed === 'object')
-  const providers = Reflect.get(parsed, 'x-comfy-router-alt-providers')
-  assert.ok(Array.isArray(providers))
-  return providers.map((entry: unknown) => {
-    assert.ok(entry && typeof entry === 'object')
-    const provider = Reflect.get(entry, 'provider')
-    assert.equal(typeof provider, 'string')
-    return provider
-  })
+  return alternateProvidersSchema.parse(JSON.parse(spec))
 }
 
 export function parseCoverageTable(markdown: string): {
@@ -95,12 +96,14 @@ export function parseCoverageTable(markdown: string): {
   }
 }
 
-async function checkRouterProviderDrift(): Promise<void> {
+export async function checkRouterProviderDrift(
+  options: FetchTextOptions = {}
+): Promise<void> {
   const [coverageMarkdown, catalogMarkdown, ...specs] = await Promise.all([
-    fetchText(PROVIDERS_PAGE),
-    fetchText(MODELS_PAGE),
+    fetchText(PROVIDERS_PAGE, options),
+    fetchText(MODELS_PAGE, options),
     ...ROUTER_PROVIDER_COVERAGE.map((row) =>
-      fetchText(`${ROUTER_SCHEMAS}/${row.modelId}.json`)
+      fetchText(`${ROUTER_SCHEMAS}/${row.modelId}.json`, options)
     )
   ])
   assert.deepEqual(
@@ -137,10 +140,7 @@ async function checkRouterProviderDrift(): Promise<void> {
   assert.deepEqual(previewPathsInCoverage, [])
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (isDirectExecution(process.argv[1], import.meta.filename)) {
   checkRouterProviderDrift()
     .then(() => {
       console.warn('Router provider coverage matches the published sources.')
