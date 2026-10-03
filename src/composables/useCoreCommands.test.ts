@@ -311,6 +311,8 @@ describe('useCoreCommands', () => {
         Record<string, string>
       >
       const original = messages[menuLabels][key]
+      const previousLocale = i18n.global.locale.value
+      i18n.global.locale.value = 'en'
       i18n.global.mergeLocaleMessage('en', {
         [menuLabels]: { [key]: 'Sentinel paste label' }
       })
@@ -328,6 +330,7 @@ describe('useCoreCommands', () => {
         i18n.global.mergeLocaleMessage('en', {
           [menuLabels]: { [key]: original }
         })
+        i18n.global.locale.value = previousLocale
       }
     })
   })
