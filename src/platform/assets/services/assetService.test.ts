@@ -817,6 +817,22 @@ describe(assetService.getAssetModels, () => {
 
     expect(models).toEqual([{ name: 'uncovered.safetensors', pathIndex: 0 }])
   })
+
+  it('keeps model-type categories exact for a hierarchical query', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'retagged',
+          name: 'chatglm3-checkpoint.safetensors',
+          tags: ['models', 'model_type:LLM', 'LLM/checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('LLM/checkpoints')
+
+    expect(models).toEqual([])
+  })
 })
 
 describe(assetService.onModelsScanned, () => {
