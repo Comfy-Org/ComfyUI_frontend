@@ -95,6 +95,23 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
 )
 export type AgentRunModeValue = AgentRunModePreference['mode']
 
+const SKILL_NAME_MAX = 256
+
+/**
+ * Display-only, so an over-long name is clamped. Rejecting it would drop
+ * the live frame or the persisted tool call.
+ */
+const zSkillName = z
+  .string()
+  .nullish()
+  .transform((skill) =>
+    typeof skill === 'string'
+      ? Array.from(skill.slice(0, SKILL_NAME_MAX * 2))
+          .slice(0, SKILL_NAME_MAX)
+          .join('')
+      : skill
+  )
+
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
@@ -115,7 +132,7 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
   tool_call_id: z.string().optional(),
   status: z.string(),
   duration_ms: z.number().optional(),
-  skill: z.string().max(256).nullish()
+  skill: zSkillName
 })
 
 /**
@@ -187,7 +204,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
-    skill: z.string().max(256).nullish(),
+    skill: zSkillName,
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
