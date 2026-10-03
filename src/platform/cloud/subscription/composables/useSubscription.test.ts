@@ -2874,7 +2874,11 @@ describe('useSubscription', () => {
       await fetchStatus()
       mockGetBillingStatus.mockClear()
 
-      await expect(manageSubscription()).rejects.toThrow()
+      const blockedOpen = manageSubscription()
+      await expect(blockedOpen).rejects.toBeInstanceOf(PaymentPopupBlockedError)
+      await expect(blockedOpen).rejects.toThrow(
+        "Couldn't open the billing page. Allow pop-ups for this site and try again."
+      )
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(mockGetBillingStatus).not.toHaveBeenCalled()
