@@ -157,6 +157,14 @@ describe('applyViewport', () => {
 })
 
 describe('applyParentSizedCanvasStyle', () => {
+  it('preserves stylesheet-driven dimensions that already match the parent', () => {
+    const canvas = createTestCanvasElement({ cssSize: [800, 600] })
+
+    applyParentSizedCanvasStyle(canvas, 800, 600)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual(['', ''])
+  })
+
   it('follows the parent while the canvas style is its own', () => {
     const canvas = createTestCanvasElement()
 

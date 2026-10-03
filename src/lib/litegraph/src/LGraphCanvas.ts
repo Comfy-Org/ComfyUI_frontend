@@ -6639,6 +6639,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (usesParentSize) {
       applyParentSizedCanvasStyle(this.canvas, width ?? 0, height ?? 0)
+    } else {
+      if (!this.canvas.style.width) this.canvas.style.width = `${width}px`
+      if (!this.canvas.style.height) this.canvas.style.height = `${height}px`
     }
 
     const viewport = measureViewport(

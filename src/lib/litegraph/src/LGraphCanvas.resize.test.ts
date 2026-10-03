@@ -56,4 +56,18 @@ describe('LGraphCanvas.resize', () => {
       1200
     ])
   })
+
+  it('applies explicit dimensions as CSS pixels and backing-store pixels', () => {
+    const { canvas } = createParentSizedCanvas()
+
+    canvas.resize(640, 480)
+
+    const { style, width, height } = canvas.canvas
+    expect([style.width, style.height, width, height]).toEqual([
+      '640px',
+      '480px',
+      1280,
+      960
+    ])
+  })
 })
