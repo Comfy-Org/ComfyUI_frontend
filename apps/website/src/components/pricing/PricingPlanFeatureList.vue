@@ -7,7 +7,7 @@ import type {
 
 import { BookOpen, Check, Clock, X } from '@lucide/vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 export type { PlanFeatureGroup }
 
@@ -33,6 +33,7 @@ const { locale = 'en' } = defineProps<{
   features: PlanFeatureGroup[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -43,7 +44,7 @@ const { locale = 'en' } = defineProps<{
       class="flex flex-col gap-2"
     >
       <p v-if="group.titleKey" class="text-sm text-primary-comfy-canvas">
-        {{ t(group.titleKey, locale) }}
+        {{ t(group.titleKey) }}
       </p>
       <ul class="space-y-2">
         <li
@@ -67,21 +68,18 @@ const { locale = 'en' } = defineProps<{
           />
           <span class="sr-only">
             {{
-              t(
-                `pricing.plan.feature.status.${feature.status ?? 'included'}`,
-                locale
-              )
+              t(`pricing.plan.feature.status.${feature.status ?? 'included'}`)
             }}:
           </span>
           <span
-            class="ppformula-text-center inline-block text-sm"
+            class="inline-block text-sm"
             :class="
               feature.highlight
                 ? 'text-primary-comfy-yellow'
                 : statusTextClass[feature.status ?? 'included']
             "
           >
-            {{ t(feature.text, locale) }}
+            {{ t(feature.text) }}
           </span>
         </li>
       </ul>

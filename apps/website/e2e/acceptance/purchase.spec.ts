@@ -19,6 +19,7 @@ import {
   liveSettings,
   requiredSetting
 } from '../../acceptance/settings'
+import { hubModelHref } from '../../src/config/hub-models'
 
 const topupDollars = 10
 
@@ -34,7 +35,7 @@ for (const model of modelCases.filter((model) => model.smoke)) {
     expectedCharge(model.slug, 'own')
     const domain = requiredSetting('WORKSHOP_SIGNUP_EMAIL_DOMAIN')
     const email = z.string().email().parse(`workshop-${randomUUID()}@${domain}`)
-    const path = `/models/${model.slug}/`
+    const path = hubModelHref(model.slug)
     await page.goto(path)
     await useOwnInputs(page, model)
     await page.getByTestId('run-button').click()

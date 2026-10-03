@@ -15,10 +15,6 @@ import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256
 export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
-// Reserve space for the doc_ops frame fields outside `ops` (type, protocol,
-// workflow id and tab). The server's identifiers are bounded well below this.
-const WIRE_FRAME_OVERHEAD_BYTES = 1024
-const utf8 = new TextEncoder()
 
 export interface MintContext {
   actor: Actor
@@ -60,14 +56,24 @@ function isBatchable(op: Op): boolean {
   return (BATCHABLE_OPS as readonly string[]).includes(op.op)
 }
 
-/** Conservative encoded size of a complete doc_ops frame carrying `ops`. */
-export function wireBatchSize(ops: readonly Op[]): number {
-  return utf8.encode(JSON.stringify(ops)).length + WIRE_FRAME_OVERHEAD_BYTES
-}
-
-/** UTF-8 byte length of a single op's JSON encoding, as it appears inside a batch array. */
-function opBytes(op: Op): number {
-  return utf8.encode(JSON.stringify(op)).length
+function wireSize(op: Op): number {
+  const json = JSON.stringify(op)
+  if (typeof json !== 'string')
+    throw new TypeError('Operation did not serialize to JSON')
+  if (json.charCodeAt(0) !== 123)
+    throw new TypeError('Operation did not serialize to a wire object')
+  if (typeof (op as Op & { toJSON?: unknown }).toJSON !== 'function')
+    return new TextEncoder().encode(json).length
+  const serialized: unknown = JSON.parse(json)
+  if (
+    typeof serialized !== 'object' ||
+    serialized === null ||
+    Array.isArray(serialized) ||
+    !('op_id' in serialized) ||
+    typeof serialized.op_id !== 'string'
+  )
+    throw new TypeError('Operation did not serialize to a wire object')
+  return new TextEncoder().encode(json).length
 }
 
 /**
@@ -80,32 +86,30 @@ function opBytes(op: Op): number {
 export function chunkWireOps(ops: Op[]): Op[][] {
   const batches: Op[][] = []
   let current: Op[] = []
-  // Sum of per-op serialized byte lengths in `current`. The full batch size
-  // is this total plus the JSON array's 2 brackets and (length - 1) commas.
-  let currentOpBytes = 0
+  let currentBytes = 0
 
   const flush = (): void => {
     if (current.length > 0) batches.push(current)
     current = []
-    currentOpBytes = 0
+    currentBytes = 0
   }
 
   for (const op of ops) {
+    // Validate every operation at the transport boundary, including `clear`.
+    // Non-batchable ops still have to survive the enclosing frame's
+    // JSON.stringify before they can be considered deliverable.
+    const bytes = wireSize(op)
     if (!isBatchable(op)) {
       flush()
       batches.push([op])
       continue
     }
     const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
-    const thisOpBytes = opBytes(op)
-    const candidateArrayBytes =
-      currentOpBytes + thisOpBytes + 2 + current.length
     const overBytes =
-      current.length > 0 &&
-      candidateArrayBytes + WIRE_FRAME_OVERHEAD_BYTES > WIRE_MAX_BATCH_BYTES
+      current.length > 0 && currentBytes + bytes > WIRE_MAX_BATCH_BYTES
     if (overOps || overBytes) flush()
     current.push(op)
-    currentOpBytes += thisOpBytes
+    currentBytes += bytes
   }
   flush()
   return batches

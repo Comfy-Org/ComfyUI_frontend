@@ -13,7 +13,6 @@ const defaultFlags: FeatureFlags = {
   supportsManagerV4: false,
   modelUploadButtonEnabled: false,
   assetDeletionEnabled: false,
-  assetRenameEnabled: false,
   privateModelsEnabled: false,
   onboardingSurveyEnabled: false,
   linearToggleEnabled: false,
@@ -31,6 +30,7 @@ const defaultFlags: FeatureFlags = {
   unifiedCloudAuthEnabled: false,
   unifiedWebSessionEnabled: false,
   billingControlEnabled: false,
+  memberCreditLimitsEnabled: false,
   legacyBillingMigrationEnabled: false,
   embeddedCheckoutEnabled: false,
   billingSdkTopupEnabled: false,
@@ -43,7 +43,8 @@ const defaultFlags: FeatureFlags = {
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
   onboardingTourEnabled: false,
-  assetsEnabled: false
+  assetsEnabled: false,
+  agentInAppExperienceEnabled: false
 }
 
 const featureFlags: ReturnType<typeof realUseFeatureFlags> = {

@@ -18,22 +18,12 @@
  *   MAXIMALITY — a batch is only ended early when a cap forces it. Without this
  *                a chunker that emits one op per batch passes all three above.
  *
- * Plus the envelope itself (`mintWireOps`) and the convergence claim it exists
- * to support: ops minted here resolve last-writer-wins identically no matter
- * what order the host applies them in.
+ * It also checks the envelope itself (`mintWireOps`) without coupling this
+ * transport suite to the applier or the retired store-first projection path.
  */
-import {
-  applyOps,
-  BATCHABLE_OPS,
-  compareStampKeys,
-  mint,
-  nodesMap,
-  stampKey
-} from '@comfyorg/comfy-multi-player'
-import type { Op } from '@comfyorg/comfy-multi-player'
+import { BATCHABLE_OPS } from '@comfyorg/comfy-multi-player'
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import * as Y from 'yjs'
 
 import type { GraphOperation } from './graphOperations'
 import {
@@ -41,14 +31,13 @@ import {
   WIRE_MAX_OPS_PER_BATCH,
   chunkWireOps,
   mintOpId,
-  mintWireOps,
-  wireBatchSize
+  mintWireOps
 } from './opEnvelope'
 
 const FC_OPTIONS = { numRuns: 100 } as const
 
 const MINT = { actor: 'human:pbt-user:tab-1', baseVersion: 7 }
-const CATALOG = { types: { TestNode: { widget_order: ['text'] } } }
+const utf8 = new TextEncoder()
 
 function addNode(id: number): GraphOperation {
   return {
@@ -79,11 +68,8 @@ function clear(ids: number[]): GraphOperation {
   return { op: 'clear', removed_nodes: ids }
 }
 
-function readWidget(doc: Y.Doc): unknown {
-  const node = nodesMap(doc).get('1')
-  if (!(node instanceof Y.Map)) return undefined
-  const widgets = node.get('widgets')
-  return widgets instanceof Y.Map ? widgets.get('text') : undefined
+function serializedBatchBytes(batch: unknown[]): number {
+  return utf8.encode(JSON.stringify(batch)).length
 }
 
 /**
@@ -170,7 +156,7 @@ describe('chunkWireOps (property)', () => {
     fc.assert(
       fc.property(operationsArb, (operations) => {
         for (const batch of chunkWireOps(mintWireOps(operations, MINT))) {
-          const bytes = wireBatchSize(batch)
+          const bytes = serializedBatchBytes(batch)
           if (batch.length > 1) {
             expect(bytes).toBeLessThanOrEqual(WIRE_MAX_BATCH_BYTES)
           }
@@ -190,6 +176,14 @@ describe('chunkWireOps (property)', () => {
       MINT
     )
     expect(chunkWireOps(thirds).map((batch) => batch.length)).toEqual([3, 1])
+
+    const multibyte = mintWireOps(
+      [1, 2, 3, 4].map((id) => setWidget(id, 'é'.repeat(third))),
+      MINT
+    )
+    expect(chunkWireOps(multibyte).map((batch) => batch.length)).toEqual([
+      1, 1, 1, 1
+    ])
   })
 
   it('is maximal: a batch only ends early when a cap or a clear forces it', () => {
@@ -211,7 +205,7 @@ describe('chunkWireOps (property)', () => {
           }
           const overOps = batch.length + 1 > WIRE_MAX_OPS_PER_BATCH
           const overBytes =
-            wireBatchSize([...batch, head]) > WIRE_MAX_BATCH_BYTES
+            serializedBatchBytes([...batch, head]) > WIRE_MAX_BATCH_BYTES
           expect(overOps || overBytes).toBe(true)
         }
       }),
@@ -252,7 +246,13 @@ describe('mintWireOps (property)', () => {
             expect(op.actor).toBe(actor)
             expect(op.base_version).toBe(baseVersion)
             expect(op.stamp).toEqual([baseVersion, actor])
-            expect(op).toMatchObject(original)
+            expect(op).toEqual({
+              ...original,
+              op_id: expect.stringMatching(/^[0-9a-f]{32}$/),
+              actor,
+              base_version: baseVersion,
+              stamp: [baseVersion, actor]
+            })
           }
         }
       ),
@@ -263,139 +263,5 @@ describe('mintWireOps (property)', () => {
   it('mints ids that are unique across many direct mintOpId calls', () => {
     const ids = Array.from({ length: 512 }, () => mintOpId())
     expect(new Set(ids).size).toBe(512)
-  })
-})
-
-/**
- * The reason the envelope exists: ops minted here must resolve last-writer-wins
- * to the same value on every replica, whatever order the host applies them in.
- * This exercises FE-minted stamps against the real applier, not a model of it.
- */
-describe('minted stamps (property) — order-independent LWW', () => {
-  const writerArb = fc.record({
-    actor: fc.string({ minLength: 1, maxLength: 8 }).map((s) => `human:${s}:t`),
-    baseVersion: fc.integer({ min: 0, max: 20 }),
-    value: fc.string({ maxLength: 12 })
-  })
-
-  function applyIn(order: readonly Op[], seed: Op[]): Y.Doc {
-    const doc = mint({ nodes: [], links: [] }, CATALOG)
-    applyOps(doc, seed)
-    for (const op of order) applyOps(doc, [op])
-    return doc
-  }
-
-  it('converges to the max-stamp winner regardless of arrival order', () => {
-    let contended = 0
-
-    fc.assert(
-      fc.property(
-        fc.uniqueArray(writerArb, {
-          minLength: 2,
-          maxLength: 5,
-          selector: (writer) => `${writer.baseVersion}\u0000${writer.actor}`
-        }),
-        fc.array(fc.integer(), { minLength: 8, maxLength: 8 }),
-        (writers, permutationKeys) => {
-          const seed = mintWireOps([addNode(1)], {
-            actor: 'system:mint',
-            baseVersion: 0
-          })
-          // Every writer targets the SAME register, concurrently.
-          const concurrent = writers.map((writer) =>
-            mintWireOps([setWidget(1, writer.value)], {
-              actor: writer.actor,
-              baseVersion: writer.baseVersion
-            })
-          )
-          const ops = concurrent.map((minted) => minted[0])
-          if (new Set(ops.map((op) => op.actor)).size > 1) contended++
-
-          const reversed = [...ops].reverse()
-          const shuffled = ops
-            .map((op, index) => ({
-              op,
-              key: permutationKeys[index % permutationKeys.length],
-              index
-            }))
-            .sort((a, b) => a.key - b.key || a.index - b.index)
-            .map((entry) => entry.op)
-
-          const forward = readWidget(applyIn(ops, seed))
-          expect(readWidget(applyIn(reversed, seed))).toEqual(forward)
-          expect(readWidget(applyIn(shuffled, seed))).toEqual(forward)
-
-          // …and the surviving value is the one the total stamp order picks,
-          // not merely whatever both orders happened to agree on.
-          const winner = [...ops].sort((a, b) =>
-            compareStampKeys(stampKey(a), stampKey(b))
-          )[ops.length - 1]
-          expect(winner.op).toBe('set_widget')
-          if (winner.op !== 'set_widget') return
-          expect(forward).toEqual(winner.value)
-        }
-      ),
-      FC_OPTIONS
-    )
-
-    // Vacuity guard: single-actor runs would make the convergence claim trivial.
-    expect(contended).toBeGreaterThan(0)
-  })
-})
-
-/**
- * DQ-11 boundary, RECORDED not fixed.
- *
- * DQ-11 resolved to incarnation-namespaced stamps: a stale stamp minted before
- * a reconnect (life 1) must never defeat a live write from the same client
- * after it (life 2). This branch pins `@comfyorg/comfy-multi-player` at a
- * revision that still uses the 2-tuple `Stamp` `[base_version, actor]` with no
- * incarnation component. `opEnvelope.ts` still mints exactly the 2-tuple
- * shape. The APPLIER still cannot distinguish or order two incarnations of the
- * same actor — it has no component to do so with. The current mitigation lives
- * on the SENDER: `opSender.ts` gives each locally minted operation a strictly
- * increasing `base_version` within the active workflow lineage.
- *
- * The second test below asserts the DESIRED outcome and is marked `it.fails`
- * because this pin cannot deliver it yet. It is a tripwire: when the pin
- * advances to incarnation-namespaced stamps the assertion starts passing,
- * `it.fails` reports that as a failure, and this is where the write leg gets
- * updated and the marker removed.
- */
-describe('minted stamps — DQ-11 actor-incarnation gap at this pin', () => {
-  it('pins the actor-incarnation-free stamp shape the write leg mints', () => {
-    const [op] = mintWireOps([setWidget(1, 'v')], MINT)
-
-    expect(op.stamp).toEqual([MINT.baseVersion, MINT.actor])
-    expect(op.stamp).toHaveLength(2)
-    // No incarnation / life component exists to namespace the stamp with.
-    expect(Object.keys(op)).not.toContain('incarnation')
-  })
-
-  it.fails('a stale life-1 write must not defeat a live life-2 write', () => {
-    const doc = mint({ nodes: [], links: [] }, CATALOG)
-    const actor = 'human:reconnecting-client:tab-1'
-
-    applyOps(
-      doc,
-      mintWireOps([addNode(1)], { actor: 'system:mint', baseVersion: 0 })
-    )
-
-    // Life 1: minted against a high base_version, then delayed in flight.
-    const stale = mintWireOps([setWidget(1, 'life-1-stale')], {
-      actor,
-      baseVersion: 9
-    })
-    // Life 2: same client after a reconnect, minted against the fresh (lower)
-    // version the host handed back. Applied FIRST; the delayed op lands after.
-    const live = mintWireOps([setWidget(1, 'life-2-live')], {
-      actor,
-      baseVersion: 3
-    })
-
-    applyOps(doc, live)
-    applyOps(doc, stale)
-
-    expect(readWidget(doc)).toBe('life-2-live')
   })
 })

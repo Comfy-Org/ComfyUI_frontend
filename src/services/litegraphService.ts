@@ -1,6 +1,7 @@
 import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -351,9 +352,10 @@ export const useLitegraphService = () => {
    */
   function addInputs(node: LGraphNode, inputs: Record<string, InputSpec>) {
     // Use input_order if available to ensure consistent widget ordering
-    //@ts-expect-error was ComfyNode.nodeData as ComfyNodeDefImpl
-    const nodeDefImpl = node.constructor.nodeData as ComfyNodeDefImpl
-    const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
+    const orderedInputSpecs = getOrderedInputSpecs(
+      node.constructor.nodeData ?? {},
+      inputs
+    )
 
     // Create sockets and widgets in the determined order
     for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
@@ -681,8 +683,7 @@ export const useLitegraphService = () => {
             } catch (error) {
               toastStore.addAlert(
                 t('toastMessages.errorCopyImage', {
-                  // @ts-expect-error fixme ts strict error
-                  error: error.message ?? error
+                  error: error instanceof Error ? error.message : error
                 })
               )
             }
@@ -865,8 +866,8 @@ export const useLitegraphService = () => {
     const origNodeOnKeyDown = node.prototype.onKeyDown
 
     node.prototype.onKeyDown = function (e) {
-      // @ts-expect-error fixme ts strict error
-      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
+      const originalResult: unknown = origNodeOnKeyDown?.call(this, e)
+      if (originalResult === false) {
         return false
       }
 
@@ -877,19 +878,16 @@ export const useLitegraphService = () => {
       let handled = false
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const imageIndex = this.imageIndex
+        if (imageIndex === undefined) return
         if (e.key === 'ArrowLeft') {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex -= 1
+          this.imageIndex = imageIndex - 1
         } else {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex += 1
+          this.imageIndex = imageIndex + 1
         }
-        // @ts-expect-error fixme ts strict error
         this.imageIndex %= this.imgs.length
 
-        // @ts-expect-error fixme ts strict error
         if (this.imageIndex < 0) {
-          // @ts-expect-error fixme ts strict error
           this.imageIndex = this.imgs.length + this.imageIndex
         }
         handled = true
@@ -956,11 +954,10 @@ export const useLitegraphService = () => {
   }
 
   function getCanvasCenter(): Point {
-    const dpi = Math.max(window.devicePixelRatio || 1, 1)
     if (!app.isGraphReady) return [0, 0]
     const visibleArea = app.canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
-    return [x + w / dpi / 2, y + h / dpi / 2]
+    return [x + w / 2, y + h / 2]
   }
 
   function goToNode(nodeId: SerializedNodeId) {
@@ -998,7 +995,9 @@ export const useLitegraphService = () => {
     const bounds = createBounds(nodes)
     if (!bounds) return
 
-    canvas.ds.fitToBounds(bounds)
+    canvas.ds.fitToBounds(bounds, {
+      viewport: visibleCanvasViewport(canvas)
+    })
     canvas.setDirty(true, true)
   }
 

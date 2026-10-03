@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/vue'
 import {
   afterEach,
   beforeEach,
@@ -80,7 +80,10 @@ function renderForm(
   props: {
     canSubmit?: boolean
     verificationPending?: boolean
+    locked?: boolean
     publishableKey?: string
+    themeKey?: string
+    pageLayout?: boolean
     onConfirm?: (token: string) => void
     onSubmittingChange?: (submitting: boolean) => void
     container?: HTMLElement
@@ -143,7 +146,10 @@ describe('StripePaymentForm', () => {
     stripeMocks.submit.mockResolvedValue({})
     stripeMocks.update.mockResolvedValue(undefined)
     stripeMocks.createConfirmationToken.mockResolvedValue({
-      confirmationToken: { id: 'ctoken_1' }
+      confirmationToken: {
+        id: 'ctoken_1',
+        payment_method_preview: { type: 'alipay' }
+      }
     })
   })
 
@@ -194,6 +200,42 @@ describe('StripePaymentForm', () => {
         })
       })
     )
+  })
+
+  it('re-themes the mounted Elements in place when the host theme changes', async () => {
+    const themeRoot = document.createElement('div')
+    themeRoot.style.setProperty('--base-foreground', 'rgb(20, 20, 20)')
+    themeRoot.style.setProperty('--base-background', 'rgb(255, 255, 255)')
+    document.body.append(themeRoot)
+    onTestFinished(() => themeRoot.remove())
+
+    const { rerender } = renderForm(66500, 'pmc_test', {
+      container: themeRoot,
+      themeKey: 'light'
+    })
+    await waitFor(() =>
+      expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    )
+
+    themeRoot.style.setProperty('--base-foreground', 'rgb(250, 250, 250)')
+    themeRoot.style.setProperty('--base-background', 'rgb(30, 30, 30)')
+    await rerender({ themeKey: 'dark' })
+
+    await waitFor(() =>
+      expect(stripeMocks.update).toHaveBeenCalledWith({
+        appearance: expect.objectContaining({
+          variables: expect.objectContaining({
+            colorText: 'rgb(250, 250, 250)',
+            colorBackground: 'rgb(30, 30, 30)'
+          })
+        })
+      })
+    )
+    expect(stripeMocks.stripe.elements).toHaveBeenCalledTimes(1)
+    expect(stripeMocks.create).toHaveBeenCalledTimes(2)
+    expect(stripeMocks.mount).toHaveBeenCalledTimes(1)
+    expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    expect(stripeMocks.destroy).not.toHaveBeenCalled()
   })
 
   describe('checkout journey instrumentation', () => {
@@ -354,7 +396,12 @@ describe('StripePaymentForm', () => {
         screen.getByRole('button', { name: 'Pay and subscribe' })
       )
       unmount()
-      resolveToken({ confirmationToken: { id: 'ctoken_late' } })
+      resolveToken({
+        confirmationToken: {
+          id: 'ctoken_late',
+          payment_method_preview: { type: 'card' }
+        }
+      })
       await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(confirmed).toStrictEqual([])
@@ -410,8 +457,47 @@ describe('StripePaymentForm', () => {
     expect(stripeMocks.createConfirmationToken).toHaveBeenCalledWith({
       elements: stripeMocks.elements
     })
-    expect(emitted().confirm).toEqual([['ctoken_1']])
+    expect(emitted().confirm).toEqual([['ctoken_1', 'alipay']])
   })
+
+  it('makes the mounted elements inert while locked, and leaves the pay slot live', async () => {
+    renderForm(66500, 'pmc_test', { locked: true })
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+    const region = screen.getByRole('group', { name: 'Payment method' })
+    expect(region.getAttribute('inert')).not.toBeNull()
+    expect(within(region).getByText('Billing address')).toBeDefined()
+    expect(
+      within(region).queryByRole('button', { name: 'Pay and subscribe' })
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeDefined()
+  })
+
+  it.for([
+    { layout: 'embedded', pageLayout: false, titled: true },
+    { layout: 'page', pageLayout: true, titled: false }
+  ])(
+    'the $layout layout names the payment group either way, and only titles it itself when embedded',
+    async ({ pageLayout, titled }) => {
+      renderForm(66500, 'pmc_test', { pageLayout })
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      expect(
+        screen.getByRole('group', { name: 'Payment method' })
+      ).toBeDefined()
+      expect(
+        screen.queryByRole('heading', { name: 'Payment method' }) !== null
+      ).toBe(titled)
+      expect(screen.queryByText('Choose a payment method') !== null).toBe(
+        titled
+      )
+      expect(
+        screen.getByRole('heading', { name: 'Billing address' })
+      ).toBeDefined()
+    }
+  )
 
   it('collects a billing address alongside the payment element', async () => {
     renderForm()

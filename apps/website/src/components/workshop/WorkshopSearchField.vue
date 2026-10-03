@@ -10,7 +10,7 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import { filterWorkshopModels } from '../../config/models-catalogue'
 import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 
 const {
@@ -28,18 +28,18 @@ const {
   kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const query = defineModel<string>({ required: true })
 const mounted = useMounted()
 const label = computed(() =>
-  t(kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search', locale)
+  t(kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search')
 )
 const shortLabel = computed(() =>
   t(
     kind === 'models'
       ? 'workshop.search.short'
-      : 'workshop.catalogue.searchWorkflows',
-    locale
+      : 'workshop.catalogue.searchWorkflows'
   )
 )
 const showLabel = computed(() =>
@@ -47,7 +47,7 @@ const showLabel = computed(() =>
     kind === 'models'
       ? 'workshop.search.show'
       : 'workshop.catalogue.showWorkflows',
-    locale
+    { n: matches.value }
   )
 )
 
@@ -87,7 +87,7 @@ const clearButtonClass =
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative" data-testid="workshop-search-field">
     <button
       v-if="compact"
       ref="sheetTrigger"
@@ -127,7 +127,7 @@ const clearButtonClass =
       <button
         v-if="query"
         type="button"
-        :aria-label="t('workshop.search.clear', locale)"
+        :aria-label="t('workshop.search.clear')"
         data-testid="workshop-search-clear"
         :class="clearButtonClass"
         @click="query = ''"
@@ -164,7 +164,7 @@ const clearButtonClass =
               <button
                 v-if="query"
                 type="button"
-                :aria-label="t('workshop.search.clear', locale)"
+                :aria-label="t('workshop.search.clear')"
                 :class="clearButtonClass"
                 @click="query = ''"
               >
@@ -173,7 +173,7 @@ const clearButtonClass =
             </div>
             <button
               type="button"
-              :aria-label="t('workshop.search.close', locale)"
+              :aria-label="t('workshop.search.close')"
               class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-white/8 text-primary-warm-gray hover:text-primary-warm-white"
               data-testid="workshop-search-sheet-close"
               @click="sheetOpen = false"
@@ -206,7 +206,7 @@ const clearButtonClass =
               data-testid="workshop-search-sheet-clear"
               @click="clearSheet"
             >
-              {{ t('workshop.filter.clearAll', locale) }}
+              {{ t('workshop.filter.clearAll') }}
             </button>
             <button
               type="button"
@@ -214,7 +214,7 @@ const clearButtonClass =
               data-testid="workshop-search-sheet-apply"
               @click="sheetOpen = false"
             >
-              {{ showLabel.replace('{n}', `${matches}`) }}
+              {{ showLabel }}
             </button>
           </div>
         </DialogContent>

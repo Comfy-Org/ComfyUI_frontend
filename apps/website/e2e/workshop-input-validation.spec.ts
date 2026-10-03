@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
+import { hubModelHref } from '../src/config/hub-models'
 
 const availability = workshopModelAvailabilitySchema.parse(
   JSON.parse(
@@ -15,7 +16,7 @@ const availability = workshopModelAvailabilitySchema.parse(
 )
 
 async function openModel(page: Page, slug: string): Promise<boolean> {
-  const response = await page.goto(`/models/${slug}/`)
+  const response = await page.goto(hubModelHref(slug))
   if (availability[slug]?.disabled) {
     expect(response?.status()).toBe(404)
     return false
