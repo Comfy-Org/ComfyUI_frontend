@@ -456,6 +456,7 @@ function startAgentCrdtFollower(
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
+  const pendingProjectionUpdates = new Map<string, ClassifiedDocUpdate>()
   const reportMaterialized = (
     workflowId: string,
     materialized: readonly NodeId[]
@@ -469,7 +470,14 @@ function startAgentCrdtFollower(
     )
   }
   const applyCollected = (workflowId: string): void => {
-    reportMaterialized(workflowId, projection.applyCollected(workflowId))
+    const outcome = projection.applyCollected(workflowId)
+    if (!outcome.applied) return
+    reportMaterialized(workflowId, outcome.createdNodeIds)
+    const update = pendingProjectionUpdates.get(workflowId)
+    if (update) {
+      reportAgentProjection(update, outcome.nodes, outcome.failureCount, true)
+      pendingProjectionUpdates.delete(workflowId)
+    }
   }
   const incrementOutcome = (
     key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
@@ -550,6 +558,9 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     const { applied, created, nodes, failureCount } = applyFrame(update)
     reportAgentProjection(update, nodes, failureCount, applied)
+    if (!applied && getGraph() === null)
+      pendingProjectionUpdates.set(update.workflowId, update)
+    else pendingProjectionUpdates.delete(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -714,7 +725,10 @@ function startAgentCrdtFollower(
   const rebindProjection = (next: string | null): void => {
     const current = subscribedWorkflowId.value
     if (current === next) return
-    if (current !== null) projection.unbind(current)
+    if (current !== null) {
+      projection.unbind(current)
+      pendingProjectionUpdates.delete(current)
+    }
     if (next !== null) projection.bind(next, bridge.follower)
     subscribedWorkflowId.value = next
   }

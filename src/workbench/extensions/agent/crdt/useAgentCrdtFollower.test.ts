@@ -64,12 +64,13 @@ const projectionState = vi.hoisted(() => {
   })
   const applied = (
     createdNodeIds: NodeId[] = [],
-    nodes: DocNodeDelta = NO_NODES
-  ): FrameOutcome => ({
+    nodes: DocNodeDelta = NO_NODES,
+    failureCount = 0
+  ): Extract<FrameOutcome, { applied: true }> => ({
     applied: true,
     nodes,
     createdNodeIds,
-    failureCount: 0
+    failureCount
   })
   return {
     NO_NODES,
@@ -78,7 +79,7 @@ const projectionState = vi.hoisted(() => {
     bind: vi.fn(),
     unbind: vi.fn(),
     applyFrame: vi.fn((_update: unknown): FrameOutcome => applied()),
-    applyCollected: vi.fn((_workflowId: string): NodeId[] => []),
+    applyCollected: vi.fn((_workflowId: string): FrameOutcome => applied()),
     revertRejected: vi.fn(
       (_workflowId: string, _ops: readonly Op[]): NodeId[] => []
     ),
@@ -262,7 +263,9 @@ describe('useAgentCrdtFollower', () => {
     projectionState.applyFrame
       .mockReset()
       .mockReturnValue(projectionState.applied())
-    projectionState.applyCollected.mockReset().mockReturnValue([])
+    projectionState.applyCollected
+      .mockReset()
+      .mockReturnValue(projectionState.applied())
     projectionState.revertRejected.mockReset().mockReturnValue([])
     projectionState.noteLocalWrites.mockReset()
     projectionState.settleLocalWrites.mockReset()
@@ -1131,7 +1134,16 @@ describe('useAgentCrdtFollower', () => {
       })
       expect(onMaterialized).not.toHaveBeenCalled()
 
-      projectionState.applyCollected.mockReturnValue([toNodeId(3)])
+      projectionState.applyCollected.mockReturnValue(
+        projectionState.applied(
+          [toNodeId(3)],
+          {
+            added: ['3'],
+            removed: []
+          },
+          1
+        )
+      )
       graph.value = fakeGraph
       await nextTick()
 
@@ -1140,6 +1152,17 @@ describe('useAgentCrdtFollower', () => {
         actor: undefined,
         nodeIds: [toNodeId(3)]
       })
+      expect(telemetryState.trackAgentGraphProjection).toHaveBeenLastCalledWith(
+        {
+          op_id: null,
+          op_count: 0,
+          sequence: 9,
+          stage: 'applied',
+          added_count: 1,
+          removed_count: 0,
+          apply_failure_count: 1
+        }
+      )
       unmount()
     })
 

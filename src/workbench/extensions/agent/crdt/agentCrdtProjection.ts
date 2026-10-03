@@ -159,19 +159,27 @@ export class AgentCrdtProjection {
   /**
    * Applies the changes collected while no graph could take them: frames
    * delivered before the graph loaded, or while its tab was inactive.
-   * @returns ids of nodes created live on this pass.
+   * @returns the apply result for the whole collected batch.
    */
-  applyCollected(workflowId: string): NodeId[] {
+  applyCollected(workflowId: string): FrameOutcome {
     const target = this.targets.get(workflowId)
-    if (!target || !this.getGraph()) return []
+    if (!target || !this.getGraph())
+      return { applied: false, nodes: EMPTY_DELTA }
     target.reportedPendingNodes.clear()
-    return this.apply(
+    const changes = target.collector.take()
+    const { createdNodeIds, failureCount } = this.apply(
       workflowId,
       target,
-      target.collector.take(),
+      changes,
       { actor: 'agent-collected', opIds: [] },
       this.takeApplyMode(workflowId)
-    ).createdNodeIds
+    )
+    return {
+      applied: true,
+      nodes: docNodeDelta(changes),
+      createdNodeIds,
+      failureCount
+    }
   }
 
   /**
