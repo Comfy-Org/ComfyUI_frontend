@@ -11,6 +11,9 @@ describe('model catalogue access', () => {
       if (route === '/secure-nodes/models/loras') {
         return new Response(JSON.stringify(['styles/a.safetensors']))
       }
+      if (route === '/secure-nodes/models/embeddings') {
+        return new Response(JSON.stringify(['styles/easynegative.pt']))
+      }
       if (
         route ===
         '/secure-nodes/model-sidecar/loras?name=styles%2Fa.safetensors&suffix=.md'
@@ -26,6 +29,9 @@ describe('model catalogue access', () => {
 
     await expect(models.list('loras')).resolves.toEqual([
       'styles/a.safetensors'
+    ])
+    await expect(models.list('embeddings')).resolves.toEqual([
+      'styles/easynegative.pt'
     ])
     await expect(
       models.readSidecar('loras', 'styles/a.safetensors', '.md')

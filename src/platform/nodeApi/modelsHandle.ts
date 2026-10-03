@@ -8,6 +8,7 @@ export type ModelFolder =
   | 'clip_vision'
   | 'controlnet'
   | 'diffusion_models'
+  | 'embeddings'
   | 'loras'
   | 'text_encoders'
   | 'unet'
@@ -20,6 +21,7 @@ const MODEL_FOLDERS: readonly ModelFolder[] = [
   'clip_vision',
   'controlnet',
   'diffusion_models',
+  'embeddings',
   'loras',
   'text_encoders',
   'unet',
