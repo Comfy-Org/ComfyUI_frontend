@@ -125,7 +125,7 @@ type CheckoutJourneyOperationLinked = {
   billing_op_id: string
 }
 
-export type CheckoutJourneyPhaseEvent =
+type CheckoutJourneyProgressEvent =
   | CheckoutJourneyEntered
   | CheckoutJourneyPreviewReady
   | CheckoutJourneyPreviewFailed
@@ -139,7 +139,45 @@ export type CheckoutJourneyPhaseEvent =
   | CheckoutJourneySubmitted
   | CheckoutJourneyOperationLinked
 
-type CheckoutJourneyPhase = CheckoutJourneyPhaseEvent['phase']
+/** How the customer left: the page went away, or a control of this page led out. */
+export type CheckoutExit = 'page_exit' | 'back' | 'close' | 'host_link'
+/** The ending screens of the full-page checkout. */
+export type CheckoutEndingKind =
+  | 'success'
+  | 'completed'
+  | 'already_completed'
+  | 'in_progress'
+  | 'received'
+  | 'unconfirmed'
+  | 'refused'
+  | 'plan_unavailable'
+  | 'link_invalid'
+  | 'load_failed'
+/** Whose payment an ending shows: this page's Pay, a return, one it followed, or one already settled. */
+export type CheckoutEndingAttribution =
+  | 'started'
+  | 'returned'
+  | 'followed'
+  | 'settled'
+
+/** The customer left before the checkout reached an ending. */
+type CheckoutJourneyAbandoned = {
+  phase: 'abandoned'
+  last_phase: CheckoutJourneyProgressEvent['phase']
+  exit: CheckoutExit
+}
+type CheckoutJourneyEnded = {
+  phase: 'ended'
+  ending_kind: CheckoutEndingKind
+  attribution?: CheckoutEndingAttribution
+}
+
+export type CheckoutJourneyPhaseEvent =
+  | CheckoutJourneyProgressEvent
+  | CheckoutJourneyAbandoned
+  | CheckoutJourneyEnded
+
+export type CheckoutJourneyPhase = CheckoutJourneyPhaseEvent['phase']
 
 export type CheckoutJourneyTelemetryEvent = CheckoutJourneyContext &
   CheckoutJourneyPhaseEvent
@@ -167,7 +205,9 @@ export const CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE: Record<
   promo: 'billing.checkout.promo',
   pay_blocked: 'billing.checkout.pay_blocked',
   submitted: 'billing.checkout.submitted',
-  operation_linked: 'billing.checkout.operation_linked'
+  operation_linked: 'billing.checkout.operation_linked',
+  abandoned: 'billing.checkout.abandoned',
+  ended: 'billing.checkout.ended'
 }
 
 export function getCheckoutJourneyTelemetryEventName(
@@ -236,6 +276,16 @@ function getChoicePayload(event: CheckoutJourneyPhaseEvent) {
   }
 }
 
+function getExitPayload(event: CheckoutJourneyPhaseEvent) {
+  return {
+    ...('last_phase' in event && { last_phase: event.last_phase }),
+    ...('exit' in event && { exit: event.exit }),
+    ...('ending_kind' in event && { ending_kind: event.ending_kind }),
+    ...('attribution' in event &&
+      event.attribution !== undefined && { attribution: event.attribution })
+  }
+}
+
 export function getCheckoutJourneyTelemetryEventPayload(
   event: CheckoutJourneyTelemetryEvent
 ) {
@@ -243,7 +293,8 @@ export function getCheckoutJourneyTelemetryEventPayload(
     ...getContextPayload(event),
     ...getPreviewPayload(event),
     ...getPaymentFormPayload(event),
-    ...getChoicePayload(event)
+    ...getChoicePayload(event),
+    ...getExitPayload(event)
   }
 }
 

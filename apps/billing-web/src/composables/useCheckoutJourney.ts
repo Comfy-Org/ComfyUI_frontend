@@ -1,5 +1,9 @@
 import type {
+  CheckoutEndingAttribution,
+  CheckoutEndingKind,
   CheckoutEntryFlow,
+  CheckoutExit,
+  CheckoutJourneyPhase,
   CheckoutJourneyPhaseEvent,
   PreviewSubscribeResult,
   SubscriptionPreview
@@ -38,8 +42,15 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
   let presses = 0
   let linkingPress: number | undefined
   let billingOpId: string | undefined
+  let lastPhase:
+    | Exclude<CheckoutJourneyPhase, 'abandoned' | 'ended'>
+    | undefined
+  let lastEnding: CheckoutEndingKind | undefined
+  let left = false
 
   function track(phase: CheckoutJourneyPhaseEvent) {
+    if (phase.phase !== 'abandoned' && phase.phase !== 'ended')
+      lastPhase = phase.phase
     billingWebTelemetry.trackCheckoutJourneyEvent({
       checkout_journey_id: journeyId,
       checkout_entered_at: enteredAt,
@@ -143,9 +154,32 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
     if (failed) track(failed)
   }
 
+  /** Once per ending screen shown; an ending resolves the journey. */
+  function ended(
+    kind: CheckoutEndingKind,
+    attribution: CheckoutEndingAttribution | undefined
+  ) {
+    if (kind === lastEnding) return
+    lastEnding = kind
+    track({
+      phase: 'ended',
+      ending_kind: kind,
+      ...(attribution !== undefined && { attribution })
+    })
+  }
+
+  /** The customer left a journey no ending resolved; only the first way out counts. */
+  function abandoned(exit: CheckoutExit) {
+    if (left || lastEnding !== undefined || lastPhase === undefined) return
+    left = true
+    track({ phase: 'abandoned', last_phase: lastPhase, exit })
+  }
+
   return {
     enter,
     track,
+    ended,
+    abandoned,
     submitted,
     submitSettled,
     operationIssued,
