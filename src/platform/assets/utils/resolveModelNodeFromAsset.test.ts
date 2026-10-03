@@ -1,4 +1,7 @@
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import {
+  ModelNodeProvider,
+  useModelToNodeStore
+} from '@/stores/modelToNodeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -69,16 +72,20 @@ describe('canCreateNodeForAsset', () => {
   })
 
   it.for([
-    { hasProvider: true, expected: true },
-    { hasProvider: false, expected: false }
+    { providerCategory: 'checkpoints', expected: true },
+    { providerCategory: 'vae', expected: false }
   ])(
-    'returns $expected when registry provider availability is $hasProvider',
-    ({ hasProvider, expected }) => {
+    'returns $expected when the registry provider category is $providerCategory',
+    ({ providerCategory, expected }) => {
       useNodeDefStore().nodeDefsByName = {
         TestNode: fromPartial<ComfyNodeDefImpl>({ name: 'TestNode' })
       }
-      vi.spyOn(useModelToNodeStore(), 'hasNodeProvider').mockReturnValue(
-        hasProvider
+      useModelToNodeStore().registerNodeProvider(
+        providerCategory,
+        new ModelNodeProvider(
+          fromPartial<ComfyNodeDefImpl>({ name: 'TestNode' }),
+          'model_name'
+        )
       )
 
       expect(canCreateNodeForAsset(createMockAsset())).toBe(expected)
