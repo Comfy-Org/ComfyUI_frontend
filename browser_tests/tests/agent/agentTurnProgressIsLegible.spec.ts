@@ -154,16 +154,14 @@ test.describe(
       const overflow = await thinkingRow.evaluate((element) => {
         const style = getComputedStyle(element)
         return {
+          hiddenWidth: element.scrollWidth - element.clientWidth,
           hiddenHeight: element.scrollHeight - element.clientHeight,
-          textOverflow: style.textOverflow,
-          webkitLineClamp: style.webkitLineClamp,
           fontSizePx: Number.parseFloat(style.fontSize),
           lineHeightPx: Number.parseFloat(style.lineHeight)
         }
       })
+      expect(overflow.hiddenWidth).toBeLessThanOrEqual(1)
       expect(overflow.hiddenHeight).toBeLessThanOrEqual(1)
-      expect(overflow.textOverflow).toBe('clip')
-      expect(overflow.webkitLineClamp).toBe('none')
       expect(overflow.lineHeightPx).toBeGreaterThan(overflow.fontSizePx)
 
       // The metrics above only see clipping by the row's OWN box. The
@@ -187,37 +185,39 @@ test.describe(
     // This is turn-level elapsed time, NOT the per-tool-call durations that
     // `agentPanel.spec.ts` asserts are absent (`'0.5s'`, `'0.2s'`) — those are
     // a separate, deliberately hidden surface. This pin does not contradict it.
-    test.fail(
-      'names how long the finished turn took',
-      async ({ agentPanel, getWebSocket, postedMessages }) => {
-        const panel = agentPanel.root
-        await agentPanel.open()
-        await agentPanel.selectWorkflow()
+    test('names how long the finished turn took', async ({
+      agentPanel,
+      getWebSocket,
+      postedMessages
+    }) => {
+      const panel = agentPanel.root
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
 
-        const ws = await getWebSocket()
-        await agentPanel.sendMessage('Set the prompt to a red fox in the snow')
-        await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+      const ws = await getWebSocket()
+      await agentPanel.sendMessage('Set the prompt to a red fox in the snow')
+      await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 
-        pushEvent(ws, THINKING_EVENT)
-        pushEvent(ws, OPEN_TAB_TOOL_EVENT)
-        pushEvent(ws, MESSAGE_DELTA_EVENT)
-        pushEvent(ws, MESSAGE_DONE_EVENT)
+      pushEvent(ws, THINKING_EVENT)
+      pushEvent(ws, OPEN_TAB_TOOL_EVENT)
+      pushEvent(ws, MESSAGE_DELTA_EVENT)
+      pushEvent(ws, MESSAGE_DONE_EVENT)
 
-        // The turn is over: Send is back and the collapsed summary is up.
-        await expect(
-          panel.getByRole('button', { name: enMessages.agent.send })
-        ).toBeVisible()
-        const summary = panel.getByRole('button', {
-          name: new RegExp(`^${enMessages.agent.worked}`)
-        })
-        await expect(summary).toHaveCount(1)
+      // The turn is over: Send is back and the collapsed summary is up.
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.send })
+      ).toBeVisible()
+      const summary = panel.getByRole('button', {
+        name: new RegExp(`^${enMessages.agent.worked}`)
+      })
+      await expect(summary).toHaveCount(1)
 
-        // "Worked" alone does not answer "how long was it working?" — and
-        // neither does `Worked for .+`, which "Worked for you" satisfies. The
-        // two alternatives are the only shapes the label actually takes
-        // (`workedForSeconds`, `workedForMinutes`), so a number is required.
-        await expect(summary).toHaveText(/Worked for (\d+ seconds|\d+m \d+s)/)
-      }
-    )
+      // "Worked" alone does not answer "how long was it working?" — and
+      // neither does `Worked for .+`, which "Worked for you" satisfies. The
+      // two alternatives are the only shapes the label actually takes
+      // (`workedForSeconds`, `workedForMinutes`), so a number is required.
+      test.fail()
+      await expect(summary).toHaveText(/Worked for (\d+ seconds|\d+m \d+s)/)
+    })
   }
 )
