@@ -5,10 +5,16 @@ import type {
 } from '@comfyorg/comfyui-desktop-bridge-types'
 import { describe, expect, it, vi } from 'vitest'
 
+import { noteTemplateInputAlreadyPresent } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import {
   resolveTemplateInputAssets,
   startMissingTemplateInputDownloads
 } from '@/platform/workflow/templates/utils/templateInputAssets'
+
+vi.mock(
+  import('@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'),
+  () => ({ noteTemplateInputAlreadyPresent: vi.fn() })
+)
 
 function asset(
   assetId: string,
@@ -110,6 +116,21 @@ describe('startMissingTemplateInputDownloads', () => {
       ['t1', 'c']
     ])
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('rebinds a file the host already had', async () => {
+    const downloadTemplateInputAsset = downloadStub(async () => ({
+      status: 'already-present' as const
+    }))
+    startMissingTemplateInputDownloads('t1', [asset('a', 'missing')], {
+      getBridge: () => bridge({ downloadTemplateInputAsset }),
+      reportError: vi.fn()
+    })
+    await vi.waitFor(() =>
+      // No download means no progress event, so this is the only signal the
+      // graph gets that the file is there.
+      expect(noteTemplateInputAlreadyPresent).toHaveBeenCalledWith('a.png')
+    )
   })
 
   it.for([
