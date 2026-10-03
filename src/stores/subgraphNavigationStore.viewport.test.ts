@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { nextTick } from 'vue'
 
@@ -210,6 +210,44 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       mockGraph.nodes = []
       mockGraph._nodes = []
+    })
+
+    it('does not let a first-visit fit queued for a hidden canvas overwrite a later cache restore', () => {
+      const store = useSubgraphNavigationStore()
+      store.viewportCache.delete(':sub-a')
+      setCanvasVisible(mockCanvas.canvas, false)
+      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
+      mockGraph._nodes = mockGraph.nodes
+      onTestFinished(() => {
+        mockGraph.nodes = []
+        mockGraph._nodes = []
+      })
+
+      // First visit to A while hidden: no cached viewport, so a fit is queued.
+      mockCanvas.subgraph = { id: 'sub-a' } as never
+      store.restoreViewport('sub-a')
+
+      // Navigate away to an already-visited B. A cache hit applies the cached
+      // viewport and returns, leaving A's queued fit in the scheduler.
+      store.viewportCache.set(':sub-b', { scale: 1, offset: [0, 0] })
+      mockCanvas.subgraph = { id: 'sub-b' } as never
+      store.restoreViewport('sub-b')
+
+      // Back to A, now cached too, so this is also a cache hit.
+      mockCanvas.subgraph = { id: 'sub-a' } as never
+      store.viewportCache.set(':sub-a', { scale: 3, offset: [11, 22] })
+      store.restoreViewport('sub-a')
+
+      // The canvas becomes visible. The fit queued for A's first visit names
+      // the graph that is active again, so a graph-id-only ownership test
+      // makes it current and it clobbers the restore.
+      setCanvasVisible(mockCanvas.canvas, true)
+      useCanvasScheduler().flush()
+
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
+      expect(mockCanvas.ds.scale).toBe(3)
+      expect(mockCanvas.ds.offset).toEqual([11, 22])
     })
 
     it('skips a queued fit if the active graph changes while hidden', () => {

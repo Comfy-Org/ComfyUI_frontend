@@ -28,4 +28,19 @@ describe('visibleCanvasViewport', () => {
       visibleCanvasViewport({ ds: createTestDragAndScale(800, 450) })
     ).toEqual([0, 0, 300, 450])
   })
+
+  it('falls back to the whole canvas when the panel leaves nothing uncovered', () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.consentAccepted = true
+    panel.isOpen = true
+    panel.setWidth(500)
+
+    // A narrow canvas fully covered by the panel. An empty rectangle is
+    // rejected by every fit and animate path, so the user's framing request
+    // would be discarded rather than deferred — fit the whole canvas instead.
+    expect(
+      visibleCanvasViewport({ ds: createTestDragAndScale(480, 450) })
+    ).toEqual([0, 0, 480, 450])
+  })
 })

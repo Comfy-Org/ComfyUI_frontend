@@ -137,6 +137,12 @@ export const useSubgraphNavigationStore = defineStore(
       const canvas = canvasStore.canvas
       if (!canvas) return
 
+      // Any queued fit belongs to an earlier arrival, including an earlier
+      // arrival at this same graph. Leaving A and returning to it makes a fit
+      // queued on A's first visit current again by graph id alone, so without
+      // this it runs after the cache restore below and overwrites it.
+      canvasScheduler.cancel('subgraph-navigation-fit')
+
       const expectedKey = buildCacheKey(graphId)
       const viewport = viewportCache.get(expectedKey)
       if (viewport) {
