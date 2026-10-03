@@ -1,13 +1,16 @@
+import { assert } from '@/base/assert'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import type {
   DocFrameClient,
   DocOp,
+  DocReseedResult,
   DocReset,
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
 import { wireLog } from './crdtLog'
+import { RESEED_CONFLICT, STALE_SCHEMA_RESEED_REQUIRED } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -41,6 +44,24 @@ function trySend(send: () => boolean): boolean {
     })
     wireLog.warn('frame_send_failed', 'outbound doc frame dropped', error)
     return false
+  }
+}
+
+function reseedRefusalState(subscribed: DocSubscribed): {
+  workflowId: string | null
+  expectedSeq: number | null
+} {
+  if (
+    subscribed.ok ||
+    subscribed.code !== STALE_SCHEMA_RESEED_REQUIRED ||
+    subscribed.expectedSeq === undefined ||
+    !Number.isSafeInteger(subscribed.expectedSeq) ||
+    subscribed.expectedSeq <= 0
+  )
+    return { workflowId: null, expectedSeq: null }
+  return {
+    workflowId: subscribed.workflowId,
+    expectedSeq: subscribed.expectedSeq ?? null
   }
 }
 
@@ -125,6 +146,25 @@ export class LayoutFollowerBridge extends EventTarget {
    * harmless). It never moves {@link lastSeq} backwards.
    */
   private catchUpPending = false
+  /**
+   * The workflow a `doc_reseed` went out for and has not been answered yet;
+   * only its answer is acted on (see {@link onDocReseedResult}).
+   */
+  private reseedWorkflowId: string | null = null
+  /**
+   * The workflow the host last refused `stale_schema_reseed_required`, until
+   * this bridge answers it. The only state in which {@link reseed} may send a
+   * whole canvas (ADR-CRDT-FOLLOWER-0025, 2026-09-26 amendment).
+   */
+  private reseedEligibleWorkflowId: string | null = null
+  /** Sequence bound to the current stale-schema refusal. */
+  private reseedExpectedSeq: number | null = null
+  /**
+   * A successful/conflicting reseed already reset this workflow's lineage.
+   * Until the replacement subscribe is confirmed, another stale refusal must
+   * use the lifecycle's bounded backoff instead of sending another canvas.
+   */
+  private reseedBlockedWorkflowId: string | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -132,6 +172,7 @@ export class LayoutFollowerBridge extends EventTarget {
     client.addEventListener('doc_reset', this.onDocReset)
     client.addEventListener('doc_subscribed', this.onDocSubscribed)
     client.addEventListener('doc_ops_result', this.forwardFrame)
+    client.addEventListener('doc_reseed_result', this.onDocReseedResult)
   }
 
   /** The semantic doc this bridge currently follows. */
@@ -180,6 +221,11 @@ export class LayoutFollowerBridge extends EventTarget {
    */
   subscribe(workflowId: string): void {
     const lineage = this.lineageWorkflowId
+    if (this.desiredWorkflowId !== workflowId) {
+      this.reseedBlockedWorkflowId = null
+      this.reseedEligibleWorkflowId = null
+      this.reseedExpectedSeq = null
+    }
     this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
@@ -230,9 +276,60 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reconcile()
   }
 
+  /** Reconnect starts a fresh transport session and permits fresh recovery. */
+  reconnect(): void {
+    this.reseedBlockedWorkflowId = null
+    this.reseedEligibleWorkflowId = null
+    this.reseedExpectedSeq = null
+    this.resubscribe()
+  }
+
   unsubscribe(): void {
     this.desiredWorkflowId = null
     this.reconcile()
+  }
+
+  /**
+   * Answer a `stale_schema_reseed_required` refusal: ask the server to re-mint
+   * the followed document from `workflow`, the canvas this tab shows. Only for
+   * the workflow this bridge wants followed.
+   *
+   * @returns whether the frame left the transport.
+   */
+  reseed(workflowId: string, workflow: Record<string, unknown>): boolean {
+    const expectedSeq = this.reseedSequenceFor(workflowId)
+    if (expectedSeq !== null) {
+      this.reseedEligibleWorkflowId = null
+      this.reseedExpectedSeq = null
+    } else {
+      assert(
+        false,
+        'followers send a whole canvas only to answer a current stale-schema refusal — see ADR-CRDT-FOLLOWER-0025',
+        { workflowId }
+      )
+      return false
+    }
+    if (!trySend(() => this.client.reseed(workflowId, expectedSeq, workflow)))
+      return false
+    this.reseedWorkflowId = workflowId
+    return true
+  }
+
+  /** Whether the host supplied a valid, current, unconsumed refusal token. */
+  canReseed(workflowId: string): boolean {
+    return this.reseedSequenceFor(workflowId) !== null
+  }
+
+  private reseedSequenceFor(workflowId: string): number | null {
+    const expectedSeq = this.reseedExpectedSeq
+    return workflowId === this.reseedEligibleWorkflowId &&
+      workflowId === this.desiredWorkflowId &&
+      workflowId !== this.reseedBlockedWorkflowId &&
+      expectedSeq !== null &&
+      Number.isSafeInteger(expectedSeq) &&
+      expectedSeq > 0
+      ? expectedSeq
+      : null
   }
 
   sendHumanOps(tab: string, ops: DocOp[]): void {
@@ -255,6 +352,10 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_reset', this.onDocReset)
       this.client.removeEventListener('doc_subscribed', this.onDocSubscribed)
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
+      this.client.removeEventListener(
+        'doc_reseed_result',
+        this.onDocReseedResult
+      )
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
       this.followerDoc.destroy()
@@ -407,11 +508,48 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
+    const refusal =
+      subscribed.workflowId === this.reseedBlockedWorkflowId
+        ? { workflowId: null, expectedSeq: null }
+        : reseedRefusalState(subscribed)
+    this.reseedEligibleWorkflowId = refusal.workflowId
+    this.reseedExpectedSeq = refusal.expectedSeq
     if (subscribed.ok) {
+      this.reseedBlockedWorkflowId = null
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+  }
+
+  /**
+   * A reseed that landed (`ok`), or lost the race to another writer
+   * (`conflict`), leaves the server holding a NEW lineage. This tab was
+   * refused, so it does not follow the channel the server's `doc_reset` went
+   * out on: take the same path that frame takes — drop the doc and resubscribe
+   * with an empty state vector — so the catch-up is the whole new document.
+   * Any other answer is final for this refusal and only forwarded.
+   */
+  private readonly onDocReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const result = event.detail as DocReseedResult
+    if (result.workflowId !== this.reseedWorkflowId) return
+    this.reseedWorkflowId = null
+    this.dispatchEvent(new CustomEvent(event.type, { detail: result }))
+    if (result.workflowId !== this.desiredWorkflowId) return
+    // Retryable failures are rescheduled by the lifecycle's bounded backoff.
+    if (!result.ok && result.code !== RESEED_CONFLICT) return
+    this.reseedBlockedWorkflowId = result.workflowId
+    const reset: DocReset = {
+      workflowId: result.workflowId,
+      seq: result.seq ?? 0,
+      lineageSeq: result.seq ?? 0,
+      actor: 'system:client-seed'
+    }
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+    this.dropDocForNewLineage()
+    this.resubscribe()
+    this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 
   private readonly forwardFrame: EventListener = (event) => {

@@ -31,9 +31,12 @@ const bridgeState = vi.hoisted(() => {
     subscribe = vi.fn()
     unsubscribe = vi.fn()
     resubscribe = vi.fn()
+    reconnect = vi.fn(() => this.resubscribe())
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
+    reseed = vi.fn(() => true)
+    canReseed = vi.fn(() => true)
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     follower = {
@@ -194,7 +197,9 @@ function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
   getGraph: () => LGraph | null = () => null,
-  events: Parameters<typeof useAgentCrdtFollower>[4] = {}
+  events: Parameters<typeof useAgentCrdtFollower>[4] = {},
+  applierDeps: Parameters<typeof useAgentCrdtFollower>[5] = {},
+  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -213,7 +218,9 @@ function mountFollower(
         () => null,
         isTargetActive,
         getGraph,
-        events
+        events,
+        applierDeps,
+        canvasFor
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
@@ -2193,5 +2200,187 @@ describe('useAgentCrdtFollower', () => {
 
     expect(reportedTeardownErrors()).toStrictEqual([null, undefined])
     expect(clientState.destroy).toHaveBeenCalled()
+  })
+
+  describe('stale-schema reseed on subscribe', () => {
+    const canvas = {
+      last_node_id: 1,
+      nodes: [{ id: 1, type: 'CheckpointLoaderSimple' }],
+      links: []
+    }
+    const staleRefusal = {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    }
+
+    function mountWithCanvas(
+      canvasFor: (workflowId: string) => Record<string, unknown> | null = () =>
+        canvas
+    ) {
+      return mountFollower('wf-1', true, () => null, {}, {}, canvasFor)
+    }
+
+    it('answers the refusal once with the canvas the tab shows, instead of the retry', () => {
+      vi.useFakeTimers()
+      const canvasFor = vi.fn(() => canvas)
+      const { unmount, status } = mountWithCanvas(canvasFor)
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+
+      expect(canvasFor).toHaveBeenCalledWith('wf-1')
+      expect(bridge().reseed).toHaveBeenCalledExactlyOnceWith('wf-1', canvas)
+      expect(status().connected).toBe(false)
+      // The bridge resubscribes on the answer; the refused-subscribe backoff
+      // must not race it.
+      vi.advanceTimersByTime(5_000)
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('backs off instead of reseeding again before replacement subscribe confirms', () => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      dispatchFrame('doc_reseed_result', {
+        workflowId: 'wf-1',
+        ok: true,
+        seq: 8,
+        outcome: 'reseeded'
+      })
+      bridge().canReseed.mockReturnValue(false)
+      dispatchFrame('doc_subscribed', staleRefusal)
+
+      expect(bridge().reseed).toHaveBeenCalledTimes(1)
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+      unmount()
+    })
+
+    it('can answer a fresh refusal after reconnecting', () => {
+      const { unmount } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      apiState.target.dispatchEvent(new Event('reconnected'))
+      dispatchFrame('doc_subscribed', { ...staleRefusal, expectedSeq: 8 })
+
+      expect(bridge().reseed).toHaveBeenCalledTimes(2)
+      unmount()
+    })
+
+    it('does not retry a permanent non-reseed refusal', () => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', {
+        workflowId: 'wf-1',
+        ok: false,
+        code: 'schema_version_mismatch'
+      })
+
+      expect(bridge().reseed).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it.for<[string, () => Record<string, unknown> | null]>([
+      ['no canvas', () => null],
+      ['an empty canvas', () => ({ nodes: [], links: [] })]
+    ])('does not reseed from %s', ([, canvasFor]) => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas(canvasFor)
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+
+      expect(bridge().reseed).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+      unmount()
+    })
+
+    it('can reseed after a canvas becomes available on a later refusal', () => {
+      vi.useFakeTimers()
+      let available = false
+      const { unmount } = mountWithCanvas(() => (available ? canvas : null))
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      expect(bridge().reseed).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(500)
+
+      available = true
+      dispatchFrame('doc_subscribed', { ...staleRefusal, expectedSeq: 8 })
+      expect(bridge().reseed).toHaveBeenCalledExactlyOnceWith('wf-1', canvas)
+      unmount()
+    })
+
+    it('falls back to the ordinary retry when the reseed cannot leave the socket', () => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas()
+      bridge().reseed.mockReturnValue(false)
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+      unmount()
+    })
+
+    it('stops probing a document whose reseed was refused, quietly', () => {
+      vi.useFakeTimers()
+      telemetryState.reportError.mockClear()
+      const { unmount } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      dispatchFrame('doc_reseed_result', {
+        workflowId: 'wf-1',
+        ok: false,
+        code: 'stale_schema_reseed_refused'
+      })
+      apiState.target.dispatchEvent(new Event('status'))
+      vi.advanceTimersByTime(10 * 60_000)
+
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      expect(bridge().reconcile).not.toHaveBeenCalled()
+      expect(telemetryState.reportError).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('retries after a transient reseed failure and accepts a fresh refusal token', () => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      dispatchFrame('doc_reseed_result', {
+        workflowId: 'wf-1',
+        ok: false,
+        code: 'unavailable'
+      })
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+
+      dispatchFrame('doc_subscribed', { ...staleRefusal, expectedSeq: 8 })
+      expect(bridge().reseed).toHaveBeenCalledTimes(2)
+      unmount()
+    })
+
+    it('a retarget allows one reseed for the new binding', () => {
+      vi.useFakeTimers()
+      const { unmount, workflowId } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      workflowId.value = 'wf-2'
+      return nextTick().then(() => {
+        dispatchFrame('doc_subscribed', {
+          ...staleRefusal,
+          workflowId: 'wf-2'
+        })
+        expect(bridge().reseed).toHaveBeenCalledTimes(2)
+        expect(bridge().reseed).toHaveBeenLastCalledWith('wf-2', canvas)
+        unmount()
+      })
+    })
   })
 })

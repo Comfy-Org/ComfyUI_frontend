@@ -22,6 +22,7 @@ const bridgeState = vi.hoisted(() => {
     })
 
     resubscribe = vi.fn()
+    reconnect = vi.fn(() => this.resubscribe())
     reconcile = vi.fn()
     destroy = vi.fn()
     subscribedWorkflowId: string | null = null
