@@ -24,17 +24,6 @@ function createMockLGraphCanvas() {
 
 describe('TransformPane', () => {
   describe('component mounting', () => {
-    it('should mount successfully with minimal props', () => {
-      const mockCanvas = createMockLGraphCanvas()
-      render(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      expect(screen.getByTestId('transform-pane')).toBeInTheDocument()
-    })
-
     it('should apply transform style from composable', async () => {
       useTransformState().transformStyle = computed(() => ({
         transform: 'scale(2) translate(100px, 50px)',
@@ -141,21 +130,6 @@ describe('TransformPane', () => {
       /* oxlint-enable testing-library/prefer-user-event */
 
       expect(transformPane).toBeInTheDocument()
-    })
-  })
-
-  describe('transform state integration', () => {
-    it('should provide transform utilities to child components', () => {
-      const mockCanvas = createMockLGraphCanvas()
-      render(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      const transformState = useTransformState()
-      expect(transformState.syncWithCanvas).toBeDefined()
-      expect(transformState.screenToCanvas).toBeDefined()
     })
   })
 

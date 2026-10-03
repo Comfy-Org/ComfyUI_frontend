@@ -1,10 +1,15 @@
 import type { BillingFailed } from './stages.js'
 
-/** The part of the provider's hosted portal the customer was sent to. */
+/**
+ * The part of the provider's hosted portal the customer was sent to.
+ * `payment_recovery` is a checkout that stopped on a failed or outstanding
+ * payment and sent the customer to settle it.
+ */
 export type BillingPortalTarget =
   | 'payment_methods'
   | 'invoices'
   | 'manage_subscription'
+  | 'payment_recovery'
 
 /**
  * A trip to the provider's hosted portal. What the customer does there (adding,
