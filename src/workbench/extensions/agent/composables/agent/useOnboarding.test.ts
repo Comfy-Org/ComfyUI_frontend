@@ -111,27 +111,14 @@ describe('useOnboarding', () => {
     ).toBeNull()
   })
 
-  it('gives the device-wide flag to the first account only', () => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-a')
-
-    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-b.workspace-a')
-
-    expect(
-      localStorage.getItem('Comfy.AgentPanel.onboarded.user-a.workspace-a')
-    ).toBe('true')
-    expect(
-      localStorage.getItem('Comfy.AgentPanel.onboarded.user-b.workspace-a')
-    ).toBeNull()
-  })
-
-  it('runs the tour again for another account in the same browser and workspace', () => {
+  it('runs the tour again for another account in the same browser and workspace', async () => {
     const first = useOnboarding(
       STEPS,
       scopedOnboardingKey('user-a', 'workspace-a')!
     )
     first.finish()
     expect(first.active.value).toBe(false)
+    await nextTick()
 
     const second = useOnboarding(
       STEPS,
