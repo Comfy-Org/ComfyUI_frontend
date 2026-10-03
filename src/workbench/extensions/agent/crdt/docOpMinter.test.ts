@@ -714,8 +714,8 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
-  // The fourth action the root-scope gate refuses, and the only one with no
-  // production telemetry yet: a rename or mode change on an interior node.
+  // One of the actions the root-scope gate refuses: a rename or mode change on
+  // an interior node. Production has confirmed that this refusal is reported.
   // `set_node_field` has no `path` in the frozen vocabulary, so there is no op
   // to mint — but the refusal must stay observable, like the three above.
   it('surfaces a subgraph-interior node field write instead of minting it', async () => {
