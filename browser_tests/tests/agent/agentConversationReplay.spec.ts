@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 import { toNodeId } from '@/types/nodeId'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
@@ -14,6 +15,11 @@ import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
+
+// Synthesized (not a cloud capture, see the fixture's `source.note`), so it
+// lives under conversations/repro/ rather than conversations/ and is
+// deliberately absent from listRecordedConversations() below.
+const ASSET_GRID_CASE = 'repro/pm-1135-asset-grid-fragmentation'
 
 test.describe(
   'Agent conversation replay',
@@ -31,12 +37,53 @@ test.describe(
       }) => {
         test.setTimeout(90_000)
         await agentConversation.runTurns()
+        await page.evaluate(() => window.app!.canvas.deselectAll())
 
         await expect(page.locator('#graph-canvas')).toHaveScreenshot(
           'two-turn-dependent-edit-wired.png',
           { mask: [agentConversation.panel] }
         )
       })
+    })
+
+    test.describe(`recorded ${ASSET_GRID_CASE}`, () => {
+      test.use({ conversationCase: ASSET_GRID_CASE })
+
+      test(
+        'PM-1135: a captioned batch reply keeps each caption paired with its own asset, even when a tool call splits it across two message deltas, see linear.app/comfyorg/issue/PM-1135',
+        { tag: ['@screenshot'] },
+        async ({ agentConversation, page }) => {
+          test.setTimeout(90_000)
+          await page.route(
+            'https://assets.example/outputs/render_a.png',
+            (route) =>
+              route.fulfill({ path: assetPath('agent/asset-grid-repro-a.png') })
+          )
+          await page.route(
+            'https://assets.example/outputs/render_b.png',
+            (route) =>
+              route.fulfill({ path: assetPath('agent/asset-grid-repro-b.png') })
+          )
+
+          await agentConversation.runTurns()
+
+          const images = agentConversation.panel.getByRole('img', {
+            name: /^render_[ab]\.png$/
+          })
+          await expect(images).toHaveCount(2)
+
+          await expect(agentConversation.panel).toHaveScreenshot(
+            'asset-grid-fragmentation.png',
+            {
+              // The CRDT diagnostics chip is mounted asynchronously and may
+              // appear after the reply is complete. Keep this visual check
+              // strict enough to catch content drift while ignoring that
+              // 388-pixel connection-status difference.
+              maxDiffPixels: 400
+            }
+          )
+        }
+      )
     })
 
     test.describe('live widget effects', () => {
@@ -47,22 +94,35 @@ test.describe(
         page
       }) => {
         test.setTimeout(90_000)
-        await agentConversation.runTurns(() =>
-          page.evaluate((nodeId) => {
-            const node = window.app!.graph.getNodeById(nodeId)
-            const steps = node?.widgets?.find(
-              (widget) => widget.name === 'steps'
-            )
-            if (!steps) throw new Error('KSampler steps widget not found')
-            steps.callback = (_value, _canvas, owner) => {
-              const sampler = owner?.widgets?.find(
-                (widget) => widget.name === 'sampler_name'
+        await agentConversation.runTurns({
+          beforeFirstGraphOps: () =>
+            page.evaluate((nodeId) => {
+              const node = window.app!.graph.getNodeById(nodeId)
+              const steps = node?.widgets?.find(
+                (widget) => widget.name === 'steps'
               )
-              if (!sampler) throw new Error('KSampler sampler widget not found')
-              sampler.options.values = ['euler', 'heun']
-            }
-          }, toNodeId(3))
-        )
+              if (!steps) throw new Error('KSampler steps widget not found')
+              steps.callback = (_value, _canvas, owner) => {
+                const sampler = owner?.widgets?.find(
+                  (widget) => widget.name === 'sampler_name'
+                )
+                if (!sampler)
+                  throw new Error('KSampler sampler widget not found')
+                sampler.options.values = ['euler', 'heun']
+              }
+            }, toNodeId(3))
+        })
+
+        await expect(
+          agentConversation.vueNodes
+            .getWidgetByName('KSampler', 'steps')
+            .getByRole('spinbutton')
+        ).toHaveValue('30')
+        await expect(
+          agentConversation.vueNodes
+            .getWidgetByName('KSampler', 'cfg')
+            .getByRole('spinbutton')
+        ).toHaveValue('5.0')
 
         const sampler = agentConversation.vueNodes
           .getNodeLocator('3')
@@ -133,7 +193,6 @@ test.describe(
           await typing
           await resync
 
-          test.fail()
           await expect(field).toHaveValue(`a photo of a pier${appended}`)
         })
       })

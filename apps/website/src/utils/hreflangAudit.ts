@@ -7,11 +7,17 @@
  */
 import type { Alternate } from './hreflangRoutes'
 
-import { unprefixed, ZH_HREFLANG, ZH_PREFIX } from './hreflangRoutes'
+import { isExcludedFromSitemap } from '../config/indexing'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
+import { astroRedirects } from '../config/redirects'
+import { supportsLocaleRoute } from '../config/routes'
+import { unprefixed } from './hreflangRoutes'
 
 export interface BuiltSite {
   /** Every built route, mapped to the alternates its HTML emits. */
   pages: Map<string, Alternate[]>
+  /** Missing route keys mean no canonical link was extracted. */
+  canonicals: ReadonlyMap<string, string>
   /**
    * Sitemap URL -> the alternates it advertises, in document order. `null` when
    * the sitemap is absent.
@@ -25,24 +31,76 @@ export interface BuiltSite {
 }
 
 /**
+ * Locales this path structurally routes to (per `supportsLocaleRoute`, which
+ * already excludes locale-invariant routes like /affiliates or /models) AND
+ * are not themselves noindexed. A routable but noindexed locale is not a
+ * translation the site can point a crawler at, so it does not count toward
+ * the "this route should cluster" threshold below.
+ *
+ * Deliberately stricter than `expectedAlternates`'s `pages.has(...)` fallback:
+ * a locale-invariant route can still have both locale pages built (the zh-CN
+ * copy renders, it is just not meant to be advertised as a translation), and
+ * that fallback existing must not, on its own, turn such a route into one
+ * that is expected to cluster.
+ */
+function clusterEligibleLocales(
+  path: string,
+  origin: string
+): (typeof LOCALE_CODES)[number][] {
+  return LOCALE_CODES.filter((locale) => {
+    if (!supportsLocaleRoute(locale, path)) return false
+    const localePath = `${LOCALES[locale].prefix}${path}`
+    return !isExcludedFromSitemap(`${origin}${localePath}`)
+  })
+}
+
+/**
  * The exact locale-to-URL mapping a clustered route must emit.
  *
- * Derived from the same prefix rule the pages and the sitemap use, so there is
- * one definition of what the Chinese twin of a URL is.
+ * Required locales come from policy; built pages also expose extra
+ * publication. Once a route is already expected to cluster (see
+ * `isClustered`), a noindexed locale variant still should not join that
+ * cluster, so the same noindex filter applies here too.
  */
 function expectedAlternates(
   route: string,
-  origin: string
+  origin: string,
+  pages: ReadonlyMap<string, Alternate[]>
 ): Map<string, string> {
   const path = unprefixed(route)
-  const english = `${origin}${path}`
-  const chinese = `${origin}${ZH_PREFIX}${path === '/' ? '/' : path}`
+  const publishedLocales = LOCALE_CODES.filter((locale) => {
+    const localePath = `${LOCALES[locale].prefix}${path}`
+    if (isExcludedFromSitemap(`${origin}${localePath}`)) return false
+    return supportsLocaleRoute(locale, path) || pages.has(localePath)
+  })
+  const expected = new Map<string, string>(
+    publishedLocales.map((locale): [string, string] => [
+      LOCALES[locale].hreflang,
+      new URL(`${LOCALES[locale].prefix}${path}`, origin).href
+    ])
+  )
+  expected.set(
+    'x-default',
+    new URL(`${LOCALES[DEFAULT_LOCALE].prefix}${path}`, origin).href
+  )
+  return expected
+}
 
-  return new Map([
-    ['en', english],
-    [ZH_HREFLANG, chinese],
-    ['x-default', english]
-  ])
+function isClustered(
+  route: string,
+  alternates: Alternate[],
+  origin: string
+): boolean {
+  const path = unprefixed(route)
+  // Observed links still get audited on exempt routes, and crawlable pages
+  // cannot evade the audit by omitting every link. A lone indexable page with
+  // no indexable twin has nothing to cluster with, same as hreflangAlternates.
+  return (
+    alternates.length > 0 ||
+    (clusterEligibleLocales(path, origin).length > 1 &&
+      !isExcludedFromSitemap(`${origin}${route}`) &&
+      !Object.hasOwn(astroRedirects, route.replace(/\/$/, '')))
+  )
 }
 
 /**
@@ -57,10 +115,11 @@ function clusterErrors(
   route: string,
   alternates: Alternate[],
   origin: string,
-  source: string
+  source: string,
+  pages: ReadonlyMap<string, Alternate[]>
 ): string[] {
   const errors: string[] = []
-  const expected = expectedAlternates(route, origin)
+  const expected = expectedAlternates(route, origin, pages)
   const seen = new Set<string>()
   for (const { hreflang, href } of alternates) {
     if (seen.has(hreflang)) {
@@ -70,10 +129,6 @@ function clusterErrors(
     }
     seen.add(hreflang)
 
-    // Checking only that the expected pairs are present accepts extras beside
-    // them. A locale this site does not publish still resolves and can still be
-    // reciprocal, so nothing downstream catches it: /ja/ pages that exist for
-    // some other reason would silently enter the cluster. The set is closed.
     if (!expected.has(hreflang)) {
       errors.push(
         `${route}: ${source} declares hreflang="${hreflang}", which is not one of ${[...expected.keys()].join(', ')}`
@@ -89,7 +144,7 @@ function clusterErrors(
 
   // Reciprocity alone accepts a cluster whose two locales are swapped: each
   // side still lists the other, so every link resolves while the labels lie.
-  if (alternates.length > 0) {
+  if (isClustered(route, alternates, origin)) {
     for (const [hreflang, href] of expected) {
       if (
         !alternates.some(
@@ -105,21 +160,34 @@ function clusterErrors(
   return errors
 }
 
-export function auditBuiltSite({
-  pages,
-  sitemap,
-  origin
-}: BuiltSite): string[] {
-  const errors: string[] = []
-  const routeOfHref = (href: string) => href.slice(origin.length) || '/'
+export function routeOfHref(href: string, origin: string): string {
+  const route = href.slice(origin.length) || '/'
+  try {
+    return decodeURI(route)
+  } catch {
+    return route
+  }
+}
 
+function pageErrors(
+  pages: ReadonlyMap<string, Alternate[]>,
+  canonicals: ReadonlyMap<string, string>,
+  origin: string
+): string[] {
+  const errors: string[] = []
   for (const [route, alternates] of pages) {
-    errors.push(...clusterErrors(route, alternates, origin, 'page'))
+    if (isClustered(route, alternates, origin)) {
+      const expectedCanonical = new URL(route, origin).href
+      if (canonicals.get(route) !== expectedCanonical) {
+        errors.push(`${route}: canonical must be ${expectedCanonical}`)
+      }
+    }
+    errors.push(...clusterErrors(route, alternates, origin, 'page', pages))
 
     // Only the pages can be checked against what was actually built.
     for (const { hreflang, href } of alternates) {
       if (!href.startsWith(origin)) continue
-      const target = routeOfHref(href)
+      const target = routeOfHref(href, origin)
       if (!pages.has(target)) {
         errors.push(
           `${route}: alternate ${hreflang} -> ${target} was not built (404)`
@@ -127,34 +195,52 @@ export function auditBuiltSite({
       }
     }
   }
+  return errors
+}
 
+function reciprocityErrors(
+  pages: ReadonlyMap<string, Alternate[]>,
+  origin: string
+): string[] {
+  const errors: string[] = []
   // Reciprocity: if A lists B, B must list A. A one-way cluster is discarded.
   for (const [route, alternates] of pages) {
     for (const { hreflang, href } of alternates) {
       if (hreflang === 'x-default') continue
-      const target = routeOfHref(href)
+      const target = routeOfHref(href, origin)
       if (target === route) continue
       const back = pages.get(target)
       if (!back) continue // already reported as unbuilt
-      if (!back.some((entry) => routeOfHref(entry.href) === route)) {
+      if (!back.some((entry) => routeOfHref(entry.href, origin) === route)) {
         errors.push(`${route}: lists ${target}, which does not list it back`)
       }
     }
   }
+  return errors
+}
 
-  if (!sitemap) {
-    errors.push('sitemap-0.xml is missing, so its alternates cannot be checked')
-    return errors
-  }
-
+function missingSitemapClusters(
+  pages: ReadonlyMap<string, Alternate[]>,
+  sitemap: ReadonlyMap<string, Alternate[]>,
+  origin: string
+): string[] {
+  const errors: string[] = []
   // Comparing only the sitemap's own entries never sees a clustered page the
   // sitemap leaves out, which is the direction this actually drifted.
   for (const [route, alternates] of pages) {
-    if (alternates.length > 0 && !sitemap.has(route)) {
-      errors.push(`${route}: advertises alternates but the sitemap omits it`)
+    if (isClustered(route, alternates, origin) && !sitemap.has(route)) {
+      errors.push(`${route}: language cluster missing from sitemap`)
     }
   }
+  return errors
+}
 
+function sitemapEntryErrors(
+  pages: ReadonlyMap<string, Alternate[]>,
+  sitemap: ReadonlyMap<string, Alternate[]>,
+  origin: string
+): string[] {
+  const errors: string[] = []
   for (const [route, sitemapAlternates] of sitemap) {
     // A sitemap URL with no page behind it is a 404 offered to a crawler. Report
     // that and stop: the language comparison below would otherwise diff against
@@ -164,7 +250,9 @@ export function auditBuiltSite({
       continue
     }
 
-    errors.push(...clusterErrors(route, sitemapAlternates, origin, 'sitemap'))
+    errors.push(
+      ...clusterErrors(route, sitemapAlternates, origin, 'sitemap', pages)
+    )
 
     const langs = new Set(
       sitemapAlternates.map((alternate) => alternate.hreflang)
@@ -189,12 +277,35 @@ export function auditBuiltSite({
   return errors
 }
 
+export function auditBuiltSite({
+  pages,
+  canonicals,
+  sitemap,
+  origin
+}: BuiltSite): string[] {
+  const errors = [
+    ...pageErrors(pages, canonicals, origin),
+    ...reciprocityErrors(pages, origin)
+  ]
+  if (!sitemap) {
+    return [
+      ...errors,
+      'sitemap-0.xml is missing, so its alternates cannot be checked'
+    ]
+  }
+  return [
+    ...errors,
+    ...missingSitemapClusters(pages, sitemap, origin),
+    ...sitemapEntryErrors(pages, sitemap, origin)
+  ]
+}
+
 /**
  * The sitemap chunk filenames a sitemap index names.
  *
  * `@astrojs/sitemap` chunks at 45k URLs. Reading only `sitemap-0.xml` is correct
  * at today's ~600 pages, but the moment a second chunk exists every route inside
- * it would be reported as "advertises alternates but the sitemap omits it", which
+ * it would be reported as "language cluster missing from sitemap", which
  * names the wrong problem entirely. The index is the only thing that knows how
  * many chunks there are.
  *

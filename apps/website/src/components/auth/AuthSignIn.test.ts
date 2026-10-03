@@ -5,6 +5,8 @@ import { computed, readonly, ref } from 'vue'
 
 import type { User, UserCredential } from 'firebase/auth'
 
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
+
 import type {
   AccountCredential,
   SessionResult
@@ -334,7 +336,7 @@ describe('AuthSignIn', () => {
     expect(alert.getAttribute('data-severity')).toBe('warn')
     expect(alert.textContent).toContain('Warning')
     expect(alert.textContent).toContain(
-      t('auth.errors.auth/popup-closed-by-user', 'en')
+      t('auth.errors.auth/popup-closed-by-user', {}, { locale: 'en' })
     )
     expect(toasts.value).toHaveLength(1)
     expect(
@@ -963,7 +965,7 @@ describe('AuthSignIn', () => {
     expect(
       alert.textContent,
       'user-not-found collapses to the neutral invalid-credential line so the toast never confirms whether the email has an account'
-    ).toContain(t('auth.errors.auth/invalid-credential', 'en'))
+    ).toContain(t('auth.errors.auth/invalid-credential', {}, { locale: 'en' }))
     expect(toasts.value[0].life).toBeUndefined()
     expect(replace).not.toHaveBeenCalled()
   })
@@ -1646,7 +1648,9 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'a hung email request recovers with a message rather than silently re-enabling'
     ).toHaveLength(1)
-    expect(toasts.value[0].detail).toBe(t('auth.errors.generic', 'en'))
+    expect(toasts.value[0].detail).toBe(
+      t('auth.errors.generic', {}, { locale: 'en' })
+    )
     expect(
       screen.getByRole('button', { name: /^sign in$/i }),
       'a bounded email request frees the controls at its deadline'
@@ -1673,6 +1677,99 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'an unbounded popup wait surfaces no timeout message'
     ).toHaveLength(0)
+  })
+})
+
+describe('AuthSignIn when a closed pop-up’s result arrives late', () => {
+  const googleUser = testCredential(
+    testFirebaseUser({
+      uid: 'google-user',
+      email: 'google@example.com',
+      displayName: null
+    })
+  )
+  const googleButton = () =>
+    screen.getByRole('button', { name: /^sign in with google$/i })
+
+  /**
+   * The package reports the closed popup by rejecting; the options the page
+   * passed are what it would use for a result that still arrives.
+   */
+  function dismissedPopup() {
+    let options: PopupSignInOptions | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementationOnce((given) => {
+      options = given
+      return Promise.reject({
+        code: 'auth/popup-closed-by-user',
+        message: 'closed'
+      })
+    })
+    return {
+      options: () => options,
+      /** Firebase saves the identity before the popup promise resolves. */
+      finishLate() {
+        const credential = Promise.resolve().then(() => {
+          authUser.value = googleUser.user
+          return googleUser
+        })
+        options?.onResumed?.(credential)
+      }
+    }
+  }
+
+  beforeEach(() => {
+    vi.mocked(provisionWorkshopCustomer).mockResolvedValue()
+  })
+
+  it('finishes a late result through the usual sign-in: provisioning, session, then home', async () => {
+    const popup = dismissedPopup()
+    render(AuthSignIn)
+    render(AuthToast)
+    await clickGoogle()
+    await screen.findByRole('alert')
+    expect(googleButton()).toHaveProperty('disabled', false)
+
+    popup.finishLate()
+
+    await waitFor(() =>
+      expect(googleButton(), 'the page is signing in again').toHaveProperty(
+        'disabled',
+        true
+      )
+    )
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    expect(provisionWorkshopCustomer).toHaveBeenCalledWith(googleUser)
+    expect(captureAuthCompleted).toHaveBeenCalledOnce()
+  })
+
+  it('declines a late result while another sign-in is under way', async () => {
+    const popup = dismissedPopup()
+    vi.mocked(signInWorkshopWithEmail).mockReturnValue(new Promise(() => {}))
+    const user = userEvent.setup()
+    render(AuthSignIn)
+    await clickGoogle()
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(true))
+
+    await openEmailForm(user)
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
+
+    expect(popup.options()?.keepLateResult?.()).toBe(false)
+  })
+
+  it('keeps a late result only while the page and the rollout still want it', async () => {
+    const popup = dismissedPopup()
+    const { unmount } = render(AuthSignIn)
+    await clickGoogle()
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(true))
+
+    authFlag.value = false
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(false))
+    authFlag.value = true
+    await waitFor(() => expect(googleButton()).toBeTruthy())
+    unmount()
+    expect(popup.options()?.keepLateResult?.()).toBe(false)
   })
 })
 

@@ -19,7 +19,7 @@ const hero = {
   descriptionKey: 'minimaxLicense.hero.description',
   primaryCta: {
     labelKey: 'minimaxLicense.hero.primaryCta',
-    href: localizeHref('/contact', locale)
+    href: localizeHref('/contact/', locale)
   },
   secondaryCta: {
     labelKey: 'minimaxLicense.hero.secondaryCta',

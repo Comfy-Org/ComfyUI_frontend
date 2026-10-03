@@ -8,39 +8,20 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 /**
- * The color and title specs below share one root cause: whenever a follower
- * session is (re)bound (`EcsFollowerAdapter.bind`, ecsFollowerAdapter.ts),
- * the very next doc frame it applies is forced through a full reconcile
- * (`reconcileNextFrame`), which replays the CRDT doc's own snapshot over the
- * live node with no "is this field newer locally" check anywhere in
- * graphMutations.ts. Returning to a workflow tab (inactive -> active) is the
- * confirmed trigger for that rebind — see agentTabSwitchCatchUp.spec.ts,
- * whose "second follower subscribe" is exactly this rebind.
- *
- * Color is fixed, robustly, in `graphMutations.ts`'s `prepareNode`: a
- * reconcile now merges onto the live node's color instead of always
- * resetting it, and the doc never carries color at all, so this holds
- * regardless of what else has or hasn't reset a node's live state. Unit-level
- * proof: `graphMutations.test.ts`'s "keeps a locally set node color...".
- *
- * Title's fix (comparing the doc's title against the node's last-synced doc
- * baseline, `resolveNodeTitle`) only holds within a session — it does NOT
- * survive a full workflow-tab reload of a node that predates the current
- * reconcile, because `LGraph.clear()` (called by `configure()`, which
- * returning to a tab triggers) tears each node down individually before any
- * store-level hook could preserve its baseline. That gap is intentionally
- * left as a known repro below (see agentNodeMaterializer.test.ts's own
- * `it.fails` case for the same gap at the unit level). Unit-level proof of
- * the in-session case: `graphMutations.test.ts`'s "keeps a locally renamed
- * title...".
+ * The color and title specs cover a follower rebind: returning to a workflow
+ * tab (inactive -> active) resubscribes the follower, which used to force the
+ * next doc frame through a full reconcile that replayed the doc snapshot over
+ * the live node. Rebinding now applies only the doc changes collected while
+ * the tab was inactive, so live-only state (color, a manual rename) that the
+ * doc never carries is left alone.
  *
  * The widget-overwrite spec at the bottom of this file is a *different*
- * mechanism, not a third symptom of the reconcile root cause above: it never
- * goes through a follower rebind at all. It replays an agent turn's
- * `set_widget` while the target widget is focused, which is a plain
- * local-edit-vs-remote-write collision in `applyWidgetValues`/
- * `setWidgetValue` (`graphMutations.ts`) — those write straight into
- * `widgetValueStore` with no focus/in-progress-edit guard.
+ * mechanism: it never goes through a follower rebind at all. It replays an
+ * agent turn's `set_widget` while the target widget is focused — a plain
+ * local-edit-vs-remote-write collision on one last-writer-wins register. The
+ * follower holds a frame's value for a register with a local write in flight
+ * until the document holds that write (`LocalWidgetWrites`), so the user's
+ * keystrokes survive.
  */
 
 // Five wired nodes (checkpoint -> CLIPTextEncode -> KSampler -> VAEDecode ->
@@ -59,7 +40,7 @@ const ADDED_NODE_ID = '2785690574723683'
 // Real product opt-in for the CRDT debug instrument (crdtDebugGate.ts), not
 // test-only furniture — the same keys `agentDebugPanel.spec.ts` sets. Turning
 // it on surfaces `useAgentCrdtFollower`'s own `status.outcomes` counters in
-// the DOM, which is the browser-side apply/reconcile signal below.
+// the DOM, which is the browser-side apply signal below.
 async function enableCrdtDebugPanel(page: Page): Promise<void> {
   await page.addInitScript(() => {
     localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
@@ -69,12 +50,10 @@ async function enableCrdtDebugPanel(page: Page): Promise<void> {
 
 /**
  * Reads `status.outcomes.applied` off the CRDT debug panel's "outcomes" row.
- * That counter rises inside `useAgentCrdtFollower.ts`'s `applyAndReconcile`
- * only after `projection.applyFrame` has merged the frame into the stores
- * AND `projection.reconcileLiveGraph` has run for it — the actual apply +
- * reconcile boundary, as opposed to `subscribeCount()`, which rises in the
- * mock host the instant it calls `socket.send`, before the browser has even
- * received the frame.
+ * That counter rises inside `useAgentCrdtFollower.ts` only after
+ * `projection.applyFrame` has applied the frame to the live graph, as opposed
+ * to `subscribeCount()`, which rises in the mock host the instant it calls
+ * `socket.send`, before the browser has even received the frame.
  */
 async function appliedFrameCount(page: Page): Promise<number> {
   const outcomesCell = page
@@ -97,18 +76,14 @@ async function appliedFrameCount(page: Page): Promise<number> {
  * the agent CRDT follower to unbind and rebind against the original workflow
  * (see agentTabSwitchCatchUp.spec.ts for the mechanism this mirrors). The tab
  * control switching back only proves the click landed, not that the new
- * follower subscription and its reconcile have happened, so this captures
+ * follower subscription and its catch-up apply have happened, so this captures
  * `subscribeCount()` (proof the follower's request/response round-trip
- * happened) and `appliedFrameCount()` (proof the browser actually applied and
- * reconciled the resulting catch-up frame) before switching, and polls both
+ * happened) and `appliedFrameCount()` (proof the browser actually applied the
+ * resulting catch-up frame) before switching, and polls both
  * before asserting anything about the canvas.
  *
  * `skipTitleCheckForNodeIds` forwards to `expectCanvasReplayed` for callers
- * (the title-stomp repro below) that intentionally leave a node's live title
- * diverged from the doc's own stale projected title — see that parameter's
- * doc comment. It must stay independent of that contested value so a real
- * fix flips this test from an expected failure to a genuine pass instead of
- * hard-failing forever on a title this call site never actually cares about.
+ * that leave a node's live title diverged from the doc's projected title.
  */
 async function reconcileByReturningToTab(
   page: Page,
@@ -209,30 +184,17 @@ test.describe(
 )
 
 test.describe(
-  'Agent CRDT reconcile stomps a locally renamed node title',
+  'A full workflow-tab reload and a locally renamed node title',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: UNTOUCHED_CASE })
 
     test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
 
-    test('keeps a manual canvas rename after an unrelated agent reconcile', async ({
+    test('keeps a manual canvas rename after leaving and reloading the workflow tab', async ({
       agentConversation,
       page
     }, testInfo) => {
-      // Known, intentionally unfixed repro: the workflow-tab reload wipes
-      // this node's reconcile baseline before the title fix ever runs — see
-      // the file-level comment and agentNodeMaterializer.test.ts's matching
-      // `it.fails` case for the mechanism. The reconcile step below still
-      // runs `expectCanvasReplayed`, but with this node's title check
-      // skipped (`skipTitleCheckForNodeIds`) — the doc's own projection never
-      // learns about the manual rename, so its title stays stale whether or
-      // not the real gap is fixed, and hard-asserting on that stale value
-      // there would fail the test for the wrong reason (a contested,
-      // unrelated value) even once the real gap closes, permanently masking
-      // whether it actually did. The only check this test's outcome should
-      // hinge on is the final assertion below.
-      test.fail()
       test.setTimeout(90_000)
       const topbar = new Topbar(page)
       const actionbar = new ComfyActionbar(page)
@@ -259,11 +221,9 @@ test.describe(
         contentType: 'image/png'
       })
 
-      await test.step('an unrelated agent-driven reconcile runs (returning to the tab)', async () => {
-        // The doc's own projection never learns about this manual rename, so
-        // its title stays stale regardless of whether the real "survives a
-        // tab reload" gap below is fixed — skip only this node's title check
-        // here rather than hard-coding the stale title as an expectation.
+      await test.step('leaving and returning fully reloads the workflow tab', async () => {
+        // The doc never learns about the manual rename, so its projected
+        // title for this node is stale; the final assertion is the check.
         await reconcileByReturningToTab(
           page,
           topbar,
@@ -291,8 +251,11 @@ test.describe(
   () => {
     test.use({ conversationCase: ADD_THEN_SET_CASE })
 
+    test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
+
     test('preserves a user’s in-progress edit when an agent turn sets the same widget', async ({
-      agentConversation
+      agentConversation,
+      page
     }, testInfo) => {
       test.setTimeout(90_000)
       const textField = agentConversation.vueNodes
@@ -326,6 +289,8 @@ test.describe(
         contentType: 'image/png'
       })
 
+      const appliedBeforeTurn = await appliedFrameCount(page)
+
       await test.step('the agent turn lands while the widget is still focused', async () => {
         await agentConversation.replayResponse(1)
       })
@@ -342,21 +307,56 @@ test.describe(
         contentType: 'image/png'
       })
 
-      // Pins the mechanism, not just the symptom: the remote write's own
-      // value ("blurry, low quality", the fixture's turn-1 set_widget) must
-      // actually have landed, or this could just as easily be documenting an
-      // unrelated regression — the second pressSequentially never arriving,
-      // or the field losing focus and going blank — instead of the
-      // overwrite this test is named for.
-      await expect(textField).toHaveValue(/blurry, low quality/)
+      // Pins the mechanism, not just the symptom: the turn's doc frame must
+      // actually have been applied in the browser (the outcomes counter rises
+      // only after `projection.applyFrame`), or a green result could just as
+      // easily be documenting an unrelated regression — the replay never
+      // arriving — instead of proving the remote value was held back while
+      // the edit was in progress.
+      await expect
+        .poll(() => appliedFrameCount(page))
+        .toBeGreaterThan(appliedBeforeTurn)
 
-      // Known bug: graphMutations.ts's
-      // applyWidgetValues/setWidgetValue write straight into
-      // widgetValueStore with no check for a focused/in-progress local
-      // edit, so an agent-driven set_widget on the same widget silently
-      // overwrites (or corrupts) whatever the user was mid-typing.
-      test.fail()
+      await expect(textField).not.toHaveValue(/blurry, low quality/)
       await expect(textField).toHaveValue('hello world')
+    })
+  }
+)
+
+test.describe(
+  'Completed widget edits survive unrelated agent turns',
+  { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
+  () => {
+    test.use({ conversationCase: UNTOUCHED_CASE })
+
+    test('keeps a completed widget edit after an unrelated agent turn', async ({
+      agentConversation
+    }) => {
+      test.setTimeout(90_000)
+      const textField = agentConversation.vueNodes
+        .getNodeLocator(UNTOUCHED_NODE_ID)
+        .getByLabel('text', { exact: true })
+      const agentEditedField = agentConversation.vueNodes
+        .getNodeLocator('3')
+        .getByLabel('steps', { exact: true })
+      const localValue = 'keep this completed local edit'
+
+      await agentConversation.sendPrompt(0)
+
+      await agentConversation.replayResponse(0, {
+        beforeFirstGraphOps: async () => {
+          await test.step('the user completes and leaves a widget edit', async () => {
+            await textField.fill(localValue)
+            await textField.press('Tab')
+            await expect(textField).not.toBeFocused()
+            await expect(textField).toHaveValue(localValue)
+          })
+        }
+      })
+      await agentConversation.waitForTurnComplete()
+
+      await expect(agentEditedField.getByRole('spinbutton')).toHaveValue('30')
+      await expect(textField).toHaveValue(localValue)
     })
   }
 )

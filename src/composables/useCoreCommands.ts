@@ -69,7 +69,6 @@ import {
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
@@ -143,7 +142,6 @@ export function useCoreCommands(): ComfyCommand[] {
     selectedNodes.forEach((node) => {
       node.pos = positionUpdater(node.pos, gridSize)
     })
-    app.canvas.state.selectionChanged = true
     app.canvas.setDirty(true, true)
   }
 
@@ -308,9 +306,7 @@ export function useCoreCommands(): ComfyCommand[] {
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
           } else {
-            runMintPortsIntentionalClear(() => {
-              app.clean()
-            })
+            app.clean()
           }
           api.dispatchCustomEvent('graphCleared')
         }
@@ -932,6 +928,7 @@ export function useCoreCommands(): ComfyCommand[] {
               life: 5000
             })
             reportError(result.cause, {
+              surface: 'platform',
               errorType: 'error_resetting_onboarding_state'
             })
             return

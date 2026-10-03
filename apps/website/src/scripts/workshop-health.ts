@@ -1,4 +1,7 @@
-import type { WorkshopAnalyticsEvent } from './workshop-analytics'
+import type {
+  WorkshopAnalyticsEvent,
+  WorkshopPageType
+} from './workshop-analytics'
 
 type ServiceHealth = 'success' | 'failure' | 'excluded' | 'pending'
 
@@ -97,9 +100,19 @@ function failureType(event: WorkshopAnalyticsEvent): string | undefined {
   return failedRunType(event.properties)
 }
 
+const FEATURES = {
+  model: 'models',
+  workflow: 'workflows',
+  app: 'apps'
+} as const satisfies Record<WorkshopPageType, string>
+
 const HEALTH_FIELDS = new Set([
   'model_slug',
+  'app_slug',
+  'page_type',
+  'render_engine',
   'router_id',
+  'workflow_id',
   'provider',
   'modality',
   'request_id',
@@ -107,6 +120,7 @@ const HEALTH_FIELDS = new Set([
   'failure_stage',
   'http_status',
   'router_error_type',
+  'workflow_error_code',
   'field_error_codes',
   'field_error_names',
   'exception_name',
@@ -129,7 +143,7 @@ export function workshopHealthLog(event: WorkshopAnalyticsEvent) {
     ...Object.fromEntries(
       Object.entries(properties).filter(([key]) => HEALTH_FIELDS.has(key))
     ),
-    feature: 'models',
+    feature: FEATURES[properties.page_type ?? 'model'],
     telemetry_version: 1,
     event_name: event.name,
     service_health: health(event),

@@ -20,12 +20,14 @@ import {
   setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { GraphScope } from '@/types/graphScopeId'
-import { mintLinkId } from './idAllocation'
+import { linkIdReservations, mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeProperty, NodeState } from '@/types/nodeState'
@@ -73,9 +75,11 @@ import {
   resolveInputSlotView
 } from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
+import type { NodeCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
   hydrateExtensionPayload,
+  isNodeCanonicalField,
   NODE_CANONICAL_FIELDS,
   runExtensionSerializeHook
 } from './extensionPersistence'
@@ -83,6 +87,7 @@ import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
+import { emitNodeFieldWrite } from './graphIntents'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -165,7 +170,11 @@ interface INodePropertyInfo {
   default_value?: NodeProperty
   widget?: string
   label?: string
-  values?: TWidgetValue[]
+  values?: string[] | Record<string, TWidgetValue>
+}
+
+function isNodePropertyInfo(value: unknown): value is INodePropertyInfo {
+  return typeof value === 'object' && value !== null
 }
 
 interface IMouseOverData {
@@ -196,6 +205,32 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
     named[widget.name] = serialisedValue
   }
   return { widgets_values: positional, widgets_values_named: named }
+}
+
+function configureCanonicalField(
+  target: Partial<Record<NodeCanonicalField, unknown>>,
+  key: NodeCanonicalField,
+  incoming: unknown
+): void {
+  if (incoming == null) return
+  if (typeof incoming !== 'object') {
+    target[key] = incoming
+    return
+  }
+  const current = target[key]
+  if (
+    current &&
+    typeof current === 'object' &&
+    'configure' in current &&
+    typeof current.configure === 'function'
+  ) {
+    current.configure(incoming)
+  } else {
+    target[key] = LiteGraph.cloneObject(
+      incoming,
+      typeof current === 'object' && current !== null ? current : undefined
+    )
+  }
 }
 
 export function createWidgetRestorationState(
@@ -372,7 +407,8 @@ export class LGraphNode
   }
 
   set title(value: string) {
-    setTrackedNodeState(this, 'title', value)
+    if (setTrackedNodeState(this, 'title', value))
+      emitNodeFieldWrite(this, { field: 'title', value })
   }
   /**
    * The font style used to render the node's title text.
@@ -390,6 +426,7 @@ export class LGraphNode
   }
 
   graph: LGraph | Subgraph | null = null
+  priority?: number
 
   /** Shell state for the fields the renderer draws; the `nodeDataStore` proxy once registered. */
   _state: NodeState
@@ -504,8 +541,10 @@ export class LGraphNode
   }
 
   set mode(value: LGraphEventMode) {
-    setTrackedNodeState(this, 'mode', value)
+    if (setTrackedNodeState(this, 'mode', value))
+      emitNodeFieldWrite(this, { field: 'mode', value })
   }
+
   get last_serialization(): ISerialisedNode | undefined {
     return this._state.lastSerialization
   }
@@ -685,7 +724,29 @@ export class LGraphNode
   has_errors?: boolean
   removable?: boolean
   block_delete?: boolean
-  selected?: boolean
+  private detachedSelected = false
+
+  get selected(): boolean {
+    const scope = this.selectionScope
+    return scope
+      ? isSelectedIn(scope, toSelectableKey('node', this.id))
+      : this.detachedSelected
+  }
+
+  set selected(value: boolean | undefined) {
+    const scope = this.selectionScope
+    if (!scope) {
+      this.detachedSelected = !!value
+      return
+    }
+    this.detachedSelected = false
+    setSelectedIn(scope, toSelectableKey('node', this.id), !!value)
+  }
+
+  private get selectionScope(): GraphScope | undefined {
+    return this.graph ? graphScopeOf(this.graph) : undefined
+  }
+
   get showAdvanced(): boolean | undefined {
     return this._state.showAdvanced
   }
@@ -814,7 +875,7 @@ export class LGraphNode
     )
   }
 
-  public get is_selected(): boolean | undefined {
+  public get is_selected(): boolean {
     return this.selected
   }
 
@@ -873,6 +934,8 @@ export class LGraphNode
     param: unknown,
     options: { action_call?: string }
   ): void
+  onTrigger?(this: LGraphNode, value: unknown): void
+  setTrigger?(this: LGraphNode, func?: () => void): void
   onDrawBackground?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
   onNodeCreated?(this: LGraphNode): void
   /**
@@ -1090,7 +1153,7 @@ export class LGraphNode
       this.graph.incrementVersion()
     }
     for (const j in info) {
-      if (!NODE_CANONICAL_FIELDS.has(j)) continue
+      if (!isNodeCanonicalField(j)) continue
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
         for (const k in info.properties) {
@@ -1112,28 +1175,11 @@ export class LGraphNode
         continue
       }
 
-      // @ts-expect-error #594
-      if (info[j] == null) {
-        continue
-        // @ts-expect-error #594
-      } else if (typeof info[j] == 'object') {
-        // @ts-expect-error #594
-        if (this[j]?.configure) {
-          // @ts-expect-error #594
-          this[j]?.configure(info[j])
-        } else {
-          // @ts-expect-error #594
-          this[j] = LiteGraph.cloneObject(info[j], this[j])
-        }
-      } else {
-        // value
-        // @ts-expect-error #594
-        this[j] = info[j]
-      }
+      configureCanonicalField(this, j, info[j])
     }
 
     if (!info.title) {
-      this.title = this.constructor.title
+      this.title = this.constructor.title ?? ''
     }
 
     this.inputs = this.inputs.map((input) =>
@@ -1328,9 +1374,6 @@ export class LGraphNode
         if (links) links.length = 0
       }
     }
-
-    // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
-    data.id = undefined
 
     node.id = this.id
     node.configure(data)
@@ -1668,10 +1711,6 @@ export class LGraphNode
       case LGraphEventMode.ALWAYS:
         break
 
-      // @ts-expect-error Not impl.
-      case LiteGraph.ON_REQUEST:
-        break
-
       default:
         return false
     }
@@ -1689,17 +1728,14 @@ export class LGraphNode
       options.action_call ||= `${this.id}_exec_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error Technically it works when id is a string. Array gets props.
       this.graph.nodes_executing[this.id] = true
       this.onExecute(param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_executing[this.id] = false
 
       // save execution/action ref
       this.exec_version = this.graph.iteration
       if (options.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -1723,16 +1759,13 @@ export class LGraphNode
       options.action_call ||= `${this.id}_${action || 'action'}_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = action || 'actioning'
       this.onAction(action, param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = false
 
       // save execution/action ref
       if (options.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -2170,8 +2203,8 @@ export class LGraphNode
    * @param property name of the property
    * @returns the object with all the available info
    */
-  getPropertyInfo(property: string) {
-    let info = null
+  getPropertyInfo(property: string): INodePropertyInfo & { type: string } {
+    let info: INodePropertyInfo | null = null
 
     // there are several ways to define info about a property
     // legacy mode
@@ -2183,24 +2216,27 @@ export class LGraphNode
       }
     }
     // litescene mode using the constructor
-    // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-    if (this.constructor[`@${property}`])
-      // @ts-expect-error deprecated https://github.com/Comfy-Org/litegraph.js/issues/639
-      info = this.constructor[`@${property}`]
+    const constructorProperties = this.constructor as unknown as Record<
+      string,
+      unknown
+    >
+    const constructorProperty = constructorProperties[`@${property}`]
+    if (isNodePropertyInfo(constructorProperty)) info = constructorProperty
 
-    if (this.constructor.widgets_info?.[property])
-      info = this.constructor.widgets_info[property]
+    const widgetInfo = this.constructor.widgets_info?.[property]
+    if (isNodePropertyInfo(widgetInfo)) info = widgetInfo
 
     // litescene mode using the constructor
     if (!info && this.onGetPropertyInfo) {
       info = this.onGetPropertyInfo(property)
     }
 
-    info ||= {}
-    info.type ||= typeof this.properties[property]
-    if (info.widget == 'combo') info.type = 'enum'
+    const type =
+      info?.widget == 'combo'
+        ? 'enum'
+        : info?.type || typeof this.properties[property]
 
-    return info
+    return { ...info, type }
   }
 
   /**
@@ -2240,8 +2276,7 @@ export class LGraphNode
     }
 
     const w: IBaseWidget & { type: Type } = {
-      // @ts-expect-error - Type casting for widget type property
-      type: type.toLowerCase(),
+      type: type.toLowerCase() as Type,
       name: name,
       value: value,
       callback: typeof callback !== 'function' ? undefined : callback,
@@ -3039,7 +3074,7 @@ export class LGraphNode
   connect(
     slot: number | string,
     target_node: LGraphNode | number | null,
-    target_slot: ISlotType,
+    target_slot: number | string,
     afterRerouteId?: RerouteId
   ): LLink | null {
     // Allow legacy API support for searching target_slot by string, without mutating the input variables
@@ -3201,7 +3236,7 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
-    const linkId = mintLinkId(graph.state)
+    const linkId = mintLinkId(graph.state, linkIdReservations(graph.rootGraph))
 
     const link = new LLink(
       linkId,
@@ -3690,8 +3725,9 @@ export class LGraphNode
   trace(msg: string): void {
     this.console ||= []
     this.console.push(msg)
-    // @ts-expect-error deprecated
-    if (this.console.length > LGraphNode.MAX_CONSOLE) this.console.shift()
+    const { MAX_CONSOLE } = LGraphNode
+    if (MAX_CONSOLE !== undefined && this.console.length > MAX_CONSOLE)
+      this.console.shift()
   }
 
   /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
@@ -3758,6 +3794,10 @@ export class LGraphNode
     if (!this.graph) throw new NullGraphError()
     this.graph.incrementVersion()
     this.flags.collapsed = !this.flags.collapsed
+    emitNodeFieldWrite(this, {
+      field: 'flags.collapsed',
+      value: this.flags.collapsed
+    })
     this.setDirtyCanvas(true, true)
   }
 
@@ -3788,6 +3828,10 @@ export class LGraphNode
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined
+    emitNodeFieldWrite(this, {
+      field: 'flags.pinned',
+      value: this.flags.pinned ?? null
+    })
   }
 
   unpin(): void {

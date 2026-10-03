@@ -48,11 +48,13 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
-function translateOptions(options: (SettingOption | string)[]) {
+function translateOptions(
+  options:
+    | (SettingOption | string)[]
+    | ((value: unknown) => (SettingOption | string)[])
+) {
   if (typeof options === 'function') {
-    // @ts-expect-error: Audit and deprecate usage of legacy options type:
-    // (value) => [string | {text: string, value: string}]
-    return translateOptions(options(props.setting.value ?? ''))
+    return translateOptions(options(settingValue.value))
   }
 
   return options.map((option) => {

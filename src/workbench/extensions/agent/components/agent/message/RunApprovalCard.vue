@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
 import type { RunApprovalPart } from '../../../services/agent/agentMessageParts'
+import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
 
 const { part, answering = false } = defineProps<{
   part: RunApprovalPart
   answering?: boolean
 }>()
+const boundWorkflowId = inject(agentBoundWorkflowIdKey, ref(undefined))
+const hideWorkflowName = computed(
+  () => !!boundWorkflowId.value && part.workflowId === boundWorkflowId.value
+)
 const emit = defineEmits<{
   answer: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
@@ -32,10 +37,19 @@ const workflowLabel = computed(
     class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-component-node-border bg-secondary-background p-4 shadow-interface"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
-      <p class="m-0 font-medium text-base-foreground">
-        {{ t('agent.runApproval.lead') }}
+      <p class="m-0 text-base-foreground">
+        {{
+          t(
+            hideWorkflowName
+              ? 'agent.runApproval.leadBound'
+              : 'agent.runApproval.lead'
+          )
+        }}
       </p>
-      <ul class="m-0 min-w-0 list-disc pl-5 text-muted-foreground">
+      <ul
+        v-if="!hideWorkflowName"
+        class="m-0 min-w-0 list-disc pl-5 text-muted-foreground"
+      >
         <li>
           <Button
             v-if="part.workflowId"

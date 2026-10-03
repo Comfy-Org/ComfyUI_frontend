@@ -118,7 +118,7 @@ async function initialize(): Promise<void> {
   initializationController = controller
 
   const authStore = useAuthStore()
-  const { isInitialized, currentUser } = storeToRefs(authStore)
+  const { isInitialized, isAuthenticated, currentUser } = storeToRefs(authStore)
 
   try {
     // Step 1: Wait for Firebase auth to resolve
@@ -134,7 +134,7 @@ async function initialize(): Promise<void> {
 
     // Step 2: If not authenticated, nothing more to do
     // Unauthenticated users don't have workspace context
-    if (!currentUser.value) {
+    if (!isAuthenticated.value) {
       initializationState.value = 'ready'
       return
     }
@@ -158,7 +158,9 @@ async function initialize(): Promise<void> {
 
     const { flags } = useFeatureFlags()
     const workspaceAuthStore = useWorkspaceAuthStore()
-    if (flags.unifiedCloudAuthEnabled) {
+    const needsUnifiedToken =
+      flags.unifiedCloudAuthEnabled && currentUser.value !== null
+    if (needsUnifiedToken) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return
       if (!authenticated) {
@@ -169,10 +171,7 @@ async function initialize(): Promise<void> {
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     void billingCapabilities.initialize(controller.signal)
-    if (
-      flags.unifiedCloudAuthEnabled &&
-      !workspaceAuthStore.getUnifiedToken()
-    ) {
+    if (needsUnifiedToken && !workspaceAuthStore.getUnifiedToken()) {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
@@ -182,6 +181,7 @@ async function initialize(): Promise<void> {
   } catch (error) {
     if (generation !== initializationGeneration) return
     reportError(error, {
+      surface: 'auth',
       errorType: 'workspace_auth_gate_initialization_failure'
     })
     initializationRetryable.value = isRetryableInitializationError(error)

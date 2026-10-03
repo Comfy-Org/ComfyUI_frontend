@@ -48,12 +48,12 @@
       }
     }"
   />
-  <InputText
+  <Input
     v-if="isEditing"
     ref="itemInputRef"
     v-model="itemLabel"
     data-testid="subgraph-breadcrumb-rename-input"
-    class="fixed z-10000 p-2 text-[.8rem]"
+    class="fixed z-10000 w-50 p-2 text-[.8rem]"
     @blur="inputBlur(false)"
     @click.stop
     @keydown.enter="inputBlur(true)"
@@ -63,7 +63,6 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import InputText from 'primevue/inputtext'
 import type { MenuState } from 'primevue/menu'
 import Menu from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
@@ -71,6 +70,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -107,7 +107,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const isEditing = ref(false)
 const itemLabel = ref<string>()
-const itemInputRef = ref<{ $el?: HTMLInputElement }>()
+const itemInputRef = ref<InstanceType<typeof Input>>()
 const wrapperRef = ref<HTMLAnchorElement>()
 
 const rename = async (
@@ -161,13 +161,8 @@ const startRename = async () => {
   isEditing.value = true
   itemLabel.value = item.label as string
   void nextTick(() => {
-    if (itemInputRef.value?.$el) {
-      itemInputRef.value.$el.focus()
-      itemInputRef.value.$el.select()
-      if (wrapperRef.value) {
-        itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
-      }
-    }
+    itemInputRef.value?.focus()
+    itemInputRef.value?.select()
   })
 }
 
