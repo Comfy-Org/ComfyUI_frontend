@@ -50,9 +50,9 @@ const STATUS: AgentCrdtStatus = {
   }
 }
 
-function renderPanel() {
+function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
   return render(CrdtDevPanel, {
-    props: { status: STATUS },
+    props: { status: { ...STATUS, ...overrides } },
     global: { plugins: [i18n] }
   })
 }
@@ -105,6 +105,21 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toHaveTextContent('node-1')
     expect(sheet()).toHaveTextContent('last seq')
     expect(sheet()).toHaveTextContent('7')
+  })
+
+  it('renders disconnected status fallbacks', async () => {
+    const user = userEvent.setup()
+    renderPanel({
+      connected: false,
+      workflowId: null,
+      lastFrameType: null
+    })
+
+    await user.click(screen.getByTestId('crdt-dev-panel-chip'))
+
+    expect(screen.getByRole('row', { name: 'doc id —' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'connected no' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'last frame —' })).toBeVisible()
   })
 
   it('moves focus into the panel and restores it after Escape closes', async () => {
