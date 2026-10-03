@@ -12,6 +12,7 @@ interface CanvasViewportConsumer {
 }
 
 const appliedViewportByCanvas = new WeakMap<HTMLCanvasElement, CanvasViewport>()
+const backingStoreResetByMeasurement = new WeakSet<HTMLCanvasElement>()
 const autoSizedStyleByCanvas = new WeakMap<
   HTMLCanvasElement,
   { width?: string; height?: string }
@@ -95,6 +96,7 @@ function measureViewportFromElement(
   } finally {
     element.width = savedWidth
     element.height = savedHeight
+    backingStoreResetByMeasurement.add(element)
   }
   const width = cssRect.width || previousViewport?.cssWidth || initialRect.width
   const height =
@@ -109,7 +111,9 @@ function applyViewport(
   consumer?: CanvasViewportConsumer
 ): CanvasViewport {
   const previousForegroundViewport = appliedViewportByCanvas.get(fg)
+  const foregroundResetByMeasurement = backingStoreResetByMeasurement.delete(fg)
   const foregroundChanged =
+    foregroundResetByMeasurement ||
     fg.width !== viewport.physicalWidth ||
     fg.height !== viewport.physicalHeight ||
     previousForegroundViewport?.dpr !== viewport.dpr
@@ -122,7 +126,10 @@ function applyViewport(
   if (foregroundChanged) fg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
   if (bg !== fg) {
     const previousBackgroundViewport = appliedViewportByCanvas.get(bg)
+    const backgroundResetByMeasurement =
+      backingStoreResetByMeasurement.delete(bg)
     const backgroundChanged =
+      backgroundResetByMeasurement ||
       bg.width !== viewport.physicalWidth ||
       bg.height !== viewport.physicalHeight ||
       previousBackgroundViewport?.dpr !== viewport.dpr

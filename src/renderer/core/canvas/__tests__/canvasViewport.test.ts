@@ -80,6 +80,21 @@ describe('measureViewportFromElement', () => {
       physicalHeight: 1200
     })
   })
+
+  it('restores DPR scaling after measuring resets the backing store', () => {
+    const ctx = createMockCanvasRenderingContext2D()
+    const canvas = createTestCanvasElement({ ctx })
+    const viewport = measureViewport(800, 600, 2)
+    applyViewport(viewport, canvas, canvas)
+    vi.spyOn(canvas, 'getBoundingClientRect')
+      .mockReturnValueOnce(new DOMRect(0, 0, 800.25, 600.25))
+      .mockReturnValueOnce(new DOMRect(0, 0, 0, 0))
+
+    applyViewport(measureViewportFromElement(canvas, 2), canvas, canvas)
+
+    expect(ctx.scale).toHaveBeenCalledTimes(2)
+    expect(ctx.scale).toHaveBeenLastCalledWith(2, 2)
+  })
 })
 
 describe('applyViewport', () => {
