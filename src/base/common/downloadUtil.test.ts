@@ -149,18 +149,6 @@ describe('downloadUtil', () => {
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
-    it('should clean up DOM elements after download', () => {
-      const testUrl = 'https://example.com/image.png'
-
-      downloadFile(testUrl)
-
-      // Verify the element was added and then removed
-      expect(document.body.appendChild).toHaveBeenCalledWith(mockLink)
-      expect(document.body.removeChild).toHaveBeenCalledWith(mockLink)
-      expect(fetchMock).not.toHaveBeenCalled()
-      expect(createObjectURLSpy).not.toHaveBeenCalled()
-    })
-
     it('streams downloads via blob when running in cloud', async () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/file.bin'

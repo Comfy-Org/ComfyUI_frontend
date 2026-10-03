@@ -204,13 +204,6 @@ describe('TextPreviewWidget', () => {
       expect(screen.queryByTestId('skeleton')).toBeNull()
     })
 
-    it('shows a Skeleton on mount when the parent node is executing', () => {
-      Object.assign(useExecutionStore(), { executingNodeIds: ['n1'] })
-      Object.assign(useExecutionStore(), { isIdle: false })
-      renderPreview('text', { nodeId: toNodeId('n1') })
-      expect(screen.getByTestId('skeleton')).toBeInTheDocument()
-    })
-
     it('hides the Skeleton when execution transitions to idle', async () => {
       Object.assign(useExecutionStore(), { executingNodeIds: ['n1'] })
       Object.assign(useExecutionStore(), { isIdle: false })

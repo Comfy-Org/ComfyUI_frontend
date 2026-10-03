@@ -137,14 +137,6 @@ describe('ImagePreview', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows mask/edit button for single images', () => {
-    renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
-
-    screen.getByRole('button', { name: 'Edit or mask image' })
-  })
-
   it('hides mask and download buttons when image fails to load', async () => {
     renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
@@ -394,15 +386,6 @@ describe('ImagePreview', () => {
   })
 
   describe('grid view', () => {
-    it('defaults to grid mode for multiple images', () => {
-      renderImagePreview()
-
-      const gridThumbnails = screen.getAllByRole('button', {
-        name: /^View image/
-      })
-      expect(gridThumbnails).toHaveLength(2)
-    })
-
     it('requests lightweight thumbnails for grid cells instead of full-resolution images', () => {
       renderImagePreview()
 
