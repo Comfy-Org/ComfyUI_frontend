@@ -15,6 +15,12 @@ type NodeModelMetadata = {
   properties?: { models?: unknown }
 }
 
+export function getModelFileKey(
+  model: Pick<ModelFile, 'name' | 'directory'>
+): string {
+  return JSON.stringify([model.name, model.directory])
+}
+
 /**
  * The declared models a node actually has selected in its widgets.
  *
