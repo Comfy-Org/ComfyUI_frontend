@@ -5,6 +5,13 @@ import type { TaskStatus } from '@/platform/tasks/services/taskService'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 export type JobId = string
+/**
+ * The id of the workflow a prompt was queued from. Present on execution
+ * messages only when the server knows it — core omits the field entirely for a
+ * workflow with no id, and a server without `workflow_metadata` support never
+ * sends it, so every consumer must treat it as optional.
+ */
+export type WorkflowId = string
 
 export const zResultItem = z.object({
   filename: z.string().optional(),
@@ -42,6 +49,7 @@ export interface ProgressWsMessage {
   value: number
   max: number
   prompt_id: JobId
+  workflow_id?: WorkflowId
   node: NodeId
 }
 export interface NodeProgressState {
@@ -50,18 +58,21 @@ export interface NodeProgressState {
   state: 'pending' | 'running' | 'finished' | 'error'
   node_id: NodeId
   prompt_id: JobId
+  workflow_id?: WorkflowId
   display_node_id?: NodeId
   parent_node_id?: NodeId
   real_node_id?: NodeId
 }
 export interface ProgressStateWsMessage {
   prompt_id: JobId
+  workflow_id?: WorkflowId
   nodes: Record<NodeId, NodeProgressState>
 }
 export interface ExecutingWsMessage {
   node: NodeId | null
   display_node?: NodeId
   prompt_id: JobId
+  workflow_id?: WorkflowId
 }
 export interface ExecutedWsMessage extends ExecutingWsMessage {
   node: NodeId
@@ -71,6 +82,7 @@ export interface ExecutedWsMessage extends ExecutingWsMessage {
 }
 interface ExecutionWsMessageBase {
   prompt_id: JobId
+  workflow_id?: WorkflowId
   timestamp: number
 }
 export type ExecutionStartWsMessage = ExecutionWsMessageBase
@@ -97,6 +109,7 @@ export interface ProgressTextWsMessage {
   nodeId: NodeId
   text: string
   prompt_id?: string
+  workflow_id?: WorkflowId
 }
 export interface NotificationWsMessage {
   value: string

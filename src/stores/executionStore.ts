@@ -38,6 +38,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AppMode } from '@/utils/appMode'
@@ -480,35 +481,39 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
-    executionIdToLocatorCache.clear()
-    activeJobId.value = e.detail.prompt_id
-    queuedJobs.value[activeJobId.value] ??= { nodes: {} }
-    clearInitializationByJobId(activeJobId.value)
+    const jobId = e.detail.prompt_id
+    queuedJobs.value[jobId] ??= { nodes: {} }
+    clearInitializationByJobId(jobId)
 
     // Ensure path mapping exists — execution_start can arrive via WebSocket
     // before the HTTP response from queuePrompt triggers storeJob.
-    if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
-      const workflow = queuedJobs.value[activeJobId.value]?.workflow
+    if (!jobIdToSessionWorkflowPath.value.has(jobId)) {
+      const workflow = queuedJobs.value[jobId]?.workflow
       if (workflow) {
-        ensureSessionWorkflowPath(
-          activeJobId.value,
-          workflow.path,
-          workflow.instanceId
-        )
+        ensureSessionWorkflowPath(jobId, workflow.path, workflow.instanceId)
       }
     }
-    executionErrorStore.clearExecutionStartErrors(
-      runErrorKeyForJob(activeJobId.value)
-    )
-    queuedJobs.value[activeJobId.value].executionStartedAt ??= performance.now()
-    setWorkflowStatus(activeJobId.value, {
+    queuedJobs.value[jobId].executionStartedAt ??= performance.now()
+    setWorkflowStatus(jobId, {
       status: 'running',
-      executionStartedAt: queuedJobs.value[activeJobId.value].executionStartedAt
+      executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
+
+    // Only adopt as the global active job and clear shared UI state when the
+    // starting job belongs to the active workflow. Otherwise a job started
+    // from another tab would steal activeJobId and clobber the active tab's
+    // execution UI.
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
+
+    executionIdToLocatorCache.clear()
+    executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
+    activeJobId.value = jobId
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
     if (!activeJob.value) return
+    if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
+      return
     for (const n of e.detail.nodes) {
       activeJob.value.nodes[n] = true
     }
@@ -528,17 +533,22 @@ export const useExecutionStore = defineStore('execution', () => {
     const workflow = jobIdToWorkflow.get(jobId)
     if (workflow) clearWorkflowStatus(workflow)
     if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
     resetExecutionState(jobId)
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     if (!activeJob.value) return
+    if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
+      return
     activeJob.value.nodes[e.detail.node] = true
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
     pendingExecutionErrorsByJobId.delete(jobId)
+    clearInitializationByJobId(jobId)
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
     setWorkflowStatus(jobId, {
       status: 'completed',
       endTime: performance.now()
@@ -561,7 +571,7 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<string | number | null>): void {
+  function handleExecuting(e: CustomEvent<SerializedNodeId | null>): void {
     progressCoalescer.cancel()
     if (e.detail == null) progressStateCoalescer.cancel()
 
@@ -570,7 +580,6 @@ export const useExecutionStore = defineStore('execution', () => {
 
     if (!activeJob.value) return
 
-    // Update the executing nodes list
     if (e.detail == null) {
       activeJobId.value = null
     }
@@ -614,50 +623,122 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function applyProgressState(detail: ProgressStateWsMessage) {
-    const { nodes, prompt_id: jobId } = detail
+    const { nodes, prompt_id: jobId, workflow_id: messageWorkflowId } = detail
+    const isActiveWorkflowMessage = messageMatchesActiveWorkflow(
+      jobId,
+      messageWorkflowId
+    )
 
     // Revoke previews for nodes that are starting to execute
     const previousForJob =
       jobId in nodeProgressStatesByJob.value
         ? nodeProgressStatesByJob.value[jobId]
         : {}
-    for (const nodeId in nodes) {
-      const nodeState = nodes[nodeId]
-      if (nodeState.state === 'running' && !(nodeId in previousForJob)) {
-        // This node just started executing, revoke its previews
-        // Note that we're doing the *actual* node id instead of the display node id
-        // here intentionally. That way, we don't clear the preview every time a new node
-        // within an expanded graph starts executing.
-        const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        const executionId = tryNormalizeNodeExecutionId(nodeId)
-        if (executionId) revokePreviewsByExecutionId(executionId)
+    if (isActiveWorkflowMessage) {
+      for (const nodeId in nodes) {
+        const nodeState = nodes[nodeId]
+        if (
+          nodeState.state === 'running' &&
+          previousForJob[nodeId]?.state !== 'running'
+        ) {
+          // This node just started executing, revoke its previews
+          // Note that we're doing the *actual* node id instead of the display node id
+          // here intentionally. That way, we don't clear the preview every time a new node
+          // within an expanded graph starts executing.
+          const { revokePreviewsByExecutionId } = useNodeOutputStore()
+          const executionId = tryNormalizeNodeExecutionId(nodeId)
+          if (executionId) revokePreviewsByExecutionId(executionId)
+        }
       }
     }
 
-    // Update the progress states for all nodes
     nodeProgressStatesByJob.value = {
       ...nodeProgressStatesByJob.value,
       [jobId]: nodes
     }
     evictOldProgressJobs()
-    nodeProgressStates.value = nodes
+    if (isActiveWorkflowMessage) {
+      nodeProgressStates.value = nodes
 
-    // If we have progress for the currently executing node, update it for backwards compatibility
-    if (executingNodeId.value) {
-      const nodeState = Object.hasOwn(nodes, executingNodeId.value)
-        ? nodes[executingNodeId.value]
-        : undefined
-      if (!nodeState) return
-      _executingNodeProgress.value = {
-        value: nodeState.value,
-        max: nodeState.max,
-        prompt_id: nodeState.prompt_id,
-        node: nodeState.display_node_id || nodeState.node_id
+      // If we have progress for the currently executing node, update it for backwards compatibility
+      if (executingNodeId.value) {
+        const nodeState = Object.hasOwn(nodes, executingNodeId.value)
+          ? nodes[executingNodeId.value]
+          : undefined
+        if (!nodeState) return
+        _executingNodeProgress.value = {
+          value: nodeState.value,
+          max: nodeState.max,
+          prompt_id: nodeState.prompt_id,
+          node: nodeState.display_node_id || nodeState.node_id
+        }
       }
     }
   }
 
+  /**
+   * Determines whether a WebSocket execution message belongs to the
+   * currently active workflow tab. Used to gate writes to the global
+   * "current execution" mirror so a job initiated from another open
+   * workflow cannot leak its progress into the active one.
+   *
+   * Resolution order:
+   *  1. `workflow_id` carried on the WS message (when backend supports it).
+   *  2. {@link jobIdToWorkflowId} mapping populated when the job was queued
+   *     from this tab.
+   *  3. {@link jobIdToSessionWorkflowPath} mapping (path-based fallback).
+   *
+   * When the workflow cannot be resolved at all (e.g. job queued in a
+   * different browser session), the message is treated as belonging to
+   * the active workflow to preserve current behaviour for the existing
+   * single-tab common case.
+   */
+  function messageMatchesActiveWorkflow(
+    jobId: JobId,
+    messageWorkflowId: string | undefined
+  ): boolean {
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return true
+
+    const activeId =
+      activeWorkflow.activeState.id ?? activeWorkflow.initialState.id ?? null
+
+    if (messageWorkflowId && activeId) {
+      return messageWorkflowId === activeId
+    }
+
+    const mappedId = jobIdToWorkflowId.value.get(jobId)
+    if (mappedId && activeId) return mappedId === activeId
+
+    const mappedPath = jobIdToSessionWorkflowPath.value.get(jobId)
+    if (mappedPath && activeWorkflow.path) {
+      return mappedPath === activeWorkflow.path
+    }
+
+    return true
+  }
+
+  /**
+   * Returns true when workflow ownership for {@link jobId} can be resolved
+   * — either by an explicit `workflow_id` on the incoming message or by a
+   * mapping registered when the job was queued. When this returns false
+   * the caller should fall back to whatever legacy guard applied before
+   * workflow gating was introduced.
+   */
+  function canResolveWorkflowOwnership(
+    jobId: JobId,
+    messageWorkflowId: string | undefined
+  ): boolean {
+    return (
+      Boolean(messageWorkflowId) ||
+      jobIdToWorkflowId.value.has(jobId) ||
+      jobIdToSessionWorkflowPath.value.has(jobId)
+    )
+  }
+
   const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
+    const { prompt_id: jobId, workflow_id: messageWorkflowId } = detail
+    if (!messageMatchesActiveWorkflow(jobId, messageWorkflowId)) return
     _executingNodeProgress.value = detail
   }, 'raf:progress')
 
@@ -781,6 +862,11 @@ export const useExecutionStore = defineStore('execution', () => {
     executionErrorStore.recordExecutionError(detail, runErrorKey)
     executionErrorStore.showExecutionError(detail, runErrorKey)
     clearInitializationByJobId(detail.prompt_id)
+    // Only the active workflow's error resets the shared execution state; the
+    // dialog is already scoped by the run error key inside showExecutionError.
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id))
+      return
+
     resetExecutionState(detail.prompt_id)
   }
 
@@ -809,6 +895,9 @@ export const useExecutionStore = defineStore('execution', () => {
       return false
 
     clearInitializationByJobId(detail.prompt_id)
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id))
+      return true
+
     resetExecutionState(detail.prompt_id)
     executionErrorStore.recordPromptError(
       {
@@ -831,6 +920,9 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!result) return false
 
     clearInitializationByJobId(detail.prompt_id)
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id))
+      return true
+
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
@@ -953,14 +1045,21 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
-    const { nodeId, text, prompt_id } = e.detail
+    const { nodeId, text, prompt_id, workflow_id } = e.detail
     if (!text || !nodeId) return
 
-    // Filter: only accept progress for the active prompt
-    if (prompt_id && activeJobId.value && prompt_id !== activeJobId.value)
-      return
+    // Prefer the workflow-ownership gate when ownership can be resolved.
+    // Only fall back to the legacy active-prompt guard when ownership is
+    // unresolvable; otherwise activeJobId pointing at a different workflow's
+    // job would incorrectly drop messages for the visible workflow.
+    if (prompt_id) {
+      if (canResolveWorkflowOwnership(prompt_id, workflow_id)) {
+        if (!messageMatchesActiveWorkflow(prompt_id, workflow_id)) return
+      } else if (activeJobId.value && prompt_id !== activeJobId.value) {
+        return
+      }
+    }
 
-    // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
     const parsedCurrentId = parseNodeId(currentId)
