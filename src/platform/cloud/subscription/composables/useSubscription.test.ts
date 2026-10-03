@@ -34,7 +34,6 @@ const {
   mockLocalStorage,
   mockReportTelemetryError,
   mockReportError,
-  mockAccessBillingPortal,
   mockAccessBillingPortalDirect
 } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
@@ -48,7 +47,6 @@ const {
 
     mockReportTelemetryError: vi.fn(),
     mockReportError: vi.fn(),
-    mockAccessBillingPortal: vi.fn(),
     mockAccessBillingPortalDirect: vi.fn(),
     mockGetCheckoutAttribution: vi.fn(() => ({
       im_ref: 'impact-click-001',
@@ -130,7 +128,6 @@ vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: vi.fn(() => ({
     reportError: mockReportError,
-    accessBillingPortal: mockAccessBillingPortal,
     accessBillingPortalDirect: mockAccessBillingPortalDirect
   }))
 }))
@@ -246,7 +243,6 @@ beforeEach(() => {
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
   )
-  mockAccessBillingPortal.mockResolvedValue(true)
   mockAccessBillingPortalDirect.mockResolvedValue(true)
 })
 
@@ -2710,20 +2706,136 @@ describe('useSubscription', () => {
       windowOpenSpy.mockRestore()
     })
 
-    it('should call accessBillingPortal for invoice history', async () => {
+    it('should open the billing portal for invoice history', async () => {
       const { handleInvoiceHistory } = useSubscriptionWithScope()
 
       await handleInvoiceHistory()
 
-      expect(useAuthActions().accessBillingPortal).toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
     })
 
-    it('should call accessBillingPortal for manage subscription', async () => {
+    it('should open the billing portal for manage subscription', async () => {
       const { manageSubscription } = useSubscriptionWithScope()
 
       await manageSubscription()
 
       expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
+    })
+
+    describe('portal telemetry', () => {
+      type PortalAction = 'manageSubscription' | 'handleInvoiceHistory'
+
+      function portalEvents() {
+        return mockTelemetry.trackBillingEvent.mock.calls
+          .map(([event]) => event)
+          .filter((event) => event.operation === 'portal')
+      }
+
+      function leaveAndReturn() {
+        window.dispatchEvent(new Event('blur'))
+        window.dispatchEvent(new Event('focus'))
+      }
+
+      beforeEach(() => {
+        mockTelemetry.trackBillingEvent.mockClear()
+      })
+
+      it.for<{ action: PortalAction; target: string }>([
+        { action: 'manageSubscription', target: 'manage_subscription' },
+        { action: 'handleInvoiceHistory', target: 'invoices' }
+      ])(
+        'reports $action opening the portal and one return',
+        async ({ action, target }) => {
+          await useSubscriptionWithScope()[action]()
+          leaveAndReturn()
+          leaveAndReturn()
+
+          expect(portalEvents()).toEqual([
+            {
+              operation: 'portal',
+              stage: 'opened',
+              outcome: 'pending',
+              target,
+              billing_client: 'legacy'
+            },
+            {
+              operation: 'portal',
+              stage: 'returned',
+              outcome: 'pending',
+              target,
+              billing_client: 'legacy'
+            }
+          ])
+        }
+      )
+
+      it.for<{ action: PortalAction; target: string }>([
+        { action: 'manageSubscription', target: 'manage_subscription' },
+        { action: 'handleInvoiceHistory', target: 'invoices' }
+      ])(
+        'reports $action as a failed open when the tab is blocked',
+        async ({ action, target }) => {
+          mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
+
+          await useSubscriptionWithScope()[action]()
+          leaveAndReturn()
+
+          expect(portalEvents()).toEqual([
+            {
+              operation: 'portal',
+              stage: 'failed',
+              outcome: 'failure',
+              target,
+              billing_client: 'legacy',
+              failure_category: 'redirect',
+              error_code: 'payment_popup_blocked'
+            }
+          ])
+        }
+      )
+
+      it('reports a refused portal request as a failed open and still reports the error', async () => {
+        const refusal = new AuthStoreError('Portal refused', 500)
+        mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
+
+        await expect(
+          useSubscriptionWithScope().manageSubscription()
+        ).resolves.toBeUndefined()
+
+        expect(portalEvents()).toEqual([
+          {
+            operation: 'portal',
+            stage: 'failed',
+            outcome: 'failure',
+            target: 'manage_subscription',
+            billing_client: 'legacy',
+            failure_category: 'api_rejected'
+          }
+        ])
+        expect(mockReportError).toHaveBeenCalledWith(refusal)
+      })
+
+      it('reports a rail-mismatch refusal as a failed open and leaves recovery to the adapter', async () => {
+        const refusal = new AuthStoreError(
+          'refused',
+          409,
+          'WORKSPACE_BILLING_REQUIRED'
+        )
+        mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
+
+        await expect(
+          useSubscriptionWithScope().manageSubscription()
+        ).rejects.toBe(refusal)
+
+        expect(portalEvents()).toMatchObject([
+          {
+            operation: 'portal',
+            stage: 'failed',
+            target: 'manage_subscription'
+          }
+        ])
+        expect(mockReportError).not.toHaveBeenCalled()
+      })
     })
 
     it('rethrows a rail-mismatch refusal from the billing portal', async () => {
