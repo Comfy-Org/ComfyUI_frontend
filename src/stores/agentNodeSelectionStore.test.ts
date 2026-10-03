@@ -6,6 +6,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 
 const dialogStack = vi.hoisted(() => [] as unknown[])
 
@@ -58,8 +59,9 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
     deselectAll,
     animateToBounds,
     canvas: element,
-    // Framing measures the visible viewport through `ds`, not through the
-    // element, so the stub has to carry one at the same 1600x900 surface.
+    // Framing reads the applied CSS viewport off `ds`, so the stub needs a
+    // `DragAndScale` with the same 1600x900 viewport the element reports.
+    dpr: 1,
     ds: createTestDragAndScale(1600, 900)
   } as never
   return { animateToBounds, deselectAll, selectedItems }

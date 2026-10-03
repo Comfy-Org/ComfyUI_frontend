@@ -75,9 +75,11 @@ describe('the agentPanel store id', () => {
     store.isOpen = true
     expect(docked.value).toBe(true)
 
-    const viewport = visibleCanvasViewport({
-      ds: createTestDragAndScale(1600, 900)
-    })
+    // `visibleCanvasViewport` reads the applied CSS viewport off `ds`, not the
+    // backing store off `canvas.canvas`, so the stub supplies a `DragAndScale`
+    // whose viewport has been applied at 1600x900.
+    const canvas = { ds: createTestDragAndScale(1600, 900) }
+    const viewport = visibleCanvasViewport(canvas)
 
     expect(viewport.every((value) => Number.isFinite(value))).toBe(true)
     expect(viewport).toEqual([0, 0, 1600 - store.width, 900])

@@ -145,8 +145,6 @@ export function useTemplateWorkflows() {
         workflowName,
         { openSource: 'template' }
       )
-      if (loadedWorkflow === false) return 'graph-failed'
-      if (loadedWorkflow === undefined) return 'not-started'
 
       const template = workflowTemplatesStore.enhancedTemplates.find(
         (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
