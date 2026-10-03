@@ -13,12 +13,9 @@ import {
 const test = mergeTests(comfyPageFixture, templateApiFixture)
 
 /**
- * PM-1732 / PM-1733 — App Mode hides the graph canvas, so its element measures
- * 0x0 and fitting the view against it produced scale 0 with NaN offsets.
- *
- * Scope: this checks the camera is still valid after returning to the graph,
- * not that the graph is automatically re-framed. The hidden-canvas fit is a
- * no-op, so the camera keeps the viewport it had on entry.
+ * PM-1732 / PM-1733 — App Mode hides the graph canvas, so camera work must wait
+ * until the lifecycle has restored a measurable viewport. The current viewport
+ * architecture then applies the queued template framing operation.
  */
 test.describe('App mode template load', { tag: ['@canvas'] }, () => {
   test.describe.configure({ timeout: 60_000 })
@@ -31,7 +28,7 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
     await comfyPage.canvasOps.resetView()
   })
 
-  test('preserves the graph camera when returning from app mode', async ({
+  test('applies a valid queued camera when returning from app mode', async ({
     comfyPage,
     templateApi
   }) => {
@@ -60,7 +57,7 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
       await expect.poll(() => canvasOps.getElementWidth()).toBe(0)
     })
 
-    await test.step('returning to the graph keeps that camera', async () => {
+    await test.step('returning to the graph applies the queued camera', async () => {
       await appMode.toggleAppMode()
       await expect
         .poll(() => workflow.getActiveWorkflowResolvedMode())
@@ -79,12 +76,11 @@ test.describe('App mode template load', { tag: ['@canvas'] }, () => {
         'camera scale is finite'
       ).toBe(true)
       expect(cameraOnExit.offset.every(Number.isFinite)).toBe(true)
-      expect(cameraOnExit.scale, 'camera scale is unchanged').toBe(
-        cameraOnEntry.scale
-      )
-      expect(cameraOnExit.offset, 'camera offset is unchanged').toEqual(
-        cameraOnEntry.offset
-      )
+      expect(
+        cameraOnExit,
+        'template framing replaces the entry camera'
+      ).not.toEqual(cameraOnEntry)
+      expect(await canvasOps.getVisibleNodeCount()).toBe(7)
     })
   })
 })

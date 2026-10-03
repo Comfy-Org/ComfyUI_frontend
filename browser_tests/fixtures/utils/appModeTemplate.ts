@@ -1,7 +1,6 @@
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import type { TemplateHelper } from '@e2e/fixtures/helpers/TemplateHelper'
-
 export const APP_MODE_TEMPLATE = 'pm-1733-app-template'
 
 /**
