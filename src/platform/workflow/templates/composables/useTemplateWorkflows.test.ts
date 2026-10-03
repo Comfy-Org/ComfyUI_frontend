@@ -1008,12 +1008,14 @@ describe('useTemplateWorkflows', () => {
 
   it('continues graph loading when closing the selector unmounts the loader', async () => {
     mockWorkflowTemplatesStore.isLoaded = true
+    useFeatureUsageTracker('example-workflows').reset()
     const { loader, unmount } = mountTemplateWorkflows()
     vi.mocked(useDialogStore().closeDialog).mockImplementation(() => unmount())
     expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
       'loaded'
     )
     expect(app.loadGraphData).toHaveBeenCalledOnce()
+    expect(useFeatureUsageTracker('example-workflows').useCount.value).toBe(1)
     expect(loader.loadingTemplateId.value).toBeNull()
   })
 

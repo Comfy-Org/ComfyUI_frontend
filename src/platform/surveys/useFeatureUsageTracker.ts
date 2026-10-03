@@ -16,7 +16,9 @@ const STORAGE_KEY = 'Comfy.FeatureUsage'
  * Persists to localStorage.
  */
 export function useFeatureUsageTracker(featureId: string) {
-  const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
+  const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {}, undefined, {
+    flush: 'sync'
+  })
 
   const usage = computed(() => usageData.value[featureId])
   const useCount = computed(() => usage.value?.useCount ?? 0)

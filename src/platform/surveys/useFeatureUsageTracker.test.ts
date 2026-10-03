@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
@@ -79,6 +80,18 @@ describe('useFeatureUsageTracker', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['persisted-feature']?.useCount).toBe(1)
+  })
+
+  it('persists before its owning scope is disposed', () => {
+    const scope = effectScope()
+
+    scope.run(() => {
+      useFeatureUsageTracker('disposed-feature').trackUsage()
+    })
+    scope.stop()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['disposed-feature']?.useCount).toBe(1)
   })
 
   it('loads existing data from localStorage', () => {
