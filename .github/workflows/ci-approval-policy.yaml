@@ -1,0 +1,19 @@
+name: 'CI: Approval Policy Signal'
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  merge_group:
+    branches: [main]
+    types: [checks_requested]
+
+permissions: {}
+
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Request a live approval-policy evaluation.'
