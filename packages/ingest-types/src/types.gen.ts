@@ -8055,6 +8055,19 @@ export type GetFeaturesResponses = {
       used: number
     }
     /**
+     * The free-tier job allowance offered to new users, so a signed-out visitor sees the real offer before signing up. Same value for authenticated and unauthenticated requests. Absent when the free-tier allowance is disabled or zero.
+     */
+    free_tier_offer?: {
+      /**
+       * Number of free jobs granted to a new FREE-tier user
+       */
+      job_allowance: number
+      /**
+       * Whether the offer is available only when the user signs in with Google
+       */
+      requires_google_sign_in: boolean
+    }
+    /**
      * Maximum upload size in bytes
      */
     max_upload_size?: number
