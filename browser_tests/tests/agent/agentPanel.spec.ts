@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 
 import type { WebSocketRoute } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
+import { errors, expect, mergeTests } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -278,6 +278,25 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         { exact: true }
       )
     ).toBeVisible()
+    // Reading the counter once, at the instant the notice renders, would also
+    // pass if a duplicate send landed a tick later - which is the whole
+    // regression. So hold the window open past the notice and require that no
+    // second POST arrives, the way Actionbar's prompt-request helper proves
+    // the absence of a further prompt.
+    const resend = await comfyPage.page
+      .waitForRequest(
+        (request) =>
+          request.method() === 'POST' &&
+          /\/api\/agent\/threads\/[^/]+\/messages$/.test(request.url()),
+        { timeout: 2_000 }
+      )
+      .then(() => 'resent' as const)
+      .catch((error: unknown) => {
+        if (error instanceof errors.TimeoutError) return 'none' as const
+        throw error
+      })
+
+    expect(resend).toBe('none')
     expect(postCount).toBe(1)
   })
 
