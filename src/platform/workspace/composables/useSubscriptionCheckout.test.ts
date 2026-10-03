@@ -647,6 +647,20 @@ describe('useSubscriptionCheckout', () => {
       }
     )
 
+    it('keeps the source on the journey so an operation recovered after reload can report it', async () => {
+      const checkout = await setup('upgrade_to_add_credits')
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(getActiveCheckoutJourney()).toMatchObject({
+        entry_source: 'pricing',
+        payment_intent_source: 'upgrade_to_add_credits'
+      })
+    })
+
     // Resume matches on actor, workspace, flow and intent — not source. An
     // abandoned pricing preview for the same plan would otherwise be resumed
     // by an agent-paywall entry and keep reporting `pricing`, so the agent's
@@ -1470,7 +1484,8 @@ describe('useSubscriptionCheckout', () => {
     it.for([
       ['SUBSCRIPTION_PAYMENT_REQUIRED', null],
       ['OUTSTANDING_PAYMENT_REQUIRED', null],
-      ['TRANSITION_NOT_ALLOWED', 'payment_failed']
+      ['TRANSITION_NOT_ALLOWED', 'payment_failed'],
+      ['TRANSITION_NOT_ALLOWED', 'paused']
     ] as const)(
       'routes %s previews to the billing portal',
       async ([code, status]) => {
@@ -1863,6 +1878,207 @@ describe('useSubscriptionCheckout', () => {
       })
     })
 
+    describe('payment recovery portal telemetry', () => {
+      function portalEvents() {
+        return (vi.mocked(useTelemetry()?.trackBillingEvent)?.mock.calls ?? [])
+          .map(([event]) => event)
+          .filter((event) => event.operation === 'portal')
+      }
+
+      function leaveAndReturn() {
+        window.dispatchEvent(new Event('blur'))
+        window.dispatchEvent(new Event('focus'))
+      }
+
+      function useRailPortal(outcome: SubscriptionRailOutcome<string>) {
+        mockSubscriptionRail.value = railStub({
+          openPaymentPortal: vi
+            .fn<NonNullable<SubscriptionRailStub['openPaymentPortal']>>()
+            .mockResolvedValue(outcome)
+        })
+      }
+
+      it.for<{
+        name: string
+        arrange: () => void
+        billingClient: 'sdk' | 'legacy'
+      }>([
+        {
+          name: 'the legacy client',
+          arrange: () => {},
+          billingClient: 'legacy'
+        },
+        {
+          name: 'the SDK rail',
+          arrange: () =>
+            useRailPortal({
+              status: 'ok',
+              value: 'https://billing.stripe.com/rail-portal'
+            }),
+          billingClient: 'sdk'
+        },
+        {
+          name: 'the legacy client when the rail route is not deployed',
+          arrange: () => useRailPortal({ status: 'unavailable' }),
+          billingClient: 'legacy'
+        }
+      ])(
+        'reports the recovery portal opening from $name and one return',
+        async ({ arrange, billingClient }) => {
+          arrange()
+
+          await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+          leaveAndReturn()
+          leaveAndReturn()
+
+          expect(portalEvents()).toEqual([
+            {
+              operation: 'portal',
+              stage: 'opened',
+              outcome: 'pending',
+              target: 'payment_recovery',
+              billing_client: billingClient
+            },
+            {
+              operation: 'portal',
+              stage: 'returned',
+              outcome: 'pending',
+              target: 'payment_recovery',
+              billing_client: billingClient
+            }
+          ])
+        }
+      )
+
+      it('reports a blocked recovery tab as a failed open and the retry as the open', async () => {
+        mockOpen.mockReturnValueOnce(null)
+        await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+        expect(portalEvents()).toEqual([
+          {
+            operation: 'portal',
+            stage: 'failed',
+            outcome: 'failure',
+            target: 'payment_recovery',
+            billing_client: 'legacy',
+            failure_category: 'redirect',
+            error_code: 'payment_popup_blocked'
+          }
+        ])
+
+        const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+        mockOpen.mockReturnValueOnce({})
+        detail.onAction()
+        leaveAndReturn()
+
+        expect(portalEvents().slice(1)).toEqual([
+          {
+            operation: 'portal',
+            stage: 'opened',
+            outcome: 'pending',
+            target: 'payment_recovery',
+            billing_client: 'legacy'
+          },
+          {
+            operation: 'portal',
+            stage: 'returned',
+            outcome: 'pending',
+            target: 'payment_recovery',
+            billing_client: 'legacy'
+          }
+        ])
+      })
+
+      it('reports a retry that is blocked again as a second failed open', async () => {
+        mockOpen.mockReturnValueOnce(null)
+        await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+        const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+        mockOpen.mockReturnValueOnce(null)
+        detail.onAction()
+        leaveAndReturn()
+
+        const blocked = {
+          operation: 'portal',
+          stage: 'failed',
+          outcome: 'failure',
+          target: 'payment_recovery',
+          billing_client: 'legacy',
+          failure_category: 'redirect',
+          error_code: 'payment_popup_blocked'
+        }
+        expect(portalEvents()).toEqual([blocked, blocked])
+      })
+
+      it.for<{
+        name: string
+        arrange: () => void
+        failure: Record<string, unknown>
+      }>([
+        {
+          name: 'a refused legacy portal request',
+          arrange: () =>
+            mockGetPaymentPortalUrl.mockRejectedValueOnce(
+              new WorkspaceApiError('Forbidden', 403)
+            ),
+          failure: { failure_category: 'api_rejected' }
+        },
+        {
+          name: 'a legacy portal request that never reached the server',
+          arrange: () =>
+            mockGetPaymentPortalUrl.mockRejectedValueOnce(
+              new WorkspaceApiError('Network down')
+            ),
+          failure: { failure_category: 'network' }
+        },
+        {
+          name: 'a rail portal failure',
+          arrange: () =>
+            useRailPortal({
+              status: 'error',
+              error: new WorkspaceApiError('Forbidden', 403)
+            }),
+          failure: { failure_category: 'api_rejected' }
+        },
+        {
+          name: 'a portal address that fails validation',
+          arrange: () =>
+            mockGetPaymentPortalUrl.mockResolvedValueOnce({
+              url: 'https://billing.stripe.com.evil.test/portal'
+            }),
+          failure: { billing_client: 'legacy', failure_category: 'unknown' }
+        }
+      ])(
+        'reports $name as a failed open and keeps the error report',
+        async ({ arrange, failure }) => {
+          arrange()
+
+          await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+          leaveAndReturn()
+
+          expect(portalEvents()).toEqual([
+            {
+              operation: 'portal',
+              stage: 'failed',
+              outcome: 'failure',
+              target: 'payment_recovery',
+              ...failure
+            }
+          ])
+          expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+            surface: 'workspace',
+            errorType: 'billing_portal_open_failure'
+          })
+        }
+      )
+
+      it('reports nothing when the rejection needs no payment recovery', async () => {
+        await submitRejectedPreview('TRANSITION_NOT_ALLOWED')
+
+        expect(portalEvents()).toEqual([])
+      })
+    })
+
     it('shows error toast when plan slug is not found', async () => {
       const checkout = await setup()
       mockPlans.value = []
@@ -2054,6 +2270,22 @@ describe('useSubscriptionCheckout', () => {
       })
       expect(mockPreviewSubscribe).not.toHaveBeenCalled()
       expect(checkout.checkoutStep.value).toBe('pricing')
+    })
+
+    it('names the surface the checkout was opened from when it opens the downgrade', async () => {
+      mockIsTeamPlan.value = true
+      const checkout = await setup('team_members_panel')
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(mockShowDowngradeToPersonalDialog).toHaveBeenCalledWith({
+        planName: 'Standard',
+        planSlug: 'standard-yearly',
+        paymentIntentSource: 'team_members_panel'
+      })
     })
 
     it('shows success without conversion telemetry for a scheduled Team downgrade', async () => {

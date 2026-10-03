@@ -13,7 +13,7 @@ import { localizeHref } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import type { CalendarEvent } from '../../utils/calendar'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { isUrlUnderPath, previousEntryUrl } from '../../utils/previousEntry'
 
 const {
@@ -30,6 +30,7 @@ const {
   calendarEvent?: CalendarEvent
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
 
@@ -84,7 +85,7 @@ onUnmounted(() => {
     @cancel.prevent="closeDialog"
   >
     <button
-      :aria-label="t('events.videoDialog.close', locale)"
+      :aria-label="t('events.videoDialog.close')"
       class="group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow lg:right-26"
       @click="closeDialog"
     >

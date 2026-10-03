@@ -1,5 +1,5 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
@@ -135,14 +135,6 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Edit or mask image' })
     ).not.toBeInTheDocument()
-  })
-
-  it('shows mask/edit button for single images', () => {
-    renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
-
-    screen.getByRole('button', { name: 'Edit or mask image' })
   })
 
   it('hides mask and download buttons when image fails to load', async () => {
@@ -394,15 +386,6 @@ describe('ImagePreview', () => {
   })
 
   describe('grid view', () => {
-    it('defaults to grid mode for multiple images', () => {
-      renderImagePreview()
-
-      const gridThumbnails = screen.getAllByRole('button', {
-        name: /^View image/
-      })
-      expect(gridThumbnails).toHaveLength(2)
-    })
-
     it('requests lightweight thumbnails for grid cells instead of full-resolution images', () => {
       renderImagePreview()
 

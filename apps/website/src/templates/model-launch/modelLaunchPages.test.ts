@@ -91,8 +91,8 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     ].filter((key): key is TranslationKey => key !== undefined)
 
     for (const key of keys) {
-      expect(t(key, 'en'), `${key} (en)`).not.toBe('')
-      expect(t(key, 'zh-CN'), `${key} (zh-CN)`).not.toBe('')
+      expect(t(key, {}, { locale: 'en' }), `${key} (en)`).not.toBe('')
+      expect(t(key, {}, { locale: 'zh-CN' }), `${key} (zh-CN)`).not.toBe('')
     }
   })
 

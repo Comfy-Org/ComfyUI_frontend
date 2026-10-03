@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-node-access */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'

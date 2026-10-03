@@ -1,4 +1,5 @@
 import type {
+  BillingClient,
   CheckoutEntryFlow,
   CheckoutJourneyPhaseEvent,
   SubscriptionCheckoutType
@@ -22,6 +23,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type {
@@ -575,13 +577,18 @@ export function useSubscriptionCheckout(
    * a failure throws into the caller's catch, where a legacy throw already
    * lands.
    */
-  async function readPaymentPortalUrl(returnUrl: string): Promise<string> {
+  async function readPaymentPortalUrl(
+    returnUrl: string
+  ): Promise<{ url: string; billingClient: BillingClient }> {
     if (subscriptionRail) {
       const outcome = await subscriptionRail.openPaymentPortal(returnUrl)
-      if (outcome.status === 'ok') return outcome.value
+      if (outcome.status === 'ok') {
+        return { url: outcome.value, billingClient: 'sdk' }
+      }
       if (outcome.status === 'error') throw outcome.error
     }
-    return (await workspaceApi.getPaymentPortalUrl(returnUrl)).url
+    const { url } = await workspaceApi.getPaymentPortalUrl(returnUrl)
+    return { url, billingClient: 'legacy' }
   }
 
   async function recoverOutstandingPayment(
@@ -599,18 +606,22 @@ export function useSubscriptionCheckout(
           readRail === null
             ? await workspaceApi.getBillingStatus()
             : await readOnRail(readRail.readStatus)
-        requiresRecovery = status?.billing_status === 'payment_failed'
+        requiresRecovery =
+          status?.billing_status === 'payment_failed' ||
+          status?.billing_status === 'paused'
       } catch {
         return null
       }
     }
     if (!requiresRecovery || !isCurrent()) return null
 
+    const portal = createBillingPortalReporter(telemetry, 'payment_recovery')
+    let billingClient: BillingClient | undefined
     try {
       const returnUrl = `${globalThis.location.origin}${globalThis.location.pathname}`
-      const portalUrl = parseBillingPortalUrl(
-        await readPaymentPortalUrl(returnUrl)
-      )
+      const portalResponse = await readPaymentPortalUrl(returnUrl)
+      billingClient = portalResponse.billingClient
+      const portalUrl = parseBillingPortalUrl(portalResponse.url)
       if (!isCurrent()) return null
       if (!portalUrl) {
         throw new Error(
@@ -621,6 +632,7 @@ export function useSubscriptionCheckout(
       }
       const paymentWindow = window.open(portalUrl.href, '_blank')
       if (!paymentWindow) {
+        portal.blocked(billingClient)
         // The open above ran after an await, so it had no user gesture behind
         // it and got blocked. The toast's own button click is a gesture, so
         // retrying from there isn't blocked.
@@ -635,17 +647,23 @@ export function useSubscriptionCheckout(
             // checkout reset); a stale click must not reopen its captured URL.
             onAction: () => {
               if (!isCurrent()) return
-              window.open(portalUrl.href, '_blank')
+              if (window.open(portalUrl.href, '_blank')) {
+                portal.opened(billingClient)
+              } else {
+                portal.blocked(billingClient)
+              }
               armPaymentRecoveryReturnRefresh()
             }
           }
         })
         return 'blocked'
       }
+      portal.opened(billingClient)
       armPaymentRecoveryReturnRefresh()
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null
+      portal.failed(portalError, billingClient)
       reportError(portalError, {
         surface: 'workspace',
         errorType: 'billing_portal_open_failure'
@@ -791,7 +809,8 @@ export function useSubscriptionCheckout(
     const { useDialogService } = await import('@/services/dialogService')
     const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
-      planSlug
+      planSlug,
+      paymentIntentSource
     })
     if (!result) return
 
@@ -1403,6 +1422,7 @@ export function useSubscriptionCheckout(
       workspaceId,
       entryFlow: currentSubscriptionEntryFlow(),
       entrySource,
+      paymentIntentSource,
       // Keyed by source as well as tier/cycle, the way the top-up rail keys by
       // source alone. Resume matches on actor, workspace, flow and intent but
       // not source, so without this an abandoned `pricing` preview for a plan

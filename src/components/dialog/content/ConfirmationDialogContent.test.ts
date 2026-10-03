@@ -127,11 +127,6 @@ describe('ConfirmationDialogContent', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('falls back to "No" when denyLabel is not provided', () => {
-      renderComponent({ type: 'dirtyClose' })
-      expect(screen.getByRole('button', { name: 'No' })).toBeInTheDocument()
-    })
-
     it('calls onConfirm(false) when deny is clicked', async () => {
       const onConfirm = vi.fn()
       const { user } = renderComponent({

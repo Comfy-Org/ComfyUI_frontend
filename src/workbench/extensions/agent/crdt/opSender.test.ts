@@ -92,6 +92,16 @@ function addNode(id: number): AddNodeOperation {
   }
 }
 
+function circularAddNode(id: number): AddNodeOperation {
+  const operation = addNode(id)
+  const node: AddNodeOperation['node'] & Record<string, unknown> = {
+    ...operation.node
+  }
+  node.circular = node
+  operation.node = node
+  return operation
+}
+
 function enqueueNodeBacklog(
   sender: ReturnType<typeof createOpSender>,
   count: number
@@ -935,14 +945,7 @@ describe('createOpSender', () => {
   })
 
   it('rejects a malformed op at admission, reports it once, and leaves teardown clean', () => {
-    const circularNode = addNode(1)
-    const node: AddNodeOperation['node'] & Record<string, unknown> = {
-      ...circularNode.node
-    }
-    node.circular = node
-    circularNode.node = node
-
-    expect(() => sender.admit([circularNode])).not.toThrow()
+    expect(() => sender.admit([circularAddNode(1)])).not.toThrow()
 
     expect(settled.map(summarizeSettlement)).toEqual([
       { state: 'undeliverable', nodeIds: [1] }
@@ -962,14 +965,7 @@ describe('createOpSender', () => {
   })
 
   it('sends the valid ops around a malformed one and rejects only that op', () => {
-    const circularNode = addNode(2)
-    const node: AddNodeOperation['node'] & Record<string, unknown> = {
-      ...circularNode.node
-    }
-    node.circular = node
-    circularNode.node = node
-
-    sender.admit([addNode(1), circularNode, addNode(3)])
+    sender.admit([addNode(1), circularAddNode(2), addNode(3)])
     expect(() => sender.flush()).not.toThrow()
 
     expect(sent).toHaveLength(1)
@@ -982,15 +978,8 @@ describe('createOpSender', () => {
   })
 
   it('bounds repeated serialization failure telemetry for one sender', () => {
-    const enqueueCircular = (id: number) => {
-      const operation = addNode(id)
-      const node: AddNodeOperation['node'] & Record<string, unknown> = {
-        ...operation.node
-      }
-      node.circular = node
-      operation.node = node
-      sender.enqueue([operation])
-    }
+    const enqueueCircular = (id: number) =>
+      sender.enqueue([circularAddNode(id)])
 
     enqueueCircular(1)
     enqueueCircular(2)
@@ -1002,15 +991,8 @@ describe('createOpSender', () => {
   })
 
   it('keeps serialization telemetry bounded across successful sends and re-arms by time', () => {
-    const enqueueCircular = (id: number) => {
-      const operation = addNode(id)
-      const node: AddNodeOperation['node'] & Record<string, unknown> = {
-        ...operation.node
-      }
-      node.circular = node
-      operation.node = node
-      sender.enqueue([operation])
-    }
+    const enqueueCircular = (id: number) =>
+      sender.enqueue([circularAddNode(id)])
 
     enqueueCircular(1)
     enqueueCircular(2)
@@ -1043,13 +1025,8 @@ describe('createOpSender', () => {
     expect(settled[0]).toMatchObject({ state: 'undeliverable' })
   })
 
-  it('settles later admissions undeliverable after a rejection settlement detaches the sender', () => {
-    const circularNode = addNode(1)
-    const node: AddNodeOperation['node'] & Record<string, unknown> = {
-      ...circularNode.node
-    }
-    node.circular = node
-    circularNode.node = node
+  it('settles a later admission under the detach error type after a rejection settlement detaches', () => {
+    const circularNode = circularAddNode(1)
     const localSettled: BatchOutcome[] = []
     let workflow = 'wf-old'
     const localSender = createOpSender({
@@ -1061,7 +1038,9 @@ describe('createOpSender', () => {
       baseVersion: () => 41,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
-        localSender.detach()
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
+          localSender.detach()
+        throw new Error('listener boom')
       }
     })
     localSender.admit([circularNode])
@@ -1074,16 +1053,56 @@ describe('createOpSender', () => {
       { state: 'undeliverable', nodeIds: [1] },
       { state: 'undeliverable', nodeIds: [2] }
     ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_settling_agent_op_sender_detach'
+      })
+    )
+  })
+
+  it('keeps the outer admission when a nested admit only settles itself unbound', () => {
+    const circularNode = circularAddNode(1)
+    const localSettled: BatchOutcome[] = []
+    let workflow: string | null = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
+          workflow = null
+          localSender.admit([addNode(3)])
+          workflow = 'wf-new'
+        }
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe('wf-new')
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([2])
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ])
     localSender.detach()
   })
 
   it('commits the admitted ops before notifying a rejection, so a reentrant admit appends', () => {
-    const circularNode = addNode(1)
-    const node: AddNodeOperation['node'] & Record<string, unknown> = {
-      ...circularNode.node
-    }
-    node.circular = node
-    circularNode.node = node
     const localSender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         sent.push({ workflowId, tab, ops })
@@ -1100,7 +1119,7 @@ describe('createOpSender', () => {
       }
     })
 
-    localSender.admit([circularNode, addNode(2)])
+    localSender.admit([circularAddNode(1), addNode(2)])
     localSender.flush()
 
     expect(sent).toHaveLength(1)
@@ -1164,12 +1183,6 @@ describe('createOpSender', () => {
   })
 
   it('settles the admitted ops when a rejection settlement detaches the sender', () => {
-    const circularNode = addNode(2)
-    const node: AddNodeOperation['node'] & Record<string, unknown> = {
-      ...circularNode.node
-    }
-    node.circular = node
-    circularNode.node = node
     const localSettled: BatchOutcome[] = []
     const localSender = createOpSender({
       sendOps: () => true,
@@ -1186,7 +1199,7 @@ describe('createOpSender', () => {
       }
     })
 
-    localSender.admit([addNode(1), circularNode, addNode(3)])
+    localSender.admit([addNode(1), circularAddNode(2), addNode(3)])
     localSender.flush()
 
     expect(localSender.pending()).toBe(0)

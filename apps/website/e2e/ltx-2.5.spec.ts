@@ -11,11 +11,11 @@ import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/ltx-2.5'
 const ZH_PATH = '/zh-CN/ltx-2.5'
-const HERO_TITLE = t('ltx.hero.title', 'en')
-const MODELS_HEADING = t('ltx.models.heading', 'en')
+const HERO_TITLE = t('ltx.hero.title', {}, { locale: 'en' })
+const MODELS_HEADING = t('ltx.models.heading', {}, { locale: 'en' })
 const MODELS_ROUTE = getRoutes('en').models
-const REVIEWS_HEADING = t('ltx.reviews.heading', 'en')
-const HIGHLIGHT_CTA = t('ltx.reviews.highlightCta', 'en')
+const REVIEWS_HEADING = t('ltx.reviews.heading', {}, { locale: 'en' })
+const HIGHLIGHT_CTA = t('ltx.reviews.highlightCta', {}, { locale: 'en' })
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
 const LTX_RUN_TEMPLATE = 'https://cloud.comfy.org/?template=video_ltx2_5_i2v'
@@ -73,7 +73,9 @@ test.describe('LTX 2.5 page — desktop @smoke', () => {
     })
 
     for (const key of BADGE_KEYS) {
-      await expect(hero.getByText(t(key, 'en'), { exact: true })).toBeVisible()
+      await expect(
+        hero.getByText(t(key, {}, { locale: 'en' }), { exact: true })
+      ).toBeVisible()
     }
   })
 
@@ -97,8 +99,12 @@ test.describe('LTX 2.5 page — link targets', () => {
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: t('ui.breadcrumb', 'en') })
-      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
+      .getByRole('navigation', {
+        name: t('ui.breadcrumb', {}, { locale: 'en' })
+      })
+      .getByRole('link', {
+        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+      })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
@@ -109,14 +115,14 @@ test.describe('LTX 2.5 page — link targets', () => {
       has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
     })
     const runCta = hero.getByRole('link', {
-      name: t('ltx.hero.primaryCta', 'en')
+      name: t('ltx.hero.primaryCta', {}, { locale: 'en' })
     })
     await expect(runCta).toHaveAttribute('href', HERO_PRIMARY_CTA.href)
     await expect(runCta).toHaveAttribute('href', LTX_RUN_TEMPLATE)
     await expect(runCta).toHaveAttribute('target', '_blank')
 
     const secondary = hero.getByRole('link', {
-      name: t('ltx.hero.secondaryCta', 'en')
+      name: t('ltx.hero.secondaryCta', {}, { locale: 'en' })
     })
     await expect(secondary).toHaveAttribute(
       'href',
@@ -255,7 +261,7 @@ test.describe('LTX 2.5 page — zh-CN', () => {
 
     const reviews = page.getByRole('heading', {
       level: 2,
-      name: t('ltx.reviews.heading', 'zh-CN')
+      name: t('ltx.reviews.heading', {}, { locale: 'zh-CN' })
     })
     await reviews.scrollIntoViewIfNeeded()
     await expect(reviews).toBeVisible()
@@ -279,7 +285,9 @@ test.describe('LTX 2.5 page — mobile @mobile', () => {
       .filter({
         has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
       })
-      .getByRole('link', { name: t('ltx.hero.primaryCta', 'en') })
+      .getByRole('link', {
+        name: t('ltx.hero.primaryCta', {}, { locale: 'en' })
+      })
 
     await expect(cta).toBeVisible()
 

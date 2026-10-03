@@ -559,3 +559,103 @@ describe('payment portal on the billing SDK rail', () => {
     )
   })
 })
+
+describe('payment portal telemetry', () => {
+  function portalEvents() {
+    const trackBillingEvent = useTelemetry()?.trackBillingEvent
+    if (!trackBillingEvent) throw new Error('Telemetry mock unavailable')
+    return vi
+      .mocked(trackBillingEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.operation === 'portal')
+  }
+
+  function leaveAndReturn() {
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+  }
+
+  beforeEach(() => {
+    const trackBillingEvent = useTelemetry()?.trackBillingEvent
+    if (trackBillingEvent) vi.mocked(trackBillingEvent).mockClear()
+    vi.mocked(window.open).mockReturnValue({
+      location: { href: '' },
+      close: vi.fn()
+    } as unknown as Window)
+  })
+
+  it.for<{
+    name: string
+    railOn: boolean
+    billingClient: 'sdk' | 'legacy'
+  }>([
+    { name: 'the SDK rail', railOn: true, billingClient: 'sdk' },
+    { name: 'the workspace client', railOn: false, billingClient: 'legacy' }
+  ])(
+    'reports the portal opening from $name and one return',
+    async ({ railOn, billingClient }) => {
+      flagState.billingSdkSubscriptionEnabled = railOn
+      vi.mocked(harness.sdk.commands.openPaymentPortal).mockResolvedValue({
+        status: 'ok',
+        value: { url: 'https://portal.sdk.example/session' }
+      })
+
+      await setupBilling().manageSubscription()
+      leaveAndReturn()
+      leaveAndReturn()
+
+      expect(portalEvents()).toEqual([
+        {
+          operation: 'portal',
+          stage: 'opened',
+          outcome: 'pending',
+          target: 'manage_subscription',
+          billing_client: billingClient
+        },
+        {
+          operation: 'portal',
+          stage: 'returned',
+          outcome: 'pending',
+          target: 'manage_subscription',
+          billing_client: billingClient
+        }
+      ])
+    }
+  )
+
+  it('reports a blocked portal tab as a failed open', async () => {
+    vi.mocked(window.open).mockReturnValue(null)
+
+    await setupBilling().manageSubscription()
+
+    expect(portalEvents()).toEqual([
+      {
+        operation: 'portal',
+        stage: 'failed',
+        outcome: 'failure',
+        target: 'manage_subscription',
+        failure_category: 'redirect',
+        error_code: 'payment_popup_blocked'
+      }
+    ])
+  })
+
+  it('reports a refused portal request as a failed open', async () => {
+    vi.mocked(workspaceApi.getPaymentPortalUrl).mockRejectedValue(
+      new WorkspaceApiError('Forbidden', 403)
+    )
+
+    await expect(setupBilling().manageSubscription()).rejects.toThrow()
+    leaveAndReturn()
+
+    expect(portalEvents()).toEqual([
+      {
+        operation: 'portal',
+        stage: 'failed',
+        outcome: 'failure',
+        target: 'manage_subscription',
+        failure_category: 'api_rejected'
+      }
+    ])
+  })
+})

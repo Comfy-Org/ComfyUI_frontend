@@ -18,6 +18,9 @@ const FAKE_STRIPE_JS = `
   window.__e2eFakeStripe = {
     confirmationTokens: 0,
     nextActions: 0,
+    // Payment elements taken off the page, so a spec can tell a form kept as
+    // typed from one mounted afresh.
+    unmounts: 0,
     // Every argument the app actually passed to handleNextAction, so a spec
     // can tell "called correctly" from "called with the wrong secret".
     nextActionCalls: []
@@ -29,8 +32,12 @@ const FAKE_STRIPE_JS = `
     if (failing) window.__e2eStripeLoadErrors -= 1
     return {
       mount() {},
-      unmount() {},
-      destroy() {},
+      unmount() {
+        window.__e2eFakeStripe.unmounts += 1
+      },
+      destroy() {
+        window.__e2eFakeStripe.unmounts += 1
+      },
       on(event, handler) {
         if (event === (failing ? 'loaderror' : 'ready'))
           setTimeout(() => handler({ error: { code: 'e2e_load_error' } }))

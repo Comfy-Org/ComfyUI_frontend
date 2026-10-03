@@ -52,7 +52,8 @@ const PROMO = charged({
         kind: 'promotion',
         code: 'SAVE20',
         name: 'Save 20%',
-        duration: 'once'
+        duration: 'once',
+        term: 'first_month'
       }
     },
     { kind: 'account_balance', amount_cents: 250 }
@@ -130,7 +131,8 @@ describe('successBreakdown', () => {
                 code: 'LOYAL',
                 name: 'Loyalty',
                 duration: 'repeating',
-                duration_in_months: 3
+                duration_in_months: 3,
+                term: 'months'
               }
             }
           ]
@@ -139,6 +141,37 @@ describe('successBreakdown', () => {
       breakdown: {
         deductions: [
           { label: 'Loyalty', amount: '−$20.00', subline: 'For 3 months' }
+        ],
+        paidToday: { label: 'Paid today', amount: '$80.00', sublines: [] }
+      }
+    },
+    {
+      name: 'a one-time code on a monthly plan change covers this payment only',
+      page: settled(
+        'started',
+        charged({
+          reasons: [
+            {
+              kind: 'promo_code',
+              amount_cents: 2_000,
+              discount: {
+                kind: 'promotion',
+                code: 'SWITCH20',
+                name: 'Switch offer',
+                duration: 'once',
+                term: 'this_payment'
+              }
+            }
+          ]
+        })
+      ),
+      breakdown: {
+        deductions: [
+          {
+            label: 'Switch offer',
+            amount: '−$20.00',
+            subline: 'This payment only'
+          }
         ],
         paidToday: { label: 'Paid today', amount: '$80.00', sublines: [] }
       }

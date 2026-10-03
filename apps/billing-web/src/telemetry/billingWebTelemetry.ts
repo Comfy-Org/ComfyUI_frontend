@@ -15,6 +15,7 @@ import {
   getCheckoutJourneyTelemetryEventPayload
 } from '@comfyorg/account-core/billing'
 import type { CloudTelemetryConfig } from '@comfyorg/account-core/firebase'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import {
   createPostHogBeforeSend,
   createPostHogUrlQueryScrub
@@ -39,12 +40,22 @@ interface StartPostHogOptions {
 
 type PostHogClient = Pick<
   PostHog,
-  'capture' | 'identify' | 'reset' | 'get_distinct_id' | 'get_property'
+  | 'capture'
+  | 'identify'
+  | 'reset'
+  | 'get_distinct_id'
+  | 'get_property'
+  | 'onFeatureFlags'
 >
 
 interface BillingEvent {
-  readonly name: BillingTelemetryEventName | CheckoutJourneyTelemetryEventName
+  readonly name:
+    | BillingTelemetryEventName
+    | CheckoutJourneyTelemetryEventName
+    | WebSessionTelemetryEvent['name']
   readonly properties: Readonly<Record<string, unknown>>
+  /** Sent while the page goes away, after PostHog has drained its queue on `pagehide`. */
+  readonly onPageExit?: true
 }
 
 interface IdentitySink {
@@ -72,6 +83,9 @@ const MASKED_URL_PARAMS = [
 
 /** Bounds what waits on a PostHog load that never finishes. */
 const MAX_WAITING_EVENTS = 50
+
+/** Bounds how long events wait for the flags when `/flags` is slow or blocked. */
+const FLAG_LOAD_WAIT_MS = 3000
 
 /** Telemetry observes the billing flow; a failing sink must never break it. */
 function attempt(send: () => void): void {
@@ -124,6 +138,20 @@ function syncIdentity(
 
 const RUM_USER: IdentitySink = { signIn: setRumUser, signOut: clearRumUser }
 
+/**
+ * PostHog stamps `$feature/<flag>` only once this origin has loaded the flags,
+ * so events sent before that miss the rollout cohort.
+ */
+function whenFlagsLoaded(client: PostHogClient): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, FLAG_LOAD_WAIT_MS)
+    client.onFeatureFlags(() => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+}
+
 async function loadPostHog(
   config: CloudTelemetryConfig
 ): Promise<PostHogClient | undefined> {
@@ -155,8 +183,12 @@ export function createBillingWebTelemetry() {
           posthog.waiting.push(event)
         return
       case 'ready':
-        if (!posthog.disabledEvents.has(event.name))
-          posthog.client.capture(event.name, event.properties)
+        if (posthog.disabledEvents.has(event.name)) return
+        if (event.onPageExit)
+          posthog.client.capture(event.name, event.properties, {
+            transport: 'sendBeacon'
+          })
+        else posthog.client.capture(event.name, event.properties)
     }
   }
 
@@ -170,6 +202,7 @@ export function createBillingWebTelemetry() {
     try {
       const resolved = await config
       const client = await loadPostHog(resolved)
+      if (client) await whenFlagsLoaded(client)
       posthog = client
         ? {
             status: 'ready',
@@ -217,8 +250,15 @@ export function createBillingWebTelemetry() {
         properties: {
           ...getCheckoutJourneyTelemetryEventPayload(event),
           billing_surface: 'billing_web'
-        }
+        },
+        ...(event.phase === 'abandoned' && { onPageExit: true })
       })
+    )
+  }
+
+  function trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    attempt(() =>
+      send({ name: event.name, properties: { ...event.properties } })
     )
   }
 
@@ -231,7 +271,8 @@ export function createBillingWebTelemetry() {
     startPostHog,
     startRumUser,
     trackBillingEvent,
-    trackCheckoutJourneyEvent
+    trackCheckoutJourneyEvent,
+    trackWebSessionEvent
   }
 }
 
