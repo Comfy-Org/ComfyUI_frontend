@@ -47,10 +47,10 @@ function pendingHostRequest(
 }
 
 function createDownloadHarness({
-  loadFolderPaths = vi.fn(async () => ({})),
+  folderPaths = {},
   dispatchDownload = () => pendingHostRequest()
 }: {
-  loadFolderPaths?: () => Promise<FolderPaths>
+  folderPaths?: FolderPaths
   dispatchDownload?: DispatchDownload
 } = {}) {
   let desktopProgress!: (progress: ComfyDownloadProgress) => void
@@ -58,7 +58,7 @@ function createDownloadHarness({
   const stopDesktop = vi.fn()
   const stopLegacy = vi.fn()
   const downloads = useTemplateModelRowDownloads({
-    loadFolderPaths,
+    folderPaths,
     dispatchDownload,
     subscribeDesktopProgress: (listener) => {
       desktopProgress = listener
@@ -112,7 +112,6 @@ describe('useTemplateModelRowDownloads', () => {
 
   it('subscribes only to Desktop2 before direct host dispatch', async () => {
     const order: string[] = []
-    const loadFolderPaths = vi.fn<() => Promise<FolderPaths>>()
     const request = model('desktop2.safetensors')
     const dispatchDownload = vi.fn((): ModelDownloadDispatchOutcome => {
       order.push('dispatch')
@@ -124,7 +123,7 @@ describe('useTemplateModelRowDownloads', () => {
     })
 
     const downloads = useTemplateModelRowDownloads({
-      loadFolderPaths,
+      folderPaths: {},
       dispatchDownload,
       subscribeDesktopProgress: () => {
         order.push('desktop-subscribe')
@@ -145,46 +144,30 @@ describe('useTemplateModelRowDownloads', () => {
         revealLegacyDownload: false
       }
     )
-    expect(loadFolderPaths).not.toHaveBeenCalled()
     expect(downloads.stateFor(request)).toEqual({
       status: 'starting',
       attempt: 1
     })
   })
 
-  it('queues a legacy row while paths load detached and retries without revealing the sidebar', async () => {
-    const paths = deferred<FolderPaths>()
+  it('dispatches a legacy row with its resolved paths without revealing the sidebar', async () => {
     const hostResult = deferred<boolean>()
-    const dispatchDownload = vi
-      .fn<DispatchDownload>()
-      .mockReturnValueOnce({
-        status: 'not-dispatched',
-        reason: 'missing-directory-path'
-      })
-      .mockReturnValueOnce({
-        status: 'host-requested',
-        host: 'electron',
-        hostResult: hostResult.promise
-      })
+    const folderPaths = { checkpoints: ['/models/checkpoints'] }
+    const dispatchDownload = vi.fn<DispatchDownload>().mockReturnValue({
+      status: 'host-requested',
+      host: 'electron',
+      hostResult: hostResult.promise
+    })
     const request = model('legacy.safetensors')
     const { downloads } = createDownloadHarness({
-      loadFolderPaths: () => paths.promise,
+      folderPaths,
       dispatchDownload
     })
 
     downloads.request(request)
 
-    expect(downloads.stateFor(request)).toEqual({
-      status: 'queued',
-      attempt: 1
-    })
     expect(dispatchDownload).toHaveBeenCalledOnce()
-
-    const folderPaths = { checkpoints: ['/models/checkpoints'] }
-    paths.resolve(folderPaths)
-    await vi.waitFor(() => expect(dispatchDownload).toHaveBeenCalledTimes(2))
-
-    expect(dispatchDownload).toHaveBeenLastCalledWith(request, folderPaths, {
+    expect(dispatchDownload).toHaveBeenCalledWith(request, folderPaths, {
       revealLegacyDownload: false
     })
     expect(downloads.stateFor(request)).toEqual({
@@ -221,10 +204,7 @@ describe('useTemplateModelRowDownloads', () => {
               : rejectedResult.promise
       })
     )
-    const { downloads } = createDownloadHarness({
-      loadFolderPaths: vi.fn(),
-      dispatchDownload
-    })
+    const { downloads } = createDownloadHarness({ dispatchDownload })
 
     downloads.request(requests.false)
     downloads.request(requests.true)
@@ -455,41 +435,22 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
-  it('does not retry dispatch from an obsolete detached folder lookup', async () => {
-    const paths = deferred<FolderPaths>()
-    const dispatchDownload = vi
-      .fn<DispatchDownload>()
-      .mockReturnValueOnce({
-        status: 'not-dispatched',
-        reason: 'missing-directory-path'
-      })
-      .mockReturnValue(pendingHostRequest())
-    const request = model('obsolete-paths.safetensors')
-    const { downloads, emitDesktop } = createDownloadHarness({
-      loadFolderPaths: () => paths.promise,
-      dispatchDownload
+  it('fails a row the host cannot place instead of deferring it', async () => {
+    const dispatchDownload = vi.fn<DispatchDownload>().mockReturnValue({
+      status: 'not-dispatched',
+      reason: 'missing-directory-path'
     })
-    downloads.request(request)
-    emitDesktop({
-      url: request.url,
-      filename: request.name,
-      directory: request.directory,
-      progress: 0,
-      status: 'error'
-    })
+    const request = model('unplaceable.safetensors')
+    const { downloads } = createDownloadHarness({ dispatchDownload })
+
     downloads.request(request)
 
+    expect(dispatchDownload).toHaveBeenCalledOnce()
     expect(downloads.stateFor(request)).toEqual({
-      status: 'starting',
-      attempt: 2
+      status: 'failed',
+      reason: 'error',
+      attempt: 1
     })
-    expect(dispatchDownload).toHaveBeenCalledTimes(2)
-
-    paths.resolve({ checkpoints: ['/models/checkpoints'] })
-    await paths.promise
-    await Promise.resolve()
-
-    expect(dispatchDownload).toHaveBeenCalledTimes(2)
   })
 
   it('requires retry activity before accepting an uncorrelated native terminal', async () => {
@@ -538,39 +499,18 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
-  it('disposes both observers while a detached folder lookup continues', async () => {
-    const paths = deferred<FolderPaths>()
-    const dispatchDownload = vi
-      .fn<DispatchDownload>()
-      .mockReturnValueOnce({
-        status: 'not-dispatched',
-        reason: 'missing-directory-path'
-      })
-      .mockReturnValueOnce(pendingHostRequest('electron'))
+  it('unsubscribes both observers once however often it is disposed', () => {
     const { downloads, stopDesktop, stopLegacy } = createDownloadHarness({
-      loadFolderPaths: () => paths.promise,
-      dispatchDownload
+      dispatchDownload: () => pendingHostRequest('electron')
     })
-    const request = model('dispose.safetensors')
-    downloads.request(request)
+    // The legacy observer only exists once a legacy dispatch subscribes it.
+    downloads.request(model('dispose.safetensors'))
 
+    // A successful open runs both onClose() and onBeforeUnmount().
+    downloads.dispose()
     downloads.dispose()
 
     expect(stopDesktop).toHaveBeenCalledOnce()
     expect(stopLegacy).toHaveBeenCalledOnce()
-    expect(downloads.stateFor(request)).toEqual({
-      status: 'queued',
-      attempt: 1
-    })
-
-    paths.resolve({ checkpoints: ['/models/checkpoints'] })
-    await Promise.resolve()
-    await Promise.resolve()
-
-    expect(dispatchDownload).toHaveBeenCalledOnce()
-    expect(downloads.stateFor(request)).toEqual({
-      status: 'queued',
-      attempt: 1
-    })
   })
 })

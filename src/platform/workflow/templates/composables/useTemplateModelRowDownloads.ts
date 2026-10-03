@@ -30,7 +30,12 @@ type SubscribeLegacyProgress = (
 ) => () => void
 
 type TemplateModelRowDownloadDependencies = {
-  loadFolderPaths: () => Promise<FolderPaths>
+  /**
+   * Resolved before Detail opens, so a dispatch never has to wait on a lookup
+   * that could outlive this view. Empty for hosts that resolve their own
+   * directories.
+   */
+  folderPaths: FolderPaths
   dispatchDownload?: (
     model: ModelWithUrl,
     paths: FolderPaths,
@@ -166,7 +171,7 @@ function legacyProgressEvent(
 }
 
 export function useTemplateModelRowDownloads({
-  loadFolderPaths,
+  folderPaths,
   dispatchDownload = dispatchModelDownload,
   subscribeDesktopProgress = subscribeToDesktopProgress,
   subscribeLegacyProgress = subscribeToLegacyProgress
@@ -280,21 +285,6 @@ export function useTemplateModelRowDownloads({
     })
   }
 
-  function isCurrentQueuedAttempt(
-    model: ModelWithUrl,
-    attempt: number
-  ): boolean {
-    if (disposed) return false
-    const identity = identityFor(model)
-    const currentModel = models.get(identity)
-    const currentState = states.get(identity)
-    return (
-      currentModel?.url === model.url &&
-      currentState?.status === 'queued' &&
-      currentState.attempt === attempt
-    )
-  }
-
   function fail(model: ModelWithUrl, attempt: number): void {
     applyEvent(model, { type: 'error', attempt })
   }
@@ -302,8 +292,7 @@ export function useTemplateModelRowDownloads({
   function handleOutcome(
     model: ModelWithUrl,
     attempt: number,
-    outcome: ModelDownloadDispatchOutcome,
-    canLoadFolderPaths: boolean
+    outcome: ModelDownloadDispatchOutcome
   ): void {
     switch (outcome.status) {
       case 'host-requested':
@@ -316,43 +305,19 @@ export function useTemplateModelRowDownloads({
         fail(model, attempt)
         return
       case 'not-dispatched':
-        if (
-          outcome.reason !== 'missing-directory-path' ||
-          !canLoadFolderPaths
-        ) {
-          fail(model, attempt)
-          return
-        }
-        ensureLegacyProgress()
-        void loadFolderPaths().then(
-          (paths) => {
-            if (isCurrentQueuedAttempt(model, attempt)) {
-              dispatch(model, attempt, paths, false)
-            }
-          },
-          () => {
-            if (isCurrentQueuedAttempt(model, attempt)) fail(model, attempt)
-          }
-        )
+        fail(model, attempt)
         return
       default:
         return outcome satisfies never
     }
   }
 
-  function dispatch(
-    model: ModelWithUrl,
-    attempt: number,
-    paths: FolderPaths,
-    canLoadFolderPaths: boolean
-  ): void {
-    if (disposed) return
+  function dispatch(model: ModelWithUrl, attempt: number): void {
     try {
       handleOutcome(
         model,
         attempt,
-        dispatchDownload(model, paths, { revealLegacyDownload: false }),
-        canLoadFolderPaths
+        dispatchDownload(model, folderPaths, { revealLegacyDownload: false })
       )
     } catch {
       fail(model, attempt)
@@ -369,10 +334,11 @@ export function useTemplateModelRowDownloads({
     if (queued === current) return
 
     states.set(identity, queued)
-    dispatch(model, queued.attempt, {}, true)
+    dispatch(model, queued.attempt)
   }
 
   function dispose(): void {
+    if (disposed) return
     disposed = true
     stopDesktopProgress()
     stopLegacyProgress?.()

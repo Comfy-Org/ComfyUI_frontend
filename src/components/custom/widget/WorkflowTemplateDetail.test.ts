@@ -42,19 +42,16 @@ function renderDetail({
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  setupPending = false,
-  modelDownloadsAvailable = false
+  modelSetupState = 'none'
 }: {
   renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  setupPending?: boolean
-  modelDownloadsAvailable?: boolean
+  modelSetupState?: 'none' | 'resolving' | 'downloadable'
 } = {}) {
   const modelSetupProps = {
-    setupPending,
-    modelDownloadsAvailable
+    modelSetupState
   }
 
   return render(WorkflowTemplateDetail, {
@@ -152,7 +149,7 @@ describe('WorkflowTemplateDetail', () => {
 
   it('keeps Open now available while offering Download models & open', async () => {
     const user = userEvent.setup()
-    const result = renderDetail({ modelDownloadsAvailable: true })
+    const result = renderDetail({ modelSetupState: 'downloadable' })
 
     await user.click(screen.getByRole('button', { name: 'Open now' }))
     await user.click(
@@ -167,7 +164,7 @@ describe('WorkflowTemplateDetail', () => {
   })
 
   it('does not block Open now while model metadata is pending', () => {
-    renderDetail({ setupPending: true })
+    renderDetail({ modelSetupState: 'resolving' })
 
     expect(screen.getByRole('button', { name: 'Open now' })).toBeEnabled()
     expect(
