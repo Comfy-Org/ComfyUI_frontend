@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import {
+  createTestCanvasElement,
+  setIntrinsicCanvasLayout
+} from '@/utils/__tests__/canvasTestUtils'
 
 describe('LGraphCanvas.resize', () => {
   beforeEach(() => {
@@ -39,6 +42,23 @@ describe('LGraphCanvas.resize', () => {
       2000,
       1400
     ])
+  })
+
+  it('keeps an unstyled canvas whose intrinsic size already matches its parent at its logical size', () => {
+    const { canvas } = createParentSizedCanvas()
+    setIntrinsicCanvasLayout(canvas.canvas)
+    canvas.canvas.width = 800
+    canvas.canvas.height = 600
+
+    canvas.resize()
+
+    const rect = canvas.canvas.getBoundingClientRect()
+    expect([
+      rect.width,
+      rect.height,
+      canvas.canvas.width,
+      canvas.canvas.height
+    ]).toEqual([800, 600, 1600, 1200])
   })
 
   it('sizes the backing store without overriding caller CSS dimensions', () => {

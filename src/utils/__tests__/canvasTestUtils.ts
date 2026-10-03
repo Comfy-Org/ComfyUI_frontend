@@ -135,6 +135,20 @@ export function createTestCanvasElement({
   return element
 }
 
+/**
+ * happy-dom has no layout, so report the box an `auto`-sized canvas gets: its
+ * inline CSS dimensions when it has them, and its backing-store attributes
+ * otherwise. That is how a browser lays out an unstyled `<canvas>`, and it is
+ * what makes the layout box observable in a unit test.
+ */
+export function setIntrinsicCanvasLayout(element: HTMLCanvasElement): void {
+  vi.spyOn(element, 'getBoundingClientRect').mockImplementation(() => {
+    const width = Number.parseFloat(element.style.width) || element.width
+    const height = Number.parseFloat(element.style.height) || element.height
+    return new DOMRect(0, 0, width, height)
+  })
+}
+
 /** happy-dom has no layout, so report the offset geometry a rendered or hidden canvas has. */
 export function setCanvasVisible(element: HTMLElement, visible: boolean): void {
   Object.defineProperties(element, {

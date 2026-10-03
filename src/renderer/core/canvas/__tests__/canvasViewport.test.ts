@@ -8,7 +8,8 @@ import {
 } from '@/renderer/core/canvas/canvasViewport'
 import {
   createMockCanvasRenderingContext2D,
-  createTestCanvasElement
+  createTestCanvasElement,
+  setIntrinsicCanvasLayout
 } from '@/utils/__tests__/canvasTestUtils'
 
 function createTransformTrackingCanvas(cssSize?: {
@@ -16,11 +17,26 @@ function createTransformTrackingCanvas(cssSize?: {
   height: number
 }) {
   const transform = { x: 1, y: 1 }
+  // `scale` multiplies the current transform; `setTransform` replaces it. The
+  // difference is what the compounding and probe-reset cases below observe.
+  const setTransform: CanvasRenderingContext2D['setTransform'] = vi.fn(
+    (
+      a?: number | DOMMatrix2DInit,
+      _b?: number,
+      _c?: number,
+      d?: number
+    ): void => {
+      if (typeof a !== 'number' || typeof d !== 'number') return
+      transform.x = a
+      transform.y = d
+    }
+  )
   const ctx = createMockCanvasRenderingContext2D({
     scale: vi.fn((x: number, y: number) => {
       transform.x *= x
       transform.y *= y
-    })
+    }),
+    setTransform
   })
   const canvas = createTestCanvasElement({ ctx })
   for (const dimension of ['width', 'height'] as const) {
@@ -126,8 +142,22 @@ describe('applyViewport', () => {
     expect([fg.width, fg.height, bg.width, bg.height]).toEqual([
       1600, 1200, 1600, 1200
     ])
-    expect(fgContext.scale).toHaveBeenCalledExactlyOnceWith(2, 2)
-    expect(bgContext.scale).toHaveBeenCalledExactlyOnceWith(2, 2)
+    expect(fgContext.setTransform).toHaveBeenCalledExactlyOnceWith(
+      2,
+      0,
+      0,
+      2,
+      0,
+      0
+    )
+    expect(bgContext.setTransform).toHaveBeenCalledExactlyOnceWith(
+      2,
+      0,
+      0,
+      2,
+      0,
+      0
+    )
   })
 
   it('scales a shared foreground/background context only once', () => {
@@ -136,7 +166,7 @@ describe('applyViewport', () => {
 
     applyViewport(measureViewport(800, 600, 2), canvas, canvas)
 
-    expect(ctx.scale).toHaveBeenCalledExactlyOnceWith(2, 2)
+    expect(ctx.setTransform).toHaveBeenCalledExactlyOnceWith(2, 0, 0, 2, 0, 0)
   })
 
   it('hands the applied DPR and CSS dimensions to the consumer', () => {
@@ -153,20 +183,22 @@ describe('applyViewport', () => {
     expect(consumer.ds.setViewportSize).toHaveBeenCalledWith(800, 600)
   })
 
-  it('restores the DPR transform a measurement probe reset, even when the backing size rounds back', () => {
+  it('keeps the DPR transform across a measurement probe, even when the backing size rounds back', () => {
     const cssSize = { width: 800.1, height: 600 }
     const { canvas, transform } = createTransformTrackingCanvas(cssSize)
 
     applyViewport(measureViewportFromElement(canvas, 2), canvas, canvas)
     expect(transform).toEqual({ x: 2, y: 2 })
 
+    // The probe resets the context by reassigning the backing attributes, and
+    // rounding back to the same physical size means no later write undoes it.
     cssSize.width = 800.2
     const reprobed = measureViewportFromElement(canvas, 2)
     expect([reprobed.physicalWidth, reprobed.physicalHeight]).toEqual([
       canvas.width,
       canvas.height
     ])
-    expect(transform).toEqual({ x: 1, y: 1 })
+    expect(transform).toEqual({ x: 2, y: 2 })
 
     applyViewport(reprobed, canvas, canvas)
 
@@ -251,6 +283,29 @@ describe('applyLogicalCanvasStyle', () => {
 
     applyLogicalCanvasStyle(canvas, 800, 600)
 
+    expect([canvas.style.width, canvas.style.height]).toEqual(['', ''])
+  })
+
+  it('pins an unstyled canvas whose intrinsic size already matches the request', () => {
+    const canvas = createTestCanvasElement()
+    setIntrinsicCanvasLayout(canvas)
+
+    applyLogicalCanvasStyle(canvas, 800, 600)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual([
+      '800px',
+      '600px'
+    ])
+  })
+
+  it('reuses the stylesheet verdict instead of reprobing an unchanged canvas', () => {
+    const canvas = createTestCanvasElement({ cssSize: [800, 600] })
+    applyLogicalCanvasStyle(canvas, 800, 600)
+    const backingStoreWrites = vi.spyOn(canvas, 'width', 'set')
+
+    applyLogicalCanvasStyle(canvas, 800, 600)
+
+    expect(backingStoreWrites).not.toHaveBeenCalled()
     expect([canvas.style.width, canvas.style.height]).toEqual(['', ''])
   })
 })

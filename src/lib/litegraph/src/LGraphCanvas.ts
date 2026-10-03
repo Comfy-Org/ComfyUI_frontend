@@ -1042,7 +1042,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _dpr: number = 1
 
-  /** Device pixel ratio applied with the current viewport dimensions. */
+  /**
+   * Device pixel ratio of the canvas contexts. Assigning a new value
+   * recomputes the low-quality zoom threshold.
+   */
   get dpr(): number {
     return this._dpr
   }
@@ -6683,6 +6686,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /**
    * @deprecated Use {@link measureViewport} + {@link applyViewport} from `canvasViewport.ts` instead.
+   * Call {@link applyLogicalCanvasStyle} first so the DPR-scaled backing store
+   * cannot size the layout box of a canvas that has no CSS dimensions.
    * This method remains for legacy callers that rely on parent-element fallback sizing.
    */
   resize(width?: number, height?: number): void {
