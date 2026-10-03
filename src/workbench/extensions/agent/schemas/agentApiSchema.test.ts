@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import {
   AGENT_WS_EVENT_TYPES,
@@ -9,7 +9,8 @@ import {
   zAgentMessage,
   zAgentMessages,
   zAgentTurnAccepted,
-  zAgentWsEvent
+  zAgentWsEvent,
+  zPersistedToolCallSummary
 } from './agentApiSchema'
 import type { ZodTypeAny } from 'zod'
 
@@ -97,6 +98,87 @@ describe('agentApiSchema contract subtleties', () => {
     type: 'agent_message_done',
     data: { message_id: 'm1', thread_id: 't1' }
   }
+
+  it('accepts a null skill on tool-call frames', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'success',
+        skill: null,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    expect(parsed).toMatchObject({ data: { skill: null } })
+  })
+
+  it('clamps an over-long skill instead of dropping the tool-call frame', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'running',
+        skill: 'a'.repeat(300),
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data.skill).toBe('a'.repeat(256))
+  })
+
+  it('does not split a Unicode code point when clamping a skill', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'running',
+        skill: `${'a'.repeat(255)}😀tail`,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data.skill).toBe(`${'a'.repeat(255)}😀`)
+  })
+
+  it('clamps an over-long skill on a persisted tool-call row', () => {
+    const parsed = zPersistedToolCallSummary.parse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: 'call-1',
+      tool_name: 'load_skill',
+      status: 'success',
+      skill: 'a'.repeat(300)
+    })
+
+    expect(parsed.skill).toBe('a'.repeat(256))
+  })
+
+  it('keeps a whole transcript readable when a persisted tool-call row is malformed', () => {
+    const parsed = zAgentMessages.parse([
+      {
+        id: 'row-1',
+        thread_id: 't1',
+        turn_id: 'turn-a',
+        seq: 1,
+        role: 'assistant',
+        status: 'complete',
+        content: {
+          text: 'Done',
+          tool_calls: [{ unexpected: 'shape' }]
+        }
+      }
+    ])
+
+    expect(parsed[0].content?.tool_calls).toEqual([{ unexpected: 'shape' }])
+  })
 
   it('accepts agent_message_done with usage null (cancelled turn)', () => {
     expect(

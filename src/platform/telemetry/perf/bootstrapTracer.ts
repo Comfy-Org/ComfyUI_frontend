@@ -33,7 +33,7 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-// eslint-disable-next-line no-restricted-imports -- startup telemetry must publish before the registry exists
+// oxlint-disable-next-line no-restricted-imports -- startup telemetry must publish before the registry exists
 import { datadogRum } from '@datadog/browser-rum'
 
 import { isCloud } from '@/platform/distribution/types'

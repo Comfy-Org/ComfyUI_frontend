@@ -562,6 +562,34 @@ describe('auth token priority chain', () => {
       expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
     })
 
+    it('getWorkspaceAuthHeader awaits an in-flight unified mint instead of racing it', async () => {
+      let resolveMint: (minted: boolean) => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveMint = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'workspace-header-race-user' })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      let settled = false
+      const headerPromise = store.getWorkspaceAuthHeader().then((header) => {
+        settled = true
+        return header
+      })
+      await Promise.resolve()
+      expect(settled).toBe(false)
+
+      useWorkspaceAuthStore().unifiedToken = 'minted-workspace-jwt'
+      resolveMint(true)
+      const header = await headerPromise
+
+      expect(settled).toBe(true)
+      expect(header).toEqual({
+        Authorization: 'Bearer minted-workspace-jwt'
+      })
+    })
+
     it('getAuthToken awaits an in-flight unified mint instead of racing it', async () => {
       let resolveMint: (minted: boolean) => void = () => {}
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockReturnValueOnce(

@@ -5,7 +5,7 @@ import { computed } from 'vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import { getRoutes } from '../../config/routes'
 import { comfyApiPlanLimits } from '../../data/comfyApiPlanLimits'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 
 const { locale = 'en', bare = false } = defineProps<{
@@ -13,6 +13,7 @@ const { locale = 'en', bare = false } = defineProps<{
   /** Render the table alone, with no section wrapper or heading — for embedding inside another section. */
   bare?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const contactHref = computed(() => getRoutes(locale).contact)
 
@@ -42,10 +43,10 @@ const metricRows: MetricRow[] = [
     "
   >
     <SectionHeader v-if="!bare" max-width="xl" heading-size="subsection">
-      {{ t('pricing.comfyApi.heading', locale) }}
+      {{ t('pricing.comfyApi.heading') }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
-          {{ t('pricing.comfyApi.subtitle', locale) }}
+          {{ t('pricing.comfyApi.subtitle') }}
         </p>
       </template>
     </SectionHeader>
@@ -56,7 +57,7 @@ const metricRows: MetricRow[] = [
         :key="plan.id"
         class="rounded-4xl bg-transparency-white-t4 px-5 py-6"
       >
-        <PricingPlanLabel :label="t(plan.labelKey, locale)" />
+        <PricingPlanLabel :label="t(plan.labelKey)" />
         <ul class="mt-5 space-y-4">
           <li
             v-for="metric in metricRows"
@@ -64,7 +65,7 @@ const metricRows: MetricRow[] = [
             class="flex items-center justify-between gap-4"
           >
             <p class="text-sm text-primary-warm-gray">
-              {{ t(metric.labelKey, locale) }}
+              {{ t(metric.labelKey) }}
             </p>
             <p class="font-mono text-sm text-primary-warm-white">
               {{ plan[metric.key] }}
@@ -84,7 +85,7 @@ const metricRows: MetricRow[] = [
               class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
             >
               <th class="px-2 py-4" scope="col">
-                {{ t('pricing.comfyApi.metricColumn', locale) }}
+                {{ t('pricing.comfyApi.metricColumn') }}
               </th>
               <th
                 v-for="plan in comfyApiPlanLimits"
@@ -92,14 +93,14 @@ const metricRows: MetricRow[] = [
                 class="p-4 text-right"
                 scope="col"
               >
-                {{ t(plan.labelKey, locale) }}
+                {{ t(plan.labelKey) }}
               </th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="metric in metricRows" :key="metric.key">
               <td class="max-w-72 px-2 py-3.5 text-sm text-primary-warm-white">
-                {{ t(metric.labelKey, locale) }}
+                {{ t(metric.labelKey) }}
               </td>
               <td
                 v-for="plan in comfyApiPlanLimits"
@@ -115,12 +116,12 @@ const metricRows: MetricRow[] = [
     </div>
 
     <p class="mt-4 px-2 text-center text-xs text-primary-warm-gray">
-      {{ t('pricing.comfyApi.enterpriseNote', locale) }}
+      {{ t('pricing.comfyApi.enterpriseNote') }}
       <a
         :href="contactHref"
         class="rounded-sm underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
       >
-        {{ t('pricing.enterprise.cta', locale) }}
+        {{ t('pricing.enterprise.cta') }}
       </a>
     </p>
   </component>

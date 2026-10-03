@@ -1,9 +1,11 @@
+import { isBinaryFbx, readFbxPolygons } from '@comfyorg/quad-wireframe-three'
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
 import type { ModelLoadContext } from './ModelAdapter'
+import { faceSizesFor } from './quadWireframe/faceSizesRegistry'
 
 const stlLoaderStub = {
   setPath: vi.fn(),
@@ -11,8 +13,10 @@ const stlLoaderStub = {
 }
 const fbxLoaderStub = {
   setPath: vi.fn(),
-  loadAsync: vi.fn<(filename: string) => Promise<THREE.Object3D>>()
+  loadAsync: vi.fn<(filename: string) => Promise<THREE.Object3D>>(),
+  parse: vi.fn<(bytes: ArrayBuffer, path: string) => THREE.Object3D>()
 }
+vi.mock(import('@comfyorg/quad-wireframe-three'), { spy: true })
 const gltfLoaderStub = {
   setPath: vi.fn(),
   loadAsync: vi.fn<(filename: string) => Promise<{ scene: THREE.Object3D }>>()
@@ -42,6 +46,7 @@ vi.mock(import('three/examples/jsm/loaders/FBXLoader'), () => ({
     class {
       setPath = fbxLoaderStub.setPath
       loadAsync = fbxLoaderStub.loadAsync
+      parse = fbxLoaderStub.parse
     }
   )
 }))
@@ -192,6 +197,52 @@ describe('MeshModelAdapter', () => {
       expect(result!.object).toBe(fbxModel)
     })
 
+    it('parses fetched bytes and records binary FBX polygon sizes per mesh', async () => {
+      const fbxModel = makeFbxLikeGroup()
+      const mesh = fbxModel.children[0] as THREE.Mesh
+      const bytes = new ArrayBuffer(8)
+      const faceSizes = new Uint32Array(6).fill(4)
+      fbxLoaderStub.parse.mockReturnValue(fbxModel)
+      vi.mocked(isBinaryFbx).mockReturnValue(true)
+      vi.mocked(readFbxPolygons).mockReturnValue([
+        { id: 1, name: mesh.geometry.name, faceSizes }
+      ])
+      const fetchBytes = vi.fn(async () => bytes)
+
+      const adapter = new MeshModelAdapter()
+      const result = await adapter.load(
+        makeContext(),
+        '/api/view/',
+        'quads.fbx',
+        fetchBytes
+      )
+
+      expect(fbxLoaderStub.parse).toHaveBeenCalledWith(bytes, '/api/view/')
+      expect(fbxLoaderStub.loadAsync).not.toHaveBeenCalled()
+      expect(readFbxPolygons).toHaveBeenCalledWith(bytes)
+      expect(result!.object).toBe(fbxModel)
+      expect(faceSizesFor(mesh.geometry)).toEqual(faceSizes)
+    })
+
+    it('skips polygon lookup for ASCII FBX bytes', async () => {
+      const fbxModel = makeFbxLikeGroup()
+      fbxLoaderStub.parse.mockReturnValue(fbxModel)
+      vi.mocked(isBinaryFbx).mockReturnValue(false)
+
+      const adapter = new MeshModelAdapter()
+      await adapter.load(
+        makeContext(),
+        '/api/view/',
+        'ascii.fbx',
+        async () => new ArrayBuffer(8)
+      )
+
+      expect(readFbxPolygons).not.toHaveBeenCalled()
+      expect(
+        faceSizesFor((fbxModel.children[0] as THREE.Mesh).geometry)
+      ).toBeUndefined()
+    })
+
     it('disables frustum culling on SkinnedMesh children', async () => {
       const group = new THREE.Group()
       const skinned = new THREE.SkinnedMesh(
@@ -300,6 +351,32 @@ describe('MeshModelAdapter', () => {
       expect(computeNormals).toHaveBeenCalled()
       expect(ctx.registerOriginalMaterial).toHaveBeenCalledTimes(1)
       expect(result!.object).toBe(scene)
+    })
+
+    it('records polygon sizes for meshes flagged with FB_ngon_encoding', async () => {
+      const quad = new THREE.BufferGeometry()
+      quad.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(
+          [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0],
+          3
+        )
+      )
+      quad.setIndex([0, 1, 2, 0, 2, 3])
+      const flagged = new THREE.Mesh(quad, new THREE.MeshStandardMaterial())
+      flagged.userData.gltfExtensions = { FB_ngon_encoding: {} }
+      const plain = new THREE.Mesh(
+        quad.clone(),
+        new THREE.MeshStandardMaterial()
+      )
+      const scene = new THREE.Group().add(flagged, plain)
+      gltfLoaderStub.loadAsync.mockResolvedValue({ scene })
+
+      const adapter = new MeshModelAdapter()
+      await adapter.load(makeContext(), '/api/view/', 'nomad.glb')
+
+      expect(faceSizesFor(flagged.geometry)).toEqual(Uint32Array.from([4]))
+      expect(faceSizesFor(plain.geometry)).toBeUndefined()
     })
 
     it('also handles .gltf filenames', async () => {

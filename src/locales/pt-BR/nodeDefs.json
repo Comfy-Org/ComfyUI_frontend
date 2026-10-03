@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Anime uma imagem em um vídeo com diálogo e som sincronizados usando o HeyGen Video 1.0. A imagem é usada como o primeiro quadro.",
+    "display_name": "HeyGen Video 1.0 Imagem para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Gere um vídeo com diálogo e som sincronizados a partir de um prompt de texto usando o HeyGen Video 1.0. Opcionalmente, conecte até 12 imagens, vídeos e clipes de áudio de referência e mencione-os no prompt como {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_aspect_ratio": {
+        "name": "proporção_da_tela"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Anime qualquer imagem de uma pessoa em um vídeo falante com sincronização labial (HeyGen Avatar IV). Controle com um roteiro de texto ou seu próprio áudio.",
     "display_name": "HeyGen Talking Photo",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Edita ou combina até 5 imagens, guiado por um prompt de texto, usando o Ideogram 4.5. Renderiza novamente a imagem inteira e pode alterar seu tamanho ou proporção; use o Ideogram 4.5 Edição Precisa para manter os pixels não alterados inalterados.",
+    "display_name": "Ideogram 4.5 Editar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualidade"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "model_width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Gera imagens usando o P-Image, o modelo de texto para imagem rápido da Ideogram. Forte em tipografia e fotorrealismo; suporta legendas estruturadas em JSON do Ideogram 4.0 para texto, cores e layout exatos.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "O prompt realmente utilizado para gerar a imagem (a legenda estruturada reescrita quando prompt_upsampling foi executado, ou seu prompt original). Use novamente com prompt_upsampling DESLIGADO e a mesma semente para reproduzir esta imagem."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Edita uma imagem guiado por um prompt de texto usando a edição precisa do Ideogram 4.5: somente o que o prompt solicita é alterado, os pixels não alterados permanecem idênticos e a saída mantém o tamanho da imagem 1 (imagens acima de cerca de 4 MP são reduzidas primeiro). Aceita até 4 imagens de referência.",
+    "display_name": "Ideogram 4.5 Edição Precisa",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualidade"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Gera imagens a partir de um prompt de texto usando o Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 Texto para Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualidade"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_size": {
+        "name": "tamanho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "A legenda estruturada a partir da qual a imagem foi gerada. Forneça-a novamente com magic_prompt definido como 'off' e a mesma seed para reproduzir a imagem."
       }
     }
   },

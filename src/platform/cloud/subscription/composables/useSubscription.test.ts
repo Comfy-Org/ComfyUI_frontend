@@ -1,6 +1,6 @@
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAuthStore } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope } from 'vue'
 
@@ -34,7 +34,8 @@ const {
   mockLocalStorage,
   mockReportTelemetryError,
   mockReportError,
-  mockAccessBillingPortal
+  mockAccessBillingPortal,
+  mockAccessBillingPortalDirect
 } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   const mockIsLoggedIn = ref(false)
@@ -48,6 +49,7 @@ const {
     mockReportTelemetryError: vi.fn(),
     mockReportError: vi.fn(),
     mockAccessBillingPortal: vi.fn(),
+    mockAccessBillingPortalDirect: vi.fn(),
     mockGetCheckoutAttribution: vi.fn(() => ({
       im_ref: 'impact-click-001',
       utm_source: 'impact'
@@ -128,7 +130,8 @@ vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: vi.fn(() => ({
     reportError: mockReportError,
-    accessBillingPortal: mockAccessBillingPortal
+    accessBillingPortal: mockAccessBillingPortal,
+    accessBillingPortalDirect: mockAccessBillingPortalDirect
   }))
 }))
 
@@ -244,6 +247,7 @@ beforeEach(() => {
     (input, init) => fetch(input, init)
   )
   mockAccessBillingPortal.mockResolvedValue(true)
+  mockAccessBillingPortalDirect.mockResolvedValue(true)
 })
 
 describe('useSubscription', () => {
@@ -364,6 +368,51 @@ describe('useSubscription', () => {
       const { subscriptionTier } = useSubscriptionWithScope()
 
       expect(subscriptionTier.value).toBeNull()
+    })
+
+    it('labels a TEAM subscription with the team-plan name, not the Standard fallback', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'TEAM',
+        renewal_date: '2025-11-16T12:00:00Z'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      const { subscriptionTierName, fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+      expect(subscriptionTierName.value).toBe('Team')
+    })
+
+    it('labels an ENTERPRISE subscription with the Enterprise catalog name', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'ENTERPRISE',
+        renewal_date: '2025-11-16T12:00:00Z'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      const { subscriptionTierName, fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+      expect(subscriptionTierName.value).toBe('Enterprise')
+    })
+
+    it('labels a tier with no catalog entry as the current plan, not Standard', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'LEGACY_UNMAPPED',
+        renewal_date: '2025-11-16T12:00:00Z'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      const { subscriptionTierName, fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+      expect(subscriptionTierName.value).toBe('Current plan')
     })
 
     it('derives cancellation state and end date from cancel_at', async () => {
@@ -817,6 +866,85 @@ describe('useSubscription', () => {
 
       windowOpenSpy.mockRestore()
     })
+
+    it.for([
+      {
+        name: 'the checkout request is rejected',
+        checkoutResponse: () =>
+          ({
+            ok: false,
+            status: 400,
+            statusText: 'Bad Request',
+            json: async () => ({ message: 'declined' }),
+            text: async () => ''
+          }) as Response,
+        openedWindow: window,
+        rejection: 'Failed to initiate subscription',
+        failure: { failure_category: 'api_rejected' }
+      },
+      {
+        name: 'no checkout URL comes back',
+        checkoutResponse: () => new Response(JSON.stringify({})),
+        openedWindow: window,
+        rejection: 'No checkout URL returned',
+        failure: {
+          failure_category: 'unknown',
+          error_code: 'missing_checkout_response'
+        }
+      },
+      {
+        name: 'the browser blocks the checkout tab',
+        checkoutResponse: () =>
+          new Response(
+            JSON.stringify({ checkout_url: 'https://checkout.stripe.com/x' })
+          ),
+        openedWindow: null,
+        rejection: "Couldn't open the payment page",
+        failure: {
+          failure_category: 'redirect',
+          error_code: 'payment_popup_blocked'
+        }
+      }
+    ])(
+      'closes a resubscribe checkout that never opened with one failure: $name',
+      async ({ checkoutResponse, openedWindow, rejection, failure }) => {
+        vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+          '00000000-0000-4000-8000-000000000005'
+        )
+        vi.mocked(global.fetch).mockResolvedValue(checkoutResponse())
+        vi.spyOn(window, 'open').mockImplementation(() => openedWindow)
+
+        await expect(
+          useSubscriptionWithScope().subscribeDirect({
+            operation: 'resubscribe',
+            source: 'settings_billing_panel'
+          })
+        ).rejects.toThrow(rejection)
+
+        const attemptEvent = {
+          operation: 'subscription_checkout',
+          checkout_attempt_id: '00000000-0000-4000-8000-000000000005',
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        }
+        expect(mockTelemetry.trackBillingEvent.mock.calls).toEqual([
+          [{ ...attemptEvent, stage: 'started', outcome: 'pending' }],
+          [
+            {
+              ...attemptEvent,
+              stage: 'failed',
+              outcome: 'failure',
+              ...failure,
+              duration_ms: expect.any(Number)
+            }
+          ]
+        ])
+        expect(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+        ).toBeNull()
+      }
+    )
   })
 
   describe('pending checkout recovery', () => {
@@ -1993,20 +2121,45 @@ describe('useSubscription', () => {
               tier: 'creator',
               cycle: 'yearly',
               checkout_type: 'new',
-              payment_intent_source: 'out_of_credits'
+              payment_intent_source: 'out_of_credits',
+              duration_ms: expect.any(Number)
             }
           ]
         ]
       },
       {
-        name: 'a plain subscribeDirect never reported a start, so it reports nothing',
+        name: 'subscribeDirect reported the start, so it closes with one success',
         open: (subscription: ReturnType<typeof useSubscription>) =>
           subscription.subscribeDirect(),
         activeStatus: {
           subscription_tier: 'STANDARD',
           subscription_duration: 'MONTHLY'
         } satisfies Partial<BillingStatusResponse>,
-        expectedEvents: []
+        expectedEvents: [
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'started',
+              outcome: 'pending',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000003',
+              tier: 'standard',
+              cycle: 'monthly',
+              checkout_type: 'new'
+            }
+          ],
+          [
+            {
+              operation: 'subscription_checkout',
+              stage: 'succeeded',
+              outcome: 'success',
+              checkout_attempt_id: '00000000-0000-4000-8000-000000000003',
+              tier: 'standard',
+              cycle: 'monthly',
+              checkout_type: 'new',
+              duration_ms: expect.any(Number)
+            }
+          ]
+        ]
       }
     ])(
       'closes a confirmed checkout only in the funnel it opened: $name',
@@ -2061,7 +2214,7 @@ describe('useSubscription', () => {
 
     it.for([
       {
-        name: 'a portal plan change never opened a checkout, so it reports none',
+        name: 'an attempt that never reported a start reports none',
         attempt: {
           attempt_id: 'attempt-change',
           tier: 'pro',
@@ -2166,10 +2319,59 @@ describe('useSubscription', () => {
             tier: 'pro',
             cycle: 'monthly',
             checkout_type: 'change',
-            recovery_outcome: 'late_success'
+            recovery_outcome: 'late_success',
+            duration_ms: expect.any(Number)
           }
         ]
       ])
+    })
+
+    it('measures a reported success from the attempt start', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-measured',
+          started_at_ms: Date.now() - 90_000,
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'change',
+          previous_tier: 'creator',
+          start_reported: true
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        renewal_date: '2025-11-16',
+        subscription_tier: 'PRO',
+        subscription_duration: 'MONTHLY'
+      })
+
+      useCurrentUser().isLoggedIn = computed(() => true)
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+        ).toBeNull()
+      })
+      expect(mockTelemetry.trackBillingEvent.mock.calls).toEqual([
+        [
+          {
+            operation: 'subscription_checkout',
+            stage: 'succeeded',
+            outcome: 'success',
+            checkout_attempt_id: 'attempt-measured',
+            tier: 'pro',
+            cycle: 'monthly',
+            checkout_type: 'change',
+            duration_ms: expect.any(Number)
+          }
+        ]
+      ])
+      const [[succeeded]] = mockTelemetry.trackBillingEvent.mock.calls
+      expect(succeeded.duration_ms).toBeGreaterThanOrEqual(90_000)
+      expect(succeeded.duration_ms).toBeLessThan(120_000)
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
@@ -2308,6 +2510,105 @@ describe('useSubscription', () => {
     })
   })
 
+  describe('boot read before a workspace is selected', () => {
+    const SESSION_USER = { id: 'user-123', email: 'user@example.com' }
+    const flushPromises = () => new Promise((resolve) => setTimeout(resolve))
+
+    beforeEach(() => {
+      railState.rail = { readStatus: mockReadStatus }
+      mockReadStatus.mockImplementation(async () =>
+        useTeamWorkspaceStore().activeWorkspaceId
+          ? { status: 'ok', value: buildStatus() }
+          : { status: 'error', code: 'NOT_AUTHENTICATED' }
+      )
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    })
+
+    afterEach(() => {
+      Object.assign(useAuthStore(), { sessionUser: undefined })
+    })
+
+    it('waits on a web session until the workspace is selected', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
+      mockIsLoggedIn.value = true
+
+      const { subscriptionStatus, isInitialized } = useSubscriptionWithScope()
+      await flushPromises()
+
+      expect(mockReadStatus).not.toHaveBeenCalled()
+      expect(isInitialized.value).toBe(false)
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
+      await flushPromises()
+
+      expect(mockReadStatus).toHaveBeenCalledOnce()
+      expect(subscriptionStatus.value).toEqual(buildStatus())
+      expect(isInitialized.value).toBe(true)
+      expect(consoleError).not.toHaveBeenCalled()
+    })
+
+    it('recovers a pending checkout on a web session only once the workspace is selected', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-session-boot',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      let resolveRead!: (
+        result: Awaited<ReturnType<BillingReadRail['readStatus']>>
+      ) => void
+      mockReadStatus.mockReturnValue(
+        new Promise((resolve) => {
+          resolveRead = resolve
+        })
+      )
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
+      mockIsLoggedIn.value = true
+
+      const { subscriptionStatus, isInitialized } = useSubscriptionWithScope()
+      window.dispatchEvent(new Event('pageshow'))
+      await flushPromises()
+
+      expect(mockReadStatus).not.toHaveBeenCalled()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
+      await flushPromises()
+
+      expect(mockReadStatus).toHaveBeenCalledOnce()
+      expect(isInitialized.value).toBe(false)
+
+      resolveRead({ status: 'ok', value: buildStatus() })
+      await flushPromises()
+
+      expect(subscriptionStatus.value).toEqual(buildStatus())
+      expect(isInitialized.value).toBe(true)
+    })
+
+    it('reads at once without a web session, as before', async () => {
+      mockReadStatus.mockResolvedValue({ status: 'ok', value: buildStatus() })
+      mockIsLoggedIn.value = true
+
+      const { subscriptionStatus, isInitialized } = useSubscriptionWithScope()
+      await flushPromises()
+
+      expect(mockReadStatus).toHaveBeenCalledOnce()
+      expect(subscriptionStatus.value).toEqual(buildStatus())
+      expect(isInitialized.value).toBe(true)
+    })
+  })
+
   describe('requireActiveSubscription', () => {
     it('should not show dialog when subscription is active', async () => {
       mockGetBillingStatus.mockResolvedValue({
@@ -2422,14 +2723,34 @@ describe('useSubscription', () => {
 
       await manageSubscription()
 
-      expect(useAuthActions().accessBillingPortal).toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
+    })
+
+    it('rethrows a rail-mismatch refusal from the billing portal', async () => {
+      const refusal = new AuthStoreError(
+        'refused',
+        409,
+        'WORKSPACE_BILLING_REQUIRED'
+      )
+      mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
+      const { manageSubscription } = useSubscriptionWithScope()
+
+      await expect(manageSubscription()).rejects.toBe(refusal)
+      expect(mockReportError).not.toHaveBeenCalled()
+    })
+
+    it('reports other billing portal failures instead of throwing', async () => {
+      const failure = new Error('portal down')
+      mockAccessBillingPortalDirect.mockRejectedValueOnce(failure)
+      const { manageSubscription } = useSubscriptionWithScope()
+
+      await expect(manageSubscription()).resolves.toBeUndefined()
+      expect(mockReportError).toHaveBeenCalledWith(failure)
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
       useCurrentUser().isLoggedIn = computed(() => true)
-      vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
-        false
-      )
+      mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
 
       mockGetBillingStatus.mockResolvedValue({
         is_active: true,

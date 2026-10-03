@@ -11,6 +11,7 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
     expect(node).not.toBeNull()
     if (!node) return
 
+    await node.centerOnNode()
     const before = await comfyPage.nodeOps.getSerializedGraph()
     await node.click('title')
 
@@ -85,6 +86,7 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
     expect(node).not.toBeNull()
     if (!node) return
 
+    await node.centerOnNode()
     const before = await comfyPage.canvasOps.getNodeGeometry(node.id)
     await node.dragBy({ x: 40, y: 20 })
     const after = await comfyPage.canvasOps.getNodeGeometry(node.id)

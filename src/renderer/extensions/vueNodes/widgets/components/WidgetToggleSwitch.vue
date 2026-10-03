@@ -13,10 +13,10 @@
       "
       @update:model-value="(v) => handleOptionChange(v as string)"
     >
-      <ToggleGroupItem value="off" size="sm">
+      <ToggleGroupItem value="off" size="sm" class="flex-1 truncate">
         {{ widget.options?.off ?? t('widgets.boolean.false') }}
       </ToggleGroupItem>
-      <ToggleGroupItem value="on" size="sm">
+      <ToggleGroupItem value="on" size="sm" class="flex-1 truncate">
         {{ widget.options?.on ?? t('widgets.boolean.true') }}
       </ToggleGroupItem>
     </ToggleGroup>

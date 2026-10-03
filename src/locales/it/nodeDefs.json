@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Anima un'immagine trasformandola in un video con dialogo e audio sincronizzati usando HeyGen Video 1.0. L'immagine viene usata come primo fotogramma.",
+    "display_name": "HeyGen Video 1.0 da immagine a video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_duration": {
+        "name": "durata"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Genera un video con dialogo e audio sincronizzati da un prompt di testo usando HeyGen Video 1.0. Facoltativamente, collega fino a 12 immagini, video e clip audio di riferimento e menzionali nel prompt come {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 da riferimento a video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_aspect_ratio": {
+        "name": "rapporto_aspetto"
+      },
+      "model_duration": {
+        "name": "durata"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Anima qualsiasi immagine di una persona in un video parlante sincronizzato con il labiale (HeyGen Avatar IV). Puoi guidarlo con uno script di testo o con il tuo audio.",
     "display_name": "HeyGen Talking Photo",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Modifica o combina fino a 5 immagini, guidato da un prompt di testo, usando Ideogram 4.5. Esegue nuovamente il rendering dell'intera immagine e può modificarne la dimensione o il rapporto d'aspetto; usa Ideogram 4.5 Modifica precisa per mantenere invariati i pixel non interessati.",
+    "display_name": "Ideogram 4.5 Modifica",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_height": {
+        "name": "altezza"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_size": {
+        "name": "dimensione"
+      },
+      "model_width": {
+        "name": "larghezza"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Genera immagini utilizzando P-Image, il modello text-to-image veloce di Ideogram. Tipografia avanzata e fotorealismo; supporta le didascalie strutturate JSON di Ideogram 4.0 per testo, colori e layout esatti.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Il prompt da cui è stata effettivamente generata l’immagine (la didascalia strutturata riscritta se prompt_upsampling era attivo, altrimenti il tuo prompt). Riutilizzalo con prompt_upsampling su OFF e lo stesso seed per riprodurre questa immagine."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Modifica un'immagine guidandosi con un prompt di testo usando la modifica precisa di Ideogram 4.5: cambia solo ciò che il prompt richiede, i pixel non interessati rimangono identici e l'output mantiene le dimensioni dell'immagine 1 (le immagini oltre ~4 MP vengono prima ridimensionate). Accetta fino a 4 immagini di riferimento.",
+    "display_name": "Ideogram 4.5 Modifica precisa",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Genera immagini da un prompt di testo usando Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 da testo a immagine",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_size": {
+        "name": "dimensione"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "La didascalia strutturata da cui è stata generata l'immagine. Reinseriscila con magic_prompt impostato su 'off' e lo stesso seme per riprodurre l'immagine."
       }
     }
   },

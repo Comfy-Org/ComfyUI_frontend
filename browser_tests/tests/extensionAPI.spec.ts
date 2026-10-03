@@ -177,14 +177,14 @@ test.describe('Topbar commands', () => {
             type: 'number',
             defaultValue: 10
           },
-          selector: '.p-inputnumber input'
+          selector: 'input[inputmode="decimal"]'
         },
         {
           config: {
             type: 'slider',
             defaultValue: 10
           },
-          selector: '.p-slider.p-component'
+          selector: '[data-slot="slider"]'
         },
         {
           config: {
@@ -192,14 +192,14 @@ test.describe('Topbar commands', () => {
             defaultValue: 'foo',
             options: ['foo', 'bar', 'baz']
           },
-          selector: '.p-select.p-component'
+          selector: '[role="combobox"]'
         },
         {
           config: {
             type: 'text',
             defaultValue: 'Hello'
           },
-          selector: '.p-inputtext'
+          selector: 'input'
         },
         {
           config: {
@@ -234,16 +234,11 @@ test.describe('Topbar commands', () => {
             .getByText('TestSetting Test')
             .locator(selector)
 
-          await expect
-            .poll(() =>
-              component.evaluate((el) =>
-                el instanceof HTMLInputElement ||
-                el instanceof HTMLButtonElement
-                  ? el.disabled
-                  : el.classList.contains('p-disabled')
-              )
-            )
-            .toBe(true)
+          if (config.type === 'slider') {
+            await expect(component).toHaveAttribute('aria-disabled', 'true')
+          } else {
+            await expect(component).toBeDisabled()
+          }
         })
       }
     })
