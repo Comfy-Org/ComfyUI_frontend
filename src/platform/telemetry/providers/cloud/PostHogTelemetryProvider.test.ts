@@ -1,3 +1,7 @@
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
@@ -9,7 +13,6 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
   OnboardingTourStage,
   RunButtonProperties
@@ -469,7 +472,7 @@ describe('PostHogTelemetryProvider', () => {
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
         input_method: 'suggestion',
-        starter_prompt_id: 'list_workflows',
+        starter_prompt_id: 'slot_2',
         starter_prompt_click_id: 'click-1'
       })
 
@@ -482,7 +485,7 @@ describe('PostHogTelemetryProvider', () => {
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
           input_method: 'suggestion',
-          starter_prompt_id: 'list_workflows',
+          starter_prompt_id: 'slot_2',
           starter_prompt_click_id: 'click-1'
         }
       )
@@ -493,7 +496,7 @@ describe('PostHogTelemetryProvider', () => {
       await vi.dynamicImportSettled()
 
       provider.trackAgentStarterPromptClicked({
-        prompt_id: 'find_workflow',
+        prompt_id: 'slot_3',
         prompt_index: 2,
         prompt_count: 5,
         prompt_text_hash: 'deadbeef',
@@ -505,13 +508,46 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
         {
-          prompt_id: 'find_workflow',
+          prompt_id: 'slot_3',
           prompt_index: 2,
           prompt_count: 5,
           prompt_text_hash: 'deadbeef',
           locale: 'en',
           click_id: 'click-1',
           draft_was_empty: true
+        }
+      )
+    })
+
+    it('captures free-use notice interactions with their placement', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentFreeUseNotice({
+        action: 'dismissed',
+        placement: 'top-banner'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_FREE_USE_NOTICE,
+        { action: 'dismissed', placement: 'top-banner' }
+      )
+    })
+
+    it('captures panel-open experiment exposure with the PostHog arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentFreeUseExposure({
+        placement: 'control',
+        '$feature/agent-free-use-message-placement': 'control'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
+        {
+          placement: 'control',
+          '$feature/agent-free-use-message-placement': 'control'
         }
       )
     })
@@ -575,6 +611,27 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
         { outcome: 'retry_scheduled', retry_count: 1 }
+      )
+    })
+
+    it.for([
+      {
+        name: 'session_bootstrap',
+        properties: { outcome: 'restored', origin: 'https://cloud.comfy.org' }
+      },
+      {
+        name: 'session_signed_out_remotely',
+        properties: { origin: 'https://cloud.comfy.org' }
+      }
+    ] as const)('captures the web session event $name as is', async (event) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWebSessionEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        event.name,
+        event.properties
       )
     })
 
@@ -886,14 +943,23 @@ describe('PostHogTelemetryProvider', () => {
       {
         event: TelemetryEvents.AGENT_PAYWALL_SHOWN,
         track: (provider: PostHogTelemetryProvider) =>
-          provider.trackAgentPaywallShown({ reason: 'subscription_inactive' }),
-        properties: { reason: 'subscription_inactive' }
+          provider.trackAgentPaywallShown({
+            reason: 'subscription_inactive',
+            surface: 'credits_exhausted'
+          }),
+        properties: {
+          reason: 'subscription_inactive',
+          surface: 'credits_exhausted'
+        }
       },
       {
         event: TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
         track: (provider: PostHogTelemetryProvider) =>
-          provider.trackAgentPaywallCtaClicked({ cta: 'add_credits' }),
-        properties: { cta: 'add_credits' }
+          provider.trackAgentPaywallCtaClicked({
+            cta: 'add_credits',
+            surface: 'refused_send'
+          }),
+        properties: { cta: 'add_credits', surface: 'refused_send' }
       }
     ])('captures $event', async ({ event, track, properties }) => {
       const provider = createProvider()
@@ -950,6 +1016,7 @@ describe('PostHogTelemetryProvider', () => {
           operation: 'subscription_checkout',
           stage: 'failed',
           outcome: 'failure',
+          checkout_attempt_id: 'attempt-abandoned',
           tier: 'pro',
           cycle: 'monthly',
           checkout_type: 'new',
@@ -1065,7 +1132,10 @@ describe('PostHogTelemetryProvider', () => {
 
       provider.trackBillingEvent(event)
 
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, event)
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, {
+        ...event,
+        billing_surface: 'cloud_app'
+      })
     })
 
     it('drops fields outside the billing telemetry contract', async () => {
@@ -1093,10 +1163,65 @@ describe('PostHogTelemetryProvider', () => {
           stage: 'failed',
           outcome: 'failure',
           billing_op_id: 'opaque-op-id',
-          failure_category: 'unknown'
+          failure_category: 'unknown',
+          billing_surface: 'cloud_app'
         }
       )
     })
+
+    it('stamps the cloud app surface on checkout journey events', async () => {
+      const provider = createProvider()
+      const event = {
+        checkout_journey_id: 'journey-1',
+        checkout_entered_at: '2026-10-01T00:00:00.000Z',
+        assignment_status: 'unavailable',
+        entry_flow: 'initial_subscription',
+        entry_source: 'other',
+        ui_mode: 'full_page',
+        phase: 'entered',
+        payment_intent_source: 'subscribe_to_run'
+      } satisfies CheckoutJourneyTelemetryEvent
+      await vi.dynamicImportSettled()
+
+      provider.trackCheckoutJourneyEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        'billing.checkout.entered',
+        { ...event, schema_version: 1, billing_surface: 'cloud_app' }
+      )
+    })
+
+    it.for([
+      {
+        exit: 'page_exit',
+        options: [{ transport: 'sendBeacon', send_instantly: true }]
+      },
+      { exit: 'dialog_close', options: [] }
+    ] as const)(
+      'captures a checkout abandoned at $exit with the matching transport',
+      async ({ exit, options }) => {
+        const provider = createProvider()
+        const event = {
+          checkout_journey_id: 'journey-1',
+          checkout_entered_at: '2026-10-01T00:00:00.000Z',
+          assignment_status: 'unavailable',
+          entry_flow: 'topup',
+          entry_source: 'settings_billing',
+          phase: 'abandoned',
+          last_phase: 'entered',
+          exit
+        } satisfies CheckoutJourneyTelemetryEvent
+        await vi.dynamicImportSettled()
+
+        provider.trackCheckoutJourneyEvent(event)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(
+          'billing.checkout.abandoned',
+          { ...event, schema_version: 1, billing_surface: 'cloud_app' },
+          ...options
+        )
+      }
+    )
 
     it('captures widget favorite toggled events with their metadata', async () => {
       const provider = createProvider()

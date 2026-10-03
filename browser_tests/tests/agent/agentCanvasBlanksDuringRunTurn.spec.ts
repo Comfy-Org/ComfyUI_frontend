@@ -243,8 +243,7 @@ async function driveThroughDocReset(
   await loadSeedIntoActiveTab(page, SEED)
 
   const panel = page.locator('#agent-panel-root')
-  await new AgentPanel(page).open()
-  await expect(panel).toBeVisible({ timeout: 30_000 })
+  await new AgentPanel(page).open(30_000)
 
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {

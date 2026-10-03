@@ -1,7 +1,7 @@
 import type { ButtonVariants } from '../components/ui/button'
 import type { Locale, TranslationKey } from '../i18n/translations'
 
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
 import { resolveRel } from '../utils/cta'
 import { localizeHref } from './routes'
 
@@ -52,7 +52,7 @@ export const bannerConfig: BannerConfig = {
   targetSections: ['sitewide'],
   titleKey: 'launches.banner.text',
   link: {
-    href: '/agent',
+    href: '/agent/',
     titleKey: 'launches.banner.cta',
     buttonVariant: 'underlineLink'
   }
@@ -63,19 +63,18 @@ export function getBannerData(
   config: BannerConfig,
   locale: Locale
 ): BannerData {
+  const { t } = translationsFor(locale)
   const { link } = config
   const target = link?.target ? '_blank' : undefined
 
   return {
     id: config.id,
-    title: t(config.titleKey, locale),
-    description: config.descriptionKey
-      ? t(config.descriptionKey, locale)
-      : undefined,
+    title: t(config.titleKey),
+    description: config.descriptionKey ? t(config.descriptionKey) : undefined,
     link: link
       ? {
           href: localizeHref(link.href, locale),
-          title: t(link.titleKey, locale),
+          title: t(link.titleKey),
           target,
           rel: resolveRel({ target: target ?? '_self' }),
           buttonVariant: link.buttonVariant

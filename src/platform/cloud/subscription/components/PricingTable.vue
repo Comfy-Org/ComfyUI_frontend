@@ -1,31 +1,18 @@
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex justify-center">
-      <SelectButton
+      <ToggleGroup
         v-model="currentBillingCycle"
-        :options="billingCycleOptions"
-        option-label="label"
-        option-value="value"
+        type="single"
         :allow-empty="false"
-        unstyled
-        :pt="{
-          root: {
-            class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-          },
-          pcToggleButton: {
-            root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-              class: [
-                'w-36  h-8 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-                context.active
-                  ? 'bg-base-foreground text-base-background'
-                  : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-              ]
-            }),
-            label: { class: 'flex items-center gap-2 ' }
-          }
-        }"
+        class="rounded-lg bg-secondary-background p-1.5"
       >
-        <template #option="{ option }">
+        <ToggleGroupItem
+          v-for="option in billingCycleOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 w-36 data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+        >
           <div class="flex items-center gap-2">
             <span>{{ option.label }}</span>
             <div
@@ -35,8 +22,8 @@
               {{ t('subscription.saveYearly') }}
             </div>
           </div>
-        </template>
-      </SelectButton>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
     <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
@@ -261,12 +248,11 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
-import SelectButton from 'primevue/selectbutton'
-import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -281,10 +267,13 @@ import type {
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
-  recordPendingSubscriptionCheckoutAttempt,
+  persistPendingSubscriptionCheckoutAttempt,
   withPendingCheckoutAttemptId
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
-import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import {
+  performSubscriptionCheckout,
+  runReportedCheckoutAttempt
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
@@ -293,7 +282,9 @@ import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useAuthStore } from '@/stores/authStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
@@ -386,7 +377,9 @@ const isYearlySubscription = computed(
 )
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useAuthStore())
-const { accessBillingPortal, reportError } = useAuthActions()
+const workspaceStore = useTeamWorkspaceStore()
+const { accessBillingPortal, accessBillingPortalDirect, reportError } =
+  useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
@@ -472,6 +465,8 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     isLoading.value = true
     loadingTier.value = tierKey
+    const checkoutOwnerId = userId.value ?? undefined
+    const checkoutWorkspaceId = workspaceStore.activeWorkspaceId
 
     try {
       if (hasPaidSubscription.value) {
@@ -481,9 +476,9 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
         } as const
         const previousPlan = currentPlanDescriptor.value
         const checkoutAttribution = await getCheckoutAttributionForCloud()
-        const beginCheckoutMetadata = userId.value
+        const beginCheckoutMetadata = checkoutOwnerId
           ? {
-              user_id: userId.value,
+              user_id: checkoutOwnerId,
               tier: targetPlan.tierKey,
               cycle: targetPlan.billingCycle,
               checkout_type: 'change' as const,
@@ -511,29 +506,38 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
             telemetry?.trackBeginCheckout(beginCheckoutMetadata)
           }
         } else {
-          const didOpenPortal = await accessBillingPortal(checkoutTier)
-          if (!didOpenPortal) {
-            return
-          }
-
-          const pendingAttempt = recordPendingSubscriptionCheckoutAttempt({
-            tier: targetPlan.tierKey,
-            cycle: targetPlan.billingCycle,
-            checkout_type: 'change',
-            payment_intent_source: reason,
-            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
-            ...(previousPlan
-              ? { previous_cycle: previousPlan.billingCycle }
-              : {})
-          })
-          if (beginCheckoutMetadata) {
-            telemetry?.trackBeginCheckout(
-              withPendingCheckoutAttemptId(
-                beginCheckoutMetadata,
-                pendingAttempt
-              )
-            )
-          }
+          await runReportedCheckoutAttempt(
+            {
+              tier: targetPlan.tierKey,
+              cycle: targetPlan.billingCycle,
+              checkout_type: 'change',
+              owner_id: checkoutOwnerId,
+              workspace_id: checkoutWorkspaceId,
+              payment_intent_source: reason,
+              ...(previousPlan
+                ? {
+                    previous_tier: previousPlan.tierKey,
+                    previous_cycle: previousPlan.billingCycle
+                  }
+                : {})
+            },
+            async (pendingAttempt) => {
+              if (!(await accessBillingPortalDirect(checkoutTier))) {
+                throw new PaymentPopupBlockedError(
+                  t('subscription.billingTabBlocked')
+                )
+              }
+              persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
+              if (beginCheckoutMetadata) {
+                telemetry?.trackBeginCheckout(
+                  withPendingCheckoutAttemptId(
+                    beginCheckoutMetadata,
+                    pendingAttempt
+                  )
+                )
+              }
+            }
+          )
         }
       } else {
         // Failure telemetry now lives in performSubscriptionCheckout itself.

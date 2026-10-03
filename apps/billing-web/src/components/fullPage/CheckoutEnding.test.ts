@@ -5,9 +5,10 @@ import type { CapabilityDenialReason } from '@comfyorg/account-core/billing'
 
 import type { EndingScreen } from '@/checkout/endingScreen'
 import { endingOf } from '@/checkout/endingScreen'
-import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
+import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import { createBillingI18n } from '@/i18n'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 
 const PLAN: EndingPlan = { name: 'Pro', price: '$50.00', period: 'USD / mo' }
 
@@ -21,7 +22,7 @@ function renderEnding(ending: EndingScreen, closesItself = false) {
 const CLOSE_LINE =
   "You can close this page. We'll email your invoice once this goes through and this page will automatically update."
 
-type Action = 'Close' | 'Try again' | 'View plans'
+type Action = 'Close' | 'Try again' | 'View plans' | 'Add credits'
 
 describe('CheckoutEnding', () => {
   const UNKNOWN =
@@ -51,7 +52,7 @@ describe('CheckoutEnding', () => {
     {
       reason: 'subscription_change_in_progress',
       code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
-      body: UNKNOWN
+      body: 'Your plan already has a change scheduled. Cancel it in your billing settings to make a different one.'
     },
     { reason: 'not_a_member', code: 'NOT_A_MEMBER', body: UNKNOWN },
     { reason: 'unspecified', code: 'UNSPECIFIED', body: UNKNOWN }
@@ -81,6 +82,34 @@ describe('CheckoutEnding', () => {
     }
   )
 
+  it.for([
+    { duration: 'MONTHLY', plan: 'Pro' },
+    { duration: 'ANNUAL', plan: 'Pro Yearly' }
+  ] as const)(
+    'a refusal for a change already scheduled to $duration names it $plan and the full date it takes effect',
+    ({ duration, plan }) => {
+      const ending = endingOf({
+        kind: 'refused',
+        reason: 'subscription_change_in_progress',
+        scheduled: {
+          plan: { tier: 'PRO', duration },
+          effectiveAt: '2026-10-28T00:00:00.000Z'
+        }
+      })
+      if (ending === undefined) throw new Error('a refusal is an ending')
+      renderEnding(ending)
+
+      expect(
+        screen.getByText(
+          `Your plan is set to change to ${plan} on October 28, 2026. Cancel that change in your billing settings to make a different one.`
+        )
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'SUBSCRIPTION_CHANGE_IN_PROGRESS'
+      )
+    }
+  )
+
   it.for<{
     ending: EndingScreen
     title: string
@@ -101,7 +130,7 @@ describe('CheckoutEnding', () => {
     {
       ending: { kind: 'completed', code: 'op_seen' },
       title: "You're all set",
-      body: 'A payment on this workspace completed — check your plan in settings.',
+      body: 'A payment for Acme Team went through. Check your plan in settings for the details.',
       codeLabel: 'Your reference for this payment:',
       action: 'Close',
       support: false,
@@ -154,7 +183,17 @@ describe('CheckoutEnding', () => {
       closeLine: false
     },
     {
-      ending: { kind: 'load_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' },
+      title: "This link isn't valid",
+      body: "The amount in your link isn't valid. Nothing has been charged. Choose an amount in your billing settings.",
+      codeLabel:
+        'If you think this is a mistake, contact support with this code:',
+      action: 'Add credits',
+      support: true,
+      closeLine: false
+    },
+    {
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' },
       title: "Couldn't load your checkout",
       body: "We couldn't load your quote. Nothing has been charged. Try again, or contact support if this keeps happening.",
       codeLabel: 'If this keeps happening, contact support with this code:',
@@ -163,16 +202,16 @@ describe('CheckoutEnding', () => {
       closeLine: false
     },
     {
-      ending: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'recheck', code: 'REQUEST_FAILED' },
       title: "Couldn't load your checkout",
-      body: "We couldn't check this workspace's payments, so we can't show your checkout yet. Try again, or contact support if this keeps happening.",
+      body: "We couldn't check your recent payments, so checkout can't open yet. Try again, or contact support if this keeps happening.",
       codeLabel: 'If this keeps happening, contact support with this code:',
       action: 'Try again',
       support: true,
       closeLine: false
     }
   ])(
-    '$ending.kind reads as designed',
+    '$ending.kind reads as designed: $body',
     ({ ending, title, body, codeLabel, action, support, closeLine }) => {
       renderEnding(ending)
 
@@ -207,17 +246,201 @@ describe('CheckoutEnding', () => {
     expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
       'Pro$50.00 USD / mo'
     )
+    expect(screen.queryByText(/credits added/)).not.toBeInTheDocument()
+  })
+
+  it('77-4068: Success counts the credits the server says it added', () => {
+    renderEnding({ kind: 'success', receipt: { creditsAdded: 6858 } })
+
+    expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Pro$50.00 USD / mo6,858 credits added'
+    )
+  })
+
+  it('758-15763: Success keeps the rate and lists each reason, then Paid today', () => {
+    render(CheckoutEnding, {
+      props: {
+        screen: { kind: 'success' },
+        workspace: 'Acme Team',
+        plan: PLAN,
+        breakdown: {
+          deductions: [
+            { label: 'Launch', amount: '−$10.00', subline: 'First month' },
+            { label: 'Account balance', amount: '−$5.00' }
+          ],
+          paidToday: { label: 'Paid today', amount: '$35.00', sublines: [] }
+        }
+      },
+      global: { plugins: [createBillingI18n()] }
+    })
+
+    expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Pro$50.00 USD / moLaunch−$10.00First monthAccount balance−$5.00Paid today$35.00'
+    )
+  })
+
+  it('shows no Paid today when the charge matched the plan rate', () => {
+    renderEnding({ kind: 'success' })
+
+    expect(
+      screen.queryByTestId('checkout-ending-paid-today')
+    ).not.toBeInTheDocument()
+  })
+
+  describe('the receipt the server reported', () => {
+    const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+
+    it.for<EndingScreen>([
+      {
+        kind: 'already_completed',
+        code: 'op_old',
+        receipt: { plan: RECEIPT_PLAN, creditsAdded: 6858 }
+      },
+      {
+        kind: 'completed',
+        code: 'op_seen',
+        receipt: { plan: RECEIPT_PLAN, creditsAdded: 6858 }
+      }
+    ])(
+      '328-4444: $kind names the plan its receipt names, in place of the reference',
+      (ending) => {
+        renderEnding(ending)
+
+        expect(screen.getByTestId('checkout-ending-plan')).toHaveTextContent(
+          'Pro$50.00 USD / mo6,858 credits added'
+        )
+        expect(
+          screen.queryByTestId('checkout-ending-code')
+        ).not.toBeInTheDocument()
+      }
+    )
+
+    it('keeps the reference when the catalog cannot list the plan a receipt names', () => {
+      render(CheckoutEnding, {
+        props: {
+          screen: {
+            kind: 'already_completed',
+            code: 'op_old',
+            receipt: { plan: RECEIPT_PLAN }
+          },
+          workspace: 'Acme Team'
+        },
+        global: { plugins: [createBillingI18n()] }
+      })
+
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'op_old'
+      )
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+    })
+
+    it('410-5225: a top-up already completed reads Added and Amount paid, and no balance', () => {
+      renderEnding({
+        kind: 'already_completed',
+        code: 'op_topup',
+        receipt: { creditsAdded: 3000, amountChargedCents: 1500 }
+      })
+
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Added+3,000Amount paid$15.00'
+      )
+      expect(screen.getByTestId('checkout-ending-credits-icon')).toBeVisible()
+      expect(screen.queryByText(/balance/i)).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('checkout-ending-code')
+      ).not.toBeInTheDocument()
+    })
+
+    it('77-3783: a top-up Success counts the credits added and what they cost, and names no plan', () => {
+      renderEnding({
+        kind: 'success',
+        purchase: 'credits',
+        receipt: { creditsAdded: 3165, amountChargedCents: 1500 }
+      })
+
+      expect(
+        screen.getByRole('heading', { name: '3,165 credits added' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Credits for Acme Team have been successfully added.')
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Added+3,165Amount paid$15.00'
+      )
+      expect(screen.getByTestId('checkout-ending-credits-icon')).toBeVisible()
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+    })
+
+    it('a top-up Success the server has not counted yet claims no number', () => {
+      renderEnding({ kind: 'success', purchase: 'credits' })
+
+      expect(
+        screen.getByRole('heading', { name: "You're all set" })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('Credits for Acme Team have been successfully added.')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+    })
+
+    it('390-4947: Payment received confirms the payment and shows the credits still adding', () => {
+      renderEnding({
+        kind: 'received',
+        code: 'op_r',
+        receipt: { amountChargedCents: 3500, plan: RECEIPT_PLAN }
+      })
+
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Payment$35.00Credits addedAdding…PlanPro'
+      )
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'op_r'
+      )
+    })
+
+    it('390-4947: a top-up still adding its credits names no plan', () => {
+      renderEnding({
+        kind: 'received',
+        code: 'op_r',
+        receipt: { amountChargedCents: 2500 }
+      })
+
+      expect(screen.getByTestId('checkout-ending-receipt')).toHaveTextContent(
+        'Payment$25.00Credits addedAdding…'
+      )
+      expect(
+        screen.queryByTestId('checkout-ending-credits-icon')
+      ).not.toBeInTheDocument()
+      expect(screen.queryByText('Plan')).not.toBeInTheDocument()
+    })
+
+    it('keeps Payment received card-less while the charge is not confirmed', () => {
+      renderEnding({ kind: 'received', code: 'op_r' })
+
+      expect(
+        screen.queryByTestId('checkout-ending-receipt')
+      ).not.toBeInTheDocument()
+    })
   })
 
   it.for<{ ending: EndingScreen; action: Action; event: string }>([
     { ending: { kind: 'success' }, action: 'Close', event: 'close' },
     {
-      ending: { kind: 'load_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' },
       action: 'Try again',
       event: 'retry'
     },
     {
-      ending: { kind: 'recheck_failed', code: 'REQUEST_FAILED' },
+      ending: { kind: 'load_failed', cause: 'recheck', code: 'REQUEST_FAILED' },
       action: 'Try again',
       event: 'retry'
     },
@@ -225,6 +448,11 @@ describe('CheckoutEnding', () => {
       ending: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' },
       action: 'View plans',
       event: 'viewPlans'
+    },
+    {
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' },
+      action: 'Add credits',
+      event: 'addCredits'
     }
   ])('$action emits $event', async ({ ending, action, event }) => {
     const { emitted } = renderEnding(ending)
@@ -298,6 +526,35 @@ describe('CheckoutEnding', () => {
     expect(screen.queryByText(/Don't pay again/)).not.toBeInTheDocument()
   })
 
+  it.for([
+    {
+      code: '3f2b9c1e-8a4d-4f6b-9c2e-7d1a5b8e0f43',
+      pieces: ['3f2b9c1e-', '8a4d-', '4f6b-', '9c2e-', '7d1a5b8e0f43']
+    },
+    {
+      code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+      pieces: ['SUBSCRIPTION_', 'CHANGE_', 'IN_', 'PROGRESS']
+    }
+  ])(
+    '372-4951: $code may wrap after each hyphen or underscore',
+    ({ code, pieces }) => {
+      renderEnding({ kind: 'in_progress', code })
+
+      const shown = screen.getByTestId('checkout-ending-code')
+      const breakable = Array.from(shown.childNodes)
+        .map((node) =>
+          node.nodeName === 'WBR'
+            ? '|'
+            : node.nodeType === Node.TEXT_NODE
+              ? node.textContent
+              : ''
+        )
+        .join('')
+        .split('|')
+      expect(breakable).toEqual(pieces)
+    }
+  )
+
   it('mails support with the code the screen shows', () => {
     renderEnding({ kind: 'in_progress', code: 'op_s' })
 
@@ -317,5 +574,67 @@ describe('CheckoutEnding', () => {
     expect(
       await screen.findByRole('button', { name: 'Copied' })
     ).toBeInTheDocument()
+  })
+})
+
+describe('CheckoutEnding, leaving for the product', () => {
+  it.for<{ name: string; ending: EndingScreen }>([
+    { name: 'a finished checkout', ending: { kind: 'success' } },
+    {
+      name: 'a payment that went through earlier',
+      ending: { kind: 'completed', code: 'op_seen' }
+    },
+    {
+      name: 'a payment already completed',
+      ending: { kind: 'already_completed', code: 'op_old' }
+    }
+  ])('reports Close on $name as a success close', async ({ ending }) => {
+    const sent = trackedBillingEvents()
+    const { emitted } = renderEnding(ending)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(emitted('close')).toHaveLength(1)
+    expect(sent()).toStrictEqual([
+      {
+        operation: 'web_return',
+        stage: 'clicked',
+        outcome: 'pending',
+        control: 'success_close'
+      }
+    ])
+  })
+
+  it.for<{ action: Action; ending: EndingScreen }>([
+    {
+      action: 'Try again',
+      ending: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' }
+    },
+    {
+      action: 'View plans',
+      ending: { kind: 'plan_unavailable', code: 'PLAN_NOT_FOUND' }
+    },
+    {
+      action: 'Add credits',
+      ending: { kind: 'link_invalid', code: 'CHECKOUT_LINK_INVALID' }
+    }
+  ])('reports nothing for $action, which is not a way back', async (row) => {
+    const sent = trackedBillingEvents()
+    renderEnding(row.ending)
+
+    await userEvent.click(screen.getByRole('button', { name: row.action }))
+
+    expect(sent()).toStrictEqual([])
+  })
+
+  it('closes itself after the countdown without reporting a click', async () => {
+    vi.useFakeTimers()
+    const sent = trackedBillingEvents()
+    const { emitted } = renderEnding({ kind: 'success' }, true)
+
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(emitted('close')).toHaveLength(1)
+    expect(sent()).toStrictEqual([])
   })
 })

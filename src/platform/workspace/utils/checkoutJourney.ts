@@ -1,13 +1,19 @@
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import type {
   CheckoutAssignmentStatus,
   CheckoutEntryFlow,
   CheckoutEntrySource,
   CheckoutJourneyArm,
   CheckoutJourneyContext,
-  CheckoutUiMode,
-  PaymentIntentSource
-} from '@/platform/telemetry/types'
+  CheckoutUiMode
+} from '@comfyorg/account-core/billing'
+import {
+  isBillingSource,
+  isContractIdentifier
+} from '@comfyorg/billing-contract'
+
+import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/paymentIntentSource'
 
 /**
  * One lifecycle owner for a checkout journey's frozen entry context and
@@ -99,6 +105,11 @@ export interface CheckoutJourneyRecord {
   entry_flow: CheckoutEntryFlow
   entry_source: CheckoutEntrySource
   /**
+   * The source the customer entered from, as the one source list names it.
+   * Absent on a record written before it was kept, or opened with no source.
+   */
+  payment_intent_source?: PaymentIntentSource
+  /**
    * Stable key for the intended purchase within the flow (e.g. tier:cycle).
    * A change of intent starts a new journey rather than resuming.
    */
@@ -121,6 +132,7 @@ interface CheckoutJourneyIdentity {
 export interface StartCheckoutJourneyInput extends CheckoutJourneyIdentity {
   entryFlow: CheckoutEntryFlow
   entrySource: CheckoutEntrySource
+  paymentIntentSource?: PaymentIntentSource
   assignment: CheckoutAssignment
   /** Stable key for the intended purchase (e.g. tier:cycle); a change starts a new journey. */
   intent?: string
@@ -175,6 +187,9 @@ export function createCheckoutJourneyRecord(
     workspace_id: input.workspaceId,
     entry_flow: input.entryFlow,
     entry_source: input.entrySource,
+    ...(input.paymentIntentSource !== undefined && {
+      payment_intent_source: input.paymentIntentSource
+    }),
     ...(input.intent !== undefined && { intent: input.intent }),
     assignment_status: input.assignment.status,
     ...(input.assignment.status === 'resolved' && {
@@ -261,6 +276,21 @@ export function getActiveCheckoutJourney(): CheckoutJourneyRecord | null {
   return loadCheckoutJourney()
 }
 
+/**
+ * The source of the journey bound to `billingOpId`, for an operation event
+ * emitted by a tab that did not start it (a poll recovered after reload).
+ */
+export function getCheckoutJourneyPaymentIntentSource(
+  billingOpId: string
+): PaymentIntentSource | undefined {
+  const journey = loadCheckoutJourney()
+  if (journey?.billing_op_id !== billingOpId) return undefined
+  return (
+    journey.payment_intent_source ??
+    paymentIntentSourceForJourneyEntry(journey.entry_source)
+  )
+}
+
 export function bindOperationToCheckoutJourney(
   billingOpId: string
 ): CheckoutJourneyRecord | null {
@@ -301,7 +331,7 @@ export function clearCheckoutJourney(): void {
 
 let fallbackJourneyIdCounter = 0
 
-function createJourneyId(): string {
+export function createJourneyId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
@@ -424,6 +454,7 @@ function readPersistedJourney(): CheckoutJourneyRecord | null {
 
 const UI_MODES = {
   embedded: true,
+  full_page: true,
   hosted: true,
   unknown: true
 } satisfies Record<CheckoutUiMode, true>
@@ -440,8 +471,10 @@ function readIdentity(
     candidate
   // A non-finite started_at_ms would make every expiry comparison false, so an
   // immortal journey could be persisted by hand; an unparseable entered_at
-  // would reach telemetry as the journey's declared UTC entry time.
+  // would reach telemetry as the journey's declared UTC entry time; a
+  // journey_id the billing contract refuses would stop the hosted handoff.
   return typeof journey_id === 'string' &&
+    isContractIdentifier(journey_id) &&
     typeof entered_at === 'string' &&
     !Number.isNaN(Date.parse(entered_at)) &&
     typeof started_at_ms === 'number' &&
@@ -480,8 +513,10 @@ function readAssignment(
 }
 
 function readOptionalFields(candidate: Record<string, unknown>) {
-  const { intent, ui_mode, billing_op_id } = candidate
+  const { intent, ui_mode, billing_op_id, payment_intent_source } = candidate
   return {
+    ...(typeof payment_intent_source === 'string' &&
+      isBillingSource(payment_intent_source) && { payment_intent_source }),
     ...(typeof intent === 'string' && { intent }),
     ...(isAllowlisted(UI_MODES, ui_mode) && { ui_mode }),
     ...(typeof billing_op_id === 'string' && { billing_op_id })

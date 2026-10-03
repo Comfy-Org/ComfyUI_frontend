@@ -228,6 +228,18 @@ void z
   {
     file: path.join(probeDirs.browserTests, 'allowed.spec.ts'),
     source: "test('allowed', () => {})\n"
+  },
+  {
+    file: path.join(probeDirs.source, 'disabled.test.ts'),
+    source: `it.skipIf(true)('a', () => {})
+describe.runIf(false)('b', () => {})
+test.skipIf(1).sequential('c', () => {})
+suite.runIf(0)('d', () => {})
+it.skipIf(false)('e', () => {})
+it.runIf(true)('f', () => {})
+it.skipIf(runtime)('g', () => {})
+other.skipIf(true)('h', () => {})
+`
   }
 ]
 
@@ -265,10 +277,16 @@ function parseDiagnostics(output: string): Diagnostic[] {
   ) {
     throw new Error('Oxlint returned an invalid JSON report')
   }
-  if (!report.diagnostics.every(isDiagnostic)) {
+  const ruleDiagnostics = report.diagnostics.filter(isRuleDiagnostic)
+  if (!ruleDiagnostics.every(isDiagnostic)) {
     throw new Error('Oxlint returned diagnostics in an unexpected shape')
   }
-  return report.diagnostics
+  return ruleDiagnostics
+}
+
+// The suppressions-file summary ("new violations not covered...") has no rule code.
+function isRuleDiagnostic(value: unknown): boolean {
+  return typeof value === 'object' && value !== null && 'code' in value
 }
 
 describe('restricted syntax rules', () => {
@@ -456,6 +474,19 @@ describe('restricted syntax rules', () => {
       ['arrayCopy.vue', 2]
     ])
     expect(copyFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
+  it('rejects test declarations disabled by a literal condition', () => {
+    const disabledFindings = findingsFor('no-statically-disabled-test')
+    expect(locations(disabledFindings)).toEqual([
+      ['disabled.test.ts', 1],
+      ['disabled.test.ts', 2],
+      ['disabled.test.ts', 3],
+      ['disabled.test.ts', 4]
+    ])
+    expect(disabledFindings.every(({ severity }) => severity === 'error')).toBe(
       true
     )
   })

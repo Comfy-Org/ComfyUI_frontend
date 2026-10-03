@@ -53,7 +53,8 @@ describe('useBillingBanner', () => {
             renewalDate: null,
             endDate: null,
             isCancelled: false,
-            ...billing.subscription.value
+            ...billing.subscription.value,
+            agentHasFunds: billing.subscription.value.hasFunds
           }
         : null
     )
@@ -114,6 +115,18 @@ describe('useBillingBanner', () => {
     const billing = setupBilling()
     useBillingBanner()
     billing.billingStatus.value = 'payment_failed'
+
+    window.dispatchEvent(new Event('focus'))
+    await nextTick()
+
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+  })
+
+  it('refreshes status and balance on focus while the workspace is paused', async () => {
+    const billing = setupBilling()
+    useBillingBanner()
+    billing.billingStatus.value = 'paused'
 
     window.dispatchEvent(new Event('focus'))
     await nextTick()

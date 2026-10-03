@@ -1,4 +1,5 @@
-import { t } from '../i18n/translations'
+import type { Locale } from '../i18n/translations'
+import { t, translationsFor } from '../i18n/translations'
 import { fieldsForDefinition } from './workshop-form-definition'
 import { workshopExampleFiles } from './workshop-example-file'
 import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
@@ -572,6 +573,7 @@ export interface PlaygroundExample {
   /** The few settings worth reading back: size, then length. */
   readonly specs: readonly string[]
   readonly values: WorkshopExampleValues
+  readonly prompt?: string
   readonly outputUrl: string
   readonly mediaKind?: 'image' | 'video' | 'audio'
   readonly sampleOnly?: boolean
@@ -629,10 +631,26 @@ export function examplesForModel(
       outputUrl: example.thumbnailUrl,
       ...(example.sampleOnly ? { sampleOnly: true } : {}),
       ...(example.mediaKind ? { mediaKind: example.mediaKind } : {}),
+      ...(example.prompt?.trim() ? { prompt: example.prompt } : {}),
       ...(example.node ? { nodeDisplayName: example.node.displayName } : {}),
       ...(example.fields ? { fields: example.fields } : {})
     }
   })
+}
+
+export function exampleAlt(
+  modelName: string,
+  title: string,
+  locale: Locale = 'en'
+): string {
+  const { t } = translationsFor(locale)
+  const sample = /^Sample (\d+)$/.exec(title)
+  return sample
+    ? t('workshop.examples.sampleAlt', {
+        name: modelName,
+        n: sample[1]
+      })
+    : `${modelName}: ${title}`
 }
 
 export function exampleValues(

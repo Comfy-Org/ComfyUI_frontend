@@ -1,6 +1,6 @@
 // The subject is a decorative aria-hidden SVG, so there is nothing to query
 // by role or text: the assertion is a count of animated nodes.
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'

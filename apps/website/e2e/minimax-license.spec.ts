@@ -11,7 +11,7 @@ import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/minimax/license'
 const ZH_PATH = '/zh-CN/minimax/license'
-const CONTACT_HREF = 'https://comfy.org/contact'
+const CONTACT_HREF = 'https://comfy.org/contact/'
 const META_TITLE = t('minimaxLicense.meta.title')
 const HERO_TITLE = t('minimaxLicense.hero.title')
 const HERO_CTA = t('minimaxLicense.hero.primaryCta')
@@ -137,13 +137,13 @@ test.describe('MiniMax license page — zh-CN', () => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: t('minimaxLicense.hero.title', 'zh-CN')
+        name: t('minimaxLicense.hero.title', {}, { locale: 'zh-CN' })
       })
     ).toBeVisible()
 
     const steps = page.getByRole('heading', {
       level: 2,
-      name: t('minimaxLicense.steps.heading', 'zh-CN')
+      name: t('minimaxLicense.steps.heading', {}, { locale: 'zh-CN' })
     })
     await steps.scrollIntoViewIfNeeded()
     await expect(steps).toBeVisible()

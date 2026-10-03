@@ -26,7 +26,6 @@ export enum ServerFeatureFlag {
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
   ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
-  ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
@@ -43,6 +42,7 @@ export enum ServerFeatureFlag {
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   UNIFIED_WEB_SESSION = 'unified_web_session',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
   BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
@@ -188,13 +188,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    get assetRenameEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.ASSET_RENAME_ENABLED,
-        remoteConfig.value.asset_rename_enabled,
-        false
-      )
-    },
     get privateModelsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PRIVATE_MODELS_ENABLED,
@@ -310,6 +303,12 @@ export function useFeatureFlags() {
         cachedBillingControlEnabled
       )
     },
+    get memberCreditLimitsEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED,
+        remoteConfig.value.member_credit_limits_enabled
+      )
+    },
     get legacyBillingMigrationEnabled() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
@@ -422,7 +421,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED]:
         flags.modelUploadButtonEnabled,
       [ServerFeatureFlag.ASSET_DELETION_ENABLED]: flags.assetDeletionEnabled,
-      [ServerFeatureFlag.ASSET_RENAME_ENABLED]: flags.assetRenameEnabled,
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
@@ -443,6 +441,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
+      [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
+        flags.memberCreditLimitsEnabled,
       [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
         flags.legacyBillingMigrationEnabled,
       [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:

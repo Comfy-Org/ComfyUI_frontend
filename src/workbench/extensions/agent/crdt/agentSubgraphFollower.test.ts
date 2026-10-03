@@ -35,9 +35,7 @@ import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class PromotedWidgetNode extends LGraphNode {
   constructor() {
@@ -499,6 +497,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         message: expect.stringContaining('Link 9')
       }),
       expect.objectContaining({
+        surface: 'agent',
         errorType: 'agent_graph_link_unresolved',
         context: expect.objectContaining({ target: '1', targetSlot: 0 })
       })
@@ -622,6 +621,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         message: expect.stringContaining('carries 2 opaque widget values')
       }),
       expect.objectContaining({
+        surface: 'agent',
         errorType: 'agent_graph_host_widgets_mismatch',
         context: expect.objectContaining({ expected: 1, actual: 2 })
       })
@@ -841,6 +841,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
+        surface: 'agent',
         errorType: 'agent_graph_host_widgets_mismatch',
         context: expect.objectContaining({ expected: 1, actual: 0 })
       })

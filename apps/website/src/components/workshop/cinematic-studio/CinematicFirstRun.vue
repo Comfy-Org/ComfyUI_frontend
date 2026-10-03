@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { workshopAppRepo } from '../../../lib/workshop/apps'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import { STARTER_SHOTS } from '../../../lib/workshop/cinematic-studio/starters'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
 import AppRepoLink from './AppRepoLink.vue'
 
@@ -11,6 +11,7 @@ const { selected, locale = 'en' } = defineProps<{
   selected?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ start: [shot: StarterShot] }>()
 </script>
@@ -21,15 +22,15 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
       <h1
         class="flex items-center gap-3 text-3xl font-semibold tracking-tight text-primary-warm-white lg:text-5xl"
       >
-        {{ tc('cinematic.title', locale) }}
+        {{ t('cinematic.title') }}
         <span
           class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] font-normal tracking-wider text-primary-comfy-canvas uppercase lg:text-xs"
         >
-          {{ tc('cinematic.beta', locale) }}
+          {{ t('cinematic.beta') }}
         </span>
       </h1>
       <p class="max-w-xl text-sm text-primary-comfy-canvas lg:text-base">
-        {{ tc('cinematic.firstRun.body', locale) }}
+        {{ t('cinematic.firstRun.body') }}
       </p>
       <AppRepoLink :repo="workshopAppRepo('studio')" :locale />
     </div>
@@ -53,7 +54,7 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
           <span
             class="text-sm text-primary-comfy-canvas group-hover:text-primary-warm-white group-aria-pressed:text-primary-warm-white"
           >
-            {{ tc(shot.label, locale) }}
+            {{ t(shot.label) }}
           </span>
         </button>
       </li>

@@ -1,12 +1,21 @@
 import type {
   BillingOperationState,
+  BillingPlansData,
+  CancelRefusalCode,
   CapabilityDenialReason,
   PaymentReasonKey,
   PendingBillingOperation,
   TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
+import { isGrantLanding } from '@comfyorg/account-core/billing'
 
 type ElementStatus = 'loading' | 'ready' | 'failed'
+
+/** A plan change the server already scheduled, its plan as the server's catalog lists it. */
+export interface ScheduledChange {
+  readonly plan: Pick<BillingPlansData['plans'][number], 'tier' | 'duration'>
+  readonly effectiveAt: string
+}
 
 /** `none` means the read succeeded and the workspace has no saved method. */
 type SavedStatus = 'loading' | 'ready' | 'none' | 'failed'
@@ -34,9 +43,11 @@ type PaymentRail =
 type CollectRail = Extract<PaymentRail, { method: 'collect' }>
 
 /**
- * What the last Pay left above the button. `reconciling` is a Pay the server
- * refused because an operation is already pending or settled: no card, Pay
- * stays locked until the page re-reads that operation.
+ * What the last Pay left above the button. A `processing_error` with a
+ * `code` is a Pay the server refused outright, before any operation existed.
+ * `reconciling` is a Pay the server refused because an operation is already
+ * pending or settled: no card, Pay stays locked until the page re-reads that
+ * operation.
  */
 export type InlineOutcome =
   | {
@@ -45,6 +56,11 @@ export type InlineOutcome =
       readonly operationId?: string
     }
   | { readonly kind: 'processing_error'; readonly operationId?: string }
+  | {
+      readonly kind: 'processing_error'
+      readonly code: string
+      readonly serverMessage?: string
+    }
   | { readonly kind: 'not_completed'; readonly operationId?: string }
   | { readonly kind: 'price_updated' }
   | { readonly kind: 'promo_expired'; readonly code: string }
@@ -56,6 +72,12 @@ export type InlineOutcome =
  * the consent `invalid` until it is ticked.
  */
 export type Reactivation = 'not_required' | 'required' | 'invalid' | 'confirmed'
+
+/**
+ * Cancel payment on a challenge still pending. `canceling` from the click
+ * until the server settles it, the code once the server kept the payment.
+ */
+type PaymentCancel = 'canceling' | CancelRefusalCode
 
 /**
  * `sent` from the Pay click until the attempt settles, so an operation the
@@ -70,6 +92,7 @@ export type Attempt =
       readonly kind: 'sent'
       readonly redirectMethod?: string
       readonly operation?: PendingBillingOperation
+      readonly cancel?: PaymentCancel
     }
 
 const IDLE: Attempt = { kind: 'idle' }
@@ -80,34 +103,67 @@ type Capture = {
   readonly reactivation: Reactivation
   readonly attempt: Attempt
   readonly outcome?: InlineOutcome
+  /** The operation the server canceled from here; a later read of it is stale. */
+  readonly canceled?: string
 }
 
 /**
  * Who a settled payment belongs to, which decides what its screen may claim.
- * `started`: this page's own Pay, so it names the plan it quoted. `followed`:
- * money this page did not send, watched settle from a screen that promised
- * to update. `settled`: found already through on arrival or on a re-read.
+ * `started`: this page's own Pay, so it names the plan it quoted. `returned`:
+ * this tab's own Pay, settled after a reload or a provider's page took the
+ * quote away, so it names the plan the server now lists. `followed`: money
+ * this page did not send, watched settle from a screen that promised to
+ * update. `settled`: found already through on arrival or on a re-read.
  */
-type Attribution = 'started' | 'followed' | 'settled'
+type Attribution = 'started' | 'returned' | 'followed' | 'settled'
+
+/**
+ * The plan a settled payment bought, as the server's catalog lists it: the
+ * one its receipt names, or for a returned payment without one, the plan the
+ * status now reports.
+ */
+export type SettledPlan = Pick<
+  BillingPlansData['plans'][number],
+  'tier' | 'duration' | 'price_cents'
+>
 
 /**
  * The full-page checkout, one state at a time. `resolving` renders the
  * capture skeleton, and carries a verdict a recovered operation already
- * reached so the capture it resolves into opens on that card. `waiting` is
+ * reached so the capture it resolves into opens on that card, or a success
+ * this tab already saw, which ends the page only if the quote is refused
+ * (the same link revisited) and gives way to a form otherwise. `waiting` is
  * money in flight that this page did not start: no fresh form until it
- * settles. `unconfirmed` is money whose outcome the page could not learn, so
- * it neither offers a form nor claims a charge. `sibling` on either marks
+ * settles, only the rail its quote asks for, locked. `unconfirmed` is money
+ * whose outcome the page could not learn, so it neither offers a form nor
+ * claims a charge. `sibling` on either marks
  * money another tab sent while this one had its form open, whose verdict and
- * challenge belong to that tab. `recheck_failed` is a re-read of what the
- * workspace is waiting on that failed before any form showed, so the page
- * cannot say whether money is moving. `terminal` is a payment that went
- * through.
+ * challenge belong to that tab. `unavailable` is a read that failed before
+ * any form showed: the capabilities, the quote, or the re-read of what the
+ * workspace is waiting on, after which the page cannot say whether money is
+ * moving.
+ * `terminal` is a payment that went through.
  */
+/** Which read failed: the capabilities, the quote, or the re-read of the workspace's payments. */
+export type LoadFailure = 'capabilities' | 'quote' | 'recheck'
+
 export type CheckoutPage =
-  | { readonly kind: 'resolving'; readonly outcome?: InlineOutcome }
-  | { readonly kind: 'refused'; readonly reason: CapabilityDenialReason }
-  | { readonly kind: 'unavailable'; readonly code: string }
-  | { readonly kind: 'recheck_failed'; readonly code: string }
+  | {
+      readonly kind: 'resolving'
+      readonly outcome?: InlineOutcome
+      readonly settled?: TerminalBillingOperation
+      readonly canceled?: string
+    }
+  | {
+      readonly kind: 'refused'
+      readonly reason: CapabilityDenialReason
+      readonly scheduled?: ScheduledChange
+    }
+  | {
+      readonly kind: 'unavailable'
+      readonly cause: LoadFailure
+      readonly code: string
+    }
   | {
       readonly kind: 'plan_unavailable'
       readonly reason: PlanUnavailableReason
@@ -117,6 +173,8 @@ export type CheckoutPage =
       readonly kind: 'waiting'
       readonly operation: PendingBillingOperation
       readonly sibling?: true
+      readonly rail?: PaymentRail
+      readonly cancel?: PaymentCancel
     }
   | {
       readonly kind: 'unconfirmed'
@@ -127,6 +185,7 @@ export type CheckoutPage =
       readonly kind: 'terminal'
       readonly operation?: TerminalBillingOperation
       readonly attribution: Attribution
+      readonly plan?: SettledPlan
     }
 
 /** A verdict an operation reached on its own, for the card above Pay. */
@@ -136,11 +195,29 @@ export type OperationOutcome = Exclude<
 >
 
 export type CheckoutPageEvent =
-  | { readonly type: 'refused'; readonly reason: CapabilityDenialReason }
-  | { readonly type: 'unavailable'; readonly code: string }
+  | {
+      readonly type: 'refused'
+      readonly reason: CapabilityDenialReason
+      readonly scheduled?: ScheduledChange
+    }
+  | {
+      readonly type: 'unavailable'
+      readonly code: string
+      readonly httpStatus?: number
+    }
+  /** The capabilities read failed, so the page cannot say whether this workspace may check out. */
+  | {
+      readonly type: 'capabilitiesFailed'
+      readonly code: string
+      readonly httpStatus?: number
+    }
   /** The lifecycle could not say what the workspace is waiting on. */
   | { readonly type: 'recheckFailed'; readonly code: string }
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
+  /** The quote answered `allowed: false`; its free-text reason is never read. */
+  | { readonly type: 'notAllowed' }
+  /** The server's catalog named the plan a settled payment bought. */
+  | { readonly type: 'settledPlanRead'; readonly plan: SettledPlan }
   /** Try again on a checkout that could not load. */
   | { readonly type: 'retried' }
   | ({
@@ -149,7 +226,12 @@ export type CheckoutPageEvent =
       /** The applied code a re-read found lapsed; the quote is priced without it. */
       readonly expiredPromo?: string
     } & (
-      | { readonly method: 'collect'; readonly saved: SavedArrival }
+      | {
+          readonly method: 'collect'
+          readonly saved: SavedArrival
+          /** No Stripe key resolved, so the card form arrives failed. */
+          readonly element?: 'failed'
+        }
       | { readonly method: 'on_file' }
     ))
   | { readonly type: 'elementReady' }
@@ -164,10 +246,9 @@ export type CheckoutPageEvent =
   | { readonly type: 'consentMissing' }
   /** `redirectMethod` is the chosen method's type when it pays on its own site. */
   | { readonly type: 'paySubmitted'; readonly redirectMethod?: string }
-  /** No `outcome` is a coded refusal, which the page words beside Pay instead of a card. */
   | {
       readonly type: 'payFailed'
-      readonly outcome?: Exclude<InlineOutcome, { kind: 'reconciling' }>
+      readonly outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
     }
   | { readonly type: 'payRejectedAsPending' }
   /** The server activated the plan on the spot, issuing no operation to follow. */
@@ -194,18 +275,27 @@ export type CheckoutPageEvent =
       readonly operation: BillingOperationState
       readonly outcome?: OperationOutcome
     }
+  /** Cancel payment clicked on a challenge still pending. */
+  | { readonly type: 'cancelRequested' }
+  /** The server dropped the operation; nothing was charged. */
+  | { readonly type: 'paymentCanceled'; readonly operationId: string }
+  /** The server kept the payment it was asked to cancel. */
+  | { readonly type: 'cancelRefused'; readonly code: CancelRefusalCode }
+  /** The cancel got no answer that names the payment's fate. */
+  | { readonly type: 'cancelFailed' }
 
 export const RESOLVING: CheckoutPage = { kind: 'resolving' }
 
 /**
- * Why no plan can be quoted for this link: the checkout's 404. `retired` is
- * a slug the catalog no longer has; the other two are links nobody could
- * have been sent, a team plan named without its commit stop, or a URL the
- * entry contract cannot read at all.
+ * Why nothing can be quoted for this link: the checkout's 404. `retired` is
+ * a slug the catalog no longer has; the rest are links nobody could have
+ * been sent, a team plan named without its commit stop, a top-up with no
+ * readable amount, or a URL the entry contract cannot read at all.
  */
 export type PlanUnavailableReason =
   | 'retired'
   | 'team_stop_missing'
+  | 'amount_invalid'
   | 'unreadable'
 
 export const UNREADABLE_LINK: CheckoutPage = {
@@ -213,13 +303,21 @@ export const UNREADABLE_LINK: CheckoutPage = {
   reason: 'unreadable'
 }
 
+export const INVALID_AMOUNT_LINK: CheckoutPage = {
+  kind: 'plan_unavailable',
+  reason: 'amount_invalid'
+}
+
 /** The first read picks the tab: Saved whenever the tab row shows at all. */
-function arrivedRail(saved: SavedArrival): CollectRail {
+function arrivedRail(
+  saved: SavedArrival,
+  element: ElementStatus = 'loading'
+): CollectRail {
   if (saved === 'failed')
-    return { method: 'collect', element: 'loading', saved, tab: 'saved' }
+    return { method: 'collect', element, saved, tab: 'saved' }
   return saved > 0
-    ? { method: 'collect', element: 'loading', saved: 'ready', tab: 'saved' }
-    : { method: 'collect', element: 'loading', saved: 'none', tab: 'new' }
+    ? { method: 'collect', element, saved: 'ready', tab: 'saved' }
+    : { method: 'collect', element, saved: 'none', tab: 'new' }
 }
 
 function withCollect(
@@ -269,28 +367,60 @@ function requoteNotice(
 
 type StopEvent = Extract<
   CheckoutPageEvent,
-  { type: 'refused' | 'unavailable' | 'recheckFailed' | 'planUnavailable' }
+  {
+    type:
+      | 'refused'
+      | 'unavailable'
+      | 'capabilitiesFailed'
+      | 'recheckFailed'
+      | 'planUnavailable'
+      | 'notAllowed'
+  }
 >
 
-/** The page a read that ends resolving leaves behind. */
-function stoppedOn(event: StopEvent): CheckoutPage {
+const STOP_EVENT: Readonly<Record<StopEvent['type'], true>> = {
+  refused: true,
+  unavailable: true,
+  capabilitiesFailed: true,
+  recheckFailed: true,
+  planUnavailable: true,
+  notAllowed: true
+}
+
+function isStopEvent(event: CheckoutPageEvent): event is StopEvent {
+  return Object.hasOwn(STOP_EVENT, event.type)
+}
+
+/**
+ * The page a read that ends resolving leaves behind. A refused quote over a
+ * success this tab already saw is that success revisited; any other is a
+ * checkout the server will not sell, for a reason it gives no code for.
+ */
+function stoppedOn(
+  page: Extract<CheckoutPage, { kind: 'resolving' }>,
+  event: StopEvent
+): CheckoutPage {
   switch (event.type) {
+    case 'notAllowed':
+      return page.settled === undefined
+        ? { kind: 'refused', reason: 'unspecified' }
+        : { kind: 'terminal', operation: page.settled, attribution: 'settled' }
     case 'refused':
-      return { kind: 'refused', reason: event.reason }
+      return {
+        kind: 'refused',
+        reason: event.reason,
+        ...(event.scheduled === undefined ? {} : { scheduled: event.scheduled })
+      }
     case 'unavailable':
-      return { kind: 'unavailable', code: event.code }
+      return { kind: 'unavailable', cause: 'quote', code: event.code }
+    case 'capabilitiesFailed':
+      return { kind: 'unavailable', cause: 'capabilities', code: event.code }
     case 'recheckFailed':
-      return { kind: 'recheck_failed', code: event.code }
+      return { kind: 'unavailable', cause: 'recheck', code: event.code }
     case 'planUnavailable':
       return { kind: 'plan_unavailable', reason: event.reason }
   }
 }
-
-/** Try again re-reads a checkout whose load or re-read failed. */
-const RETRYABLE: ReadonlySet<CheckoutPage['kind']> = new Set([
-  'unavailable',
-  'recheck_failed'
-])
 
 /** An event that means nothing in the current state returns it untouched. */
 export function reduceCheckoutPage(
@@ -299,18 +429,24 @@ export function reduceCheckoutPage(
 ): CheckoutPage {
   if (isRailEvent(event)) return reduceRail(page, event)
   if (isAttemptEvent(event)) return reduceAttempt(page, event)
+  if (isCancelEvent(event)) return reduceCancel(page, event)
+  if (isStopEvent(event))
+    return page.kind === 'resolving' ? stoppedOn(page, event) : page
   switch (event.type) {
-    case 'refused':
-    case 'unavailable':
-    case 'recheckFailed':
-    case 'planUnavailable':
-      return page.kind === 'resolving' ? stoppedOn(event) : page
+    case 'settledPlanRead':
+      return page.kind === 'terminal' && page.attribution !== 'started'
+        ? { ...page, plan: event.plan }
+        : page
     case 'requoteFailed':
-      return leavingCapture(page, { kind: 'unavailable', code: event.code })
+      return leavingCapture(page, {
+        kind: 'unavailable',
+        cause: 'quote',
+        code: event.code
+      })
     case 'retried':
-      return RETRYABLE.has(page.kind) ? RESOLVING : page
+      return page.kind === 'unavailable' ? RESOLVING : page
     case 'quoted':
-      return page.kind === 'resolving' ? arrived(page, event) : page
+      return quotedOn(page, event)
     case 'reconciled':
       return event.operation === undefined
         ? nothingPending(page)
@@ -318,6 +454,142 @@ export function reduceCheckoutPage(
     case 'operationChanged':
       return followed(page, event.operation, event.outcome)
   }
+}
+
+type CancelEvent = Extract<
+  CheckoutPageEvent,
+  {
+    type:
+      | 'cancelRequested'
+      | 'cancelRefused'
+      | 'cancelFailed'
+      | 'paymentCanceled'
+  }
+>
+
+const CANCEL_EVENT: Readonly<Record<CancelEvent['type'], true>> = {
+  cancelRequested: true,
+  cancelRefused: true,
+  cancelFailed: true,
+  paymentCanceled: true
+}
+
+function isCancelEvent(event: CheckoutPageEvent): event is CancelEvent {
+  return Object.hasOwn(CANCEL_EVENT, event.type)
+}
+
+/** Cancel payment on a challenge, from the click to the server's answer. */
+function reduceCancel(page: CheckoutPage, event: CancelEvent): CheckoutPage {
+  switch (event.type) {
+    case 'cancelRequested':
+      return cancelTarget(page) === undefined
+        ? page
+        : withCancel(page, 'canceling')
+    case 'cancelRefused':
+      return isCanceling(page) ? withCancel(page, event.code) : page
+    case 'cancelFailed':
+      return isCanceling(page) ? withCancel(page, undefined) : page
+    case 'paymentCanceled':
+      return canceled(page, event.operationId)
+  }
+}
+
+function cancelOf(page: CheckoutPage): PaymentCancel | undefined {
+  if (page.kind === 'waiting') return page.cancel
+  return page.kind === 'capture' && page.attempt.kind === 'sent'
+    ? page.attempt.cancel
+    : undefined
+}
+
+export const isCanceling = (page: CheckoutPage) =>
+  cancelOf(page) === 'canceling'
+
+function withCancel(
+  page: CheckoutPage,
+  cancel: PaymentCancel | undefined
+): CheckoutPage {
+  if (page.kind === 'waiting') return { ...page, cancel }
+  if (page.kind !== 'capture' || page.attempt.kind !== 'sent') return page
+  return { ...page, attempt: { ...page.attempt, cancel } }
+}
+
+/**
+ * The operation Cancel payment would cancel: a plan payment whose challenge
+ * is still pending, with no cancel already asked or refused.
+ */
+export function cancelTarget(page: CheckoutPage): string | undefined {
+  if (page.kind !== 'capture' && page.kind !== 'waiting') return undefined
+  const phase = submitPhaseOf(page)
+  return phase.kind === 'challenge' && phase.cancel === 'offered'
+    ? phase.operation.id
+    : undefined
+}
+
+/** A card the canceled operation earned on its way out is not a verdict to show. */
+function namesOperation(
+  outcome: InlineOutcome | undefined,
+  operationId: string
+): boolean {
+  return (
+    outcome !== undefined &&
+    'operationId' in outcome &&
+    outcome.operationId === operationId
+  )
+}
+
+/**
+ * Cancel is navigation, never an outcome: this page's own Pay goes back to
+ * the form it was sent from, as typed; a page that arrived on the money
+ * resolves a fresh one.
+ */
+function canceled(page: CheckoutPage, operationId: string): CheckoutPage {
+  switch (page.kind) {
+    case 'waiting':
+      return page.operation.id === operationId
+        ? { kind: 'resolving', canceled: operationId }
+        : page
+    case 'resolving':
+      return namesOperation(page.outcome, operationId)
+        ? { kind: 'resolving', canceled: operationId }
+        : { ...page, canceled: operationId }
+    case 'capture':
+      return { ...canceledInCapture(page, operationId), canceled: operationId }
+    default:
+      return page
+  }
+}
+
+function canceledInCapture(page: Capture, operationId: string): Capture {
+  if (
+    page.attempt.kind === 'sent' &&
+    page.attempt.operation?.id === operationId
+  )
+    return { ...page, attempt: IDLE }
+  return namesOperation(page.outcome, operationId)
+    ? { ...page, outcome: undefined }
+    : page
+}
+
+/** A verdict reached while the server settles a cancel waits for its answer. */
+const heldForCancel = (
+  page: CheckoutPage,
+  outcome: OperationOutcome | undefined
+) => outcome !== undefined && isCanceling(page)
+
+/**
+ * A read of a canceled operation still short of its end, or ending unpaid,
+ * says nothing new: a poll taken before the cancel committed can land after
+ * it, and the unpaid end is the cancel itself, not a verdict.
+ */
+function isCanceledHere(
+  page: CheckoutPage,
+  operation: BillingOperationState
+): boolean {
+  return (
+    (page.kind === 'capture' || page.kind === 'resolving') &&
+    page.canceled === operation.id &&
+    operation.phase !== 'succeeded'
+  )
 }
 
 /** A lapsed code changed the price, so its card outranks a carried verdict. */
@@ -330,6 +602,24 @@ function arrivedOutcome(
     : { kind: 'promo_expired', code: event.expiredPromo }
 }
 
+function quotedRail(
+  event: Extract<CheckoutPageEvent, { type: 'quoted' }>
+): PaymentRail {
+  return event.method === 'collect'
+    ? arrivedRail(event.saved, event.element)
+    : { method: 'on_file' }
+}
+
+/** A quote opens capture, or lays the rail under money already in flight. */
+function quotedOn(
+  page: CheckoutPage,
+  event: Extract<CheckoutPageEvent, { type: 'quoted' }>
+): CheckoutPage {
+  if (page.kind === 'resolving') return arrived(page, event)
+  if (page.kind === 'waiting') return { ...page, rail: quotedRail(event) }
+  return page
+}
+
 function arrived(
   page: Extract<CheckoutPage, { kind: 'resolving' }>,
   event: Extract<CheckoutPageEvent, { type: 'quoted' }>
@@ -337,13 +627,11 @@ function arrived(
   const outcome = arrivedOutcome(page, event)
   return {
     kind: 'capture',
-    rail:
-      event.method === 'collect'
-        ? arrivedRail(event.saved)
-        : { method: 'on_file' },
+    rail: quotedRail(event),
     reactivation: reactivationOf(event.reactivation),
     attempt: IDLE,
-    ...(outcome === undefined ? {} : { outcome })
+    ...(outcome === undefined ? {} : { outcome }),
+    ...(page.canceled === undefined ? {} : { canceled: page.canceled })
   }
 }
 
@@ -444,7 +732,8 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
   switch (event.type) {
     case 'reactivationConfirmed':
       return withCapture(page, (capture) =>
-        capture.reactivation === 'not_required'
+        capture.reactivation === 'not_required' ||
+        capture.attempt.kind === 'sent'
           ? undefined
           : {
               ...capture,
@@ -471,7 +760,7 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
       return withCapture(page, (capture) => ({
         ...capture,
         attempt: IDLE,
-        ...(event.outcome === undefined ? {} : { outcome: event.outcome })
+        outcome: event.outcome
       }))
     case 'payRejectedAsPending':
       return withCapture(page, (capture) => ({
@@ -548,6 +837,40 @@ export function waitingOn(operation: PendingBillingOperation): WaitingOn {
   return settling ? 'settling' : 'verifying'
 }
 
+/**
+ * A screen that promised to update but whose operation the lifecycle no
+ * longer polls: an outcome parked for a human, or a success whose credits
+ * the server has not recorded yet. The page re-reads it itself.
+ */
+export function awaitingServer(page: CheckoutPage): boolean {
+  if (page.kind === 'unconfirmed') return true
+  return (
+    page.kind === 'terminal' &&
+    page.operation !== undefined &&
+    isGrantLanding(page.operation)
+  )
+}
+
+/**
+ * Where a settled page reads the plan its payment bought, keyed so a caller
+ * reads it once: the slug its receipt names, or for this tab's own payment
+ * returned without one, the status. A page that priced the payment itself
+ * names the plan from its quote and needs neither.
+ */
+export function settledPlanSource(
+  page: CheckoutPage
+): { readonly key: string; readonly receiptSlug?: string } | undefined {
+  if (page.kind !== 'terminal' || page.attribution === 'started')
+    return undefined
+  const receiptSlug =
+    page.operation?.phase === 'succeeded'
+      ? page.operation.receipt?.plan?.slug
+      : undefined
+  if (receiptSlug !== undefined)
+    return { key: `receipt:${receiptSlug}`, receiptSlug }
+  return page.attribution === 'returned' ? { key: 'status' } : undefined
+}
+
 /** The server parked the operation for a human and cannot say whether money moved. */
 const outcomeUnknown = (operation: BillingOperationState) =>
   operation.phase === 'reconciliation_needed'
@@ -594,6 +917,8 @@ function followed(
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
+  if (isCanceledHere(page, operation) || heldForCancel(page, outcome))
+    return page
   if (page.kind === 'terminal') return withSettled(page, operation)
   if (page.kind === 'resolving') return arrivedOn(page, operation, outcome)
   if (page.kind === 'capture')
@@ -603,21 +928,28 @@ function followed(
   return page
 }
 
-/** A terminal reached before its operation arrived takes the operation's id. */
+/**
+ * A terminal reached before its operation arrived takes the operation, and a
+ * later read of the same operation replaces it, since the server may since
+ * have recorded the credits it added.
+ */
 function withSettled(
   page: Extract<CheckoutPage, { kind: 'terminal' }>,
   operation: BillingOperationState
 ): CheckoutPage {
-  return operation.phase === 'succeeded' && page.operation === undefined
+  const takes =
+    page.operation === undefined || page.operation.id === operation.id
+  return operation.phase === 'succeeded' && takes
     ? { ...page, operation }
     : page
 }
 
 /**
- * No form yet: a success is Already completed, money in flight is waiting,
- * and anything else (parked on a card, a challenge the bank refused, or
- * settled short of success) resolves a capture, opening on the verdict when
- * there is one.
+ * No form yet: this tab's own payment that went through while it was away
+ * is its Success, any other success waits for the quote to say whether this
+ * link is still for sale, money in flight is waiting, and anything else
+ * (parked on a card, a challenge the bank refused, or settled short of
+ * success) resolves a capture, opening on the verdict when there is one.
  */
 function arrivedOn(
   page: Extract<CheckoutPage, { kind: 'resolving' }>,
@@ -625,7 +957,9 @@ function arrivedOn(
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
-    return { kind: 'terminal', operation, attribution: 'settled' }
+    return operation.awaitedHere
+      ? { kind: 'terminal', operation, attribution: 'returned' }
+      : { ...page, settled: operation }
   if (outcome !== undefined) return { kind: 'resolving', outcome }
   if (isInFlight(operation)) return { kind: 'waiting', operation }
   if (outcomeUnknown(operation)) return unconfirmed(operation)
@@ -645,7 +979,11 @@ function watched(
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
-    return { kind: 'terminal', operation, attribution: attributionOf(page) }
+    return {
+      kind: 'terminal',
+      operation,
+      attribution: operation.awaitedHere ? 'returned' : attributionOf(page)
+    }
   if (outcomeUnknown(operation)) return unconfirmed(operation, page)
   if (outcome !== undefined)
     return ownsVerdict(page, operation)
@@ -656,10 +994,13 @@ function watched(
     : watchedWaiting(page, operation)
 }
 
+/** A charge the server now says went through moves the page forward to Payment received. */
 function watchedUnconfirmed(
   page: Extract<CheckoutPage, { kind: 'unconfirmed' }>,
   operation: BillingOperationState
 ): CheckoutPage {
+  if (isInFlight(operation) && waitingOn(operation) === 'received')
+    return { kind: 'waiting', operation, ...siblingOf(page) }
   return isInFlight(operation) || operation.phase === 'timed_out'
     ? page
     : RESOLVING
@@ -673,9 +1014,7 @@ function watchedWaiting(
     return waitingOn(page.operation) === 'verifying'
       ? unconfirmed(operation, page)
       : page
-  return isInFlight(operation)
-    ? { kind: 'waiting', operation, ...siblingOf(page) }
-    : RESOLVING
+  return isInFlight(operation) ? { ...page, operation } : RESOLVING
 }
 
 /**
@@ -717,7 +1056,7 @@ function followedInCapture(
   if (page.attempt.kind === 'sent')
     return followedOwn(page, page.attempt, operation, outcome)
   return isInFlight(operation) && outcome === undefined
-    ? { kind: 'waiting', operation, sibling: true }
+    ? { kind: 'waiting', operation, sibling: true, rail: page.rail }
     : nothingPending(page)
 }
 
@@ -761,24 +1100,61 @@ export type SubmitPhase =
   | { readonly kind: 'capture' }
   | { readonly kind: 'unknown' }
   | { readonly kind: 'processing' }
-  | { readonly kind: 'challenge'; readonly operation: PendingBillingOperation }
+  | {
+      readonly kind: 'challenge'
+      readonly operation: PendingBillingOperation
+      readonly cancel?: CancelOffer
+    }
   | { readonly kind: 'redirecting'; readonly method: string }
+
+/**
+ * What Cancel payment offers on a challenge. Absent for an operation the
+ * server never cancels (a top-up), so the button never shows there.
+ */
+export type CancelOffer = 'offered' | 'canceling' | 'not_cancelable'
 
 export function submitPhaseOf(
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
 ): SubmitPhase {
-  if (page.kind === 'waiting') return phaseOver(page.operation)
+  if (page.kind === 'waiting') return phaseOver(page.operation, page.cancel)
   if (page.kind !== 'capture' || page.attempt.kind === 'idle')
     return { kind: 'capture' }
-  const { redirectMethod, operation } = page.attempt
+  const { redirectMethod, operation, cancel } = page.attempt
   if (redirectMethod !== undefined)
     return { kind: 'redirecting', method: redirectMethod }
-  return operation === undefined ? { kind: 'unknown' } : phaseOver(operation)
+  return operation === undefined
+    ? { kind: 'unknown' }
+    : phaseOver(operation, cancel)
 }
 
-function phaseOver(operation: PendingBillingOperation): SubmitPhase {
-  if (isChallengePending(operation)) return { kind: 'challenge', operation }
+/** A payment the server would not cancel because it is already moving is Phase B on its word. */
+function phaseOver(
+  operation: PendingBillingOperation,
+  cancel: PaymentCancel | undefined
+): SubmitPhase {
+  if (cancel === 'PAYMENT_IN_FLIGHT') return { kind: 'processing' }
+  if (isChallengePending(operation))
+    return {
+      kind: 'challenge',
+      operation,
+      ...cancelOfferOf(operation, cancel)
+    }
   return isProcessing(operation) ? { kind: 'processing' } : { kind: 'unknown' }
+}
+
+const CANCEL_OFFER: Readonly<
+  Record<Exclude<PaymentCancel, 'PAYMENT_IN_FLIGHT'>, CancelOffer>
+> = {
+  canceling: 'canceling',
+  NOT_CANCELABLE: 'not_cancelable'
+}
+
+function cancelOfferOf(
+  operation: PendingBillingOperation,
+  cancel: Exclude<PaymentCancel, 'PAYMENT_IN_FLIGHT'> | undefined
+): { readonly cancel?: CancelOffer } {
+  if (operation.kind !== 'subscription') return {}
+  return { cancel: cancel === undefined ? 'offered' : CANCEL_OFFER[cancel] }
 }
 
 /** Past the bank's challenge on the server's word, so it can no longer be called back. */
@@ -827,13 +1203,6 @@ export function challengeToReopen(page: CheckoutPage): string | undefined {
     ? operation.challenge.clientSecret
     : undefined
 }
-
-/**
- * No endpoint cancels a pending payment yet (BE gap named on FE-3022), so
- * Cancel payment stays hidden rather than claiming a cancel the server
- * never made. Flip this once the endpoint lands and wire the click to it.
- */
-export const PENDING_PAYMENT_CANCEL_AVAILABLE = false
 
 /**
  * What the payment column shows for a rail. With no saved method to fall

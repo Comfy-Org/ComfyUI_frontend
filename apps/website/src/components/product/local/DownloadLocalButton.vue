@@ -1,83 +1,81 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import type { Platform } from '../../../composables/useDownloadUrl'
 import {
-  downloadUrls,
+  installers,
+  platformIcons,
   useDownloadUrl
 } from '../../../composables/useDownloadUrl'
-import { t } from '../../../i18n/translations'
+import type { Locale } from '../../../i18n/translations'
+import { translationsFor } from '../../../i18n/translations'
 import { captureDownloadClick } from '../../../scripts/posthog'
 import BrandButton from '../../common/BrandButton.vue'
+import InstallerMenu from './InstallerMenu.vue'
 
-const { locale = 'en', class: customClass = '' } = defineProps<{
+const {
+  locale = 'en',
+  class: customClass = '',
+  showInstallerMenu = false
+} = defineProps<{
   locale?: Locale
   class?: HTMLAttributes['class']
+  showInstallerMenu?: boolean
 }>()
+const { t } = translationsFor(locale)
 
-const { downloadUrl, platform, showFallback } = useDownloadUrl()
+const { installer, showFallback } = useDownloadUrl()
 
-const label = computed(() => t('download.hero.downloadLocal', locale))
-
-const ICONS: Record<Platform, string> = {
-  windows: '/icons/os/windows.svg',
-  mac: '/icons/os/apple.svg'
-}
-
-interface ButtonSpec {
-  key: Platform
-  href: string
-  icon: string
-  ariaLabel?: string
-}
-
-const buttons = computed<ButtonSpec[]>(() => {
-  if (platform.value) {
-    return [
-      {
-        key: platform.value,
-        href: downloadUrl.value,
-        icon: ICONS[platform.value]
-      }
-    ]
-  }
+const buttons = computed(() => {
+  if (installer.value) return [installer.value]
   if (showFallback.value) {
-    return [
-      {
-        key: 'windows',
-        href: downloadUrls.windows,
-        icon: ICONS.windows,
-        ariaLabel: `${label.value} — Windows`
-      },
-      {
-        key: 'mac',
-        href: downloadUrls.macArm,
-        icon: ICONS.mac,
-        ariaLabel: `${label.value} — macOS`
-      }
-    ]
+    return [installers.windows, installers.macArm]
   }
   return []
 })
+
+function hasInstallerMenu(index: number) {
+  return showInstallerMenu && index === 0
+}
 </script>
 
 <template>
-  <BrandButton
-    v-for="btn in buttons"
-    :key="btn.key"
-    :href="btn.href"
-    target="_blank"
-    size="lg"
-    :class="customClass"
-    :aria-label="btn.ariaLabel"
-    :data-astro-prefetch="btn.key === 'windows' ? 'false' : undefined"
-    @click="captureDownloadClick(btn.key)"
+  <div
+    v-for="(btn, index) in buttons"
+    :key="btn.url"
+    :class="cn('inline-flex', hasInstallerMenu(index) && 'lg:min-w-60')"
   >
-    <span class="inline-flex items-center gap-2">
-      <img :src="btn.icon" alt="" class="inline-block size-5" />
-      <span class="inline-block">{{ label }}</span>
-    </span>
-  </BrandButton>
+    <BrandButton
+      :href="btn.url"
+      target="_blank"
+      size="lg"
+      :class="
+        cn(
+          customClass,
+          'flex-1',
+          hasInstallerMenu(index) && 'rounded-r-none lg:min-w-0'
+        )
+      "
+      :data-astro-prefetch="btn.platform === 'windows' ? 'false' : undefined"
+      @click="captureDownloadClick(btn.platform)"
+    >
+      <span class="inline-flex items-center gap-2">
+        <img
+          :src="platformIcons[btn.platform]"
+          alt=""
+          class="inline-block size-5 shrink-0"
+        />
+        <span class="text-left">
+          {{ t('download.hero.downloadLocal') }}
+          <span
+            class="block text-xs font-normal tracking-normal whitespace-normal"
+          >
+            {{ t(btn.label) }}
+          </span>
+        </span>
+      </span>
+    </BrandButton>
+    <InstallerMenu v-if="hasInstallerMenu(index)" :locale />
+  </div>
 </template>

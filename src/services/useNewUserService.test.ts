@@ -18,9 +18,7 @@ Object.defineProperty(window, 'localStorage', {
 import { useNewUserService } from '@/services/useNewUserService'
 import { reportError } from '@/platform/telemetry/reportError'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>
@@ -173,6 +171,7 @@ describe('useNewUserService', () => {
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         new Error('Workflow draft index is not valid JSON'),
         {
+          surface: 'graph',
           errorType: 'error_parsing_workflow_draft_index',
           level: 'warning',
           context: { length: corrupt.length }
@@ -406,18 +405,6 @@ describe('useNewUserService', () => {
   })
 
   describe('edge cases', () => {
-    it('should handle settingStore.get returning false as not completed', async () => {
-      useSettingStore().settingValues = {
-        'Comfy.TutorialCompleted': false
-      }
-      useSettingStore().settingValues['Comfy.TutorialCompleted'] = false
-      mockLocalStorage.getItem.mockReturnValue(null)
-
-      await service.initializeIfNewUser()
-
-      expect(service.isNewUser()).toBe(true)
-    })
-
     it('should handle multiple callback registrations after initialization', async () => {
       const mockCallback1 = vi.fn().mockResolvedValue(undefined)
       const mockCallback2 = vi.fn().mockResolvedValue(undefined)

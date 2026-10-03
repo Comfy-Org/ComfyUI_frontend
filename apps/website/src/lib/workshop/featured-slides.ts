@@ -2,6 +2,7 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import type { FeaturedSlide } from '../../components/workshop/FeaturedBanner.vue'
 import type { Locale } from '../../i18n/translations'
 import { bannerName } from './banner-name'
+import { bannerSummary } from './banner-summary'
 import { modelDocsHref } from './model-docs'
 import { taskLabelFor } from './task-label'
 
@@ -21,14 +22,16 @@ export function modelSlides(
   models: readonly WorkshopModel[],
   locale: Locale
 ): FeaturedSlide[] {
-  return models.map((model) => ({
-    key: model.slug,
-    href: model.href,
-    title: bannerName(model.name, taskLabelFor(model, 'en')),
-    kind: taskLabelFor(model, locale),
-    tags: model.capabilities.slice(0, TAG_LIMIT),
-    summary: model.summary,
-    media: slideMedia(model),
-    docsHref: modelDocsHref(model)
-  }))
+  return models
+    .flatMap(({ href, ...model }) => (href ? [{ ...model, href }] : []))
+    .map((model) => ({
+      key: model.slug,
+      href: model.href,
+      title: bannerName(model.name, taskLabelFor(model, 'en')),
+      kind: taskLabelFor(model, locale),
+      tags: model.capabilities.slice(0, TAG_LIMIT),
+      summary: bannerSummary(model.slug, model.summary),
+      media: slideMedia(model),
+      docsHref: modelDocsHref(model)
+    }))
 }

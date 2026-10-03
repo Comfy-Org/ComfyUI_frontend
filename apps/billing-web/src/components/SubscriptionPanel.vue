@@ -9,7 +9,7 @@ import SubscriptionActions from '@/components/SubscriptionActions.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 
 const { t } = useI18n()
-const { coded, refusal, date } = useHostedCopy()
+const { refusal, date, planName } = useHostedCopy()
 const { plans, loading, failure, refresh } = usePlans()
 
 const { status } = useBillingClient<'status'>(undefined)
@@ -29,18 +29,14 @@ async function subscriptionChanged() {
 
 const endsAt = computed(() => billingStatus.value?.cancel_at)
 
-const currentName = computed(() => {
+const currentPlan = computed(() => {
   const catalog = plans.value
-  const current = catalog?.plans.find(
-    (plan) => plan.slug === catalog.current_plan_slug
-  )
-  return current
-    ? t('hosted.plan.name', {
-        tier: coded('tier', current.tier),
-        duration: coded('duration', current.duration)
-      })
-    : undefined
+  return catalog?.plans.find((plan) => plan.slug === catalog.current_plan_slug)
 })
+
+const currentName = computed(() =>
+  currentPlan.value ? planName(currentPlan.value) : undefined
+)
 </script>
 
 <template>
@@ -63,6 +59,9 @@ const currentName = computed(() => {
       {{ t('hosted.subscription.endsOn', { date: date(endsAt) }) }}
     </p>
 
-    <SubscriptionActions @changed="subscriptionChanged" />
+    <SubscriptionActions
+      :current-plan="currentPlan"
+      @changed="subscriptionChanged"
+    />
   </section>
 </template>

@@ -63,10 +63,6 @@ const config: KnipConfig = {
     // Optional host tool the recorder probes for and degrades without
     'xcode-select'
   ],
-  ignoreDependencies: [
-    // Weird importmap things
-    '@iconify/json'
-  ],
   ignore: [
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check } from '@lucide/vue'
 
@@ -14,12 +15,12 @@ import {
   ROUTER_SERVING_PROVIDERS
 } from '../../config/router-providers'
 import type { Locale } from '../../i18n/translations'
-import { routerT } from './routerCopy'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
-const served = routerT('platform.router.coverage.served', locale)
-const notServed = routerT('platform.router.coverage.notServed', locale)
+const served = t('platform.router.coverage.served')
+const notServed = t('platform.router.coverage.notServed')
 
 type Column = 'Comfy' | (typeof ROUTER_SERVING_PROVIDERS)[number]['name']
 
@@ -78,28 +79,26 @@ const linkedDocs = new Map(
   ])
 )
 
-const moreModels = routerT('platform.router.coverage.moreModels', locale, {
+const moreModels = t('platform.router.coverage.moreModels', {
   count:
     ROUTER_CATALOG_MODEL_COUNT -
     ROUTER_PROVIDER_COVERAGE.length -
     ROUTER_COMFY_ONLY_PREVIEW.length
 })
-const browseAll = routerT('platform.router.coverage.browseAll', locale, {
+const browseAll = t('platform.router.coverage.browseAll', {
   count: ROUTER_CATALOG_MODEL_COUNT
 })
 </script>
 
 <template>
   <CompareTable01
-    :heading="routerT('platform.router.coverage.heading', locale)"
-    :feature-label="routerT('platform.router.coverage.modelColumn', locale)"
+    :heading="t('platform.router.coverage.heading')"
+    :feature-label="t('platform.router.coverage.modelColumn')"
     :columns="columns"
     :rows="rows"
   >
     <template #subtitle>
-      <InlineCodeText
-        :text="routerT('platform.router.coverage.body', locale)"
-      />
+      <InlineCodeText :text="t('platform.router.coverage.body')" />
     </template>
     <template #column="{ column }">
       <div class="flex justify-center">
@@ -145,11 +144,11 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale, {
       >
         <p class="text-lg text-primary-warm-white lg:text-xl">
           <span class="text-primary-comfy-yellow">{{ moreModels }}</span>
-          {{ routerT('platform.router.coverage.moreModelsSuffix', locale) }}
+          {{ t('platform.router.coverage.moreModelsSuffix') }}
         </p>
         <Button
           as="a"
-          :href="getRoutes(locale).modelsShowcase"
+          :href="getRoutes(locale).workshop"
           variant="outline"
           class="pointer-events-auto h-12 rounded-full text-sm"
         >

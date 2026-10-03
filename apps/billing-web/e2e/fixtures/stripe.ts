@@ -18,6 +18,9 @@ const FAKE_STRIPE_JS = `
   window.__e2eFakeStripe = {
     confirmationTokens: 0,
     nextActions: 0,
+    // Payment elements taken off the page, so a spec can tell a form kept as
+    // typed from one mounted afresh.
+    unmounts: 0,
     // Every argument the app actually passed to handleNextAction, so a spec
     // can tell "called correctly" from "called with the wrong secret".
     nextActionCalls: []
@@ -29,8 +32,12 @@ const FAKE_STRIPE_JS = `
     if (failing) window.__e2eStripeLoadErrors -= 1
     return {
       mount() {},
-      unmount() {},
-      destroy() {},
+      unmount() {
+        window.__e2eFakeStripe.unmounts += 1
+      },
+      destroy() {
+        window.__e2eFakeStripe.unmounts += 1
+      },
       on(event, handler) {
         if (event === (failing ? 'loaderror' : 'ready'))
           setTimeout(() => handler({ error: { code: 'e2e_load_error' } }))
@@ -64,7 +71,9 @@ const FAKE_STRIPE_JS = `
       // or the redirect a method such as Alipay finishes on.
       retrievePaymentIntent: () =>
         Promise.resolve({
-          paymentIntent: {
+          paymentIntent: window.__e2eStripeIntentSettled
+            ? { status: 'succeeded', next_action: null }
+            : {
             status: 'requires_action',
             next_action: {
               type: window.__e2eStripeRedirectTo
@@ -76,10 +85,19 @@ const FAKE_STRIPE_JS = `
       // A spec sets window.__e2eStripeRedirectTo before load to make the
       // challenge leave the page the way a redirect method does, or
       // window.__e2eStripeHoldNextAction to keep it open until the spec
-      // settles it through window.__e2eFakeStripe.releaseNextAction.
+      // settles it through window.__e2eFakeStripe.releaseNextAction, or
+      // window.__e2eStripeIntentSettled to reject the way Stripe does for an
+      // intent that no longer requires action.
       handleNextAction: (args) => {
         window.__e2eFakeStripe.nextActions += 1
         window.__e2eFakeStripe.nextActionCalls.push(args)
+        if (window.__e2eStripeIntentSettled) {
+          const error = new Error(
+            'handleNextAction: The PaymentIntent supplied is not in the requires_action state.'
+          )
+          error.name = 'IntegrationError'
+          return Promise.reject(error)
+        }
         if (window.__e2eStripeRedirectTo) {
           window.location.assign(window.__e2eStripeRedirectTo)
           return new Promise(() => {})

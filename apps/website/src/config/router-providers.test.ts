@@ -4,7 +4,6 @@ import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
 import {
-  ROUTER_CATALOG_MODEL_COUNT,
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE,
   ROUTER_PROVIDER_COVERAGE_VERIFIED_AT,
@@ -132,17 +131,6 @@ describe('Router provider coverage', () => {
         name: row.docsName ?? row.name
       })).sort(byDocsUrl)
     )
-  })
-
-  it('counts the models the docs catalog lists', async (ctx) => {
-    if (skipReason) return ctx.skip(skipReason)
-    const markdown = await fetchDocs(MODELS_PAGE)
-    if (markdown === null) return ctx.skip(`could not fetch ${MODELS_PAGE}`)
-
-    const models = new Set(
-      markdown.match(/comfy-router\/models\/[\w.-]+\/[\w.-]+/g) ?? []
-    )
-    expect(models.size).toBe(ROUTER_CATALOG_MODEL_COUNT)
   })
 
   it('previews catalog models that only Comfy serves', async (ctx) => {

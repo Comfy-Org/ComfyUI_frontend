@@ -22,41 +22,6 @@ const base: WorkshopModel = {
 }
 
 describe('WorkshopModelCard', () => {
-  // Every workflow but a couple runs on the shared Cloud endpoint, so a mark
-  // on all of them would mark nothing.
-  const workflow = (slug: string): WorkshopModel => ({
-    slug,
-    name: 'Remove an object from a video',
-    workflowCount: 1,
-    href: `/models/${slug}/`,
-    type: 'CLOUD',
-    workflowId: 'ltx2-obscura-remova',
-    capabilities: [],
-    modality: 'video'
-  })
-
-  it.for([
-    { case: 'a model', model: base },
-    {
-      case: 'a workflow on the shared endpoint',
-      model: workflow('workflows/remove-object')
-    }
-  ])('says nothing about Comfy API for $case', ({ model }) => {
-    render(WorkshopModelCard, { props: { model } })
-
-    expect(screen.queryByTestId('model-card-comfy-api')).toBeNull()
-  })
-
-  it('marks a workflow that runs on its own deployment', () => {
-    render(WorkshopModelCard, {
-      props: { model: workflow('workflows/remove-object-from-video') }
-    })
-
-    expect(screen.getByTestId('model-card-comfy-api')).toHaveTextContent(
-      'Comfy API'
-    )
-  })
-
   it('links the name, provider badge and task to the model page', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
@@ -259,5 +224,31 @@ describe('WorkshopModelCard', () => {
   ])('leaves fallback and unlabelled artwork unmarked', (card) => {
     render(WorkshopModelCard, { props: { model: card } })
     expect(screen.queryByTestId('model-thumbnail-label')).toBeNull()
+  })
+
+  it.for([
+    {
+      kind: 'a workflow, whose name is a sentence',
+      model: {
+        type: 'CLOUD',
+        workflowId: 'workflows/upscale-a-video',
+        slug: 'workflows/upscale-a-video',
+        name: 'Upscale a video',
+        href: '/models/workflows/upscale-a-video/',
+        workflowCount: 1,
+        capabilities: [],
+        models: ['Topaz'],
+        modality: 'video'
+      },
+      shown: 'Upscale a video'
+    },
+    {
+      kind: 'a model, whose name repeats its task as a suffix',
+      model: { ...base, name: 'Flux Image-to-Image' },
+      shown: 'Flux'
+    }
+  ] as const)('shows the whole name of $kind', ({ model, shown }) => {
+    render(WorkshopModelCard, { props: { model } })
+    expect(screen.getByTestId('model-card-name').textContent).toBe(shown)
   })
 })

@@ -157,27 +157,31 @@ describe('HostTelemetrySink', () => {
     )
   })
 
-  it('forwards agent paywall impressions with their reason', () => {
+  it('forwards agent paywall impressions with their reason and surface', () => {
     new HostTelemetrySink().trackAgentPaywallShown({
-      reason: 'subscription_inactive'
+      reason: 'subscription_inactive',
+      surface: 'credits_exhausted'
     })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.AGENT_PAYWALL_SHOWN,
-      { reason: 'subscription_inactive' }
+      { reason: 'subscription_inactive', surface: 'credits_exhausted' }
     )
   })
 
-  it('forwards agent paywall CTA clicks with their cta', () => {
-    new HostTelemetrySink().trackAgentPaywallCtaClicked({ cta: 'add_credits' })
+  it('forwards agent paywall CTA clicks with their cta and surface', () => {
+    new HostTelemetrySink().trackAgentPaywallCtaClicked({
+      cta: 'add_credits',
+      surface: 'refused_send'
+    })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
-      { cta: 'add_credits' }
+      { cta: 'add_credits', surface: 'refused_send' }
     )
   })
 
-  it('forwards canonical billing events using the derived name and payload', () => {
+  it('forwards canonical billing events with their derived name and payload, claiming no surface', () => {
     new HostTelemetrySink().trackBillingEvent({
       operation: 'operation',
       stage: 'succeeded',
@@ -278,7 +282,7 @@ describe('HostTelemetrySink', () => {
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
           input_method: 'suggestion',
-          starter_prompt_id: 'list_workflows',
+          starter_prompt_id: 'slot_2',
           starter_prompt_click_id: 'click-1'
         }),
       properties: {
@@ -288,7 +292,7 @@ describe('HostTelemetrySink', () => {
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
         input_method: 'suggestion',
-        starter_prompt_id: 'list_workflows',
+        starter_prompt_id: 'slot_2',
         starter_prompt_click_id: 'click-1'
       }
     },
@@ -320,7 +324,7 @@ describe('HostTelemetrySink', () => {
       name: TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentStarterPromptClicked({
-          prompt_id: 'explain_selected_node',
+          prompt_id: 'slot_4',
           prompt_index: 3,
           prompt_count: 5,
           prompt_text_hash: 'deadbeef',
@@ -329,13 +333,34 @@ describe('HostTelemetrySink', () => {
           draft_was_empty: false
         }),
       properties: {
-        prompt_id: 'explain_selected_node',
+        prompt_id: 'slot_4',
         prompt_index: 3,
         prompt_count: 5,
         prompt_text_hash: 'deadbeef',
         locale: 'en',
         click_id: 'click-1',
         draft_was_empty: false
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentFreeUseNotice({
+          action: 'dismissed',
+          placement: 'top-banner'
+        }),
+      properties: { action: 'dismissed', placement: 'top-banner' }
+    },
+    {
+      name: TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentFreeUseExposure({
+          placement: 'control',
+          '$feature/agent-free-use-message-placement': 'control'
+        }),
+      properties: {
+        placement: 'control',
+        '$feature/agent-free-use-message-placement': 'control'
       }
     },
     {

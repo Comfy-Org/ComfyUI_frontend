@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ModelsPage from '../../components/workshop/ModelsPage.vue'
+import type { CatalogueTab } from '../../components/workshop/CatalogueTabs.vue'
+import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import { HUB_APPS_PATH, HUB_WORKFLOWS_PATH } from '../../config/hub-models'
+import { isIndexableModelPage } from '../../config/indexing'
+import { HUB_SECTION_COPY } from './hub-section-copy'
+
+const SECTIONS: Readonly<Record<string, Exclude<CatalogueTab, 'models'>>> = {
+  [HUB_WORKFLOWS_PATH]: 'workflows',
+  [HUB_APPS_PATH]: 'apps'
+}
+const section = SECTIONS[Astro.routePattern]
+if (!section)
+  throw new Error(`No hub section is built at ${Astro.routePattern}`)
+const copy = HUB_SECTION_COPY[section]
+---
+
+<BaseLayout
+  title={copy.title}
+  description={copy.description}
+  noindex={!isIndexableModelPage(Astro.url.pathname)}
+  preloadFonts={['Medium']}
+>
+  <script>
+    import '../../scripts/hubNavigation'
+  </script>
+  <ModelsPage
+    section={section}
+    heading={copy.heading}
+    client:load
+    transition:persist="hub-catalogue"
+  >
+    <ModelsShowcase slot="fallback" />
+  </ModelsPage>
+  <noscript>
+    <ModelsShowcase />
+  </noscript>
+</BaseLayout>

@@ -7,7 +7,11 @@
 import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
 
 import type { MockCloud } from './fixtures/cloud'
-import { E2E_USER } from './fixtures/env'
+import { CLOUD_ORIGIN, E2E_USER } from './fixtures/env'
+import {
+  expectPlanlessLinkToLeaveFor,
+  expectStraightToPricingTable
+} from './fixtures/planless'
 import {
   challengeRequiredOperation,
   contactSupportOperation,
@@ -360,8 +364,12 @@ test('reloading on the result page while pending recovers it and shows the settl
   await signIn(entryPath('result'))
 
   await expect(
+    page.getByRole('link', { name: 'Return to ComfyUI' })
+  ).toHaveAttribute('href', /billing_ref=op_pending/)
+  await expect(page.getByText('Checking on your payment…')).toBeVisible()
+  await expect(
     page.getByRole('heading', { name: 'Review payment' })
-  ).toBeVisible()
+  ).toHaveCount(0)
   await expect(
     page.getByRole('region', { name: 'Payment complete' })
   ).toHaveCount(0)
@@ -416,15 +424,83 @@ test('a checkout link naming a team credit stop quotes it along with the plan', 
   })
 })
 
-test('a checkout link that names no plan goes back to the host to choose one', async ({
-  page
-}) => {
-  await page.goto(entryPath('checkout', { workspace: 'ws_team_e2e' }))
+test.describe('a checkout link that names no plan goes back to the host to choose one', () => {
+  test('on the Team tab when the link names a team', async ({ page }) => {
+    await expectPlanlessLinkToLeaveFor(
+      page,
+      { workspace: 'ws_team_e2e', team_credit_stop_id: 'stop_700' },
+      `${CLOUD_ORIGIN}/?pricing=team&workspace=ws_team_e2e`
+    )
+  })
 
-  await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
-  )
-  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
+  test("to a platform link's own return_to when billing may follow it", async ({
+    page
+  }) => {
+    await expectPlanlessLinkToLeaveFor(
+      page,
+      { product: 'platform', workspace: 'ws_e2e' },
+      `${CLOUD_ORIGIN}/?workspace=ws_e2e`
+    )
+  })
+
+  test('never to the cloud for a platform link this deployment has no platform page for', async ({
+    page,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+    const platformLink = entryPath('checkout', {
+      product: 'platform',
+      return_to: 'nowhere'
+    })
+
+    await page.goto(platformLink)
+
+    await expect(
+      page.getByText("That link doesn't name a place we can send you back to.")
+    ).toBeVisible()
+    await expect(page).toHaveURL(platformLink)
+  })
+
+  test('for a signed-out visitor', async ({ page }) => {
+    await expectStraightToPricingTable(page, 'ws_team_e2e')
+  })
+
+  test('for a signed-in customer, in the tab they signed in on', async ({
+    page,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+    await expect(
+      page.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeVisible()
+
+    await expectStraightToPricingTable(page, 'ws_e2e')
+  })
+
+  test('for a signed-in customer the host opens a new tab for, before that tab has a session', async ({
+    context,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+
+    await expectStraightToPricingTable(await context.newPage(), 'ws_e2e')
+  })
+
+  test('for a signed-in customer whose link names a workspace they cannot manage, never the refusal', async ({
+    context,
+    cloud,
+    signIn
+  }) => {
+    await signIn(CHECKOUT)
+    cloud.reply('POST', '/auth/token', () => ({
+      status: 403,
+      body: { error: 'refused' }
+    }))
+    const tab = await context.newPage()
+
+    await expectStraightToPricingTable(tab, 'ws_not_a_member')
+    await expect(tab.getByRole('alert')).toHaveCount(0)
+  })
 })
 
 test('Close on a checkout tab the product opened closes that tab', async ({
