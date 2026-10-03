@@ -95,7 +95,7 @@ export function parseCoverageTable(markdown: string): {
   }
 }
 
-export async function checkRouterProviderDrift(): Promise<void> {
+async function checkRouterProviderDrift(): Promise<void> {
   const [coverageMarkdown, catalogMarkdown, ...specs] = await Promise.all([
     fetchText(PROVIDERS_PAGE),
     fetchText(MODELS_PAGE),
@@ -143,7 +143,7 @@ if (
 ) {
   checkRouterProviderDrift()
     .then(() => {
-      console.log('Router provider coverage matches the published sources.')
+      console.warn('Router provider coverage matches the published sources.')
     })
     .catch((error: unknown) => {
       console.error(error)
