@@ -25,6 +25,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const modelToNodeMap = ref<Partial<Record<string, ModelNodeProvider[]>>>({})
   const nodeDefStore = useNodeDefStore()
   const haveDefaultsLoaded = ref(false)
+  const isReady = computed(() => haveDefaultsLoaded.value)
 
   const registeredNodeTypes = computed<
     Partial<Record<string, string | RegExp>>
@@ -174,6 +175,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
 
   return {
     modelToNodeMap,
+    isReady,
     getRegisteredNodeTypes,
     isModelWidget,
     getCategoryForNodeType,

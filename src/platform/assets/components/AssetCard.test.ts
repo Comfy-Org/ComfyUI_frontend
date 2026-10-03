@@ -12,6 +12,17 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import userEvent from '@testing-library/user-event'
 
+const { mockCanCreateNodeForAsset } = vi.hoisted(() => ({
+  mockCanCreateNodeForAsset: vi.fn(() => true)
+}))
+
+vi.mock(
+  import('@/platform/assets/integration/resolveModelNodeFromAsset'),
+  () => ({
+    canCreateNodeForAsset: mockCanCreateNodeForAsset
+  })
+)
+
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     deleteAsset: vi.fn()
@@ -60,6 +71,7 @@ function renderCard(asset: AssetDisplayItem) {
 }
 
 beforeEach(() => {
+  mockCanCreateNodeForAsset.mockReturnValue(true)
   vi.mocked(useSettingStore().get).mockImplementation(() => 0)
   vi.mocked(useAssetDownloadStore().isDownloadedThisSession).mockImplementation(
     () => false
@@ -91,6 +103,20 @@ describe('AssetCard', () => {
 
     expect(showConfirmDialog).toHaveBeenCalledOnce()
     expect(screen.queryByRole('menuitem', { name: 'g.delete' })).toBeNull()
+  })
+
+  it('exposes and blocks Use when the asset has no node provider', async () => {
+    const user = userEvent.setup()
+    mockCanCreateNodeForAsset.mockReturnValue(false)
+
+    const { emitted } = renderCard(createDisplayAsset())
+    const useButton = screen.getByRole('button', {
+      name: 'g.use: assetBrowser.useDisabledNoProvider'
+    })
+
+    expect(useButton).toHaveAttribute('aria-disabled', 'true')
+    await user.click(useButton)
+    expect(emitted()).not.toHaveProperty('select')
   })
 
   describe('FE-228: filename rendering', () => {
