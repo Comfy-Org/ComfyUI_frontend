@@ -18,7 +18,10 @@ import { useCustomerEventsService } from '@/services/customerEventsService'
 
 type Balance = Pick<
   BalanceInfo,
-  'amountMicros' | 'cloudCreditBalanceMicros' | 'prepaidBalanceMicros'
+  | 'amountMicros'
+  | 'cloudCreditBalanceMicros'
+  | 'cloudCreditTotalMicros'
+  | 'prepaidBalanceMicros'
 >
 type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
@@ -386,7 +389,23 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('147,700 left of 147,700')
   })
 
-  it('uses the full annual grant for a personal tier credit pool', () => {
+  it('uses the API total when monthly and annual grants overlap', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 120200,
+      cloudCreditBalanceMicros: 120200,
+      cloudCreditTotalMicros: 120200
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain('253,622 left of 253,622')
+  })
+
+  it('falls back to the tier-derived annual grant for older servers', () => {
     state.canAccessSubscriptionFeatures = true
     state.subscription = {
       tier: 'PRO',
@@ -399,6 +418,25 @@ describe('CreditsTile', () => {
     }
     const { container } = renderTile()
     expect(container.textContent).toContain('253,200 left of 253,200')
+  })
+
+  it('excludes top-ups from the API credit pool total', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 120300,
+      cloudCreditBalanceMicros: 120000,
+      cloudCreditTotalMicros: 120000,
+      prepaidBalanceMicros: 300
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain('253,200 left of 253,200')
+    expect(screen.getByText('633')).toBeTruthy()
+    expect(container.textContent).not.toContain('left of 253,833')
   })
 
   it('shows no credit pool total or allowance bar when the duration is unknown', () => {

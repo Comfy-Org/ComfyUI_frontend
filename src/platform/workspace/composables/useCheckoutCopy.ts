@@ -70,7 +70,9 @@ export function useCheckoutCopy() {
     switchesToday: t('subscription.preview.switchesToday'),
     startsOn: (date) => t('subscription.preview.startsOn', { date }),
     creditsYoullGetToday: t('subscription.preview.creditsYoullGetToday'),
-    refillReplacesNote: t('subscription.preview.refillReplacesNote'),
+    currentMonthlyCreditsValidNote: t(
+      'subscription.preview.currentMonthlyCreditsValidNote'
+    ),
     afterThat: t('subscription.preview.afterThat'),
     creditsRefillMonthlyTo: t('subscription.preview.creditsRefillMonthlyTo'),
     billedEachMonth: (amount) =>

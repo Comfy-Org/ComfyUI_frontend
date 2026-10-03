@@ -405,6 +405,10 @@ export type UsageTimeSeries = {
 export type UsageBalance = {
   amount_micros?: number
   cloud_credit_balance_micros?: number
+  /**
+   * The original allocation of currently active cloud credit grants in microamount
+   */
+  cloud_credit_total_micros?: number
   currency?: string
   prepaid_balance_micros?: number
 }
@@ -4661,6 +4665,10 @@ export type BillingBalanceResponse = {
    * The remaining balance from cloud credits in microamount
    */
   cloud_credit_balance_micros?: number
+  /**
+   * The original allocation of currently active cloud credit grants in microamount
+   */
+  cloud_credit_total_micros?: number
   /**
    * Currency code
    */

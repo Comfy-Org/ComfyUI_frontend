@@ -339,7 +339,8 @@ const bannerBody = computed(() => {
     case 'downgrade':
       return bodies.downgradeBody
     case 'duration_change':
-      return newIsYearly.value
+      return previewData.current_plan?.duration === 'MONTHLY' &&
+        newIsYearly.value
         ? bodies.durationChangeBody
         : bodies.durationChangeBodyMonthly
     default:
@@ -380,7 +381,7 @@ const refillCredits = computed(() =>
 )
 const refillLabel = computed(() => {
   if (isImmediate.value) {
-    return newIsYearly.value
+    return previewData.current_plan?.duration === 'MONTHLY' && newIsYearly.value
       ? copy.creditsYoullGetToday
       : copy.eachMonthCreditsRefill
   }
@@ -402,7 +403,10 @@ const planDetails = computed(() =>
 )
 
 const refillNote = computed(() => {
-  if (isImmediate.value) return newIsYearly.value ? copy.refillReplacesNote : ''
+  if (isImmediate.value)
+    return previewData.current_plan?.duration === 'MONTHLY' && newIsYearly.value
+      ? copy.currentMonthlyCreditsValidNote
+      : ''
   return newIsYearly.value
     ? copy.billedYearly(annualTotalFormatted.value)
     : copy.billedEachMonth(`$${formatNumber(newMonthlyUsd.value, locale)}`)

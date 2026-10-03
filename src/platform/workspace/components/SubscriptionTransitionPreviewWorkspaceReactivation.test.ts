@@ -65,7 +65,8 @@ const i18n = createI18n({
           commitment: 'commitment',
           creditsYoullGetToday: "Credits you'll get today",
           eachMonthCreditsRefill: 'Each month credits refill to',
-          refillReplacesNote: 'Replaces your monthly refill.',
+          currentMonthlyCreditsValidNote:
+            "This month's credits stay valid until your current cycle ends.",
           afterThat: 'After that',
           creditsRefillMonthlyTo: 'Credits refill monthly to',
           billedEachMonth: '{amount} billed each month.',

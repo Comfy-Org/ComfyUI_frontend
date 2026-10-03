@@ -34,7 +34,8 @@ export const checkoutCopy: CheckoutCopy = {
   switchesToday: 'Switches today',
   startsOn: (date) => `Starts ${date}`,
   creditsYoullGetToday: "Credits you'll get today",
-  refillReplacesNote: 'Replaces your monthly refill.',
+  currentMonthlyCreditsValidNote:
+    "This month's credits stay valid until your current cycle ends.",
   afterThat: 'After that',
   creditsRefillMonthlyTo: 'Credits refill monthly to',
   billedEachMonth: (amount) => `${amount} billed each month.`,

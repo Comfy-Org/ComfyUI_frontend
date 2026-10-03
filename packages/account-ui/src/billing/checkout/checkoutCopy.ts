@@ -76,7 +76,7 @@ export interface CheckoutCopy {
   readonly switchesToday: string
   readonly startsOn: (date: string) => string
   readonly creditsYoullGetToday: string
-  readonly refillReplacesNote: string
+  readonly currentMonthlyCreditsValidNote: string
   readonly afterThat: string
   readonly creditsRefillMonthlyTo: string
   readonly billedEachMonth: (amount: string) => string

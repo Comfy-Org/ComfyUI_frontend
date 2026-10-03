@@ -60,7 +60,26 @@ describe('CheckoutTransitionConfirm', () => {
     expect(screen.getByText("Credits you'll get today")).toBeTruthy()
     expect(screen.getByText('88,800')).toBeTruthy()
     expect(screen.getByText('$336 Billed yearly')).toBeTruthy()
-    expect(screen.getByText('Replaces your monthly refill.')).toBeTruthy()
+    expect(
+      screen.getByText(
+        "This month's credits stay valid until your current cycle ends."
+      )
+    ).toBeTruthy()
+  })
+
+  it('omits the monthly credit retention note when the current plan is already yearly', () => {
+    renderTransition({
+      previewData: upgrade({
+        current_plan: plan('STANDARD', 'ANNUAL', 20_000),
+        new_plan: plan('CREATOR', 'ANNUAL', 33_600)
+      })
+    })
+    expect(screen.getByText("Credits you'll get today")).toBeTruthy()
+    expect(
+      screen.queryByText(
+        "This month's credits stay valid until your current cycle ends."
+      )
+    ).toBeNull()
   })
 
   it('describes a scheduled change by when it starts and what follows', () => {

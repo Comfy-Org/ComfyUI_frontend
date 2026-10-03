@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { AuthStoreError } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useLegacyBilling } from './useLegacyBilling'
 
@@ -16,6 +16,25 @@ const refusal = () =>
   new AuthStoreError('refused', 409, 'WORKSPACE_BILLING_REQUIRED')
 
 describe('useLegacyBilling', () => {
+  it('maps the server-authoritative cloud credit total', () => {
+    useAuthStore().balance = {
+      amount_micros: 7_000,
+      currency: 'USD',
+      cloud_credit_balance_micros: 2_000,
+      cloud_credit_total_micros: 5_000,
+      prepaid_balance_micros: 2_000
+    }
+
+    expect(useLegacyBilling().balance.value).toEqual({
+      amountMicros: 7_000,
+      currency: 'USD',
+      effectiveBalanceMicros: 7_000,
+      cloudCreditBalanceMicros: 2_000,
+      cloudCreditTotalMicros: 5_000,
+      prepaidBalanceMicros: 2_000
+    })
+  })
+
   describe('resubscribe', () => {
     it('performs the checkout via the unwrapped subscribeDirect', async () => {
       const billing = useLegacyBilling()

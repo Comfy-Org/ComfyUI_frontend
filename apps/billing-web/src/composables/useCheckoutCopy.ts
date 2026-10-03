@@ -61,7 +61,7 @@ export function useCheckoutCopy() {
     switchesToday: preview('switchesToday'),
     startsOn: (date) => preview('startsOn', { date }),
     creditsYoullGetToday: preview('creditsYoullGetToday'),
-    refillReplacesNote: preview('refillReplacesNote'),
+    currentMonthlyCreditsValidNote: preview('currentMonthlyCreditsValidNote'),
     afterThat: preview('afterThat'),
     creditsRefillMonthlyTo: preview('creditsRefillMonthlyTo'),
     billedEachMonth: (amount) => preview('billedEachMonth', { amount }),

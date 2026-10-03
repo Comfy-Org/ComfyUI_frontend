@@ -43,6 +43,8 @@ const i18n = createI18n({
     en: {
       subscription: {
         preview: {
+          currentMonthlyCreditsValidNote:
+            "This month's credits stay valid until your current cycle ends.",
           renewsAt: 'Renews at {amount} on {date}. Cancel anytime.',
           renewsAtAmount: 'Renews at {amount}. Cancel anytime.'
         }
@@ -143,6 +145,11 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       screen.getByText('subscription.preview.creditsYoullGetToday')
     ).toBeTruthy()
     expect(screen.getByText('88,800')).toBeTruthy()
+    expect(
+      screen.getByText(
+        "This month's credits stay valid until your current cycle ends."
+      )
+    ).toBeTruthy()
     expect(screen.getByText('$318.50')).toBeTruthy()
     expect(
       screen.getByText('subscription.preview.confirmUpgradeCta')
@@ -170,6 +177,11 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     ).toBeTruthy()
     expect(screen.getByText('21,100')).toBeTruthy()
     expect(screen.getByText('$82.50')).toBeTruthy()
+    expect(
+      screen.queryByText(
+        "This month's credits stay valid until your current cycle ends."
+      )
+    ).toBeNull()
   })
 
   it('opens verification only from its button without exposing the URL', async () => {
@@ -297,6 +309,11 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(
       screen.queryByText('subscription.preview.billedEachMonth')
     ).toBeNull()
+    expect(
+      screen.queryByText(
+        "This month's credits stay valid until your current cycle ends."
+      )
+    ).toBeNull()
   })
 
   it('renders a team credit-commit change using the slider stop for name and credits', () => {
@@ -354,7 +371,9 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       screen.getByText('subscription.preview.creditsYoullGetToday')
     ).toBeTruthy()
     expect(
-      screen.getByText('subscription.preview.refillReplacesNote')
+      screen.getByText(
+        "This month's credits stay valid until your current cycle ends."
+      )
     ).toBeTruthy()
     expect(screen.getByText('$12,600.00')).toBeTruthy()
   })
