@@ -76,4 +76,14 @@ describe('foldActivity', () => {
 
     expect(rows[0]).toMatchObject({ count: 2, ok: true })
   })
+
+  it('uses the latest outcome across repeated retries', () => {
+    const rows = foldActivity([
+      { ...tool('load_skill', true), skill: 'comfy-director' },
+      { ...tool('load_skill', false), skill: 'comfy-director' },
+      { ...tool('load_skill', true), skill: 'comfy-director' }
+    ])
+
+    expect(rows[0]).toMatchObject({ count: 3, ok: true })
+  })
 })
