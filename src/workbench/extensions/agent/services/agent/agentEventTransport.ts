@@ -2,13 +2,19 @@ import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
 import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
 import type {
+  AskUserResolution,
   AssistantMessage,
-  RunApprovalPart,
   TextPart,
   ThinkingPart,
   ToolPart
 } from './agentMessageParts'
-import { snapshotMessage } from './agentMessageParts'
+import {
+  isAskPart,
+  retireAskParts,
+  snapshotMessage,
+  toAskOrNoticePart,
+  toAskPart
+} from './agentMessageParts'
 import type {
   UndeliverableAskContext,
   UndeliverableAskReason
@@ -85,12 +91,13 @@ export interface AgentEventTransport {
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
   /**
-   * PM-1658: drops a run-approval part the way an `agent_ask_resolved` frame
-   * would, for an ask resolved out of band. The transport owns the message
-   * every later emit republishes, so editing the store's copy alone lets a
-   * dismissed card reappear the next time this one snapshots.
+   * PM-1658: retires an ask's part the way an `agent_ask_resolved` frame
+   * would, for an ask resolved out of band: a run-approval card goes, an
+   * `ask_user` card turns read-only with `resolution`. The transport owns the
+   * message every later emit republishes, so editing the store's copy alone
+   * lets a dismissed card reappear the next time this one snapshots.
    */
-  dropAskPart: (askId: string) => void
+  dropAskPart: (askId: string, resolution?: AskUserResolution) => void
   /**
    * Tears the transport down for a reason other than natural completion
    * (abort, drop, reset, hydrate). Flushes any tool-call parts held pending
@@ -326,35 +333,35 @@ export function createAgentEventTransport(
   }
 
   /**
-   * Applies one `agent_ask` frame. Only the `run_approval` kind renders a
-   * part; returns `false` for any other kind, mirroring `ingest`'s early
-   * `return` for that case.
+   * Applies one `agent_ask` frame: a `run_approval` or `ask_user` card, or a
+   * notice standing in for an ask this panel cannot render. Returns `false`
+   * for a redelivered ask (a replay, a resubscribe) that is already on
+   * screen: a second card would share its key and its in-progress answer.
    *
-   * That `false` reaches a live turn and still shows the user nothing, while
-   * the server parks waiting for an answer — the same dead-panel outcome as an
-   * ask dropped in routing, so it is reported the same way. Generated-contract
-   * kinds without a client renderer are tagged separately from unknown input.
+   * An ask that cannot be rendered still parks the server waiting for an
+   * answer nothing on screen can give — the same dead-panel outcome as an ask
+   * dropped in routing, so it is reported the same way. Generated-contract
+   * kinds the card refuses (an `ask_user` with nothing to choose) are tagged
+   * separately from unknown input.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
-    if (data.kind !== 'run_approval') {
+    const shown = message.parts.some(
+      (part) =>
+        (isAskPart(part) || part.type === 'notice') &&
+        part.askId === data.ask_id
+    )
+    if (shown) return false
+    if (!toAskPart(data))
       reportUndeliverableAsk(
         data,
         data.kind === 'ask_user' ? 'unrendered-kind' : 'unknown-kind'
       )
-      return false
-    }
     dropDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
-    const part: RunApprovalPart = {
-      type: 'runApproval',
-      askId: data.ask_id,
-      workflowId: data.context?.workflow_id || undefined,
-      workflowName: data.context?.workflow_name || undefined
-    }
-    message.parts.push(part)
+    message.parts.push(toAskOrNoticePart(data))
     return true
   }
 
@@ -367,12 +374,18 @@ export function createAgentEventTransport(
     message.thinkingText = openThinking?.text
   }
 
-  /** Applies one `agent_ask_resolved` frame: drops the matching run-approval
-   * part, since its ask is no longer pending. */
-  function handleAskResolvedEvent(data: AgentAskResolvedEvent['data']): void {
-    message.parts = message.parts.filter(
-      (part) => part.type !== 'runApproval' || part.askId !== data.ask_id
-    )
+  /** Applies one `agent_ask_resolved` frame: retires the matching ask part,
+   * since its ask is no longer pending. Returns `false` when no part matched. */
+  function handleAskResolvedEvent(
+    data: AgentAskResolvedEvent['data']
+  ): boolean {
+    const parts = retireAskParts(message.parts, data.ask_id, {
+      answered: data.status === 'answered',
+      selected: data.selected ?? []
+    })
+    if (parts === message.parts) return false
+    message.parts = parts
+    return true
   }
 
   /** Applies one `agent_message_delta` frame: appends its delta to the open
@@ -450,8 +463,8 @@ export function createAgentEventTransport(
    * Applies one chat event to `message` by dispatching to the per-type
    * handler above, and reports whether `ingest` should emit a fresh
    * snapshot afterwards. Most event types always want a snapshot; a
-   * repeated `agent_active_tab` or a non-`run_approval` `agent_ask` is a
-   * no-op (mirroring their handlers' own `false` return), and
+   * repeated `agent_active_tab`, a redelivered `agent_ask` or an
+   * `agent_ask_resolved` for an ask this message does not hold is a no-op (mirroring their handlers' own `false` return), and
    * `agent_message_done` already emits via `settle()` so it says no too.
    */
   function applyChatEvent(event: AgentChatEvent): boolean {
@@ -472,8 +485,7 @@ export function createAgentEventTransport(
       case 'agent_ask':
         return handleAskEvent(event.data)
       case 'agent_ask_resolved':
-        handleAskResolvedEvent(event.data)
-        return true
+        return handleAskResolvedEvent(event.data)
       case 'agent_message_delta':
         handleMessageDeltaEvent(event.data)
         return true
@@ -507,11 +519,9 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  function dropAskPart(askId: string): void {
-    const parts = message.parts.filter(
-      (part) => part.type !== 'runApproval' || part.askId !== askId
-    )
-    if (parts.length === message.parts.length) return
+  function dropAskPart(askId: string, resolution?: AskUserResolution): void {
+    const parts = retireAskParts(message.parts, askId, resolution)
+    if (parts === message.parts) return
     message.parts = parts
     emit(snapshotMessage(message))
   }
