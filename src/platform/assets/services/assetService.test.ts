@@ -730,7 +730,6 @@ describe(assetService.getAssetModels, () => {
 
   it('resolves a legacy hierarchical category from its top-level bucket', async () => {
     vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
-    const category = 'LLM/checkpoints'
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -746,7 +745,7 @@ describe(assetService.getAssetModels, () => {
       ])
     )
 
-    const models = await assetService.getAssetModels(category)
+    const models = await assetService.getAssetModels('LLM/checkpoints')
 
     expect(models).toEqual([
       { name: 'chatglm3-checkpoint.safetensors', pathIndex: 0 }
