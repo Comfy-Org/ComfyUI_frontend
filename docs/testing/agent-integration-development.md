@@ -107,7 +107,8 @@ a build Air does not produce, or keep it alive across frontend restarts. Then Vi
 to be told where the agent published itself rather than handed a token:
 
 ```bash
-DEV_AGENT_URL=http://127.0.0.1:6286 DEV_AGENT_DATA_DIR=~/.comfy-agent \
+VITE_AGENT_STANDALONE=true DEV_AGENT_URL=http://127.0.0.1:6286 \
+  DEV_AGENT_DATA_DIR=~/.comfy-agent \
   pnpm dev --port 6207 --strictPort
 ```
 
