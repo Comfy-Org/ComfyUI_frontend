@@ -1,9 +1,12 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { AccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
 
-export interface AccountPreconditionContext {
+interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */
   nodeType?: string
+  source?: PaymentIntentSource
 }
 
 // Routes a resolved account precondition to its dedicated modal. This is the
@@ -24,13 +27,24 @@ export function useAccountPreconditionDialog() {
         )
         return
       case 'subscription':
-        void dialogService.showSubscriptionRequiredDialog()
-        return
-      case 'credits':
-        void dialogService.showTopUpCreditsDialog({
-          isInsufficientCredits: true
+        void dialogService.showSubscriptionRequiredDialog({
+          reason: context.source ?? 'subscription_required'
         })
         return
+      case 'credits': {
+        // The server just declared the balance exhausted; there is no push or
+        // polling for billing state, so refresh it here to converge
+        // hasFunds-keyed surfaces such as the credits-exhausted banner. The
+        // refresh is best-effort: allSettled keeps a flaky billing API from
+        // surfacing as unhandled rejections.
+        const { fetchStatus, fetchBalance } = useBillingContext()
+        void Promise.allSettled([fetchStatus(), fetchBalance()])
+        void dialogService.showTopUpCreditsDialog({
+          isInsufficientCredits: true,
+          ...(context.source && { source: context.source })
+        })
+        return
+      }
     }
   }
 

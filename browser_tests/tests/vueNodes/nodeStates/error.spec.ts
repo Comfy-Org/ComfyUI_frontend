@@ -5,16 +5,16 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
 import {
   cleanupFakeModel,
-  dismissErrorOverlay,
-  enableErrorsOverlay
+  dismissErrorOverlay
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   ExecutionHelper,
   buildKSamplerError
 } from '@e2e/fixtures/helpers/ExecutionHelper'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -22,6 +22,8 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const ERROR_CLASS = /ring-destructive-background/
+const WARNING_CLASS = /ring-warning-background/
+const SLOT_ERROR_CLASS = /before:ring-error/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
 const KSAMPLER_MODEL_INPUT_NAME = 'model'
@@ -59,12 +61,32 @@ async function selectLoadImageNodeForPaste(
   comfyPage: ComfyPage,
   loadImageId: string
 ): Promise<void> {
+  const localLoadImageId = toNodeId(loadImageId)
   await comfyPage.page.evaluate((nodeId) => {
-    const node = window.app!.graph.getNodeById(Number(nodeId))
+    const node = window.app!.graph.getNodeById(nodeId)
     if (!node) throw new Error(`Load Image node ${nodeId} not found`)
     window.app!.canvas.selectNode(node)
     window.app!.canvas.current_node = node
-  }, loadImageId)
+  }, localLoadImageId)
+}
+
+async function getInputSlotIndexByName(
+  comfyPage: ComfyPage,
+  nodeId: string,
+  inputName: string
+): Promise<number> {
+  return comfyPage.page.evaluate(
+    ({ inputName, nodeId }) => {
+      const graph = window.app!.canvas.graph ?? window.app!.graph
+      const node = graph.getNodeById(nodeId)
+      const index = node?.findInputSlot(inputName) ?? -1
+      if (index < 0) {
+        throw new Error(`Input slot "${inputName}" not found`)
+      }
+      return index
+    },
+    { inputName, nodeId: toNodeId(nodeId) }
+  )
 }
 
 async function setupLoadImageErrorScenario(comfyPage: ComfyPage) {
@@ -82,14 +104,14 @@ async function setupLoadImageErrorScenario(comfyPage: ComfyPage) {
 }
 
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
-  test('should display error state when node is missing (node from workflow is not installed)', async ({
+  test('should display warning state when node is missing (node from workflow is not installed)', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
     await expect(
       comfyPage.vueNodes.getNodeInnerWrapper(UNKNOWN_NODE_ID)
-    ).toHaveClass(ERROR_CLASS)
+    ).toHaveClass(WARNING_CLASS)
   })
 
   test('should display error state when node causes execution error', async ({
@@ -106,8 +128,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('validation errors', () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsOverlay(comfyPage)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 
@@ -137,17 +162,10 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       async ({ comfyPage }) => {
         const ksamplerId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
         const ksamplerNode = comfyPage.vueNodes.getNodeLocator(ksamplerId)
-        const modelInputIndex = await comfyPage.page.evaluate(
-          ({ nodeId, inputName }) => {
-            const node = window.app!.graph.getNodeById(nodeId)
-            const index =
-              node?.inputs?.findIndex((input) => input.name === inputName) ?? -1
-            if (index < 0) {
-              throw new Error(`Input slot "${inputName}" not found`)
-            }
-            return index
-          },
-          { nodeId: ksamplerId, inputName: KSAMPLER_MODEL_INPUT_NAME }
+        const modelInputIndex = await getInputSlotIndexByName(
+          comfyPage,
+          ksamplerId,
+          KSAMPLER_MODEL_INPUT_NAME
         )
         const modelInputSlotRow = comfyPage.vueNodes.getInputSlotRow(
           ksamplerId,
@@ -173,7 +191,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
         await expect(modelInputSlotRow).toBeVisible()
         await expect(modelInputSlotRow).toBeInViewport()
-        await expect(modelInputSlotHighlight).toHaveClass(/before:ring-error/)
+        await expect(modelInputSlotHighlight).toHaveClass(SLOT_ERROR_CLASS)
         await expect(
           comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
         ).toHaveClass(ERROR_CLASS)
@@ -320,12 +338,15 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('subgraph propagation', { tag: '@subgraph' }, () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsOverlay(comfyPage)
       await cleanupFakeModel(comfyPage)
     })
 
-    test('parent subgraph node shows error ring when an interior node is missing', async ({
+    test('parent subgraph node shows warning ring when an interior node is missing', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
@@ -335,10 +356,10 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
       await expect(
         comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
-      ).toHaveClass(ERROR_CLASS)
+      ).toHaveClass(WARNING_CLASS)
     })
 
-    test('parent subgraph node shows error ring when an interior node has a missing model', async ({
+    test('parent subgraph node shows warning ring when an interior node has a missing model', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
@@ -350,7 +371,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
       await expect(
         comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
-      ).toHaveClass(ERROR_CLASS)
+      ).toHaveClass(WARNING_CLASS)
     })
 
     test('parent subgraph node shows error ring when an interior node fails execution', async ({
@@ -370,11 +391,9 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
-      exec.executionError(
-        'mocked-prompt',
-        INNER_EXECUTION_ID,
-        'boom inside the subgraph'
-      )
+      const jobId = await exec.run()
+      await comfyPage.nextFrame()
+      exec.executionError(jobId, INNER_EXECUTION_ID, 'boom inside the subgraph')
 
       await expect(innerWrapper).toHaveClass(ERROR_CLASS)
     })
@@ -404,6 +423,77 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       await comfyPage.runButton.click()
 
       await expect(innerWrapper).toHaveClass(ERROR_CLASS)
+    })
+
+    test('boundary-linked validation error surfaces on the subgraph host', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      const subgraphParentId =
+        await comfyPage.vueNodes.getNodeIdByTitle('New Subgraph')
+      const innerWrapper =
+        comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
+      const hostInputIndex = await getInputSlotIndexByName(
+        comfyPage,
+        subgraphParentId,
+        'positive'
+      )
+      const hostInputSlotHighlight =
+        comfyPage.vueNodes.getInputSlotConnectionDot(
+          subgraphParentId,
+          hostInputIndex
+        )
+      await expect(
+        innerWrapper,
+        'subgraph host must mount before injecting validation errors'
+      ).toBeVisible()
+      await expect(
+        innerWrapper,
+        'subgraph host should start without an error ring'
+      ).not.toHaveClass(ERROR_CLASS)
+
+      await test.step('surface the boundary-linked error on the host', async () => {
+        const exec = new ExecutionHelper(comfyPage)
+        await exec.mockValidationFailure({
+          [INNER_EXECUTION_ID]: buildKSamplerError(
+            'required_input_missing',
+            'positive',
+            'Required input is missing: positive'
+          )
+        })
+        await comfyPage.runButton.click()
+        await dismissErrorOverlay(comfyPage)
+
+        await expect(innerWrapper).toHaveClass(ERROR_CLASS)
+        await expect(hostInputSlotHighlight).toHaveClass(SLOT_ERROR_CLASS)
+      })
+
+      await test.step('confirm the interior node does not show the surfaced ring', async () => {
+        await comfyPage.vueNodes.enterSubgraph(subgraphParentId)
+        await comfyPage.nextFrame()
+        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+        const interiorKSamplerId =
+          await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+        const interiorPositiveInputIndex = await getInputSlotIndexByName(
+          comfyPage,
+          interiorKSamplerId,
+          'positive'
+        )
+        const interiorPositiveSlotHighlight =
+          comfyPage.vueNodes.getInputSlotConnectionDot(
+            interiorKSamplerId,
+            interiorPositiveInputIndex
+          )
+        const interiorInnerWrapper =
+          comfyPage.vueNodes.getNodeInnerWrapper(interiorKSamplerId)
+
+        await expect(interiorInnerWrapper).toBeVisible()
+        await expect(interiorInnerWrapper).not.toHaveClass(ERROR_CLASS)
+        await expect(interiorPositiveSlotHighlight).toBeVisible()
+        await expect(interiorPositiveSlotHighlight).not.toHaveClass(
+          SLOT_ERROR_CLASS
+        )
+      })
     })
   })
 })

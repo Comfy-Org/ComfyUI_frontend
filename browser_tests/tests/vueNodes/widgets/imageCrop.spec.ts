@@ -5,6 +5,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
 
 type CropValue = { x: number; y: number; width: number; height: number } | null
 
@@ -15,6 +16,7 @@ async function getCropValue(
   comfyPage: ComfyPage,
   nodeId: number
 ): Promise<CropValue> {
+  const localNodeId = toNodeId(nodeId)
   return comfyPage.page.evaluate((id) => {
     const n = window.app!.graph.getNodeById(id)
     const w = n?.widgets?.find((x) => x.type === 'imagecrop')
@@ -34,7 +36,7 @@ async function getCropValue(
       }
     }
     return null
-  }, nodeId)
+  }, localNodeId)
 }
 
 async function setCropBounds(
@@ -42,6 +44,7 @@ async function setCropBounds(
   nodeId: number,
   bounds: { x: number; y: number; width: number; height: number }
 ) {
+  const localNodeId = toNodeId(nodeId)
   await comfyPage.page.evaluate(
     ({ id, b }) => {
       const n = window.app!.graph.getNodeById(id)
@@ -51,7 +54,7 @@ async function setCropBounds(
         w.callback?.(b)
       }
     },
-    { id: nodeId, b: bounds }
+    { id: localNodeId, b: bounds }
   )
   await comfyPage.nextFrame()
   await comfyPage.nextFrame()
@@ -115,10 +118,6 @@ async function dragOnLocator(
 }
 
 test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  })
-
   test.describe('without source image', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('widgets/image_crop_widget')
@@ -837,7 +836,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
             await route.abort('failed')
             return
           }
-          await route.continue()
+          await route.fallback()
         })
         try {
           failExamplePng = true
@@ -1204,20 +1203,19 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         await comfyPage.page.route('**/api/view**', async (route) => {
           const url = route.request().url()
           if (!url.includes('example.png')) {
-            await route.continue()
+            await route.fallback()
             return
           }
           await new Promise<void>((resolve) => {
             setTimeout(resolve, 500)
           })
-          await route.continue()
+          await route.fallback()
         })
 
         try {
           await comfyPage.workflow.loadWorkflow(
             'widgets/image_crop_with_source'
           )
-          await comfyPage.vueNodes.waitForNodes()
           const node = comfyPage.vueNodes.getNodeLocator('2')
           const runDone = comfyPage.runButton.click()
           await expect(

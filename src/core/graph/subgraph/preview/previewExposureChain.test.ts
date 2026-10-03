@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import type { PreviewExposureChainContext } from './previewExposureChain'
@@ -13,7 +15,7 @@ interface FixtureExposure extends PreviewExposure {}
 
 interface NestedHostMapping {
   fromHostLocator: string
-  fromSourceNodeId: string
+  fromSourceNodeId: NodeId
   toRootGraphId: UUID
   toHostLocator: string
 }
@@ -66,7 +68,7 @@ describe(resolvePreviewExposureChain, () => {
         [
           {
             name: 'preview',
-            sourceNodeId: '42',
+            sourceNodeId: toNodeId('42'),
             sourcePreviewName: '$$canvas-image-preview'
           }
         ]
@@ -88,14 +90,14 @@ describe(resolvePreviewExposureChain, () => {
           hostNodeLocator: 'host-a',
           exposure: {
             name: 'preview',
-            sourceNodeId: '42',
+            sourceNodeId: toNodeId('42'),
             sourcePreviewName: '$$canvas-image-preview'
           }
         }
       ],
       leaf: {
         rootGraphId: rootGraphA,
-        sourceNodeId: '42',
+        sourceNodeId: toNodeId('42'),
         sourcePreviewName: '$$canvas-image-preview'
       }
     })
@@ -108,7 +110,7 @@ describe(resolvePreviewExposureChain, () => {
         [
           {
             name: 'outer-preview',
-            sourceNodeId: '99',
+            sourceNodeId: toNodeId('99'),
             sourcePreviewName: 'inner-preview'
           }
         ]
@@ -118,7 +120,7 @@ describe(resolvePreviewExposureChain, () => {
         [
           {
             name: 'inner-preview',
-            sourceNodeId: 'leaf-node',
+            sourceNodeId: toNodeId('leaf-node'),
             sourcePreviewName: '$$canvas-image-preview'
           }
         ]
@@ -127,7 +129,7 @@ describe(resolvePreviewExposureChain, () => {
     const ctx = makeContext(exposureMap, [
       {
         fromHostLocator: 'host-outer',
-        fromSourceNodeId: '99',
+        fromSourceNodeId: toNodeId('99'),
         toRootGraphId: rootGraphA,
         toHostLocator: 'host-inner'
       }
@@ -145,7 +147,7 @@ describe(resolvePreviewExposureChain, () => {
     expect(result?.steps[1].hostNodeLocator).toBe('host-inner')
     expect(result?.leaf).toEqual({
       rootGraphId: rootGraphA,
-      sourceNodeId: 'leaf-node',
+      sourceNodeId: toNodeId('leaf-node'),
       sourcePreviewName: '$$canvas-image-preview'
     })
   })
@@ -157,7 +159,7 @@ describe(resolvePreviewExposureChain, () => {
         [
           {
             name: 'p1',
-            sourceNodeId: 'sub-a',
+            sourceNodeId: toNodeId('sub-a'),
             sourcePreviewName: 'p2'
           }
         ]
@@ -167,7 +169,7 @@ describe(resolvePreviewExposureChain, () => {
         [
           {
             name: 'p2',
-            sourceNodeId: 'sub-b',
+            sourceNodeId: toNodeId('sub-b'),
             sourcePreviewName: 'p3'
           }
         ]
@@ -177,7 +179,7 @@ describe(resolvePreviewExposureChain, () => {
         [
           {
             name: 'p3',
-            sourceNodeId: 'leaf',
+            sourceNodeId: toNodeId('leaf'),
             sourcePreviewName: '$$canvas-image-preview'
           }
         ]
@@ -186,13 +188,13 @@ describe(resolvePreviewExposureChain, () => {
     const ctx = makeContext(exposureMap, [
       {
         fromHostLocator: 'host-1',
-        fromSourceNodeId: 'sub-a',
+        fromSourceNodeId: toNodeId('sub-a'),
         toRootGraphId: rootGraphA,
         toHostLocator: 'host-2'
       },
       {
         fromHostLocator: 'host-2',
-        fromSourceNodeId: 'sub-b',
+        fromSourceNodeId: toNodeId('sub-b'),
         toRootGraphId: rootGraphB,
         toHostLocator: 'host-3'
       }
@@ -208,7 +210,7 @@ describe(resolvePreviewExposureChain, () => {
     ])
     expect(result?.leaf).toEqual({
       rootGraphId: rootGraphB,
-      sourceNodeId: 'leaf',
+      sourceNodeId: toNodeId('leaf'),
       sourcePreviewName: '$$canvas-image-preview'
     })
   })
@@ -220,7 +222,7 @@ describe(resolvePreviewExposureChain, () => {
         [
           {
             name: 'outer',
-            sourceNodeId: '99',
+            sourceNodeId: toNodeId('99'),
             sourcePreviewName: 'missing-on-inner'
           }
         ]
@@ -230,7 +232,7 @@ describe(resolvePreviewExposureChain, () => {
     const ctx = makeContext(exposureMap, [
       {
         fromHostLocator: 'host-outer',
-        fromSourceNodeId: '99',
+        fromSourceNodeId: toNodeId('99'),
         toRootGraphId: rootGraphA,
         toHostLocator: 'host-inner'
       }
@@ -246,7 +248,7 @@ describe(resolvePreviewExposureChain, () => {
     expect(result?.steps).toHaveLength(1)
     expect(result?.leaf).toEqual({
       rootGraphId: rootGraphA,
-      sourceNodeId: '99',
+      sourceNodeId: toNodeId('99'),
       sourcePreviewName: 'missing-on-inner'
     })
   })
@@ -255,13 +257,19 @@ describe(resolvePreviewExposureChain, () => {
     const exposureMap = new Map<string, FixtureExposure[]>([
       [
         `${rootGraphA}|host-a`,
-        [{ name: 'cyclic', sourceNodeId: 'sub', sourcePreviewName: 'cyclic' }]
+        [
+          {
+            name: 'cyclic',
+            sourceNodeId: toNodeId('sub'),
+            sourcePreviewName: 'cyclic'
+          }
+        ]
       ]
     ])
     const ctx = makeContext(exposureMap, [
       {
         fromHostLocator: 'host-a',
-        fromSourceNodeId: 'sub',
+        fromSourceNodeId: toNodeId('sub'),
         toRootGraphId: rootGraphA,
         toHostLocator: 'host-a'
       }
@@ -278,6 +286,6 @@ describe(resolvePreviewExposureChain, () => {
       expect.stringContaining('cycle detected')
     )
     expect(result?.steps).toHaveLength(1)
-    expect(result?.leaf.sourceNodeId).toBe('sub')
+    expect(result?.leaf.sourceNodeId).toBe(toNodeId('sub'))
   })
 })

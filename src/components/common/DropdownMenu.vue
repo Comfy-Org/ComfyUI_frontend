@@ -7,21 +7,27 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, toValue } from 'vue'
+import { computed, ref, toValue } from 'vue'
 
 import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { ButtonVariants } from '../ui/button/button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 
 defineOptions({
   inheritAttrs: false
 })
 
-const { itemClass: itemProp, contentClass: contentProp } = defineProps<{
+const {
+  itemClass: itemProp,
+  contentClass: contentProp,
+  modal = true
+} = defineProps<{
   entries?: MenuItem[]
   icon?: string
   to?: string | HTMLElement
+  modal?: boolean
   itemClass?: string
   contentClass?: string
   buttonSize?: ButtonVariants['size']
@@ -37,14 +43,17 @@ const itemClass = computed(() =>
 
 const contentClass = computed(() =>
   cn(
-    'data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade z-1700 min-w-[220px] rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[opacity,transform]',
+    'z-1700 min-w-55 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[opacity,transform] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
     contentProp
   )
 )
+
+const open = ref(false)
+const contentStyle = useModalLiftedZIndex(open)
 </script>
 
 <template>
-  <DropdownMenuRoot>
+  <DropdownMenuRoot v-model:open="open" :modal>
     <DropdownMenuTrigger as-child>
       <slot name="button">
         <Button :size="buttonSize ?? 'icon'" :class="buttonClass">
@@ -60,6 +69,7 @@ const contentClass = computed(() =>
         :collision-padding="10"
         v-bind="$attrs"
         :class="contentClass"
+        :style="contentStyle"
       >
         <slot :item-class>
           <DropdownItem
@@ -67,6 +77,7 @@ const contentClass = computed(() =>
             :key="toValue(item.label) ?? index"
             :item-class
             :content-class
+            :content-style
             :item
           />
         </slot>

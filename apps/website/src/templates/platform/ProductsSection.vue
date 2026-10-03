@@ -1,0 +1,142 @@
+<script setup lang="ts">
+import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
+import { brandButtonVariants } from '../../components/common/brandButton.variants'
+import { getRoutes } from '../../config/routes'
+import type { Locale } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
+import BuilderVisual from './BuilderVisual.vue'
+import CodeTabs from './CodeTabs.vue'
+import { modelsApiCodeTabs } from './codeSamples'
+import ServerlessJsonApiGpuAnimation from './ServerlessJsonApiGpuAnimation.vue'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
+
+const routes = getRoutes(locale)
+
+const modelsTabs = modelsApiCodeTabs
+</script>
+
+<template>
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
+    <!-- Comfy API: the headline product, full width -->
+    <article
+      id="serverless"
+      class="group relative grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl border border-transparent bg-transparency-white-t4 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
+    >
+      <a
+        :href="routes.platformComfyApi"
+        :aria-label="t('platform.products.serverless.title')"
+        class="absolute inset-0 z-0 rounded-4xl"
+      ></a>
+      <div class="pointer-events-none relative z-10">
+        <h3
+          class="flex items-center gap-2.5 text-lg font-normal text-primary-warm-white lg:text-xl"
+        >
+          <span class="sr-only">
+            {{ t('platform.products.serverless.title') }}
+          </span>
+          <ProductHeroBadge
+            :text="t('platform.products.serverless.badgeLabel')"
+            compact
+            :show-connector="false"
+            aria-hidden="true"
+          />
+        </h3>
+        <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
+          {{ t('platform.products.serverless.description') }}
+        </p>
+        <div class="mt-8">
+          <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
+            <span class="inline-block uppercase">
+              {{ t('platform.hero.getStarted') }}
+            </span>
+          </span>
+        </div>
+      </div>
+      <ServerlessJsonApiGpuAnimation
+        class="pointer-events-none relative z-10"
+        :locale
+        compact
+      />
+    </article>
+
+    <!-- Models API and Builder, side by side -->
+    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <article
+        id="models"
+        class="group relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent bg-transparency-white-t4 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+      >
+        <a
+          :href="routes.platformRouter"
+          :aria-label="t('platform.products.models.title')"
+          class="absolute inset-0 z-0 rounded-4xl"
+        ></a>
+        <h3 class="sr-only">
+          {{ t('platform.products.models.title') }}
+        </h3>
+        <div
+          class="pointer-events-none relative z-10 flex w-fit items-center gap-2"
+          aria-hidden="true"
+        >
+          <ProductHeroBadge
+            :text="t('platform.products.models.badgeLabel')"
+            :show-connector="false"
+            compact
+          />
+        </div>
+        <p
+          class="pointer-events-none relative z-10 mt-3 text-sm/relaxed font-light text-primary-comfy-canvas"
+        >
+          {{ t('platform.products.models.description') }}
+        </p>
+        <div class="relative z-10 mt-6">
+          <CodeTabs
+            :tabs="modelsTabs"
+            :label="t('platform.products.models.title')"
+          />
+        </div>
+        <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
+          <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
+            <span class="inline-block uppercase">
+              {{ t('platform.products.models.learnMore') }}
+            </span>
+          </span>
+        </div>
+      </article>
+
+      <article
+        id="builder"
+        class="group/builder relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent bg-transparency-white-t4 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+      >
+        <a
+          :href="routes.platformBuilder"
+          :aria-label="t('platform.products.builder.title')"
+          class="absolute inset-0 rounded-4xl"
+        ></a>
+        <h3 class="sr-only">
+          {{ t('platform.products.builder.title') }}
+        </h3>
+        <ProductHeroBadge
+          :text="t('platform.products.builder.title').toUpperCase()"
+          :show-logo="false"
+          compact
+          aria-hidden="true"
+        />
+        <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
+          {{ t('platform.products.builder.description') }}
+        </p>
+        <div class="mt-6 flex-1">
+          <BuilderVisual />
+        </div>
+        <div class="pointer-events-none relative z-10 mt-auto self-start pt-6">
+          <span :class="brandButtonVariants({ variant: 'solid', size: 'sm' })">
+            <span class="inline-block uppercase">
+              {{ t('platform.hero.getStarted') }}
+            </span>
+          </span>
+        </div>
+      </article>
+    </div>
+  </section>
+</template>

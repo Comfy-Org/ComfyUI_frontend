@@ -1,17 +1,73 @@
-import { shallowReactive } from 'vue'
+import { computed, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 import { widgetId } from '@/types/widgetId'
 
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
   applyFirstWidgetValueToGraph(this, extraLinks)
+}
+
+/**
+ * `node.resolveInput` only exists on the `ExecutableNodeDTO` used while
+ * building the API prompt (see `executionUtil.ts`), not on `LGraphNode`
+ * itself. Prompt serialization is the only place that can resolve a
+ * promoted widget's per-host value, so this is a runtime duck-type check
+ * rather than a static one.
+ */
+type LinkedInputResolver = {
+  resolveInput: (
+    slot: number
+  ) => { widgetInfo?: { value: unknown } } | undefined
+}
+
+function hasLinkedInputResolver(
+  node: LGraphNode
+): node is LGraphNode & LinkedInputResolver {
+  return (
+    typeof (node as Partial<LinkedInputResolver>).resolveInput === 'function'
+  )
+}
+
+/**
+ * Resolves the choice widget's current effective value.
+ *
+ * Per ADR-SUBGRAPH-PROMOTION-0009, a promoted widget's host value is not mirrored back onto
+ * the interior widget, so `comboWidget.value` is only accurate when
+ * `choice` hasn't been converted to a linked subgraph input. When it has,
+ * the live value must be resolved the same way prompt serialization
+ * resolves any other linked widget input: `resolverNode` is the
+ * execution-scoped node passed into `serializeValue`, which is what's
+ * actually able to walk the link to the promoted host value.
+ */
+function resolveChoiceValue(
+  interiorNode: LGraphNode,
+  comboWidget: IBaseWidget,
+  resolverNode: LGraphNode = interiorNode
+) {
+  const choiceInputIndex = interiorNode.inputs.findIndex(
+    (input) => input.widget?.name === comboWidget.name
+  )
+  if (choiceInputIndex < 0 || !hasLinkedInputResolver(resolverNode)) {
+    return comboWidget.value
+  }
+
+  const resolved = resolverNode.resolveInput(choiceInputIndex)
+  // `resolved.widgetInfo` is only set when the link resolves back to a
+  // promoted widget. When `choice` is linked to a real node's output
+  // instead, there is no widget to read a value from here -- resolving that
+  // upstream execution-time value is out of scope for this fix, so this
+  // falls back to the (possibly stale) interior widget value.
+  return resolved?.widgetInfo ? resolved.widgetInfo.value : comboWidget.value
 }
 
 function onCustomComboCreated(this: LGraphNode) {
@@ -31,7 +87,7 @@ function onCustomComboCreated(this: LGraphNode) {
     )
     if (app.configuringGraph || !this.graph) return
     if (values.includes(`${comboWidget.value}`)) return
-    comboWidget.value = values[0] ?? ''
+    comboWidget.value = values.at(0) ?? ''
     comboWidget.callback?.(comboWidget.value)
   }
   comboWidget.callback = useChainCallback(comboWidget.callback, () =>
@@ -46,7 +102,6 @@ function onCustomComboCreated(this: LGraphNode) {
     const newCount = node.widgets.length - 1
     const widgetName = `option${newCount}`
     const widget = node.addWidget('string', widgetName, '', () => {})
-    if (!widget) return
     let localValue = `${widget.value ?? ''}`
 
     Object.defineProperty(widget, 'value', {
@@ -86,11 +141,41 @@ function onCustomComboCreated(this: LGraphNode) {
     },
     set value(_) {},
     draw: () => undefined,
-    computeSize: () => [0, -4],
-    options: { hidden: true },
-    y: 0
+    hidden: true,
+    options: {},
+    y: 0,
+    serializeValue: (resolverNode: LGraphNode, _index: number) =>
+      widgets
+        .slice(2)
+        .findIndex(
+          (w) => w.value === resolveChoiceValue(this, comboWidget, resolverNode)
+        )
   })
   addOption(this)
+}
+
+class StubWidget<T extends WidgetValue> extends BaseWidget {
+  override serialize = true
+  constructor(
+    node: LGraphNode,
+    name: string,
+    protected valueGetter: () => T
+  ) {
+    super({ name, node, options: {}, type: 'hidden', y: 0 })
+  }
+  drawWidget() {}
+  onClick() {}
+  override get value(): T {
+    return this.valueGetter()
+  }
+  override set value(_: T) {}
+}
+function connectedInputsFor(node: LGraphNode, prefix: string = 'autogrow.') {
+  return computed(() =>
+    node.inputs
+      .filter((input) => input.name.startsWith(prefix) && input.link)
+      .map((input) => input.label ?? input.localized_name ?? input.name)
+  )
 }
 
 function onCustomIntCreated(this: LGraphNode) {
@@ -191,20 +276,35 @@ function onCustomFloatCreated(this: LGraphNode) {
 app.registerExtension({
   name: 'Comfy.CustomWidgets',
   beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
-    if (nodeData?.name === 'CustomCombo')
+    if (nodeData.name === 'CustomCombo')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomComboCreated
       )
-    else if (nodeData?.name === 'PrimitiveInt')
+    else if (nodeData.name === 'PrimitiveInt')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomIntCreated
       )
-    else if (nodeData?.name === 'PrimitiveFloat')
+    else if (nodeData.name === 'PrimitiveFloat')
       nodeType.prototype.onNodeCreated = useChainCallback(
         nodeType.prototype.onNodeCreated,
         onCustomFloatCreated
       )
+  },
+  getCustomWidgets() {
+    return {
+      COMFY_BRANCH_INPUT_NAMES: function (node, inputName) {
+        const connectedInputs = connectedInputsFor(node)
+        const values = () => connectedInputs.value
+        node.addCustomWidget(new StubWidget<string[]>(node, inputName, values))
+      },
+      COMFY_BRANCH_SELECTOR: function (node, inputName) {
+        const connectedInputs = connectedInputsFor(node)
+        const values = () => connectedInputs.value
+        const startValue = connectedInputs.value[0] ?? ''
+        node.addWidget('combo', inputName, startValue, () => {}, { values })
+      }
+    }
   }
 })

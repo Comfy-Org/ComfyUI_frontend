@@ -4,7 +4,7 @@
   >
     <div class="flex items-center gap-2">
       <div class="flex flex-1 items-center gap-2 break-all">
-        <span v-html="formattedText"></span>
+        <SanitizedHtml as="span" :html="formattedText" />
         <Skeleton v-if="isParentNodeExecuting" class="h-4! flex-1!" />
       </div>
     </div>
@@ -14,11 +14,13 @@
 <script setup lang="ts">
 import { default as DOMPurify } from 'dompurify'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, watch } from 'vue'
+import { computed } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { useExecutionStore } from '@/stores/executionStore'
+import type { NodeId } from '@/types/nodeId'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
+import { escapeHtml } from '@/utils/htmlEscape'
 
 const modelValue = defineModel<string>({ required: true })
 const props = defineProps<{
@@ -28,8 +30,7 @@ const props = defineProps<{
 const executionStore = useExecutionStore()
 const isParentNodeExecuting = computed(() => {
   if (executionStore.isIdle) return false
-  if (!parentNodeId) return executionStore.executingNodeIds.length > 0
-  return executionStore.executingNodeIds.includes(parentNodeId)
+  return executionStore.executingNodeIds.includes(props.nodeId)
 })
 const formattedText = computed(() => {
   const src = modelValue.value
@@ -43,14 +44,19 @@ const formattedText = computed(() => {
     }
   )
 
-  // Keep current behavior (auto-link bare URLs + \n -> <br>)
-  let html = nl2br(linkifyHtml(holed))
+  // Escape HTML-significant characters BEFORE linkifying so bracket-delimited
+  // text that looks like a tag (e.g. `<lora:my_style_v2:0.8>`) displays
+  // literally instead of being parsed as markup and dropped. linkifyHtml only
+  // matches http(s)/ftp/file/www URLs, none of which contain the escaped
+  // entities, so escaping first doesn't stop real URLs from being linkified.
+  // Keep current behavior otherwise (auto-link bare URLs + \n -> <br>).
+  let html = nl2br(linkifyHtml(escapeHtml(holed)))
 
-  // Restore placeholders as <a>...</a> (minimal escaping + http default)
+  // Restore placeholders as <a>...</a> (escape label/url for safety)
   html = html.replace(/__LNK(\d+)__/g, (_m, i) => {
     const { label, url } = tokens[+i]
-    const safeHref = url.replace(/"/g, '&quot;')
-    const safeLabel = label.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const safeHref = escapeHtml(url)
+    const safeLabel = escapeHtml(label)
     return /^https?:\/\//i.test(url)
       ? `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`
       : safeLabel
@@ -64,19 +70,4 @@ const formattedText = computed(() => {
     ALLOWED_ATTR: ['href', 'target', 'rel']
   })
 })
-
-let parentNodeId: NodeId | null = null
-onMounted(() => {
-  // Get the parent node ID from props if provided
-  // For backward compatibility, fall back to the first executing node
-  parentNodeId = props.nodeId ?? parentNodeId
-})
-
-// Lazily adopt the first executing node as the parent when no nodeId is known.
-watch(
-  () => executionStore.executingNodeIds,
-  (ids) => {
-    if (!parentNodeId && ids.length > 0) parentNodeId = ids[0]
-  }
-)
 </script>

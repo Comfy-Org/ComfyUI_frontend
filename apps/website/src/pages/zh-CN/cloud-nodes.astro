@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import HeroSection from '../../templates/cloud-nodes/HeroSection.vue'
+import SetupSection from '../../templates/cloud-nodes/SetupSection.vue'
+import ModelsSection from '../../templates/cloud-nodes/ModelsSection.vue'
+import HowItWorksSection from '../../templates/cloud-nodes/HowItWorksSection.vue'
+import WhySection from '../../templates/cloud-nodes/WhySection.vue'
+import FAQSection from '../../templates/cloud-nodes/FAQSection.vue'
+import ClosingCtaSection from '../../templates/cloud-nodes/ClosingCtaSection.vue'
+import { absoluteUrl } from '../../utils/jsonLd'
+---
+
+<BaseLayout
+  title={Astro.locals.t('cloudNodesLaunch.meta.title')}
+  description={Astro.locals.t('cloudNodesLaunch.meta.description')}
+  breadcrumbs={[
+    {
+      name: Astro.locals.t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, '/')
+    },
+    { name: Astro.locals.t('breadcrumb.cloudNodes') }
+  ]}
+>
+  <HeroSection locale="zh-CN" client:load />
+  <SetupSection locale="zh-CN" />
+  <ModelsSection locale="zh-CN" client:visible />
+  <HowItWorksSection locale="zh-CN" />
+  <WhySection locale="zh-CN" />
+  <ProductCardsSection
+    locale="zh-CN"
+    label-key="products.labelProducts"
+    cta-variant="underlineLink"
+  />
+  <FAQSection client:visible locale="zh-CN" />
+  <ClosingCtaSection locale="zh-CN" />
+</BaseLayout>

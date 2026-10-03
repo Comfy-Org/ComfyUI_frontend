@@ -26,7 +26,7 @@ export function useShareDialog() {
     if (!wf) return share()
 
     const isAppDefault = wf.initialMode === 'app'
-    const linearData = wf.changeTracker?.activeState?.extra?.linearData
+    const linearData = wf.changeTracker.activeState.extra?.linearData
     const { outputs } = pruneLinearData(linearData)
 
     if (isAppDefault && outputs.length === 0) {
@@ -66,11 +66,8 @@ export function useShareDialog() {
         onClose: hide
       },
       dialogComponentProps: {
-        pt: {
-          root: {
-            class: 'rounded-2xl overflow-hidden w-full sm:w-144 max-w-full'
-          }
-        }
+        contentClass:
+          'sm:max-w-[min(36rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden'
       }
     })
   }

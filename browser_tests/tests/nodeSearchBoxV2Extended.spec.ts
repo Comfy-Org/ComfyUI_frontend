@@ -1,3 +1,6 @@
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -5,8 +8,11 @@ import {
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 
 test.describe('Node search box V2 extended', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.searchBoxV2.setup()
+  test.use({
+    initialSettings: {
+      'Comfy.LinkRelease.Action': 'search box',
+      'Comfy.LinkRelease.ActionShift': 'search box'
+    }
   })
 
   test('Double-click on empty canvas opens search', async ({ comfyPage }) => {
@@ -57,11 +63,12 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      await searchBoxV2.categoryButton('sampling').click()
+      await searchBoxV2.categoryButton('model').click()
+      await searchBoxV2.categoryButton('model/sampling').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
       const samplingResults = await searchBoxV2.results.allTextContents()
 
-      await searchBoxV2.categoryButton('loaders').click()
+      await searchBoxV2.categoryButton('model/loaders').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
       await expect
         .poll(() => searchBoxV2.results.allTextContents())
@@ -139,7 +146,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const newNode = refsAfter.find((n) => !idsBefore.has(n.id))
       expect(newNode, 'expected a new CLIPTextEncode node').toBeDefined()
       const clipInput = await newNode!.getInput(0)
-      await expect.poll(() => clipInput.getLinkCount()).toBe(1)
+      await clipInput.expectLinkCount(1)
     })
   })
 
@@ -205,8 +212,8 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await expect(searchBoxV2.results.first()).toBeVisible()
       const comfyCount = await searchBoxV2.results.count()
 
-      // Under root filter, categories are prefixed (e.g. comfy/sampling).
-      await searchBoxV2.categoryButton('comfy/sampling').click()
+      // Under root filter, categories are prefixed (e.g. comfy/model).
+      await searchBoxV2.categoryButton('comfy/model').click()
       await expect
         .poll(() => searchBoxV2.results.count())
         .toBeLessThan(comfyCount)
@@ -219,8 +226,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      const samplingBtn = searchBoxV2.categoryButton('sampling')
-      const subcategory = searchBoxV2.categoryButton('sampling/custom_sampling')
+      await searchBoxV2.categoryButton('model').click()
+      const samplingBtn = searchBoxV2.categoryButton('model/sampling')
+      const subcategory = searchBoxV2.categoryButton('model/sampling/custom')
 
       await test.step('Expanding sampling reveals its subcategories', async () => {
         await samplingBtn.click()
@@ -238,11 +246,12 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      await searchBoxV2.categoryButton('sampling').click()
+      await searchBoxV2.categoryButton('model').click()
+      await searchBoxV2.categoryButton('model/sampling').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
       const parentCount = await searchBoxV2.results.count()
 
-      const subcategory = searchBoxV2.categoryButton('sampling/custom_sampling')
+      const subcategory = searchBoxV2.categoryButton('model/sampling/custom')
       await expect(subcategory).toBeVisible()
       await subcategory.click()
 
@@ -258,7 +267,8 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await expect(searchBoxV2.results.first()).toBeVisible()
       const defaultCount = await searchBoxV2.results.count()
 
-      await searchBoxV2.categoryButton('sampling').click()
+      await searchBoxV2.categoryButton('model').click()
+      await searchBoxV2.categoryButton('model/sampling').click()
       await expect
         .poll(() => searchBoxV2.results.count())
         .not.toBe(defaultCount)
@@ -316,11 +326,13 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       await searchBoxV2.open()
 
-      await searchBoxV2.input.fill('S')
+      // The result list caps at 64, so a one- or two-letter query saturates it
+      // and narrowing is invisible. Start below the cap.
+      await searchBoxV2.input.fill('Sam')
       await expect(searchBoxV2.results.first()).toBeVisible()
       const count1 = await getCount()
 
-      await searchBoxV2.input.fill('Sa')
+      await searchBoxV2.input.fill('Sampl')
       await expect.poll(getCount).toBeLessThan(count1)
       const count2 = await getCount()
 
@@ -395,6 +407,118 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await expect(
         comfyPage.page.locator('[data-node-id][data-ghost]')
       ).toHaveCount(0)
+    })
+  })
+
+  test.describe('Nested dynamic input types', () => {
+    test('Input filter surfaces a type nested in a DynamicCombo option', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await searchBoxV2.open()
+      await searchBoxV2.input.fill('Dynamic Combo')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+
+      await searchBoxV2.applyTypeFilter('input', 'IMAGE')
+
+      await expect(
+        searchBoxV2.results.filter({ hasText: 'Node With Dynamic Combo' })
+      ).toHaveCount(1)
+    })
+
+    test('Input filter surfaces a type nested three levels deep', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await searchBoxV2.open()
+      await searchBoxV2.input.fill('Dynamic Combo')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+
+      await searchBoxV2.applyTypeFilter('input', 'MASK')
+
+      await expect(
+        searchBoxV2.results.filter({ hasText: 'Node With Dynamic Combo' })
+      ).toHaveCount(1)
+    })
+
+    for (const side of ['input', 'output'] as const) {
+      test(`Dynamic control wrappers are not offered as ${side} filter values`, async ({
+        comfyPage
+      }) => {
+        const { searchBoxV2 } = comfyPage
+
+        await searchBoxV2.open()
+        await searchBoxV2.typeFilterButton(side).click()
+        await searchBoxV2.filterOptions.first().waitFor({ state: 'visible' })
+
+        const offered = await searchBoxV2.filterOptions.allTextContents()
+        expect(offered.length).toBeGreaterThan(0)
+        expect(offered.filter((t) => /COMFY_\w+_V3/.test(t))).toEqual([])
+      })
+    }
+
+    /** Drag the default graph's existing IMAGE link (VAE Decode -> Save Image)
+     * off its input and release it on empty canvas. */
+    async function releaseImageLinkOnCanvas(comfyPage: ComfyPage) {
+      // The default graph is wider than the viewport; fit it so the Save Image
+      // input is actually on screen before dragging from it.
+      await fitToViewInstant(comfyPage)
+
+      const saveImage = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
+      )[0]
+      const imageInput = await saveImage.getInput(0)
+
+      await comfyPage.canvasOps.dragAndDrop(
+        await imageInput.getPosition(),
+        DefaultGraphPositions.emptySpace
+      )
+    }
+
+    /** Whether the node has a connected socket of `type`, whatever its index. */
+    async function hasConnectedInputOfType(
+      node: Awaited<ReturnType<typeof dynamicComboNode>>,
+      type: string
+    ) {
+      return await node.comfyPage.page.evaluate(
+        ([nodeId, type]) => {
+          const graphNode = window.app!.canvas.graph!.getNodeById(nodeId)
+          if (!graphNode) throw new Error(`Node ${nodeId} not found`)
+          return graphNode.findInputByType(type)?.slot.link != null
+        },
+        [node.id, type] as const
+      )
+    }
+
+    async function dynamicComboNode(comfyPage: ComfyPage) {
+      const [node] = await comfyPage.nodeOps.getNodeRefsByType(
+        'DevToolsNodeWithDynamicCombo'
+      )
+      return node
+    }
+
+    test('Link release via the search box connects through a combo option', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await releaseImageLinkOnCanvas(comfyPage)
+
+      await expect(searchBoxV2.dialog).toBeVisible()
+      await searchBoxV2.input.fill('Dynamic Combo')
+      await expect(searchBoxV2.results.first()).toBeVisible()
+      await searchBoxV2.results.first().click()
+      await expect(searchBoxV2.dialog).toBeHidden()
+
+      const target = await dynamicComboNode(comfyPage)
+      const combo = await target.getWidgetByName('combo')
+
+      // IMAGE lives under option3, which is not the default selection, so the
+      // node only has an IMAGE socket if the reveal ran.
+      expect(await combo.getValue()).toBe('option3')
+      expect(await hasConnectedInputOfType(target, 'IMAGE')).toBe(true)
     })
   })
 })

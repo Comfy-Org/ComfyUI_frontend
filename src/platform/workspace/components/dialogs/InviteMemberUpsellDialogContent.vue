@@ -8,13 +8,13 @@
     >
       <h2 class="m-0 text-sm font-normal text-base-foreground">
         {{
-          isActiveSubscription
+          canAccessSubscriptionFeatures
             ? $t('workspacePanel.inviteUpsellDialog.titleSingleSeat')
             : $t('workspacePanel.inviteUpsellDialog.titleNotSubscribed')
         }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onDismiss"
       >
@@ -26,7 +26,7 @@
     <div class="flex flex-col gap-4 p-4">
       <p class="m-0 text-sm text-muted-foreground">
         {{
-          isActiveSubscription
+          canAccessSubscriptionFeatures
             ? $t('workspacePanel.inviteUpsellDialog.messageSingleSeat')
             : $t('workspacePanel.inviteUpsellDialog.messageNotSubscribed')
         }}
@@ -39,11 +39,7 @@
         {{ $t('g.cancel') }}
       </Button>
       <Button variant="primary" size="lg" @click="onUpgrade">
-        {{
-          isActiveSubscription
-            ? $t('workspacePanel.inviteUpsellDialog.upgradeToCreator')
-            : $t('workspacePanel.inviteUpsellDialog.viewPlans')
-        }}
+        {{ $t('workspacePanel.inviteUpsellDialog.upgradeToTeam') }}
       </Button>
     </div>
   </div>
@@ -52,10 +48,12 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const { isActiveSubscription, showSubscriptionDialog } = useBillingContext()
+const { canAccessSubscriptionFeatures } = useBillingContext()
+const subscriptionDialog = useSubscriptionDialog()
 
 function onDismiss() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })
@@ -63,6 +61,9 @@ function onDismiss() {
 
 function onUpgrade() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })
-  showSubscriptionDialog()
+  subscriptionDialog.show({
+    planMode: 'team',
+    reason: 'invite_member_upsell'
+  })
 }
 </script>

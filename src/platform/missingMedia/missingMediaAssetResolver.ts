@@ -1,6 +1,6 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import { isCloud } from '@/platform/distribution/types'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -16,14 +16,16 @@ interface MediaPathDetectionOptions {
 }
 
 export interface MissingMediaAssetSources {
-  inputAssets: AssetItem[]
-  generatedAssets: AssetItem[]
+  inputAssets: readonly AssetItem[]
+  generatedAssets: readonly AssetItem[]
 }
 
 export interface ResolveMissingMediaAssetSourcesOptions {
   signal?: AbortSignal
+  isCloud: boolean
   includeGeneratedAssets: boolean
   generatedMatchNames: ReadonlySet<string>
+  generatedHashRequiredNames?: ReadonlySet<string>
   allowCompactSuffix: boolean
 }
 
@@ -33,8 +35,10 @@ export type MissingMediaAssetResolver = (
 
 export async function resolveMissingMediaAssetSources({
   signal,
+  isCloud,
   includeGeneratedAssets,
   generatedMatchNames,
+  generatedHashRequiredNames = new Set<string>(),
   allowCompactSuffix
 }: ResolveMissingMediaAssetSourcesOptions): Promise<MissingMediaAssetSources> {
   const pathOptions = { allowCompactSuffix }
@@ -48,71 +52,61 @@ export async function resolveMissingMediaAssetSources({
   }
 
   try {
-    // Input assets (`/api/assets`) and generated assets (Cloud asset API or
-    // OSS `/history`) are independent oracles. Use `allSettled` so a failure
-    // in one — e.g. `/api/assets` 404 on a pre-BE-786 OSS instance, or zod
-    // schema skew during a BE-934 partial deploy — doesn't take down the
-    // other path. Each branch soft-degrades to an empty list; the caller
-    // then marks affected candidates missing instead of swallowing the
-    // whole verification with a toast.
     const [inputResult, generatedResult] = await Promise.allSettled([
-      assetService.getInputAssetsIncludingPublic(controller.signal),
+      useFeatureFlags().flags.assetsEnabled
+        ? assetService.getAllAssetsByTag('input', true, {
+            signal: controller.signal
+          })
+        : Promise.resolve<AssetItem[]>([]),
       includeGeneratedAssets
         ? fetchGeneratedAssets(controller.signal, {
+            isCloud,
             generatedMatchNames,
+            generatedHashRequiredNames,
             pathOptions
           })
         : Promise.resolve<AssetItem[]>([])
     ])
 
     return {
-      inputAssets: unwrapAssetFetchResult(inputResult, 'inputAssets'),
-      generatedAssets: unwrapAssetFetchResult(
-        generatedResult,
-        'generatedAssets'
-      )
+      inputAssets: unwrapAssetSource(inputResult, 'input'),
+      generatedAssets: unwrapAssetSource(generatedResult, 'generated')
     }
   } finally {
     signal?.removeEventListener('abort', abortFromCaller)
   }
 }
 
-function unwrapAssetFetchResult(
+/**
+ * Input and generated assets come from independent endpoints, so one failing
+ * degrades to an empty list instead of discarding the other.
+ */
+function unwrapAssetSource(
   result: PromiseSettledResult<AssetItem[]>,
-  label: 'inputAssets' | 'generatedAssets'
+  source: 'input' | 'generated'
 ): AssetItem[] {
   if (result.status === 'fulfilled') return result.value
-  if (isAbortError(result.reason)) return []
+  if (isAbortError(result.reason)) throw result.reason
   console.warn(
-    `[missingMedia] ${label} fetch failed; degrading to empty list.`,
+    `[missingMedia] ${source} asset fetch failed; degrading to empty list.`,
     result.reason
   )
   return []
 }
 
 interface FetchGeneratedAssetsOptions {
+  isCloud: boolean
   generatedMatchNames: ReadonlySet<string>
+  generatedHashRequiredNames: ReadonlySet<string>
   pathOptions: MediaPathDetectionOptions
 }
 
-/**
- * Derive comparison keys for matching workflow widget values against an asset.
- *
- * `id` is the identity field; `file_path` is a namespace-rooted locator emitted
- * on a best-effort basis. Workflow widget values predate the `file_path` rollout
- * and may still be bare filenames, hashes, or annotated paths, so detection keys
- * union `file_path`, `hash`, `name`, and `subfolder + name` variants — a widget
- * value in any of those shapes must keep matching once an asset starts emitting
- * `file_path`.
- */
 export function getAssetDetectionNames(
   asset: AssetItem,
   options: MediaPathDetectionOptions
 ): string[] {
   const names = new Set<string>()
-
-  // Treat file_path, hashes, and names as opaque match keys because widget
-  // values may carry any of them.
+  // Widget values predate `file_path` and may hold any of these shapes.
   addPathDetectionNames(names, asset.file_path, options)
   addPathDetectionNames(names, asset.hash, options)
   addPathDetectionNames(names, asset.name, options)
@@ -125,21 +119,20 @@ export function getAssetDetectionNames(
   return Array.from(names)
 }
 
-/**
- * Pick the generated-assets oracle by runtime. Cloud queries
- * `/api/assets?include_tags=output`; Core synthesizes `AssetItem` shells
- * from job-execution history because OSS does not auto-register output
- * files as assets (pre-BE-786). Unifying this oracle is a separate
- * concern — track as a follow-up to FE-746.
- */
 async function fetchGeneratedAssets(
   signal: AbortSignal | undefined,
-  { generatedMatchNames, pathOptions }: FetchGeneratedAssetsOptions
+  {
+    isCloud,
+    generatedMatchNames,
+    generatedHashRequiredNames,
+    pathOptions
+  }: FetchGeneratedAssetsOptions
 ): Promise<AssetItem[]> {
   if (isCloud) {
     return await fetchCloudGeneratedAssets(
       signal,
       generatedMatchNames,
+      generatedHashRequiredNames,
       pathOptions
     )
   }
@@ -154,13 +147,14 @@ async function fetchGeneratedAssets(
 async function fetchCloudGeneratedAssets(
   signal: AbortSignal | undefined,
   targetNames: ReadonlySet<string>,
+  hashRequiredNames: ReadonlySet<string>,
   pathOptions: MediaPathDetectionOptions
 ): Promise<AssetItem[]> {
   const assets: AssetItem[] = []
   const foundTargetNames = new Set<string>()
   let offset = 0
 
-  while (true) {
+  for (;;) {
     signal?.throwIfAborted()
 
     const assetPage = await assetService.getAssetsPageByTag('output', true, {
@@ -176,9 +170,10 @@ async function fetchCloudGeneratedAssets(
 
     for (const asset of batch) {
       assets.push(asset)
-      rememberResolvedTargetNames(
+      rememberResolvedCloudTargetNames(
         asset,
         targetNames,
+        hashRequiredNames,
         foundTargetNames,
         pathOptions
       )
@@ -205,7 +200,7 @@ async function fetchGeneratedHistoryAssets(
   const seenJobIds = new Set<string>()
   let offset = 0
 
-  while (true) {
+  for (;;) {
     signal?.throwIfAborted()
 
     const requestedOffset = offset
@@ -286,6 +281,28 @@ function rememberResolvedTargetNames(
   }
 }
 
+function rememberResolvedCloudTargetNames(
+  asset: AssetItem,
+  targetNames: ReadonlySet<string>,
+  hashRequiredNames: ReadonlySet<string>,
+  foundTargetNames: Set<string>,
+  options: MediaPathDetectionOptions
+) {
+  if (targetNames.size === 0) return
+
+  if (asset.hash) {
+    for (const name of getMediaPathDetectionNames(asset.hash, options)) {
+      if (targetNames.has(name)) foundTargetNames.add(name)
+    }
+  }
+
+  for (const name of getAssetDetectionNames(asset, options)) {
+    if (!hashRequiredNames.has(name) && targetNames.has(name)) {
+      foundTargetNames.add(name)
+    }
+  }
+}
+
 function hasResolvedAllTargetNames(
   targetNames: ReadonlySet<string>,
   foundTargetNames: ReadonlySet<string>
@@ -297,12 +314,15 @@ function mapHistoryJobToAsset(job: JobListItem): AssetItem | null {
   const output = job.preview_output
   if (job.status !== 'completed' || !output?.filename) return null
 
+  const createdAt = new Date(job.create_time).toISOString()
+
   return {
     id: `${job.id}-${output.filename}`,
     name: output.filename,
     display_name: output.display_name,
-    mime_type: null,
     tags: ['output'],
+    created_at: createdAt,
+    updated_at: createdAt,
     user_metadata: {
       subfolder: output.subfolder
     }

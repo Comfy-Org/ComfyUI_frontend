@@ -1,11 +1,15 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import type {
   CameraState,
   GizmoMode
 } from '@/extensions/core/load3d/interfaces'
+import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
+import { QuadWireframeOverlay } from '@/extensions/core/load3d/quadWireframe/QuadWireframeManager'
 
 const {
   cloneSkinnedMock,
@@ -25,19 +29,19 @@ const {
   detectFormatFromURLMock: vi.fn()
 }))
 
-vi.mock('three/examples/jsm/utils/SkeletonUtils.js', () => ({
+vi.mock(import('three/examples/jsm/utils/SkeletonUtils.js'), () => ({
   clone: cloneSkinnedMock
 }))
 
-vi.mock('@/extensions/core/load3d/ModelExporter', () => ({
-  ModelExporter: {
+vi.mock(import('@/extensions/core/load3d/ModelExporter'), () => ({
+  ModelExporter: fromAny({
     exportGLB: exportGLBMock,
     exportOBJ: exportOBJMock,
     exportSTL: exportSTLMock,
     exportFBX: exportFBXMock,
     exportDirect: exportDirectMock,
     detectFormatFromURL: detectFormatFromURLMock
-  }
+  })
 }))
 
 type GizmoStub = {
@@ -60,6 +64,7 @@ type GizmoStub = {
 type ModelManagerStub = {
   fitToViewer: ReturnType<typeof vi.fn>
   clearModel: ReturnType<typeof vi.fn>
+  getCurrentBounds: ReturnType<typeof vi.fn>
 }
 
 type CameraManagerStub = {
@@ -101,7 +106,8 @@ function makeInstance() {
   const gizmo = makeGizmoStub()
   const modelManager: ModelManagerStub = {
     fitToViewer: vi.fn(),
-    clearModel: vi.fn()
+    clearModel: vi.fn(),
+    getCurrentBounds: vi.fn(() => null)
   }
   const cameraManager: CameraManagerStub = {
     toggleCamera: vi.fn(),
@@ -133,8 +139,13 @@ function makeInstance() {
     animationManager,
     eventManager,
     adapterRef: { current: null },
+    _loadGeneration: 0,
+    loadingPromise: null,
+    thumbnailCaptureQueue: Promise.resolve(),
     forceRender: vi.fn(),
-    handleResize: vi.fn()
+    handleResize: vi.fn(),
+    preRenderCallbacks: [],
+    postRenderCallbacks: []
   })
 
   return {
@@ -156,10 +167,6 @@ describe('Load3d', () => {
 
   beforeEach(() => {
     ctx = makeInstance()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('gizmo delegation', () => {
@@ -334,7 +341,7 @@ describe('Load3d', () => {
       const sceneResize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize, setPixelRatio: vi.fn() },
+        view: { canvas, setSize },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,
@@ -351,7 +358,10 @@ describe('Load3d', () => {
       expect(sceneResize).toHaveBeenCalledWith(800, 400)
     })
 
-    it('renderMainScene applies the letterboxed viewport and feeds aspect to the camera', () => {
+    function makeRenderMainSceneContext(
+      backgroundType: 'color' | 'image' = 'color',
+      activeCamera: THREE.Camera = ctx.cameraManager.activeCamera
+    ) {
       const setViewport = vi.fn()
       const setScissor = vi.fn()
       const setScissorTest = vi.fn()
@@ -360,45 +370,159 @@ describe('Load3d', () => {
       const render = vi.fn()
       const updateAspectRatio = vi.fn()
       const renderBackground = vi.fn()
+      const getCurrentBackgroundInfo = vi.fn(() => ({
+        type: backgroundType,
+        value: ''
+      }))
 
-      const canvas = document.createElement('canvas')
-      Object.defineProperty(canvas, 'clientWidth', {
-        value: 800,
-        configurable: true
-      })
-      Object.defineProperty(canvas, 'clientHeight', {
-        value: 600,
-        configurable: true
-      })
       const scene = {} as THREE.Scene
 
       Object.assign(ctx.load3d, {
-        renderer: {
-          domElement: canvas,
-          setViewport,
-          setScissor,
-          setScissorTest,
-          setClearColor,
-          clear,
-          render
+        view: {
+          width: 800,
+          height: 600,
+          state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+          renderer: {
+            state: { reset: vi.fn() },
+            setViewport,
+            setScissor,
+            setScissorTest,
+            setClearColor,
+            clear,
+            render
+          }
         },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,
         isViewerMode: false,
-        cameraManager: { ...ctx.cameraManager, updateAspectRatio },
-        sceneManager: { ...ctx.sceneManager, renderBackground, scene }
+        cameraManager: {
+          ...ctx.cameraManager,
+          updateAspectRatio,
+          activeCamera
+        },
+        sceneManager: {
+          ...ctx.sceneManager,
+          renderBackground,
+          getCurrentBackgroundInfo,
+          scene
+        }
+      })
+
+      return {
+        setViewport,
+        setScissor,
+        setScissorTest,
+        clear,
+        render,
+        updateAspectRatio,
+        renderBackground,
+        scene
+      }
+    }
+
+    it('renderMainScene renders the full canvas with an extrapolated view offset so the letterboxed rect is unchanged', () => {
+      const r = makeRenderMainSceneContext()
+      const camera = ctx.cameraManager.activeCamera as THREE.PerspectiveCamera
+
+      let viewAtRender: THREE.PerspectiveCamera['view'] = null
+      r.render.mockImplementationOnce(() => {
+        viewAtRender = camera.view ? { ...camera.view } : null
       })
 
       ctx.load3d.renderMainScene()
 
-      expect(setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
-      expect(setScissor).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
-      expect(setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
-      expect(setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
-      expect(updateAspectRatio).toHaveBeenCalledWith(2)
-      expect(setScissorTest).toHaveBeenCalledWith(true)
-      expect(render).toHaveBeenCalledWith(scene, ctx.cameraManager.activeCamera)
+      // Container 800x600, target aspect 2:1 → letterboxed rect 800x400 at y=100
+      expect(r.setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(r.setScissor).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(r.setScissorTest).toHaveBeenCalledWith(true)
+      expect(r.clear).toHaveBeenCalledOnce()
+      expect(r.updateAspectRatio).toHaveBeenCalledWith(2)
+      expect(r.render).toHaveBeenNthCalledWith(1, r.scene, camera)
+
+      expect(viewAtRender).not.toBeNull()
+      expect(viewAtRender!.enabled).toBe(true)
+      expect(viewAtRender!.fullWidth).toBe(800)
+      expect(viewAtRender!.fullHeight).toBe(400)
+      expect(viewAtRender!.offsetX).toBeCloseTo(0)
+      expect(viewAtRender!.offsetY).toBe(-100)
+      expect(viewAtRender!.width).toBe(800)
+      expect(viewAtRender!.height).toBe(600)
+
+      expect(camera.view?.enabled ?? false).toBe(false)
+    })
+
+    it('renderMainScene dims the letterbox bars after rendering the scene', () => {
+      const r = makeRenderMainSceneContext()
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.render).toHaveBeenCalledTimes(3)
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 0, 800, 100)
+      expect(r.setScissor).toHaveBeenNthCalledWith(2, 0, 0, 800, 100)
+      expect(r.setViewport).toHaveBeenNthCalledWith(3, 0, 500, 800, 100)
+      expect(r.setScissor).toHaveBeenNthCalledWith(3, 0, 500, 800, 100)
+    })
+
+    it('renderMainScene keeps a color background covering the whole canvas', () => {
+      const r = makeRenderMainSceneContext('color')
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.renderBackground).toHaveBeenCalledWith()
+      // No viewport narrowing before the bars are dimmed.
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 0, 800, 100)
+    })
+
+    it('renderMainScene confines an image background to the letterboxed rect', () => {
+      const r = makeRenderMainSceneContext('image')
+
+      ctx.load3d.renderMainScene()
+
+      // Viewport/scissor narrow to the letterbox rect for the background
+      // pass, then restore to the full canvas for the scene pass.
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.setViewport).toHaveBeenNthCalledWith(3, 0, 0, 800, 600)
+      expect(r.setScissor).toHaveBeenNthCalledWith(3, 0, 0, 800, 600)
+
+      const backgroundOrder = r.renderBackground.mock.invocationCallOrder[0]
+      expect(backgroundOrder).toBeGreaterThan(
+        r.setViewport.mock.invocationCallOrder[1]
+      )
+      expect(backgroundOrder).toBeLessThan(
+        r.setViewport.mock.invocationCallOrder[2]
+      )
+    })
+
+    it('renderMainScene applies the view offset to orthographic cameras too', () => {
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1)
+      const r = makeRenderMainSceneContext('color', camera)
+
+      let viewEnabledAtRender = false
+      r.render.mockImplementationOnce(() => {
+        viewEnabledAtRender = camera.view?.enabled ?? false
+      })
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.render).toHaveBeenNthCalledWith(1, r.scene, camera)
+      expect(viewEnabledAtRender).toBe(true)
+      expect(camera.view?.enabled ?? false).toBe(false)
+    })
+
+    it('renderMainScene falls back to the letterboxed viewport for cameras without view-offset support', () => {
+      const camera = new THREE.Camera()
+      const r = makeRenderMainSceneContext('color', camera)
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.render).toHaveBeenCalledTimes(1)
+      expect(r.render).toHaveBeenCalledWith(r.scene, camera)
+      expect(r.renderBackground).toHaveBeenCalledWith()
     })
 
     it('setBackgroundImage updates background size with letterbox dimensions when a texture is loaded', async () => {
@@ -415,7 +539,7 @@ describe('Load3d', () => {
       })
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas },
+        view: { canvas },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,
@@ -438,7 +562,7 @@ describe('Load3d', () => {
       expect(args[3]).toBe(400)
     })
 
-    it('handleResize calls setPixelRatio with the value returned by getZoomScaleCallback', () => {
+    it('handleResize scales the view size by getZoomScaleCallback', () => {
       delete (ctx.load3d as { handleResize?: unknown }).handleResize
 
       const parent = document.createElement('div')
@@ -453,10 +577,10 @@ describe('Load3d', () => {
       const canvas = document.createElement('canvas')
       parent.appendChild(canvas)
 
-      const setPixelRatio = vi.fn()
+      const setSize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        view: { canvas, setSize },
         getZoomScaleCallback: () => 2.5,
         targetWidth: 0,
         targetHeight: 0,
@@ -467,10 +591,10 @@ describe('Load3d', () => {
 
       ctx.load3d.handleResize()
 
-      expect(setPixelRatio).toHaveBeenCalledWith(2.5)
+      expect(setSize).toHaveBeenCalledWith(1000, 1000)
     })
 
-    it('handleResize defaults to pixelRatio 1 when no getZoomScaleCallback is provided', () => {
+    it('handleResize caps the zoom scale at 3', () => {
       delete (ctx.load3d as { handleResize?: unknown }).handleResize
 
       const parent = document.createElement('div')
@@ -485,10 +609,42 @@ describe('Load3d', () => {
       const canvas = document.createElement('canvas')
       parent.appendChild(canvas)
 
-      const setPixelRatio = vi.fn()
+      const setSize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        view: { canvas, setSize },
+        getZoomScaleCallback: () => 10,
+        targetWidth: 0,
+        targetHeight: 0,
+        isViewerMode: false,
+        cameraManager: { ...ctx.cameraManager, handleResize: vi.fn() },
+        sceneManager: { ...ctx.sceneManager, handleResize: vi.fn() }
+      })
+
+      ctx.load3d.handleResize()
+
+      expect(setSize).toHaveBeenCalledWith(1200, 1200)
+    })
+
+    it('handleResize defaults to scale 1 when no getZoomScaleCallback is provided', () => {
+      delete (ctx.load3d as { handleResize?: unknown }).handleResize
+
+      const parent = document.createElement('div')
+      Object.defineProperty(parent, 'clientWidth', {
+        value: 400,
+        configurable: true
+      })
+      Object.defineProperty(parent, 'clientHeight', {
+        value: 400,
+        configurable: true
+      })
+      const canvas = document.createElement('canvas')
+      parent.appendChild(canvas)
+
+      const setSize = vi.fn()
+
+      Object.assign(ctx.load3d, {
+        view: { canvas, setSize },
         getZoomScaleCallback: undefined,
         targetWidth: 0,
         targetHeight: 0,
@@ -499,7 +655,7 @@ describe('Load3d', () => {
 
       ctx.load3d.handleResize()
 
-      expect(setPixelRatio).toHaveBeenCalledWith(1)
+      expect(setSize).toHaveBeenCalledWith(400, 400)
     })
   })
 
@@ -510,14 +666,15 @@ describe('Load3d', () => {
       const viewHelperRender = vi.fn()
       const controlsUpdate = vi.fn()
       const renderMainScene = vi.fn()
-      const resetViewport = vi.fn()
+      const beginRender = vi.fn()
+      const blit = vi.fn()
 
       Object.assign(ctx.load3d, {
         STATUS_MOUSE_ON_NODE: true,
         STATUS_MOUSE_ON_SCENE: false,
         STATUS_MOUSE_ON_VIEWER: false,
         INITIAL_RENDER_DONE: false,
-        clock: new THREE.Clock(),
+        timer: new THREE.Timer(),
         animationManager: {
           update: animationUpdate,
           isAnimationPlaying: false,
@@ -525,13 +682,16 @@ describe('Load3d', () => {
         },
         viewHelperManager: {
           update: viewHelperUpdate,
-          viewHelper: { render: viewHelperRender }
+          render: viewHelperRender
         },
         controlsManager: { update: controlsUpdate },
         recordingManager: { getIsRecording: vi.fn(() => false) },
         renderMainScene,
-        resetViewport,
-        renderer: {}
+        view: {
+          beginRender,
+          blit,
+          renderer: { setScissorTest: vi.fn(), state: { reset: vi.fn() } }
+        }
       })
 
       ;(ctx.load3d as unknown as { startAnimation(): void }).startAnimation()
@@ -546,9 +706,10 @@ describe('Load3d', () => {
       expect(animationUpdate).toHaveBeenCalledOnce()
       expect(viewHelperUpdate).toHaveBeenCalledOnce()
       expect(controlsUpdate).toHaveBeenCalledOnce()
+      expect(beginRender).toHaveBeenCalledOnce()
       expect(renderMainScene).toHaveBeenCalledOnce()
-      expect(resetViewport).toHaveBeenCalledOnce()
       expect(viewHelperRender).toHaveBeenCalledOnce()
+      expect(blit).toHaveBeenCalledOnce()
 
       // Cancel the queued rAF so the test doesn't leak frames.
       loop.stop()
@@ -560,12 +721,10 @@ describe('Load3d', () => {
 
       Object.assign(ctx.load3d, {
         renderLoop: { stop },
-        resizeObserver: null,
         contextMenuAbortController: null,
-        renderer: {
-          forceContextLoss: vi.fn(),
-          dispose: vi.fn(),
-          domElement: canvas
+        view: {
+          canvas,
+          dispose: vi.fn()
         },
         sceneManager: { ...ctx.sceneManager, dispose: vi.fn() },
         cameraManager: { ...ctx.cameraManager, dispose: vi.fn() },
@@ -677,8 +836,8 @@ describe('Load3d', () => {
     })
 
     it('waits for the current loadingPromise to settle', async () => {
-      let resolveLoad!: () => void
-      const p = new Promise<void>((resolve) => {
+      let resolveLoad!: (accepted: boolean) => void
+      const p = new Promise<boolean>((resolve) => {
         resolveLoad = resolve
       })
       Object.assign(ctx.load3d, { loadingPromise: p })
@@ -692,7 +851,7 @@ describe('Load3d', () => {
       await Promise.resolve()
       expect(settled).toBe(false)
 
-      resolveLoad()
+      resolveLoad(true)
 
       Object.assign(ctx.load3d, { loadingPromise: null })
       await idle
@@ -700,12 +859,12 @@ describe('Load3d', () => {
     })
 
     it('drains a chained sequence of loads before resolving', async () => {
-      let resolveFirst!: () => void
-      const first = new Promise<void>((resolve) => {
+      let resolveFirst!: (accepted: boolean) => void
+      const first = new Promise<boolean>((resolve) => {
         resolveFirst = resolve
       })
-      let resolveSecond!: () => void
-      const second = new Promise<void>((resolve) => {
+      let resolveSecond!: (accepted: boolean) => void
+      const second = new Promise<boolean>((resolve) => {
         resolveSecond = resolve
       })
 
@@ -720,11 +879,11 @@ describe('Load3d', () => {
         settled = true
       })
 
-      resolveFirst()
+      resolveFirst(true)
       await new Promise((r) => setTimeout(r, 0))
       expect(settled).toBe(false)
 
-      resolveSecond()
+      resolveSecond(true)
       Object.assign(ctx.load3d, { loadingPromise: null })
       await idle
       expect(settled).toBe(true)
@@ -739,6 +898,94 @@ describe('Load3d', () => {
       Object.assign(ctx.load3d, { loadingPromise: null })
 
       await expect(idle).resolves.toBeUndefined()
+    })
+
+    it('waits for a load accepted while the current load is still pending', async () => {
+      let resolveFirst!: () => void
+      let resolveSecond!: () => void
+      const first = new Promise<void>((resolve) => {
+        resolveFirst = resolve
+      })
+      const second = new Promise<void>((resolve) => {
+        resolveSecond = resolve
+      })
+      const internal = vi
+        .fn()
+        .mockImplementationOnce(() => first)
+        .mockImplementationOnce(() => second)
+      Object.assign(ctx.load3d, {
+        loadingPromise: null,
+        _loadModelInternal: internal
+      })
+
+      const loadA = ctx.load3d.loadModel('api/view?filename=a.glb')
+      const idle = ctx.load3d.whenLoadIdle()
+      const loadB = ctx.load3d.loadModel('api/view?filename=b.glb')
+      let settled = false
+      void idle.then(() => {
+        settled = true
+      })
+
+      resolveFirst()
+      await loadA
+      await Promise.resolve()
+      expect(internal).toHaveBeenCalledTimes(2)
+      expect(settled).toBe(false)
+
+      resolveSecond()
+      await Promise.all([idle, loadB])
+      expect(settled).toBe(true)
+    })
+
+    it('keeps the viewer empty when clear is accepted during a pending load', async () => {
+      let resolveLoad!: () => void
+      const pendingLoad = new Promise<void>((resolve) => {
+        resolveLoad = resolve
+      })
+      const loadedModel = new THREE.Group()
+      const modelManager: typeof ctx.modelManager & {
+        currentModel: THREE.Object3D | null
+        originalModel: THREE.Object3D | null
+      } = {
+        ...ctx.modelManager,
+        currentModel: null,
+        originalModel: null,
+        clearModel: vi.fn(() => {
+          modelManager.currentModel = null
+        })
+      }
+      Object.assign(ctx.load3d, {
+        _loadGeneration: 0,
+        loadingPromise: null,
+        cameraManager: {
+          ...ctx.cameraManager,
+          getCameraState: vi.fn(),
+          getCurrentCameraType: vi.fn(() => 'perspective'),
+          setCameraState: vi.fn()
+        },
+        controlsManager: { ...ctx.controlsManager, reset: vi.fn() },
+        loaderManager: {
+          loadModel: vi.fn(async () => {
+            await pendingLoad
+            modelManager.currentModel = loadedModel
+          })
+        },
+        modelManager,
+        animationManager: {
+          ...ctx.animationManager,
+          setupModelAnimations: vi.fn()
+        },
+        hasLoadedModel: false
+      })
+
+      const load = ctx.load3d.loadModel('api/view?filename=a.glb')
+      ctx.load3d.clearModel()
+      const idle = ctx.load3d.whenLoadIdle()
+      resolveLoad()
+      const [accepted] = await Promise.all([load, idle])
+
+      expect(accepted).toBe(false)
+      expect(ctx.load3d.getCurrentModel()).toBeNull()
     })
   })
 
@@ -842,7 +1089,7 @@ describe('Load3d', () => {
       const mocks = setupLoadInternal()
 
       await ctx.load3d.loadModel('a.glb')
-      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.reset.mockClear()
       mocks.getCameraState.mockClear()
       mocks.setCameraState.mockClear()
 
@@ -863,7 +1110,7 @@ describe('Load3d', () => {
       }))
       // First load (active type stays perspective per the default mock).
       await ctx.load3d.loadModel('a.glb')
-      ;(ctx.cameraManager.toggleCamera as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.toggleCamera.mockClear()
 
       await ctx.load3d.loadModel('b.glb')
 
@@ -877,7 +1124,7 @@ describe('Load3d', () => {
       const mocks = setupLoadInternal()
       await ctx.load3d.loadModel('a.glb')
       ctx.load3d.clearModel()
-      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.reset.mockClear()
       mocks.getCameraState.mockClear()
 
       await ctx.load3d.loadModel('b.glb')
@@ -947,23 +1194,25 @@ describe('Load3d', () => {
       })
       const modelGroup = new THREE.Group()
       modelGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)))
+      const sceneStub = {
+        ...ctx.sceneManager,
+        gridHelper: { visible: true },
+        captureScene: sceneCaptureMock,
+        whenSplatsSorted: vi.fn().mockResolvedValue(undefined)
+      }
       Object.assign(ctx.load3d, {
         cameraManager: cameraStub,
         controlsManager: controlsStub,
-        sceneManager: {
-          ...ctx.sceneManager,
-          gridHelper: { visible: true },
-          captureScene: sceneCaptureMock
-        },
+        sceneManager: sceneStub,
         modelManager: {
           ...ctx.modelManager,
           currentModel: modelGroup
         }
       })
-      return { cameraStub, sceneCaptureMock }
+      return { cameraStub, controlsStub, sceneCaptureMock, sceneStub }
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects thumbnail capture when no model is loaded', async () => {
       Object.assign(ctx.load3d, {
         modelManager: { ...ctx.modelManager, currentModel: null }
       })
@@ -993,22 +1242,91 @@ describe('Load3d', () => {
       await expect(ctx.load3d.captureThumbnail(64, 64)).rejects.toThrow('boom')
       expect(ctx.forceRender).toHaveBeenCalled()
     })
+
+    it('frames the camera and controls target using the adapter-aware bounds, not a naive Box3 of the model', async () => {
+      const { cameraStub, controlsStub } = setupForCapture()
+      // A degenerate model (e.g. a Gaussian splat) whose naive Box3 would be
+      // empty/zero-sized, but whose adapter reports real bounds far away.
+      const adapterBounds = new THREE.Box3(
+        new THREE.Vector3(100, 100, 100),
+        new THREE.Vector3(102, 102, 102)
+      )
+      Object.assign(ctx.load3d, {
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: new THREE.Group(),
+          getCurrentBounds: vi.fn(() => adapterBounds)
+        }
+      })
+
+      await ctx.load3d.captureThumbnail(64, 64)
+
+      const expectedCenter = adapterBounds.getCenter(new THREE.Vector3())
+      expect(cameraStub.perspectiveCamera.position.x).toBeGreaterThan(90)
+      expect(controlsStub.controls.target.copy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          x: expectedCenter.x,
+          y: expectedCenter.y,
+          z: expectedCenter.z
+        })
+      )
+    })
+
+    it('runs concurrent captures one at a time so each restores the live camera and grid', async () => {
+      const { cameraStub, sceneStub } = setupForCapture()
+      let finishSort = () => {}
+      const whenSplatsSorted =
+        sceneStub.whenSplatsSorted.mockImplementationOnce(
+          () => new Promise<void>((resolve) => (finishSort = resolve))
+        )
+      Object.assign(ctx.load3d, { adapterRef: { current: { kind: 'splat' } } })
+
+      const first = ctx.load3d.captureThumbnail(64, 64)
+      const second = ctx.load3d.captureThumbnail(64, 64)
+      await vi.waitFor(() => expect(whenSplatsSorted).toHaveBeenCalledOnce())
+      expect(cameraStub.getCameraState).toHaveBeenCalledOnce()
+
+      finishSort()
+      await Promise.all([first, second])
+
+      expect(cameraStub.getCameraState).toHaveBeenCalledTimes(2)
+      expect(cameraStub.setCameraState).toHaveBeenCalledTimes(2)
+      expect(sceneStub.gridHelper.visible).toBe(true)
+    })
+
+    it.for([
+      { kind: 'splat', waitsForSort: true },
+      { kind: 'mesh', waitsForSort: false }
+    ])(
+      'waits for splat sorting before capture: $kind -> $waitsForSort',
+      async ({ kind, waitsForSort }) => {
+        const { cameraStub, sceneCaptureMock, sceneStub } = setupForCapture()
+        const { whenSplatsSorted } = sceneStub
+        Object.assign(ctx.load3d, { adapterRef: { current: { kind } } })
+
+        await ctx.load3d.captureThumbnail(64, 64)
+
+        if (!waitsForSort) {
+          expect(whenSplatsSorted).not.toHaveBeenCalled()
+          return
+        }
+        expect(whenSplatsSorted).toHaveBeenCalledWith(
+          cameraStub.perspectiveCamera
+        )
+        expect(whenSplatsSorted.mock.invocationCallOrder[0]).toBeLessThan(
+          sceneCaptureMock.mock.invocationCallOrder[0]
+        )
+      }
+    )
   })
 
   describe('exportModel', () => {
-    beforeEach(() => {
-      cloneSkinnedMock.mockReset()
-      exportGLBMock.mockReset()
-      exportOBJMock.mockReset()
-      exportSTLMock.mockReset()
-      exportFBXMock.mockReset()
-    })
-
     function setupForExport(overrides: {
       currentModel: THREE.Object3D | null
       originalModel?: THREE.Object3D | null
       originalFileName?: string | null
       originalURL?: string | null
+      originalMaterials?: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>
     }) {
       Object.assign(ctx.load3d, {
         modelManager: {
@@ -1016,12 +1334,13 @@ describe('Load3d', () => {
           currentModel: overrides.currentModel,
           originalModel: overrides.originalModel ?? null,
           originalFileName: overrides.originalFileName ?? 'cube',
-          originalURL: overrides.originalURL ?? null
+          originalURL: overrides.originalURL ?? null,
+          originalMaterials: overrides.originalMaterials ?? new WeakMap()
         }
       })
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects export when no model is loaded', async () => {
       setupForExport({ currentModel: null })
 
       await expect(ctx.load3d.exportModel('fbx')).rejects.toThrow(
@@ -1130,6 +1449,37 @@ describe('Load3d', () => {
       expect(exportedModel.animations).toEqual([clip])
     })
 
+    it('hands the exporter a model without the quad wireframe overlay', async () => {
+      const original = new THREE.MeshStandardMaterial()
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshBasicMaterial({ visible: false })
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      const model = new THREE.Group().add(mesh)
+      const originalMaterials = new WeakMap<THREE.Mesh, THREE.Material>()
+      originalMaterials.set(mesh, original)
+
+      setupForExport({ currentModel: model, originalMaterials })
+
+      await ctx.load3d.exportModel('glb')
+
+      const [exported] = exportGLBMock.mock.calls[0] as [THREE.Object3D]
+      const exportedMeshes: THREE.Mesh[] = []
+      let overlays = 0
+      exported.traverse((child) => {
+        if (child instanceof THREE.Mesh) exportedMeshes.push(child)
+        if (child instanceof QuadWireframeOverlay) overlays += 1
+      })
+      expect(overlays).toBe(0)
+      expect(exportedMeshes).toHaveLength(1)
+      expect(exportedMeshes[0].material).toBe(original)
+      // The on-screen model keeps its overlay and its wireframe material.
+      expect(mesh.children).toContain(overlay)
+      expect(mesh.material).not.toBe(original)
+    })
+
     it('uses Object3D.clone (not SkeletonUtils) for non-fbx formats', async () => {
       const model = new THREE.Object3D()
       const cloneSpy = vi.spyOn(model, 'clone')
@@ -1169,7 +1519,7 @@ describe('Load3d', () => {
       )
     })
 
-    it('throws on unsupported format', async () => {
+    it('rejects an unsupported format', async () => {
       const model = new THREE.Object3D()
       setupForExport({ currentModel: model })
       vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -1201,7 +1551,7 @@ describe('Load3d', () => {
       expect(cloneSkinnedMock).not.toHaveBeenCalled()
     })
 
-    it('refuses a direct export when the requested format differs from the source', async () => {
+    it('rejects direct export when the requested format differs from the source', async () => {
       exportDirectMock.mockReset()
       detectFormatFromURLMock.mockReturnValue('spz')
       vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -1228,6 +1578,122 @@ describe('Load3d', () => {
       expect(detectFormatFromURLMock).toHaveBeenCalledWith(
         'http://example.com/api/view?filename=scene.spz'
       )
+    })
+  })
+
+  describe('constructor wiring', () => {
+    function makeConstructorDeps() {
+      const container = document.createElement('div')
+      const canvas = document.createElement('canvas')
+      container.appendChild(canvas)
+
+      const view = {
+        canvas,
+        renderer: {
+          state: { reset: vi.fn() },
+          setViewport: vi.fn(),
+          setScissor: vi.fn(),
+          setScissorTest: vi.fn(),
+          setClearColor: vi.fn(),
+          clear: vi.fn(),
+          render: vi.fn()
+        },
+        width: 800,
+        height: 600,
+        state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+        observeResize: vi.fn(),
+        beginRender: vi.fn(),
+        blit: vi.fn(),
+        setSize: vi.fn(),
+        dispose: vi.fn()
+      }
+      const gizmoManager = {
+        setPointerNdcSource: vi.fn(),
+        init: vi.fn(),
+        dispose: vi.fn()
+      }
+      const deps = {
+        view,
+        eventManager: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          emitEvent: vi.fn()
+        },
+        sceneManager: {
+          init: vi.fn(),
+          scene: new THREE.Scene(),
+          renderBackground: vi.fn(),
+          handleResize: vi.fn(),
+          dispose: vi.fn()
+        },
+        cameraManager: {
+          init: vi.fn(),
+          activeCamera: new THREE.PerspectiveCamera(),
+          handleResize: vi.fn(),
+          dispose: vi.fn()
+        },
+        controlsManager: { init: vi.fn(), update: vi.fn(), dispose: vi.fn() },
+        lightingManager: { init: vi.fn(), dispose: vi.fn() },
+        viewHelperManager: {
+          createViewHelper: vi.fn(),
+          init: vi.fn(),
+          update: vi.fn(),
+          render: vi.fn(),
+          dispose: vi.fn()
+        },
+        hdriManager: { dispose: vi.fn() },
+        loaderManager: { init: vi.fn(), dispose: vi.fn() },
+        modelManager: { dispose: vi.fn() },
+        recordingManager: {
+          getIsRecording: vi.fn(() => false),
+          dispose: vi.fn()
+        },
+        animationManager: {
+          init: vi.fn(),
+          update: vi.fn(),
+          isAnimationPlaying: false,
+          dispose: vi.fn()
+        },
+        gizmoManager,
+        adapterRef: { current: null, capabilities: null }
+      }
+      return { container, deps: deps as unknown as Load3dDeps, gizmoManager }
+    }
+
+    it('wires the gizmo pointer NDC source to clientPointToNdc on every construction path', () => {
+      const { container, deps, gizmoManager } = makeConstructorDeps()
+      const load3d = new Load3d(container, deps)
+
+      expect(gizmoManager.setPointerNdcSource).toHaveBeenCalledOnce()
+
+      const ndc = { x: 0.25, y: -0.5, inside: true }
+      const clientPointToNdc = vi
+        .spyOn(load3d, 'clientPointToNdc')
+        .mockReturnValue(ndc)
+      const source = gizmoManager.setPointerNdcSource.mock
+        .calls[0][0] as PointerNdcSource
+
+      expect(source(12, 34)).toBe(ndc)
+      expect(clientPointToNdc).toHaveBeenCalledWith(12, 34)
+    })
+
+    it('runs the replaced configuration cleanup immediately and the current one once on remove()', () => {
+      const { container, deps } = makeConstructorDeps()
+      const load3d = new Load3d(container, deps)
+      const first = vi.fn()
+      const second = vi.fn()
+
+      load3d.setConfigurationCleanup(first)
+      expect(first).not.toHaveBeenCalled()
+
+      load3d.setConfigurationCleanup(second)
+      expect(first).toHaveBeenCalledOnce()
+      expect(second).not.toHaveBeenCalled()
+
+      load3d.remove()
+      load3d.remove()
+      expect(first).toHaveBeenCalledOnce()
+      expect(second).toHaveBeenCalledOnce()
     })
   })
 })

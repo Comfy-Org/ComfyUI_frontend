@@ -1,22 +1,25 @@
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IComboWidget
+} from '@/lib/litegraph/src/types/widgets'
+import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
+import type { ControlOptions } from '@/types/simplifiedWidget'
+import { isControlOption } from '@/types/simplifiedWidget'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 
-type ValueControlMode =
-  | 'fixed'
-  | 'increment'
-  | 'increment-wrap'
-  | 'decrement'
-  | 'randomize'
+type ValueControlMode = ControlOptions | 'increment-wrap'
+
+export function isValueControlMode(value: unknown): value is ValueControlMode {
+  return isControlOption(value) || value === 'increment-wrap'
+}
 
 export function nextValueForLinkedTarget(params: {
   target: IBaseWidget
   linkedWidgets: IBaseWidget[] | undefined
   nodeId: unknown
-  isPartialExecution: boolean | undefined
 }): IBaseWidget['value'] | undefined {
-  if (params.isPartialExecution) return undefined
   const linked = params.linkedWidgets
   if (!linked) return undefined
 
@@ -85,7 +88,7 @@ export function computeNextControlledValue(
 }
 
 function computeNextComboValue(
-  target: IBaseWidget,
+  target: IComboWidget,
   mode: ValueControlMode,
   { comboFilter, nodeId }: { comboFilter?: string; nodeId?: unknown }
 ): IBaseWidget['value'] | undefined {
@@ -93,10 +96,13 @@ function computeNextComboValue(
   if (!Array.isArray(rawValues)) return undefined
 
   const allValues = rawValues.filter(
-    (value): value is string => typeof value === 'string'
+    (value): value is string | number =>
+      typeof value === 'string' || typeof value === 'number'
   )
   const check = buildComboFilter(comboFilter, nodeId)
-  const values = check ? allValues.filter(check) : allValues
+  const values = check
+    ? allValues.filter((value) => check(String(value)))
+    : allValues
 
   if (!values.length) {
     if (allValues.length) {
@@ -108,7 +114,7 @@ function computeNextComboValue(
     return undefined
   }
 
-  let currentIndex = values.indexOf(target.value as string)
+  let currentIndex = findComboValueIndex(values, target.value)
   const length = values.length
 
   switch (mode) {

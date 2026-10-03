@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
+import { test } from './fixtures/workshopVisibility'
 
 const caseStudyVideoPath = fileURLToPath(
   new URL(
@@ -17,7 +17,7 @@ test.describe('Homepage @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Comfy — Professional Control of Visual AI')
+    await expect(page).toHaveTitle('Comfy - Professional Control of Visual AI')
   })
 
   test('HeroSection heading is visible', async ({ page }) => {
@@ -32,6 +32,44 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
+  test('ModelReleaseSection carousel shows the active slide', async ({
+    page
+  }) => {
+    const activeSlide = page.locator('article[aria-hidden="false"]', {
+      hasText: 'New Model Release'
+    })
+    await expect(activeSlide.getByText('New Model Release')).toBeVisible()
+    const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
+    await cta.scrollIntoViewIfNeeded()
+    await expect(cta).toBeVisible()
+    await expect(cta).toHaveAttribute(
+      'href',
+      '/hub/models/seedance-2-5-text-to-video/'
+    )
+  })
+
+  test('ModelDiscoverySection links providers to the Workshop', async ({
+    page
+  }) => {
+    const section = page.getByTestId('model-discovery')
+    await expect(
+      section.getByRole('heading', { name: /ready to run/i })
+    ).toBeVisible()
+    const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
+    await expect(bytedance).toHaveAttribute('href', '/hub/models/?q=ByteDance')
+    await expect(
+      section.getByRole('link', { name: 'Browse all models' })
+    ).toHaveAttribute('href', '/hub/models/')
+  })
+
+  test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {
+    const carousel = page.locator('[aria-roledescription="carousel"]')
+    await expect(carousel).toBeVisible()
+    await expect(
+      carousel.getByRole('link', { name: 'FLUX 3 Video: Text to Video' })
+    ).toBeVisible()
+  })
+
   test('ProductShowcase section is visible', async ({ page }) => {
     await expect(page.getByText('HOW', { exact: true }).first()).toBeVisible()
     await expect(
@@ -39,10 +77,11 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
-  test('UseCaseSection is visible', async ({ page }) => {
+  test('IndustriesSection is visible', async ({ page }) => {
     await expect(
-      page.getByText('Industries that create with ComfyUI')
+      page.getByRole('button', { name: 'VFX & Animation' })
     ).toBeVisible()
+    await expect(page.getByText(/Powered by 60,000\+ nodes/)).toBeVisible()
   })
 
   test('GetStartedSection with heading is visible', async ({ page }) => {
@@ -55,7 +94,9 @@ test.describe('Homepage @smoke', () => {
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
-    const cards = section.locator('a[href]')
+    const cards = section
+      .getByRole('group', { name: 'Products' })
+      .getByRole('link')
     await expect(cards).toHaveCount(4)
   })
 
@@ -112,11 +153,6 @@ test.describe('Homepage @smoke', () => {
     expect(ctaBox).not.toBeNull()
     expect(ctaBox!.y - (subBox!.y + subBox!.height)).toBeGreaterThanOrEqual(24)
   })
-
-  test('BuildWhatSection is visible', async ({ page }) => {
-    // "DOESN'T EXIST" is the actual badge text rendered in the Build What section
-    await expect(page.getByText("DOESN'T EXIST")).toBeVisible()
-  })
 })
 
 test.describe('Product showcase accordion @interaction', () => {
@@ -150,6 +186,22 @@ test.describe('Product showcase accordion @interaction', () => {
 
     await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
     await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
+  })
+
+  test('third feature shows the mask scene on mobile @mobile', async ({
+    page
+  }) => {
+    const thirdFeature = page
+      .getByRole('button', { name: /Community Workflows/i })
+      .first()
+
+    await thirdFeature.scrollIntoViewIfNeeded()
+    await thirdFeature.click()
+
+    // The CSS-hidden desktop copy is also in the DOM; target the mobile one.
+    const maskScene = page.locator('.vms-stage:visible')
+    await expect(maskScene).toBeVisible()
+    await expect(maskScene.locator('video').first()).toBeAttached()
   })
 })
 
@@ -198,9 +250,15 @@ test.describe('Product cards links @smoke', () => {
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
+    const products = section.getByRole('group', { name: 'Products' })
 
-    for (const href of ['/download', '/cloud', '/api', '/cloud/enterprise']) {
-      await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
+    for (const href of [
+      '/download/',
+      '/cloud/',
+      '/platform/',
+      '/enterprise/'
+    ]) {
+      await expect(products.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })
 })
@@ -215,10 +273,93 @@ test.describe('Get started section links @smoke', () => {
 
     const downloadLink = section.getByRole('link', { name: 'Download Desktop' })
     await expect(downloadLink).toBeVisible()
-    await expect(downloadLink).toHaveAttribute('href', '/download')
+    await expect(downloadLink).toHaveAttribute('href', '/download/')
 
-    const cloudLink = section.getByRole('link', { name: 'Launch Cloud' })
+    const cloudLink = section.getByRole('link', { name: 'Try Cloud for free' })
     await expect(cloudLink).toBeVisible()
-    await expect(cloudLink).toHaveAttribute('href', 'https://cloud.comfy.org')
+    await expect(cloudLink).toHaveAttribute(
+      'href',
+      /^https:\/\/cloud\.comfy\.org\//
+    )
+  })
+})
+
+test.describe('Model discovery row @interaction', () => {
+  test.beforeEach(async ({ context }) => {
+    await context.route('**/t.comfy.org/**', (route) =>
+      /\/(flags|decide)\//.test(route.request().url())
+        ? route.fulfill({
+            json: {
+              featureFlags: {
+                'workshop-enabled': true,
+                'workshop-workflows-enabled': true
+              },
+              featureFlagPayloads: {}
+            }
+          })
+        : route.abort('blockedbyclient')
+    )
+  })
+
+  test('the toggle swaps the row and leads to the page of the half it shows', async ({
+    page
+  }) => {
+    await page.goto('/')
+    const tabs = page.getByTestId('catalogue-tabs')
+    const browse = page.getByTestId('model-discovery').getByRole('link', {
+      name: /^Browse all/
+    })
+    await expect(browse).toHaveAttribute('href', '/hub/models/')
+
+    await tabs.getByRole('button', { name: 'Workflows' }).click()
+    await expect(
+      tabs.getByRole('button', { name: 'Workflows' })
+    ).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('discovery-workflow').first()).toBeAttached()
+    await expect(browse).toHaveAttribute('href', '/hub/workflows/')
+    await browse.click()
+    await expect(page).toHaveURL('/hub/workflows/')
+  })
+
+  test('a hovered or focused workflow card gives its whole name', async ({
+    page
+  }) => {
+    await page.goto('/')
+    await page
+      .getByTestId('catalogue-tabs')
+      .getByRole('button', { name: 'Workflows' })
+      .click()
+    const cards = page.getByTestId('discovery-workflow')
+    await expect(cards.first()).toBeAttached()
+    await page.addStyleTag({
+      content:
+        '[data-testid="discovery-marquee"] { animation: none !important }'
+    })
+
+    const cut = await cards.evaluateAll((elements) =>
+      elements.findIndex((element) => {
+        const name = element.querySelector('span[title]')
+        const box = element.getBoundingClientRect()
+        return (
+          name !== null &&
+          name.scrollWidth > name.clientWidth + 1 &&
+          box.x > 0 &&
+          box.right < window.innerWidth
+        )
+      })
+    )
+    expect(cut).toBeGreaterThan(-1)
+
+    const card = cards.nth(cut)
+    const name = card.locator('span[title]')
+    const overflow = () =>
+      name.evaluate((element) => element.scrollWidth - element.clientWidth)
+    await card.hover()
+    await expect.poll(overflow).toBeLessThanOrEqual(1)
+
+    await page.mouse.move(0, 0)
+    await expect.poll(overflow).toBeGreaterThan(1)
+    await card.focus()
+    await expect.poll(overflow).toBeLessThanOrEqual(1)
   })
 })

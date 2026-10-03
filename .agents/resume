@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+node_major="$(tr -d '[:space:]' < "$repo_root/.nvmrc")"
+node_home="$HOME/.local/share/comfyui-frontend-node-v$node_major"
+export PATH="$node_home/bin:$PATH"
+
+[[ -x "$node_home/bin/node" && -x "$node_home/bin/pnpm" ]]
+expected_pnpm="$("$node_home/bin/node" -e "console.log(require(process.argv[1]).packageManager.split('@')[1])" "$repo_root/package.json")"
+actual_node="$("$node_home/bin/node" --version)"
+actual_pnpm="$("$node_home/bin/pnpm" --version)"
+
+[[ "$actual_node" == v"$node_major".* ]]
+[[ "$actual_pnpm" == "$expected_pnpm" ]]
+
+echo "Orb toolchain ready: Node.js $actual_node, pnpm $actual_pnpm"

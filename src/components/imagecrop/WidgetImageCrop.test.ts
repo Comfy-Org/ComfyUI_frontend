@@ -5,6 +5,7 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { Ref } from 'vue'
 
@@ -31,7 +32,7 @@ function createDefaultCropState() {
   }
 }
 
-vi.mock('@/composables/useImageCrop', async () => {
+vi.mock<unknown>(import('@/composables/useImageCrop'), async () => {
   return {
     ASPECT_RATIOS: {
       '1:1': 1,
@@ -51,7 +52,7 @@ const upstreamHolder = vi.hoisted(() => ({
   ref: null as Ref<unknown> | null
 }))
 
-vi.mock('@/composables/useUpstreamValue', async () => {
+vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
   const { ref } = await import('vue')
   return {
     useUpstreamValue: () => {
@@ -81,16 +82,6 @@ const i18n = createI18n({
       boundingBox: { x: 'X', y: 'Y', width: 'Width', height: 'Height' }
     }
   }
-})
-
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs" type="button"><slot /></button>'
-})
-
-const Passthrough = defineComponent({
-  template: '<div><slot /></div>'
 })
 
 const WidgetBoundingBoxStub = defineComponent({
@@ -124,7 +115,7 @@ function makeWidget(
     value: { x: 0, y: 0, width: 512, height: 512 },
     options: {},
     ...overrides
-  } as SimplifiedWidget<Bounds>
+  }
 }
 
 function renderWidget(
@@ -132,22 +123,17 @@ function renderWidget(
   initialModel: Bounds = { x: 0, y: 0, width: 512, height: 512 }
 ) {
   const value = ref<Bounds>(initialModel)
+  const nodeId = toNodeId(1)
   const Harness = defineComponent({
     components: { WidgetImageCrop },
-    setup: () => ({ value, widget }),
+    setup: () => ({ value, widget, nodeId }),
     template:
-      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="1" />'
+      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="nodeId" />'
   })
   const utils = render(Harness, {
     global: {
       plugins: [i18n],
       stubs: {
-        Button: ButtonStub,
-        Select: Passthrough,
-        SelectContent: Passthrough,
-        SelectTrigger: Passthrough,
-        SelectValue: Passthrough,
-        SelectItem: Passthrough,
         WidgetBoundingBox: WidgetBoundingBoxStub
       }
     }
@@ -233,7 +219,7 @@ describe('WidgetImageCrop', () => {
       renderWidget(
         makeWidget({
           options: { disabled: true },
-          linkedUpstream: { nodeId: 'n1' }
+          linkedUpstream: { nodeId: toNodeId('n1') }
         }),
         { x: 0, y: 0, width: 512, height: 512 }
       )

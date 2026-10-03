@@ -1,14 +1,12 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-
-const mockSettingStore = vi.hoisted(() => ({
-  get: vi.fn(() => false)
-}))
 
 const mockCanvas = vi.hoisted(() => ({
   graph_mouse: [0, 0] as [number, number],
@@ -17,17 +15,7 @@ const mockCanvas = vi.hoisted(() => ({
   setDirty: vi.fn()
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => mockSettingStore
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => mockCanvas
-  })
-}))
-
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       emitBeforeChange: vi.fn(),
@@ -44,6 +32,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+// oxlint-disable-next-line vitest/prefer-import-in-mock -- import() would mark createImageHost used and retire its knip tag
 vi.mock('@/scripts/ui/imagePreview', () => ({
   calculateImageGrid: vi.fn(() => ({
     cellWidth: 100,
@@ -54,7 +43,7 @@ vi.mock('@/scripts/ui/imagePreview', () => ({
   }))
 }))
 
-vi.mock('@/utils/imageUtil', () => ({
+vi.mock(import('@/utils/imageUtil'), () => ({
   is_all_same_aspect_ratio: vi.fn(() => true)
 }))
 
@@ -129,22 +118,18 @@ const defaultInputSpec = fromPartial<InputSpec>({
   type: 'CUSTOM'
 })
 
+beforeEach(() => {
+  vi.mocked(useCanvasStore().getCanvas).mockReturnValue(fromPartial(mockCanvas))
+})
+
 describe('useImagePreviewWidget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     // clearAllMocks does not reset mockReturnValue — restore defaults explicitly
-    mockSettingStore.get.mockReturnValue(false)
+    useSettingStore().settingValues['Comfy.Node.AllowImageSizeDraw'] = false
     vi.mocked(is_all_same_aspect_ratio).mockReturnValue(true)
     mockCanvas.graph_mouse = [0, 0]
     mockCanvas.pointer_is_down = false
     mockCanvas.canvas.style.cursor = ''
-  })
-
-  // Restore real timers unconditionally so a thrown assertion in any
-  // useFakeTimers() test does not leak fake timers into later tests.
-  // Idempotent when timers are already real.
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('widget construction', () => {
@@ -163,15 +148,16 @@ describe('useImagePreviewWidget', () => {
       expect(widget.type).toBe('custom')
     })
 
-    it('widget options include serialize false and canvasOnly', () => {
+    it('keeps the preview on the canvas', () => {
       const constructor = useImagePreviewWidget()
       const node = createMockNode()
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      expect(widget.options).toMatchObject({
-        serialize: false,
-        canvasOnly: true
+      expect(widget.visibility.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
       })
     })
   })
@@ -196,7 +182,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node1)
       const node2 = createMockNode({ id: 2 })
-      const copy = widget.createCopyForNode!(node2)
+      const copy = widget.createCopyForNode(node2)
 
       expect(copy.name).toBe('preview')
       expect(copy.type).toBe('custom')
@@ -205,9 +191,6 @@ describe('useImagePreviewWidget', () => {
 
   describe('drawWidget — upload spinner', () => {
     it('renders spinner when node.isUploading is true', () => {
-      vi.useFakeTimers()
-      vi.setSystemTime(500)
-
       const constructor = useImagePreviewWidget()
       const node = createMockNode({ isUploading: true })
       constructor(node, defaultInputSpec)
@@ -226,9 +209,6 @@ describe('useImagePreviewWidget', () => {
     })
 
     it('uses LiteGraph.NODE_TEXT_COLOR for spinner stroke', () => {
-      vi.useFakeTimers()
-      vi.setSystemTime(0)
-
       const constructor = useImagePreviewWidget()
       const node = createMockNode({ isUploading: true })
       constructor(node, defaultInputSpec)
@@ -262,6 +242,29 @@ describe('useImagePreviewWidget', () => {
       await vi.waitFor(() => {
         expect(ctx.drawImage).toHaveBeenCalled()
       })
+    })
+
+    it('does not draw an image that breaks before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const img = createMockImage(200, 100)
+      const node = createMockNode({
+        imgs: [img],
+        imageIndex: 0
+      })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      Object.defineProperties(img, {
+        naturalHeight: { value: 0 },
+        naturalWidth: { value: 0 }
+      })
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
     })
 
     it('auto-sets imageIndex to 0 for single image with null index', () => {
@@ -341,7 +344,7 @@ describe('useImagePreviewWidget', () => {
 
   describe('drawWidget — image size text', () => {
     it('draws image size text when setting is enabled', () => {
-      mockSettingStore.get.mockReturnValue(true)
+      useSettingStore().settingValues['Comfy.Node.AllowImageSizeDraw'] = true
 
       const constructor = useImagePreviewWidget()
       const img = createMockImage(512, 768)
@@ -365,7 +368,7 @@ describe('useImagePreviewWidget', () => {
     })
 
     it('does not draw image size text when setting is disabled', () => {
-      mockSettingStore.get.mockReturnValue(false)
+      useSettingStore().settingValues['Comfy.Node.AllowImageSizeDraw'] = false
 
       const constructor = useImagePreviewWidget()
       const img = createMockImage(512, 768)
@@ -402,6 +405,28 @@ describe('useImagePreviewWidget', () => {
 
       expect(calculateImageGrid).toHaveBeenCalledWith(imgs, 300, 220)
       expect(node.imageRects).toHaveLength(2)
+    })
+
+    it('does not draw thumbnails that break before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const imgs = [createMockImage(100, 100), createMockImage(100, 100)]
+      const node = createMockNode({ imgs, imageIndex: null })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      for (const img of imgs) {
+        Object.defineProperties(img, {
+          naturalHeight: { value: 0 },
+          naturalWidth: { value: 0 }
+        })
+      }
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
     })
 
     it('uses non-compact mode for mixed aspect ratios', () => {

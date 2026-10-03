@@ -1,25 +1,12 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 
-const mockStartDrag = vi.fn()
-const mockHandleNativeDrop = vi.fn()
-
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
-  useNodeDragToCanvas: () => ({
-    startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop
-  })
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn().mockReturnValue('left')
-  })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 describe('useNodePreviewAndDrag', () => {
   const mockNodeDef = {
@@ -27,24 +14,19 @@ describe('useNodePreviewAndDrag', () => {
     display_name: 'Test Node'
   } as ComfyNodeDefImpl
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('initial state', () => {
     it('should initialize with correct default values', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       expect(result.isHovered.value).toBe(false)
       expect(result.isDragging.value).toBe(false)
       expect(result.showPreview.value).toBe(false)
-      expect(result.previewRef.value).toBeNull()
     })
 
     it('should compute showPreview based on hover and drag state', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       result.isHovered.value = true
       expect(result.showPreview.value).toBe(true)
@@ -57,7 +39,7 @@ describe('useNodePreviewAndDrag', () => {
   describe('handleMouseEnter', () => {
     it('should set isHovered to true when nodeDef exists', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       const mockElement = document.createElement('div')
       vi.spyOn(mockElement, 'getBoundingClientRect').mockReturnValue({
@@ -82,7 +64,7 @@ describe('useNodePreviewAndDrag', () => {
 
     it('should not set isHovered when nodeDef is undefined', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(undefined)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       const mockElement = document.createElement('div')
       const mockEvent = fromPartial<MouseEvent>({
@@ -97,7 +79,7 @@ describe('useNodePreviewAndDrag', () => {
   describe('handleMouseLeave', () => {
     it('should set isHovered to false', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       result.isHovered.value = true
       result.handleMouseLeave()
@@ -109,7 +91,7 @@ describe('useNodePreviewAndDrag', () => {
   describe('handleDragStart', () => {
     it('should call startDrag with native mode when nodeDef exists', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       const mockDataTransfer = {
         effectAllowed: '',
@@ -124,7 +106,12 @@ describe('useNodePreviewAndDrag', () => {
 
       expect(result.isDragging.value).toBe(true)
       expect(result.isHovered.value).toBe(false)
-      expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, 'native')
+      expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(
+        mockNodeDef,
+        {
+          mode: 'native'
+        }
+      )
       expect(mockDataTransfer.effectAllowed).toBe('copy')
       expect(mockDataTransfer.setData).toHaveBeenCalledWith(
         'application/x-comfy-node',
@@ -134,20 +121,20 @@ describe('useNodePreviewAndDrag', () => {
 
     it('should not start drag when nodeDef is undefined', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(undefined)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       const mockEvent = { dataTransfer: null } as DragEvent
       result.handleDragStart(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(mockStartDrag).not.toHaveBeenCalled()
+      expect(useNodeDragToCanvas().startDrag).not.toHaveBeenCalled()
     })
   })
 
   describe('handleDragEnd', () => {
     it('should call handleNativeDrop with drop coordinates', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       result.isDragging.value = true
 
@@ -159,12 +146,15 @@ describe('useNodePreviewAndDrag', () => {
       result.handleDragEnd(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(mockHandleNativeDrop).toHaveBeenCalledWith(100, 200)
+      expect(useNodeDragToCanvas().handleNativeDrop).toHaveBeenCalledWith(
+        100,
+        200
+      )
     })
 
     it('should always call handleNativeDrop regardless of dropEffect', () => {
       const nodeDef = ref<ComfyNodeDefImpl | undefined>(mockNodeDef)
-      const result = useNodePreviewAndDrag(nodeDef)
+      const result = useNodePreviewAndDrag(nodeDef, ref(null))
 
       result.isDragging.value = true
 
@@ -177,7 +167,10 @@ describe('useNodePreviewAndDrag', () => {
       result.handleDragEnd(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(mockHandleNativeDrop).toHaveBeenCalledWith(300, 400)
+      expect(useNodeDragToCanvas().handleNativeDrop).toHaveBeenCalledWith(
+        300,
+        400
+      )
     })
   })
 })

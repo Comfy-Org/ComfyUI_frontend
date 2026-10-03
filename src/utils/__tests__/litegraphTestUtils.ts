@@ -3,19 +3,50 @@ import type {
   INodeOutputSlot,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
-  CanvasPointerEvent,
+  ISerialisedGraph,
   LGraph,
-  LGraphCanvas,
   LGraphGroup,
   LinkNetwork,
+  SerialisableGraph
+} from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphEventMode,
+  LGraphNode,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
+import type { LinkId } from '@/types/linkId'
+import { toGroupId } from '@/types/groupId'
+import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { zeroUuid } from '@/utils/uuid'
+
+/** Creates a node shell state with minimal required fields. */
+export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
+  return {
+    flags: {},
+    graphId: zeroUuid,
+    id: toNodeId(1),
+    inputs: [],
+    mode: LGraphEventMode.ALWAYS,
+    outputs: [],
+    title: 'Test Node',
+    type: 'TestNode',
+    ...overrides,
+    properties: overrides.properties ?? {}
+  }
+}
 
 /**
  * Creates a mock LGraphNode with minimal required properties
@@ -23,15 +54,18 @@ import type { ChangeTracker } from '@/scripts/changeTracker'
 export function createMockLGraphNode(
   overrides: Partial<LGraphNode> | Record<string, unknown> = {}
 ): LGraphNode {
-  const partial: Partial<LGraphNode> = {
-    id: 1,
+  const nodeOverrides = overrides as Partial<LGraphNode>
+  const size = nodeOverrides.size ?? [100, 100]
+  return fromPartial<LGraphNode>({
+    id: toNodeId(1),
     pos: [0, 0],
-    size: [100, 100],
+    size,
+    renderingSize: size,
     title: 'Test Node',
     mode: LGraphEventMode.ALWAYS,
-    ...(overrides as Partial<LGraphNode>)
-  }
-  return partial as Partial<LGraphNode> as LGraphNode
+    flags: {},
+    ...nodeOverrides
+  })
 }
 
 /**
@@ -41,11 +75,11 @@ export function createMockPositionable(
   overrides: Partial<Positionable> = {}
 ): Positionable {
   const partial: Partial<Positionable> = {
-    id: 1,
+    id: toGroupId(1),
     pos: [0, 0],
     ...overrides
   }
-  return partial as Partial<Positionable> as Positionable
+  return partial as Positionable
 }
 
 /**
@@ -55,12 +89,12 @@ export function createMockLGraphGroup(
   overrides: Partial<LGraphGroup> = {}
 ): LGraphGroup {
   const partial: Partial<LGraphGroup> = {
-    id: 1,
+    id: toGroupId(1),
     pos: [0, 0],
     boundingRect: new Rectangle(0, 0, 100, 100),
     ...overrides
   }
-  return partial as Partial<LGraphGroup> as LGraphGroup
+  return partial as LGraphGroup
 }
 
 /**
@@ -80,85 +114,22 @@ export function createMockSubgraphNode(
 }
 
 /**
- * Creates a mock LGraphCanvas with minimal required properties for testing
- */
-export function createMockCanvas(
-  overrides: Partial<LGraphCanvas> | Record<string, unknown> = {}
-): LGraphCanvas {
-  return {
-    setDirty: vi.fn(),
-    state: {
-      selectionChanged: false
-    },
-    ...(overrides as Partial<LGraphCanvas>)
-  } as LGraphCanvas
-}
-
-/**
  * Creates a mock LGraph with trigger function
  */
 export function createMockLGraph(overrides: Partial<LGraph> = {}): LGraph {
-  return {
+  const nodes = overrides._nodes ?? []
+  const byId = new Map(nodes.map((node) => [String(node.id), node]))
+  const graph = fromPartial<LGraph>({
     trigger: vi.fn(),
+    // A real dispatcher: node lifecycle subscribers listen on `graph.events`.
+    events: new CustomEventTarget<LGraphEventMap>(),
+    _nodes: nodes,
+    _groups: [],
+    links: createMockLinks([]),
+    getNodeById: (id: NodeId) => byId.get(String(id)) ?? null,
     ...overrides
-  } as LGraph
-}
-
-/**
- * Creates a mock CanvasPointerEvent
- */
-export function createMockCanvasPointerEvent(
-  canvasX: number,
-  canvasY: number,
-  overrides: Partial<CanvasPointerEvent> = {}
-): CanvasPointerEvent {
-  return {
-    canvasX,
-    canvasY,
-    ...overrides
-  } as CanvasPointerEvent
-}
-
-/**
- * Creates a mock CanvasRenderingContext2D
- */
-export function createMockCanvasRenderingContext2D(
-  overrides: Partial<CanvasRenderingContext2D> = {}
-): CanvasRenderingContext2D {
-  const partial: Partial<CanvasRenderingContext2D> = {
-    save: vi.fn(),
-    restore: vi.fn(),
-    translate: vi.fn(),
-    scale: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    fillText: vi.fn(),
-    measureText: vi.fn(() => ({ width: 10 }) as TextMetrics),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    closePath: vi.fn(),
-    arc: vi.fn(),
-    rect: vi.fn(),
-    clip: vi.fn(),
-    clearRect: vi.fn(),
-    setTransform: vi.fn(),
-    roundRect: vi.fn(),
-    getTransform: vi.fn(
-      () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) as DOMMatrix
-    ),
-    font: '',
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline,
-    ...overrides
-  }
-  return partial as CanvasRenderingContext2D
+  })
+  return Object.assign(graph, { rootGraph: overrides.rootGraph ?? graph })
 }
 
 /**
@@ -241,7 +212,7 @@ export function createMockFileList(files: File[]): FileList {
     },
     files
   )
-  return fileList as FileList
+  return fileList
 }
 
 /**
@@ -252,6 +223,15 @@ export function createMockChangeTracker(
   overrides: Partial<ChangeTracker> = {}
 ): ChangeTracker {
   const partial = {
+    initialState: {
+      last_node_id: 0,
+      last_link_id: 0,
+      nodes: [],
+      links: [],
+      groups: [],
+      config: {},
+      version: 0.4
+    },
     activeState: {
       last_node_id: 0,
       last_link_id: 0,
@@ -264,6 +244,8 @@ export function createMockChangeTracker(
     undoQueue: [],
     redoQueue: [],
     changeCount: 0,
+    beforeChange: vi.fn(),
+    afterChange: vi.fn(),
     captureCanvasState: vi.fn(),
     checkState: vi.fn(),
     deactivate: vi.fn(),
@@ -282,67 +264,19 @@ export function createMockChangeTracker(
 export function createMockLoadedWorkflow(
   overrides: Partial<LoadedComfyWorkflow> | Record<string, unknown> = {}
 ): LoadedComfyWorkflow {
-  return {
+  return fromPartial<LoadedComfyWorkflow>({
     changeTracker: createMockChangeTracker(),
     ...overrides
-  } as unknown as LoadedComfyWorkflow
-}
-
-/**
- * Creates a mock MinimapCanvas for minimap testing
- */
-export function createMockMinimapCanvas(
-  overrides: Partial<HTMLCanvasElement> = {}
-): HTMLCanvasElement {
-  const mockGetContext = vi.fn()
-  mockGetContext.mockImplementation((contextId: string) =>
-    contextId === '2d' ? createMockCanvas2DContext() : null
-  )
-
-  const partial: Partial<HTMLCanvasElement> = {
-    width: 200,
-    height: 200,
-    clientWidth: 200,
-    clientHeight: 200,
-    getContext: mockGetContext as HTMLCanvasElement['getContext'],
-    ...overrides
-  }
-  return partial as HTMLCanvasElement
-}
-
-/**
- * Creates a mock CanvasRenderingContext2D for canvas testing
- */
-export function createMockCanvas2DContext(
-  overrides: Partial<CanvasRenderingContext2D> = {}
-): CanvasRenderingContext2D {
-  const partial: Partial<CanvasRenderingContext2D> = {
-    clearRect: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    arc: vi.fn(),
-    fill: vi.fn(),
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    save: vi.fn(),
-    restore: vi.fn(),
-    ...overrides
-  }
-  return partial as CanvasRenderingContext2D
+  })
 }
 
 export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
   const partial: Partial<LLink> = {
-    id: 1,
+    id: toLinkId(1),
     type: '*',
-    origin_id: 1,
+    origin_id: toNodeId(1),
     origin_slot: 0,
-    target_id: 2,
+    target_id: toNodeId(2),
     target_slot: 0,
     _pos: [0, 0],
     ...overrides
@@ -351,11 +285,50 @@ export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
 }
 
 export function createMockLinks(links: LLink[]): LGraph['links'] {
-  const map = new Map<number, LLink>()
+  const map = new Map<LinkId, LLink>()
   const record: Record<number, LLink> = {}
   for (const link of links) {
     map.set(link.id, link)
     record[link.id] = link
   }
-  return Object.assign(map, record) as LGraph['links']
+  return Object.assign(map, record)
+}
+export function reloadSerializedGraph(
+  serialized: ISerialisedGraph | SerialisableGraph,
+  graphFactory: () => LGraph
+): LGraph {
+  const payload = JSON.parse(JSON.stringify(serialized)) as typeof serialized
+  const reloaded = graphFactory()
+  payload.id = reloaded.id
+  useWidgetValueStore().clearGraph(payload.id)
+  usePreviewExposureStore().clearGraph(payload.id)
+  reloaded.configure(payload)
+  return reloaded
+}
+
+/**
+ * Creates a link between two nodes by directly mutating graph state,
+ * bypassing the layout store integration in connect().
+ */
+export function createTestLink(
+  graph: LGraph,
+  sourceNode: LGraphNode,
+  outputSlot: number,
+  targetNode: LGraphNode,
+  inputSlot: number
+): LLink {
+  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+  graph.state.lastLinkId = linkId
+  const link = new LLink(
+    linkId,
+    sourceNode.outputs[outputSlot].type,
+    sourceNode.id,
+    outputSlot,
+    targetNode.id,
+    inputSlot
+  )
+  if (!graph._addLink(link)) {
+    throw new Error('Failed to add test link')
+  }
+  return link
 }

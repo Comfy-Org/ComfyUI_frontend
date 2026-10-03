@@ -9,7 +9,7 @@
         </p>
       </div>
 
-      <Divider class="my-4" />
+      <div class="my-4 border-t border-interface-stroke" />
 
       <div class="my-4 flex items-center justify-between">
         <h3 class="my-0 text-lg font-semibold">
@@ -22,7 +22,7 @@
       </div>
 
       <div v-if="loading" class="flex items-center justify-center py-8">
-        <ProgressSpinner class="size-8" />
+        <Spinner class="size-8" />
       </div>
 
       <div
@@ -36,7 +36,7 @@
         <SecretListItem
           v-for="secret in secrets"
           :key="secret.id"
-          :secret="secret"
+          :secret
           :loading="operatingSecretId === secret.id"
           :disabled="operatingSecretId !== null"
           @edit="openEditDialog(secret)"
@@ -47,7 +47,8 @@
       <SecretFormDialog
         v-model:visible="createDialogVisible"
         mode="create"
-        :existing-providers="existingProviders"
+        :existing-providers
+        :available-providers
         @saved="fetchSecrets"
       />
 
@@ -55,7 +56,8 @@
         v-model:visible="editDialogVisible"
         mode="edit"
         :secret="selectedSecret"
-        :existing-providers="existingProviders"
+        :existing-providers
+        :available-providers
         @saved="fetchSecrets"
       />
     </div>
@@ -63,14 +65,13 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
-import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useSecrets } from '../composables/useSecrets'
@@ -84,9 +85,11 @@ const dialogStore = useDialogStore()
 const {
   loading,
   secrets,
+  availableProviders,
   operatingSecretId,
   existingProviders,
   fetchSecrets,
+  fetchProviders,
   deleteSecret
 } = useSecrets()
 
@@ -122,4 +125,5 @@ function confirmDelete(secret: SecretMetadata) {
 }
 
 fetchSecrets()
+fetchProviders()
 </script>

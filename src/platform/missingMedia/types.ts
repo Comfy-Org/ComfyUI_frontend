@@ -1,4 +1,5 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 export type MediaType = 'image' | 'video' | 'audio'
 
@@ -7,9 +8,10 @@ export type MediaType = 'image' | 'video' | 'audio'
  * The same file name may appear multiple times across different nodes.
  */
 export interface MissingMediaCandidate {
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   nodeType: string
   widgetName: string
+  promotedSources?: PromotedWidgetExecutionSource[]
   mediaType: MediaType
   /** Display name (plain filename for OSS, asset hash for cloud). */
   name: string
@@ -29,7 +31,7 @@ export interface MissingMediaViewModel {
   mediaType: MediaType
   representative: MissingMediaCandidate
   referencingNodes: Array<{
-    nodeId: NodeId
+    nodeId: SerializedNodeId
     nodeType?: string
     widgetName: string
   }>

@@ -2,10 +2,17 @@ import { isEqual } from 'es-toolkit'
 import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import {
+  captureInputLayout,
+  inputLinkId,
+  outputLinkIds,
+  replaceNodeInputs
+} from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import { toRerouteId } from '@/types/rerouteId'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -17,13 +24,14 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type {
   ISerialisedNode,
   SerialisableLLink,
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
 
-import type { GraphOrSubgraph } from './Subgraph'
+import type { GraphOrSubgraph, Subgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphNode } from './SubgraphNode'
@@ -111,52 +119,52 @@ export function getBoundaryLinks(
       const node = item
 
       // Inputs
-      if (node.inputs) {
-        for (const input of node.inputs) {
-          addFloatingLinks(input._floatingLinks)
+      for (const [inputIndex] of node.inputs.entries()) {
+        addFloatingLinks(slotFloatingLinks(graph, 'input', node.id, inputIndex))
 
-          if (input.link == null) continue
+        const linkId = inputLinkId(graph, node.id, inputIndex)
+        if (linkId === undefined) continue
 
-          const resolved = LLink.resolve(input.link, graph)
-          if (!resolved) {
-            console.warn(`Failed to resolve link ID [${input.link}]`)
-            continue
-          }
+        const resolved = LLink.resolve(linkId, graph)
+        if (!resolved) {
+          console.warn(`Failed to resolve link ID [${linkId}]`)
+          continue
+        }
 
-          // Output end of this link is outside the items set
-          const { link, outputNode } = resolved
-          if (outputNode) {
-            if (!items.has(outputNode)) {
-              boundaryInputLinks.push(link)
-            } else {
-              internalLinks.push(link)
-            }
-          } else if (link.origin_id === SUBGRAPH_INPUT_ID) {
-            // Subgraph input node - always boundary
+        // Output end of this link is outside the items set
+        const { link, outputNode } = resolved
+        if (outputNode) {
+          if (!items.has(outputNode)) {
             boundaryInputLinks.push(link)
+          } else {
+            internalLinks.push(link)
           }
+        } else if (link.origin_id === SUBGRAPH_INPUT_ID) {
+          // Subgraph input node - always boundary
+          boundaryInputLinks.push(link)
         }
       }
 
       // Outputs
-      if (node.outputs) {
-        for (const output of node.outputs) {
-          addFloatingLinks(output._floatingLinks)
+      for (const [outputIndex] of node.outputs.entries()) {
+        addFloatingLinks(
+          slotFloatingLinks(graph, 'output', node.id, outputIndex)
+        )
 
-          if (!output.links) continue
+        const linkIds = outputLinkIds(graph, node.id, outputIndex)
+        if (!linkIds.length) continue
 
-          const many = LLink.resolveMany(output.links, graph)
-          for (const { link, inputNode } of many) {
-            if (
-              // Subgraph output node
-              link.target_id === SUBGRAPH_OUTPUT_ID ||
-              // Input end of this link is outside the items set
-              (inputNode && !items.has(inputNode))
-            ) {
-              boundaryOutputLinks.push(link)
-            }
-            // Internal links are discovered on input side.
+        const many = LLink.resolveMany(linkIds, graph)
+        for (const { link, inputNode } of many) {
+          if (
+            // Subgraph output node
+            link.target_id === SUBGRAPH_OUTPUT_ID ||
+            // Input end of this link is outside the items set
+            (inputNode && !items.has(inputNode))
+          ) {
+            boundaryOutputLinks.push(link)
           }
+          // Internal links are discovered on input side.
         }
       }
     } else if (item instanceof Reroute) {
@@ -202,9 +210,7 @@ export function getBoundaryLinks(
    * Adds any floating links that cross the boundary.
    * @param floatingLinks The floating links to check
    */
-  function addFloatingLinks(floatingLinks: Set<LLink> | undefined): void {
-    if (!floatingLinks) return
-
+  function addFloatingLinks(floatingLinks: LLink[]): void {
     for (const link of floatingLinks) {
       const crossesBoundary = LLink.getReroutes(graph, link).some(
         (reroute) => !items.has(reroute)
@@ -221,21 +227,45 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
   // Selectively clone - keep IDs & links
   for (const node of nodes) {
     const newNode = LiteGraph.createNode(node.type)
+    const data = structuredClone(node.serialize())
     if (!newNode) {
       console.warn('Failed to create node', node.type)
-      const serializedData = structuredClone(node.serialize())
-      clonedNodes.push(serializedData)
+      clonedNodes.push(data)
       continue
     }
 
     // Must be cloned; litegraph "serialize" is mostly shallow clone
-    const data = structuredClone(node.serialize())
     newNode.configure(data)
-
     clonedNodes.push(newNode.serialize())
   }
 
   return clonedNodes
+}
+
+export function findUnresolvableSubgraphLink(
+  subgraphNode: SubgraphNode
+): LLink | undefined {
+  const { subgraph } = subgraphNode
+
+  for (const link of subgraph.links.values()) {
+    const originOk =
+      link.origin_id === UNASSIGNED_NODE_ID ||
+      (link.origin_id === SUBGRAPH_INPUT_ID
+        ? Number.isInteger(link.origin_slot) &&
+          link.origin_slot >= 0 &&
+          link.origin_slot < subgraph.inputs.length
+        : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
+          undefined)
+    const targetOk =
+      link.target_id === UNASSIGNED_NODE_ID ||
+      (link.target_id === SUBGRAPH_OUTPUT_ID
+        ? Number.isInteger(link.target_slot) &&
+          link.target_slot >= 0 &&
+          link.target_slot < subgraph.outputs.length
+        : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
+          undefined)
+    if (!originOk || !targetOk) return link
+  }
 }
 
 /**
@@ -267,12 +297,16 @@ function mapReroutes(
 ) {
   let child: SerialisableLLink | Reroute = link
   let nextReroute =
-    child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+    child.parentId === undefined
+      ? undefined
+      : reroutes.get(toRerouteId(child.parentId))
 
   while (child.parentId !== undefined && nextReroute) {
     child = nextReroute
     nextReroute =
-      child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+      child.parentId === undefined
+        ? undefined
+        : reroutes.get(toRerouteId(child.parentId))
   }
 
   const lastId = child.parentId
@@ -300,7 +334,8 @@ export function mapSubgraphInputsAndLinks(
       if (!input) continue
 
       const linkData = link.asSerialisable()
-      link.parentId = mapReroutes(link, reroutes)
+      const parentId = mapReroutes(link, reroutes)
+      link.parentId = parentId === undefined ? undefined : toRerouteId(parentId)
       linkData.origin_id = SUBGRAPH_INPUT_ID
       linkData.origin_slot = inputs.length
 
@@ -482,7 +517,67 @@ export function findUsedSubgraphIds(
   return usedSubgraphIds
 }
 
-function reorderInPlace<T>(arr: T[], indices: readonly number[]): void {
+function findLiveSubgraphIds(
+  rootGraph: LGraph,
+  removedNode: SubgraphNode
+): Set<SubgraphId> {
+  const liveIds = new Set<SubgraphId>()
+  const toVisit: GraphOrSubgraph[] = [rootGraph]
+
+  while (toVisit.length > 0) {
+    const graph = toVisit.shift()!
+    for (const node of graph._nodes) {
+      if (node === removedNode || !node.isSubgraphNode()) continue
+      if (liveIds.has(node.subgraph.id)) continue
+      liveIds.add(node.subgraph.id)
+      toVisit.push(node.subgraph)
+    }
+  }
+
+  return liveIds
+}
+
+function collectSubgraphsPostOrder(
+  subgraph: Subgraph,
+  visitedIds: Set<SubgraphId>,
+  result: Subgraph[]
+): void {
+  if (visitedIds.has(subgraph.id)) return
+  visitedIds.add(subgraph.id)
+
+  for (const node of subgraph._nodes) {
+    if (node.isSubgraphNode()) {
+      collectSubgraphsPostOrder(node.subgraph, visitedIds, result)
+    }
+  }
+
+  result.push(subgraph)
+}
+
+export function findReleasableSubgraphs(
+  rootGraph: LGraph,
+  removedNode: SubgraphNode
+): Subgraph[] {
+  const liveIds = findLiveSubgraphIds(rootGraph, removedNode)
+  const removedSubtree: Subgraph[] = []
+  collectSubgraphsPostOrder(removedNode.subgraph, new Set(), removedSubtree)
+  return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))
+}
+
+export function findOrphanedSubgraphs(
+  rootGraph: LGraph,
+  removedNodes: Iterable<LGraphNode>
+): Subgraph[] {
+  const orphaned = new Map<SubgraphId, Subgraph>()
+  for (const node of removedNodes) {
+    if (!node.isSubgraphNode()) continue
+    for (const subgraph of findReleasableSubgraphs(rootGraph, node))
+      orphaned.set(subgraph.id, subgraph)
+  }
+  return [...orphaned.values()]
+}
+
+function reorderInPlace(arr: unknown[], indices: readonly number[]): void {
   arr.splice(0, arr.length, ...indices.flatMap((i) => arr[i] ?? []))
 }
 
@@ -502,9 +597,16 @@ export function reorderSubgraphInputs(
   orderedIndices: readonly number[]
 ): void {
   const subgraph = subgraphNode.subgraph
-  if (!subgraph) return
 
   const n = subgraph.inputs.length
+  if (subgraphNode.inputs.length !== n) {
+    console.error('reorderSubgraphInputs: host and subgraph inputs differ', {
+      hostInputs: subgraphNode.inputs.length,
+      subgraphInputs: n
+    })
+    return
+  }
+
   if (
     orderedIndices.length !== n ||
     new Set(orderedIndices).size !== orderedIndices.length ||
@@ -519,8 +621,18 @@ export function reorderSubgraphInputs(
 
   const oldOrder = subgraph.inputs.map((i) => i.id)
 
+  const previousInputs = captureInputLayout(subgraphNode)
+  const orderedHostInputs = orderedIndices.map(
+    (index) => previousInputs.inputs[index]
+  )
+
+  const result = replaceNodeInputs(
+    subgraphNode,
+    previousInputs,
+    orderedHostInputs
+  )
+  if (!result.ok) return
   reorderInPlace(subgraph.inputs, orderedIndices)
-  reorderInPlace(subgraphNode.inputs, orderedIndices)
   subgraphNode.invalidatePromotedViews()
 
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
@@ -528,13 +640,6 @@ export function reorderSubgraphInputs(
   }
   for (const [slot, link] of indexedLinks(subgraph.inputs, innerLinks)) {
     link.origin_slot = slot
-  }
-
-  function* outerLink(input: INodeInputSlot): Generator<LLink | undefined> {
-    if (input.link != null) yield subgraphNode.graph?.getLink(input.link)
-  }
-  for (const [slot, link] of indexedLinks(subgraphNode.inputs, outerLink)) {
-    link.target_slot = slot
   }
 
   const newOrder = subgraph.inputs.map((i) => i.id)

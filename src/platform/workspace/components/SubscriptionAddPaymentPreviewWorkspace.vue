@@ -1,255 +1,131 @@
 <template>
-  <h2 class="m-0 mb-8 text-center text-xl text-muted-foreground lg:text-2xl">
-    {{ $t('subscription.preview.confirmPayment') }}
-  </h2>
-  <div
-    class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
-  >
-    <div class="">
-      <!-- Plan Header -->
-      <div class="flex flex-col gap-2">
-        <span class="text-sm text-base-foreground">
-          {{ tierName }}
-        </span>
-        <div class="flex items-baseline gap-2">
-          <span class="text-4xl font-semibold text-base-foreground">
-            ${{ displayPrice }}
-          </span>
-          <span class="text-xl text-base-foreground">
-            {{ $t('subscription.usdPerMonthPerMember') }}
-          </span>
-        </div>
-        <span class="text-muted-foreground">
-          {{ $t('subscription.preview.startingToday') }}
-        </span>
-      </div>
-
-      <!-- Credits Section -->
-      <div class="flex flex-col gap-3 pt-16 pb-8">
-        <div class="flex items-center justify-between">
-          <span class="text-base-foreground">
-            {{ $t('subscription.preview.eachMonthCreditsRefill') }}
-          </span>
-          <div class="flex items-center gap-1">
-            <i class="icon-[lucide--component] text-sm text-amber-400" />
-            <span class="font-bold text-base-foreground">
-              {{ displayCredits }}
-            </span>
-            <span class="text-base-foreground">
-              {{ $t('subscription.preview.perMember') }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Expandable Features -->
-        <button
-          class="flex cursor-pointer items-center justify-end gap-1 border-none bg-transparent p-0 text-sm text-muted-foreground hover:text-base-foreground"
-          @click="isFeaturesCollapsed = !isFeaturesCollapsed"
-        >
-          <span>
-            {{
-              isFeaturesCollapsed
-                ? $t('subscription.preview.showMoreFeatures')
-                : $t('subscription.preview.hideFeatures')
-            }}
-          </span>
-          <i
-            :class="
-              cn(
-                'pi text-xs',
-                isFeaturesCollapsed ? 'pi-chevron-down' : 'pi-chevron-up'
-              )
-            "
-          />
-        </button>
-        <div v-show="!isFeaturesCollapsed" class="flex flex-col gap-2 pt-2">
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.maxDurationLabel') }}
-            </span>
-            <span class="text-sm font-bold text-base-foreground">
-              {{ maxDuration }}
-            </span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.gpuLabel') }}
-            </span>
-            <i class="pi pi-check text-success-foreground text-xs" />
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.addCreditsLabel') }}
-            </span>
-            <i class="pi pi-check text-success-foreground text-xs" />
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.customLoRAsLabel') }}
-            </span>
-            <i
-              v-if="hasCustomLoRAs"
-              class="pi pi-check text-success-foreground text-xs"
-            />
-            <i v-else class="pi pi-times text-xs text-muted-foreground" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Total Due Section -->
-      <div class="flex flex-col gap-2 border-t border-border-subtle pt-8">
-        <div class="flex items-center justify-between text-base">
-          <span class="text-base-foreground">
-            {{ $t('subscription.preview.totalDueToday') }}
-          </span>
-          <span class="font-bold text-base-foreground">
-            ${{ totalDueToday }}
-          </span>
-        </div>
-        <span class="text-sm text-muted-foreground">
-          {{
-            $t('subscription.preview.nextPaymentDue', {
-              date: nextPaymentDate
-            })
-          }}
-        </span>
-      </div>
-    </div>
-    <!-- Footer -->
-    <div class="flex flex-col gap-2 pt-8">
-      <!-- Terms Agreement -->
-      <p class="text-center text-xs text-muted-foreground">
-        <i18n-t keypath="subscription.preview.termsAgreement" tag="span">
-          <template #terms>
-            <a
-              href="https://www.comfy.org/terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="underline hover:text-base-foreground"
-            >
-              {{ $t('subscription.preview.terms') }}
-            </a>
-          </template>
-          <template #privacy>
-            <a
-              href="https://www.comfy.org/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="underline hover:text-base-foreground"
-            >
-              {{ $t('subscription.preview.privacyPolicy') }}
-            </a>
-          </template>
-        </i18n-t>
-      </p>
-
-      <!-- Add Credit Card Button -->
-      <Button
-        variant="secondary"
-        size="lg"
-        class="w-full rounded-lg"
-        :loading="isLoading"
-        @click="$emit('addCreditCard')"
-      >
-        {{ $t('subscription.preview.addCreditCard') }}
-      </Button>
-
-      <!-- Back Link -->
-      <Button
-        variant="textonly"
-        class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
-        @click="$emit('back')"
-      >
-        {{ $t('subscription.preview.backToAllPlans') }}
-      </Button>
-    </div>
-  </div>
+  <CheckoutSubscribeConfirm
+    v-model:selected-saved-method-id="selectedSavedMethodId"
+    :plan
+    :copy
+    :locale
+    :publishable-key
+    :theme-key="colorPaletteStore.activePaletteId"
+    :billing-cycle
+    :is-loading
+    :preview-data
+    :action-url
+    :authentication-state
+    :authentication-error
+    :reconciliation-operation-id
+    :parked-checkout-recovery
+    :use-payment-element
+    :saved-methods
+    :quote-is-current
+    :is-applying-promotion-code
+    :embedded-checkout-enabled
+    @add-credit-card="emit('addCreditCard')"
+    @confirm-payment="emit('confirmPayment', $event)"
+    @back="emit('back')"
+    @change-payment-method="emit('changePaymentMethod')"
+    @apply-promotion-code="emit('applyPromotionCode', $event)"
+    @invalidate-quote="emit('invalidateQuote')"
+    @payment-phase="emitPaymentJourneyPhase"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+/**
+ * The cloud app's binding of the shared new-subscription confirm: its tier
+ * and team-stop catalog, its translations, its Stripe key and theme, and its
+ * checkout-journey telemetry (ADR BILLING-WEB-0038).
+ */
+import { CheckoutSubscribeConfirm } from '@comfyorg/account-ui/billing/checkout'
+import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import {
-  getTierCredits,
-  getTierFeatures,
-  getTierPrice
-} from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
-import { cn } from '@comfyorg/tailwind-utils'
+import { useTelemetry } from '@/platform/telemetry'
+import type {
+  BillingAuthenticationState,
+  PreviewSubscribeResponse,
+  SavedPaymentMethod
+} from '@/platform/workspace/api/workspaceApi'
+import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
+import { useCheckoutCopy } from '@/platform/workspace/composables/useCheckoutCopy'
+import {
+  getActiveCheckoutJourney,
+  toCheckoutJourneyContext
+} from '@/platform/workspace/utils/checkoutJourney'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 interface Props {
-  tierKey: Exclude<TierKey, 'free' | 'founder'>
+  /** Personal-tier checkout. Required unless `teamPlan` is set. */
+  tierKey?: Exclude<TierKey, 'free' | 'founder'>
   billingCycle?: BillingCycle
   isLoading?: boolean
   previewData?: PreviewSubscribeResponse | null
+  /** Team-plan checkout (selected slider stop); overrides tier-derived display. */
+  teamPlan?: TeamPlanSelection | null
+  actionUrl?: string | null
+  authenticationState?: BillingAuthenticationState | null
+  authenticationError?: string | null
+  reconciliationOperationId?: string | null
+  parkedCheckoutRecovery?: boolean
+  usePaymentElement?: boolean
+  savedMethods?: SavedPaymentMethod[] | null
+  quoteIsCurrent?: boolean
+  isApplyingPromotionCode?: boolean
+  embeddedCheckoutEnabled?: boolean
 }
 
 const {
   tierKey,
   billingCycle = 'monthly',
   isLoading = false,
-  previewData = null
+  previewData = null,
+  teamPlan = null,
+  actionUrl = null,
+  authenticationState = null,
+  authenticationError = null,
+  reconciliationOperationId = null,
+  parkedCheckoutRecovery = false,
+  usePaymentElement = false,
+  savedMethods = null,
+  quoteIsCurrent = false,
+  isApplyingPromotionCode = false,
+  embeddedCheckoutEnabled = false
 } = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   addCreditCard: []
+  confirmPayment: [confirmationToken: string]
   back: []
+  changePaymentMethod: []
+  applyPromotionCode: [code: string]
+  invalidateQuote: []
 }>()
 
-const { t, n } = useI18n()
+const selectedSavedMethodId = defineModel<string | null>(
+  'selectedSavedMethodId',
+  { default: null }
+)
 
-const isFeaturesCollapsed = ref(true)
+const { locale } = useI18n()
+const { copy, checkoutPlan } = useCheckoutCopy()
+const telemetry = useTelemetry()
+const colorPaletteStore = useColorPaletteStore()
 
-const tierName = computed(() => t(`subscription.tiers.${tierKey}.name`))
+const publishableKey = resolveStripePublishableKey() ?? ''
 
-const displayPrice = computed(() => {
-  if (previewData?.new_plan) {
-    return (previewData.new_plan.price_cents / 100).toFixed(0)
-  }
-  return getTierPrice(tierKey, billingCycle === 'yearly')
-})
+const plan = computed(() => checkoutPlan(tierKey, teamPlan))
 
-const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
-
-const hasCustomLoRAs = computed(() => getTierFeatures(tierKey).customLoRAs)
-const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))
-
-const totalDueToday = computed(() => {
-  if (previewData) {
-    return (previewData.cost_today_cents / 100).toFixed(2)
-  }
-  const priceValue = getTierPrice(tierKey, billingCycle === 'yearly')
-  if (billingCycle === 'yearly') {
-    return (priceValue * 12).toFixed(2)
-  }
-  return priceValue.toFixed(2)
-})
-
-const nextPaymentDate = computed(() => {
-  if (previewData?.new_plan?.period_end) {
-    return new Date(previewData.new_plan.period_end).toLocaleDateString(
-      'en-US',
-      {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      }
-    )
-  }
-  const date = new Date()
-  if (billingCycle === 'yearly') {
-    date.setFullYear(date.getFullYear() + 1)
-  } else {
-    date.setMonth(date.getMonth() + 1)
-  }
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
+function emitPaymentJourneyPhase(phase: StripePaymentPhase): void {
+  // The form stops reporting once unmounted; what it cannot know is whether
+  // the active journey is still the one this checkout started.
+  const journey = getActiveCheckoutJourney()
+  if (!journey) return
+  telemetry?.trackCheckoutJourneyEvent({
+    ...toCheckoutJourneyContext(journey),
+    ...phase
   })
-})
+}
 </script>

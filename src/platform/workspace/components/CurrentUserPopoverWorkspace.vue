@@ -1,16 +1,15 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
-    class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    data-testid="current-user-popover"
+    class="current-user-popover -m-3 w-fit max-w-96 min-w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
         class="mb-1"
         :photo-url="userPhotoUrl"
-        :pt:icon:class="{
-          'text-2xl!': !userPhotoUrl
-        }"
+        icon-class="size-6"
         size="large"
       />
 
@@ -24,42 +23,67 @@
     </div>
 
     <!-- Workspace Selector -->
-    <div class="relative">
+    <div v-if="!accountActionsOnly" class="relative">
+      <!-- An API-key session is bound to one server-resolved workspace and
+           exposes no discovery or switching -->
       <div
-        ref="workspaceSwitcherTrigger"
-        class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
-        data-testid="workspace-switcher-trigger"
-        @click="toggleWorkspaceSwitcher"
+        v-if="isApiKeyLogin"
+        class="flex w-full items-center gap-2 rounded-lg px-4 py-2"
+        data-testid="workspace-context-row"
       >
-        <div class="flex min-w-0 flex-1 items-center gap-2">
-          <WorkspaceProfilePic
-            class="size-6 shrink-0 text-xs"
-            :workspace-name="workspaceName"
+        <WorkspaceProfilePic class="size-6 shrink-0 text-xs" :workspace-name />
+        <span class="truncate text-sm text-base-foreground">
+          {{ workspaceName }}
+        </span>
+      </div>
+      <template v-else>
+        <button
+          ref="workspaceSwitcherTrigger"
+          v-tooltip="{ value: workspaceName, showDelay: 300 }"
+          type="button"
+          class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
+          :aria-expanded="isWorkspaceSwitcherOpen"
+          aria-haspopup="menu"
+          aria-controls="workspace-switcher-panel"
+          data-testid="workspace-switcher-trigger"
+          @click="toggleWorkspaceSwitcher"
+          @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+        >
+          <div class="flex w-0 flex-1 items-center gap-2">
+            <WorkspaceProfilePic
+              class="size-6 shrink-0 text-xs"
+              :workspace-name
+              :subscription-tier="activeWorkspace?.subscriptionTier"
+            />
+            <span class="truncate text-sm text-base-foreground">
+              {{ workspaceName }}
+            </span>
+          </div>
+          <i
+            class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
           />
-          <span class="truncate text-sm text-base-foreground">{{
-            workspaceName
-          }}</span>
-        </div>
-        <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
-      </div>
+        </button>
 
-      <div
-        v-if="isWorkspaceSwitcherOpen"
-        ref="workspaceSwitcherPanel"
-        class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-        data-testid="workspace-switcher-panel"
-      >
-        <WorkspaceSwitcherPopover
-          @select="isWorkspaceSwitcherOpen = false"
-          @create="handleCreateWorkspace"
-        />
-      </div>
+        <div
+          v-if="isWorkspaceSwitcherOpen"
+          id="workspace-switcher-panel"
+          ref="workspaceSwitcherPanel"
+          role="menu"
+          class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+          data-testid="workspace-switcher-panel"
+        >
+          <WorkspaceSwitcherPopover
+            @select="isWorkspaceSwitcherOpen = false"
+            @create="handleCreateWorkspace"
+          />
+        </div>
+      </template>
     </div>
 
     <!-- Credits Section -->
 
-    <div class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-sm text-amber-400" />
+    <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
+      <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton
         v-if="isLoadingBalance"
         width="4rem"
@@ -79,19 +103,8 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <!-- Upgrade to add credits (free tier) -->
       <Button
-        v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
-        variant="gradient"
-        size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
-      <!-- Add Credits (subscribed + personal or workspace owner only, paid tier) -->
-      <Button
-        v-else-if="isActiveSubscription && permissions.canTopUp"
+        v-if="canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -99,6 +112,15 @@
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-else-if="canSubscribeSelfServe"
+        variant="subscribe"
+        size="sm"
+        data-testid="upgrade-to-add-credits-button"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
@@ -110,13 +132,13 @@
             : $t('workspaceSwitcher.subscribe')
         "
         size="sm"
-        button-variant="gradient"
+        button-variant="subscribe"
       />
       <Button
         v-if="showSubscribeAction && !isPersonalWorkspace"
         variant="primary"
         size="sm"
-        @click="handleOpenPlansAndPricing"
+        @click="handleOpenSubscriptionAction"
       >
         {{
           isCancelled
@@ -126,11 +148,13 @@
       </Button>
     </div>
 
-    <Divider class="mx-0 my-2" />
-
-    <!-- Plans & Pricing (PERSONAL and OWNER only) -->
     <div
-      v-if="showPlansAndPricing"
+      v-if="!accountActionsOnly"
+      class="mx-0 my-2 border-t border-interface-stroke"
+    />
+
+    <div
+      v-if="!accountActionsOnly && isCloud && showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -141,21 +165,35 @@
       }}</span>
     </div>
 
-    <!-- Manage Plan (PERSONAL and OWNER, only if subscribed) -->
-    <div
-      v-if="showManagePlan"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+    <button
+      v-if="!accountActionsOnly && isCloud && showManagePlan"
+      type="button"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="manage-plan-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      @click="handleOpenManagePlanSettings"
     >
-      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
-    </div>
+    </button>
+
+    <button
+      v-if="!accountActionsOnly && showLocalPlansAndCredits"
+      type="button"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
+      data-testid="plans-credits-menu-item"
+      @click="handleOpenPlanCreditsSettings"
+    >
+      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
+        $t('subscription.plansAndCredits')
+      }}</span>
+    </button>
 
     <!-- Partner Nodes Pricing (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -166,10 +204,14 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <div
+      v-if="!accountActionsOnly"
+      class="mx-0 my-2 border-t border-interface-stroke"
+    />
 
     <!-- Workspace Settings (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="workspace-settings-menu-item"
       @click="handleOpenWorkspaceSettings"
@@ -192,7 +234,7 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <div class="mx-0 my-2 border-t border-interface-stroke" />
 
     <!-- Logout (always shown) -->
     <div
@@ -211,7 +253,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -229,6 +270,7 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -238,9 +280,12 @@ const workspaceStore = useTeamWorkspaceStore()
 const {
   initState,
   workspaceName,
-  isInPersonalWorkspace: isPersonalWorkspace
+  isInPersonalWorkspace: isPersonalWorkspace,
+  activeWorkspace
 } = storeToRefs(workspaceStore)
-const { permissions } = useWorkspaceUI()
+const { permissions, canReactivatePlan, canOpenPricingSurface } =
+  useWorkspaceUI()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
@@ -257,15 +302,24 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const { accountActionsOnly = false } = defineProps<{
+  accountActionsOnly?: boolean
+}>()
+
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
-const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
-  useCurrentUser()
+const {
+  userDisplayName,
+  userEmail,
+  userPhotoUrl,
+  handleSignOut,
+  isApiKeyLogin
+} = useCurrentUser()
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
-  isActiveSubscription,
-  isFreeTier,
+  billingStatus,
+  canAccessSubscriptionFeatures,
   subscription,
   balance,
   isLoading,
@@ -294,16 +348,35 @@ const displayedCredits = computed(() => {
   })
 })
 
-const showPlansAndPricing = computed(
-  () => permissions.value.canManageSubscription
+const showPlansAndPricing = canOpenPricingSurface
+// Subscribing is a Cloud-only concept: Local users manage plan/credits
+// through settings instead (see showLocalPlansAndCredits below), regardless
+// of subscription status.
+const showLocalPlansAndCredits = computed(
+  () => !isCloud && permissions.value.canManageSubscription
+)
+const hasDelinquentSubscription = computed(
+  () =>
+    (billingStatus.value === 'payment_failed' ||
+      billingStatus.value === 'paused') &&
+    Boolean(subscription.value?.planSlug)
 )
 const showManagePlan = computed(
-  () => permissions.value.canManageSubscription && isActiveSubscription.value
-)
-const showSubscribeAction = computed(
   () =>
     permissions.value.canManageSubscription &&
-    (!isActiveSubscription.value || isCancelled.value)
+    (canAccessSubscriptionFeatures.value || hasDelinquentSubscription.value)
+)
+
+const showSubscribeAction = computed(
+  () =>
+    // Subscribing is Cloud-only, so the whole action stays gated on isCloud.
+    // Self-serve subscribe is server-authoritative; reactivation is not.
+    isCloud &&
+    ((isCancelled.value && canReactivatePlan.value) ||
+      (!canAccessSubscriptionFeatures.value &&
+        !hasDelinquentSubscription.value &&
+        canSubscribeSelfServe.value &&
+        canTopUp.value))
 )
 
 const handleOpenUserSettings = () => {
@@ -316,29 +389,40 @@ const handleOpenWorkspaceSettings = () => {
   emit('close')
 }
 
+/**
+ * Plan selection stays in the app: billing-web's `/v1/pricing` has no
+ * personal/team tabs, cycle toggle, or credit slider (G7), and a per-credit
+ * Team plan 400s there (FE-2642). Only checkout hands off to billing-web,
+ * from inside the table (`useSubscriptionCheckout`'s `handleSubscribeClick`
+ * / `handleSubscribeTeamClick`).
+ */
 const handleOpenPlansAndPricing = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   emit('close')
 }
 
-const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('workspace')
-  } else {
-    settingsDialog.show('credits')
-  }
+const handleOpenSubscriptionAction = () => {
+  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
+  emit('close')
+}
 
+const handleOpenManagePlanSettings = () => {
+  settingsDialog.show('workspace')
+  emit('close')
+}
+
+const handleOpenPlanCreditsSettings = () => {
+  settingsDialog.show('workspace')
   emit('close')
 }
 
 const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
   emit('close')
 }
 
 const handleTopUp = () => {
-  // Track purchase credits entry from avatar popover
-  useTelemetry()?.trackAddApiCreditButtonClicked()
+  useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
   dialogService.showTopUpCreditsDialog()
   emit('close')
 }
@@ -367,7 +451,7 @@ const toggleWorkspaceSwitcher = () => {
 }
 
 const refreshBalance = () => {
-  void fetchBalance()
+  if (!accountActionsOnly) void fetchBalance()
 }
 
 defineExpose({ refreshBalance })

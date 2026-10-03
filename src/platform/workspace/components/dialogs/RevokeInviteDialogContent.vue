@@ -10,7 +10,7 @@
         {{ $t('workspacePanel.revokeInviteDialog.title') }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -42,6 +42,7 @@ import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -52,6 +53,7 @@ const { inviteId } = defineProps<{
 
 const dialogStore = useDialogStore()
 const workspaceStore = useTeamWorkspaceStore()
+const { fetchStatus } = useBillingContext()
 const toast = useToast()
 const { t } = useI18n()
 const loading = ref(false)
@@ -64,6 +66,7 @@ async function onRevoke() {
   loading.value = true
   try {
     await workspaceStore.revokeInvite(inviteId)
+    void fetchStatus().catch(console.error)
     dialogStore.closeDialog({ key: 'revoke-invite' })
   } catch (error) {
     toast.add({

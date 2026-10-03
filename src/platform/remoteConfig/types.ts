@@ -1,6 +1,9 @@
+import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type { PostHogConfig } from 'posthog-js'
 
 import type { TelemetryEventName } from '@/platform/telemetry/types'
+
+export type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 /**
  * Server health alert configuration from the backend
@@ -44,6 +47,7 @@ export type OnboardingSurveyOption = {
   value: string
   label?: LocalizedString
   labelKey?: string
+  icon?: string
 }
 
 export type OnboardingSurveyFieldCondition = {
@@ -75,13 +79,14 @@ export type OnboardingSurvey = {
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
-export type RemoteConfig = {
+export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string
   posthog_project_token?: string
   posthog_api_host?: string
   posthog_config?: Partial<PostHogConfig>
+  syftdata_source_id?: string
   customer_io?: {
     write_key?: string
     site_id?: string
@@ -89,26 +94,57 @@ export type RemoteConfig = {
   }
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
-  max_upload_size?: number
   comfy_api_base_url?: string
+  comfy_cloud_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
+  firebase_env?: 'dev'
   telemetry_disabled_events?: TelemetryEventName[]
   enable_telemetry?: boolean
   model_upload_button_enabled?: boolean
-  asset_rename_enabled?: boolean
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
+  onboarding_tour_enabled?: boolean
+  /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
+  manager_survey_url?: string
   linear_toggle_enabled?: boolean
-  team_workspaces_enabled?: boolean
+  'agent-in-app-experience'?: boolean
+  'agent-free-use-message-placement'?: string
+  partner_node_governance_enabled?: boolean
+  /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
+  partner_run_gate_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
+  supports_model_type_tags?: boolean
   free_tier_credits?: number
+  free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
+  // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
+  // funnel it through normalizeHostedBillingDestination before trusting it.
+  hosted_billing_destination?: string
   unified_cloud_auth?: boolean
+  unified_web_session?: boolean
+  // Wire key carries the server's own spelling; see ServerFeatureFlag.
+  embedded_checked_enabled?: boolean
+  billing_sdk_topup_enabled?: boolean
+  billing_sdk_subscription_enabled?: boolean
+  billing_control_enabled?: boolean
+  member_credit_limits_enabled?: boolean
+  legacy_billing_migration_enabled?: boolean
+  v1_payment_recovery?: boolean
+  churnkey_app_id?: string
   sentry_dsn?: string
+  turnstile_sitekey?: string
+  /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */
+  stripe_publishable_key?: string
+  /** Absent when this environment has no billing-web deployment yet; always validate with getBillingWebUrl before trusting it. */
+  billing_web_url?: string
+  // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).
+  // Always funnel it through normalizeTurnstileMode before trusting it as a
+  // TurnstileMode — that resolver is the single narrowing boundary.
+  signup_turnstile?: string
 }

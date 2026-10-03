@@ -1,20 +1,36 @@
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import type {
+  GetEmbeddingsResponse as EmbeddingsResponse,
+  GetExtensionsResponse as ExtensionsResponse
+} from '@comfyorg/ingest-types'
+import type {
   DeviceStats,
-  EmbeddingsResponse,
-  ExtensionsResponse,
-  LogEntry,
-  LogsRawResponse,
   NodeError,
+  PromptFailureResponse,
   PromptResponse,
-  Settings,
   SystemStats,
-  TerminalSize,
-  User,
+  UserConfigResponse,
   UserData,
   UserDataFullInfo
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/types'
+import type {
+  LogEntry,
+  LogsRawResponse,
+  TerminalSize
+} from '@/platform/remote/comfyui/execution/types'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyApp } from '@/scripts/app'
+import type {
+  ContextMenu,
+  DragAndScale,
+  LGraph,
+  LGraphBadge,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LLink,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 
 import type {
   BottomPanelExtension,
@@ -25,6 +41,14 @@ import type {
   ToastMessageOptions
 } from './extensionTypes'
 
+export type { NodeId, SerializedNodeId } from './nodeId'
+export { toNodeId, parseNodeId } from './nodeId'
+export type { LinkId } from './linkId'
+export { toLinkId } from './linkId'
+export type { RerouteId } from './rerouteId'
+export { toRerouteId } from './rerouteId'
+export type { SlotDirection, SlotId, SlotIndex } from './slotId'
+export { slotId } from './slotId'
 export type { ComfyExtension } from './comfy'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@/scripts/api'
@@ -46,11 +70,12 @@ export type {
   EmbeddingsResponse,
   ExtensionsResponse,
   PromptResponse,
+  PromptFailureResponse,
   NodeError,
   Settings,
   DeviceStats,
   SystemStats,
-  User,
+  UserConfigResponse as User,
   UserData,
   UserDataFullInfo,
   TerminalSize,
@@ -85,11 +110,28 @@ declare global {
     /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
     graph?: unknown
 
+    LiteGraph?: typeof LiteGraph
+    LGraph?: typeof LGraph
+    LLink?: typeof LLink
+    LGraphNode?: typeof LGraphNode
+    LGraphGroup?: typeof LGraphGroup
+    DragAndScale?: typeof DragAndScale
+    LGraphCanvas?: typeof LGraphCanvas
+    ContextMenu?: typeof ContextMenu
+    LGraphBadge?: typeof LGraphBadge
+
     /** For use in tests to capture WebSocket messages */
     __capturedMessages?: CapturedMessages
 
     /** For use in tests to track app initialization state */
     __appReadiness?: AppReadiness
+
+    /**
+     * Set to `true` by Desktop builds predating the bridge's `isRemote()`;
+     * local installs of those builds leave it unset.
+     * @deprecated Superseded by `ComfyDesktop2Bridge.isRemote()`.
+     */
+    __comfyDesktop2Remote?: boolean
 
     __comfyDesktop2?: ComfyDesktop2Bridge
   }

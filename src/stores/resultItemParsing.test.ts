@@ -1,7 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import { isTextResult, resultItemSupportsPreview } from '@/utils/resultItem'
 import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
 
 function makeOutput(
@@ -21,7 +24,7 @@ describe(parseNodeOutput, () => {
     expect(result).toEqual([])
   })
 
-  it('flattens images into ResultItemImpl instances', () => {
+  it('flattens images into result items', () => {
     const output = makeOutput({
       images: [
         { filename: 'a.png', subfolder: '', type: 'output' },
@@ -83,6 +86,21 @@ describe(parseNodeOutput, () => {
     expect(types).toContain('3d')
   })
 
+  it('flattens files outputs (e.g. SaveText)', () => {
+    const output = makeOutput({
+      files: [{ filename: 'result.txt', subfolder: '', type: 'output' }],
+      text: 'some generated text'
+    })
+
+    const result = parseNodeOutput('9', output)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe('result.txt')
+    expect(result[0].mediaType).toBe('files')
+    expect(isTextResult(result[0])).toBe(true)
+    expect(resultItemSupportsPreview(result[0])).toBe(true)
+  })
+
   it('ignores empty arrays', () => {
     const output = makeOutput({ images: [], audio: [] })
     const result = parseNodeOutput('1', output)
@@ -138,7 +156,6 @@ describe(parseNodeOutput, () => {
     expect(result).toHaveLength(2)
     expect(result[0].filename).toBe('valid.png')
     expect(result[1].filename).toBe('no-subfolder.png')
-    expect(result[1].subfolder).toBe('')
   })
 
   it('excludes items missing filename', () => {

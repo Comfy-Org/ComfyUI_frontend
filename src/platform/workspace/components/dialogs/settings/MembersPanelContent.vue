@@ -1,147 +1,183 @@
 <template>
-  <div class="grow overflow-auto pt-6">
-    <div
-      class="border-inter flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+  <div class="flex h-full flex-col">
+    <!-- Upsell Banner -->
+    <MemberUpsellBanner
+      v-if="
+        !isPlanLoading &&
+        ((isInPersonalWorkspace && maxSeats === 1) || isPlanEnded) &&
+        permissions.canManageSubscription
+      "
+      :variant="
+        isPlanEnded
+          ? isSalesManagedPlan
+            ? 'contactSales'
+            : 'reactivate'
+          : 'upgrade'
+      "
+      :enterprise="isEnterprisePlan"
+      @action="
+        isPlanEnded && isSalesManagedPlan
+          ? handleContactSales()
+          : showTeamPlans()
+      "
+    />
+    <!-- Controls row: tabs, search, invite (outside the table frame). Once the
+         panel scrolls it moves into the dialog header, left of the close
+         button, so the workspace name can scroll away. -->
+    <Teleport
+      defer
+      to="#settings-header-controls"
+      :disabled="!isHeaderCollapsed"
     >
-      <!-- Section Header -->
-      <div class="flex w-full items-center gap-9">
-        <div class="flex min-w-0 flex-1 items-baseline gap-2">
-          <span class="text-base font-semibold text-base-foreground">
-            <template v-if="activeView === 'active'">
-              {{
-                $t('workspacePanel.members.membersCount', {
-                  count:
-                    isSingleSeatPlan || isPersonalWorkspace
-                      ? 1
-                      : members.length,
-                  maxSeats: maxSeats
-                })
-              }}
-            </template>
-            <template v-else-if="permissions.canViewPendingInvites">
-              {{
-                $t(
-                  'workspacePanel.members.pendingInvitesCount',
-                  pendingInvites.length
-                )
-              }}
-            </template>
-          </span>
+      <div
+        ref="controlsRef"
+        :class="
+          cn(
+            'flex w-full items-center gap-4',
+            isHeaderCollapsed ? 'min-w-0 flex-1' : 'mb-6'
+          )
+        "
+      >
+        <div v-if="showViewTabs" class="flex items-center gap-2">
+          <Button
+            :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
+            size="lg"
+            @click="activeView = 'active'"
+          >
+            {{ $t('workspacePanel.members.tabs.active') }}
+          </Button>
+          <Button
+            v-if="uiConfig.showPendingTab"
+            :variant="activeView === 'pending' ? 'secondary' : 'muted-textonly'"
+            size="lg"
+            @click="activeView = 'pending'"
+          >
+            {{
+              $t('workspacePanel.members.tabs.pendingCount', livePendingCount)
+            }}
+          </Button>
         </div>
-        <div
-          v-if="uiConfig.showSearch && !isSingleSeatPlan"
-          class="flex items-start gap-2"
-        >
+        <div class="ml-auto flex items-center gap-2">
           <SearchInput
+            v-if="showSearch"
             v-model="searchQuery"
-            :placeholder="$t('g.search')"
+            :placeholder="$t('workspacePanel.members.searchPlaceholder')"
             size="lg"
             class="w-64"
           />
+          <Button
+            v-if="showInviteButton"
+            v-tooltip="
+              inviteTooltip
+                ? { value: inviteTooltip, showDelay: 0 }
+                : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
+            "
+            variant="secondary"
+            size="lg"
+            :disabled="isInviteDisabled"
+            :aria-label="$t('workspacePanel.inviteMember')"
+            @click="handleInviteMember"
+          >
+            {{ $t('workspacePanel.invite') }}
+            <i class="pi pi-plus text-sm" />
+          </Button>
+          <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
         </div>
       </div>
-
+    </Teleport>
+    <div
+      class="flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+    >
       <!-- Members Content -->
       <div class="flex min-h-0 flex-1 flex-col">
-        <!-- Table Header with Tab Buttons and Column Headers -->
-        <div
-          v-if="uiConfig.showMembersList"
-          :class="
-            cn(
-              'grid w-full items-center py-2',
-              isSingleSeatPlan
-                ? 'grid-cols-1 py-0'
-                : activeView === 'pending'
+        <div class="min-h-0 flex-1 overflow-y-auto" @scroll="handlePanelScroll">
+          <!-- Table Header with Tab Buttons and Column Headers -->
+          <div
+            v-if="uiConfig.showMembersList && showViewTabs"
+            :class="
+              cn(
+                'sticky -top-px z-10 grid w-full items-center bg-base-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
+                activeView === 'pending'
                   ? uiConfig.pendingGridCols
                   : uiConfig.headerGridCols
-            )
-          "
-        >
-          <!-- Tab buttons in first column -->
-          <div v-if="!isSingleSeatPlan" class="flex items-center gap-2">
-            <Button
-              :variant="
-                activeView === 'active' ? 'secondary' : 'muted-textonly'
-              "
-              size="md"
-              @click="activeView = 'active'"
-            >
-              {{ $t('workspacePanel.members.tabs.active') }}
-            </Button>
-            <Button
-              v-if="uiConfig.showPendingTab"
-              :variant="
-                activeView === 'pending' ? 'secondary' : 'muted-textonly'
-              "
-              size="md"
-              @click="activeView = 'pending'"
-            >
-              {{
-                $t(
-                  'workspacePanel.members.tabs.pendingCount',
-                  pendingInvites.length
-                )
-              }}
-            </Button>
-          </div>
-          <!-- Date column headers -->
-          <template v-if="activeView === 'pending'">
-            <Button
-              variant="muted-textonly"
-              size="sm"
-              class="justify-start"
-              @click="toggleSort('inviteDate')"
-            >
-              {{ $t('workspacePanel.members.columns.inviteDate') }}
-              <i class="icon-[lucide--chevrons-up-down] size-4" />
-            </Button>
-            <Button
-              variant="muted-textonly"
-              size="sm"
-              class="justify-start"
-              @click="toggleSort('expiryDate')"
-            >
-              {{ $t('workspacePanel.members.columns.expiryDate') }}
-              <i class="icon-[lucide--chevrons-up-down] size-4" />
-            </Button>
-            <div />
-          </template>
-          <template v-else>
-            <template v-if="!isSingleSeatPlan">
+              )
+            "
+          >
+            <!-- Email column header -->
+            <span class="text-xs text-muted-foreground">
+              {{ $t('workspacePanel.members.columns.email') }}
+            </span>
+            <!-- Date column headers -->
+            <template v-if="activeView === 'pending'">
               <Button
                 variant="muted-textonly"
                 size="sm"
-                class="justify-end"
-                @click="toggleSort('joinDate')"
+                class="w-fit justify-self-start"
+                @click="toggleSort('inviteDate')"
               >
-                {{ $t('workspacePanel.members.columns.joinDate') }}
+                {{ $t('workspacePanel.members.columns.inviteDate') }}
                 <i class="icon-[lucide--chevrons-up-down] size-4" />
               </Button>
-              <!-- Empty cell for action column header (OWNER only) -->
-              <div v-if="permissions.canRemoveMembers" />
+              <Button
+                variant="muted-textonly"
+                size="sm"
+                class="w-fit justify-self-start"
+                @click="toggleSort('expiryDate')"
+              >
+                {{ $t('workspacePanel.members.columns.expiryDate') }}
+                <i class="icon-[lucide--chevrons-up-down] size-4" />
+              </Button>
+              <div />
             </template>
-          </template>
-        </div>
+            <template v-else>
+              <span
+                :class="
+                  cn(
+                    'text-xs text-muted-foreground',
+                    uiConfig.showCreditsColumn
+                      ? 'justify-self-start'
+                      : 'justify-self-end'
+                  )
+                "
+              >
+                {{ $t('workspacePanel.members.columns.role') }}
+              </span>
+              <div
+                v-if="uiConfig.showCreditsColumn"
+                class="flex items-center gap-1 text-xs text-muted-foreground"
+              >
+                <i class="icon-[lucide--coins] size-4" />
+                {{ $t('workspacePanel.members.columns.creditsUsed') }}
+              </div>
+              <!-- Empty cell for action column header (OWNER only) -->
+              <div v-if="permissions.canManageMembers" />
+            </template>
+          </div>
 
-        <!-- Members List -->
-        <div class="min-h-0 flex-1 overflow-y-auto">
+          <!-- Members List -->
+          <!-- Empty States -->
+          <p
+            v-if="emptyStateMessage"
+            class="p-6 text-center text-sm text-muted-foreground"
+          >
+            {{ emptyStateMessage }}
+          </p>
+
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <!-- Personal Workspace: show only current user -->
-            <template v-if="isPersonalWorkspace">
+            <template v-if="isInPersonalWorkspace && maxSeats === 1">
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"
                 :photo-url="userPhotoUrl ?? undefined"
                 :grid-cols="uiConfig.membersGridCols"
-                :show-role-badge="uiConfig.showRoleBadge"
+                :is-single-seat-plan="maxSeats === 1"
               />
             </template>
 
-            <!-- Team Workspace: sorted list -->
             <template v-else>
               <MemberListItem
-                v-for="(member, index) in filteredMembers"
+                v-for="member in filteredMembers"
                 :key="member.id"
                 :member="member"
                 :is-current-user="isCurrentUser(member)"
@@ -151,94 +187,175 @@
                     : undefined
                 "
                 :grid-cols="uiConfig.membersGridCols"
-                :show-role-badge="uiConfig.showRoleBadge"
-                :show-date-column="uiConfig.showDateColumn"
-                :can-remove-members="permissions.canRemoveMembers"
-                :is-single-seat-plan="isSingleSeatPlan"
-                :striped="index % 2 === 1"
-                @show-menu="showMemberMenu($event, member)"
+                :show-role-column="
+                  uiConfig.showRoleColumn && hasMultipleMembers
+                "
+                :show-credits-column="uiConfig.showCreditsColumn"
+                :can-manage-members="permissions.canManageMembers"
+                :menu-items="memberMenus.get(member.id)"
               />
-
-              <!-- Member actions menu (shared for all members) -->
-              <Menu ref="memberMenu" :model="memberMenuItems" :popup="true" />
             </template>
           </template>
-
-          <!-- Upsell Banner -->
-          <MemberUpsellBanner
-            v-if="isSingleSeatPlan"
-            :is-active-subscription="isActiveSubscription"
-            @show-plans="showSubscriptionDialog()"
-          />
 
           <!-- Pending Invites -->
           <PendingInvitesList
             v-if="activeView === 'pending'"
             :invites="filteredPendingInvites"
             :grid-cols="uiConfig.pendingGridCols"
-            @copy-link="handleCopyInviteLink"
+            :search-query="searchQuery"
+            :loaded="pendingInvitesLoaded"
+            @resend="handleResendInvite"
             @revoke="handleRevokeInvite"
           />
         </div>
       </div>
     </div>
-    <!-- Personal Workspace Message -->
-    <div v-if="isPersonalWorkspace" class="flex items-center">
+    <div v-if="isPlanEnded" class="flex shrink-0 items-center gap-1 pt-2 pb-6">
       <p class="text-sm text-muted-foreground">
-        {{ $t('workspacePanel.members.personalWorkspaceMessage') }}
+        {{ $t('workspacePanel.members.planEndedFooter') }}
       </p>
-      <button
-        class="cursor-pointer border-none bg-transparent underline"
-        @click="handleCreateWorkspace"
+      <Button
+        v-if="permissions.canManageSubscription"
+        variant="muted-textonly"
+        size="sm"
+        class="text-sm text-base-foreground"
+        @click="isSalesManagedPlan ? handleContactSales() : showTeamPlans()"
       >
-        {{ $t('workspacePanel.members.createNewWorkspace') }}
-      </button>
+        {{
+          isSalesManagedPlan
+            ? $t('workspacePanel.members.contactSales')
+            : $t('workspacePanel.members.resubscribe')
+        }}
+      </Button>
+    </div>
+    <!-- Need More Members Footer -->
+    <div
+      v-else-if="hasMemberSeats && membersLoaded"
+      class="flex shrink-0 items-center gap-1 pt-2 pb-6"
+    >
+      <p class="text-sm text-muted-foreground">
+        {{
+          maxSeats === 0
+            ? $t(
+                'workspacePanel.members.totalMembersUnlimited',
+                { count: totalMembers },
+                totalMembers
+              )
+            : $t('workspacePanel.members.totalMembersCount', {
+                count: totalMembers,
+                maxSeats: maxSeats
+              })
+        }}
+        {{ $t('workspacePanel.members.needMoreMembers') }}
+      </p>
+      <Button
+        variant="muted-textonly"
+        size="sm"
+        class="text-sm text-base-foreground"
+        @click="handleContactUs"
+      >
+        {{ $t('workspacePanel.members.contactUs') }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Menu from 'primevue/menu'
-import { ref } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
+import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
-import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const TEAM_PLAN_REQUEST_URL =
+  'https://comfysupport.portal.usepylon.com/forms/team-plan-requests'
 
 const {
   searchQuery,
+  membersLoaded,
+  totalMembers,
+  pendingInvitesLoaded,
   activeView,
   maxSeats,
-  isSingleSeatPlan,
+  isInPersonalWorkspace,
+  isPlanEnded,
+  isSalesManagedPlan,
+  isEnterprisePlan,
+  hasMemberSeats,
+  isPlanLoading,
+  hasMultipleMembers,
+  showSearch,
+  showViewTabs,
+  showInviteButton,
+  isInviteDisabled,
+  inviteTooltip,
+  handleInviteMember,
   personalWorkspaceMember,
   filteredMembers,
   filteredPendingInvites,
-  memberMenuItems,
-  isPersonalWorkspace,
-  members,
+  memberMenus,
   pendingInvites,
   permissions,
   uiConfig,
-  isActiveSubscription,
   userPhotoUrl,
   isCurrentUser,
-  selectMember,
   toggleSort,
-  showSubscriptionDialog,
-  handleCopyInviteLink,
-  handleRevokeInvite,
-  handleCreateWorkspace
+  showTeamPlans,
+  handleResendInvite,
+  handleRevokeInvite
 } = useMembersPanel()
 
-const memberMenu = ref<InstanceType<typeof Menu> | null>(null)
+const { isHeaderCollapsed, handlePanelScroll } = useSettingsHeaderCollapse()
 
-function showMemberMenu(event: Event, member: WorkspaceMember) {
-  selectMember(member)
-  memberMenu.value?.toggle(event)
+const controlsRef = useTemplateRef<HTMLElement>('controlsRef')
+
+// Teleporting re-parents these controls, which blurs whatever is focused and
+// aborts an in-progress IME composition. Restore focus after the move so a
+// half-typed filter survives the header collapsing.
+watch(isHeaderCollapsed, async () => {
+  const active = document.activeElement
+  const wasInside =
+    active instanceof HTMLElement && !!controlsRef.value?.contains(active)
+  if (!wasInside) return
+  await nextTick()
+  active.focus()
+})
+
+const { t } = useI18n()
+
+const emptyStateMessage = computed(() => {
+  if (!uiConfig.value.showMembersList) return null
+  if (!membersLoaded.value) return null
+  if (activeView.value !== 'active') return null
+  if (isInPersonalWorkspace.value && maxSeats.value === 1) return null
+  if (filteredMembers.value.length > 0) return null
+
+  const query = searchQuery.value.trim()
+  return query
+    ? t('workspacePanel.members.noMembersMatch', { query })
+    : t('workspacePanel.members.noMembers')
+})
+
+const livePendingCount = computed(
+  () => pendingInvites.value.filter((invite) => invite.token).length
+)
+
+function handleContactUs() {
+  window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
+}
+
+// The ended banner and footer action: a sales-managed plan's route back is the
+// enterprise page, not the team-plan request form the Contact us link uses.
+function handleContactSales() {
+  window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
 }
 </script>

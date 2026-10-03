@@ -4,24 +4,22 @@ import { ref } from 'vue'
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import SectionLabel from '../common/SectionLabel.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { ScrollTrigger } from '../../scripts/gsapSetup'
-import VideoPlayer from '../common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const sectionRef = ref<HTMLElement>()
 const logoRef = ref<HTMLElement>()
 const labelRef = ref<HTMLElement>()
 const headingRef = ref<HTMLElement>()
 const bodyRef = ref<HTMLElement>()
-const videoRef = ref<HTMLElement>()
 
 useHeroAnimation({
   section: sectionRef,
   textEls: [labelRef, headingRef, bodyRef],
-  logo: logoRef,
-  video: videoRef
+  logo: logoRef
 })
 
 function handleLogoLoad() {
@@ -34,7 +32,6 @@ function handleLogoLoad() {
     <div
       class="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left"
     >
-      <!-- 3D logo graphic -->
       <div
         ref="logoRef"
         class="order-2 mt-8 w-full lg:order-1 lg:mt-0 lg:w-5/12"
@@ -49,48 +46,25 @@ function handleLogoLoad() {
         />
       </div>
 
-      <!-- Text -->
       <div
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-16 lg:pl-12"
       >
         <SectionLabel ref="labelRef">
-          {{ t('customers.hero.label', locale) }}
+          {{ t('customers.hero.label') }}
         </SectionLabel>
         <h1
           ref="headingRef"
           class="mt-4 text-4xl/tight font-light text-primary-comfy-canvas lg:text-6xl"
         >
-          {{ t('customers.hero.heading', locale) }}
+          {{ t('customers.hero.heading') }}
         </h1>
         <p
           ref="bodyRef"
           class="mt-6 max-w-lg text-base text-primary-comfy-canvas"
         >
-          {{ t('customers.hero.body', locale) }}
+          {{ t('customers.hero.body') }}
         </p>
       </div>
-    </div>
-
-    <!-- Video -->
-
-    <div
-      id="hero-video"
-      ref="videoRef"
-      class="max-w-9xl mx-auto scroll-mt-24 px-4 pb-20 lg:scroll-mt-36 lg:px-20 lg:pb-40"
-    >
-      <VideoPlayer
-        src="https://media.comfy.org/website/customers/blackmath/video.webm"
-        poster="https://media.comfy.org/website/customers/blackmath/poster.webp"
-        :tracks="[
-          {
-            src: 'https://media.comfy.org/website/customers/blackmath/video.vtt',
-            kind: 'subtitles',
-            srclang: 'en',
-            label: 'English'
-          }
-        ]"
-        :locale
-      />
     </div>
   </section>
 </template>

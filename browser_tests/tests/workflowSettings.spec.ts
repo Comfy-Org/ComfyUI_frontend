@@ -1,9 +1,7 @@
 import type { Page, Request } from '@playwright/test'
 
-import type {
-  ComfyApiWorkflow,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
@@ -66,7 +64,6 @@ test.describe('Workflow settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Workflow.AutoSave', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
-      await comfyPage.settings.setSetting('Comfy.Workflow.AutoSave', 'off')
     })
 
     test("'off' does not save modified workflow after delay", async ({
@@ -107,7 +104,6 @@ test.describe('Workflow settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Workflow.AutoSaveDelay', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
-      await comfyPage.settings.setSetting('Comfy.Workflow.AutoSave', 'off')
     })
 
     test('long delay defers save until at least the configured duration has elapsed', async ({
@@ -140,13 +136,13 @@ test.describe('Workflow settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Workflow.SortNodeIdOnSave', () => {
     async function getSerializedNodeIds(
       comfyPage: ComfyPage
-    ): Promise<NodeId[]> {
+    ): Promise<SerializedNodeId[]> {
       return (await comfyPage.workflow.getExportedWorkflow()).nodes.map(
         (n) => n.id
       )
     }
 
-    function ascendingById(ids: NodeId[]): NodeId[] {
+    function ascendingById(ids: SerializedNodeId[]): SerializedNodeId[] {
       return [...ids].sort((a, b) => Number(a) - Number(b))
     }
 

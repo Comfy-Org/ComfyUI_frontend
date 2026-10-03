@@ -2,23 +2,26 @@
 import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { id } = defineProps<{ id: string }>()
+const { id } = defineProps<{ id: SerializedNodeId }>()
 
 const appModeStore = useAppModeStore()
+const parsedId = computed(() => parseNodeId(id))
 const isPromoted = computed(() =>
-  appModeStore.selectedOutputs.some(matchesThis)
+  parsedId.value ? appModeStore.selectedOutputs.some(matchesThis) : false
 )
 
 function matchesThis(nodeId: NodeId) {
-  return id == nodeId
+  return parsedId.value === nodeId
 }
 function togglePromotion() {
+  if (!parsedId.value) return
   if (isPromoted.value) remove(appModeStore.selectedOutputs, matchesThis)
-  else appModeStore.selectedOutputs.push(id)
+  else appModeStore.selectedOutputs.push(parsedId.value)
 }
 </script>
 <template>
@@ -40,7 +43,7 @@ function togglePromotion() {
         v-if="isPromoted"
         class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-warning-background p-2"
       >
-        <i class="bg-text-foreground icon-[lucide--check] size-full" />
+        <i class="icon-[lucide--check] size-full bg-base-foreground" />
       </div>
       <div
         v-else

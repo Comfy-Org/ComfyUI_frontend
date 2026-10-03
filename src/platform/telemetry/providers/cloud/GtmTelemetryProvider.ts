@@ -1,3 +1,5 @@
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
+
 import type {
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -27,7 +29,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -84,11 +87,11 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     if (typeof window.gtag !== 'function') {
       function gtag() {
         // gtag queue shape is dataLayer.push(arguments)
-        // eslint-disable-next-line prefer-rest-params
+        // oxlint-disable-next-line prefer-rest-params
         ;(window.dataLayer as unknown[] | undefined)?.push(arguments)
       }
 
-      window.gtag = gtag as Window['gtag']
+      window.gtag = gtag
     }
 
     const gtagScriptSrc = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
@@ -137,16 +140,11 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
+    const normalizedEmail = normalizeEmail(metadata.email)
     const payload = {
       method: metadata.method,
       ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
-      ...(metadata.email
-        ? {
-            user_data: {
-              email: metadata.email.trim().toLowerCase()
-            }
-          }
-        : {})
+      ...(normalizedEmail ? { user_data: { email: normalizedEmail } } : {})
     }
 
     this.pushEvent(metadata.is_new_user ? 'sign_up' : 'login', payload)
@@ -182,13 +180,20 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    // GA4 names must be bare snake_case; the TelemetryEvents enum carries an
+    // `app:` prefix for Mixpanel/PostHog that dataLayer would forward verbatim.
+    this.pushEvent('workspace_invite_sent', metadata)
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.pushEvent('run_workflow', {
       subscribe_to_run: properties.subscribe_to_run,
       trigger_source: properties.trigger_source ?? 'unknown',
       view_mode: properties.view_mode,
       is_app_mode: properties.is_app_mode,
-      dock_state: properties.dock_state
+      dock_state: properties.dock_state,
+      agent_panel_open: properties.agent_panel_open
     })
   }
 
@@ -296,7 +301,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.pushEvent('page_visibility', {
-      visibility_state: metadata.visibility_state
+      visibility_state: metadata.visibility_state,
+      agent_panel_open: metadata.agent_panel_open
     })
   }
 

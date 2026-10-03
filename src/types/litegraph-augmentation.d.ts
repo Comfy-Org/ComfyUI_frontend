@@ -5,15 +5,20 @@ import type {
   LLink,
   Size
 } from '@/lib/litegraph/src/litegraph'
+import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef as ComfyNodeDefV1,
+  InputSpec
+} from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
+import type { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 /** ComfyUI extensions of litegraph */
 declare module '@/lib/litegraph/src/types/widgets' {
@@ -53,7 +58,7 @@ declare module '@/lib/litegraph/src/types/widgets' {
     onRemove?(): void
     beforeQueued?(options?: WidgetCallbackOptions): unknown
     afterQueued?(options?: WidgetCallbackOptions): unknown
-    serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown
+    serializeValue?(node: LGraphNode, index: number): unknown
 
     /**
      * Refreshes the widget's value or options from its remote source.
@@ -73,7 +78,8 @@ declare module '@/lib/litegraph/src/types/widgets' {
  */
 declare module '@/lib/litegraph/src/interfaces' {
   interface IWidgetLocator {
-    [key: symbol]: unknown
+    [CONFIG]?: InputSpec
+    [GET_CONFIG]?: () => InputSpec | undefined
   }
 }
 
@@ -84,7 +90,7 @@ declare module '@/lib/litegraph/src/litegraph' {
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
     type?: string
     comfyClass: string
-    title: string
+    title?: string
     nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 & { [key: symbol]: unknown }
     category?: string
     new (): T
@@ -96,6 +102,7 @@ declare module '@/lib/litegraph/src/litegraph' {
 
   interface LGraphNode {
     constructor: LGraphNodeConstructor
+    canvasHeight?: number
 
     /**
      * Callback fired on each node after the graph is configured
@@ -112,12 +119,12 @@ declare module '@/lib/litegraph/src/litegraph' {
     /** Flattens a subgraph node into its executable inner nodes. */
     getInnerNodes?(
       nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
-      subgraphNodePath?: readonly NodeId[],
+      subgraphNodePath?: readonly SerializedNodeId[],
       nodes?: ExecutableLGraphNode[],
       subgraphs?: Set<LGraphNode>
     ): ExecutableLGraphNode[]
     recreate?(): Promise<LGraphNode>
-    refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
+    refreshComboInNode?(defs?: Record<string, ComfyNodeDef>): void
     /**
      * @deprecated primitive node.
      * Used by virtual nodes (primitives) to insert their values into the graph prior to queueing.
@@ -143,9 +150,10 @@ declare module '@/lib/litegraph/src/litegraph' {
     onDragDrop?(e: DragEvent): Promise<boolean> | boolean
 
     index?: number
-    runningInternalNodeId?: NodeId
+    runningInternalNodeId?: SerializedNodeId
 
     comfyClass?: string
+    convertWidgetToInput?(): boolean
 
     /**
      * If the node is a frontend only node and should not be serialized into the prompt.
@@ -195,6 +203,9 @@ declare module '@/lib/litegraph/src/litegraph' {
     pasteFile?(file: File): void
     /** Callback for pasting multiple files into the node */
     pasteFiles?(files: File[]): void
+
+    /** Used internally for sizing the node during creation */
+    _initialMinSize?: { width: number; height: number }
   }
   /**
    * Only used by the Primitive node. Primitive node is using the widget property
@@ -202,7 +213,7 @@ declare module '@/lib/litegraph/src/litegraph' {
    * We should remove this hacky solution once we have a proper solution.
    */
   interface INodeOutputSlot {
-    widget?: { name: string; [key: symbol]: unknown }
+    widget?: IWidgetLocator
   }
 }
 

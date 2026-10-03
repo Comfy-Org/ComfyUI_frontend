@@ -20,4 +20,18 @@ export class SettingsHelper {
       return await window.app!.extensionManager.setting.get(id)
     }, settingId)) as T
   }
+
+  /**
+   * Reads the value the server holds, which {@link getSetting} cannot: that
+   * reports the in-memory store, where a value may have been derived at load
+   * rather than persisted. Returns `undefined` for a setting never written.
+   */
+  async getPersistedSetting<T = unknown>(
+    settingId: string
+  ): Promise<T | undefined> {
+    return (await this.page.evaluate(async (id) => {
+      const persisted = await window.app!.api.getSettings()
+      return persisted[id as keyof typeof persisted]
+    }, settingId)) as T | undefined
+  }
 }

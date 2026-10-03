@@ -1,35 +1,52 @@
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { render } from '@testing-library/vue'
+import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SecretMetadata } from '../types'
-import { useSecrets } from './useSecrets'
+import type { SecretErrorCode, SecretMetadata } from '../types'
+import { useSecrets as useSecretsComposable } from './useSecrets'
 
 const mockAdd = vi.fn()
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mockAdd })
-}))
-
 const mockListSecrets = vi.fn()
+const mockListSecretProviders = vi.fn()
 const mockDeleteSecret = vi.fn()
 
-vi.mock('../api/secretsApi', () => ({
+vi.mock(import('../api/secretsApi'), () => ({
   listSecrets: () => mockListSecrets(),
+  listSecretProviders: () => mockListSecretProviders(),
   deleteSecret: (id: string) => mockDeleteSecret(id),
   SecretsApiError: class SecretsApiError extends Error {
     constructor(
       message: string,
       public readonly status?: number,
-      public readonly code?: string
+      public readonly code?: SecretErrorCode
     ) {
       super(message)
       this.name = 'SecretsApiError'
     }
   }
 }))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function useSecrets(): ReturnType<typeof useSecretsComposable> {
+  let result!: ReturnType<typeof useSecretsComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useSecretsComposable()
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return result
+}
 
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}
@@ -44,11 +61,11 @@ function createMockSecret(
   }
 }
 
-describe('useSecrets', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(mockAdd)
+})
 
+describe('useSecrets', () => {
   describe('fetchSecrets', () => {
     it('fetches and populates secrets list', async () => {
       const mockSecrets = [
@@ -131,6 +148,50 @@ describe('useSecrets', () => {
         summary: 'g.error',
         detail: 'Delete failed'
       })
+    })
+  })
+
+  describe('fetchProviders', () => {
+    it('populates availableProviders from the API', async () => {
+      mockListSecretProviders.mockResolvedValue([
+        { id: 'huggingface' },
+        { id: 'civitai' }
+      ])
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      expect(availableProviders.value).toBeNull()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toEqual([
+        { id: 'huggingface' },
+        { id: 'civitai' }
+      ])
+    })
+
+    it('distinguishes a server-returned empty allowlist from not-loaded', async () => {
+      mockListSecretProviders.mockResolvedValue([])
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toEqual([])
+    })
+
+    it('leaves availableProviders null on API failure', async () => {
+      const { SecretsApiError } = await import('../api/secretsApi')
+      mockListSecretProviders.mockRejectedValue(
+        new SecretsApiError('unavailable', 503)
+      )
+
+      const { availableProviders, fetchProviders } = useSecrets()
+
+      await fetchProviders()
+
+      expect(availableProviders.value).toBeNull()
+      expect(mockAdd).not.toHaveBeenCalled()
     })
   })
 

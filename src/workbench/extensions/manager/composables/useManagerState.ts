@@ -2,6 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed, readonly, watch } from 'vue'
 
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
@@ -57,8 +58,7 @@ export function useManagerState() {
 
       // Get current values
       const clientSupportsV4 =
-        api.getClientFeatureFlags().supports_manager_v4_ui ?? false
-
+        api.getClientFeatureFlags().supports_manager_v4_ui === true
       const serverSupportsV4 = api.getServerFeature(
         'extension.manager.supports_v4'
       )
@@ -70,7 +70,7 @@ export function useManagerState() {
       // Check command line args first (highest priority)
       // --enable-manager flag enables the manager (opposite of old --disable-manager)
       const hasEnableManager =
-        systemStats.value?.system?.argv?.includes('--enable-manager')
+        systemStats.value?.system.argv.includes('--enable-manager')
 
       // If --enable-manager is NOT present, manager is disabled
       if (!hasEnableManager) {
@@ -78,7 +78,7 @@ export function useManagerState() {
       }
 
       if (
-        systemStats.value?.system?.argv?.includes('--enable-manager-legacy-ui')
+        systemStats.value?.system.argv.includes('--enable-manager-legacy-ui')
       ) {
         return ManagerUIState.LEGACY_UI
       }
@@ -101,7 +101,6 @@ export function useManagerState() {
         return ManagerUIState.NEW_UI
       }
 
-      // Server supports v4 but client doesn't = LEGACY_UI
       if (serverSupportsV4 === true && !clientSupportsV4) {
         return ManagerUIState.LEGACY_UI
       }
@@ -183,6 +182,14 @@ export function useManagerState() {
     computed((): boolean => {
       return isManagerEnabled.value
     })
+  )
+
+  /**
+   * The top bar Extensions button also opens the cloud custom nodes survey,
+   * so it stays visible on cloud where the manager itself is disabled.
+   */
+  const shouldShowExtensionsButton = readonly(
+    computed((): boolean => isCloud || shouldShowManagerButtons.value)
   )
 
   // Fire the upgrade-required toast once when we first observe the
@@ -276,6 +283,7 @@ export function useManagerState() {
     isIncompatibleManager,
     shouldShowInstallButton,
     shouldShowManagerButtons,
+    shouldShowExtensionsButton,
     openManager
   }
 }

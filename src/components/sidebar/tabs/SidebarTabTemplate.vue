@@ -3,50 +3,52 @@
     :class="
       cn(
         'comfy-vue-side-bar-container group/sidebar-tab flex size-full flex-col',
-        props.class
+        className
       )
     "
   >
     <div class="comfy-vue-side-bar-header flex flex-col">
-      <Toolbar
-        class="min-h-16 rounded-none border-x-0 border-t-0 bg-transparent px-3 2xl:px-4"
-        :pt="sidebarPt"
+      <div
+        class="flex min-h-16 items-center justify-between border-b border-interface-stroke bg-transparent px-4"
       >
-        <template #start>
-          <span class="truncate font-bold" :title="props.title">
-            {{ props.title }}
+        <div class="flex min-w-0 flex-1 items-center overflow-hidden">
+          <span class="truncate font-bold" :title="title">
+            {{ title }}
           </span>
           <slot name="alt-title" />
-        </template>
-        <template #end>
+        </div>
+        <div class="flex items-center gap-2">
           <div
-            class="flex flex-row overflow-hidden transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 [&_.p-button]:py-1 2xl:[&_.p-button]:py-2"
+            class="flex flex-row gap-2 overflow-hidden transition-all duration-200 has-aria-expanded:w-auto has-aria-expanded:opacity-100 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 [&_.p-button]:py-1 2xl:[&_.p-button]:py-2"
           >
             <slot name="tool-buttons" />
           </div>
-        </template>
-      </Toolbar>
+          <SidebarTabCloseButton v-if="closable" />
+        </div>
+      </div>
       <slot name="header" />
     </div>
-    <!-- h-0 to force scrollpanel to grow -->
-    <ScrollPanel class="comfy-vue-side-bar-body h-0 grow">
+    <div
+      class="comfy-vue-side-bar-body scrollbar-custom h-0 grow overflow-x-hidden"
+    >
       <slot name="body" />
-    </ScrollPanel>
+    </div>
     <slot name="footer" />
   </div>
 </template>
 
 <script setup lang="ts">
-import ScrollPanel from 'primevue/scrollpanel'
-import Toolbar from 'primevue/toolbar'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
-const props = defineProps<{
+import SidebarTabCloseButton from '@/components/sidebar/tabs/SidebarTabCloseButton.vue'
+
+const {
+  title,
+  class: className,
+  closable = true
+} = defineProps<{
   title: string
   class?: string
+  closable?: boolean
 }>()
-const sidebarPt = {
-  start: 'min-w-0 flex-1 overflow-hidden'
-}
 </script>

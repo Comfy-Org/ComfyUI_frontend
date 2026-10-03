@@ -38,7 +38,7 @@ export class ConfirmDialog {
     await this.page.waitForFunction(
       () =>
         (window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy === false,
+          .isBusy === false,
       undefined,
       { timeout: 3000 }
     )

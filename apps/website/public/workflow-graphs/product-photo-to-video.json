@@ -1,0 +1,399 @@
+{
+  "id": "f7435406-80be-44c7-9d7f-1d544497454c",
+  "revision": 0,
+  "last_node_id": 30,
+  "last_link_id": 41,
+  "nodes": [
+    {
+      "id": 10,
+      "type": "ByteDanceSeedreamNode",
+      "pos": [2526.725175568671, 431.3332844999543],
+      "size": [400, 615],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [9, 17, 19, 21]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "ByteDanceSeedreamNode"
+      },
+      "widgets_values": [
+        "seedream-4-5-251128",
+        "Professional studio product photography of the exact product shown in image 1, positioned at a dynamic three-quarter angle. Preserve its shape, proportions, materials, colors, markings, and existing logo; do not add or replace branding. The lighting is dramatic and cool-toned, featuring a hard spotlight that creates a glowing halo effect on the ground while casting soft shadows. The background is a seamless, clean gradient transitioning from a light silver-gray top to a deep anthracite black floor. Minimal composition with generous negative space, shot with shallow depth of field (f/2.8) to emphasize product details while softly blurring the background.",
+        "1664x2496 (2:3)",
+        2048,
+        2048,
+        "disabled",
+        1,
+        555,
+        "fixed",
+        false,
+        true
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 9,
+      "type": "SaveImage",
+      "pos": [2976.3332442553233, 431.3332844999543],
+      "size": [510, 615],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 9
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": ["ComfyUI"]
+    },
+    {
+      "id": 19,
+      "type": "SaveVideo",
+      "pos": [4066.3332695243143, 1401.3333986822865],
+      "size": [510, 863],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 20
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": ["video/ComfyUI-2", "auto", "auto"]
+    },
+    {
+      "id": 18,
+      "type": "MinimaxHailuoVideoNode",
+      "pos": [3606.3334166614623, 441.33329646024174],
+      "size": [400, 275],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "first_frame_image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [18, 34]
+        }
+      ],
+      "title": "Detailed Texture Vid - MiniMax Hailuo Video",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "MinimaxHailuoVideoNode"
+      },
+      "widgets_values": [
+        "Product video — the camera slowly zooms toward the exact product in the input image, revealing its material and texture details with cinematic shallow depth of field. Preserve the product’s shape, proportions, materials, colors, markings, and existing logo throughout the shot.",
+        222,
+        "fixed",
+        true,
+        6,
+        "1080P"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 20,
+      "type": "MinimaxHailuoVideoNode",
+      "pos": [3606.3334166614623, 1401.3333986822865],
+      "size": [400, 275],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "first_frame_image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [20, 35]
+        }
+      ],
+      "title": "Cinematic Pan Vid - MiniMax Hailuo Video",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "MinimaxHailuoVideoNode"
+      },
+      "widgets_values": [
+        "Product video — the camera pans across the exact product in the input image from one end to the other. Dramatic cinematic light sweeps across it and dust motes float in the air. Preserve the product’s shape, proportions, materials, colors, markings, and existing logo throughout the shot.",
+        333,
+        "fixed",
+        true,
+        6,
+        "1080P"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 5,
+      "type": "MinimaxHailuoVideoNode",
+      "pos": [3606.3334166614623, -448.6666929851903],
+      "size": [400, 275],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "first_frame_image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [16, 33]
+        }
+      ],
+      "title": "360 Rotation Vid - MiniMax Hailuo Video",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "MinimaxHailuoVideoNode"
+      },
+      "widgets_values": [
+        "Product video — a 360° rotating hero showcase of the exact product in the input image, with a cinematic soft spotlight, minimal studio background, and seamless loop. Preserve the product’s shape, proportions, materials, colors, markings, and existing logo throughout the shot.",
+        111,
+        "fixed",
+        true,
+        6,
+        "1080P"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [1956.3333027083456, 431.3332844999543],
+      "size": [510, 782.9427083333334],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [10]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Load Product Image",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["product_shoe.jpeg", "image"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 27,
+      "type": "ConcatenateVideo",
+      "pos": [4746.333153076701, 441.33329646024174],
+      "size": [270, 130],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "video0",
+          "name": "videos.video0",
+          "type": "VIDEO",
+          "link": 33
+        },
+        {
+          "label": "video1",
+          "name": "videos.video1",
+          "type": "VIDEO",
+          "link": 34
+        },
+        {
+          "label": "video2",
+          "name": "videos.video2",
+          "type": "VIDEO",
+          "link": 35
+        },
+        {
+          "label": "video3",
+          "name": "videos.video3",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [41]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ConcatenateVideo"
+      },
+      "widgets_values": ["auto"],
+      "title": "Concatenate Video"
+    },
+    {
+      "id": 17,
+      "type": "SaveVideo",
+      "pos": [4066.3332695243143, 441.33329646024185],
+      "size": [510, 863],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 18
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": ["video/ComfyUI-2", "auto", "auto"]
+    },
+    {
+      "id": 16,
+      "type": "SaveVideo",
+      "pos": [4066.3332695243143, -448.6666929851903],
+      "size": [510, 820],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 16
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.4.0",
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": ["video/ComfyUI-1", "auto", "auto"]
+    },
+    {
+      "id": 30,
+      "type": "SaveVideo",
+      "pos": [4990, 441.33329646024185],
+      "size": [800, 863],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 41
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.6.0"
+      },
+      "widgets_values": ["video/ComfyUI", "auto", "auto"]
+    }
+  ],
+  "links": [
+    [9, 10, 0, 9, 0, "IMAGE"],
+    [10, 1, 0, 10, 0, "IMAGE"],
+    [16, 5, 0, 16, 0, "VIDEO"],
+    [17, 10, 0, 5, 0, "IMAGE"],
+    [18, 18, 0, 17, 0, "VIDEO"],
+    [19, 10, 0, 18, 0, "IMAGE"],
+    [20, 20, 0, 19, 0, "VIDEO"],
+    [21, 10, 0, 20, 0, "IMAGE"],
+    [33, 5, 0, 27, 0, "VIDEO"],
+    [34, 18, 0, 27, 1, "VIDEO"],
+    [35, 20, 0, 27, 2, "VIDEO"],
+    [41, 27, 0, 30, 0, "VIDEO"]
+  ],
+  "groups": [],
+  "definitions": {
+    "subgraphs": []
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.27854483637981103,
+      "offset": [-687.6993930063913, 975.7438486175533]
+    },
+    "frontendVersion": "1.35.9",
+    "workflowRendererVersion": "LG",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

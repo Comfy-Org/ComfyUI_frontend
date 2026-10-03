@@ -14,12 +14,12 @@ import type {
   NodeInputSlot
 } from '@/lib/litegraph/src/litegraph'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
-import {
-  createMockCanvasPointerEvent,
-  createMockNodeInputSlot
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockNodeInputSlot } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 
 type MockPointerEvent = CanvasPointerEvent
 type MockRenderLink = ToOutputRenderLink
@@ -30,7 +30,6 @@ describe('LinkConnector SubgraphInput connection validation', () => {
 
   beforeEach(() => {
     connector = new LinkConnector(mockSetConnectingLinks)
-    vi.clearAllMocks()
   })
   describe('Link disconnection validation', () => {
     it('should properly cleanup a moved input link', () => {
@@ -111,8 +110,15 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       targetNode.addInput('number_in', 'number')
       subgraph.add(targetNode)
 
-      const link = new LLink(1, 'number', sourceNode.id, 0, targetNode.id, 0)
-      subgraph._links.set(link.id, link)
+      const link = new LLink(
+        toLinkId(1),
+        'number',
+        sourceNode.id,
+        0,
+        targetNode.id,
+        0
+      )
+      subgraph.links.set(link.id, link)
 
       const movingLink = new MovingOutputLink(subgraph, link)
 
@@ -137,26 +143,26 @@ describe('LinkConnector SubgraphInput connection validation', () => {
 
       // Create valid link (number -> number)
       const validLink = new LLink(
-        1,
+        toLinkId(1),
         'number',
         sourceNode.id,
         0,
         targetNode.id,
         0
       )
-      subgraph._links.set(validLink.id, validLink)
+      subgraph.links.set(validLink.id, validLink)
       const validMovingLink = new MovingOutputLink(subgraph, validLink)
 
       // Create invalid link (string -> number)
       const invalidLink = new LLink(
-        2,
+        toLinkId(2),
         'string',
         sourceNode.id,
         1,
         targetNode.id,
         1
       )
-      subgraph._links.set(invalidLink.id, invalidLink)
+      subgraph.links.set(invalidLink.id, invalidLink)
       const invalidMovingLink = new MovingOutputLink(subgraph, invalidLink)
 
       const numberInput = subgraph.inputs[0]
@@ -181,8 +187,15 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       targetNode.addInput('number_in', 'number')
       subgraph.add(targetNode)
 
-      const link = new LLink(1, 'number', sourceNode.id, 0, targetNode.id, 0)
-      subgraph._links.set(link.id, link)
+      const link = new LLink(
+        toLinkId(1),
+        'number',
+        sourceNode.id,
+        0,
+        targetNode.id,
+        0
+      )
+      subgraph.links.set(link.id, link)
       const movingLink = new MovingOutputLink(subgraph, link)
 
       const wildcardInput = subgraph.inputs[0]
@@ -197,7 +210,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       // Create a minimal valid setup
       const subgraph = createTestSubgraph()
       const node = new LGraphNode('TestNode')
-      node.id = 1
+      node.id = toNodeId(1)
       node.addInput('test_in', 'number')
       subgraph.add(node)
 
@@ -224,8 +237,15 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       subgraph.add(targetNode)
 
       // Create an invalid link (string output -> string input, but subgraph expects number)
-      const link = new LLink(1, 'string', sourceNode.id, 0, targetNode.id, 0)
-      subgraph._links.set(link.id, link)
+      const link = new LLink(
+        toLinkId(1),
+        'string',
+        sourceNode.id,
+        0,
+        targetNode.id,
+        0
+      )
+      subgraph.links.set(link.id, link)
       const movingLink = new MovingOutputLink(subgraph, link)
 
       // Mock console.warn to verify it's called
@@ -276,8 +296,15 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       subgraph.add(targetNode)
 
       // Create a valid link (number -> number)
-      const link = new LLink(1, 'number', sourceNode.id, 0, targetNode.id, 0)
-      subgraph._links.set(link.id, link)
+      const link = new LLink(
+        toLinkId(1),
+        'number',
+        sourceNode.id,
+        0,
+        targetNode.id,
+        0
+      )
+      subgraph.links.set(link.id, link)
       const movingLink = new MovingOutputLink(subgraph, link)
 
       // Add the link to the connector
@@ -323,7 +350,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
 
       // Create valid and invalid links
       const validLink = new LLink(
-        1,
+        toLinkId(1),
         'number',
         sourceNode.id,
         0,
@@ -331,15 +358,15 @@ describe('LinkConnector SubgraphInput connection validation', () => {
         0
       )
       const invalidLink = new LLink(
-        2,
+        toLinkId(2),
         'string',
         sourceNode.id,
         1,
         targetNode.id,
         1
       )
-      subgraph._links.set(validLink.id, validLink)
-      subgraph._links.set(invalidLink.id, invalidLink)
+      subgraph.links.set(validLink.id, validLink)
+      subgraph.links.set(invalidLink.id, invalidLink)
 
       const validMovingLink = new MovingOutputLink(subgraph, validLink)
       const invalidMovingLink = new MovingOutputLink(subgraph, invalidLink)

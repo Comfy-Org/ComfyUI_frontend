@@ -1,15 +1,11 @@
-import { useElementBounding, useRafFn } from '@vueuse/core'
+import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
@@ -48,6 +44,14 @@ function currentSelectionMatchesSignature(
   return buildSelectionSignature(store) === moreOptionsSelectionSignature
 }
 
+function getSelectionBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
+  if (item instanceof LGraphGroup) return item.boundingRect
+
+  const bounds: Rect = [0, 0, 0, 0]
+  item.measure(bounds)
+  return bounds
+}
+
 export function useSelectionToolboxPosition(
   toolboxRef: Ref<HTMLElement | undefined>
 ) {
@@ -55,6 +59,15 @@ export function useSelectionToolboxPosition(
   const lgCanvas = canvasStore.getCanvas()
   const { getSelectableItems } = useSelectedLiteGraphItems()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
+  const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
+
+  useEventListener(
+    lgCanvas.canvas,
+    'litegraph:dragging-items-changed',
+    (event: CustomEvent<{ dragging: boolean }>) => {
+      isDraggingLiteGraphItems.value = event.detail.dragging
+    }
+  )
 
   // World position of selection center
   const worldPosition = ref({ x: 0, y: 0 })
@@ -68,10 +81,9 @@ export function useSelectionToolboxPosition(
 
   // Unified dragging state - combines both LiteGraph and Vue node dragging
   const isDragging = computed((): boolean => {
-    const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
     const vueNodeDragging =
       shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
-    return litegraphDragging || vueNodeDragging
+    return isDraggingLiteGraphItems.value || vueNodeDragging
   })
 
   /**
@@ -96,30 +108,8 @@ export function useSelectionToolboxPosition(
     // Get bounds for all selected items
     const allBounds: ReadOnlyRect[] = []
     for (const item of selectableItems) {
-      // Skip items without valid IDs
-      if (item.id == null) continue
-
-      if (shouldRenderVueNodes.value && typeof item.id === 'string') {
-        // Use layout store for Vue nodes (only works with string IDs)
-        const layout = layoutStore.getNodeLayoutRef(item.id).value
-        if (layout) {
-          allBounds.push([
-            layout.bounds.x,
-            layout.bounds.y,
-            layout.bounds.width,
-            layout.bounds.height
-          ])
-        }
-      } else {
-        // Fallback to LiteGraph bounds for regular nodes or non-string IDs
-        if (item instanceof LGraphNode || item instanceof LGraphGroup) {
-          allBounds.push([
-            item.pos[0],
-            item.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
-            item.size[0],
-            item.size[1] + LiteGraph.NODE_TITLE_HEIGHT
-          ])
-        }
+      if (item instanceof LGraphNode || item instanceof LGraphGroup) {
+        allBounds.push(getSelectionBounds(item))
       }
     }
 
@@ -165,23 +155,23 @@ export function useSelectionToolboxPosition(
     }
   })
 
-  // Watch for selection changes
+  const handleSelectionMembershipChange = () => {
+    if (!moreOptionsRestorePending.value && !moreOptionsSelectionSignature)
+      return
+
+    moreOptionsRestorePending.value = false
+    moreOptionsWasOpenBeforeDrag = false
+    moreOptionsSelectionSignature = moreOptionsOpen.value
+      ? buildSelectionSignature(canvasStore)
+      : null
+  }
+
   watch(
-    () => canvasStore.getCanvas().state.selectionChanged,
-    (changed) => {
-      if (changed) {
-        if (moreOptionsRestorePending.value || moreOptionsSelectionSignature) {
-          moreOptionsRestorePending.value = false
-          moreOptionsWasOpenBeforeDrag = false
-          if (!moreOptionsOpen.value) {
-            moreOptionsSelectionSignature = null
-          } else {
-            moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
-          }
-        }
-        updateSelectionBounds()
-        canvasStore.getCanvas().state.selectionChanged = false
-      }
+    [() => canvasStore.selectedItems, () => layoutStore.layoutVersion],
+    ([selectedItems], [previousSelectedItems]) => {
+      if (selectedItems !== previousSelectedItems)
+        handleSelectionMembershipChange()
+      updateSelectionBounds()
     },
     { immediate: true }
   )
@@ -190,7 +180,7 @@ export function useSelectionToolboxPosition(
     (v) => {
       if (v) {
         moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
-      } else if (!canvasStore.canvas?.state?.draggingItems) {
+      } else if (!isDraggingLiteGraphItems.value) {
         moreOptionsSelectionSignature = null
         if (moreOptionsRestorePending.value)
           moreOptionsRestorePending.value = false

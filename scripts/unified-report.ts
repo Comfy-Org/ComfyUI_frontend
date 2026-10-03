@@ -15,11 +15,15 @@ const coverageStatus = getArg('coverage-status') ?? 'skip'
 
 const lines: string[] = []
 
-if (sizeStatus === 'ready') {
+const hasSizeData = existsSync('temp/size')
+
+if (sizeStatus === 'ready' && hasSizeData) {
   try {
-    const sizeReport = execFileSync('node', ['scripts/size-report.js'], {
-      encoding: 'utf-8'
-    }).trimEnd()
+    const sizeReport = execFileSync(
+      'pnpm',
+      ['exec', 'tsx', 'scripts/size-report.ts'],
+      { encoding: 'utf-8' }
+    ).trimEnd()
     lines.push(sizeReport)
   } catch {
     lines.push('## 📦 Bundle Size')
@@ -32,13 +36,13 @@ if (sizeStatus === 'ready') {
   lines.push('## 📦 Bundle Size')
   lines.push('')
   lines.push('> ⚠️ Size data collection failed. Check the CI workflow logs.')
-} else {
+} else if (sizeStatus !== 'ready') {
   lines.push('## 📦 Bundle Size')
   lines.push('')
   lines.push('> ⏳ Size data collection in progress…')
 }
 
-lines.push('')
+if (lines.length > 0) lines.push('')
 
 if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   try {
@@ -62,7 +66,7 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   lines.push('## ⚡ Performance')
   lines.push('')
   lines.push('> ⚠️ Performance tests failed. Check the CI workflow logs.')
-} else {
+} else if (perfStatus !== 'skip') {
   lines.push('## ⚡ Performance')
   lines.push('')
   lines.push('> ⏳ Performance tests in progress…')

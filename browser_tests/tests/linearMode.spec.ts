@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Linear Mode', { tag: '@ui' }, () => {
   test('Displays linear controls when app mode active', async ({
@@ -16,7 +17,9 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
   test('Run button visible in linear mode', async ({ comfyPage }) => {
     await comfyPage.appMode.enterAppModeWithInputs([])
 
-    await expect(comfyPage.page.getByTestId('linear-run-button')).toBeVisible()
+    await expect(
+      comfyPage.page.getByTestId(TestIds.linear.runButton)
+    ).toBeVisible()
   })
 
   test('Workflow info section visible', async ({ comfyPage }) => {
@@ -54,7 +57,11 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     const username = `playwright-test-${parallelIndex}`
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
+    await comfyPage.setupSettings({ userId })
 
+    await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+      route.fulfill({ json: [] })
+    )
     await page.goto(`${comfyPage.url}/api/users`)
     await page.evaluate((id) => {
       localStorage.clear()
@@ -74,7 +81,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     await page.route('**/templates/default.json', async (route) => {
       notifyWorkflowRequested()
       await requestUnblocked
-      return route.continue()
+      return route.fallback()
     })
 
     await comfyPage.goto({ url: `${comfyPage.url}/?template=default` })

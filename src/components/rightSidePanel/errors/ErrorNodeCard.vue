@@ -1,14 +1,11 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-    <div
-      v-if="card.nodeId && !compact"
-      class="flex min-h-8 flex-wrap items-center gap-2"
-    >
+    <div v-if="card.nodeId" class="flex min-h-8 flex-wrap items-center gap-2">
       <span class="flex min-w-0 flex-1">
         <button
           v-if="hasRuntimeError && (card.nodeTitle || card.title)"
           type="button"
-          class="focus-visible:ring-ring m-0 max-w-full min-w-0 cursor-pointer appearance-none truncate rounded-sm border-0 bg-transparent p-0 text-left text-xs font-normal text-base-foreground outline-none focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+          class="m-0 max-w-full min-w-0 cursor-pointer appearance-none truncate rounded-sm border-0 bg-transparent p-0 text-left text-xs font-normal text-base-foreground outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
           @click="handleLocateNode"
         >
           {{ card.nodeTitle || card.title }}
@@ -21,15 +18,6 @@
         </span>
       </span>
       <div class="flex shrink-0 items-center">
-        <Button
-          v-if="card.isSubgraphNode"
-          variant="secondary"
-          size="sm"
-          class="shrink-0 focus-visible:ring-inset"
-          @click.stop="handleEnterSubgraph"
-        >
-          {{ t('rightSidePanel.enterSubgraph') }}
-        </Button>
         <Button
           v-if="hasRuntimeError"
           variant="textonly"
@@ -48,15 +36,7 @@
         >
           <i class="icon-[lucide--monitor-x] size-4" />
         </Button>
-        <Button
-          variant="textonly"
-          size="icon-sm"
-          class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-          :aria-label="t('rightSidePanel.locateNode')"
-          @click.stop="handleLocateNode"
-        >
-          <i class="icon-[lucide--locate] size-4" />
-        </Button>
+        <LocateNodeButton :label="locateLabel" @locate="handleLocateNode" />
       </div>
     </div>
 
@@ -83,7 +63,7 @@
             <button
               v-if="card.nodeId"
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
               @click="handleLocateNode"
             >
               {{ getInlineItemLabel(error) }}
@@ -112,7 +92,7 @@
 
         <TransitionCollapse>
           <div
-            v-if="error.isRuntimeError && isRuntimeDisclosureExpanded"
+            v-if="error.isRuntimeError && runtimeDetailsExpanded"
             :id="getRuntimeDetailsId(idx)"
             role="region"
             data-testid="runtime-error-panel"
@@ -188,21 +168,21 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
+import LocateNodeButton from './LocateNodeButton.vue'
 import TransitionCollapse from '../layout/TransitionCollapse.vue'
 
 import type { ErrorCardData, ErrorItem } from './types'
 import { useErrorActions } from './useErrorActions'
 import { useErrorReport } from './useErrorReport'
 
-const { card, compact = false } = defineProps<{
+const { card } = defineProps<{
   card: ErrorCardData
-  compact?: boolean
 }>()
 
 const emit = defineEmits<{
   locateNode: [nodeId: string]
-  enterSubgraph: [nodeId: string]
   copyToClipboard: [text: string]
 }>()
 
@@ -213,9 +193,12 @@ const runtimeDetailsExpanded = ref(true)
 const hasRuntimeError = computed(() =>
   card.errors.some((error) => error.isRuntimeError)
 )
-const isRuntimeDisclosureExpanded = computed(
-  () => compact || runtimeDetailsExpanded.value
-)
+const locateLabel = computed(() => {
+  const item = card.nodeTitle || card.title
+  return item
+    ? t('rightSidePanel.locateNodeFor', { item }, { escapeParameter: false })
+    : t('rightSidePanel.locateNode')
+})
 const runtimeDetailsControlIds = computed(() =>
   card.errors
     .map((error, idx) => (error.isRuntimeError ? getRuntimeDetailsId(idx) : ''))
@@ -233,13 +216,11 @@ function handleLocateNode() {
   }
 }
 
-function handleEnterSubgraph() {
-  if (card.nodeId) {
-    emit('enterSubgraph', card.nodeId)
-  }
-}
-
 function handleCopyError(idx: number) {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_tab_copy_error_clicked',
+    element_group: 'errors_panel'
+  })
   const details = displayedDetailsMap.value[idx]
   const message = getCopyMessage(card.errors[idx])
   emit('copyToClipboard', [message, details].filter(Boolean).join('\n\n'))

@@ -91,6 +91,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
+import type { NodeId } from '@/types/nodeId'
 
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
@@ -101,7 +102,7 @@ const { t } = useI18n()
 
 const props = defineProps<{
   readonly?: boolean
-  nodeId: string
+  nodeId: NodeId
 }>()
 
 // Audio element ref

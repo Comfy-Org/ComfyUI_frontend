@@ -1,0 +1,95 @@
+<script setup lang="ts">
+import type { Locale } from '../../i18n/translations'
+
+import SectionHeader from '../../components/common/SectionHeader.vue'
+import { translationsFor } from '../../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
+
+const principles = [
+  {
+    title: t('brand.voice.direct.title'),
+    body: t('brand.voice.direct.body')
+  },
+  {
+    title: t('brand.voice.precise.title'),
+    body: t('brand.voice.precise.body')
+  },
+  {
+    title: t('brand.voice.human.title'),
+    body: t('brand.voice.human.body')
+  },
+  {
+    title: t('brand.voice.antihype.title'),
+    body: t('brand.voice.antihype.body')
+  }
+]
+
+const doExamples = [t('brand.voice.do.0'), t('brand.voice.do.1')]
+
+const dontExamples = [t('brand.voice.dont.0'), t('brand.voice.dont.1')]
+</script>
+
+<template>
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:px-20 lg:py-12">
+    <SectionHeader align="start" max-width="xl">
+      {{ t('brand.voice.heading') }}
+    </SectionHeader>
+
+    <dl class="mt-10 flex max-w-4xl flex-col gap-3.5 text-sm/[1.6]">
+      <div v-for="principle in principles" :key="principle.title">
+        <dt class="text-primary-comfy-yellow">{{ principle.title }}</dt>
+        <dd class="text-primary-warm-gray">{{ principle.body }}</dd>
+      </div>
+    </dl>
+
+    <div class="mt-12 grid gap-4 md:grid-cols-2">
+      <div class="flex flex-col gap-4 rounded-4xl bg-transparency-white-t4 p-8">
+        <div class="flex items-center gap-2">
+          <span
+            class="size-2.5 rounded-full bg-primary-comfy-yellow"
+            aria-hidden="true"
+          />
+          <span
+            class="text-sm font-bold tracking-wider text-primary-comfy-canvas uppercase"
+          >
+            {{ t('brand.voice.doLabel') }}
+          </span>
+        </div>
+        <div
+          v-for="example in doExamples"
+          :key="example"
+          class="rounded-2xl bg-transparency-ink-t80 p-5"
+        >
+          <p class="text-base/[1.45] text-primary-comfy-canvas">
+            {{ example }}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-4 rounded-4xl bg-transparency-white-t4 p-8">
+        <div class="flex items-center gap-2">
+          <span
+            class="size-2.5 rounded-full bg-primary-warm-gray"
+            aria-hidden="true"
+          />
+          <span
+            class="text-sm font-bold tracking-wider text-primary-warm-gray uppercase"
+          >
+            {{ t('brand.voice.dontLabel') }}
+          </span>
+        </div>
+        <div
+          v-for="example in dontExamples"
+          :key="example"
+          class="rounded-2xl bg-transparency-ink-t80 p-5"
+        >
+          <p class="text-base/[1.45] text-primary-warm-gray line-through">
+            {{ example }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>

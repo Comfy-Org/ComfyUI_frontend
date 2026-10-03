@@ -1,3 +1,5 @@
+import { shallowReactive } from 'vue'
+
 import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
@@ -62,27 +64,20 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   }
 
   get highlightColor(): CanvasColour {
-    return (
-      LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ??
-      LiteGraph.NODE_SELECTED_TITLE_COLOR ??
-      LiteGraph.NODE_TEXT_COLOR
-    )
+    return LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR
   }
 
   abstract get isWidgetInputSlot(): boolean
 
   constructor(
-    slot: OptionalProps<INodeSlot, 'boundingRect'>,
+    slot:
+      | OptionalProps<INodeSlot, 'boundingRect'>
+      | OptionalProps<ISubgraphInput, 'link' | 'boundingRect'>,
     node: LGraphNode
   ) {
-    // @ts-expect-error Workaround: Ensure internal properties are not copied to the slot (_listenerController
     // https://github.com/Comfy-Org/litegraph.js/issues/1138
-    const maybeSubgraphSlot: OptionalProps<
-      ISubgraphInput,
-      'link' | 'boundingRect'
-    > = slot
-    const { boundingRect, name, type, _listenerController, ...rest } =
-      maybeSubgraphSlot
+    const { boundingRect, name, type, ...rest } = slot
+    if ('_listenerController' in rest) delete rest._listenerController
     const rectangle = boundingRect
       ? Rectangle.ensureRect(boundingRect)
       : new Rectangle()
@@ -91,6 +86,9 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
 
     Object.assign(this, rest)
     this._node = node
+
+    // Return the proxy so in-place field writes (rename, retype) reach Vue.
+    return shallowReactive(this)
   }
 
   /**

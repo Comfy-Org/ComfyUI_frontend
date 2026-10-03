@@ -1,15 +1,24 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  ExportedSubgraphInstance,
+  INodeInputSlot,
   ISlotType,
   LGraphCanvas,
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
-import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetValue } from '@/types/simplifiedWidget'
+import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import {
+  LegacyWidget,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import {
   appendQuarantine,
@@ -19,9 +28,14 @@ import {
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
@@ -31,20 +45,16 @@ import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
+  registerTestSubgraphNodeTypes,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 function createNodeWithWidget(
   title: string,
   widgetType: TWidgetType = 'number',
-  widgetValue: unknown = 42,
+  widgetValue: WidgetValue = 42,
   slotType: ISlotType = 'number',
   tooltip?: string
 ) {
@@ -52,8 +62,7 @@ function createNodeWithWidget(
   const input = node.addInput('value', slotType)
   node.addOutput('out', slotType)
 
-  // @ts-expect-error Abstract class instantiation
-  const widget = new BaseWidget({
+  const widget: LegacyWidget = new LegacyWidget({
     name: 'widget',
     type: widgetType,
     value: widgetValue,
@@ -111,15 +120,13 @@ function promotedWidgetStateByName(
 function writePromotedWidgetValue(
   node: { inputs: Array<{ widgetId?: WidgetId; name: string }> },
   index: number,
-  value: unknown
+  value: WidgetState['value']
 ) {
   const input = promotedInputs(node)[index]
-  if (!input) throw new Error(`Missing promoted input ${index}`)
   useWidgetValueStore().setValue(input.widgetId, value)
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -140,6 +147,47 @@ describe('SubgraphWidgetPromotion', () => {
         type: 'number',
         value: 42
       })
+    })
+
+    it('does not persist source connection suppression on the promoted widget', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget('Test Node')
+
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+      const input = promotedInputs(subgraphNode).at(0)
+      if (!input) throw new Error('Missing promoted input')
+
+      expect(widget.visibility.suppression.byConnection).toBe(true)
+      expect(useWidgetValueStore().getWidgetVisibility(input.widgetId)).toEqual(
+        {
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          suppression: { byExtension: false, byConnection: false }
+        }
+      )
+    })
+
+    it('preserves extension-owned visible state without promoting connection suppression', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget('Test Node')
+      widget.options.hidden = false
+
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+      const input = promotedInputs(subgraphNode).at(0)
+      if (!input) throw new Error('Missing promoted input')
+      const promotedWidget = promotedWidgetStateByName(subgraphNode, 'value')
+
+      expect(widget.visibility.suppression.byConnection).toBe(true)
+      expect(useWidgetValueStore().getWidgetVisibility(input.widgetId)).toEqual(
+        {
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          suppression: { byExtension: false, byConnection: false }
+        }
+      )
+      expect(promotedWidget.options.hidden).toBe(false)
     })
 
     it('resolves nested promoted widgets before the inner host input is hydrated', () => {
@@ -168,6 +216,41 @@ describe('SubgraphWidgetPromotion', () => {
           value: 42
         }
       )
+    })
+
+    it('preserves the host value when its source is converted to a nested subgraph', async () => {
+      const rootGraph = createTestRootGraph()
+      const subgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'value', type: 'STRING' }]
+      })
+      const sourceType = 'test/nested-conversion-source'
+
+      class SourceNode extends LGraphNode {
+        constructor() {
+          super('Source')
+          const input = this.addInput('value', 'STRING')
+          input.widget = { name: 'value' }
+          this.addWidget('text', 'value', 'source value', () => {})
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, SourceNode)
+      registerTestSubgraphNodeTypes(rootGraph)
+
+      const source = LiteGraph.createNode(sourceType)
+      if (!source) throw new Error('Failed to create source node')
+      subgraph.add(source)
+      const link = subgraph.inputNode.slots[0].connect(source.inputs[0], source)
+      if (!link) throw new Error('Failed to connect promoted input')
+
+      const host = createTestSubgraphNode(subgraph)
+      rootGraph.add(host)
+      writePromotedWidgetValue(host, 0, 'host value')
+
+      subgraph.convertToSubgraph(new Set([source]))
+      await Promise.resolve()
+
+      expect(promotedWidgetStateByName(host, 'value').value).toBe('host value')
     })
 
     it('should promote all widget types', () => {
@@ -252,8 +335,7 @@ describe('SubgraphWidgetPromotion', () => {
       const numInput = multiWidgetNode.addInput('num', 'number')
       const strInput = multiWidgetNode.addInput('str', 'string')
 
-      // @ts-expect-error Abstract class instantiation
-      const widget1 = new BaseWidget({
+      const widget1 = new LegacyWidget({
         name: 'widget1',
         type: 'number',
         value: 10,
@@ -262,8 +344,7 @@ describe('SubgraphWidgetPromotion', () => {
         node: multiWidgetNode
       })
 
-      // @ts-expect-error Abstract class instantiation
-      const widget2 = new BaseWidget({
+      const widget2 = new LegacyWidget({
         name: 'widget2',
         type: 'string',
         value: 'hello',
@@ -343,7 +424,7 @@ describe('SubgraphWidgetPromotion', () => {
       )
     })
 
-    it('should handle disconnection of promoted widget', () => {
+    it('should handle disconnection of promoted widget', async () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'input', type: 'number' }]
       })
@@ -357,10 +438,70 @@ describe('SubgraphWidgetPromotion', () => {
 
       subgraph.inputNode.slots[0].disconnect()
 
+      // Demotion is deferred by a microtask so a same-tick reconnect (a
+      // rewire) can cancel it instead of dropping the widget for one tick;
+      // a genuine disconnect like this one still fully demotes once that
+      // microtask runs.
+      await Promise.resolve()
+
       expect(subgraphNode.widgets).toHaveLength(
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
+    })
+
+    it('keeps the host widget promoted while another interior widget is still connected', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+
+      const { node: first } = createNodeWithWidget('First', 'number', 13)
+      const { node: second, widget: secondWidget } = createNodeWithWidget(
+        'Second',
+        'number',
+        27
+      )
+      subgraph.add(first)
+      subgraph.add(second)
+      subgraph.inputNode.slots[0].connect(first.inputs[0], first)
+      subgraph.inputNode.slots[0].connect(second.inputs[0], second)
+
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(2)
+      // linkIds resolve in connection order, so `first` seeds the store.
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
+
+      const repromotions: IBaseWidget[] = []
+      subgraph.events.addEventListener('widget-promoted', (e) => {
+        repromotions.push(e.detail.widget)
+      })
+
+      // Disconnect the interior widget that currently backs the promotion.
+      // The input must re-resolve to the remaining interior widget — observable
+      // as a repromotion event carrying that widget — not merely survive as a
+      // stale binding to the removed source.
+      first.disconnectInput(0, true)
+
+      expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(1)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(subgraphNode.widgets).toHaveLength(1)
+      expect(repromotions).toStrictEqual([secondWidget])
+      // Re-resolution deliberately keeps the store-backed value (see
+      // widgetValueStore.registerWidget): rebinding must not clobber the
+      // promoted value the user may have edited.
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
+
+      second.disconnectInput(0, true)
+
+      // Demotion is deferred by a microtask (see the rewire-desync
+      // describe block below); this is a genuine disconnect with nothing
+      // left to re-resolve to, so it still fully demotes once that
+      // microtask runs.
+      await Promise.resolve()
+
+      expect(promotedInputs(subgraphNode)).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(0)
     })
 
     it('writes canvas edits back to the host widget store', () => {
@@ -380,6 +521,35 @@ describe('SubgraphWidgetPromotion', () => {
       concrete.setValue(99, { e: fromAny({}), node: subgraphNode, canvas })
 
       expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(99)
+    })
+
+    it('keeps sibling hosts of one definition isolated across a rebind', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'STRING' }]
+      })
+      const {
+        node: interiorNode,
+        widget: interiorWidget,
+        input: interiorInput
+      } = createNodeWithWidget('Interior', 'text', 'seeded', 'STRING')
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const hostA = createTestSubgraphNode(subgraph, { id: 101 })
+      const hostB = createTestSubgraphNode(subgraph, { id: 102 })
+
+      hostA.widgets[0].value = 'a-edit'
+      hostB.widgets[0].value = 'b-edit'
+      expect(promotedWidgetStateByName(hostA, 'value').value).toBe('a-edit')
+      expect(promotedWidgetStateByName(hostB, 'value').value).toBe('b-edit')
+      expect(interiorWidget.value).toBe('seeded')
+
+      interiorNode.disconnectInput(0)
+      await Promise.resolve()
+      subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+      expect(promotedWidgetStateByName(hostA, 'value').value).not.toBe('b-edit')
+      expect(promotedWidgetStateByName(hostB, 'value').value).not.toBe('a-edit')
     })
   })
 
@@ -597,8 +767,7 @@ describe('SubgraphWidgetPromotion', () => {
       const numInput = multiWidgetNode.addInput('num', 'number')
       const strInput = multiWidgetNode.addInput('str', 'string')
 
-      // @ts-expect-error Abstract class instantiation
-      const widget1 = new BaseWidget({
+      const widget1 = new LegacyWidget({
         name: 'widget1',
         type: 'number',
         value: 10,
@@ -608,8 +777,7 @@ describe('SubgraphWidgetPromotion', () => {
         tooltip: 'Number widget tooltip'
       })
 
-      // @ts-expect-error Abstract class instantiation
-      const widget2 = new BaseWidget({
+      const widget2 = new LegacyWidget({
         name: 'widget2',
         type: 'string',
         value: 'hello',
@@ -703,7 +871,7 @@ describe('SubgraphWidgetPromotion', () => {
         title: string
         widgetType: TWidgetType
         slotType: ISlotType
-        initialValue: unknown
+        initialValue: WidgetValue
         withComfyClass?: boolean
         hugeMaxSeed?: boolean
       }
@@ -1091,6 +1259,49 @@ describe('SubgraphWidgetPromotion', () => {
           'second host value'
         ])
       })
+
+      it('preserves null promoted values through serialize and reload', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, TEXT_PAIR)
+
+        const host = createTestSubgraphNode(subgraph, { id: 101 })
+        writePromotedWidgetValue(host, 0, null)
+        writePromotedWidgetValue(host, 1, null)
+
+        const serialized = host.serialize()
+        expect(serialized.widgets_values).toEqual([null, null])
+
+        const widgetStore = useWidgetValueStore()
+        widgetStore.clearGraph(host.rootGraph.id)
+        const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
+        reloaded.configure(serialized)
+
+        expect(
+          promotedWidgetStates(reloaded).map((state) => state.value)
+        ).toEqual([null, null])
+      })
+
+      it('reads a null store value back through the projected widget', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, TEXT_PAIR)
+        const host = createTestSubgraphNode(subgraph)
+
+        writePromotedWidgetValue(host, 0, null)
+
+        expect(host.widgets[0]?.value).toBeNull()
+      })
+
+      it('preserves a null promoted value across reorder', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, TEXT_PAIR)
+        const host = createTestSubgraphNode(subgraph)
+        writePromotedWidgetValue(host, 0, null)
+        writePromotedWidgetValue(host, 1, 'second value')
+
+        reorderSubgraphInputsByName(host, ['second', 'first'])
+
+        expect(host.serialize().widgets_values).toEqual(['second value', null])
+      })
     })
 
     describe('proxyWidgets is no longer re-emitted', () => {
@@ -1130,13 +1341,24 @@ describe('SubgraphWidgetPromotion', () => {
 
     describe('previewExposures round-trip', () => {
       const CANVAS = '$$canvas-image-preview'
-      const exposure12 = { sourceNodeId: '12', sourcePreviewName: CANVAS }
+      const exposure12 = {
+        sourceNodeId: toNodeId('12'),
+        sourcePreviewName: CANVAS
+      }
       const exposure14 = {
+        sourceNodeId: toNodeId('14'),
+        sourcePreviewName: 'videopreview'
+      }
+      const serializedExposure12 = {
+        sourceNodeId: '12',
+        sourcePreviewName: CANVAS
+      }
+      const serializedExposure14 = {
         sourceNodeId: '14',
         sourcePreviewName: 'videopreview'
       }
-      const named12 = { name: CANVAS, ...exposure12 }
-      const named14 = { name: 'videopreview', ...exposure14 }
+      const named12 = { name: CANVAS, ...serializedExposure12 }
+      const named14 = { name: 'videopreview', ...serializedExposure14 }
 
       it('hydrates previewExposures into the store during configure', () => {
         const hostNode = createTestSubgraphNode(createTestSubgraph())
@@ -1151,6 +1373,33 @@ describe('SubgraphWidgetPromotion', () => {
             String(hostNode.id)
           )
         ).toEqual([{ name: 'preview', ...exposure12 }])
+      })
+
+      it('moves a nested host raw-ID entry to its owner-scoped locator', () => {
+        const outer = createTestSubgraph()
+        const hostNode = createTestSubgraphNode(createTestSubgraph(), {
+          id: 21
+        })
+        outer.add(hostNode)
+        const rootGraphId = hostNode.rootGraph.id
+        const rawLocator = createNodeLocatorId(null, hostNode.id)
+        const scopedLocator = getPreviewExposureHostLocator(hostNode)
+        expect(scopedLocator).not.toBeNull()
+        if (!scopedLocator) return
+        const store = usePreviewExposureStore()
+        store.setExposures(rootGraphId, rawLocator, [
+          { name: 'preview', ...exposure12 }
+        ])
+
+        hostNode._internalConfigureAfterSlots()
+
+        expect(store.getExposures(rootGraphId, scopedLocator)).toEqual([
+          { name: 'preview', ...exposure12 }
+        ])
+        expect(store.getExposures(rootGraphId, rawLocator)).toEqual([])
+        expect(hostNode.serialize().properties?.previewExposures).toEqual([
+          { name: 'preview', ...serializedExposure12 }
+        ])
       })
 
       type SerializeCase = {
@@ -1384,6 +1633,236 @@ describe('SubgraphWidgetPromotion', () => {
         expect(byName.get('clip_name')).toBe('qwen_3_4b.safetensors')
         expect(byName.get('steps')).toBe(8)
       })
+
+      it('applies a null quarantined host value instead of falling through to widgets_values', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'STRING' }]
+        })
+        const { node: interiorNode } = createNodeWithWidget(
+          'Interior',
+          'text',
+          'interior default',
+          'STRING'
+        )
+        subgraph.add(interiorNode)
+        subgraph.inputNode.slots[0].connect(
+          interiorNode.inputs[0],
+          interiorNode
+        )
+
+        const hostNode = createTestSubgraphNode(subgraph)
+        const serialized = hostNode.serialize()
+        serialized.widgets_values = ['stale value']
+        serialized.properties = {
+          ...serialized.properties,
+          proxyWidgetErrorQuarantine: [
+            {
+              originalEntry: ['-1', 'value'] as SerializedProxyWidgetTuple,
+              reason: 'missingSourceNode',
+              hostValue: null,
+              attemptedAtVersion: 1
+            }
+          ]
+        }
+
+        const reloaded = createTestSubgraphNode(subgraph)
+        reloaded.configure(serialized)
+
+        expect(promotedWidgetStateByName(reloaded, 'value').value).toBeNull()
+      })
     })
+  })
+})
+
+// PM-1328 / PM-1253 / PM-1254: wiring a new source into the interior link
+// behind one promoted widget (e.g. "prompt") was dropping/visually duplicating
+// the *other*, unrelated promoted widgets (e.g. width/height/seed) on the
+// same host node. Confirmed mechanism: SubgraphInputNode's
+// 'input-disconnected' handler (SubgraphNode.ts) used to demote the widget
+// synchronously while deferring the matching `widgetValueStore` cleanup to a
+// `queueMicrotask`, leaving `hostNode.widgets.length` and the store's tracked
+// id count for that node disagreeing for one tick -- exactly the window the
+// Vue widget grid (useProcessedWidgets) reads from two different sources to
+// render. The fix defers the demotion itself by a microtask, cancelled by a
+// same-tick reconnect, so a rewire never drops the widget at all.
+describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
+  function makeInteriorNode(title: string, value: WidgetValue = 1) {
+    const node = new LGraphNode(title)
+    const input = node.addInput('value', 'number')
+    node.addOutput('out', 'number')
+    const widget: LegacyWidget = new LegacyWidget({
+      name: 'widget',
+      type: 'number',
+      value,
+      y: 0,
+      options: {},
+      node
+    })
+    node.widgets = [widget]
+    input.widget = { name: widget.name }
+    return node
+  }
+
+  it('keeps every promoted widget present while rewiring the interior link behind one of them', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'text', type: 'number' },
+        { name: 'seed', type: 'number' },
+        { name: 'width', type: 'number' },
+        { name: 'height', type: 'number' }
+      ]
+    })
+
+    const textNode = makeInteriorNode('TextNode')
+    const seedNode = makeInteriorNode('SeedNode')
+    const widthNode = makeInteriorNode('WidthNode')
+    const heightNode = makeInteriorNode('HeightNode')
+    const replacementTextNode = makeInteriorNode('ReplacementTextNode', 2)
+    subgraph.add(textNode)
+    subgraph.add(seedNode)
+    subgraph.add(widthNode)
+    subgraph.add(heightNode)
+    subgraph.add(replacementTextNode)
+
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    subgraph.inputNode.slots[1].connect(seedNode.inputs[0], seedNode)
+    subgraph.inputNode.slots[2].connect(widthNode.inputs[0], widthNode)
+    subgraph.inputNode.slots[3].connect(heightNode.inputs[0], heightNode)
+
+    const hostNode = createTestSubgraphNode(subgraph)
+    expect(hostNode.widgets).toHaveLength(4)
+
+    // Rewire the interior link feeding the 'text' promoted widget onto a new
+    // source node, exactly as a user (or agent) dragging a new node onto
+    // that widget's socket does: the old link is removed before the new one
+    // lands.
+    textNode.disconnectInput(0, true)
+
+    // The other, unrelated promoted widgets (seed/width/height) -- and the
+    // rewired one itself -- must never disappear mid-rewire.
+    expect(hostNode.widgets).toHaveLength(4)
+
+    subgraph.inputNode.slots[0].connect(
+      replacementTextNode.inputs[0],
+      replacementTextNode
+    )
+    await Promise.resolve()
+
+    expect(hostNode.widgets).toHaveLength(4)
+    expect(promotedInputs(hostNode)).toHaveLength(4)
+  })
+})
+
+// Speculative lead for PM-1328's duplication (not the confirmed disappear
+// mechanism above): a promoted textarea's host widget is a DOMWidgetImpl
+// living in useDomWidgetStore, materialized by createPromotedHostWidget
+// (see multilineTextarea.ts, wired up the same way the app's real
+// SubgraphNode subclass does in litegraphService.ts). Every other promoted
+// widget is a plain store projection. The theory: if anything ever resolves
+// a store-projected row for an input that already has a DOM host attached,
+// the widget grid would render two rows for one input. `_projectPromotedWidget`
+// guards this with `if (input._widget) return input._widget`, so this test
+// exercises the guard across the real rebuild/rewire/configure sequence
+// rather than asserting the guard exists in isolation.
+describe('Promoted textarea dual-registration (PM-1328 duplication lead)', () => {
+  class DomHostSubgraphNode extends SubgraphNode {
+    protected override createPromotedHostWidget(
+      input: INodeInputSlot,
+      id: WidgetId,
+      sourceWidget: Readonly<IBaseWidget>
+    ): IBaseWidget | undefined {
+      return createPromotedMultilineWidget({
+        subgraphNode: this,
+        input,
+        widgetId: id,
+        sourceWidget
+      })
+    }
+  }
+
+  function createSettledDomHostSubgraphNode(subgraph: Subgraph): SubgraphNode {
+    const rootGraph = subgraph.rootGraph
+    const instanceData: ExportedSubgraphInstance = {
+      id: rootGraph.state.lastNodeId + 1,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      properties: {},
+      flags: {},
+      mode: 0,
+      order: 0
+    }
+    const node = new DomHostSubgraphNode(rootGraph, subgraph, instanceData)
+    rootGraph.add(node)
+    return node
+  }
+
+  function makeTextareaInteriorNode(title: string, value = 'hello') {
+    const node = new LGraphNode(title)
+    const input = node.addInput('value', 'STRING')
+    const widget = fromAny<IBaseWidget, unknown>({
+      name: 'widget',
+      type: 'customtext',
+      value,
+      options: {},
+      element: document.createElement('textarea')
+    })
+    node.widgets = [widget]
+    input.widget = { name: widget.name }
+    return node
+  }
+
+  function textRowCount(hostNode: SubgraphNode): number {
+    return hostNode.widgets.filter((widget) => widget.name === 'text').length
+  }
+
+  function domStoreEntryCount(hostNode: SubgraphNode): number {
+    return [...useDomWidgetStore().widgetStates.values()].filter(
+      (state) => state.widget.node === hostNode
+    ).length
+  }
+
+  it('keeps exactly one widget row and one DOM registration per input across a rewire', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const textNode = makeTextareaInteriorNode('TextNode')
+    subgraph.add(textNode)
+
+    // Settle the host node in its graph *before* the interior link resolves
+    // the promoted widget, matching how the real app always adds a
+    // SubgraphNode before its subgraph's own construction-time links fire.
+    const hostNode = createSettledDomHostSubgraphNode(subgraph)
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
+
+    textNode.disconnectInput(0, true)
+    expect(textRowCount(hostNode)).toBeLessThanOrEqual(1)
+    expect(domStoreEntryCount(hostNode)).toBeLessThanOrEqual(1)
+
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
+  })
+
+  it('keeps exactly one widget row and one DOM registration per input across a reconfigure', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const textNode = makeTextareaInteriorNode('TextNode')
+    subgraph.add(textNode)
+
+    const hostNode = createSettledDomHostSubgraphNode(subgraph)
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    expect(textRowCount(hostNode)).toBe(1)
+
+    hostNode.configure(hostNode.serialize())
+
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
   })
 })

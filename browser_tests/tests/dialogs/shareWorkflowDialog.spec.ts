@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { AssetInfo } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -99,15 +99,15 @@ async function mockShareableAssets(
 }
 
 /**
- * Dismiss stale PrimeVue dialog masks left by cloud-mode's onboarding flow
- * or auth-triggered modals by pressing Escape until they clear.
+ * Dismiss stale dialogs left by cloud-mode's onboarding flow or
+ * auth-triggered modals by pressing Escape until they clear.
  */
 async function dismissOverlays(page: Page): Promise<void> {
-  const mask = page.locator('.p-dialog-mask')
+  const dialogs = page.getByRole('dialog')
   for (let attempt = 0; attempt < 3; attempt++) {
-    if ((await mask.count()) === 0) break
+    if ((await dialogs.count()) === 0) break
     await page.keyboard.press('Escape')
-    await mask
+    await dialogs
       .first()
       .waitFor({ state: 'hidden', timeout: 2000 })
       .catch(() => {})

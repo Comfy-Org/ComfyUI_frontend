@@ -46,7 +46,7 @@ type ContextMenuEventListener = (
   value: IContextMenuItem,
   options: IContextMenuOptions,
   event: MouseEvent,
-  parentMenu: ContextMenu<unknown> | undefined,
+  parentMenu: ContextMenu | undefined,
   node: LGraphNode
 ) => boolean | void
 
@@ -59,7 +59,9 @@ export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   new (title: string, type?: string): T
 
-  title: string
+  title?: string
+  desc?: string
+  priority?: number
   type?: string // TODO: to be, or not to be--that is the question
   size?: Size
   min_height?: number
@@ -79,6 +81,7 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
 
 // End backwards compat
 
+export type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 export { CanvasPointer } from './CanvasPointer'
@@ -114,10 +117,11 @@ export {
   type SubgraphId
 } from './LGraph'
 export type { LGraphTriggerEvent } from './types/graphTriggers'
-export { BadgePosition, LGraphBadge } from './LGraphBadge'
+export { LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
-export { LGraphGroup, type GroupId } from './LGraphGroup'
-export { LGraphNode, type NodeId } from './LGraphNode'
+export { LGraphGroup } from './LGraphGroup'
+export type { GroupId } from '@/types/groupId'
+export { LGraphNode } from './LGraphNode'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'
@@ -159,7 +163,6 @@ export { BaseWidget } from './widgets/BaseWidget'
 export { LegacyWidget } from './widgets/LegacyWidget'
 
 export { isComboWidget } from './widgets/widgetMap'
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export { isAssetWidget } from './widgets/widgetMap'
 // Additional test-specific exports
 export { LGraphButton } from './LGraphButton'

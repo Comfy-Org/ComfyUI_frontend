@@ -1,62 +1,50 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { useNodeDragToCanvas as UseNodeDragToCanvasType } from './useNodeDragToCanvas'
+import { useNodeDragToCanvas } from './useNodeDragToCanvas'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useLitegraphService } from '@/services/litegraphService'
 
-const {
-  mockAddNodeOnGraph,
-  mockConvertEventToCanvasOffset,
-  mockSelectItems,
-  mockCanvas
-} = vi.hoisted(() => {
-  const mockConvertEventToCanvasOffset = vi.fn()
-  const mockSelectItems = vi.fn()
-  return {
-    mockAddNodeOnGraph: vi.fn(),
-    mockConvertEventToCanvasOffset,
-    mockSelectItems,
-    mockCanvas: {
-      canvas: {
-        getBoundingClientRect: vi.fn()
-      },
-      convertEventToCanvasOffset: mockConvertEventToCanvasOffset,
-      selectItems: mockSelectItems
+const { mockConvertEventToCanvasOffset, mockSelectItems, mockCanvas } =
+  vi.hoisted(() => {
+    const mockConvertEventToCanvasOffset = vi.fn()
+    const mockSelectItems = vi.fn()
+    return {
+      mockConvertEventToCanvasOffset,
+      mockSelectItems,
+      mockCanvas: {
+        canvas: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          getBoundingClientRect: vi.fn()
+        },
+        convertEventToCanvasOffset: mockConvertEventToCanvasOffset,
+        selectItems: mockSelectItems
+      }
     }
-  }
-})
+  })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn(() => ({
-    canvas: mockCanvas
-  }))
-}))
+vi.mock(import('@/services/litegraphService'))
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: vi.fn(() => ({
-    addNodeOnGraph: mockAddNodeOnGraph
-  }))
-}))
+vi.mock(import('@/i18n'))
 
 describe('useNodeDragToCanvas', () => {
-  let useNodeDragToCanvas: typeof UseNodeDragToCanvasType
-
   const mockNodeDef = {
     name: 'TestNode',
     display_name: 'Test Node'
   } as ComfyNodeDefImpl
 
-  beforeEach(async () => {
-    vi.resetModules()
-    vi.resetAllMocks()
-
-    const module = await import('./useNodeDragToCanvas')
-    useNodeDragToCanvas = module.useNodeDragToCanvas
+  beforeEach(() => {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>(mockCanvas)
   })
 
   afterEach(() => {
-    const { cleanupGlobalListeners } = useNodeDragToCanvas()
-    cleanupGlobalListeners()
-    vi.restoreAllMocks()
+    const { cancelDrag } = useNodeDragToCanvas()
+    cancelDrag()
   })
 
   describe('startDrag', () => {
@@ -70,22 +58,6 @@ describe('useNodeDragToCanvas', () => {
 
       expect(isDragging.value).toBe(true)
       expect(draggedNode.value).toBe(mockNodeDef)
-    })
-
-    it('should set dragMode to click by default', () => {
-      const { dragMode, startDrag } = useNodeDragToCanvas()
-
-      startDrag(mockNodeDef)
-
-      expect(dragMode.value).toBe('click')
-    })
-
-    it('should set dragMode to native when specified', () => {
-      const { dragMode, startDrag } = useNodeDragToCanvas()
-
-      startDrag(mockNodeDef, 'native')
-
-      expect(dragMode.value).toBe('native')
     })
   })
 
@@ -102,30 +74,15 @@ describe('useNodeDragToCanvas', () => {
       expect(isDragging.value).toBe(false)
       expect(draggedNode.value).toBeNull()
     })
-
-    it('should reset dragMode to click', () => {
-      const { dragMode, startDrag, cancelDrag } = useNodeDragToCanvas()
-
-      startDrag(mockNodeDef, 'native')
-      expect(dragMode.value).toBe('native')
-
-      cancelDrag()
-
-      expect(dragMode.value).toBe('click')
-    })
   })
 
-  describe('setupGlobalListeners', () => {
-    it('should add event listeners to document', () => {
+  describe('drag listener lifecycle', () => {
+    it('should attach document listeners on startDrag', () => {
       const addEventListenerSpy = vi.spyOn(document, 'addEventListener')
-      const { setupGlobalListeners } = useNodeDragToCanvas()
+      const { startDrag } = useNodeDragToCanvas()
 
-      setupGlobalListeners()
+      startDrag(mockNodeDef)
 
-      expect(addEventListenerSpy).toHaveBeenCalledWith(
-        'pointermove',
-        expect.any(Function)
-      )
       expect(addEventListenerSpy).toHaveBeenCalledWith(
         'pointerdown',
         expect.any(Function),
@@ -142,32 +99,50 @@ describe('useNodeDragToCanvas', () => {
       )
     })
 
-    it('should only setup listeners once', () => {
+    it('should not attach drag listeners until a drag starts', () => {
       const addEventListenerSpy = vi.spyOn(document, 'addEventListener')
-      const { setupGlobalListeners } = useNodeDragToCanvas()
+      useNodeDragToCanvas()
 
-      setupGlobalListeners()
+      expect(addEventListenerSpy).not.toHaveBeenCalledWith(
+        'pointerup',
+        expect.any(Function),
+        true
+      )
+      expect(addEventListenerSpy).not.toHaveBeenCalledWith(
+        'keydown',
+        expect.any(Function)
+      )
+    })
+
+    it('should detach document listeners on cancelDrag', () => {
+      const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener')
+      const { startDrag, cancelDrag } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef)
+      cancelDrag()
+
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'pointerdown',
+        expect.any(Function),
+        true
+      )
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
+        'pointerup',
+        expect.any(Function),
+        true
+      )
+    })
+
+    it('should only attach listeners once across re-arms', () => {
+      const addEventListenerSpy = vi.spyOn(document, 'addEventListener')
+      const { startDrag } = useNodeDragToCanvas()
+
+      startDrag(mockNodeDef)
       const callCount = addEventListenerSpy.mock.calls.length
 
-      setupGlobalListeners()
+      startDrag(mockNodeDef)
 
       expect(addEventListenerSpy.mock.calls.length).toBe(callCount)
-    })
-  })
-
-  describe('cursorPosition', () => {
-    it('should update on pointermove', () => {
-      const { cursorPosition, setupGlobalListeners } = useNodeDragToCanvas()
-
-      setupGlobalListeners()
-
-      const pointerEvent = new PointerEvent('pointermove', {
-        clientX: 100,
-        clientY: 200
-      })
-      document.dispatchEvent(pointerEvent)
-
-      expect(cursorPosition.value).toEqual({ x: 100, y: 200 })
     })
   })
 
@@ -181,9 +156,7 @@ describe('useNodeDragToCanvas', () => {
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
 
-      const { startDrag, setupGlobalListeners } = useNodeDragToCanvas()
-
-      setupGlobalListeners()
+      const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
       const pointerEvent = new PointerEvent('pointerup', {
@@ -193,9 +166,12 @@ describe('useNodeDragToCanvas', () => {
       })
       document.dispatchEvent(pointerEvent)
 
-      expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef, {
-        pos: [150, 150]
-      })
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        mockNodeDef,
+        {
+          pos: [150, 150]
+        }
+      )
     })
 
     it('should not add node when pointer is outside canvas', () => {
@@ -206,10 +182,7 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
 
-      const { startDrag, setupGlobalListeners, isDragging } =
-        useNodeDragToCanvas()
-
-      setupGlobalListeners()
+      const { startDrag, isDragging } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
       const pointerEvent = new PointerEvent('pointerup', {
@@ -219,15 +192,12 @@ describe('useNodeDragToCanvas', () => {
       })
       document.dispatchEvent(pointerEvent)
 
-      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(false)
     })
 
     it('should cancel drag on Escape key', () => {
-      const { startDrag, setupGlobalListeners, isDragging } =
-        useNodeDragToCanvas()
-
-      setupGlobalListeners()
+      const { startDrag, isDragging } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
       expect(isDragging.value).toBe(true)
@@ -239,10 +209,7 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should not cancel drag on other keys', () => {
-      const { startDrag, setupGlobalListeners, isDragging } =
-        useNodeDragToCanvas()
-
-      setupGlobalListeners()
+      const { startDrag, isDragging } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
       const keyEvent = new KeyboardEvent('keydown', { key: 'Enter' })
@@ -259,11 +226,12 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      const placedNode = { id: 1 }
-      mockAddNodeOnGraph.mockReturnValue(placedNode)
+      const placedNode = new LGraphNode('Placed node')
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        placedNode
+      )
 
-      const { startDrag, setupGlobalListeners } = useNodeDragToCanvas()
-      setupGlobalListeners()
+      const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
       document.dispatchEvent(
@@ -277,6 +245,106 @@ describe('useNodeDragToCanvas', () => {
       expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
     })
 
+    it('should apply the requested widget values to the placed node', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+      const placedNode = new LGraphNode('Placed node')
+      const widget = placedNode.addWidget('text', 'ckpt_name', '', () => {})
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        placedNode
+      )
+
+      const { startDrag } = useNodeDragToCanvas()
+      startDrag(mockNodeDef, {
+        widgetValues: { ckpt_name: 'model.safetensors' }
+      })
+
+      document.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: 250,
+          clientY: 250,
+          bubbles: true
+        })
+      )
+
+      expect(widget.value).toBe('model.safetensors')
+    })
+
+    it('should warn but still place the node when a requested widget is missing', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+      const placedNode = new LGraphNode('Placed node')
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        placedNode
+      )
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      const { startDrag } = useNodeDragToCanvas()
+      startDrag(mockNodeDef, {
+        widgetValues: { ckpt_name: 'model.safetensors' }
+      })
+
+      document.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: 250,
+          clientY: 250,
+          bubbles: true
+        })
+      )
+
+      expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'assetBrowser.failedToSetModelValue'
+        })
+      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ckpt_name')
+      )
+    })
+
+    it('should show an error toast when the graph fails to add the node', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      const { startDrag } = useNodeDragToCanvas()
+      startDrag(mockNodeDef)
+
+      document.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: 250,
+          clientY: 250,
+          bubbles: true
+        })
+      )
+
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'assetBrowser.failedToCreateNode'
+        })
+      )
+    })
+
     it('should not call selectItems when graph returns no node', () => {
       mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
         left: 0,
@@ -285,10 +353,9 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      mockAddNodeOnGraph.mockReturnValue(null)
+      vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      const { startDrag, setupGlobalListeners } = useNodeDragToCanvas()
-      setupGlobalListeners()
+      const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
       document.dispatchEvent(
@@ -311,11 +378,8 @@ describe('useNodeDragToCanvas', () => {
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
 
-      const { startDrag, setupGlobalListeners, isDragging } =
-        useNodeDragToCanvas()
-
-      setupGlobalListeners()
-      startDrag(mockNodeDef, 'native')
+      const { startDrag, isDragging } = useNodeDragToCanvas()
+      startDrag(mockNodeDef, { mode: 'native' })
 
       const pointerEvent = new PointerEvent('pointerup', {
         clientX: 250,
@@ -324,7 +388,7 @@ describe('useNodeDragToCanvas', () => {
       })
       document.dispatchEvent(pointerEvent)
 
-      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(true)
     })
   })
@@ -341,12 +405,15 @@ describe('useNodeDragToCanvas', () => {
 
       const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
 
-      startDrag(mockNodeDef, 'native')
+      startDrag(mockNodeDef, { mode: 'native' })
       handleNativeDrop(250, 250)
 
-      expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef, {
-        pos: [200, 200]
-      })
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        mockNodeDef,
+        {
+          pos: [200, 200]
+        }
+      )
     })
 
     it('should not add node when drop position is outside canvas', () => {
@@ -359,10 +426,10 @@ describe('useNodeDragToCanvas', () => {
 
       const { startDrag, handleNativeDrop, isDragging } = useNodeDragToCanvas()
 
-      startDrag(mockNodeDef, 'native')
+      startDrag(mockNodeDef, { mode: 'native' })
       handleNativeDrop(600, 250)
 
-      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(false)
     })
 
@@ -377,10 +444,10 @@ describe('useNodeDragToCanvas', () => {
 
       const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
 
-      startDrag(mockNodeDef, 'click')
+      startDrag(mockNodeDef)
       handleNativeDrop(250, 250)
 
-      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
     })
 
     it('should reset drag state after drop', () => {
@@ -392,14 +459,12 @@ describe('useNodeDragToCanvas', () => {
       })
       mockConvertEventToCanvasOffset.mockReturnValue([200, 200])
 
-      const { startDrag, handleNativeDrop, isDragging, dragMode } =
-        useNodeDragToCanvas()
+      const { startDrag, handleNativeDrop, isDragging } = useNodeDragToCanvas()
 
-      startDrag(mockNodeDef, 'native')
+      startDrag(mockNodeDef, { mode: 'native' })
       handleNativeDrop(250, 250)
 
       expect(isDragging.value).toBe(false)
-      expect(dragMode.value).toBe('click')
     })
   })
 
@@ -426,31 +491,29 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should stop propagation when in click-drag mode over canvas', () => {
-      const { startDrag, setupGlobalListeners } = useNodeDragToCanvas()
-      setupGlobalListeners()
+      const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
       expect(dispatchPointerDown(250, 250)).toHaveBeenCalled()
     })
 
-    it('should not stop propagation when not dragging', () => {
-      const { setupGlobalListeners } = useNodeDragToCanvas()
-      setupGlobalListeners()
+    it('should not stop propagation once the drag is cancelled', () => {
+      const { startDrag, cancelDrag } = useNodeDragToCanvas()
+      startDrag(mockNodeDef)
+      cancelDrag()
 
       expect(dispatchPointerDown(250, 250)).not.toHaveBeenCalled()
     })
 
     it('should not stop propagation in native drag mode', () => {
-      const { startDrag, setupGlobalListeners } = useNodeDragToCanvas()
-      setupGlobalListeners()
-      startDrag(mockNodeDef, 'native')
+      const { startDrag } = useNodeDragToCanvas()
+      startDrag(mockNodeDef, { mode: 'native' })
 
       expect(dispatchPointerDown(250, 250)).not.toHaveBeenCalled()
     })
 
     it('should not stop propagation when pointer is outside canvas', () => {
-      const { startDrag, setupGlobalListeners } = useNodeDragToCanvas()
-      setupGlobalListeners()
+      const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
 
       expect(dispatchPointerDown(600, 250)).not.toHaveBeenCalled()
@@ -477,10 +540,8 @@ describe('useNodeDragToCanvas', () => {
     }
 
     it('should prefer tracked drag position over dragend coordinates', () => {
-      const { startDrag, setupGlobalListeners, handleNativeDrop } =
-        useNodeDragToCanvas()
-      setupGlobalListeners()
-      startDrag(mockNodeDef, 'native')
+      const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
+      startDrag(mockNodeDef, { mode: 'native' })
 
       fireDrag(250, 250)
       // dragend supplies a bad position (the Firefox bug); the tracked one
@@ -494,10 +555,8 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should ignore drag events with (0, 0)', () => {
-      const { startDrag, setupGlobalListeners, handleNativeDrop } =
-        useNodeDragToCanvas()
-      setupGlobalListeners()
-      startDrag(mockNodeDef, 'native')
+      const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
+      startDrag(mockNodeDef, { mode: 'native' })
 
       fireDrag(250, 250)
       fireDrag(0, 0)
@@ -510,10 +569,8 @@ describe('useNodeDragToCanvas', () => {
     })
 
     it('should fall back to dragend coordinates when no drag fired', () => {
-      const { startDrag, setupGlobalListeners, handleNativeDrop } =
-        useNodeDragToCanvas()
-      setupGlobalListeners()
-      startDrag(mockNodeDef, 'native')
+      const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
+      startDrag(mockNodeDef, { mode: 'native' })
 
       handleNativeDrop(250, 250)
 
@@ -523,32 +580,14 @@ describe('useNodeDragToCanvas', () => {
       })
     })
 
-    it('should ignore dragover events fired before startDrag', () => {
-      const { startDrag, setupGlobalListeners, handleNativeDrop } =
-        useNodeDragToCanvas()
-      setupGlobalListeners()
-
-      fireDrag(250, 250)
-      startDrag(mockNodeDef, 'native')
-      handleNativeDrop(300, 300)
-
-      expect(mockConvertEventToCanvasOffset).toHaveBeenCalledWith({
-        clientX: 300,
-        clientY: 300
-      })
-    })
-
     it('should clear tracked position between drags', () => {
-      const { startDrag, setupGlobalListeners, handleNativeDrop } =
-        useNodeDragToCanvas()
-      setupGlobalListeners()
-
-      startDrag(mockNodeDef, 'native')
+      const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
+      startDrag(mockNodeDef, { mode: 'native' })
       fireDrag(250, 250)
       handleNativeDrop(1505, 102)
 
       // Second drag - no drag events, so we should fall back to args.
-      startDrag(mockNodeDef, 'native')
+      startDrag(mockNodeDef, { mode: 'native' })
       handleNativeDrop(300, 300)
 
       expect(mockConvertEventToCanvasOffset).toHaveBeenLastCalledWith({

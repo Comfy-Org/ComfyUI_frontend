@@ -1,47 +1,24 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: () => 0
-  })
-}))
-
-vi.mock('@/stores/assetDownloadStore', () => ({
-  useAssetDownloadStore: () => ({
-    isDownloadedThisSession: () => false,
-    acknowledgeAsset: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    closeDialog: vi.fn()
-  })
-}))
-
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     deleteAsset: vi.fn()
   }
 }))
 
-vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
+vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: vi.fn()
 }))
-
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
-  return {
-    ...actual,
-    useImage: () => ({ isLoading: false, error: null })
-  }
-})
 
 const HASH = 'blake3:abc123def456'
 const ORIGINAL_FILENAME = 'sunset_photo.png'
@@ -49,7 +26,7 @@ const ORIGINAL_FILENAME = 'sunset_photo.png'
 function createDisplayAsset(
   overrides: Partial<AssetDisplayItem> = {}
 ): AssetDisplayItem {
-  const base = {
+  return fromPartial({
     id: 'asset-1',
     name: HASH,
     hash: HASH,
@@ -61,12 +38,10 @@ function createDisplayAsset(
     user_metadata: {},
     metadata: { filename: ORIGINAL_FILENAME },
     ...overrides
-  }
-  return base
+  })
 }
 
 function renderCard(asset: AssetDisplayItem) {
-  setActivePinia(createPinia())
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -81,9 +56,7 @@ function renderCard(asset: AssetDisplayItem) {
       stubs: {
         AssetBadgeGroup: true,
         IconGroup: true,
-        MoreButton: true,
-        StatusBadge: true,
-        Button: { template: '<button><slot /></button>' }
+        MoreButton: true
       },
       directives: {
         tooltip: {}
@@ -92,11 +65,18 @@ function renderCard(asset: AssetDisplayItem) {
   })
 }
 
-describe('AssetCard', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => 0)
+  vi.mocked(useAssetDownloadStore().isDownloadedThisSession).mockImplementation(
+    () => false
+  )
+  vi.mocked(useAssetDownloadStore().acknowledgeAsset).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+})
 
+describe('AssetCard', () => {
   describe('FE-228: filename rendering', () => {
     it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()

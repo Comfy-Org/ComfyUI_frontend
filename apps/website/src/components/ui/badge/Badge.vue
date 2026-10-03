@@ -25,12 +25,12 @@ const {
     data-slot="badge"
     :data-variant="variant"
     :data-size="size"
-    :class="cn(badgeVariants({ variant, size }), className)"
+    :class="cn(badgeVariants({ size, variant }), className)"
   >
     <slot name="prepend">
       <component :is="prependIcon" v-if="prependIcon" />
     </slot>
-    <span class="ppformula-text-center">
+    <span class="inline-block">
       <slot />
     </span>
     <slot name="append">

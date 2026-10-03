@@ -132,7 +132,7 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 | nodeDefStore.ts              | useNodeFrequencyStore         | Tracks node usage frequency                             | Nodes      |
 | queueStore.ts                | useQueueStore                 | Manages execution queue and task history                | Execution  |
 | queueStore.ts                | useQueuePendingTaskCountStore | Tracks pending task counts                              | Execution  |
-| queueStore.ts                | useQueueSettingsStore         | Manages queue execution settings                        | Execution  |
+| queueSettingsStore.ts        | useQueueSettingsStore         | Manages queue execution settings                        | Execution  |
 | releaseStore.ts              | useReleaseStore               | Manages application release information                 | System     |
 | serverConfigStore.ts         | useServerConfigStore          | Handles server configuration                            | Config     |
 | settingStore.ts              | useSettingStore               | Manages application settings                            | Config     |
@@ -331,10 +331,13 @@ export const usePreferencesStore = defineStore('preferences', () => {
 
 ## Testing Stores
 
-Stores should be tested to ensure they behave as expected. Here's an example of how to test a store:
+Stores should be tested to ensure they behave as expected. `vitest.setup.ts`
+activates a fresh testing Pinia before every test, so a store test never
+creates its own — the `comfy/use-global-pinia` oxlint rule fails any test file
+that imports `createPinia`/`createTestingPinia`. Vitest is also configured with
+`mockReset`/`restoreMocks`, so per-test mock cleanup is unnecessary.
 
 ```typescript
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -342,7 +345,7 @@ import { api } from '@/scripts/api'
 import { useExampleStore } from '@/stores/exampleStore'
 
 // Mock API dependencies
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     getData: vi.fn()
   }
@@ -352,12 +355,8 @@ describe('useExampleStore', () => {
   let store: ReturnType<typeof useExampleStore>
 
   beforeEach(() => {
-    // Create a fresh pinia instance and make it active
-    setActivePinia(createPinia())
+    // The global testing Pinia is already active; just resolve the store
     store = useExampleStore()
-
-    // Clear all mocks
-    vi.clearAllMocks()
   })
 
   it('should initialize with default state', () => {

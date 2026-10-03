@@ -12,7 +12,7 @@
         }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="() => handleClose()"
       >
@@ -38,9 +38,10 @@
           :autofocus="amount === 50"
           variant="secondary"
           size="lg"
+          :aria-pressed="selectedPreset === amount"
           :class="
             cn(
-              'focus-visible:ring-secondary-foreground h-10 w-full text-base font-medium',
+              'h-10 w-full text-base font-medium focus-visible:ring-border-default',
               selectedPreset === amount && 'bg-secondary-background-selected'
             )
           "
@@ -57,20 +58,24 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
-        <FormattedNumberStepper
+        <NumberField
           :model-value="payAmount"
           :min="0"
           :max="MAX_AMOUNT"
-          :step="getStepAmount"
+          :step="getStepAmount(payAmount)"
+          :format-options="{ maximumFractionDigits: 0 }"
           @update:model-value="handlePayAmountChange"
-          @max-reached="showCeilingWarning = true"
         >
-          <template #prefix>
-            <span class="shrink-0 text-base font-semibold text-base-foreground"
-              >$</span
-            >
-          </template>
-        </FormattedNumberStepper>
+          <NumberFieldDecrement />
+          <span class="shrink-0 text-base font-semibold text-base-foreground"
+            >$</span
+          >
+          <NumberFieldInput
+            :aria-label="$t('credits.topUp.youPay')"
+            class="text-lg font-medium"
+          />
+          <NumberFieldIncrement />
+        </NumberField>
       </div>
 
       <!-- You Get -->
@@ -78,17 +83,21 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
-        <FormattedNumberStepper
+        <NumberField
           v-model="creditsModel"
           :min="0"
           :max="usdToCredits(MAX_AMOUNT)"
-          :step="getCreditsStepAmount"
-          @max-reached="showCeilingWarning = true"
+          :step="getCreditsStepAmount(creditsModel)"
+          :format-options="{ maximumFractionDigits: 0 }"
         >
-          <template #prefix>
-            <i class="icon-[lucide--component] size-4 shrink-0 text-gold-500" />
-          </template>
-        </FormattedNumberStepper>
+          <NumberFieldDecrement />
+          <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
+          <NumberFieldInput
+            :aria-label="$t('credits.topUp.youGet')"
+            class="text-lg font-medium"
+          />
+          <NumberFieldIncrement />
+        </NumberField>
       </div>
     </div>
 
@@ -98,7 +107,7 @@
       v-if="isBelowMin"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.minRequired', {
           credits: formatNumber(usdToCredits(MIN_AMOUNT))
@@ -109,7 +118,7 @@
       v-if="showCeilingWarning"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.maxAllowed', {
           credits: formatNumber(usdToCredits(MAX_AMOUNT))
@@ -117,7 +126,7 @@
       }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
       <a
-        href="https://www.comfy.org/cloud/enterprise"
+        href="https://comfy.org/cloud/enterprise/"
         target="_blank"
         class="ml-1 text-inherit"
         >{{ $t('credits.topUp.contactUs') }}</a
@@ -156,13 +165,15 @@ import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
-import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
+import NumberField from '@/components/ui/number-field/NumberField.vue'
+import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
+import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
+import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
-import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -178,9 +189,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { flags } = useFeatureFlags()
 
-const { isSubscriptionEnabled } = useSubscription()
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
 const MIN_AMOUNT = 5
@@ -189,7 +198,6 @@ const MAX_AMOUNT = 10000
 // State
 const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
-const showCeilingWarning = ref(false)
 const loading = ref(false)
 
 // Computed
@@ -210,6 +218,7 @@ const isValidAmount = computed(
 )
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
+const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
 
 // Utility functions
 function formatNumber(num: number): string {
@@ -232,18 +241,16 @@ function getCreditsStepAmount(currentCredits: number): number {
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
-  showCeilingWarning.value = false
 }
 
 function handlePresetClick(amount: number) {
-  showCeilingWarning.value = false
   payAmount.value = amount
   selectedPreset.value = amount
 }
 
 function handleClose(clearTracking = true) {
   if (clearTracking) {
-    clearTopupTracking()
+    usePendingTopup().clearPendingTopup()
   }
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
@@ -255,24 +262,34 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    await authActions.purchaseCredits(payAmount.value)
+    if (authActions.canPurchaseCredits()) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'started',
+        outcome: 'pending'
+      })
+    }
+    await authActions.purchaseCreditsDirect(payAmount.value)
 
-    // Close top-up dialog (keep tracking) and open credits panel to show updated balance
+    // Close top-up dialog (keep tracking) and open Plan & Credits to show the
+    // updated balance. The destination is the V1 panel for every session: the
+    // legacy `credits` panel is hidden from the settings menu, and keying this
+    // off the billing rail sent rail-less sessions (API key, pre-workspace
+    // bootstrap) to that hidden screen.
     handleClose(false)
 
-    // In workspace mode (personal workspace), show workspace settings panel
-    // Otherwise, show legacy subscription/credits panel
-    const settingsPanel = flags.teamWorkspacesEnabled
-      ? 'workspace'
-      : isSubscriptionEnabled()
-        ? 'subscription'
-        : 'credits'
-    settingsDialog.show(settingsPanel)
+    settingsDialog.show('workspace')
   } catch (error) {
     console.error('Purchase failed:', error)
 
     const errorMessage =
       error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      ...describeBillingFailure(error)
+    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),

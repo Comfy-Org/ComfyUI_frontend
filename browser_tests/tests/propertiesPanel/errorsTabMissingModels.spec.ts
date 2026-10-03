@@ -1,18 +1,22 @@
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   interceptClipboardWrite,
   getClipboardText
 } from '@e2e/fixtures/utils/clipboardSpy'
 import {
   cleanupFakeModel,
-  loadWorkflowAndOpenErrorsTab
+  loadWorkflowAndOpenErrorsTab,
+  openErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
+const GATED_MODEL_REPO_URL = 'https://huggingface.co/comfy-e2e/gated-test'
 
 function getModelLabel(group: Locator, modelName: string = FAKE_MODEL_NAME) {
   return group.getByRole('button', { name: modelName, exact: true })
@@ -25,11 +29,9 @@ async function expectReferenceBadge(group: Locator, count: number) {
 }
 
 test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
     await cleanupFakeModel(comfyPage)
   })
 
@@ -80,6 +82,97 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     ).toHaveCount(2)
   })
 
+  test.describe('Validation absorption', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.RightSidePanel.ShowErrorsTab': true,
+        'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar'
+      }
+    })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      const nodeErrors = {
+        '1': {
+          class_type: 'CheckpointLoaderSimple',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'value_not_in_list',
+              message: 'Value not in list',
+              details: '',
+              extra_info: {
+                input_name: 'ckpt_name',
+                received_value: FAKE_MODEL_NAME
+              }
+            }
+          ]
+        }
+      } satisfies Record<string, NodeError>
+      await new ExecutionHelper(comfyPage).mockValidationFailure(nodeErrors)
+    })
+
+    test('Should keep an absorbed missing-model validation failure amber across workflow switches', async ({
+      comfyPage
+    }) => {
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
+        .click()
+
+      await expect(
+        comfyPage.page.locator('section[data-testid^="error-group-"]')
+      ).toHaveCount(1)
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+      ).toBeVisible()
+      await expect(
+        comfyPage.page
+          .getByTestId(TestIds.dialogs.missingModelsGroup)
+          .getByTestId(TestIds.propertiesPanel.blockedLastRunIndicator)
+      ).toBeVisible()
+      const hero = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.errorsSummaryHero
+      )
+      await expect(hero).toContainText('Setup required')
+      await expect(
+        comfyPage.page.getByTestId(
+          TestIds.propertiesPanel.errorsSummaryFilters
+        ),
+        'fully absorbed run has one severity, so no filter chips render'
+      ).toBeHidden()
+      await expect(
+        comfyPage.page
+          .getByTestId(TestIds.propertiesPanel.errorsTab)
+          .getByTestId(TestIds.propertiesPanel.tabIcon)
+      ).toHaveAccessibleName('Setup required')
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+      ).toBeHidden()
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_models')
+      await openErrorsTab(comfyPage)
+
+      await expect(
+        comfyPage.page.locator('section[data-testid^="error-group-"]')
+      ).toHaveCount(1)
+      await expect(
+        comfyPage.page
+          .getByTestId(TestIds.dialogs.missingModelsGroup)
+          .getByTestId(TestIds.propertiesPanel.blockedLastRunIndicator)
+      ).toBeVisible()
+      await expect(hero).toContainText('Setup required')
+    })
+  })
+
   test('Should copy model URL to clipboard', async ({ comfyPage }) => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
     await interceptClipboardWrite(comfyPage.page)
@@ -106,10 +199,19 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       await expect(copyUrlButton.first()).toBeVisible()
     })
 
-    test('Should show Download button for downloadable models', async ({
+    test('Should probe and show Download for the devtools model fixture', async ({
       comfyPage
     }) => {
-      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      await Promise.all([
+        comfyPage.page.waitForResponse(
+          (response) =>
+            response.request().method() === 'HEAD' &&
+            response.url() ===
+              'http://localhost:8188/api/devtools/fake_model.safetensors' &&
+            response.ok()
+        ),
+        loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      ])
 
       const downloadButton = comfyPage.page.getByTestId(
         TestIds.dialogs.missingModelDownload
@@ -143,7 +245,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         const objectInfo = await response.json()
         const ckptName =
           objectInfo.CheckpointLoaderSimple.input.required.ckpt_name
-        ckptName[0] = [...ckptName[0], 'fake_model.safetensors']
+        ckptName[0] = [...ckptName[0], FAKE_MODEL_NAME]
         await route.fulfill({ response, json: objectInfo })
       })
 
@@ -151,24 +253,80 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         const url = new URL(response.url())
         return url.pathname.endsWith('/object_info') && response.ok()
       })
-      const modelFoldersResponse = comfyPage.page.waitForResponse(
-        (response) => {
-          const url = new URL(response.url())
-          return url.pathname.endsWith('/experiment/models') && response.ok()
-        }
-      )
       const refreshButton = comfyPage.page.getByTestId(
         TestIds.dialogs.missingModelRefresh
       )
 
-      await Promise.all([
-        objectInfoResponse,
-        modelFoldersResponse,
-        refreshButton.click()
-      ])
+      await Promise.all([objectInfoResponse, refreshButton.click()])
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
       ).toBeHidden()
+    })
+
+    test.describe('Gated Hugging Face model', { tag: '@ui' }, () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.page
+          .context()
+          .route('https://huggingface.co/**', async (route) => {
+            if (route.request().method() === 'HEAD') {
+              return route.fulfill({
+                status: 403,
+                headers: {
+                  'Access-Control-Allow-Origin': '*',
+                  'Access-Control-Expose-Headers': 'X-Error-Code',
+                  'X-Error-Code': 'GatedRepo'
+                }
+              })
+            }
+
+            return route.fulfill({
+              status: 200,
+              contentType: 'text/html',
+              body: '<html><body>stub repo page</body></html>'
+            })
+          })
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_models_gated'
+        )
+      })
+
+      test('Should classify a 403 model as gated', async ({ comfyPage }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
+        ).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedHint)
+        ).toBeVisible()
+      })
+
+      test('Should keep Download available for a gated model', async ({
+        comfyPage
+      }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
+        ).toBeVisible()
+
+        const downloadButton = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingModelDownload
+        )
+
+        await expect(downloadButton).toBeVisible()
+        await expect(downloadButton).toBeEnabled()
+        await expect(downloadButton).toHaveText('Download')
+      })
+
+      test('Should open the gated repository with the browser fallback', async ({
+        comfyPage
+      }) => {
+        const pagePromise = comfyPage.page.context().waitForEvent('page')
+        await comfyPage.page
+          .getByTestId(TestIds.dialogs.missingModelGatedAccess)
+          .click()
+        const accessPage = await pagePromise
+
+        await expect(accessPage).toHaveURL(GATED_MODEL_REPO_URL)
+      })
     })
   })
 })

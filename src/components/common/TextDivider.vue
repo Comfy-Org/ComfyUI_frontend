@@ -1,25 +1,30 @@
 <template>
   <div class="flex items-center">
     <span v-if="position === 'left'" class="mr-2 shrink-0">{{ text }}</span>
-    <Divider :align="align" :type="type" :layout="layout" class="grow" />
+    <div
+      role="separator"
+      :class="
+        cn(
+          'grow border-0 border-t border-interface-stroke',
+          type === 'dashed' && 'border-dashed',
+          type === 'dotted' && 'border-dotted'
+        )
+      "
+    />
     <span v-if="position === 'right'" class="ml-2 shrink-0">{{ text }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   text,
   position = 'left',
-  align = 'center',
-  type = 'solid',
-  layout = 'horizontal'
+  type = 'solid'
 } = defineProps<{
   text: string
   position?: 'left' | 'right'
-  align?: 'left' | 'center' | 'right' | 'top' | 'bottom'
   type?: 'solid' | 'dashed' | 'dotted'
-  layout?: 'horizontal' | 'vertical'
 }>()
 </script>

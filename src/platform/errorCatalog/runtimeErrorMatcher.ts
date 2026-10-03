@@ -33,7 +33,13 @@ const INSUFFICIENT_CREDITS_MESSAGES = new Set([
   'Payment Required: Please add credits to your account to use this node.'
 ])
 const WORKSPACE_INSUFFICIENT_CREDITS_MESSAGES = new Set([
-  'Payment Required: Please add credits to your workspace to continue.'
+  // Execution-time (pre-GPU) WebSocket failure for a queued team job.
+  'Payment Required: Please add credits to your workspace to continue.',
+  // Submit-time 429 rejection for a team workspace out of credits
+  // (checkTeamWorkspaceSubscription). It shares the PAYMENT_REQUIRED error type
+  // with the subscription-required rejection, so it can only be told apart by
+  // message.
+  'Insufficient credits to queue workflows'
 ])
 const SUBSCRIPTION_REQUIRED_MESSAGES = new Set([
   'Workspace has no active subscription. Please subscribe to a plan to continue.',
@@ -243,8 +249,12 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
     resolve: () => catalogMatch(WORKSPACE_INSUFFICIENT_CREDITS_CATALOG_ID)
   },
   {
+    // 'insufficient_credits' is the error.type BE-2866 will emit on the
+    // personal submit-time 402; the team submit path is a 429 matched by
+    // message in WORKSPACE_INSUFFICIENT_CREDITS_MESSAGES above.
     matches: (info, message) =>
       info.exceptionType === 'InsufficientFundsError' ||
+      info.exceptionType === 'insufficient_credits' ||
       INSUFFICIENT_CREDITS_MESSAGES.has(message),
     resolve: () => catalogMatch(INSUFFICIENT_CREDITS_CATALOG_ID)
   },

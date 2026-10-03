@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access -- hidden color/file inputs have no role/label, queried by selector */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access -- hidden color/file inputs have no role/label, queried by selector */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -7,13 +7,16 @@ import { createI18n } from 'vue-i18n'
 
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
 
-vi.mock('@/components/load3d/controls/PopupSlider.vue', () => ({
-  default: {
-    name: 'PopupSliderStub',
-    props: ['tooltipText', 'modelValue'],
-    template: '<div data-testid="fov-popup-slider">{{ tooltipText }}</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/load3d/controls/PopupSlider.vue'),
+  () => ({
+    default: {
+      name: 'PopupSliderStub',
+      props: ['tooltipText', 'modelValue'],
+      template: '<div data-testid="fov-popup-slider">{{ tooltipText }}</div>'
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

@@ -1,42 +1,29 @@
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex justify-center">
-      <SelectButton
+      <ToggleGroup
         v-model="currentBillingCycle"
-        :options="billingCycleOptions"
-        option-label="label"
-        option-value="value"
+        type="single"
         :allow-empty="false"
-        unstyled
-        :pt="{
-          root: {
-            class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-          },
-          pcToggleButton: {
-            root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-              class: [
-                'w-36  h-8 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-                context.active
-                  ? 'bg-base-foreground text-base-background'
-                  : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-              ]
-            }),
-            label: { class: 'flex items-center gap-2 ' }
-          }
-        }"
+        class="rounded-lg bg-secondary-background p-1.5"
       >
-        <template #option="{ option }">
+        <ToggleGroupItem
+          v-for="option in billingCycleOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 w-36 data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+        >
           <div class="flex items-center gap-2">
             <span>{{ option.label }}</span>
             <div
               v-if="option.value === 'yearly'"
-              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-2xs font-bold text-white"
+              class="flex items-center rounded-full bg-primary-background px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-white"
             >
-              -20%
+              {{ t('subscription.saveYearly') }}
             </div>
           </div>
-        </template>
-      </SelectButton>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
     <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
@@ -67,15 +54,15 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-baseline gap-2">
                 <span
-                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
+                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
                 >
+                  ${{ getPrice(tier) }}
                   <span
                     v-show="currentBillingCycle === 'yearly'"
                     class="text-2xl text-muted-foreground line-through"
                   >
                     ${{ tier.pricing.monthly }}
                   </span>
-                  ${{ getPrice(tier) }}
                 </span>
                 <span class="font-inter text-xl/normal text-base-foreground">
                   {{ t('subscription.usdPerMonth') }}
@@ -103,7 +90,7 @@
             {{ t('subscription.soloUseOnly') }}
             <span class="mx-1 text-muted-foreground">–</span>
             <button
-              class="text-primary-foreground cursor-pointer border-none bg-transparent p-0 text-sm font-medium underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+              class="cursor-pointer border-none bg-transparent p-0 text-sm font-medium text-muted-foreground underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
               @click="emit('chooseTeamWorkspace')"
             >
               {{ t('subscription.needTeamWorkspace') }}
@@ -113,7 +100,7 @@
           <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span
-                class="text-foreground font-inter text-sm/normal font-normal"
+                class="font-inter text-sm/normal font-normal text-base-foreground"
               >
                 {{
                   currentBillingCycle === 'yearly'
@@ -122,9 +109,12 @@
                 }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--component] text-sm text-amber-400" />
+                <i
+                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
+                  aria-hidden="true"
+                />
                 <span
-                  class="font-inter text-sm/normal font-bold text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
                   {{ n(getCreditsDisplay(tier)) }}
                 </span>
@@ -132,45 +122,47 @@
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.maxDurationLabel') }}
               </span>
               <span
-                class="font-inter text-sm/normal font-bold text-base-foreground"
+                class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
               >
                 {{ tier.maxDuration }}
               </span>
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-background" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-success-foreground text-xs" />
+              <i class="pi pi-check text-xs text-success-background" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-foreground text-sm font-normal">
+              <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.customLoRAsLabel') }}
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-success-foreground text-xs"
+                class="pi pi-check text-xs text-success-background"
               />
-              <i v-else class="pi pi-times text-foreground text-xs" />
+              <i v-else class="pi pi-times text-xs text-base-foreground" />
             </div>
 
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-start justify-between">
                 <div class="flex flex-col gap-2">
-                  <span class="text-foreground text-sm/relaxed font-normal">
+                  <span
+                    class="text-sm/relaxed font-normal text-base-foreground"
+                  >
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
                   <div class="group flex flex-row items-center gap-2 pt-2">
@@ -186,9 +178,9 @@
                   </div>
                 </div>
                 <span
-                  class="font-inter text-sm/normal font-bold text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
-                  ~{{ n(tier.pricing.videoEstimate) }}
+                  ~{{ n(getVideoEstimateDisplay(tier)) }}
                 </span>
               </div>
             </div>
@@ -245,7 +237,7 @@
           <span class="underline">
             {{ t('subscription.videoEstimateTryTemplate') }}
           </span>
-          <span class="no-underline" v-html="'&rarr;'"></span>
+          <span class="no-underline">→</span>
         </a>
       </div>
     </Popover>
@@ -256,32 +248,43 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
-import SelectButton from 'primevue/selectbutton'
-import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  amountForBillingCycle,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  RegistrySubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
-import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import {
+  persistPendingSubscriptionCheckoutAttempt,
+  withPendingCheckoutAttemptId
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import {
+  performSubscriptionCheckout,
+  runReportedCheckoutAttempt
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type {
+  CheckoutAttributionMetadata,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useAuthStore } from '@/stores/authStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
@@ -309,7 +312,7 @@ interface BillingCycleOption {
 }
 
 interface PricingTierConfig {
-  id: SubscriptionTier
+  id: RegistrySubscriptionTier
   key: CheckoutTierKey
   name: string
   pricing: TierPricing
@@ -317,6 +320,10 @@ interface PricingTierConfig {
   customLoRAs: boolean
   isPopular?: boolean
 }
+
+const { reason } = defineProps<{
+  reason?: PaymentIntentSource
+}>()
 
 const emit = defineEmits<{
   chooseTeamWorkspace: []
@@ -359,14 +366,20 @@ const tiers: PricingTierConfig[] = [
   }
 ]
 const {
-  isActiveSubscription,
+  canAccessSubscriptionFeatures,
   isFreeTier,
-  subscriptionTier,
-  isYearlySubscription
-} = useSubscription()
+  tier: subscriptionTier,
+  subscription
+} = useBillingContext()
+
+const isYearlySubscription = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useAuthStore())
-const { accessBillingPortal, reportError } = useAuthActions()
+const workspaceStore = useTeamWorkspaceStore()
+const { accessBillingPortal, accessBillingPortalDirect, reportError } =
+  useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
@@ -375,11 +388,11 @@ const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 const hasPaidSubscription = computed(
-  () => isActiveSubscription.value && !isFreeTier.value
+  () => canAccessSubscriptionFeatures.value && !isFreeTier.value
 )
 
 const currentTierKey = computed<TierKey | null>(() =>
-  subscriptionTier.value ? TIER_TO_KEY[subscriptionTier.value] : null
+  subscriptionTier.value ? toTierKey(subscriptionTier.value) : null
 )
 
 const currentPlanDescriptor = computed(() => {
@@ -430,7 +443,7 @@ const getButtonSeverity = (
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
-    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+    : 'font-inter text-sm font-bold leading-normal text-base-foreground'
 
 const getPrice = (tier: PricingTierConfig): number =>
   tier.pricing[currentBillingCycle.value]
@@ -438,8 +451,13 @@ const getPrice = (tier: PricingTierConfig): number =>
 const getAnnualTotal = (tier: PricingTierConfig): number =>
   tier.pricing.yearly * 12
 
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
-  tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
+  amountForBillingCycle(tier.pricing.credits, isYearly.value)
+
+const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>
+  amountForBillingCycle(tier.pricing.videoEstimate, isYearly.value)
 
 const handleSubscribe = wrapWithErrorHandlingAsync(
   async (tierKey: CheckoutTierKey) => {
@@ -447,6 +465,8 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     isLoading.value = true
     loadingTier.value = tierKey
+    const checkoutOwnerId = userId.value ?? undefined
+    const checkoutWorkspaceId = workspaceStore.activeWorkspaceId
 
     try {
       if (hasPaidSubscription.value) {
@@ -456,16 +476,17 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
         } as const
         const previousPlan = currentPlanDescriptor.value
         const checkoutAttribution = await getCheckoutAttributionForCloud()
-        if (userId.value) {
-          telemetry?.trackBeginCheckout({
-            user_id: userId.value,
-            tier: targetPlan.tierKey,
-            cycle: targetPlan.billingCycle,
-            checkout_type: 'change',
-            ...checkoutAttribution,
-            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {})
-          })
-        }
+        const beginCheckoutMetadata = checkoutOwnerId
+          ? {
+              user_id: checkoutOwnerId,
+              tier: targetPlan.tierKey,
+              cycle: targetPlan.billingCycle,
+              checkout_type: 'change' as const,
+              ...(reason ? { payment_intent_source: reason } : {}),
+              ...checkoutAttribution,
+              ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {})
+            }
+          : null
         // Pass the target tier to create a deep link to subscription update confirmation
         const checkoutTier = getCheckoutTier(
           targetPlan.tierKey,
@@ -480,29 +501,49 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
         if (downgrade) {
           // TODO(COMFY-StripeProration): Remove once backend checkout creation mirrors portal proration ("change at billing end")
-          await accessBillingPortal()
-        } else {
-          const didOpenPortal = await accessBillingPortal(checkoutTier)
-          if (!didOpenPortal) {
-            return
+          const didOpenPortal = await accessBillingPortal()
+          if (didOpenPortal && beginCheckoutMetadata) {
+            telemetry?.trackBeginCheckout(beginCheckoutMetadata)
           }
-
-          recordPendingSubscriptionCheckoutAttempt({
-            tier: targetPlan.tierKey,
-            cycle: targetPlan.billingCycle,
-            checkout_type: 'change',
-            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
-            ...(previousPlan
-              ? { previous_cycle: previousPlan.billingCycle }
-              : {})
-          })
+        } else {
+          await runReportedCheckoutAttempt(
+            {
+              tier: targetPlan.tierKey,
+              cycle: targetPlan.billingCycle,
+              checkout_type: 'change',
+              owner_id: checkoutOwnerId,
+              workspace_id: checkoutWorkspaceId,
+              payment_intent_source: reason,
+              ...(previousPlan
+                ? {
+                    previous_tier: previousPlan.tierKey,
+                    previous_cycle: previousPlan.billingCycle
+                  }
+                : {})
+            },
+            async (pendingAttempt) => {
+              if (!(await accessBillingPortalDirect(checkoutTier))) {
+                throw new PaymentPopupBlockedError(
+                  t('subscription.billingTabBlocked')
+                )
+              }
+              persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
+              if (beginCheckoutMetadata) {
+                telemetry?.trackBeginCheckout(
+                  withPendingCheckoutAttemptId(
+                    beginCheckoutMetadata,
+                    pendingAttempt
+                  )
+                )
+              }
+            }
+          )
         }
       } else {
-        await performSubscriptionCheckout(
-          tierKey,
-          currentBillingCycle.value,
-          true
-        )
+        // Failure telemetry now lives in performSubscriptionCheckout itself.
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value, {
+          paymentIntentSource: reason
+        })
       }
     } finally {
       isLoading.value = false

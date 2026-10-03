@@ -23,13 +23,26 @@
       :loading="isPublishing"
       @click="$emit('publish')"
     >
-      <i class="icon-[lucide--upload] size-4" />
-      {{ $t('comfyHubPublish.publishButton') }}
+      <i
+        :class="
+          cn(
+            'size-4',
+            isUpdate ? 'icon-[lucide--refresh-cw]' : 'icon-[lucide--upload]'
+          )
+        "
+      />
+      {{
+        isUpdate
+          ? $t('comfyHubPublish.updateButton')
+          : $t('comfyHubPublish.publishButton')
+      }}
     </Button>
   </footer>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 
 defineProps<{
@@ -37,6 +50,7 @@ defineProps<{
   isLastStep: boolean
   isPublishDisabled?: boolean
   isPublishing?: boolean
+  isUpdate?: boolean
 }>()
 
 defineEmits<{

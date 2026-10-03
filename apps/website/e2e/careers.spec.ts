@@ -8,7 +8,31 @@ test.describe('Careers page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Careers — Comfy')
+    await expect(page).toHaveTitle('Careers - Comfy')
+  })
+
+  test('hero autoplays the recruiting video muted with player controls', async ({
+    page
+  }) => {
+    const video = page.locator('video')
+
+    await expect(video).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/website/careers/recruiting-v03.mp4'
+    )
+    await expect(video).toHaveAttribute('loop', '')
+    await expect(video).toHaveJSProperty('muted', true)
+    await expect
+      .poll(
+        async () =>
+          video.evaluate((element: HTMLVideoElement) => element.currentTime),
+        { timeout: 15_000 }
+      )
+      .toBeGreaterThan(0)
+
+    await video.hover()
+    await expect(page.getByRole('button', { name: 'Unmute' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible()
   })
 
   test('Roles section heading is visible', async ({ page }) => {
@@ -72,7 +96,7 @@ test.describe('Careers page role links', () => {
 test.describe('Careers page (zh-CN) @smoke', () => {
   test('renders localized heading and roles', async ({ page }) => {
     await page.goto('/zh-CN/careers')
-    await expect(page).toHaveTitle('招聘 — Comfy')
+    await expect(page).toHaveTitle('招聘 - Comfy')
     await expect(
       page.getByRole('heading', { name: '职位', level: 2 })
     ).toBeVisible()

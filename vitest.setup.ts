@@ -1,6 +1,42 @@
 import '@testing-library/jest-dom/vitest'
-import { vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { disposePinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, vi } from 'vitest'
 import 'vue'
+
+import './vitest.network.setup'
+
+import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
+import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { StubPath2D } from '@/utils/__tests__/stubPath2D'
+
+beforeEach(({ task }) => {
+  for (
+    let current: typeof task | typeof task.suite = task;
+    current;
+    current = current.suite
+  ) {
+    if (current.concurrent) {
+      throw new Error(
+        'Frontend setup shares Pinia, timers, and DOM state. ' +
+          'Keep this test and its ancestor suites sequential, or move it to ' +
+          'a project with test-owned fixtures and no frontend setup.'
+      )
+    }
+  }
+
+  vi.stubGlobal('__VUE_DEVTOOLS_GLOBAL_HOOK__', { emit: vi.fn() })
+  vi.stubGlobal('Path2D', StubPath2D)
+  const pinia = createTestingPinia({ stubActions: false })
+  setActivePinia(pinia)
+  remoteConfigState.value = 'anonymous'
+
+  return () => disposePinia(pinia)
+})
+
+afterEach(() => {
+  clearRegisteredLiteGraphTypes()
+})
 
 // Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
 vi.mock('@sparkjsdev/spark', async () => {
@@ -49,7 +85,6 @@ declare global {
 
 // Define global variables for tests
 globalThis.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
-globalThis.__SENTRY_ENABLED__ = false
 globalThis.__SENTRY_DSN__ = ''
 globalThis.__ALGOLIA_APP_ID__ = ''
 globalThis.__ALGOLIA_API_KEY__ = ''
@@ -57,27 +92,31 @@ globalThis.__USE_PROD_CONFIG__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
 globalThis.__IS_NIGHTLY__ = false
 
-// Define runtime config for tests
-window.__CONFIG__ = {
-  subscription_required: true,
-  mixpanel_token: 'test-token',
-  comfy_api_base_url: 'https://stagingapi.comfy.org',
-  comfy_platform_base_url: 'https://stagingplatform.comfy.org',
-  firebase_config: {
-    apiKey: 'test',
-    authDomain: 'test.firebaseapp.com',
-    projectId: 'test',
-    storageBucket: 'test.appspot.com',
-    messagingSenderId: '123',
-    appId: '123'
+// Define runtime config for tests (absent in @vitest-environment node files)
+if (globalThis.window) {
+  window.__CONFIG__ = {
+    subscription_required: true,
+    mixpanel_token: 'test-token',
+    comfy_api_base_url: 'https://stagingapi.comfy.org',
+    comfy_platform_base_url: 'https://stagingplatform.comfy.org',
+    firebase_config: {
+      apiKey: 'test',
+      authDomain: 'test.firebaseapp.com',
+      projectId: 'test',
+      storageBucket: 'test.appspot.com',
+      messagingSenderId: '123',
+      appId: '123'
+    }
   }
 }
 
 // Mock Worker for extendable-media-recorder
-globalThis.Worker = vi.fn().mockImplementation(() => ({
-  postMessage: vi.fn(),
-  terminate: vi.fn(),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  dispatchEvent: vi.fn()
-}))
+globalThis.Worker = vi.fn(function () {
+  return {
+    postMessage: vi.fn(),
+    terminate: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn()
+  }
+})

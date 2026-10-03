@@ -2,7 +2,7 @@ import * as THREE from 'three'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 
-import { type EventManagerInterface } from './interfaces'
+import type { EventManagerInterface } from './interfaces'
 
 export class RecordingManager {
   private mediaRecorder: MediaRecorder | null = null
@@ -11,7 +11,7 @@ export class RecordingManager {
   private recordingStream: MediaStream | null = null
   private recordingIndicator: THREE.Sprite | null = null
   private scene: THREE.Scene
-  private renderer: THREE.WebGLRenderer
+  private sourceCanvas: HTMLCanvasElement
   private eventManager: EventManagerInterface
   private recordingStartTime: number = 0
   private recordingDuration: number = 0
@@ -21,11 +21,11 @@ export class RecordingManager {
 
   constructor(
     scene: THREE.Scene,
-    renderer: THREE.WebGLRenderer,
+    sourceCanvas: HTMLCanvasElement,
     eventManager: EventManagerInterface
   ) {
     this.scene = scene
-    this.renderer = renderer
+    this.sourceCanvas = sourceCanvas
     this.eventManager = eventManager
     this.setupRecordingIndicator()
   }
@@ -61,7 +61,7 @@ export class RecordingManager {
     }
 
     try {
-      const sourceCanvas = this.renderer.domElement
+      const sourceCanvas = this.sourceCanvas
       const sourceWidth = sourceCanvas.width
       const sourceHeight = sourceCanvas.height
 
@@ -118,10 +118,6 @@ export class RecordingManager {
       }
 
       this.recordingStream = this.recordingCanvas.captureStream(30)
-
-      if (!this.recordingStream) {
-        throw new Error('Failed to capture stream from canvas')
-      }
 
       this.mediaRecorder = new MediaRecorder(this.recordingStream, {
         mimeType: 'video/webm;codecs=vp9',
@@ -254,8 +250,8 @@ export class RecordingManager {
 
     if (this.recordingIndicator) {
       this.scene.remove(this.recordingIndicator)
-      ;(this.recordingIndicator.material as THREE.SpriteMaterial).map?.dispose()
-      ;(this.recordingIndicator.material as THREE.SpriteMaterial).dispose()
+      this.recordingIndicator.material.map?.dispose()
+      this.recordingIndicator.material.dispose()
     }
   }
 }

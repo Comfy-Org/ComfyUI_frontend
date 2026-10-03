@@ -3,43 +3,50 @@
     <ComboboxAnchor
       :class="
         cn(
-          searchInputVariants({ size }),
+          searchInputVariants({ size, invalid }),
           disabled && 'pointer-events-none opacity-50'
         )
       "
       @click="focus"
     >
-      <Button
-        v-if="modelValue"
-        :class="cn('absolute', sizeConfig.clearPos)"
-        variant="textonly"
-        size="icon-sm"
-        :aria-label="$t('g.clear')"
-        @click.stop="clearSearch"
+      <slot
+        name="trailing"
+        :icon-class="sizeConfig.icon"
+        :position-class="sizeConfig.iconPos"
       >
-        <i :class="cn('icon-[lucide--x]', sizeConfig.icon)" />
-      </Button>
-      <i
-        v-else-if="loading"
-        :class="
-          cn(
-            'pointer-events-none absolute icon-[lucide--loader-circle] animate-spin',
-            sizeConfig.iconPos,
-            sizeConfig.icon
-          )
-        "
-      />
-      <i
-        v-else
-        :class="
-          cn(
-            'pointer-events-none absolute',
-            sizeConfig.iconPos,
-            sizeConfig.icon,
-            icon
-          )
-        "
-      />
+        <Button
+          v-if="modelValue"
+          :class="cn('absolute', sizeConfig.clearPos)"
+          variant="textonly"
+          size="icon-sm"
+          :disabled
+          :aria-label="$t('g.clear')"
+          @click.stop="clearSearch"
+        >
+          <i :class="cn('icon-[lucide--x]', sizeConfig.icon)" />
+        </Button>
+        <i
+          v-else-if="loading"
+          :class="
+            cn(
+              'pointer-events-none absolute icon-[lucide--loader-circle] animate-spin',
+              sizeConfig.iconPos,
+              sizeConfig.icon
+            )
+          "
+        />
+        <i
+          v-else
+          :class="
+            cn(
+              'pointer-events-none absolute',
+              sizeConfig.iconPos,
+              sizeConfig.icon,
+              icon
+            )
+          "
+        />
+      </slot>
 
       <ComboboxInput
         ref="inputRef"
@@ -52,7 +59,10 @@
           )
         "
         :placeholder="placeholderText"
+        :aria-label="ariaLabel"
+        :aria-invalid="invalid"
         :auto-focus="autofocus"
+        @blur="emit('blur')"
       />
     </ComboboxAnchor>
   </ComboboxRoot>
@@ -78,19 +88,23 @@ const { t } = useI18n()
 
 const {
   placeholder,
+  ariaLabel,
   icon = 'icon-[lucide--search]',
   debounceTime = 300,
   autofocus = false,
   loading = false,
+  invalid = false,
   disabled = false,
   size = 'md',
   class: className
 } = defineProps<{
   placeholder?: string
+  ariaLabel?: string
   icon?: string
   debounceTime?: number
   autofocus?: boolean
   loading?: boolean
+  invalid?: boolean
   disabled?: boolean
   size?: SearchInputVariants['size']
   class?: HTMLAttributes['class']
@@ -98,6 +112,7 @@ const {
 
 const emit = defineEmits<{
   search: [value: string]
+  blur: []
 }>()
 
 const sizeConfig = computed(() => searchInputSizeConfig[size])

@@ -14,7 +14,8 @@ const wstest = mergeTests(test, webSocketFixture)
 
 test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
-    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.nodeOps.clearGraph()
+    await comfyPage.searchBoxV2.addNode('Load Image')
 
     const loadImageNode = (
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
@@ -167,14 +168,13 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       await test.step('Inject Previews from different tab', async () => {
         const jobId = await execution.run()
         await comfyPage.menu.topbar.getTab(0).click()
-        await comfyPage.vueNodes.waitForNodes(7)
+        await expect(comfyPage.vueNodes.nodes).toHaveCount(7)
 
         const images = [{ filename: 'example.png', type: 'input' }]
         execution.executed(jobId, '2:1', { images })
         await comfyPage.nextFrame()
 
         await comfyPage.menu.topbar.getTab(1).click()
-        await comfyPage.vueNodes.waitForNodes(1)
       })
 
       await expect(subgraphNode.imagePreview.locator('img')).toHaveCount(1)
@@ -208,7 +208,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
       await test.step('Inject multiple previews', async () => {
         const file = { filename: 'example.png', type: 'input' }
-        const images = new Array(100).fill(file)
+        const images = Array.from({ length: 100 }, () => file)
         execution.executed('', '1', { images })
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })

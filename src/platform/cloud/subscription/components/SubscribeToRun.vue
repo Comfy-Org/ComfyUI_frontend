@@ -5,7 +5,7 @@
       showDelay: 600
     }"
     class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
-    variant="gradient"
+    variant="subscribe"
     size="unset"
     data-testid="subscribe-to-run-button"
     @click="handleSubscribeToRun"
@@ -16,6 +16,7 @@
 </template>
 
 <script setup lang="ts">
+import { registerSubscribeToRunPrompt } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -27,6 +28,9 @@ import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const { t } = useI18n()
+
+// Mounting suppresses TopbarSubscribeButton; see useSubscribeCtaPresence
+registerSubscribeToRunPrompt()
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
@@ -54,6 +58,6 @@ function handleSubscribeToRun() {
     trackRunButton({ subscribe_to_run: true })
   }
 
-  showSubscriptionDialog()
+  showSubscriptionDialog({ reason: 'subscribe_to_run' })
 }
 </script>

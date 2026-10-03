@@ -42,10 +42,15 @@ async function renameInlineFolder(comfyPage: ComfyPage, newName: string) {
 }
 
 test.describe('Node library sidebar', () => {
+  test.use({
+    initialSettings: {
+      'Comfy.NodeLibrary.NewDesign': false,
+      [bookmarksSettingId]: [],
+      [bookmarksCustomizationSettingId]: {}
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
-    await comfyPage.settings.setSetting(bookmarksSettingId, [])
-    await comfyPage.settings.setSetting(bookmarksCustomizationSettingId, {})
     // Open the sidebar
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.open()
@@ -53,6 +58,7 @@ test.describe('Node library sidebar', () => {
 
   test('Node preview and drag to canvas', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTab
+    await tab.getFolder('model').click()
     await tab.getFolder('sampling').click()
 
     // Hover over a node to display the preview
@@ -90,6 +96,7 @@ test.describe('Node library sidebar', () => {
 
   test('Bookmark node', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTab
+    await tab.getFolder('model').click()
     await tab.getFolder('sampling').click()
 
     // Bookmark the node
@@ -113,7 +120,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.nextFrame()
 
     const tab = comfyPage.menu.nodeLibraryTab
-    await expect(tab.getFolder('sampling')).toHaveCount(1)
+    await expect(tab.getFolder('model')).toHaveCount(1)
     await expect(tab.getNode('foo')).toHaveCount(0)
   })
 
@@ -168,7 +175,7 @@ test.describe('Node library sidebar', () => {
 
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
 
@@ -181,6 +188,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/'])
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getFolder('foo')).toBeVisible()
+    await tab.getFolder('model').click()
     await tab.getFolder('sampling').click()
     await comfyPage.page.dragAndDrop(
       tab.nodeSelector('KSampler (Advanced)'),
@@ -193,6 +201,7 @@ test.describe('Node library sidebar', () => {
     comfyPage
   }) => {
     const tab = comfyPage.menu.nodeLibraryTab
+    await tab.getFolder('model').click()
     await tab.getFolder('sampling').click()
     await tab.getNode('KSampler (Advanced)').locator('.bookmark-button').click()
     await expectBookmarks(comfyPage, ['KSamplerAdvanced'])
@@ -213,6 +222,7 @@ test.describe('Node library sidebar', () => {
       'KSamplerAdvanced'
     ])
     const tab = comfyPage.menu.nodeLibraryTab
+    await tab.getFolder('model').click()
     await tab.getFolder('sampling').click()
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(2)
     await tab
@@ -283,9 +293,10 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page.getByLabel('Customize').click()
 
     // Click a color option multiple times
-    const customColorOption = comfyPage.page.locator(
-      '.p-togglebutton-content > .pi-palette'
-    )
+    const customColorOption = comfyPage.page.getByRole('button', {
+      name: 'Custom',
+      exact: true
+    })
     await customColorOption.click()
     await customColorOption.click()
 
@@ -332,7 +343,7 @@ test.describe('Node library sidebar', () => {
     await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
     await comfyPage.nextFrame()

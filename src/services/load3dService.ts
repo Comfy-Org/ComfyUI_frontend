@@ -8,6 +8,7 @@
 import { toRaw } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
+import { adoptClonedModel } from '@/extensions/core/load3d/quadWireframe/adoptClonedModel'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -16,7 +17,7 @@ import type {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { Object3D } from 'three'
 
 // Type for the useLoad3dViewer composable function
@@ -112,7 +113,7 @@ interface Load3DNode extends LGraphNode {
 const viewerInstances = new Map<NodeId, ReturnType<UseLoad3dViewerFn>>()
 
 class Load3dService {
-  private static instance: Load3dService
+  private static instance: Load3dService | undefined
 
   private constructor() {}
 
@@ -180,12 +181,13 @@ class Load3dService {
    * Use this for initial viewer creation.
    */
   async getOrCreateViewer(node: LGraphNode) {
-    if (!viewerInstances.has(node.id)) {
+    const nodeId = node.id
+    if (!viewerInstances.has(nodeId)) {
       const useLoad3dViewer = await loadUseLoad3dViewer()
-      viewerInstances.set(node.id, useLoad3dViewer(node))
+      viewerInstances.set(nodeId, useLoad3dViewer(node))
     }
 
-    return viewerInstances.get(node.id)
+    return viewerInstances.get(nodeId)
   }
 
   /**
@@ -197,21 +199,23 @@ class Load3dService {
     node: LGraphNode,
     useLoad3dViewer: T
   ): ReturnType<T> {
-    if (!viewerInstances.has(node.id)) {
-      viewerInstances.set(node.id, useLoad3dViewer(node))
+    const nodeId = node.id
+    if (!viewerInstances.has(nodeId)) {
+      viewerInstances.set(nodeId, useLoad3dViewer(node))
     }
 
-    return viewerInstances.get(node.id) as ReturnType<T>
+    return viewerInstances.get(nodeId) as ReturnType<T>
   }
 
   removeViewer(node: LGraphNode) {
-    const viewer = viewerInstances.get(node.id)
+    const nodeId = node.id
+    const viewer = viewerInstances.get(nodeId)
 
     if (viewer) {
       viewer.cleanup()
     }
 
-    viewerInstances.delete(node.id)
+    viewerInstances.delete(nodeId)
   }
 
   async copyLoad3dState(source: Load3d, target: Load3d) {
@@ -224,18 +228,26 @@ class Load3dService {
       // Remove existing model from target scene before adding new one
       const existingModel = target.getModelManager().currentModel
       if (existingModel) {
+        target.getModelManager().clearQuadWireframe()
         target.getSceneManager().scene.remove(existingModel)
       }
 
       if (source.isSplatModel()) {
         const originalURL = source.modelManager.originalURL
-        if (originalURL) {
-          await target.loadModel(originalURL)
+        if (originalURL && !(await target.loadModel(originalURL))) {
+          return
         }
       } else {
         // Use SkeletonUtils.clone for proper skeletal animation support
         const SkeletonUtils = await loadSkeletonUtils()
         const modelClone = SkeletonUtils.clone(sourceModel)
+        adoptClonedModel(
+          modelClone,
+          sourceModel,
+          source.getModelManager().originalMaterials,
+          target.getModelManager().originalMaterials
+        )
+        target.getModelManager().materialMode = 'original'
 
         target.getModelManager().currentModel = modelClone
         target.getSceneManager().scene.add(modelClone)
@@ -245,9 +257,6 @@ class Load3dService {
         if (sourceOriginalModel) {
           target.getModelManager().originalModel = sourceOriginalModel
         }
-
-        target.getModelManager().materialMode =
-          source.getModelManager().materialMode
 
         target.getModelManager().currentUpDirection =
           source.getModelManager().currentUpDirection
@@ -315,7 +324,7 @@ class Load3dService {
       .getCurrentBackgroundInfo()
     if (sourceBackgroundInfo.type === 'image') {
       const sourceNode = this.getNodeByLoad3d(source)
-      const sceneConfig = sourceNode?.properties?.['Scene Config'] as
+      const sceneConfig = sourceNode?.properties['Scene Config'] as
         | SceneConfig
         | undefined
       const backgroundPath = sceneConfig?.backgroundImage

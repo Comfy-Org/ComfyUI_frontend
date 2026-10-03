@@ -18,7 +18,7 @@ src/components/MyComponent/
 ## Story Structure
 
 ```typescript
-import type { Meta, StoryObj } from '@storybook/vue3'
+import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import ComponentName from './ComponentName.vue'
 
 const meta: Meta<typeof ComponentName> = {
@@ -31,9 +31,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  args: {
-    /* props */
-  }
+  args: {/* props */}
 }
 ```
 

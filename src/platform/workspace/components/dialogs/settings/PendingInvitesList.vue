@@ -1,21 +1,24 @@
 <template>
   <div>
     <div
-      v-for="(invite, index) in invites"
+      v-for="invite in invites"
       :key="invite.id"
       :class="
         cn(
-          'grid w-full items-center rounded-lg p-2',
-          gridCols,
-          index % 2 === 1 && 'bg-secondary-background/50'
+          'grid w-full items-center border-b border-interface-stroke/30 p-2 last:border-0',
+          gridCols
         )
       "
     >
-      <div class="flex items-center gap-3">
+      <div
+        :class="
+          cn('flex items-center gap-3', isExpired(invite) && 'opacity-60')
+        "
+      >
         <div
           class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
         >
-          <span class="text-sm font-bold text-base-foreground">
+          <span class="text-sm text-muted-foreground">
             {{ getInviteInitial(invite.email) }}
           </span>
         </div>
@@ -31,41 +34,91 @@
       <span class="text-sm text-muted-foreground">
         {{ formatDate(invite.inviteDate) }}
       </span>
-      <span class="text-sm text-muted-foreground">
-        {{ formatDate(invite.expiryDate) }}
+      <span
+        :class="
+          cn(
+            'text-sm',
+            isExpired(invite)
+              ? 'text-warning-background'
+              : 'text-muted-foreground'
+          )
+        "
+      >
+        {{
+          isExpired(invite)
+            ? $t('workspacePanel.members.expiredOn', {
+                date: formatDate(invite.expiryDate)
+              })
+            : formatDate(invite.expiryDate)
+        }}
       </span>
-      <div class="flex items-center justify-end gap-2">
-        <Button
-          v-tooltip="{
-            value: $t('workspacePanel.members.actions.copyLink'),
-            showDelay: 300
-          }"
-          variant="secondary"
-          size="md"
-          :aria-label="$t('workspacePanel.members.actions.copyLink')"
-          @click="$emit('copyLink', invite)"
+      <div class="flex items-center justify-end">
+        <MoreButton
+          v-slot="{ close }"
+          variant="muted-textonly"
+          :aria-label="$t('g.moreOptions')"
         >
-          <i class="icon-[lucide--link] size-4" />
-        </Button>
-        <Button
-          v-tooltip="{
-            value: $t('workspacePanel.members.actions.revokeInvite'),
-            showDelay: 300
-          }"
-          variant="secondary"
-          size="md"
-          :aria-label="$t('workspacePanel.members.actions.revokeInvite')"
-          @click="$emit('revoke', invite)"
-        >
-          <i class="icon-[lucide--mail-x] size-4" />
-        </Button>
+          <Button
+            v-if="invite.token"
+            variant="textonly"
+            size="unset"
+            :class="menuItemClass"
+            @click="
+              () => {
+                close()
+                void copyInviteLink(invite)
+              }
+            "
+          >
+            <i class="icon-[lucide--link] size-4" />
+            <span>{{
+              $t('workspacePanel.members.actions.copyInviteLink')
+            }}</span>
+          </Button>
+          <Button
+            variant="textonly"
+            size="unset"
+            :class="menuItemClass"
+            @click="
+              () => {
+                close()
+                $emit('resend', invite)
+              }
+            "
+          >
+            <!-- fallow-ignore-next-line css-token-drift -->
+            <i class="icon-[lucide--mail-plus] size-4" />
+            <span>{{ $t('workspacePanel.members.actions.resendInvite') }}</span>
+          </Button>
+          <Button
+            variant="textonly"
+            size="unset"
+            :class="menuItemClass"
+            @click="
+              () => {
+                close()
+                $emit('revoke', invite)
+              }
+            "
+          >
+            <!-- fallow-ignore-next-line css-token-drift -->
+            <i class="icon-[lucide--mail-x] size-4" />
+            <span>{{ $t('workspacePanel.members.actions.cancelInvite') }}</span>
+          </Button>
+        </MoreButton>
       </div>
     </div>
     <div
-      v-if="invites.length === 0"
+      v-if="loaded && invites.length === 0"
       class="flex w-full items-center justify-center py-8 text-sm text-muted-foreground"
     >
-      {{ $t('workspacePanel.members.noInvites') }}
+      {{
+        searchQuery.trim()
+          ? $t('workspacePanel.members.noInvitesMatch', {
+              query: searchQuery.trim()
+            })
+          : $t('workspacePanel.members.noInvites')
+      }}
     </div>
   </div>
 </template>
@@ -73,21 +126,33 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import MoreButton from '@/components/button/MoreButton.vue'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import Button from '@/components/ui/button/Button.vue'
-import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  buildInviteLink,
+  copyTextSilently
+} from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
 
-defineProps<{
-  invites: PendingInvite[]
+const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
+
+const toastStore = useToastStore()
+
+const { searchQuery = '', loaded = false } = defineProps<{
+  invites: WorkspacePendingInvite[]
   gridCols: string
+  searchQuery?: string
+  loaded?: boolean
 }>()
 
 defineEmits<{
-  copyLink: [invite: PendingInvite]
-  revoke: [invite: PendingInvite]
+  resend: [invite: WorkspacePendingInvite]
+  revoke: [invite: WorkspacePendingInvite]
 }>()
 
-const { d } = useI18n()
+const { d, t } = useI18n()
 
 function getInviteDisplayName(email: string): string {
   return email.split('@')[0]
@@ -99,5 +164,27 @@ function getInviteInitial(email: string): string {
 
 function formatDate(date: Date): string {
   return d(date, { dateStyle: 'medium' })
+}
+
+// Same predicate that gates the Copy invite link item: the BE returns a token
+// only for non-expired invites, so the marker always explains the missing action.
+function isExpired(invite: WorkspacePendingInvite): boolean {
+  return !invite.token
+}
+
+async function copyInviteLink(invite: WorkspacePendingInvite) {
+  if (!invite.token) return
+  if (await copyTextSilently(buildInviteLink(invite.token))) {
+    toastStore.add({
+      severity: 'success',
+      summary: t('workspacePanel.inviteLinks.copiedToast'),
+      life: 3000
+    })
+  } else {
+    toastStore.add({
+      severity: 'error',
+      summary: t('workspacePanel.inviteLinks.copyFailedToast')
+    })
+  }
 }
 </script>

@@ -1,69 +1,123 @@
-import { Form, FormField } from '@primevue/forms'
-import { render, screen } from '@testing-library/vue'
-import Button from '@/components/ui/button/Button.vue'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import ProgressSpinner from 'primevue/progressspinner'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useAuthStore } from '@/stores/authStore'
 
 import SignUpForm from './SignUpForm.vue'
+vi.mock(import('firebase/auth'))
 
-vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
+const mockTurnstileEnabled = ref(false)
+const mockTurnstileToken = ref('')
+const mockTurnstileUnavailable = ref(false)
+const mockReset = vi.fn()
+let emitTurnstileToken: ((token: string) => void) | undefined
+let emitTurnstileUnavailable: ((unavailable: boolean) => void) | undefined
+
+vi.mock<unknown>(import('@/composables/auth/useTurnstile'), () => ({
+  useTurnstile: () => ({
+    enabled: mockTurnstileEnabled
+  }),
+  useTurnstileGate: () => ({
+    token: mockTurnstileToken,
+    unavailable: mockTurnstileUnavailable,
+    waiting: computed(
+      () =>
+        mockTurnstileEnabled.value &&
+        !mockTurnstileToken.value &&
+        !mockTurnstileUnavailable.value
+    )
+  })
 }))
 
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn()
-}))
+// The real widget loads an external Turnstile script; this stub exposes a
+// spyable reset() and lets a test drive the token/unavailable v-models.
+vi.mock<unknown>(import('./TurnstileWidget.vue'), async () => {
+  const { defineComponent: defineMock } = await import('vue')
+  return {
+    default: defineMock({
+      name: 'TurnstileWidget',
+      emits: ['update:token', 'update:unavailable'],
+      setup(_, { expose, emit }) {
+        expose({ reset: mockReset })
+        emitTurnstileToken = (token: string) => emit('update:token', token)
+        emitTurnstileUnavailable = (unavailable: boolean) =>
+          emit('update:unavailable', unavailable)
+        return () => null
+      }
+    })
+  }
+})
 
-const mockLoadingRef = ref(false)
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    get loading() {
-      return mockLoadingRef.value
-    }
-  }))
-}))
+const signUpButton = enMessages.auth.signup.signUpButton
+
+function globalOptions() {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
+  return { plugins: [i18n] }
+}
 
 describe('SignUpForm', () => {
   beforeEach(() => {
-    mockLoadingRef.value = false
+    vi.useRealTimers()
+    useAuthStore().loading = false
+    mockTurnstileEnabled.value = false
+    mockTurnstileToken.value = ''
+    mockTurnstileUnavailable.value = false
+    emitTurnstileToken = undefined
+    emitTurnstileUnavailable = undefined
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
+  function renderComponent(props: Record<string, unknown> = {}) {
+    const user = userEvent.setup()
+    const utils = render(SignUpForm, { global: globalOptions(), props })
+    return { ...utils, user }
+  }
 
-  function renderComponent() {
-    const i18n = createI18n({
-      legacy: false,
-      locale: 'en',
-      messages: { en: enMessages }
-    })
-    return render(SignUpForm, {
-      global: {
-        plugins: [PrimeVue, i18n],
-        components: {
-          Form,
-          FormField,
-          Button,
-          InputText,
-          Password,
-          ProgressSpinner
-        }
+  function renderWithRef() {
+    const formRef = ref<{ resetTurnstile: () => void } | null>(null)
+    const Host = defineComponent({
+      setup() {
+        return () => h(SignUpForm, { ref: formRef })
       }
     })
+    const utils = render(Host, { global: globalOptions() })
+    return {
+      ...utils,
+      form: () => {
+        if (!formRef.value) throw new Error('form not mounted')
+        return formRef.value
+      }
+    }
+  }
+
+  const expectedValues = {
+    email: 'new@example.com',
+    password: 'Password1!',
+    confirmPassword: 'Password1!'
+  }
+
+  async function fillValidSignup(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(
+      screen.getByPlaceholderText(enMessages.auth.signup.emailPlaceholder),
+      expectedValues.email
+    )
+    await user.type(
+      screen.getByPlaceholderText(enMessages.auth.signup.passwordPlaceholder),
+      expectedValues.password
+    )
+    await user.type(
+      screen.getByPlaceholderText(
+        enMessages.auth.login.confirmPasswordPlaceholder
+      ),
+      expectedValues.confirmPassword
+    )
   }
 
   describe('Password manager autofill attributes', () => {
@@ -88,6 +142,26 @@ describe('SignUpForm', () => {
       expect(passwordInput).toHaveAttribute('id', 'comfy-org-sign-up-password')
       expect(passwordInput).toHaveAttribute('name', 'password')
       expect(passwordInput).toHaveAttribute('autocomplete', 'new-password')
+      expect(passwordInput).toHaveAttribute('type', 'password')
+    })
+
+    it('toggles password visibility without changing the confirmation field', async () => {
+      const { user } = renderComponent()
+      const passwordInput = screen.getByPlaceholderText(
+        enMessages.auth.signup.passwordPlaceholder
+      )
+      const confirmPasswordInput = screen.getByPlaceholderText(
+        enMessages.auth.login.confirmPasswordPlaceholder
+      )
+
+      await user.click(
+        screen.getAllByRole('button', {
+          name: enMessages.auth.showPassword
+        })[0]
+      )
+
+      expect(passwordInput).toHaveAttribute('type', 'text')
+      expect(confirmPasswordInput).toHaveAttribute('type', 'password')
     })
 
     it('renders confirm-password input with distinct name and new-password autocomplete', () => {
@@ -105,6 +179,236 @@ describe('SignUpForm', () => {
         'autocomplete',
         'new-password'
       )
+    })
+  })
+
+  it('marks the unmet password rules while the field is focused', async () => {
+    const { user } = renderComponent()
+    await user.type(
+      screen.getByLabelText(enMessages.auth.signup.passwordLabel),
+      'short'
+    )
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+    expect(
+      screen.getByText(enMessages.validation.password.minLength)
+    ).toHaveClass('text-destructive-background')
+    expect(
+      screen.getByText(enMessages.validation.password.uppercase)
+    ).toHaveClass('text-destructive-background')
+    expect(
+      screen.getByText(enMessages.validation.password.lowercase)
+    ).not.toHaveClass('text-destructive-background')
+    expect(screen.getByText(enMessages.validation.password.number)).toHaveClass(
+      'text-destructive-background'
+    )
+    expect(
+      screen.getByText(enMessages.validation.password.special)
+    ).toHaveClass('text-destructive-background')
+  })
+
+  it('shows the primary password schema error after blur', async () => {
+    const { user } = renderComponent()
+    const passwordInput = screen.getByLabelText(
+      enMessages.auth.signup.passwordLabel
+    )
+
+    await user.type(passwordInput, 'short')
+    await user.tab()
+    await user.tab()
+
+    expect(passwordInput).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Must be at least 8 characters'
+    )
+  })
+
+  it('hides password requirements when the field loses focus', async () => {
+    const { user } = renderComponent()
+    const passwordInput = screen.getByLabelText(
+      enMessages.auth.signup.passwordLabel
+    )
+    const confirmPasswordInput = screen.getByLabelText(
+      enMessages.auth.login.confirmPasswordLabel
+    )
+    const requirementsText = `${enMessages.validation.password.requirements}:`
+
+    expect(screen.queryByText(requirementsText)).not.toBeInTheDocument()
+
+    await user.type(passwordInput, 'short')
+    const requirements = screen.getByText(requirementsText)
+    expect(requirements).toBeInTheDocument()
+
+    await user.tab()
+    expect(requirements).toBeInTheDocument()
+
+    await user.tab()
+
+    expect(confirmPasswordInput).toHaveFocus()
+    expect(requirements).not.toBeInTheDocument()
+  })
+
+  describe('submit while loading', () => {
+    const submitButton = () =>
+      screen.getByRole('button', { name: signUpButton })
+
+    it('keeps its accessible name and disables while loading', async () => {
+      useAuthStore().loading = true
+      renderComponent()
+      await nextTick()
+
+      expect(submitButton()).toBeDisabled()
+      expect(submitButton()).toHaveAttribute('aria-busy', 'true')
+    })
+
+    it('does not emit submit when clicked', async () => {
+      useAuthStore().loading = true
+      const { user, emitted } = renderComponent()
+      await nextTick()
+
+      await user.click(submitButton())
+
+      expect(emitted().submit).toBeUndefined()
+    })
+  })
+
+  describe('Turnstile single-use token reset', () => {
+    it('exposes resetTurnstile() that resets the rendered widget', async () => {
+      mockTurnstileEnabled.value = true
+      const { form } = renderWithRef()
+      await nextTick()
+
+      form().resetTurnstile()
+
+      expect(mockReset).toHaveBeenCalledOnce()
+    })
+
+    it('does not reset the widget on the initial render', async () => {
+      mockTurnstileEnabled.value = true
+      renderWithRef()
+      await nextTick()
+
+      expect(mockReset).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Turnstile submit gating', () => {
+    it('disables the submit button until a token is present', async () => {
+      mockTurnstileEnabled.value = true
+      renderComponent()
+      await nextTick()
+
+      expect(screen.getByRole('button', { name: signUpButton })).toBeDisabled()
+    })
+
+    it('does not emit submit while the token is empty', async () => {
+      mockTurnstileEnabled.value = true
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
+      await fillValidSignup(user)
+
+      await user.click(screen.getByRole('button', { name: signUpButton }))
+
+      expect(
+        onSubmit,
+        'gating on enabled (not enforce) is what stops a shadow-mode signup racing ahead with an empty token'
+      ).not.toHaveBeenCalled()
+    })
+
+    it('emits submit with the token once the challenge is solved', async () => {
+      mockTurnstileEnabled.value = true
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
+      await fillValidSignup(user)
+
+      emitTurnstileToken!('token-xyz')
+      const submit = screen.getByRole('button', { name: signUpButton })
+      await waitFor(() => expect(submit).toBeEnabled())
+      await user.click(submit)
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(expectedValues, 'token-xyz')
+      })
+    })
+
+    it('emits submit without a token once the widget reports itself unavailable (broken/slow load fallback)', async () => {
+      mockTurnstileEnabled.value = true
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
+      await fillValidSignup(user)
+
+      emitTurnstileUnavailable!(true)
+      const submit = screen.getByRole('button', { name: signUpButton })
+      await waitFor(() => expect(submit).toBeEnabled())
+      await user.click(submit)
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(expectedValues, undefined)
+      })
+    })
+  })
+
+  describe('Turnstile wait hint accessibility', () => {
+    it('announces the wait politely while the challenge is pending', async () => {
+      mockTurnstileEnabled.value = true
+      renderComponent()
+      await nextTick()
+
+      const hint = screen.getByRole('status')
+      expect(
+        hint,
+        'the hint is the only thing telling a screen-reader user why submit is unavailable'
+      ).toHaveTextContent(enMessages.auth.turnstile.submitBlockedHint)
+      expect(hint).toHaveAttribute('aria-live', 'polite')
+    })
+
+    it('points the disabled submit button at the hint', async () => {
+      mockTurnstileEnabled.value = true
+      const { user } = renderComponent()
+      await fillValidSignup(user)
+      await nextTick()
+
+      const submit = screen.getByRole('button', { name: signUpButton })
+      expect(
+        submit,
+        'an otherwise-valid form must stay disabled while the challenge is pending'
+      ).toBeDisabled()
+      expect(submit).toHaveAttribute(
+        'aria-describedby',
+        screen.getByRole('status').id
+      )
+    })
+
+    it('drops the description once the challenge resolves', async () => {
+      mockTurnstileEnabled.value = true
+      renderComponent()
+      await nextTick()
+
+      emitTurnstileToken!('token-xyz')
+      await nextTick()
+
+      expect(
+        screen.getByRole('button', { name: signUpButton })
+      ).not.toHaveAttribute('aria-describedby')
+    })
+  })
+
+  describe('double-submit throttling', () => {
+    it('emits once when the button is clicked twice in quick succession', async () => {
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
+      await fillValidSignup(user)
+      const submit = screen.getByRole('button', { name: signUpButton })
+      await waitFor(() => expect(submit).toBeEnabled())
+
+      await user.click(submit)
+      await user.click(submit)
+
+      await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+      expect(
+        onSubmit,
+        'an impatient double-click would otherwise create the account twice'
+      ).toHaveBeenCalledOnce()
     })
   })
 })

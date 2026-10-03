@@ -1,9 +1,47 @@
-import { describe, expect, it, vi } from 'vitest'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
-import type { TelemetryProvider } from './types'
+import type {
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
+  AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentMessageSentMetadata,
+  AgentNodeTaggedMetadata,
+  AgentOnboardingStepMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
+  AgentStarterPromptClickedMetadata,
+  AgentWorkflowAppliedMetadata,
+  TelemetryProvider
+} from './types'
+
+type AgentDispatchMethod = keyof TelemetryProvider & `trackAgent${string}`
 
 describe('TelemetryRegistry', () => {
+  it('dispatches feature flag evaluations to supporting providers', () => {
+    const trackFeatureFlagEvaluation = vi.fn()
+    const registry = new TelemetryRegistry()
+    registry.registerProvider({ trackFeatureFlagEvaluation })
+    registry.registerProvider({})
+
+    registry.trackFeatureFlagEvaluation('signup_turnstile', 'shadow')
+
+    expect(trackFeatureFlagEvaluation).toHaveBeenCalledExactlyOnceWith(
+      'signup_turnstile',
+      'shadow'
+    )
+  })
+
   it('dispatches trackSearchQuery to every registered provider', () => {
     const a: TelemetryProvider = { trackSearchQuery: vi.fn() }
     const b: TelemetryProvider = { trackSearchQuery: vi.fn() }
@@ -30,6 +68,77 @@ describe('TelemetryRegistry', () => {
     expect(b.trackSearchQuery).toHaveBeenCalledExactlyOnceWith(payload)
   })
 
+  it('dispatches trackBeginCheckout with intent metadata to every provider', () => {
+    const a: TelemetryProvider = { trackBeginCheckout: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const metadata = {
+      user_id: 'user-1',
+      tier: 'pro' as const,
+      cycle: 'monthly' as const,
+      checkout_type: 'new' as const,
+      payment_intent_source: 'subscribe_to_run' as const
+    }
+    registry.trackBeginCheckout(metadata)
+
+    expect(a.trackBeginCheckout).toHaveBeenCalledExactlyOnceWith(metadata)
+  })
+
+  it('dispatches trackAuthFailed to every registered provider', () => {
+    const a: TelemetryProvider = { trackAuthFailed: vi.fn() }
+    const b: TelemetryProvider = { trackAuthFailed: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      error_code: 'auth/user-not-found',
+      auth_action: 'email_sign_in' as const
+    }
+    registry.trackAuthFailed(payload)
+
+    expect(a.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
+    expect(b.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
+  })
+
+  it('dispatches unified auth retry outcomes to supporting providers', () => {
+    const trackUnifiedAuthRetry = vi.fn()
+    const registry = new TelemetryRegistry()
+    registry.registerProvider({ trackUnifiedAuthRetry })
+    registry.registerProvider({})
+
+    registry.trackUnifiedAuthRetry({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
+
+    expect(trackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
+  })
+
+  it('dispatches trackAddApiCreditButtonClicked with its source', () => {
+    const provider: TelemetryProvider = {
+      trackAddApiCreditButtonClicked: vi.fn()
+    }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(provider)
+
+    registry.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
+
+    expect(
+      provider.trackAddApiCreditButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'credits_panel' })
+  })
+
   it('skips providers that do not implement trackSearchQuery', () => {
     const empty: TelemetryProvider = {}
     const registry = new TelemetryRegistry()
@@ -44,5 +153,467 @@ describe('TelemetryRegistry', () => {
         has_results: false
       })
     ).not.toThrow()
+  })
+
+  it('dispatches subscription cancellation telemetry to every registered provider', () => {
+    const a: TelemetryProvider = { trackSubscriptionCancellation: vi.fn() }
+    const b: TelemetryProvider = { trackSubscriptionCancellation: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      source: 'cancel_plan_menu' as const,
+      current_tier: 'standard',
+      cycle: 'monthly' as const,
+      end_date: '2026-08-01T00:00:00.000Z'
+    }
+    registry.trackSubscriptionCancellation('flow_opened', payload)
+
+    expect(a.trackSubscriptionCancellation).toHaveBeenCalledExactlyOnceWith(
+      'flow_opened',
+      payload
+    )
+    expect(b.trackSubscriptionCancellation).toHaveBeenCalledExactlyOnceWith(
+      'flow_opened',
+      payload
+    )
+  })
+
+  it('dispatches resubscribe click telemetry to every registered provider', () => {
+    const a: TelemetryProvider = { trackResubscribeClicked: vi.fn() }
+    const b: TelemetryProvider = { trackResubscribeClicked: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = { source: 'settings_billing_panel' as const }
+    registry.trackResubscribeClicked(payload)
+
+    expect(a.trackResubscribeClicked).toHaveBeenCalledExactlyOnceWith(payload)
+    expect(b.trackResubscribeClicked).toHaveBeenCalledExactlyOnceWith(payload)
+  })
+
+  it('dispatches trackWorkspaceInviteFailed to every registered provider', () => {
+    const a: TelemetryProvider = { trackWorkspaceInviteFailed: vi.fn() }
+    const b: TelemetryProvider = { trackWorkspaceInviteFailed: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      source: 'settings_members' as const,
+      attempted_count: 3,
+      failed_count: 1
+    }
+    registry.trackWorkspaceInviteFailed(payload)
+
+    expect(a.trackWorkspaceInviteFailed).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+    expect(b.trackWorkspaceInviteFailed).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+  })
+
+  it('dispatches the same canonical billing event to every provider', () => {
+    const a: TelemetryProvider = { trackBillingEvent: vi.fn() }
+    const b: TelemetryProvider = { trackBillingEvent: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event: BillingTelemetryEvent = {
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: 'op-1',
+      operation_type: 'subscription',
+      failure_category: 'provider_decline'
+    }
+    registry.trackBillingEvent(event)
+
+    expect(a.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
+    expect(b.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
+  it('dispatches the same checkout journey event to every provider', () => {
+    const a: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const b: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event: CheckoutJourneyTelemetryEvent = {
+      phase: 'entered',
+      checkout_journey_id: 'journey-1',
+      checkout_entered_at: '2026-09-09T00:00:00.000Z',
+      assignment_status: 'resolved',
+      assigned_arm: 'treatment',
+      entry_flow: 'initial_subscription',
+      entry_source: 'pricing'
+    }
+    registry.trackCheckoutJourneyEvent(event)
+
+    expect(a.trackCheckoutJourneyEvent).toHaveBeenCalledExactlyOnceWith(event)
+    expect(b.trackCheckoutJourneyEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
+  it('dispatches trackWidgetFavoriteToggled to every registered provider', () => {
+    const a: TelemetryProvider = { trackWidgetFavoriteToggled: vi.fn() }
+    const b: TelemetryProvider = { trackWidgetFavoriteToggled: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      node_type: 'CheckpointLoaderSimple',
+      widget_name: 'ckpt_name',
+      widget_type: 'combo',
+      is_favorited: true,
+      source: 'right_side_panel' as const
+    }
+    registry.trackWidgetFavoriteToggled(payload)
+
+    expect(a.trackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+    expect(b.trackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith(
+      payload
+    )
+  })
+
+  describe('agent telemetry dispatch', () => {
+    const feedbackMetadata = {
+      message_id: 'm1',
+      turn_id: 'm1',
+      vote: 'up',
+      workflow_id: null
+    } satisfies AgentMessageFeedbackMetadata
+    const panelOpenedMetadata = {
+      source: 'topbar_button'
+    } satisfies AgentPanelOpenedMetadata
+    const panelClosedMetadata = {
+      source: 'close_button',
+      open_duration_ms: 1200
+    } satisfies AgentPanelClosedMetadata
+    const entryClickedMetadata = {
+      resulting_state: 'opened'
+    } satisfies AgentEntryButtonClickedMetadata
+    const messageSentMetadata = {
+      attachment_count: 1,
+      node_tag_count: 2,
+      thread_id: 'th-1',
+      workflow_id: 'w1',
+      client_message_id: 'cm-1',
+      input_method: 'typed',
+      starter_prompt_id: null,
+      starter_prompt_click_id: null
+    } satisfies AgentMessageSentMetadata
+    const starterPromptClickedMetadata = {
+      prompt_id: 'slot_1',
+      prompt_index: 0,
+      prompt_count: 5,
+      prompt_text_hash: 'deadbeef',
+      locale: 'en',
+      click_id: 'click-1',
+      draft_was_empty: true
+    } satisfies AgentStarterPromptClickedMetadata
+    const consentShownMetadata = {
+      trigger: 'button_click'
+    } satisfies AgentConsentShownMetadata
+    const consentResolvedMetadata = {
+      decision: 'dismissed',
+      save_error_shown: true
+    } satisfies AgentConsentResolvedMetadata
+    const onboardingStepMetadata = {
+      step: 2,
+      action: 'next'
+    } satisfies AgentOnboardingStepMetadata
+    const nodeTaggedMetadata = {
+      source: 'mention_picker'
+    } satisfies AgentNodeTaggedMetadata
+    const workflowAppliedMetadata = {
+      workflow_id: 'w1',
+      target: 'active_tab_open'
+    } satisfies AgentWorkflowAppliedMetadata
+    const paywallShownMetadata = {
+      reason: 'subscription_inactive',
+      surface: 'credits_exhausted'
+    } satisfies AgentPaywallShownMetadata
+    const paywallCtaMetadata = {
+      cta: 'add_credits',
+      surface: 'refused_send'
+    } satisfies AgentPaywallCtaMetadata
+    const errorMetadata = {
+      error_class: 'request_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: true,
+      turn_accepted: false,
+      ui_treatment: 'inline_notice'
+    } satisfies AgentErrorMetadata
+    const freeUseExposureMetadata = {
+      placement: 'above-input',
+      '$feature/agent-free-use-message-placement': 'above-input'
+    } satisfies AgentFreeUseExposureMetadata
+    const freeUseNoticeMetadata = {
+      action: 'shown',
+      placement: 'above-input'
+    } satisfies AgentFreeUseNoticeMetadata
+
+    const cases = [
+      {
+        method: 'trackAgentError',
+        expected: { ...errorMetadata },
+        invoke: (registry) => registry.trackAgentError(errorMetadata)
+      },
+      {
+        method: 'trackAgentFreeUseExposure',
+        expected: { ...freeUseExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentFreeUseExposure(freeUseExposureMetadata)
+      },
+      {
+        method: 'trackAgentFreeUseNotice',
+        expected: { ...freeUseNoticeMetadata },
+        invoke: (registry) =>
+          registry.trackAgentFreeUseNotice(freeUseNoticeMetadata)
+      },
+      {
+        method: 'trackAgentMessageFeedback',
+        expected: { ...feedbackMetadata },
+        invoke: (registry) =>
+          registry.trackAgentMessageFeedback(feedbackMetadata)
+      },
+      {
+        method: 'trackAgentPanelOpened',
+        expected: { ...panelOpenedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPanelOpened(panelOpenedMetadata)
+      },
+      {
+        method: 'trackAgentPanelClosed',
+        expected: { ...panelClosedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPanelClosed(panelClosedMetadata)
+      },
+      {
+        method: 'trackAgentEntryButtonClicked',
+        expected: { ...entryClickedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentEntryButtonClicked(entryClickedMetadata)
+      },
+      {
+        method: 'trackAgentCloseButtonClicked',
+        expected: undefined,
+        invoke: (registry) => registry.trackAgentCloseButtonClicked()
+      },
+      {
+        method: 'trackAgentMessageSent',
+        expected: { ...messageSentMetadata },
+        invoke: (registry) =>
+          registry.trackAgentMessageSent(messageSentMetadata)
+      },
+      {
+        method: 'trackAgentStarterPromptClicked',
+        expected: { ...starterPromptClickedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
+      },
+      {
+        method: 'trackAgentConsentShown',
+        expected: { ...consentShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentShown(consentShownMetadata)
+      },
+      {
+        method: 'trackAgentConsentResolved',
+        expected: { ...consentResolvedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentResolved(consentResolvedMetadata)
+      },
+      {
+        method: 'trackAgentOnboardingShown',
+        expected: undefined,
+        invoke: (registry) => registry.trackAgentOnboardingShown()
+      },
+      {
+        method: 'trackAgentOnboardingStep',
+        expected: { ...onboardingStepMetadata },
+        invoke: (registry) =>
+          registry.trackAgentOnboardingStep(onboardingStepMetadata)
+      },
+      {
+        method: 'trackAgentNodeTagged',
+        expected: { ...nodeTaggedMetadata },
+        invoke: (registry) => registry.trackAgentNodeTagged(nodeTaggedMetadata)
+      },
+      {
+        method: 'trackAgentAttachButtonClicked',
+        expected: { method: 'menu' },
+        invoke: (registry) =>
+          registry.trackAgentAttachButtonClicked({ method: 'menu' })
+      },
+      {
+        method: 'trackAgentWorkflowApplied',
+        expected: { ...workflowAppliedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
+      },
+      {
+        method: 'trackAgentStopClicked',
+        expected: { method: 'escape', turn_id: 't1', turn_elapsed_ms: 42 },
+        invoke: (registry) =>
+          registry.trackAgentStopClicked({
+            method: 'escape',
+            turn_id: 't1',
+            turn_elapsed_ms: 42
+          })
+      },
+      {
+        method: 'trackAgentWorkflowBound',
+        expected: {
+          thread_id: 'th1',
+          workflow_id: 'w1',
+          prev_workflow_id: null,
+          bind_source: 'minted'
+        },
+        invoke: (registry) =>
+          registry.trackAgentWorkflowBound({
+            thread_id: 'th1',
+            workflow_id: 'w1',
+            prev_workflow_id: null,
+            bind_source: 'minted'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalShown',
+        expected: { turn_id: 't1', workflow_id: 'w1' },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalShown({
+            turn_id: 't1',
+            workflow_id: 'w1'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalResolved',
+        expected: { decision: 'run', time_to_decide_ms: 120 },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalResolved({
+            decision: 'run',
+            time_to_decide_ms: 120
+          })
+      },
+      {
+        method: 'trackAgentRunModeChanged',
+        expected: { from: 'ask_approval', to: 'auto' },
+        invoke: (registry) =>
+          registry.trackAgentRunModeChanged({
+            from: 'ask_approval',
+            to: 'auto'
+          })
+      },
+      {
+        method: 'trackAgentThreadStarted',
+        expected: { source: 'history_select' },
+        invoke: (registry) =>
+          registry.trackAgentThreadStarted({ source: 'history_select' })
+      },
+      {
+        method: 'trackAgentConsentNotOffered',
+        expected: { reason: 'first_run_screen' },
+        invoke: (registry) =>
+          registry.trackAgentConsentNotOffered({ reason: 'first_run_screen' })
+      },
+      {
+        method: 'trackAgentConsentOfferExited',
+        expected: {
+          exit: 'already_offered',
+          stage: 'offer',
+          retry_armed: false
+        },
+        invoke: (registry) =>
+          registry.trackAgentConsentOfferExited({
+            exit: 'already_offered',
+            stage: 'offer',
+            retry_armed: false
+          })
+      },
+      {
+        method: 'trackAgentConsentOfferExited',
+        expected: {
+          exit: 'scope_changed_after_read',
+          stage: 'request',
+          retry_armed: false,
+          trigger: 'button_click'
+        },
+        invoke: (registry) =>
+          registry.trackAgentConsentOfferExited({
+            exit: 'scope_changed_after_read',
+            stage: 'request',
+            retry_armed: false,
+            trigger: 'button_click'
+          })
+      },
+      {
+        method: 'trackAgentOnboardingNotShown',
+        expected: { reason: 'app_mode' },
+        invoke: (registry) =>
+          registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
+      },
+      {
+        method: 'trackAgentPaywallShown',
+        expected: { ...paywallShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallShown(paywallShownMetadata)
+      },
+      {
+        method: 'trackAgentPaywallCtaClicked',
+        expected: { ...paywallCtaMetadata },
+        invoke: (registry) =>
+          registry.trackAgentPaywallCtaClicked(paywallCtaMetadata)
+      }
+    ] satisfies ReadonlyArray<{
+      method: AgentDispatchMethod
+      expected: unknown
+      invoke: (registry: TelemetryRegistry) => void
+    }>
+
+    type CoveredDispatchMethod = (typeof cases)[number]['method']
+
+    it('covers every agent dispatch method with a case', () => {
+      expectTypeOf<
+        Exclude<AgentDispatchMethod, CoveredDispatchMethod>
+      >().toBeNever()
+
+      const dispatched = Object.getOwnPropertyNames(TelemetryRegistry.prototype)
+        .filter((name) => name.startsWith('trackAgent'))
+        .sort()
+      const covered = new Set(cases.map((testCase) => testCase.method))
+
+      expect([...covered].sort()).toEqual(dispatched)
+    })
+
+    it.for(cases)(
+      'dispatches $method to every registered provider',
+      ({ method, expected, invoke }) => {
+        const a: TelemetryProvider = { [method]: vi.fn() }
+        const b: TelemetryProvider = { [method]: vi.fn() }
+        const registry = new TelemetryRegistry()
+        registry.registerProvider(a)
+        registry.registerProvider(b)
+
+        invoke(registry)
+
+        for (const provider of [a, b]) {
+          const spy = provider[method]
+          if (expected === undefined) {
+            expect(spy).toHaveBeenCalledExactlyOnceWith()
+          } else {
+            expect(spy).toHaveBeenCalledExactlyOnceWith(expected)
+          }
+        }
+      }
+    )
   })
 })

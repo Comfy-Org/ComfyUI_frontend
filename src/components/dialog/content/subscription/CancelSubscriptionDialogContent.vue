@@ -10,7 +10,7 @@
         {{ $t('subscription.cancelDialog.title') }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         :disabled="isLoading"
         @click="onClose"
@@ -45,27 +45,69 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 
-const props = defineProps<{
+const {
+  cancelAt,
+  flowAlreadyOpened = false,
+  isScopeCurrent = () => true
+} = defineProps<{
   cancelAt?: string
+  flowAlreadyOpened?: boolean
+  isScopeCurrent?: () => boolean
 }>()
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
-const { cancelSubscription, fetchStatus, subscription } = useBillingContext()
+const { cancelSubscription, fetchStatus, subscription, tier } =
+  useBillingContext()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
+const { canCancel } = useBillingCapabilities()
+const { permissions } = useWorkspaceUI()
+const telemetry = useTelemetry()
 
 const isLoading = ref(false)
+const didCancelSucceed = ref(false)
+const didScopeAbort = ref(false)
+
+function cancellationMetadata() {
+  return getSubscriptionCancellationMetadata({
+    cancelAt,
+    duration: subscription.value?.duration,
+    endDate: subscription.value?.endDate,
+    tier: tier.value
+  })
+}
+
+onMounted(() => {
+  if (flowAlreadyOpened) return
+  telemetry?.trackSubscriptionCancellation(
+    'flow_opened',
+    cancellationMetadata()
+  )
+})
+
+onUnmounted(() => {
+  if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
+  telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
+})
 
 const formattedEndDate = computed(() => {
-  const date = parseIsoDateSafe(props.cancelAt ?? subscription.value?.endDate)
+  const date = parseIsoDateSafe(cancelAt ?? subscription.value?.endDate)
   if (!date) return t('subscription.cancelDialog.endOfBillingPeriod')
   return date.toLocaleDateString('en-US', {
     month: 'long',
@@ -84,24 +126,54 @@ function onClose() {
 }
 
 async function onConfirmCancel() {
+  if (!isScopeCurrent()) {
+    didScopeAbort.value = true
+    toast.add({
+      severity: 'warn',
+      summary: t('subscription.cancelDialog.workspaceChanged')
+    })
+    dialogStore.closeDialog({ key: 'cancel-subscription' })
+    return
+  }
+  if (
+    shouldUseWorkspaceBilling.value &&
+    !(isCloud
+      ? canCancel.value
+      : permissions.value.canManageSubscriptionLifecycle)
+  ) {
+    return
+  }
+
+  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   isLoading.value = true
   try {
-    await cancelSubscription()
-    await fetchStatus()
-    dialogStore.closeDialog({ key: 'cancel-subscription' })
-    toast.add({
-      severity: 'success',
-      summary: t('subscription.cancelSuccess'),
-      life: 5000
-    })
+    await cancelSubscription(isScopeCurrent)
   } catch (error) {
+    const errorMessage = getErrorMessage(error)
+    if (!shouldUseWorkspaceBilling.value) {
+      telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
+    }
     toast.add({
       severity: 'error',
       summary: t('subscription.cancelDialog.failed'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+      detail: errorMessage ?? t('g.unknownError')
     })
-  } finally {
     isLoading.value = false
+    return
   }
+
+  didCancelSucceed.value = true
+  try {
+    await fetchStatus()
+  } catch {
+    // Cancellation already succeeded; stale local subscription status should not report failure.
+  }
+  dialogStore.closeDialog({ key: 'cancel-subscription' })
+  toast.add({
+    severity: 'success',
+    summary: t('subscription.cancelSuccess'),
+    life: 5000
+  })
+  isLoading.value = false
 }
 </script>

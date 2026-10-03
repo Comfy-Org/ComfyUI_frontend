@@ -31,11 +31,8 @@
       </nav>
 
       <div class="flex flex-col overflow-hidden bg-base-background">
-        <header
-          v-if="$slots.header"
-          class="flex h-18 w-full items-center justify-between gap-2 px-6"
-        >
-          <div class="flex min-w-0 flex-1 gap-2">
+        <header v-if="$slots.header" :class="headerClass">
+          <div :class="headerContentClass">
             <Button
               v-if="!notMobile && !showLeftPanel"
               size="lg"
@@ -61,6 +58,7 @@
             <Button
               size="lg"
               class="w-10"
+              :variant="closeButtonVariant"
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
@@ -73,7 +71,7 @@
           <slot name="contentFilter" />
           <h2
             v-if="!hasLeftPanel"
-            class="text-xxl m-0 px-6 pt-2 pb-6 capitalize select-none"
+            class="m-0 px-6 pt-2 pb-6 text-2xl capitalize select-none"
           >
             {{ contentTitle }}
           </h2>
@@ -117,6 +115,7 @@
             <Button
               size="lg"
               class="w-10 p-0"
+              :variant="closeButtonVariant"
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
@@ -138,6 +137,7 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -152,19 +152,24 @@ const SIZE_CLASSES = {
 
 type ModalSize = keyof typeof SIZE_CLASSES
 type ContentPadding = 'default' | 'compact' | 'none'
+type HeaderPadding = 'default' | 'symmetric'
 
 const {
   contentTitle,
   rightPanelTitle,
   size = 'lg',
   leftPanelWidth = '14rem',
-  contentPadding = 'default'
+  contentPadding = 'default',
+  headerPadding = 'default',
+  closeButtonVariant
 } = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
   size?: ModalSize
   leftPanelWidth?: string
   contentPadding?: ContentPadding
+  headerPadding?: HeaderPadding
+  closeButtonVariant?: ButtonVariants['variant']
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])
@@ -199,6 +204,20 @@ const showLeftPanel = computed(() => {
     : mobileMenuOpen.value
   return shouldShow
 })
+
+const headerClass = computed(() =>
+  cn(
+    'flex w-full items-center justify-between gap-2',
+    headerPadding === 'symmetric' ? 'px-6 py-5' : 'h-18 px-6'
+  )
+)
+
+const headerContentClass = computed(() =>
+  cn(
+    'flex min-w-0 flex-1 gap-2',
+    headerPadding === 'symmetric' && 'min-h-10 items-center'
+  )
+)
 
 const contentContainerClass = computed(() =>
   cn(

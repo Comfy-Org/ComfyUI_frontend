@@ -20,7 +20,7 @@
       @dragend="handleDragEnd"
     >
       <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
-      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
+      <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
         <slot name="node" :node="item.value">
           {{ item.value.label }}
         </slot>
@@ -79,7 +79,7 @@
       <i
         :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
       />
-      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
+      <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}
         </slot>
@@ -91,10 +91,7 @@
     v-if="showPreview && item.value.type === 'node' && item.value.data"
     to="body"
   >
-    <div
-      :ref="(el) => (previewRef = el as HTMLElement)"
-      :style="nodePreviewStyle"
-    >
+    <div ref="previewRef" :style="nodePreviewStyle">
       <NodePreviewCard :node-def="item.value.data as ComfyNodeDefImpl" />
     </div>
   </Teleport>
@@ -103,7 +100,7 @@
 <script setup lang="ts">
 import type { FlattenedItem } from 'reka-ui'
 import { TreeItem } from 'reka-ui'
-import { computed, inject } from 'vue'
+import { computed, inject, useTemplateRef } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
@@ -136,6 +133,7 @@ const emit = defineEmits<{
 const contextMenuNode = inject(InjectKeyContextMenuNode)
 const nodeBookmarkStore = useNodeBookmarkStore()
 const subgraphStore = useSubgraphStore()
+const previewRef = useTemplateRef('previewRef')
 
 const nodeDef = computed(() => item.value.data)
 
@@ -160,22 +158,21 @@ function deleteBlueprint() {
   }
 }
 const editBlueprint = async () => {
-  if (!nodeDef.value)
-    throw new Error(
-      'Failed to edit subgraph blueprint lacking backing node data'
-    )
+  if (!nodeDef.value) {
+    console.error('Failed to edit subgraph blueprint lacking backing node data')
+    return
+  }
   await useSubgraphStore().editBlueprint(nodeDef.value.name)
 }
 
 const {
-  previewRef,
   showPreview,
   nodePreviewStyle,
   handleMouseEnter: baseHandleMouseEnter,
   handleMouseLeave,
   handleDragStart: baseHandleDragStart,
   handleDragEnd
-} = useNodePreviewAndDrag(nodeDef)
+} = useNodePreviewAndDrag(nodeDef, previewRef)
 
 const rowStyle = computed(() => ({
   paddingLeft: `${8 + (item.level - 1) * 24}px`
