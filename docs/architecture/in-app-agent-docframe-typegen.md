@@ -1,8 +1,9 @@
 # In-App Agent doc-frame type-generation contract
 
-The CRDT doc-frame wire contract is owned by Comfy Cloud's ingest service. The frontend consumes its
-generated types and schemas, then applies stricter runtime validation in a handwritten adapter before
-exposing frontend domain objects.
+The CRDT doc-frame wire contract is owned by Comfy Cloud's ingest service. The frontend imports its
+generated types and schemas. Its production WebSocket boundary remains a handwritten adapter that
+independently validates raw JSON before exposing frontend domain objects; a compatibility test feeds
+generated schema output through that adapter to detect disagreement between the two representations.
 
 ## Contract
 
@@ -23,18 +24,22 @@ cloud services/ingest/openapi.yaml          (authority)
   that mapping must remain at the adapter boundary.
 - Generated types describe the `{type,data}` bytes; they do not implement CRDT application,
   authority, or mutation semantics.
-- `parseServerDocFrame` deliberately validates constraints that generated Zod cannot express and
-  maps snake-case wire fields to frontend domain names. Its compatibility tests bind representative
-  generated frames to that adapter; they do not claim that the handwritten parser accepts every
-  value admitted by the generated schema.
+- `parseServerDocFrame` does not invoke Zod in production. It independently validates raw WebSocket
+  values, converts the generated schemas' `bigint` int64 output to safe numeric domain values, and
+  maps snake-case wire fields to frontend names. Its compatibility tests pass representative
+  generated outputs through that adapter and assert their complete mapped payloads; they do not
+  claim that the handwritten parser accepts every value admitted by the generated schema.
 
 ## Validation the generated schema cannot provide
 
 `update_b64` is an unconstrained string in the authoritative OpenAPI contract, so its generated Zod
 schema also accepts malformed payloads. Cloud validates base64 in code (`validateB64` in
-`common/websocket/messages`), and the frontend does the same in `parseServerDocFrame`. Schema
-conformance is therefore necessary but not sufficient, and `docFrameWireContract.test.ts` pins both
-halves.
+`common/websocket/messages`), and the frontend independently validates it in
+`parseServerDocFrame`. The adapter can therefore reject schema-conforming input. Conversely, the
+adapter accepts some raw frames that the generated schema rejects, such as a `doc_update` without
+`lineage_seq`, because the frontend domain object does not use that field. The compatibility test
+pins representative generated outputs plus these intentional boundary differences rather than
+treating schema conformance as a prerequisite for adapter acceptance.
 
 ## References
 
