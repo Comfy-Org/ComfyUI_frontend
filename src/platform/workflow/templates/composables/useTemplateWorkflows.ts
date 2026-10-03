@@ -64,17 +64,6 @@ function updateTemplateEducation(
   }
 }
 
-/**
- * `loadGraphData` tolerates a legacy envelope at runtime: every field the
- * strict schema adds is read through optional chaining, and `LGraph.configure`
- * needs only the `id` and `type` `zLegacyLoadableWorkflow` guarantees.
- */
-function asLoadableGraphData(
-  json: ComfyWorkflowJSON | LegacyLoadableWorkflow
-): ComfyWorkflowJSON {
-  return json as ComfyWorkflowJSON
-}
-
 export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
@@ -303,7 +292,7 @@ export function useTemplateWorkflows() {
   ): Promise<TemplateLoadResult> {
     try {
       const loadedWorkflow = await app.loadGraphData(
-        asLoadableGraphData(json),
+        json as ComfyWorkflowJSON,
         true,
         true,
         workflowName,
