@@ -89,6 +89,8 @@ async function run(options: Options): Promise<number> {
     )
     if (startupResult !== null) return await supervisor.stop(startupResult)
     const frontendUrl = `http://127.0.0.1:${options.frontendPort}`
+    const frontendEnv = { ...process.env }
+    delete frontendEnv.DEV_AGENT_DATA_DIR
     const frontend = spawnGroup(
       'pnpm',
       [
@@ -104,7 +106,7 @@ async function run(options: Options): Promise<number> {
       ],
       PROJECT_ROOT,
       {
-        ...process.env,
+        ...frontendEnv,
         DEV_AGENT_SESSION_TOKEN: token,
         DEV_AGENT_URL: agentUrl,
         DEV_SERVER_COMFYUI_URL: options.comfyUrl,
