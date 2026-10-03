@@ -17,6 +17,7 @@ export class OnboardingCoachmarks {
   /** The current spotlight step card (the dialog carrying a "Step N of M" label). */
   public readonly spotlight: Locator
   public readonly card: Locator
+  public readonly cardSkipButton: Locator
   public readonly cardNextButton: Locator
   public readonly cardDoneButton: Locator
 
@@ -31,8 +32,21 @@ export class OnboardingCoachmarks {
     })
     this.spotlight = page.getByTestId('coach-spotlight')
     this.card = page.getByRole('dialog').filter({ hasText: /Step \d+ of \d+/ })
+    this.cardSkipButton = this.card.getByRole('button', {
+      name: 'Skip',
+      exact: true
+    })
     this.cardNextButton = this.card.getByRole('button', { name: 'Next' })
     this.cardDoneButton = this.card.getByRole('button', { name: 'Done' })
+  }
+
+  async dismissWhenVisible() {
+    await this.page.addLocatorHandler(this.landing, async () => {
+      await this.landingSkipButton.click()
+    })
+    await this.page.addLocatorHandler(this.card, async () => {
+      await this.cardSkipButton.click()
+    })
   }
 
   /** The tour's in-app help button, which replays it past the seen-flag. */
