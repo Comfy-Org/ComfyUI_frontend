@@ -1,12 +1,18 @@
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
 import type { FlattenableWorkflowNode } from './workflowFlattening'
 
 type NodeModelMetadata = {
   type: string
   widgets_values?: readonly unknown[] | Record<string, unknown>
-  properties?: { models?: readonly ModelFile[] }
+  /**
+   * `models` is whatever the workflow carried. The legacy schema passes it
+   * through unparsed, so nothing upstream has checked that it is an array, or
+   * that its entries are model records.
+   */
+  properties?: { models?: unknown }
 }
 
 /**
@@ -19,12 +25,22 @@ type NodeModelMetadata = {
  * both as "nothing"; callers that distinguish "no metadata" from "metadata
  * that matched nothing" have to check for `undefined`.
  */
+/** Keeps the entries that are model records, discarding anything else. */
+function declaredModels(models: unknown): ModelFile[] {
+  if (!Array.isArray(models)) return []
+  const parsed: ModelFile[] = []
+  for (const entry of models) {
+    const model = zModelFile.safeParse(entry)
+    if (model.success) parsed.push(model.data)
+  }
+  return parsed
+}
+
 export function getSelectedModelsMetadata(
   node: NodeModelMetadata
 ): ModelFile[] | undefined {
-  const models = node.properties?.models
-  // Workflow JSON is user supplied, so a truthy length does not imply an array.
-  if (!Array.isArray(models) || !models.length || !node.widgets_values) return
+  const models = declaredModels(node.properties?.models)
+  if (!models.length || !node.widgets_values) return
 
   const widgetValues = Array.isArray(node.widgets_values)
     ? node.widgets_values
