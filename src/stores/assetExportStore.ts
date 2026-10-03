@@ -124,15 +124,6 @@ export const useAssetExportStore = defineStore('assetExport', () => {
   function handleAssetExport(data: AssetExportWsMessage) {
     const existing = exports.value.get(data.task_id)
 
-    if (!wireExportStatuses.has(data.status)) {
-      if (existing) {
-        existing.status = 'failed'
-        existing.error = data.error || `Unknown task status: ${data.status}`
-        existing.lastUpdate = Date.now()
-      }
-      return
-    }
-
     // Completion is authoritative even when fetching the signed URL failed;
     // late progress/cancellation frames must not revive polling or erase the
     // retryable download error.
@@ -142,6 +133,15 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     // A cancelled export is only superseded by an authoritative completion;
     // a stale progress message must not revive it and resume polling.
     if (existing?.status === 'cancelled' && data.status !== 'completed') return
+
+    if (!wireExportStatuses.has(data.status)) {
+      if (existing) {
+        existing.status = 'failed'
+        existing.error = data.error || `Unknown task status: ${data.status}`
+        existing.lastUpdate = Date.now()
+      }
+      return
+    }
 
     const exp: AssetExport = {
       taskId: data.task_id,

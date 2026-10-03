@@ -6,7 +6,7 @@ import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/t
 import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
-type ExportEventHandler = (e: CustomEvent<AssetExportWsMessage>) => void
+type ExportEventHandler = (e: CustomEvent<unknown>) => void
 
 const eventHandler = vi.hoisted(() => {
   const state: { current: ExportEventHandler | null } = { current: null }
@@ -79,6 +79,10 @@ function createExportMessage(
 }
 
 function dispatch(msg: AssetExportWsMessage) {
+  dispatchUnknown(msg)
+}
+
+function dispatchUnknown(msg: unknown) {
   if (!eventHandler.current) {
     throw new Error('Event handler not registered. Call the store factory.')
   }
@@ -152,15 +156,31 @@ describe('useAssetExportStore polling', () => {
     const store = useAssetExportStore()
     dispatch(createExportMessage())
 
-    dispatch(
-      createExportMessage({ status: 'future-status' as TaskResponse['status'] })
-    )
+    dispatchUnknown({ ...createExportMessage(), status: 'future-status' })
 
     expect(store.finishedExports[0]).toMatchObject({
       status: 'failed',
       error: 'Unknown task status: future-status'
     })
   })
+
+  it.for(['completed', 'cancelled'] as const)(
+    'preserves a terminal %s export after an unknown wire status',
+    (status) => {
+      const store = useAssetExportStore()
+      store.trackExport('task-1')
+      const [exportJob] = store.exportList
+      exportJob.status = status
+
+      dispatchUnknown({
+        ...createExportMessage({ task_id: 'task-1' }),
+        status: 'future-status'
+      })
+
+      expect(store.exportList[0].status).toBe(status)
+      expect(store.exportList[0].error).toBeUndefined()
+    }
+  )
 
   it('settles an export when its task row has been purged', async () => {
     const store = useAssetExportStore()
