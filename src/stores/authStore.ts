@@ -799,9 +799,14 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const logout = async (): Promise<void> =>
+  const logout = async (expectedIdentity?: string | null): Promise<void> =>
     executeAuthAction(async () => {
       await useCloudWebSessionStore().signOut()
+      if (
+        expectedIdentity !== undefined &&
+        currentUserIdentity() !== expectedIdentity
+      )
+        return
       if (currentUser.value) await firebaseIdentity.signOut()
     })
 

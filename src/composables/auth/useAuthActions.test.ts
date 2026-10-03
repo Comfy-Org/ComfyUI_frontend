@@ -196,7 +196,7 @@ describe('useAuthActions.logout', () => {
 
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
-    expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
+    expect(mockAuthStore.logout).toHaveBeenCalledExactlyOnceWith(undefined)
     expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
   })
 
@@ -258,10 +258,12 @@ describe('useAuthActions.logout', () => {
       .mockReturnValueOnce('user-a')
       .mockReturnValueOnce('user-b')
     vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
+    const beforeSignOut = vi.fn(async () => true)
     const { logout } = useAuthActions()
 
-    await logout()
+    await logout({ beforeSignOut })
 
+    expect(beforeSignOut).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
     expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
     expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
@@ -413,6 +415,44 @@ describe('useAuthActions.logout', () => {
     expect(beforeSignOut.mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
     )
+  })
+
+  it('abandons logout when identity changes during beforeSignOut', async () => {
+    vi.mocked(mockAuthStore.currentUserIdentity)
+      .mockReturnValueOnce('user-a')
+      .mockReturnValueOnce('user-a')
+      .mockReturnValueOnce('user-b')
+    const beforeSignOut = vi.fn(async () => true)
+    const { logout } = useAuthActions()
+
+    await logout({ beforeSignOut })
+
+    expect(beforeSignOut).toHaveBeenCalledOnce()
+    expect(mockAuthStore.logout).not.toHaveBeenCalled()
+    expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
+  })
+
+  it('starts logout before a queued identity change can cross the final fence', async () => {
+    let currentIdentity = 'user-a'
+    vi.mocked(mockAuthStore.currentUserIdentity)
+      .mockImplementationOnce(() => currentIdentity)
+      .mockImplementationOnce(() => currentIdentity)
+      .mockImplementationOnce(() => {
+        queueMicrotask(() => {
+          currentIdentity = 'user-b'
+        })
+        return currentIdentity
+      })
+      .mockImplementation(() => currentIdentity)
+    const beforeSignOut = vi.fn(async () => true)
+    const { logout } = useAuthActions()
+
+    await logout({ beforeSignOut })
+
+    expect(beforeSignOut).toHaveBeenCalledOnce()
+    expect(mockAuthStore.logout).toHaveBeenCalledOnce()
+    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
+    expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
   })
 
   it('keeps the user signed in when beforeSignOut refuses', async () => {

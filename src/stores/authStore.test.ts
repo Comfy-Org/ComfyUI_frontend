@@ -31,6 +31,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -1186,6 +1187,28 @@ describe('useAuthStore', () => {
       await expect(store.logout()).rejects.toThrow('Network error')
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
+    })
+
+    it('does not sign out a replacement identity after web-session logout', async () => {
+      let releaseWebSessionSignOut!: () => void
+      const webSessionSignOut = new Promise<void>((resolve) => {
+        releaseWebSessionSignOut = resolve
+      })
+      const cloudWebSessionStore = useCloudWebSessionStore()
+      vi.spyOn(cloudWebSessionStore, 'signOut').mockReturnValueOnce(
+        webSessionSignOut
+      )
+      vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+
+      const logout = store.logout('test-user-id')
+      await vi.waitFor(() =>
+        expect(cloudWebSessionStore.signOut).toHaveBeenCalledOnce()
+      )
+      authStateCallback({ ...mockUser, uid: 'replacement-user-id' })
+      releaseWebSessionSignOut()
+      await logout
+
+      expect(firebaseAuth.signOut).not.toHaveBeenCalled()
     })
   })
 
