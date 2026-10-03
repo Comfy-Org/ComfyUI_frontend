@@ -2,11 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import {
-  DOCKED_AGENT_PANEL_WIDTH,
-  dialogViewportGutter,
-  publishWorkspaceInsetRight
-} from '@e2e/fixtures/utils/workspaceInset'
+import { expectDialogHoldsSizeWhenPanelDocks } from '@e2e/fixtures/utils/workspaceInset'
 
 /**
  * A docked Agent panel publishes its width as `--workspace-inset-right`, and
@@ -16,11 +12,18 @@ import {
  */
 const templateViewports = [
   { room: 'too narrow for the dialog beside the panel', width: 1280 },
+  { room: 'the width PM-1865 was reported at', width: 1440 },
   { room: 'wide enough for both', width: 1920 }
 ]
 
+/** `sm:` applies from 640px, which is where the size variants start to bind. */
+const sizeVariantViewports = [
+  { room: 'exactly at the sm breakpoint', width: 640 },
+  { room: 'above the sm breakpoint', width: 800 }
+]
+
 test.describe('Dialog layout against the docked Agent panel', () => {
-  test.describe('the Templates browser', () => {
+  test.describe('the Templates browser, which pins its own max-width', () => {
     for (const { room, width } of templateViewports) {
       test.describe(`on a viewport ${room}`, () => {
         test.use({ viewport: { width, height: 800 } })
@@ -29,29 +32,10 @@ test.describe('Dialog layout against the docked Agent panel', () => {
           await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
           await expect(comfyPage.templates.content).toBeVisible()
 
-          const dialog = comfyPage.templatesDialog.root
-          await expect
-            .poll(() =>
-              dialog.evaluate((element) => element.getAnimations().length)
-            )
-            .toBe(0)
-          const withoutPanel = await dialog.boundingBox()
-          if (!withoutPanel) throw new Error('Templates dialog is not laid out')
-
-          await publishWorkspaceInsetRight(
+          await expectDialogHoldsSizeWhenPanelDocks(
             comfyPage.page,
-            DOCKED_AGENT_PANEL_WIDTH
-          )
-
-          await expect(dialog).toHaveBounds(
-            {
-              ...withoutPanel,
-              x: Math.max(
-                await dialogViewportGutter(comfyPage.page),
-                (width - DOCKED_AGENT_PANEL_WIDTH - withoutPanel.width) / 2
-              )
-            },
-            { numDigits: 1 }
+            comfyPage.templatesDialog.root,
+            width
           )
         })
       })
@@ -59,42 +43,31 @@ test.describe('Dialog layout against the docked Agent panel', () => {
   })
 
   test.describe('a dialog sized by its size variant', () => {
-    const width = 800
-    test.use({ viewport: { width, height: 800 } })
+    for (const { room, width } of sizeVariantViewports) {
+      test.describe(`on a viewport ${room}`, () => {
+        test.use({ viewport: { width, height: 800 } })
 
-    test('keeps the width its variant asks for', async ({ comfyPage }) => {
-      await comfyPage.page.evaluate(() => {
-        window
-          .app!.extensionManager.dialog.confirm({
-            title: 'Confirm',
-            type: 'default',
-            message: 'Does this dialog keep its width?'
+        test('keeps the width its variant asks for', async ({ comfyPage }) => {
+          await comfyPage.page.evaluate(() => {
+            window
+              .app!.extensionManager.dialog.confirm({
+                title: 'Confirm',
+                type: 'default',
+                message: 'Does this dialog keep its width?'
+              })
+              .catch(() => {})
           })
-          .catch(() => {})
-      })
 
-      const dialog = comfyPage.confirmDialog.root
-      await expect(dialog).toBeVisible()
-      await expect
-        .poll(() =>
-          dialog.evaluate((element) => element.getAnimations().length)
-        )
-        .toBe(0)
-      const withoutPanel = await dialog.boundingBox()
-      if (!withoutPanel) throw new Error('Confirm dialog is not laid out')
+          const dialog = comfyPage.confirmDialog.root
+          await expect(dialog).toBeVisible()
 
-      await publishWorkspaceInsetRight(comfyPage.page, DOCKED_AGENT_PANEL_WIDTH)
-
-      await expect(dialog).toHaveBounds(
-        {
-          ...withoutPanel,
-          x: Math.max(
-            await dialogViewportGutter(comfyPage.page),
-            (width - DOCKED_AGENT_PANEL_WIDTH - withoutPanel.width) / 2
+          await expectDialogHoldsSizeWhenPanelDocks(
+            comfyPage.page,
+            dialog,
+            width
           )
-        },
-        { numDigits: 1 }
-      )
-    })
+        })
+      })
+    }
   })
 })

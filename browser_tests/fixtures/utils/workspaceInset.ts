@@ -1,12 +1,13 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
+import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 
 /** `PANEL_MIN_WIDTH` in `agentPanelStore` — the narrowest docked Agent panel. */
-export const DOCKED_AGENT_PANEL_WIDTH = 420
+const DOCKED_AGENT_PANEL_WIDTH = 420
 
 /** Half of the `1rem` gutter `dialogContentVariants` reserves around a dialog. */
-export async function dialogViewportGutter(page: Page): Promise<number> {
+async function dialogViewportGutter(page: Page): Promise<number> {
   return page.evaluate(
     () => parseFloat(getComputedStyle(document.documentElement).fontSize) / 2
   )
@@ -18,7 +19,7 @@ export async function dialogViewportGutter(page: Page): Promise<number> {
  * backend a real panel needs. A real panel owns this property and rewrites it
  * whenever it resizes, so measure before resizing the viewport or opening one.
  */
-export async function publishWorkspaceInsetRight(
+async function publishWorkspaceInsetRight(
   page: Page,
   widthPx: number
 ): Promise<void> {
@@ -27,5 +28,36 @@ export async function publishWorkspaceInsetRight(
       document.documentElement.style.setProperty(property, `${widthPx}px`)
     },
     { property: WORKSPACE_INSET_RIGHT, widthPx }
+  )
+}
+
+/**
+ * Measures an open dialog, docks a panel beside it, and requires the box to
+ * keep every dimension while moving to the one position the layout allows:
+ * centred in what the panel leaves, or the viewport gutter when that is less
+ * than nothing.
+ */
+export async function expectDialogHoldsSizeWhenPanelDocks(
+  page: Page,
+  dialog: Locator,
+  viewportWidth: number
+): Promise<void> {
+  await comfyExpect
+    .poll(() => dialog.evaluate((element) => element.getAnimations().length))
+    .toBe(0)
+  const withoutPanel = await dialog.boundingBox()
+  if (!withoutPanel) throw new Error('Dialog is not laid out')
+
+  await publishWorkspaceInsetRight(page, DOCKED_AGENT_PANEL_WIDTH)
+
+  await comfyExpect(dialog).toHaveBounds(
+    {
+      ...withoutPanel,
+      x: Math.max(
+        await dialogViewportGutter(page),
+        (viewportWidth - DOCKED_AGENT_PANEL_WIDTH - withoutPanel.width) / 2
+      )
+    },
+    { numDigits: 1 }
   )
 }
