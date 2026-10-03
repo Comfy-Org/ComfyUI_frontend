@@ -337,7 +337,6 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
     const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
     const seq = isAbsent(data.seq) ? undefined : parseSequence(data.seq)
-    if (seq === null) return null
     let failed: DocOpFailure | undefined
     if (!isAbsent(data.failed)) {
       const parsedFailure = parseDocOpFailure(data.failed)
@@ -350,7 +349,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         ok: data.ok,
         applied,
         skipped,
-        ...(seq !== undefined && { seq }),
+        ...(seq !== undefined && seq !== null && { seq }),
         ...(code !== undefined && { code }),
         ...(message !== undefined && { message }),
         ...(failed !== undefined && { failed })

@@ -105,4 +105,24 @@ describe('doc frame wire contract', () => {
 
     expect(parseServerDocFrame(generatedFrame)).toBeNull()
   })
+
+  it('accepts a generated int64 sequence at the frontend safe-integer boundary', () => {
+    const wire = docUpdateFrame(encodeBase64(Uint8Array.of(1)))
+    const generatedFrame = zDocUpdateFrame.parse({
+      ...wire,
+      data: {
+        ...wire.data,
+        seq: BigInt(Number.MAX_SAFE_INTEGER)
+      }
+    })
+
+    expect(parseServerDocFrame(generatedFrame)).toEqual({
+      type: 'doc_update',
+      data: {
+        workflowId: 'wf-1',
+        seq: Number.MAX_SAFE_INTEGER,
+        update: Uint8Array.of(1)
+      }
+    })
+  })
 })
