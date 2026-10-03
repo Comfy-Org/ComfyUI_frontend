@@ -32,8 +32,9 @@ async function publishWorkspaceInsetRight(
 /**
  * Measures an open dialog, docks a panel beside it, and requires the box to
  * keep every dimension while moving to the one position the layout allows:
- * centred in what the panel leaves, or the viewport gutter when that is less
- * than nothing.
+ * centred in what the panel leaves, floored at the gutter, and the gutter
+ * itself capped by whatever slack the dialog leaves inside the viewport — a
+ * dialog as wide as the viewport has none to give.
  */
 export async function expectDialogHoldsSizeWhenPanelDocks(
   page: Page,
@@ -48,14 +49,56 @@ export async function expectDialogHoldsSizeWhenPanelDocks(
 
   await publishWorkspaceInsetRight(page, PANEL_MIN_WIDTH)
 
+  const gutter = await dialogViewportGutter(page)
   await comfyExpect(dialog).toHaveBounds(
     {
       ...withoutPanel,
       x: Math.max(
-        await dialogViewportGutter(page),
+        Math.min(gutter, viewportWidth - withoutPanel.width),
         (viewportWidth - PANEL_MIN_WIDTH - withoutPanel.width) / 2
       )
     },
     { numDigits: 1 }
   )
+}
+
+/**
+ * Opens a dialog and watches every frame of its entrance. Settled geometry
+ * cannot see this: the zoom keyframes write `transform` wholesale, so a
+ * horizontal offset parked on that property is animated up from zero and the
+ * dialog flies in from off-screen before landing in the right place.
+ */
+export async function expectDialogEntersOnScreen(
+  page: Page,
+  contentClass: string
+): Promise<void> {
+  const excursionPx = await page.evaluate(async (cls) => {
+    const key = 'enter-animation-probe'
+    window.app!.extensionManager.dialog.showLayoutDialog({
+      key,
+      component: { setup: () => () => null },
+      props: {},
+      dialogComponentProps: { contentClass: cls }
+    })
+    const startedAt = performance.now()
+    let worst = 0
+    await new Promise<void>((resolve) => {
+      const sample = () => {
+        const element = document.querySelector(`[data-dialog-key="${key}"]`)
+        if (element) {
+          const { left, right } = element.getBoundingClientRect()
+          worst = Math.max(worst, -left, right - window.innerWidth)
+        }
+        if (performance.now() - startedAt < 300) requestAnimationFrame(sample)
+        else resolve()
+      }
+      requestAnimationFrame(sample)
+    })
+    return worst
+  }, contentClass)
+
+  comfyExpect(
+    excursionPx,
+    'pixels the dialog left the viewport while opening'
+  ).toBeLessThanOrEqual(1)
 }

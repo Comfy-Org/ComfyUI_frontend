@@ -14,7 +14,7 @@ export const dialogContentVariants = cva({
     maximized: {
       true: 'inset-2 top-2 left-2 size-auto max-h-none max-w-none sm:max-w-none',
       false:
-        'top-1/2 left-1/2 max-h-[85vh] w-[calc(100vw-1rem)] -translate-y-1/2 transform-[translateX(max(calc(0.5rem-50%),calc(-50%-var(--workspace-inset-right,0px)/2)))]'
+        'top-1/2 left-1/2 max-h-[85vh] w-[calc(100vw-1rem)] translate-x-[max(calc(min(0.5rem,100vw-100%)-50vw),calc(-50%-var(--workspace-inset-right,0px)/2))] -translate-y-1/2'
     }
   },
   defaultVariants: {

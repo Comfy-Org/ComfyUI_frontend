@@ -2,7 +2,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { expectDialogHoldsSizeWhenPanelDocks } from '@e2e/fixtures/utils/workspaceInset'
+import {
+  expectDialogEntersOnScreen,
+  expectDialogHoldsSizeWhenPanelDocks
+} from '@e2e/fixtures/utils/workspaceInset'
 
 /**
  * A docked Agent panel publishes its width as `--workspace-inset-right`, and
@@ -69,5 +72,48 @@ test.describe('Dialog layout against the docked Agent panel', () => {
         })
       })
     }
+  })
+
+  /**
+   * `useManagerSurveyDialog` ships `w-full` with no unprefixed `max-w-*`, so
+   * below `sm` it is exactly as wide as the viewport and has no slack to spend
+   * on the gutter the clamp would otherwise hold back.
+   */
+  test.describe('a dialog as wide as the viewport', () => {
+    const width = 600
+    test.use({ viewport: { width, height: 800 } })
+
+    test('sits flush rather than hanging off the edge', async ({
+      comfyPage
+    }) => {
+      await comfyPage.page.evaluate(() => {
+        window.app!.extensionManager.dialog.showLayoutDialog({
+          key: 'viewport-wide-dialog',
+          component: { setup: () => () => null },
+          props: {},
+          dialogComponentProps: {
+            contentClass: 'w-full sm:max-w-lg rounded-2xl overflow-hidden'
+          }
+        })
+      })
+
+      const dialog = comfyPage.page.locator(
+        '[data-dialog-key="viewport-wide-dialog"]'
+      )
+      await expect(dialog).toBeVisible()
+
+      await expectDialogHoldsSizeWhenPanelDocks(comfyPage.page, dialog, width)
+    })
+  })
+
+  test.describe('every dialog, while it opens', () => {
+    test.use({ viewport: { width: 1440, height: 900 } })
+
+    test('never leaves the viewport mid-animation', async ({ comfyPage }) => {
+      await expectDialogEntersOnScreen(
+        comfyPage.page,
+        'w-[90vw] max-w-[1400px] sm:max-w-[1400px] h-[80vh]'
+      )
+    })
   })
 })
