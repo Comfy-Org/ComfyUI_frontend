@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
 import { DEFAULT_CAMERA } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { translationsFor } from '../../../../i18n/translations'
 import ReshootAimRig from './ReshootAimRig.vue'
+
+const { t: rc } = translationsFor('en')
 
 describe('ReshootAimRig', () => {
   it.for(['reshoot.distanceHelp', 'reshoot.keepAimHelp'] as const)(

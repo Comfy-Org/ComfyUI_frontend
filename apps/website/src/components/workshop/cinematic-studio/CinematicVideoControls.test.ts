@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { h, ref } from 'vue'
 
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../i18n/translations'
 import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
 import CinematicVideoControls from './CinematicVideoControls.vue'
+
+const { t: tc } = translationsFor('en')
 
 const video: CinematicVideoCapabilities = {
   durations: [5, 10],

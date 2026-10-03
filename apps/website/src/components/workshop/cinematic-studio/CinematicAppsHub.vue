@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -7,13 +8,13 @@ import { workshopApps } from '../../../lib/workshop/apps'
 import type { AppWorkshopModel } from '../../../config/models-catalogue'
 import type { Locale } from '../../../i18n/translations'
 import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicAppCard from './CinematicAppCard.vue'
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly AppWorkshopModel[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const HUB_PROTOTYPE = 'https://comfy-website-preview-pr-17804.vercel.app/hub/'
 
@@ -42,20 +43,20 @@ const markerOffset = computed(
       <p
         class="text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
       >
-        {{ tc('cinematic.hub.eyebrow', locale) }}
+        {{ t('cinematic.hub.eyebrow') }}
       </p>
       <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
-        {{ tc('cinematic.hub.heading', locale) }}
+        {{ t('cinematic.hub.heading') }}
       </h1>
       <p class="max-w-2xl text-base text-content-secondary">
-        {{ tc('cinematic.hub.subtitle', locale) }}
+        {{ t('cinematic.hub.subtitle') }}
       </p>
     </header>
 
     <div
       class="relative mb-8 grid w-fit grid-cols-3 rounded-2xl bg-transparency-white-t8 p-1"
       role="group"
-      :aria-label="tc('cinematic.hub.tabs', locale)"
+      :aria-label="t('cinematic.hub.tabs')"
     >
       <div class="pointer-events-none absolute inset-1 grid grid-cols-3">
         <div
@@ -78,22 +79,22 @@ const markerOffset = computed(
         "
         @click="tab = option"
       >
-        {{ tc(TAB_LABEL[option], locale) }}
+        {{ t(TAB_LABEL[option]) }}
       </button>
     </div>
 
     <template v-if="tab === 'apps'">
       <p class="mb-6 text-sm text-content-secondary">
-        {{ tc('cinematic.hub.appsIntro', locale) }}
+        {{ t('cinematic.hub.appsIntro') }}
       </p>
       <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CinematicAppCard
           v-for="app in apps"
           :key="app.key"
-          :name="tc(app.name, locale)"
-          :summary="tc(app.summary, locale)"
-          :badge="tc(app.badge, locale)"
-          :meta="app.meta && tc(app.meta, locale)"
+          :name="t(app.name)"
+          :summary="t(app.summary)"
+          :badge="t(app.badge)"
+          :meta="app.meta && t(app.meta)"
           :image="app.image"
           :href="app.href"
         />
@@ -104,7 +105,7 @@ const markerOffset = computed(
       class="flex flex-col items-start gap-3 rounded-3xl bg-hub-surface p-8"
     >
       <p class="text-base text-content-bright">
-        {{ tc('cinematic.hub.elsewhere', locale) }}
+        {{ t('cinematic.hub.elsewhere') }}
       </p>
       <a
         :href="HUB_PROTOTYPE"
@@ -112,7 +113,7 @@ const markerOffset = computed(
         rel="noopener noreferrer"
         class="text-sm text-primary-comfy-yellow underline underline-offset-4"
       >
-        {{ tc('cinematic.hub.openHub', locale) }}
+        {{ t('cinematic.hub.openHub') }}
       </a>
     </div>
   </section>

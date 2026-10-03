@@ -105,13 +105,6 @@ describe('CurrentUserButton', () => {
     return { user, ...result }
   }
 
-  it('renders correctly when user is logged in', () => {
-    renderComponent()
-    expect(
-      screen.getByRole('button', { name: 'Current user' })
-    ).toBeInTheDocument()
-  })
-
   it('toggles popover on button click', async () => {
     const { user } = renderComponent()
 

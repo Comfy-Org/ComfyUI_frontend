@@ -12,6 +12,7 @@
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
     "downloadAudio": "Download audio",
+    "downloadImages": "Download images",
     "editOrMaskImage": "Edit or mask image",
     "editImage": "Edit image",
     "openLayerEditor": "Open layer editor",
@@ -691,6 +692,7 @@
     "Copy Image": "Copy Image",
     "Paste Image": "Paste Image",
     "Save Image": "Save Image",
+    "Download Images": "Download Images",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
     "FavoriteWidget": "Favorite Widget",
@@ -2650,6 +2652,7 @@
       "cloudNewUser": "New to Comfy?",
       "cloudSignUp": "Sign up here",
       "freeRunsSuffix": "to get {count} free run. | to get {count} free runs.",
+      "freeRunsSuffixGoogle": "with Google to get {count} free run. | with Google to get {count} free runs.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -2725,6 +2728,12 @@
       "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?",
       "signOutAnyway": "Sign out anyway",
       "saveFailed": "Sign-out cancelled because saving \"{workflow}\" failed."
+    },
+    "signOutEverywhere": {
+      "action": "Sign out of all devices",
+      "success": "Signed out of all devices",
+      "successDetail": "Every device signed in to your account has been signed out.",
+      "failed": "Couldn't sign out of all devices"
     },
     "accountChanged": {
       "title": "Account changed",
@@ -4094,6 +4103,11 @@
       "failed": "Download failed",
       "inProgress": "Downloading {assetName}..."
     }
+  },
+  "nodeOutputsExport": {
+    "title": "Download Assets",
+    "downloadAll": "Download all",
+    "download": "Download ({count})"
   },
   "mediaAsset": {
     "assetDelete": {

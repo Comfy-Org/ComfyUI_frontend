@@ -11,7 +11,7 @@ import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
 import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
+import { translationsFor } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import type { WorkshopBuyCreditsTrigger } from '../../../config/workshop-buy-credits.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
@@ -40,6 +40,7 @@ const {
   githubStars?: string
   workshopInBuild?: boolean
 }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 const workshopAuthEnabled = useWorkshopAuthFlag()
 const workshopEnabled = useWorkshopEnabled()
@@ -177,16 +178,16 @@ watch(
 
 const ctaButtons = [
   {
-    full: t('nav.downloadLocal', locale),
-    short: t('nav.ctaDesktopCore', locale),
-    ariaLabel: t('nav.downloadLocal', locale),
+    full: t('nav.downloadLocal'),
+    short: t('nav.ctaDesktopCore'),
+    ariaLabel: t('nav.downloadLocal'),
     href: routes.download,
     primary: false
   },
   {
-    full: t('nav.launchCloud', locale),
-    short: t('nav.ctaCloudCore', locale),
-    ariaLabel: t('nav.launchCloud', locale),
+    full: t('nav.launchCloud'),
+    short: t('nav.ctaCloudCore'),
+    ariaLabel: t('nav.launchCloud'),
     href: externalLinks.cloudCta('nav_try_cloud'),
     primary: true
   }
