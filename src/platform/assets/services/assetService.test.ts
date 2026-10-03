@@ -86,13 +86,11 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 beforeEach(() => {
   const registeredNodeTypes: Record<string, string> = {
     CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name',
-    LoadChatGLM3: 'chatglm3_checkpoint'
+    LoraLoader: 'lora_name'
   }
   const nodeTypeCategories: Record<string, string> = {
     CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras',
-    LoadChatGLM3: 'LLM/checkpoints'
+    LoraLoader: 'loras'
   }
   vi.mocked(useModelToNodeStore().getRegisteredNodeTypes).mockImplementation(
     () => registeredNodeTypes
