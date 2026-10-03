@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import {
   AGENT_WS_EVENT_TYPES,
@@ -97,6 +97,39 @@ describe('agentApiSchema contract subtleties', () => {
     type: 'agent_message_done',
     data: { message_id: 'm1', thread_id: 't1' }
   }
+
+  it('accepts a null skill on a tool-call frame', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'success',
+        skill: null,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    expect(parsed).toMatchObject({ data: { skill: null } })
+  })
+
+  it('clamps an over-long skill without splitting a Unicode code point', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'running',
+        skill: `${'a'.repeat(255)}😀tail`,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data.skill).toBe(`${'a'.repeat(255)}😀`)
+  })
 
   it('accepts agent_message_done with usage null (cancelled turn)', () => {
     expect(

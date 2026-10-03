@@ -505,6 +505,38 @@ describe('agentEventTransport text and tool parts', () => {
       ok: true
     })
   })
+
+  it.for([
+    ['null', null],
+    ['empty', '']
+  ] as const)(
+    'preserves a running skill through a %s completion value',
+    ([, skill]) => {
+      const frame = (status: 'running' | 'success', value: string | null) =>
+        zAgentWsEvent.parse({
+          type: 'agent_tool_call',
+          data: {
+            tool_call_id: 'call-1',
+            tool_name: 'load_skill',
+            status,
+            skill: value,
+            message_id: 'm',
+            thread_id: 't'
+          }
+        })
+
+      const message = drive([
+        frame('running', 'comfy-director'),
+        frame('success', skill)
+      ])
+
+      expect(toolParts(message)[0]).toMatchObject({
+        skill: 'comfy-director',
+        state: 'done',
+        ok: true
+      })
+    }
+  )
 })
 
 describe('agentEventTransport run approval', () => {
