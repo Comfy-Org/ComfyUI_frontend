@@ -1,15 +1,27 @@
 import type { MissingModelGroup } from '@/platform/missingModel/types'
-import { isModelDownloadable } from '@/platform/missingModel/missingModelDownload'
+import {
+  getModelSources,
+  isModelDownloadable
+} from '@/platform/missingModel/missingModelDownload'
 import type { ModelWithUrl } from '@/platform/missingModel/missingModelDownload'
 
 export function toDownloadableModel(
   model: MissingModelGroup['models'][number]
 ): ModelWithUrl | null {
-  const { name, url, directory } = model.representative
+  const { name, url, directory, sources } = model.representative
   if (!url || !directory) return null
 
-  const downloadableModel = { name, url, directory }
-  return isModelDownloadable(downloadableModel) ? downloadableModel : null
+  const source = getModelSources({ url, sources }).find((candidate) =>
+    isModelDownloadable({ name, url: candidate.url, directory })
+  )
+  if (!source) return null
+
+  return {
+    name,
+    url: source.url,
+    directory,
+    ...(sources ? { sources } : {})
+  }
 }
 
 export function getDownloadableModels(

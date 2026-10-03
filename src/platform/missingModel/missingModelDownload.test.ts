@@ -6,6 +6,8 @@ import {
   clearMetadataCache,
   downloadModel,
   fetchModelMetadata,
+  getModelSourceLabel,
+  getModelSources,
   isModelDownloadable,
   isTrustedHuggingFaceUrl,
   openGatedRepoPage,
@@ -33,16 +35,13 @@ vi.mock(
 
 beforeEach(() => {
   mockIsDesktop.value = false
+  vi.spyOn(useElectronDownloadStore(), 'start').mockImplementation(
+    mockStartDownload
+  )
   vi.stubGlobal('fetch', fetchMock)
   clearMetadataCache()
   delete window.__comfyDesktop2Remote
   delete window.__comfyDesktop2
-})
-
-beforeEach(() => {
-  vi.mocked(useElectronDownloadStore().start).mockImplementation(
-    mockStartDownload
-  )
 })
 
 describe('fetchModelMetadata', () => {
@@ -469,6 +468,63 @@ describe('isModelDownloadable', () => {
         directory: 'checkpoints'
       })
     ).toBe(true)
+  })
+
+  it('allows ModelScope model URLs', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://modelscope.cn/models/Comfy-Org/MiniMax-Music-3/resolve/master/vae/model.safetensors',
+        directory: 'vae'
+      })
+    ).toBe(true)
+  })
+
+  it('rejects lookalike ModelScope hosts', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://modelscope.cn.evil.example/model.safetensors',
+        directory: 'vae'
+      })
+    ).toBe(false)
+  })
+})
+
+describe('model sources', () => {
+  it('keeps the primary URL first and removes duplicate alternatives', () => {
+    const primary =
+      'https://huggingface.co/org/model/resolve/main/model.safetensors'
+    const modelscope =
+      'https://modelscope.cn/models/org/model/resolve/master/model.safetensors'
+
+    expect(
+      getModelSources({
+        url: primary,
+        sources: [
+          { provider: 'modelscope', url: modelscope },
+          { provider: 'huggingface', url: primary }
+        ]
+      })
+    ).toEqual([
+      { provider: 'huggingface', url: primary },
+      { provider: 'modelscope', url: modelscope }
+    ])
+  })
+
+  it('uses provider labels for known sources and preserves custom labels', () => {
+    expect(
+      getModelSourceLabel({
+        provider: 'modelscope',
+        url: 'https://modelscope.cn'
+      })
+    ).toBe('ModelScope')
+    expect(
+      getModelSourceLabel({
+        provider: 'regional-mirror',
+        url: 'https://mirror.example'
+      })
+    ).toBe('regional-mirror')
   })
 })
 

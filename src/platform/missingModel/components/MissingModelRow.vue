@@ -126,6 +126,27 @@
       </template>
 
       <template v-else>
+        <select
+          v-if="sourceOptions.length > 1 && showDownloadAction"
+          v-model="selectedSourceUrl"
+          data-testid="missing-model-source-select"
+          class="h-8 max-w-32 min-w-0 shrink-0 rounded-md border border-secondary-background bg-base-background px-1.5 text-2xs text-base-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary-background"
+          :aria-label="
+            t(
+              'rightSidePanel.missingModels.selectSource',
+              { model: model.name },
+              { escapeParameter: false }
+            )
+          "
+        >
+          <option
+            v-for="source in sourceOptions"
+            :key="source.url"
+            :value="source.url"
+          >
+            {{ getModelSourceLabel(source) }}
+          </option>
+        </select>
         <AccessibleTooltip
           v-if="showGatedRepoAction"
           :label="t('rightSidePanel.missingModels.gatedModelTooltip')"
@@ -245,6 +266,7 @@ import {
   computed,
   nextTick,
   onMounted,
+  ref,
   useId,
   useTemplateRef,
   watch
@@ -271,6 +293,8 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import {
+  getModelSourceLabel,
+  getModelSources,
   isModelDownloadable,
   isTrustedHuggingFaceUrl,
   toBrowsableUrl
@@ -341,6 +365,38 @@ const {
   openModelAccessPage
 } = useMissingModelDownload()
 
+const sourceOptions = computed(() => {
+  const rep = model.representative
+  const directory = rep.directory
+  if (!rep.url || !directory) return []
+
+  return getModelSources({ url: rep.url, sources: rep.sources }).filter(
+    (source) =>
+      isModelDownloadable({
+        name: rep.name,
+        url: source.url,
+        directory
+      })
+  )
+})
+const selectedSourceUrl = ref('')
+const selectedSource = computed(
+  () =>
+    sourceOptions.value.find(
+      (source) => source.url === selectedSourceUrl.value
+    ) ?? sourceOptions.value[0]
+)
+
+watch(
+  sourceOptions,
+  (sources) => {
+    if (!sources.some((source) => source.url === selectedSourceUrl.value)) {
+      selectedSourceUrl.value = sources[0]?.url ?? ''
+    }
+  },
+  { immediate: true }
+)
+
 const expanded = computed(
   () =>
     store.modelExpandState[modelKey.value] ??
@@ -363,21 +419,12 @@ const displayModelName = computed(() => {
 })
 
 const downloadable = computed(() => {
-  const rep = model.representative
-  return !!(
-    rep.url &&
-    rep.directory &&
-    isModelDownloadable({
-      name: rep.name,
-      url: rep.url,
-      directory: rep.directory
-    })
-  )
+  return !!selectedSource.value
 })
 
 const showDownloadAction = computed(() => !isCloud && downloadable.value)
 const gatedRepoUrl = computed(() => {
-  const url = model.representative.url
+  const url = selectedSource.value?.url
   const repoUrl = url ? gatedRepoUrlFor(url) : undefined
   return repoUrl && isTrustedHuggingFaceUrl(repoUrl) ? repoUrl : undefined
 })
@@ -390,7 +437,7 @@ const gatedDownloadDescriptionId = useId()
 const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
 
-  const url = model.representative.url
+  const url = selectedSource.value?.url
   const size = url ? fileSizeFor(url) : undefined
   return size ? formatSize(size) : undefined
 })
@@ -432,19 +479,27 @@ const { showUploadDialog } = useModelUpload(
 onMounted(() => {
   if (isCloud) return
 
-  const url = model.representative.url
+  const url = selectedSource.value?.url
   if (url && downloadable.value) {
+    void prefetchModelMetadata(url)
+  }
+})
+
+watch(selectedSourceUrl, (url) => {
+  if (!isCloud && url && downloadable.value) {
     void prefetchModelMetadata(url)
   }
 })
 
 function handleDownload() {
   const rep = model.representative
-  if (rep.url && rep.directory) {
+  const source = selectedSource.value
+  if (source && rep.directory) {
     downloadMissingModel({
       name: rep.name,
-      url: rep.url,
-      directory: rep.directory
+      url: source.url,
+      directory: rep.directory,
+      sources: rep.sources
     })
   } else {
     console.warn('[MissingModelRow] Cannot download: missing url or directory')
@@ -464,7 +519,7 @@ function handleLocatePrimary() {
 }
 
 function copyModelLink() {
-  const url = model.representative.url
+  const url = selectedSource.value?.url ?? model.representative.url
   copyToClipboard(url ? toBrowsableUrl(url) : model.name)
 }
 

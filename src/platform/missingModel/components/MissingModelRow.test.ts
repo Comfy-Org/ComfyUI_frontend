@@ -176,6 +176,7 @@ describe('MissingModelRow', () => {
     vi.mocked(api.getServerFeature).mockReturnValue(false)
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
+    mockCopyToClipboard.mockReset()
     mockDownloadModel.mockResolvedValue(undefined)
     mockFetchModelMetadata.mockResolvedValue({
       fileSize: null,
@@ -430,6 +431,84 @@ describe('MissingModelRow', () => {
     expect(screen.getByText('checkpoints · 14 GB')).toBeInTheDocument()
     expect(screen.getByTestId('missing-model-download')).toHaveTextContent(
       'Download'
+    )
+  })
+
+  it('uses the selected source for metadata, actions, links, and downloads', async () => {
+    mockIsCloud.value = false
+    const user = userEvent.setup()
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    const huggingFaceUrl =
+      'https://huggingface.co/org/model/resolve/main/model.safetensors'
+    const modelScopeUrl =
+      'https://modelscope.cn/models/org/model/resolve/master/model.safetensors'
+    const civitaiUrl = 'https://civitai.com/api/download/models/12345'
+    model.representative.url = huggingFaceUrl
+    model.representative.sources = [
+      { provider: 'modelscope', url: modelScopeUrl },
+      { provider: 'civitai', url: civitaiUrl }
+    ]
+    mockFetchModelMetadata.mockImplementation(async (url) => ({
+      fileSize:
+        url === huggingFaceUrl
+          ? 1024
+          : url === modelScopeUrl
+            ? 2 * 1024 ** 3
+            : 3 * 1024 ** 3,
+      gatedRepoUrl:
+        url === huggingFaceUrl ? 'https://huggingface.co/org/model' : null
+    }))
+
+    renderRow(model, vi.fn(), false)
+
+    const sourceSelect = screen.getByTestId('missing-model-source-select')
+    expect(sourceSelect).toHaveValue(huggingFaceUrl)
+    expect(sourceSelect).toHaveDisplayValue('Hugging Face')
+    expect(screen.getAllByRole('option')).toHaveLength(3)
+    await waitFor(() => {
+      expect(mockFetchModelMetadata).toHaveBeenCalledWith(huggingFaceUrl)
+      expect(
+        screen.getByTestId('missing-model-gated-access')
+      ).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Copy URL' }))
+    expect(mockCopyToClipboard).toHaveBeenLastCalledWith(
+      'https://huggingface.co/org/model/blob/main/model.safetensors'
+    )
+
+    await user.selectOptions(sourceSelect, modelScopeUrl)
+    await waitFor(() => {
+      expect(mockFetchModelMetadata).toHaveBeenCalledWith(modelScopeUrl)
+      expect(screen.getByText('checkpoints · 2 GB')).toBeInTheDocument()
+    })
+    expect(
+      screen.queryByTestId('missing-model-gated-access')
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Copy URL' }))
+    expect(mockCopyToClipboard).toHaveBeenLastCalledWith(modelScopeUrl)
+
+    await user.selectOptions(sourceSelect, civitaiUrl)
+    await waitFor(() => {
+      expect(mockFetchModelMetadata).toHaveBeenCalledWith(civitaiUrl)
+      expect(screen.getByText('checkpoints · 3 GB')).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('button', { name: 'Copy URL' }))
+    expect(mockCopyToClipboard).toHaveBeenLastCalledWith(
+      'https://civitai.com/models/12345'
+    )
+
+    await user.selectOptions(sourceSelect, modelScopeUrl)
+    await user.click(screen.getByTestId('missing-model-download'))
+
+    expect(mockDownloadModel).toHaveBeenCalledWith(
+      {
+        name: 'model.safetensors',
+        url: modelScopeUrl,
+        directory: 'checkpoints',
+        sources: model.representative.sources
+      },
+      expect.any(Object)
     )
   })
 
