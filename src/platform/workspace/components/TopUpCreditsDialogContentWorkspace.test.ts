@@ -423,6 +423,68 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(getActiveCheckoutJourney()?.billing_op_id).toBeUndefined()
   })
 
+  describe('checkout exit', () => {
+    function abandonedEvents() {
+      return (
+        vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
+      )
+        .map(([event]) => event)
+        .filter((event) => event.phase === 'abandoned')
+    }
+
+    it.for([
+      { exit: 'dialog_close', leave: (unmount: () => void) => unmount() },
+      {
+        exit: 'page_exit',
+        leave: () => window.dispatchEvent(new Event('pagehide'))
+      }
+    ] as const)(
+      'reports a $exit from a top-up with no operation',
+      async ({ exit, leave }) => {
+        const { unmount } = renderDialog()
+        await nextTick()
+
+        leave(unmount)
+
+        expect(abandonedEvents()).toEqual([
+          expect.objectContaining({
+            entry_flow: 'topup',
+            last_phase: 'entered',
+            exit
+          })
+        ])
+      }
+    )
+
+    it('reports the close once when the page goes away afterwards', async () => {
+      const { unmount } = renderDialog()
+      await nextTick()
+
+      unmount()
+      window.dispatchEvent(new Event('pagehide'))
+
+      expect(abandonedEvents().map((event) => event.exit)).toEqual([
+        'dialog_close'
+      ])
+    })
+
+    it('reports no exit once the purchase linked an operation', async () => {
+      vi.mocked(mockBillingContext().topup).mockResolvedValue(
+        topupResponse('pending')
+      )
+      const { unmount } = renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+      await waitFor(() =>
+        expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
+      )
+
+      unmount()
+
+      expect(abandonedEvents()).toEqual([])
+    })
+  })
+
   it('reports failure telemetry when topup resolves with no response', async () => {
     renderDialog()
     await clickAddCredits()
