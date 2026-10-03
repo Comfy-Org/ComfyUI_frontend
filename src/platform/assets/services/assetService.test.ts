@@ -793,13 +793,21 @@ describe(assetService.getAssetModels, () => {
           id: 'turbo',
           name: 'turbo.safetensors',
           tags: ['models', 'chatterbox/chatterbox_turbo']
+        }),
+        validAsset({
+          id: 'nested',
+          name: 'nested.safetensors',
+          tags: ['models', 'chatterbox/chatterbox/gguf']
         })
       ])
     )
 
     const models = await assetService.getAssetModels('chatterbox/chatterbox')
 
-    expect(models).toEqual([{ name: 'base.safetensors', pathIndex: 0 }])
+    expect(models).toEqual([
+      { name: 'base.safetensors', pathIndex: 0 },
+      { name: 'nested.safetensors', pathIndex: 0 }
+    ])
   })
 
   it('resolves hierarchical bare tags on model-type backends', async () => {
