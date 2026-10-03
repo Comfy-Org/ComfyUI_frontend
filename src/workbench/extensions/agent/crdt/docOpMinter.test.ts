@@ -850,6 +850,29 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('uses the store serialize flag when a projected widget leaves it undefined', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    widget.serialize = undefined
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
   it('uses the same store fallback when filtering an add-node snapshot', () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
