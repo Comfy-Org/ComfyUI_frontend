@@ -15,6 +15,7 @@ export type Modifiers = Partial<
 export type PointerEventOptions = Modifiers & {
   button?: number
   buttons?: number
+  pointerId?: number
   timeStamp?: number
 }
 
@@ -50,7 +51,13 @@ export function pointerEvent(
   type: PointerEventType,
   x: number,
   y: number,
-  { button = 0, buttons, timeStamp, ...modifiers }: PointerEventOptions = {}
+  {
+    button = 0,
+    buttons,
+    pointerId = 1,
+    timeStamp,
+    ...modifiers
+  }: PointerEventOptions = {}
 ): CanvasPointerEvent {
   const pressed = type === 'pointerdown' || type === 'pointermove'
   const event = new PointerEvent(type, {
@@ -59,7 +66,7 @@ export function pointerEvent(
     clientX: x,
     clientY: y,
     isPrimary: true,
-    pointerId: 1,
+    pointerId,
     ...modifiers
   })
   if (timeStamp !== undefined) {

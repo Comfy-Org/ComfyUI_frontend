@@ -45,7 +45,11 @@ export const useNodeDrag = createSharedComposable(() => {
   let lastPointerX = 0
   let lastPointerY = 0
 
-  function startDrag(event: PointerEvent, nodeId: NodeId) {
+  function startDrag(
+    event: PointerEvent,
+    nodeId: NodeId,
+    initialShiftKey = event.shiftKey
+  ) {
     const { rootGraphId } = canvasStore
     if (!rootGraphId) return
 
@@ -54,7 +58,7 @@ export const useNodeDrag = createSharedComposable(() => {
     const position = layout.position
 
     // Track shift key state and sync to canvas for snap preview
-    stopShiftSync = trackShiftKey(event)
+    stopShiftSync = trackShiftKey(initialShiftKey)
 
     dragStartPos = { ...position }
     dragStartMouse = { x: event.clientX, y: event.clientY }

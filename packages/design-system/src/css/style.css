@@ -24,6 +24,10 @@
   --shadow-interface: var(--interface-panel-box-shadow);
   --shadow-inset-highlight: inset 0 1px 0 0 rgb(from white r g b / 0.1);
 
+  --radius-node-selection-sm: 15px;
+  --radius-node-selection-md: 19px;
+  --radius-node-selection-lg: 23px;
+
   --text-2xs: 0.625rem;
   --text-2xs--line-height: calc(1 / 0.625);
 

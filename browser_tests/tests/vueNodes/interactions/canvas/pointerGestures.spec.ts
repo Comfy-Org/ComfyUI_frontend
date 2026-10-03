@@ -80,10 +80,6 @@ test.describe(
         'data-node-id',
         '1'
       )
-      test.fail(
-        true,
-        'FE-2040 / Vue nodes drag at 3 px instead of the configured 6 px ClickDrift'
-      )
       await expect.poll(() => a.boundingBox()).toEqual(before)
     })
 
@@ -162,10 +158,6 @@ test.describe(
       await using press = await comfyMouse.hold()
       await comfyPage.nextFrame()
 
-      test.fail(
-        true,
-        'FE-2040 / Vue nodes are brought to front on release, not on press'
-      )
       await expect.poll(() => nodeZIndex(a.root)).toBeGreaterThan(front)
       await press.disposeAsync()
     })

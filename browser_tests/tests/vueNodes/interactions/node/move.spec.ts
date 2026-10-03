@@ -102,7 +102,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   }) => {
     const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
 
-    // Move only 2px — below the 3px drag threshold in useNodePointerInteractions
+    // Move only 2px, below the default 6px pointer drift threshold.
     const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
     await comfyMouse.dragElementBy(node.header, { x: 2, y: 1 })
     await comfyPage.nextFrame()
@@ -343,7 +343,9 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await test.step('move outside pan range and cancel drag', async () => {
       await comfyPage.page.mouse.move(400, 400, { steps: 20 })
       await ksampler.header.evaluate((node) =>
-        node.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true }))
+        node.dispatchEvent(
+          new PointerEvent('pointercancel', { bubbles: true, pointerId: 1 })
+        )
       )
     })
 
