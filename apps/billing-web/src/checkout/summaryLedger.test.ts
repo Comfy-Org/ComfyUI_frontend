@@ -723,6 +723,248 @@ describe('buildSummaryLedger discounts', () => {
   })
 })
 
+describe('buildSummaryLedger server-reported fields', () => {
+  const discountRowsOf = (
+    discount: Partial<Discount>,
+    transition: SubscriptionPreview['transition_type'] = 'new_subscription',
+    duration: Plan['duration'] = 'MONTHLY'
+  ) =>
+    ledgerOf({
+      transition_type: transition,
+      amount_due_cents: 604_800,
+      cost_today_cents: 756_000,
+      new_plan: planOf('TEAM', duration, 756_000),
+      promotion_code: 'COMFY20',
+      discounts: [{ ...entered('COMFY20', 151_200), ...discount }]
+    }).discounts
+
+  it.for<{
+    name: string
+    discount: Partial<Discount>
+    subline?: string
+  }>([
+    {
+      name: 'this payment only',
+      discount: { term: 'this_payment', duration: 'once' },
+      subline: 'This payment only'
+    },
+    {
+      name: 'the first month',
+      discount: { term: 'first_month', duration: 'once' },
+      subline: 'First month'
+    },
+    {
+      name: 'the first year',
+      discount: { term: 'first_year', duration: 'once' },
+      subline: 'First year'
+    },
+    {
+      name: 'a number of months',
+      discount: {
+        term: 'months',
+        duration: 'repeating',
+        duration_in_months: 3
+      },
+      subline: 'For 3 months'
+    },
+    {
+      name: 'a single month',
+      discount: {
+        term: 'months',
+        duration: 'repeating',
+        duration_in_months: 1
+      },
+      subline: 'For 1 month'
+    },
+    {
+      name: 'months the quote does not count',
+      discount: { term: 'months', duration: 'repeating' }
+    },
+    {
+      name: 'an ongoing discount',
+      discount: { term: 'ongoing', duration: 'forever' }
+    },
+    {
+      name: 'no term from the server',
+      discount: { duration: 'once' }
+    }
+  ])(
+    'bounds a discount row by the server-reported term: $name',
+    ({ discount, subline }) => {
+      expect(discountRowsOf(discount)).toEqual([
+        {
+          label: 'Promo code',
+          amount: '−$1,512.00',
+          ...(subline === undefined ? {} : { subline })
+        }
+      ])
+    }
+  )
+
+  it.for<{
+    transition: SubscriptionPreview['transition_type']
+    duration: Plan['duration']
+  }>([
+    { transition: 'new_subscription', duration: 'MONTHLY' },
+    { transition: 'upgrade', duration: 'MONTHLY' },
+    { transition: 'downgrade', duration: 'MONTHLY' },
+    { transition: 'duration_change', duration: 'ANNUAL' }
+  ])(
+    'words the term the same on a $transition to a $duration plan',
+    ({ transition, duration }) => {
+      const sublineOf = (term: Discount['term']) =>
+        discountRowsOf({ term, duration: 'once' }, transition, duration)[0]
+          .subline
+
+      expect([
+        sublineOf('this_payment'),
+        sublineOf('first_month'),
+        sublineOf('first_year')
+      ]).toEqual(['This payment only', 'First month', 'First year'])
+    }
+  )
+
+  it.for<{
+    name: string
+    duration: Plan['duration']
+    rate: SummaryLedger['items'][number]['comparedRate']
+  }>([
+    {
+      name: 'yearly',
+      duration: 'ANNUAL',
+      rate: {
+        keypath: 'checkout.fullPage.summary.item.comparedYearly',
+        amount: '$7,560',
+        listAmount: '$8,400'
+      }
+    },
+    {
+      name: 'monthly',
+      duration: 'MONTHLY',
+      rate: {
+        keypath: 'checkout.fullPage.summary.item.comparedMonthly',
+        amount: '$7,560',
+        listAmount: '$8,400'
+      }
+    }
+  ])(
+    'strikes through the list price a discounted $name rate replaces',
+    ({ duration, rate }) => {
+      const [item] = ledgerOf({
+        transition_type: 'new_subscription',
+        amount_due_cents: 756_000,
+        cost_today_cents: 756_000,
+        credits_today_cents: 0,
+        credits_next_period_cents: 0,
+        new_plan: planOf('TEAM', duration, 756_000, {
+          list_price_cents: 840_000
+        })
+      }).items
+
+      expect(item).toEqual({
+        label: 'Team Plan',
+        amount: '$7,560.00',
+        comparedRate: rate,
+        sublines: []
+      })
+    }
+  )
+
+  it.for<{
+    name: string
+    extra: Partial<Plan>
+    rate: Pick<SummaryLedger['items'][number], 'comparedRate' | 'sublines'>
+  }>([
+    {
+      name: 'reads a yearly rate in the monthly figures the server sent',
+      extra: {
+        list_price_cents: 840_000,
+        monthly_price_cents: 63_000,
+        monthly_list_price_cents: 70_000
+      },
+      rate: {
+        comparedRate: {
+          keypath: 'checkout.fullPage.summary.item.comparedYearlyMonthly',
+          amount: '$630',
+          listAmount: '$700'
+        },
+        sublines: []
+      }
+    },
+    {
+      name: 'states a yearly monthly rate plainly when no list price came with it',
+      extra: { monthly_price_cents: 63_000 },
+      rate: { sublines: ['$630 /mo × 12 months, billed yearly'] }
+    },
+    {
+      name: 'strikes through any list price the server sent, even one at the price',
+      extra: { list_price_cents: 756_000 },
+      rate: {
+        comparedRate: {
+          keypath: 'checkout.fullPage.summary.item.comparedYearly',
+          amount: '$7,560',
+          listAmount: '$7,560'
+        },
+        sublines: []
+      }
+    }
+  ])('$name', ({ extra, rate }) => {
+    const [item] = ledgerOf({
+      transition_type: 'new_subscription',
+      amount_due_cents: 756_000,
+      cost_today_cents: 756_000,
+      credits_today_cents: 0,
+      credits_next_period_cents: 0,
+      new_plan: planOf('TEAM', 'ANNUAL', 756_000, extra)
+    }).items
+
+    expect(item).toEqual({ label: 'Team Plan', amount: '$7,560.00', ...rate })
+  })
+
+  const PRORATED_OVER_BALANCE: Partial<SubscriptionPreview> = {
+    transition_type: 'upgrade',
+    proration_at: PRICED_AT,
+    amount_due_cents: 2750,
+    cost_today_cents: 3250,
+    balance_applied_cents: 500,
+    subtotal_cents: 3250,
+    renewal_at: JULY_28,
+    current_plan: planOf('CREATOR', 'MONTHLY', 3500),
+    new_plan: planOf('PRO', 'MONTHLY', 10_000)
+  }
+
+  it('lists the account balance the server applied, and keeps the row it explains', () => {
+    const ledger = ledgerOf(PRORATED_OVER_BALANCE)
+
+    expect(ledger.items.map(({ label, amount }) => [label, amount])).toEqual([
+      ['Pro Plan - Prorated', '$32.50']
+    ])
+    expect(ledger.balance).toEqual({
+      label: 'Account balance',
+      amount: '−$5.00',
+      subline: 'Credit already on your account'
+    })
+    expect(ledger.total).toBe('$27.50')
+  })
+
+  it('shows no balance row when the server applied none', () => {
+    expect(ledgerOf({ amount_due_cents: 2800 })).not.toHaveProperty('balance')
+  })
+
+  it('shows no Subtotal under a single money row, even with a discount and a reported subtotal', () => {
+    const ledger = ledgerOf({
+      ...PRORATED_OVER_BALANCE,
+      balance_applied_cents: undefined,
+      amount_due_cents: 2250,
+      promotion_code: 'COMFY10',
+      discounts: [entered('COMFY10', 1000)]
+    })
+
+    expect(ledger.discounts).toHaveLength(1)
+    expect(ledger).not.toHaveProperty('subtotal')
+  })
+})
+
 describe('formatHeadlineMoney', () => {
   it.for([
     { cents: 70_000, text: '$700' },

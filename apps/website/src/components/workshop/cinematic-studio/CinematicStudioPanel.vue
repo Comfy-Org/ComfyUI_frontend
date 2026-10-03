@@ -11,7 +11,7 @@ import { workshopAppRepo } from '../../../lib/workshop/apps'
 import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../i18n/translations'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import AppRepoLink from './AppRepoLink.vue'
 import AppsBackLink from './AppsBackLink.vue'
@@ -31,6 +31,7 @@ const {
   showCredits?: boolean
   locale?: Locale
 }>()
+const { t: tc } = translationsFor(locale)
 
 const {
   studio,
@@ -112,19 +113,19 @@ function generate() {
     <AppsBackLink :locale class="mb-5" />
     <div class="mb-3 flex flex-wrap items-center gap-3">
       <h1 class="text-2xl font-semibold text-primary-warm-white lg:text-3xl">
-        {{ tc('cinematic.title', locale) }}
+        {{ tc('cinematic.title') }}
       </h1>
       <span
         class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] tracking-wider text-primary-comfy-canvas uppercase"
       >
-        {{ tc('cinematic.beta', locale) }}
+        {{ tc('cinematic.beta') }}
       </span>
     </div>
     <div
       class="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <p class="text-lg text-primary-warm-gray">
-        {{ tc('cinematic.lead', locale) }}
+        {{ tc('cinematic.lead') }}
       </p>
       <AppRepoLink
         :repo="workshopAppRepo('studio')"

@@ -497,6 +497,7 @@ function addAutogrowGroup(
     )) {
       const link = inputLinks.get(existingInput)
       if (link && !inputLinks.has(newInput)) inputLinks.set(newInput, link)
+      if (existingInput.label) newInput.label = existingInput.label
     }
   }
 
@@ -576,6 +577,46 @@ export function liveAutogrowGroupOf(
     }
   }
   return undefined
+}
+
+function highestAutogrowOrdinal(node: AutogrowNode, groupName: string): number {
+  let highest = -1
+  for (const input of node.inputs) {
+    if (!input.name.startsWith(`${groupName}.`)) continue
+    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+    if (ordinal !== undefined && ordinal > highest) highest = ordinal
+  }
+  return highest
+}
+
+/**
+ * Grows the autogrow group `name` belongs to until the node holds an input by
+ * that name, and returns its live index. A local connect onto a slot the bound
+ * document has not seen mints a `grow` op (`docOpMinter.mintConnect`); this is
+ * the read leg of that exchange, for a slot the host grew whose live
+ * counterpart does not exist yet. Growth starts above the group's highest live
+ * ordinal, so the slots already carrying links are left alone. Undefined when
+ * `name` belongs to no autogrow group of this node, or the group's `max` stops
+ * short of it.
+ */
+export function growAutogrowInput(
+  node: LGraphNode,
+  name: string
+): number | undefined {
+  if (!hasAutogrowGroups(node)) return undefined
+  const groupName = liveAutogrowGroupOf(node, name)
+  if (groupName === undefined) return undefined
+  const ordinal = resolveAutogrowOrdinal(name, groupName, node)
+  if (ordinal === undefined) return undefined
+  for (
+    let next = highestAutogrowOrdinal(node, groupName) + 1;
+    next <= ordinal;
+    next++
+  ) {
+    addAutogrowGroup(next, groupName, node)
+  }
+  const index = node.inputs.findIndex((input) => input.name === name)
+  return index === -1 ? undefined : index
 }
 
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {

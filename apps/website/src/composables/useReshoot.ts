@@ -6,7 +6,7 @@ import { useWorkshopSession } from '../config/workshop-session-state'
 import type { RunFailure } from '../config/workshop-run'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import type { Locale } from '../i18n/translations'
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
 import { RESHOOT_APP_SLUG } from '../lib/workshop/cinematic-studio/analytics'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
 import type {
@@ -23,7 +23,6 @@ import {
   withKey
 } from '../lib/workshop/cinematic-studio/reshoot'
 import { clipSecondsOf } from '../lib/workshop/cinematic-studio/reshoot-clip'
-import { rc } from '../lib/workshop/cinematic-studio/reshoot-copy'
 import type {
   Pose,
   Vec3
@@ -142,6 +141,7 @@ const EXAMPLE_TAKE: ReshootTake = {
  * the metered run, priced by the app proxy's quote.
  */
 export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
+  const { t } = translationsFor(locale)
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
   const authEnabled = useWorkshopAuthFlag()
@@ -221,7 +221,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const clipError = computed(() => {
     const s = clipSeconds.value
     return upload.value && s !== undefined && Number.isFinite(s) && !clipFits(s)
-      ? rc('reshoot.clipLength', locale, { seconds: s.toFixed(1) })
+      ? t('reshoot.clipLength', { seconds: s.toFixed(1) })
       : undefined
   })
 
@@ -297,14 +297,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const quoteFailed = ref(false)
   const priceNote = computed(() => {
     if (quote.value) return quoteNote(quote.value, locale, run.value)
-    return quoteFailed.value ? rc('reshoot.quote.failed', locale) : undefined
+    return quoteFailed.value ? t('reshoot.quote.failed') : undefined
   })
   /** Why the viewport cannot show a read scene, if it cannot. */
   const notice = computed(() => {
     if (!picked.value) return undefined
-    if (unavailable.value) return rc('reshoot.unavailable', locale)
+    if (unavailable.value) return t('reshoot.unavailable')
     if (scene.value.phase === 'failed') return scene.value.note
-    if (gate.value === 'signedOut') return rc('reshoot.signIn', locale)
+    if (gate.value === 'signedOut') return t('reshoot.signIn')
     return undefined
   })
   const stage = computed(() =>
@@ -353,10 +353,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       session.value?.role === 'member'
         ? 'workshop.error.memberNoCredits'
         : 'workshop.error.noCreditsCloud'
-    return t(key, locale).replace(
-      '{workspace}',
-      session.value?.workspace.name ?? ''
-    )
+    return t(key, { workspace: session.value?.workspace.name ?? '' })
   }
 
   function noteFor(error: unknown): string {

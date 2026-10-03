@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { ArrowUpRight } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { captureWorkshopEvent } from '../../../scripts/posthog'
 
 const {
@@ -17,6 +17,7 @@ const {
   /** The app this link belongs to, for the click's analytics. */
   appSlug?: string
 }>()
+const { t } = translationsFor(locale)
 
 function captureClick() {
   if (!repo || !appSlug) return
@@ -47,7 +48,7 @@ function captureClick() {
       class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"
       aria-hidden="true"
     />
-    {{ tc(repo ? 'cinematic.repo.view' : 'cinematic.repo.soon', locale) }}
+    {{ t(repo ? 'cinematic.repo.view' : 'cinematic.repo.soon') }}
     <ArrowUpRight v-if="repo" class="size-3.5" aria-hidden="true" />
   </component>
 </template>

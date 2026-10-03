@@ -4,13 +4,13 @@ import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { routerT } from './routerCopy'
+import { translationsFor } from '../../i18n/translations'
 import CodeTabs from './CodeTabs.vue'
 import type { RouterProvider } from './codeSamples'
 import { ROUTER_PROVIDERS, routerCodeTabs } from './codeSamples'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const providerLogos: Record<
   RouterProvider,
@@ -56,23 +56,23 @@ const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
     <h2
       class="text-center text-2xl/tight font-light text-balance text-primary-comfy-canvas lg:text-3xl/tight"
     >
-      {{ routerT('platform.router.code.heading', locale) }}
+      {{ t('platform.router.code.heading') }}
     </h2>
     <div class="mt-8">
       <CodeTabs
         :tabs="routerCodeTabs"
-        :label="routerT('platform.router.code.heading', locale)"
+        :label="t('platform.router.code.heading')"
         :selected-index="ROUTER_PROVIDERS.indexOf(selectedProvider)"
         picker="dropdown"
         content-class="bg-[#2a2230]"
-        :copy-label="t('ui.copy', locale)"
-        :copied-label="t('ui.copied', locale)"
+        :copy-label="t('ui.copy')"
+        :copied-label="t('ui.copied')"
       >
         <template #controls>
           <RadioGroupRoot
             v-model="selectedProvider"
             orientation="horizontal"
-            :aria-label="routerT('platform.router.code.providerLabel', locale)"
+            :aria-label="t('platform.router.code.providerLabel')"
             class="flex w-full max-w-full items-center rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:w-auto"
           >
             <RadioGroupItem
@@ -93,7 +93,7 @@ const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
       </CodeTabs>
     </div>
     <p class="mt-6 text-center text-sm text-primary-comfy-canvas/70">
-      {{ routerT('platform.router.code.supporting', locale) }}
+      {{ t('platform.router.code.supporting') }}
     </p>
   </section>
 </template>

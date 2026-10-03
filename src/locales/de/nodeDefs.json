@@ -7763,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Animiert ein Bild mit synchronisierten Dialogen und Ton mithilfe von HeyGen Video 1.0 zu einem Video. Das Bild wird als erstes Frame verwendet.",
+    "display_name": "HeyGen Video 1.0 Bild zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Generiert mithilfe von HeyGen Video 1.0 ein Video mit synchronisierten Dialogen und Ton aus einem Text-Prompt. Optional können Sie bis zu 12 Referenzbilder, Videos und Audioclips verbinden und sie im Prompt als {'@'}Image1, {'@'}Video1, {'@'}Audio1 erwähnen.",
+    "display_name": "HeyGen Video 1.0 Referenz zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Animiert ein beliebiges Bild einer Person zu einem lippensynchronen Sprechvideo (HeyGen Avatar IV). Steuern Sie es mit einem Textskript oder eigenem Audio.",
     "display_name": "HeyGen-Sprechendes Foto",
@@ -8376,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Bearbeitet oder kombiniert mithilfe von Ideogram 4.5 bis zu 5 Bilder anhand eines Text-Prompts. Rendert das gesamte Bild neu und kann dessen Größe oder Seitenverhältnis ändern; verwenden Sie Ideogram 4.5 Precise Edit, damit unveränderte Pixel unverändert bleiben.",
+    "display_name": "Ideogram 4.5 Bearbeiten",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_height": {
+        "name": "Höhe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_quality": {
+        "name": "Qualität"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_size": {
+        "name": "Größe"
+      },
+      "model_width": {
+        "name": "Breite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Generiert Bilder mit P-Image, dem schnellen Text-zu-Bild-Modell von Ideogram. Starke Typografie und Fotorealismus; unterstützt strukturierte JSON-Beschriftungen von Ideogram 4.0 für exakten Text, Farben und Layout.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Der Prompt, aus dem das Bild tatsächlich generiert wurde (die umgeschriebene strukturierte Beschriftung, wenn prompt_upsampling ausgeführt wurde, andernfalls Ihr Prompt). Geben Sie ihn mit prompt_upsampling OFF und demselben Seed zurück, um dieses Bild zu reproduzieren."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Bearbeitet mithilfe der präzisen Bearbeitung von Ideogram 4.5 ein Bild anhand eines Text-Prompts: Nur das vom Prompt angeforderte Element wird geändert, unveränderte Pixel bleiben identisch und die Ausgabe behält die Größe von Bild 1 bei (Bilder über ~4 MP werden zuerst herunterskaliert). Akzeptiert bis zu 4 Referenzbilder.",
+    "display_name": "Ideogram 4.5 Präzises Bearbeiten",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_quality": {
+        "name": "Qualität"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Generiert mithilfe von Ideogram 4.5 Bilder aus einem Text-Prompt.",
+    "display_name": "Ideogram 4.5 Text zu Bild",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_quality": {
+        "name": "Qualität"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_size": {
+        "name": "Größe"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "Die strukturierte Bildbeschreibung, aus der das Bild generiert wurde. Verwenden Sie sie erneut mit magic_prompt auf 'off' und demselben Seed, um das Bild zu reproduzieren."
       }
     }
   },

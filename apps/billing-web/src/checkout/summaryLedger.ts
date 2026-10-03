@@ -4,26 +4,36 @@ import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { longDate, monthDay } from '@/checkout/longDate'
 
-/**
- * The four summary families of the checkout guidebook. `top_up`
- * has no quote on billing-web yet, so no builder produces it.
- */
+/** The four summary families of the checkout guidebook; `top_up` is built by `topupLedger`. */
 type SummaryFamily = 'charge_now' | 'prorated_change' | 'scheduled' | 'top_up'
+
+/**
+ * A discounted plan rate beside the list price it replaces, both as the
+ * server priced them. The list price is the one amount the summary strikes
+ * through.
+ */
+interface ComparedRate {
+  readonly keypath: string
+  readonly amount: string
+  readonly listAmount: string
+}
 
 /** A ledger line: a label and its sublines on the left, dollars on the right. */
 interface LedgerRow {
   readonly label: string
   readonly amount: string
+  readonly comparedRate?: ComparedRate
   readonly sublines: readonly string[]
 }
 
 /**
- * A discount the quote applied: what it is on the left, what it removed from
- * today's charge on the right. The code that produced it lives on a chip.
+ * A deduction from today's charge: what it is on the left, what it removed on
+ * the right. A discount's code lives on a chip; its subline bounds its term.
  */
-interface DiscountRow {
+export interface DiscountRow {
   readonly label: string
   readonly amount?: string
+  readonly subline?: string
 }
 
 /** Which code produced a discount. Only the customer's own code comes off. */
@@ -44,12 +54,18 @@ export interface SummaryLedger {
     readonly amount: string
     readonly currency: string
     readonly rate?: string
+    /** A credits-first headline leads with the credits icon. */
+    readonly icon?: 'coins'
   }
   readonly credits?: { readonly count: string; readonly qualifier: string }
   /** Money rows the total reconciles with; see `moneyItems`. */
   readonly items: readonly LedgerRow[]
   /** Every promotion the quote applied, held or entered, in the server's order. */
   readonly discounts: readonly DiscountRow[]
+  /** The server's pre-discount total, only when a discount follows two or more money rows. */
+  readonly subtotal?: string
+  /** Credit already on the account that the server applied to today's charge. */
+  readonly balance?: DiscountRow
   readonly chips: readonly PromoChip[]
   /** Codes apply to a charge made today, so only those families take one. */
   readonly acceptsPromo: boolean
@@ -57,11 +73,18 @@ export interface SummaryLedger {
   readonly trailing: readonly string[]
 }
 
-type DiscountSlots = Pick<SummaryLedger, 'discounts' | 'chips' | 'acceptsPromo'>
+type DiscountSlots = Pick<
+  SummaryLedger,
+  'discounts' | 'subtotal' | 'balance' | 'chips' | 'acceptsPromo'
+>
 
 type FamilyLedger = Omit<SummaryLedger, keyof DiscountSlots>
 
-type Translate = (key: string, named: Record<string, unknown>) => string
+type Translate = (
+  key: string,
+  named: Record<string, unknown>,
+  plural?: number
+) => string
 type Duration = SubscriptionPreview['new_plan']['duration']
 type Plan = SubscriptionPreview['new_plan']
 
@@ -80,6 +103,7 @@ const BY_DURATION = {
     cadence: `${S}.cadence.monthly`,
     rate: `${S}.rate.monthly`,
     itemRate: `${S}.item.rateMonthly`,
+    comparedRate: `${S}.item.comparedMonthly`,
     perPeriod: `${S}.credits.perMonth`,
     refillAfter: `${S}.credits.refillMonthlyAfter`,
     refillsTo: `${S}.item.refillsMonthly`,
@@ -89,6 +113,7 @@ const BY_DURATION = {
     cadence: `${S}.cadence.yearly`,
     rate: `${S}.rate.yearly`,
     itemRate: `${S}.item.rateYearly`,
+    comparedRate: `${S}.item.comparedYearly`,
     perPeriod: `${S}.credits.perYear`,
     refillAfter: `${S}.credits.refillYearlyAfter`,
     refillsTo: `${S}.item.refillsYearly`,
@@ -205,17 +230,19 @@ function refillsToLine(r: QuoteReading): string {
 
 /**
  * A money row renders only when the total reconciles with it: today's
- * charge equals the row, or a discount row itemizes the difference. A $0
- * first period or a credit on file the quote does not itemize would leave
- * the row contradicting the total, so it comes off and the total stands on
- * its own.
+ * charge equals the row, or a discount or balance row itemizes the
+ * difference. A $0 first period or a credit the quote does not itemize would
+ * leave the row contradicting the total, so it comes off and the total
+ * stands on its own.
  */
 function moneyItems(
   r: QuoteReading,
   cents: number,
   row: Omit<LedgerRow, 'amount'>
 ): LedgerRow[] {
-  return cents === r.dueCents || r.promotions.length > 0
+  const itemized =
+    r.promotions.length > 0 || r.quote.balance_applied_cents !== undefined
+  return cents === r.dueCents || itemized
     ? [{ ...row, amount: r.money(cents) }]
     : []
 }
@@ -367,25 +394,70 @@ function zeroDueLine(r: QuoteReading): string[] {
   ]
 }
 
+/**
+ * The plan's rate under its label: struck against the list price whenever
+ * the server sends one, else a plain cadence line. A yearly plan the server
+ * also rates per month reads in those monthly figures.
+ */
+type RateLine =
+  | { readonly comparedRate: ComparedRate }
+  | { readonly subline: string }
+
+function rateLineOf(r: QuoteReading): RateLine {
+  const monthlyCents = r.next.monthly_price_cents
+  if (r.next.duration === 'ANNUAL' && monthlyCents !== undefined) {
+    const amount = r.headlineMoney(monthlyCents)
+    const listCents = r.next.monthly_list_price_cents
+    return listCents === undefined
+      ? { subline: r.t(`${S}.item.billedYearlyMonthly`, { amount }) }
+      : {
+          comparedRate: {
+            keypath: `${S}.item.comparedYearlyMonthly`,
+            amount,
+            listAmount: r.headlineMoney(listCents)
+          }
+        }
+  }
+  const listCents = r.next.list_price_cents
+  return listCents === undefined
+    ? { subline: cadenceLineOf(r) }
+    : {
+        comparedRate: {
+          keypath: r.byNew.comparedRate,
+          amount: r.headlineMoney(r.next.price_cents),
+          listAmount: r.headlineMoney(listCents)
+        }
+      }
+}
+
+function cadenceLineOf(r: QuoteReading): string {
+  return r.next.duration === 'MONTHLY'
+    ? r.t(`${S}.item.billedMonthly`, {
+        amount: r.headlineMoney(r.next.seat_summary.total_cost_cents)
+      })
+    : r.t(`${S}.item.billedYearly`, {})
+}
+
 function chargeNowLedger(r: QuoteReading): FamilyLedger {
-  const cadenceLine =
-    r.next.duration === 'MONTHLY'
-      ? r.t(`${S}.item.billedMonthly`, {
-          amount: r.headlineMoney(r.next.seat_summary.total_cost_cents)
-        })
-      : r.t(`${S}.item.billedYearly`, {})
+  const rateLine = rateLineOf(r)
+  const refills =
+    r.cadenceChanges || !grantIsAllowance(r) ? [refillsToLine(r)] : []
   return {
     ...r.shared,
     family: 'charge_now',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: chargeNowCredits(r),
-    items: moneyItems(r, r.quote.cost_today_cents, {
-      label: r.plan,
-      sublines:
-        r.cadenceChanges || !grantIsAllowance(r)
-          ? [cadenceLine, refillsToLine(r)]
-          : [cadenceLine]
-    }),
+    items: moneyItems(
+      r,
+      r.quote.cost_today_cents,
+      'comparedRate' in rateLine
+        ? {
+            label: r.plan,
+            comparedRate: rateLine.comparedRate,
+            sublines: refills
+          }
+        : { label: r.plan, sublines: [rateLine.subline, ...refills] }
+    ),
     trailing: chargeNowTrailing(r)
   }
 }
@@ -404,7 +476,7 @@ export function buildSummaryLedger(
 ): SummaryLedger {
   const reading = readQuote(quote, context)
   const ledger = familyLedger(reading)
-  return { ...ledger, ...discountSlots(reading) }
+  return { ...ledger, ...discountSlots(reading, ledger.items.length) }
 }
 
 function familyLedger(r: QuoteReading): FamilyLedger {
@@ -425,17 +497,75 @@ export function acceptsPromoCode(quote: SubscriptionPreview): boolean {
 
 type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
 
-function discountRow(r: QuoteReading, discount: Discount): DiscountRow {
+/** What a deduction row needs to word itself, shared by the summary and the Success card. */
+export interface DeductionFormat {
+  readonly t: Translate
+  readonly money: (cents: number) => string
+}
+
+const deduction = (format: DeductionFormat, cents: number) =>
+  format.t(`${S}.discount.amount`, { amount: format.money(cents) })
+
+type DiscountTerm = NonNullable<Discount['term']>
+
+/** How long a discount keeps applying, worded from the term the server reported. */
+const TERM_LINE = {
+  this_payment: (t) => t(`${S}.discount.thisPaymentOnly`, {}),
+  first_month: (t) => t(`${S}.discount.firstMonth`, {}),
+  first_year: (t) => t(`${S}.discount.firstYear`, {}),
+  months: (t, months) =>
+    months === undefined
+      ? undefined
+      : t(`${S}.discount.forMonths`, { count: months }, months),
+  ongoing: () => undefined
+} satisfies Record<
+  DiscountTerm,
+  (t: Translate, months: number | undefined) => string | undefined
+>
+
+export function discountRow(
+  format: DeductionFormat,
+  discount: Pick<Discount, 'name' | 'term' | 'duration_in_months'>,
+  amountCents: number | undefined
+): DiscountRow {
+  const subline =
+    discount.term === undefined
+      ? undefined
+      : TERM_LINE[discount.term](format.t, discount.duration_in_months)
   return {
-    label: discount.name ?? r.t(`${S}.discount.fallbackLabel`, {}),
-    ...(discount.amount_off_cents === undefined
+    label: discount.name ?? format.t(`${S}.discount.fallbackLabel`, {}),
+    ...(amountCents === undefined
       ? {}
-      : {
-          amount: r.t(`${S}.discount.amount`, {
-            amount: r.money(discount.amount_off_cents)
-          })
-        })
+      : { amount: deduction(format, amountCents) }),
+    ...(subline === undefined ? {} : { subline })
   }
+}
+
+export function balanceRow(
+  format: DeductionFormat,
+  cents: number
+): DiscountRow {
+  return {
+    label: format.t(`${S}.balance.label`, {}),
+    amount: deduction(format, cents),
+    subline: format.t(`${S}.balance.subline`, {})
+  }
+}
+
+/**
+ * Subtotal names the base a discount came off, so it shows only where a
+ * discount follows two or more money rows; above a single row it would
+ * repeat that row.
+ */
+function subtotalOf(
+  r: QuoteReading,
+  moneyRows: number,
+  discountRows: number
+): string | undefined {
+  const cents = r.quote.subtotal_cents
+  if (cents === undefined || moneyRows < 2 || discountRows === 0)
+    return undefined
+  return r.money(cents)
 }
 
 /**
@@ -444,13 +574,22 @@ function discountRow(r: QuoteReading, discount: Discount): DiscountRow {
  * `promotion_code` is the customer's entered code, the only chip that comes
  * off; any other is one the account already holds.
  */
-function discountSlots(r: QuoteReading): DiscountSlots {
+function discountSlots(r: QuoteReading, moneyRows: number): DiscountSlots {
   const enteredCode = r.quote.promotion_code?.toUpperCase()
   const held = r.promotions.filter(
     (discount) => discount.code.toUpperCase() !== enteredCode
   )
+  const subtotal = subtotalOf(r, moneyRows, r.promotions.length)
+  const format = { t: r.t, money: r.money }
+  const balanceCents = r.quote.balance_applied_cents
+  const balance =
+    balanceCents === undefined ? undefined : balanceRow(format, balanceCents)
   return {
-    discounts: r.promotions.map((discount) => discountRow(r, discount)),
+    discounts: r.promotions.map((discount) =>
+      discountRow(format, discount, discount.amount_off_cents)
+    ),
+    ...(subtotal === undefined ? {} : { subtotal }),
+    ...(balance === undefined ? {} : { balance }),
     chips: [
       ...held.map(({ code }) => ({ code, removable: false })),
       ...(r.quote.promotion_code === undefined

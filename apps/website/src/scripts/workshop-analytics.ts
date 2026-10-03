@@ -144,14 +144,16 @@ export type WorkshopAnalyticsEvent =
     }
   | {
       name: 'checkout_failed'
-      properties: {
-        attempt_id?: string
-        user_id: string
-        workspace_id: string
-        stage: WorkshopCheckoutFailureStage
-        http_status?: number
-        error_code?: WorkshopCheckoutErrorCode
-      }
+      properties:
+        | {
+            attempt_id?: string
+            user_id: string
+            workspace_id: string
+            stage: WorkshopCheckoutFailureStage
+            http_status?: number
+            error_code?: WorkshopCheckoutErrorCode
+          }
+        | { stage: 'no_owner_scope' }
     }
   | {
       name: 'output_download_clicked'

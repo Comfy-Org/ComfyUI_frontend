@@ -6,7 +6,7 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
-import { createMockMinimapCanvas } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockMinimapCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 function createMockPopover(): Pick<
   InstanceType<typeof NodeSearchBoxPopover>,
