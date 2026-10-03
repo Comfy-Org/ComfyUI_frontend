@@ -3,15 +3,20 @@ import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
+import {
+  CURATED_TEMPLATE_IDS,
+  FALLBACK_TEMPLATE_IDS,
+  tutorialCards
+} from './tutorialCards'
 
 const mocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
@@ -27,6 +32,14 @@ vi.mock<unknown>(import('./firstRunEntry'), () => ({
     dismissGettingStarted: mocks.dismiss,
     dismissIntoFirstRunTour: mocks.dismissIntoTour
   })
+}))
+
+vi.mock<unknown>(import('@/components/common/LazyImage.vue'), () => ({
+  default: {
+    name: 'LazyImage',
+    template: '<img :src="src" :alt="alt" draggable="false" />',
+    props: ['src', 'alt', 'imageClass', 'imageStyle']
+  }
 }))
 
 vi.mock<unknown>(
@@ -196,6 +209,51 @@ describe('GettingStartedScreen', () => {
         `getting-started-card-${FALLBACK_TEMPLATE_IDS[0]}`,
         'getting-started-card-catalog-filler'
       ])
+    })
+  })
+
+  describe('tutorials', () => {
+    async function openTutorials() {
+      await renderScreen()
+      await userEvent.click(
+        screen.getByText(enMessages.gettingStarted.tabs.tutorials)
+      )
+    }
+
+    function coverSources() {
+      return tutorialCards.map((tutorial) =>
+        screen
+          .getByAltText(i18n.global.t(tutorial.titleKey))
+          .getAttribute('src')
+      )
+    }
+
+    it.for([[true], [false]])(
+      'shows each tutorial its own bundled cover, catalog loaded: %s',
+      async ([isLoaded]) => {
+        useWorkflowTemplatesStore().isLoaded = isLoaded
+
+        await openTutorials()
+
+        expect(coverSources()).toEqual(
+          tutorialCards.map((tutorial) => tutorial.thumbnail)
+        )
+      }
+    )
+
+    it('addresses the covers through the deployment base, not the origin root', async () => {
+      const root = api.api_base
+      onTestFinished(() => {
+        api.api_base = root
+      })
+      api.api_base = '/comfy'
+
+      await openTutorials()
+
+      expect(
+        coverSources(),
+        'Served under a path prefix, a cover pinned to the origin root 404s and the card falls back to the generic placeholder'
+      ).toEqual(tutorialCards.map((tutorial) => `/comfy${tutorial.thumbnail}`))
     })
   })
 

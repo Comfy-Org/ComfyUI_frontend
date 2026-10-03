@@ -91,11 +91,9 @@
                 class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4"
               >
                 <GettingStartedCard
-                  v-for="(tutorial, index) in tutorialCards"
+                  v-for="tutorial in tutorialCards"
                   :key="tutorial.id"
-                  :image-src="
-                    tutorialThumbnail(tutorial.thumbnailTemplate, index)
-                  "
+                  :image-src="api.fileURL(tutorial.thumbnail)"
                   :title="t(tutorial.titleKey)"
                   :badge-icon="TUTORIAL_BADGE_ICON"
                   :testid="`getting-started-tutorial-${tutorial.id}`"
@@ -131,6 +129,7 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { api } from '@/scripts/api'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -138,7 +137,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
 import { useFirstRunEntry } from './firstRunEntry'
-import type { TutorialCard } from './tutorialCards'
 import {
   CURATED_TEMPLATE_IDS,
   FALLBACK_TEMPLATE_IDS,
@@ -169,8 +167,7 @@ const dialogStore = useDialogStore()
 
 /** The dialog layer starts at z-1700; sitting below it and releasing the trap keeps any dialog (desktop sign-in approval, invite links) reachable. */
 const dialogOpen = computed(() => dialogStore.dialogStack.length > 0)
-const { loadWorkflowTemplate, getTemplateThumbnailUrl, loadingTemplateId } =
-  useTemplateWorkflows()
+const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
 
 const activeTab = ref<TabValue>('templates')
 const failedTemplateId = ref<string | null>(null)
@@ -212,17 +209,6 @@ onMounted(() => {
     if (!dialogOpen.value) screenRef.value?.focus()
   })
 })
-
-function tutorialThumbnail(
-  id: TutorialCard['thumbnailTemplate'],
-  index: number
-) {
-  const fallbacks = cards.value
-  const template =
-    templatesStore.getTemplateByName(id) ??
-    (fallbacks.length ? fallbacks[index % fallbacks.length] : undefined)
-  return template ? getTemplateThumbnailUrl(template, 'default') : ''
-}
 
 function openTutorial(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
