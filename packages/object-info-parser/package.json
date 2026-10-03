@@ -10,6 +10,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "test": "vitest run --config ./vitest.config.ts",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },

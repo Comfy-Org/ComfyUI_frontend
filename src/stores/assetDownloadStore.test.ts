@@ -129,21 +129,21 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads[0].error).toBeUndefined()
     })
 
-    // OPEN DESIGN QUESTION PM-1302 / PM-1309: `activeDownloads` is also the
-    // UI's `isInProgress` signal (see ModelImportProgressDialog.vue), and an
-    // existing, unmarked test above ("moves download to finished when
-    // failed") requires a `failed` download to leave `activeDownloads` so
-    // the dialog can show its failed state and close button. Reconciliation
-    // of a `failed`-then-actually-`completed` task is now handled
-    // separately (pollStaleDownloads() re-checks `failed` downloads too, and
-    // a later WS message is no longer dropped - see the test above), but
-    // deliberately without pulling `failed` downloads back into
-    // `activeDownloads`, which would make the dialog show them as
+    // OPEN DESIGN QUESTION (PM-1302 / PM-1309 both closed):
+    // `activeDownloads` is also the UI's `isInProgress` signal (see
+    // ModelImportProgressDialog.vue), and an existing, unmarked test above
+    // ("moves download to finished when failed") requires a `failed` download
+    // to leave `activeDownloads` so the dialog can show its failed state and
+    // close button. Reconciliation of a `failed`-then-actually-`completed`
+    // task is now handled separately (pollStaleDownloads() re-checks `failed`
+    // downloads too, and a later WS message is no longer dropped - see the
+    // test above), but deliberately without pulling `failed` downloads back
+    // into `activeDownloads`, which would make the dialog show them as
     // in-progress again. Changing that UI-facing meaning of `activeDownloads`
     // is a product decision, not a mechanical fix, so this assertion is left
     // pinned as a known, deliberate gap for further discussion rather than
     // flipped.
-    it.fails('excludes a failed-then-actually-completed task from activeDownloads so it is never reconciled (PM-1302)', () => {
+    it.fails('excludes a failed-then-actually-completed task from activeDownloads (PM-1302)', () => {
       const store = useAssetDownloadStore()
 
       dispatch(createDownloadMessage({ status: 'running' }))
@@ -152,10 +152,11 @@ describe('useAssetDownloadStore', () => {
       )
 
       // The task never actually stopped on the backend - it retried and
-      // completed - but it was dropped from activeDownloads the moment the
-      // premature `failed` message landed, so pollStaleDownloads()
-      // (which only walks activeDownloads) will never pick it back up to
-      // reconcile with the real, later `completed` message.
+      // completed - but it left activeDownloads the moment the premature
+      // `failed` message landed, so the dialog stops showing it as in
+      // progress. Reconciliation itself still happens: pollStaleDownloads()
+      // walks recheckableDownloads, which includes `failed` (see the
+      // polling test below).
       expect(store.activeDownloads).toHaveLength(1)
     })
   })

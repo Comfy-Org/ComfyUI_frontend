@@ -114,6 +114,7 @@ export const CAPABILITIES = {
   can_downgrade_to_personal: false,
   can_invite_members: false,
   can_reactivate: false,
+  can_revert_scheduled_change: false,
   can_subscribe_self_serve: true,
   can_top_up: true
 }

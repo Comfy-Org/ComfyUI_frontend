@@ -5,9 +5,10 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 // GPU classes the fleet runs on, one label per column of the worker grid.
 const GPUS = ['RTX 6000 PRO', 'H100', 'B200']
@@ -126,7 +127,7 @@ watch(
   <div
     ref="stageRef"
     role="img"
-    :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
+    :aria-label="t('platform.serverlessVisual.ariaLabel')"
     class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink font-mono"
   >
     <div

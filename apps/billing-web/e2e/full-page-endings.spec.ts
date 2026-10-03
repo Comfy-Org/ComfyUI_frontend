@@ -154,8 +154,14 @@ const LAUNCH_PROMO = {
     kind: 'promotion',
     code: 'LAUNCH20',
     name: 'Launch 20%',
-    duration: 'once'
+    duration: 'once',
+    term: 'first_month'
   }
+} as const
+
+const LAUNCH_PROMO_ON_A_CHANGE = {
+  ...LAUNCH_PROMO,
+  discount: { ...LAUNCH_PROMO.discount, term: 'this_payment' }
 } as const
 
 test('758-15763: a Pay under a promo code keeps the plan rate on Success and lists the reasons the server reported, then what was paid today', async ({
@@ -179,7 +185,8 @@ test('758-15763: a Pay under a promo code keeps the plan rate on Success and lis
         code: 'LAUNCH20',
         name: 'Launch 20%',
         amount_off_cents: 1000,
-        duration: 'once'
+        duration: 'once',
+        term: 'first_month'
       }
     ]
   }
@@ -194,7 +201,7 @@ test('758-15763: a Pay under a promo code keeps the plan rate on Success and lis
   )
 })
 
-test('a one-time code on a monthly plan change reads This payment only on the summary, and Success lists the code the server reported', async ({
+test('a one-time code on a monthly plan change reads This payment only on the summary and on Success', async ({
   page,
   cloud,
   signIn
@@ -203,7 +210,7 @@ test('a one-time code on a monthly plan change reads This payment only on the su
     amount_charged_cents: 4000,
     currency: 'usd',
     prorated: false,
-    reasons: [LAUNCH_PROMO]
+    reasons: [LAUNCH_PROMO_ON_A_CHANGE]
   })
   const preview = cloud.scenario.preview
   cloud.scenario.preview = {
@@ -217,7 +224,8 @@ test('a one-time code on a monthly plan change reads This payment only on the su
         code: 'LAUNCH20',
         name: 'Launch 20%',
         amount_off_cents: 1000,
-        duration: 'once'
+        duration: 'once',
+        term: 'this_payment'
       }
     ],
     current_plan: {
@@ -234,7 +242,7 @@ test('a one-time code on a monthly plan change reads This payment only on the su
 
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(paidToday(page)).toHaveText(
-    /Launch 20%\s*−\$10\.00[\s\S]*Paid today\s*\$40\.00/
+    /Launch 20%\s*−\$10\.00\s*This payment only\s*Paid today\s*\$40\.00/
   )
 })
 

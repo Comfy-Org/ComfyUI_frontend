@@ -136,9 +136,9 @@ describe('TransformPane', () => {
 
       const transformPane = screen.getByTestId('transform-pane')
 
-      /* eslint-disable testing-library/prefer-user-event -- pointerDown for delegation, not a click */
+      /* oxlint-disable testing-library/prefer-user-event -- pointerDown for delegation, not a click */
       await fireEvent.pointerDown(transformPane)
-      /* eslint-enable testing-library/prefer-user-event */
+      /* oxlint-enable testing-library/prefer-user-event */
 
       expect(transformPane).toBeInTheDocument()
     })

@@ -2,6 +2,7 @@
   <SidebarTabTemplate
     ref="panelRef"
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
+    :closable
     v-bind="$attrs"
   >
     <template #alt-title>
@@ -197,6 +198,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -247,6 +249,8 @@ const Load3dViewerContent = defineAsyncComponent(
 )
 
 const { t } = useI18n()
+
+const { closable = true } = defineProps<{ closable?: boolean }>()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
@@ -580,12 +584,7 @@ const handleZoomClick = (asset: AssetItem) => {
       props: {
         modelUrl: getAssetFileUrl(asset)
       },
-      dialogComponentProps: {
-        renderer: 'reka',
-        size: 'full',
-        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
-        maximizable: true
-      }
+      dialogComponentProps: LOAD3D_VIEWER_DIALOG_PROPS
     })
     return
   }
