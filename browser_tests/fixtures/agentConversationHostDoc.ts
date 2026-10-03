@@ -4,6 +4,7 @@ import {
   hasAppliedOp,
   linksMap,
   mint,
+  nodesMap,
   project,
   readGraph
 } from '@comfyorg/comfy-multi-player'
@@ -201,6 +202,22 @@ export class HostDoc {
   link(id: number): unknown {
     const link = linksMap(this.doc).get(String(id))
     return link instanceof Y.Array ? link.toJSON() : link
+  }
+
+  /** Test-only frame for widget keys `set_widget` rejects, such as `_extra_N`. */
+  setDocumentWidget(nodeId: number, name: string, value: unknown): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const widgets = nodesMap(this.doc).get(String(nodeId))?.get('widgets')
+    if (!(widgets instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} has no named widget map`)
+    }
+    widgets.set(name, value)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
   }
 
   // A batch the client minted itself (envelope included), answered the way
