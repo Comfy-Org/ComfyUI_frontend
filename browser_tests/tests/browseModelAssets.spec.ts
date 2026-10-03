@@ -97,7 +97,8 @@ test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
 
     await expect(card).toBeVisible()
     await expect(useButton).toHaveAttribute('aria-disabled', 'true')
-    await useButton.click()
+    await card.focus()
+    await card.press('Enter')
     await expect(modal).toBeVisible()
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
   })
