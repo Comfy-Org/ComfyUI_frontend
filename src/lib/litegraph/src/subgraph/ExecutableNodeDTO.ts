@@ -280,9 +280,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Muted nodes produce no output
     if (this.mode === LGraphEventMode.NEVER) return
 
-    // Upstreamed: Bypass nodes are bypassed using the first input with matching type
+    // Upstreamed: Bypass nodes resolve outputs to compatible inputs.
     if (this.mode === LGraphEventMode.BYPASS) {
-      // Bypass nodes by finding first input with matching type
+      // Bypass nodes by finding a compatible input.
       const matchingIndex = this._getBypassSlotIndex(slot, type)
 
       // No input types match - bypass not possible
@@ -371,6 +371,21 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     ) {
       return slot
     }
+
+    const outputName = this.node.outputs[slot].name
+    const outputNameIsUnique =
+      !!outputName &&
+      this.node.outputs.filter((output) => output.name === outputName)
+        .length === 1
+    const nameMatches = outputNameIsUnique
+      ? inputs.filter(
+          (input) =>
+            input.name === outputName &&
+            LiteGraph.isValidConnection(input.type, outputType) &&
+            LiteGraph.isValidConnection(input.type, type)
+        )
+      : []
+    if (nameMatches.length === 1) return inputs.indexOf(nameMatches[0])
 
     // Preserve legacy behaviour; use exact match first.
     const exactMatch = inputs.findIndex((input) => input.type === type)
