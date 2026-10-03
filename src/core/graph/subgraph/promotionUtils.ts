@@ -441,10 +441,22 @@ function demotePromotedInput(
 
   if (subgraphNode.isInputConnected(subgraphNode.inputs.indexOf(hostInput))) {
     linkedInput.disconnect()
+    // SubgraphNode defers the teardown of a disconnected promoted input by a
+    // microtask so a same-tick rewire can cancel it. Deleting the store entry
+    // synchronously here would leave one tick in which host.widgets still
+    // holds the projection while store.getWidget(id) already returns
+    // undefined. Queue behind that teardown instead: it was queued during
+    // disconnect() above, so it runs first and the projection is gone before
+    // the entry is.
+    if (hostWidgetId) {
+      queueMicrotask(() => useWidgetValueStore().deleteWidget(hostWidgetId))
+    }
   } else {
+    // Removing the slot goes through 'removing-input', which queues no
+    // deferred teardown, so there is no ordering to respect.
     subgraphNode.subgraph.removeInput(linkedInput)
+    if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
   }
-  if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
   return true
 }
 

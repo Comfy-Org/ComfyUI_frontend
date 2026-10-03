@@ -2,16 +2,23 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  ExportedSubgraphInstance,
+  INodeInputSlot,
   ISlotType,
   LGraphCanvas,
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetValue } from '@/types/simplifiedWidget'
+import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   BaseWidget,
+  LegacyWidget,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import {
@@ -385,7 +392,7 @@ describe('SubgraphWidgetPromotion', () => {
       )
     })
 
-    it('should handle disconnection of promoted widget', () => {
+    it('should handle disconnection of promoted widget', async () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'input', type: 'number' }]
       })
@@ -399,13 +406,19 @@ describe('SubgraphWidgetPromotion', () => {
 
       subgraph.inputNode.slots[0].disconnect()
 
+      // Demotion is deferred by a microtask so a same-tick reconnect (a
+      // rewire) can cancel it instead of dropping the widget for one tick;
+      // a genuine disconnect like this one still fully demotes once that
+      // microtask runs.
+      await Promise.resolve()
+
       expect(subgraphNode.widgets).toHaveLength(
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
     })
 
-    it('keeps the host widget promoted while another interior widget is still connected', () => {
+    it('keeps the host widget promoted while another interior widget is still connected', async () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
       })
@@ -448,6 +461,12 @@ describe('SubgraphWidgetPromotion', () => {
       expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
 
       second.disconnectInput(0, true)
+
+      // Demotion is deferred by a microtask (see the rewire-desync
+      // describe block below); this is a genuine disconnect with nothing
+      // left to re-resolve to, so it still fully demotes once that
+      // microtask runs.
+      await Promise.resolve()
 
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
       expect(subgraphNode.widgets).toHaveLength(0)
@@ -1622,5 +1641,305 @@ describe('SubgraphWidgetPromotion', () => {
         expect(promotedWidgetStateByName(reloaded, 'value').value).toBeNull()
       })
     })
+  })
+})
+
+// PM-1328 / PM-1253 / PM-1254: wiring a new source into the interior link
+// behind one promoted widget (e.g. "prompt") was dropping/visually duplicating
+// the *other*, unrelated promoted widgets (e.g. width/height/seed) on the
+// same host node. Confirmed mechanism: SubgraphInputNode's
+// 'input-disconnected' handler (SubgraphNode.ts) used to demote the widget
+// synchronously while deferring the matching `widgetValueStore` cleanup to a
+// `queueMicrotask`, leaving `hostNode.widgets.length` and the store's tracked
+// id count for that node disagreeing for one tick -- exactly the window the
+// Vue widget grid (useProcessedWidgets) reads from two different sources to
+// render. The fix defers the demotion itself by a microtask, cancelled by a
+// same-tick reconnect, so a rewire never drops the widget at all.
+describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
+  function makeInteriorNode(title: string, value: WidgetValue = 1) {
+    const node = new LGraphNode(title)
+    const input = node.addInput('value', 'number')
+    node.addOutput('out', 'number')
+    const widget: LegacyWidget = new LegacyWidget({
+      name: 'widget',
+      type: 'number',
+      value,
+      y: 0,
+      options: {},
+      node
+    })
+    node.widgets = [widget]
+    input.widget = { name: widget.name }
+    return node
+  }
+
+  it('keeps every promoted widget present while rewiring the interior link behind one of them', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'text', type: 'number' },
+        { name: 'seed', type: 'number' },
+        { name: 'width', type: 'number' },
+        { name: 'height', type: 'number' }
+      ]
+    })
+
+    const textNode = makeInteriorNode('TextNode')
+    const seedNode = makeInteriorNode('SeedNode')
+    const widthNode = makeInteriorNode('WidthNode')
+    const heightNode = makeInteriorNode('HeightNode')
+    const replacementTextNode = makeInteriorNode('ReplacementTextNode', 2)
+    subgraph.add(textNode)
+    subgraph.add(seedNode)
+    subgraph.add(widthNode)
+    subgraph.add(heightNode)
+    subgraph.add(replacementTextNode)
+
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    subgraph.inputNode.slots[1].connect(seedNode.inputs[0], seedNode)
+    subgraph.inputNode.slots[2].connect(widthNode.inputs[0], widthNode)
+    subgraph.inputNode.slots[3].connect(heightNode.inputs[0], heightNode)
+
+    const hostNode = createTestSubgraphNode(subgraph)
+    expect(hostNode.widgets).toHaveLength(4)
+
+    // Rewire the interior link feeding the 'text' promoted widget onto a new
+    // source node, exactly as a user (or agent) dragging a new node onto
+    // that widget's socket does: the old link is removed before the new one
+    // lands.
+    textNode.disconnectInput(0, true)
+
+    // The other, unrelated promoted widgets (seed/width/height) -- and the
+    // rewired one itself -- must never disappear mid-rewire.
+    expect(hostNode.widgets).toHaveLength(4)
+
+    subgraph.inputNode.slots[0].connect(
+      replacementTextNode.inputs[0],
+      replacementTextNode
+    )
+    await Promise.resolve()
+
+    expect(hostNode.widgets).toHaveLength(4)
+    expect(promotedInputs(hostNode)).toHaveLength(4)
+  })
+})
+
+// Deferring the demotion by a microtask (above) moved three things that used
+// to run synchronously *after* the clearing to running *before* it, or to
+// running against a slot something else already tore down. Each case below
+// is a reviewer finding on the backport carrier
+// https://github.com/Comfy-Org/ComfyUI_frontend/pull/19750 that the suite did
+// not cover: no test in the repo asserted store reclamation on a genuine
+// disconnect, which is why CI stayed green.
+describe('Deferred promoted-widget demotion — teardown ordering', () => {
+  function promoteSingleWidget() {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'input', type: 'number' }]
+    })
+    const { node } = createNodeWithWidget('Test Node')
+    const subgraphNode = setupPromotedWidget(subgraph, node)
+
+    const promotedId = subgraphNode.inputs[0].widgetId
+    if (!promotedId) throw new Error('Expected the input to be promoted')
+    expect(useWidgetValueStore().getWidget(promotedId)).toBeDefined()
+
+    return { subgraph, node, subgraphNode, promotedId }
+  }
+
+  it('retains the widget store entry across a disconnect so a later re-promotion restores the value', async () => {
+    const { subgraph, node, subgraphNode, promotedId } = promoteSingleWidget()
+    const store = useWidgetValueStore()
+    store.setValue(promotedId, 77)
+
+    subgraph.inputNode.slots[0].disconnect()
+    await Promise.resolve()
+
+    // The slot fully demotes…
+    expect(subgraphNode.inputs[0]?.widgetId).toBeUndefined()
+    expect(subgraphNode.widgets).toHaveLength(0)
+    // …but the store entry is deliberately retained. A rebind of the interior
+    // link disconnects and reconnects across two ticks, so the deferred
+    // teardown cannot tell it from a terminal disconnect, and reclaiming here
+    // would destroy the user's edit. Issue #14495; asserted end-to-end by
+    // subgraphPromotion.spec.ts "Promoted STRING widget edit survives a
+    // rebind of the interior link", which reds if this entry is deleted.
+    expect(store.getWidget(promotedId)).toBeDefined()
+
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+    await Promise.resolve()
+
+    expect(subgraphNode.inputs[0]?.widgetId).toBe(promotedId)
+    expect(store.getWidget(promotedId)?.value).toBe(77)
+  })
+
+  it('still demotes when a same-tick rewire lands on an interior input with no widget', async () => {
+    const { subgraph, node, subgraphNode } = promoteSingleWidget()
+
+    // SubgraphInput.connect dispatches 'input-connected' with no
+    // widget/node when the new interior target has no widget locator.
+    const plainTarget = new LGraphNode('No Widget Target')
+    plainTarget.addInput('value', 'number')
+    subgraph.add(plainTarget)
+
+    node.disconnectInput(0, true)
+    subgraph.inputNode.slots[0].connect(plainTarget.inputs[0], plainTarget)
+    await Promise.resolve()
+
+    // Cancelling the demotion here without promoting a replacement stranded
+    // widgetId/.widget/._widget on a widget whose interior source is gone —
+    // a phantom promoted widget that renders and serializes, with no
+    // 'widget-demoted' for the promotion-error reconciler to catch.
+    expect(subgraphNode.inputs[0]?.widgetId).toBeUndefined()
+    expect(subgraphNode.inputs[0]?._widget).toBeUndefined()
+    expect(subgraphNode.widgets).toHaveLength(0)
+  })
+
+  it('dispatches no demotion event when the node is removed in the same tick', async () => {
+    const { subgraph, subgraphNode } = promoteSingleWidget()
+    const eventCapture = createEventCapture(subgraph.events, ['widget-demoted'])
+
+    subgraph.inputNode.slots[0].disconnect()
+    // onRemoved() already runs _clearPromotedWidget, and an AbortSignal
+    // cannot cancel an already-queued microtask. Re-running the teardown
+    // dispatched a spurious 'widget-demoted' — which makes
+    // createPromotionErrorReconciler.removeHostWidgetCandidate drop a live
+    // candidate — and broke the invariant asserted above, that onRemoved()
+    // dispatches no demotion events.
+    subgraphNode.onRemoved()
+    await Promise.resolve()
+
+    expect(eventCapture.getEventsByType('widget-demoted')).toHaveLength(0)
+    eventCapture.cleanup()
+  })
+
+  it('dispatches no demotion event when the host is reconfigured in the same tick', async () => {
+    const { subgraph, subgraphNode } = promoteSingleWidget()
+    const eventCapture = createEventCapture(subgraph.events, ['widget-demoted'])
+
+    subgraph.inputNode.slots[0].disconnect()
+    // configure() replaces this.inputs wholesale, so the queued callback
+    // would otherwise run against a slot that is no longer the node's.
+    subgraphNode.configure(subgraphNode.serialize())
+    await Promise.resolve()
+
+    expect(eventCapture.getEventsByType('widget-demoted')).toHaveLength(0)
+    eventCapture.cleanup()
+  })
+})
+
+// Speculative lead for PM-1328's duplication (not the confirmed disappear
+// mechanism above): a promoted textarea's host widget is a DOMWidgetImpl
+// living in useDomWidgetStore, materialized by createPromotedHostWidget
+// (see multilineTextarea.ts, wired up the same way the app's real
+// SubgraphNode subclass does in litegraphService.ts). Every other promoted
+// widget is a plain store projection. The theory: if anything ever resolves
+// a store-projected row for an input that already has a DOM host attached,
+// the widget grid would render two rows for one input. `_projectPromotedWidget`
+// guards this with `if (input._widget) return input._widget`, so this test
+// exercises the guard across the real rebuild/rewire/configure sequence
+// rather than asserting the guard exists in isolation.
+describe('Promoted textarea dual-registration (PM-1328 duplication lead)', () => {
+  class DomHostSubgraphNode extends SubgraphNode {
+    protected override createPromotedHostWidget(
+      input: INodeInputSlot,
+      id: WidgetId,
+      sourceWidget: Readonly<IBaseWidget>
+    ): IBaseWidget | undefined {
+      return createPromotedMultilineWidget({
+        subgraphNode: this,
+        input,
+        widgetId: id,
+        sourceWidget
+      })
+    }
+  }
+
+  function createSettledDomHostSubgraphNode(subgraph: Subgraph): SubgraphNode {
+    const rootGraph = subgraph.rootGraph
+    const instanceData: ExportedSubgraphInstance = {
+      id: rootGraph.state.lastNodeId + 1,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      properties: {},
+      flags: {},
+      mode: 0,
+      order: 0
+    }
+    const node = new DomHostSubgraphNode(rootGraph, subgraph, instanceData)
+    rootGraph.add(node)
+    return node
+  }
+
+  function makeTextareaInteriorNode(title: string, value = 'hello') {
+    const node = new LGraphNode(title)
+    const input = node.addInput('value', 'STRING')
+    const widget = fromAny<IBaseWidget, unknown>({
+      name: 'widget',
+      type: 'customtext',
+      value,
+      options: {},
+      element: document.createElement('textarea')
+    })
+    node.widgets = [widget]
+    input.widget = { name: widget.name }
+    return node
+  }
+
+  function textRowCount(hostNode: SubgraphNode): number {
+    return hostNode.widgets.filter((widget) => widget.name === 'text').length
+  }
+
+  function domStoreEntryCount(hostNode: SubgraphNode): number {
+    return [...useDomWidgetStore().widgetStates.values()].filter(
+      (state) => state.widget.node === hostNode
+    ).length
+  }
+
+  it('keeps exactly one widget row and one DOM registration per input across a rewire', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const textNode = makeTextareaInteriorNode('TextNode')
+    subgraph.add(textNode)
+
+    // Settle the host node in its graph *before* the interior link resolves
+    // the promoted widget, matching how the real app always adds a
+    // SubgraphNode before its subgraph's own construction-time links fire.
+    const hostNode = createSettledDomHostSubgraphNode(subgraph)
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
+
+    textNode.disconnectInput(0, true)
+    // Mid-rewire: the demotion is deferred, so the row and its DOM
+    // registration must still be present. `toBeLessThanOrEqual(1)` is
+    // satisfied by 0, which is exactly the "rewired widget disappears"
+    // symptom (PM-1254) this suite exists to catch.
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
+
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
+  })
+
+  it('keeps exactly one widget row and one DOM registration per input across a reconfigure', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const textNode = makeTextareaInteriorNode('TextNode')
+    subgraph.add(textNode)
+
+    const hostNode = createSettledDomHostSubgraphNode(subgraph)
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    expect(textRowCount(hostNode)).toBe(1)
+
+    hostNode.configure(hostNode.serialize())
+
+    expect(textRowCount(hostNode)).toBe(1)
+    expect(domStoreEntryCount(hostNode)).toBe(1)
   })
 })

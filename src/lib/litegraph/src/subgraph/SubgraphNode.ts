@@ -313,6 +313,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         input.shape = this.getSlotShape(subgraphInput, e.detail.input)
         if (!e.detail.widget || !e.detail.node) return
 
+        // A reconnect landing before the deferred demotion below runs is a
+        // rewire, not a real disconnect: cancel the pending demotion so the
+        // widget is never torn down. Only once a replacement is actually
+        // being promoted, though — SubgraphInput.connect dispatches
+        // 'input-connected' with no widget/node when the new interior target
+        // has no widget locator, and cancelling there would strand
+        // input.widgetId/.widget/._widget on a widget whose interior source
+        // is gone: a phantom promoted widget that renders and serializes,
+        // with no 'widget-demoted' for the promotion-error reconciler.
+        input._pendingDemotionToken = undefined
+
         this._setWidget(
           subgraphInput,
           input,
@@ -336,20 +347,66 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           return
         }
 
-        if (input._widget) this.ensureWidgetRemoved(input._widget)
-        if (input.widgetId) {
-          const id = input.widgetId
-          queueMicrotask(() => {
-            if (this.inputs.some((input) => input.widgetId === id)) return
-            useWidgetValueStore().deleteWidget(id)
-          })
-        }
+        // Defer the actual demotion by a microtask instead of clearing
+        // input.widgetId/.widget/._widget here: a rewire (this disconnect
+        // immediately followed by a reconnect of the same input, e.g.
+        // dragging a new source onto an already-promoted widget) would
+        // otherwise drop the widget from `this.widgets` for one tick, which
+        // is exactly the window the Vue widget grid can render from. The
+        // 'input-connected' listener above cancels this token on a
+        // same-tick reconnect.
+        const widget = input._widget
+        const id = input.widgetId
+        const token = Symbol()
+        input._pendingDemotionToken = token
+        queueMicrotask(() => {
+          if (input._pendingDemotionToken !== token) return
+          input._pendingDemotionToken = undefined
 
-        input.pos = undefined
-        input.widget = undefined
-        input.widgetId = undefined
-        input._widget = undefined
-        this.invalidatePromotedViews()
+          // configure() and onRemoved() can tear this slot down in the same
+          // tick (both run _clearPromotedWidget), and _setWidget can
+          // re-promote it; an AbortSignal cannot cancel an already-queued
+          // microtask, so detect it here. Repeating the teardown would run
+          // widget.onRemove() a second time — a double unregister for
+          // DOM-backed host widgets — and dispatch a spurious
+          // 'widget-demoted' that makes the promotion-error reconciler drop
+          // a live candidate, breaking the invariant that onRemoved()
+          // dispatches no demotion events.
+          if (input._widget !== widget) return
+
+          if (widget) this.ensureWidgetRemoved(widget)
+
+          input.pos = undefined
+          input.widget = undefined
+          input.widgetId = undefined
+          input._widget = undefined
+          this.invalidatePromotedViews()
+
+          // Reclaim the store entry only when the host slot itself is gone.
+          //
+          // Checking after the clearing above is what makes the second
+          // predicate meaningful at all: asked before it, the input being
+          // demoted always matched its own id and the call was unreachable.
+          //
+          // But reachable-on-every-disconnect is also wrong. A rebind of the
+          // interior link disconnects and reconnects across two ticks, so
+          // this callback cannot tell it from a terminal disconnect, and the
+          // entry is what restores the user's edit when the slot is
+          // re-promoted under the same id (registerWidget reuses the value on
+          // a same-type match). That is issue #14495, asserted black-box by
+          // subgraphPromotion.spec.ts "Promoted STRING widget edit survives a
+          // rebind of the interior link", which reds if this deletes.
+          //
+          // A slot removed from the subgraph definition can never come back
+          // under this id, so there is nothing to preserve and the entry would
+          // otherwise leak — see promotionAfterReplacement.test.ts "deletes
+          // the null-valued entry and rebuilds it from the interior widget".
+          const slotStillExists = this.inputs.includes(input)
+          const anotherSlotHoldsId = this.inputs.some((i) => i.widgetId === id)
+          if (id && !slotStillExists && !anotherSlotHoldsId) {
+            useWidgetValueStore().deleteWidget(id)
+          }
+        })
       },
       { signal }
     )

@@ -805,7 +805,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     return { host, interiorNode, interiorWidget }
   }
 
-  it('drops projection but keeps slot and external link when host slot is externally connected', () => {
+  it('drops projection but keeps slot and external link when host slot is externally connected', async () => {
     const { host, interiorNode, interiorWidget } = setupPromotedWidget()
     const hostInput = host.inputs[0]
     const source = new LGraphNode('External Source')
@@ -819,6 +819,18 @@ describe('demoteWidget — axiomatic projection retraction', () => {
 
     demoteWidget(interiorNode, interiorWidget, [host])
 
+    // Demotion is deferred by a microtask so a same-tick reconnect (a
+    // rewire) can cancel it; this genuine demote completes once it runs.
+    // Until then the host projection and its store entry must agree —
+    // deleting the entry synchronously here left one tick in which
+    // host.widgets still held the projection while getWidget(id) was
+    // already undefined.
+    if (!promotedInputId) throw new Error('Missing promoted input widgetId')
+    expect(host.widgets).toHaveLength(1)
+    expect(useWidgetValueStore().getWidget(promotedInputId)).toBeDefined()
+
+    await Promise.resolve()
+
     expect(host.subgraph.inputs).toHaveLength(1)
     expect(host.inputs[0]?.link).toBe(externalLink.id)
     expect(host.inputs[0]?._widget).toBeUndefined()
@@ -830,13 +842,19 @@ describe('demoteWidget — axiomatic projection retraction', () => {
 
   it('removes the slot entirely when host slot has no external link', () => {
     const { host, interiorNode, interiorWidget } = setupPromotedWidget()
+    const promotedInputId = host.inputs[0]?.widgetId
 
     expect(host.subgraph.inputs).toHaveLength(1)
+    if (!promotedInputId) throw new Error('Missing promoted input widgetId')
 
     demoteWidget(interiorNode, interiorWidget, [host])
 
     expect(host.subgraph.inputs).toHaveLength(0)
     expect(host.inputs).toHaveLength(0)
+    // This branch removes the slot via 'removing-input', which queues no
+    // deferred demotion, so demotePromotedInput must reclaim the entry
+    // itself.
+    expect(useWidgetValueStore().getWidget(promotedInputId)).toBeUndefined()
   })
 
   it('demotes the second of two promoted widgets sharing a source widget name', () => {
