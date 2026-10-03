@@ -484,7 +484,7 @@ describe('error mapping', () => {
     expect(error.body).toBeUndefined()
   })
 
-  it('falls back to the HTTP status when the response has no error text', async () => {
+  it('falls back to the HTTP status when the response has no error body or status text', async () => {
     respond(new Response('', { status: 503 }))
 
     const error = await makeClient()
