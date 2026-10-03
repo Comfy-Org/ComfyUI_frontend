@@ -123,4 +123,25 @@ test.describe('Workflow tab status indicator', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect(backgroundTab.getByRole('img')).toHaveCount(0)
   })
+
+  test('keeps a compact inactive status visible on hover', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 800, height: 720 })
+    const ws = await getWebSocket()
+    const { backgroundTab } = await runOnBackgroundTab(comfyPage, ws)
+    const topbar = comfyPage.menu.topbar
+    await topbar.openBlankWorkflows(9)
+    await expect(topbar.tabs.first()).not.toBeInViewport({ ratio: 1 })
+
+    await backgroundTab.hover()
+
+    await expect(
+      backgroundTab.getByRole('img', { name: 'Running' })
+    ).toBeVisible()
+    await expect(
+      backgroundTab.getByTestId(TestIds.topbar.closeWorkflowButton)
+    ).toBeHidden()
+  })
 })
