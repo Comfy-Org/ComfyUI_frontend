@@ -2794,70 +2794,43 @@ describe('useSubscription', () => {
         }
       )
 
-      it('reports a refused portal request as a failed open and still reports the error', async () => {
-        const refusal = new AuthStoreError('Portal refused', 500)
-        mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
+      it.for([
+        {
+          name: 'a refused portal request',
+          failure: new AuthStoreError('Portal refused', 500),
+          category: { failure_category: 'api_rejected' }
+        },
+        {
+          name: 'a rail-mismatch refusal',
+          failure: new AuthStoreError(
+            'refused',
+            409,
+            'WORKSPACE_BILLING_REQUIRED'
+          ),
+          category: {}
+        }
+      ])(
+        'reports $name as a failed open and rejects without reporting the error',
+        async ({ failure, category }) => {
+          mockAccessBillingPortalDirect.mockRejectedValueOnce(failure)
 
-        await expect(
-          useSubscriptionWithScope().manageSubscription()
-        ).resolves.toBeUndefined()
+          await expect(
+            useSubscriptionWithScope().manageSubscription()
+          ).rejects.toBe(failure)
 
-        expect(portalEvents()).toEqual([
-          {
-            operation: 'portal',
-            stage: 'failed',
-            outcome: 'failure',
-            target: 'manage_subscription',
-            billing_client: 'legacy',
-            failure_category: 'api_rejected'
-          }
-        ])
-        expect(mockReportError).toHaveBeenCalledWith(refusal)
-      })
-
-      it('reports a rail-mismatch refusal as a failed open and leaves recovery to the adapter', async () => {
-        const refusal = new AuthStoreError(
-          'refused',
-          409,
-          'WORKSPACE_BILLING_REQUIRED'
-        )
-        mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
-
-        await expect(
-          useSubscriptionWithScope().manageSubscription()
-        ).rejects.toBe(refusal)
-
-        expect(portalEvents()).toMatchObject([
-          {
-            operation: 'portal',
-            stage: 'failed',
-            target: 'manage_subscription'
-          }
-        ])
-        expect(mockReportError).not.toHaveBeenCalled()
-      })
-    })
-
-    it('rethrows a rail-mismatch refusal from the billing portal', async () => {
-      const refusal = new AuthStoreError(
-        'refused',
-        409,
-        'WORKSPACE_BILLING_REQUIRED'
+          expect(portalEvents()).toMatchObject([
+            {
+              operation: 'portal',
+              stage: 'failed',
+              outcome: 'failure',
+              target: 'manage_subscription',
+              billing_client: 'legacy',
+              ...category
+            }
+          ])
+          expect(mockReportError).not.toHaveBeenCalled()
+        }
       )
-      mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
-      const { manageSubscription } = useSubscriptionWithScope()
-
-      await expect(manageSubscription()).rejects.toBe(refusal)
-      expect(mockReportError).not.toHaveBeenCalled()
-    })
-
-    it('reports other billing portal failures instead of throwing', async () => {
-      const failure = new Error('portal down')
-      mockAccessBillingPortalDirect.mockRejectedValueOnce(failure)
-      const { manageSubscription } = useSubscriptionWithScope()
-
-      await expect(manageSubscription()).resolves.toBeUndefined()
-      expect(mockReportError).toHaveBeenCalledWith(failure)
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
