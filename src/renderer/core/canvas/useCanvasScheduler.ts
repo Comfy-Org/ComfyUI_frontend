@@ -24,6 +24,7 @@ export interface CanvasScheduler {
 export function createCanvasScheduler(): CanvasScheduler {
   const canvasStore = useCanvasStore()
   const queue: CanvasOperation[] = []
+  let isFlushing = false
 
   function targetOf(operation: CanvasOperation): HTMLCanvasElement | undefined {
     return operation.element ?? canvasStore.canvas?.canvas
@@ -56,10 +57,23 @@ export function createCanvasScheduler(): CanvasScheduler {
   }
 
   function flush(): void {
-    for (const operation of queue.splice(0)) {
-      if (isStale(operation)) continue
-      if (isVisible(targetOf(operation))) run(operation)
-      else queue.push(operation)
+    if (isFlushing) return
+
+    isFlushing = true
+    try {
+      for (let index = 0; index < queue.length;) {
+        const operation = queue[index]
+        if (isStale(operation)) {
+          queue.splice(index, 1)
+        } else if (isVisible(targetOf(operation))) {
+          queue.splice(index, 1)
+          run(operation)
+        } else {
+          index++
+        }
+      }
+    } finally {
+      isFlushing = false
     }
   }
 
