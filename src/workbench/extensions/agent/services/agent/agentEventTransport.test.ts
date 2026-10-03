@@ -506,29 +506,33 @@ describe('agentEventTransport text and tool parts', () => {
     })
   })
 
-  it.for([
-    ['null', null],
-    ['empty', '']
-  ] as const)(
-    'preserves a running skill through a %s completion value',
-    ([, skill]) => {
-      const frame = (status: 'running' | 'success', value: string | null) =>
-        zAgentWsEvent.parse({
-          type: 'agent_tool_call',
-          data: {
-            tool_call_id: 'call-1',
-            tool_name: 'load_skill',
-            status,
-            skill: value,
-            message_id: 'm',
-            thread_id: 't'
-          }
-        })
+  it.for([null, ''] as const)(
+    'preserves the running skill when completion carries %j',
+    (skill) => {
+      const running = zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'running',
+          skill: 'comfy-director',
+          message_id: 'm',
+          thread_id: 't'
+        }
+      })
+      const completed = zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill,
+          message_id: 'm',
+          thread_id: 't'
+        }
+      })
 
-      const message = drive([
-        frame('running', 'comfy-director'),
-        frame('success', skill)
-      ])
+      const message = drive([running, completed])
 
       expect(toolParts(message)[0]).toMatchObject({
         skill: 'comfy-director',

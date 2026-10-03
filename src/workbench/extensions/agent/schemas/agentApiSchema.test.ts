@@ -114,7 +114,24 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed).toMatchObject({ data: { skill: null } })
   })
 
-  it('clamps an over-long skill without splitting a Unicode code point', () => {
+  it('clamps an over-long skill instead of dropping the tool-call frame', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'running',
+        skill: 'a'.repeat(300),
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data.skill).toBe('a'.repeat(256))
+  })
+
+  it('does not split a Unicode code point when clamping a skill', () => {
     const parsed = zAgentWsEvent.parse({
       type: 'agent_tool_call',
       data: {

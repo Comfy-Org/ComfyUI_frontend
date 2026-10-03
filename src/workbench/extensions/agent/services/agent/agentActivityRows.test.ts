@@ -58,7 +58,18 @@ describe('foldActivity', () => {
     ])
   })
 
-  it('latches a failure and an in-flight call across the fold', () => {
+  it('ignores skill metadata for tools that do not display it', () => {
+    const rows = foldActivity([
+      { ...tool('search_nodes'), skill: 'building' },
+      { ...tool('search_nodes'), skill: 'comfy-director' }
+    ])
+
+    expect(rows).toEqual([
+      expect.objectContaining({ name: 'search_nodes', count: 2 })
+    ])
+  })
+
+  it('uses the latest settled outcome and retains the in-flight state', () => {
     const rows = foldActivity([
       tool('add_node', true, 100),
       { type: 'tool', callId: 'c2', name: 'add_node', state: 'streaming' },
@@ -75,15 +86,5 @@ describe('foldActivity', () => {
     ])
 
     expect(rows[0]).toMatchObject({ count: 2, ok: true })
-  })
-
-  it('uses the latest outcome across repeated retries', () => {
-    const rows = foldActivity([
-      { ...tool('load_skill', true), skill: 'comfy-director' },
-      { ...tool('load_skill', false), skill: 'comfy-director' },
-      { ...tool('load_skill', true), skill: 'comfy-director' }
-    ])
-
-    expect(rows[0]).toMatchObject({ count: 3, ok: true })
   })
 })
