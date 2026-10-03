@@ -13,6 +13,7 @@ permissions:
 
 env:
   ISSUE_LABEL: 'area:testing'
+  ISSUE_MARKER: '<!-- router-provider-drift -->'
   ISSUE_TITLE: 'Router provider coverage has drifted from published sources'
 
 concurrency:
@@ -30,16 +31,18 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-frontend
       - name: Compare checked-in coverage with published sources
+        id: drift
         run: pnpm --filter @comfyorg/website check:router-provider-drift
       - name: File or update the drift issue
-        if: failure()
+        if: failure() && steps.drift.outcome == 'failure'
         uses: actions/github-script@v9
         with:
           github-token: ${{ github.token }}
           script: |
             const title = process.env.ISSUE_TITLE
+            const marker = process.env.ISSUE_MARKER
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
-            const body = `The scheduled [Router Provider Drift](${runUrl}) check failed. The checked-in Router provider coverage may no longer match the published documentation or schemas, or a published source may be unavailable. See the run for the exact failure. This issue is maintained by \`.github/workflows/ci-router-provider-drift.yaml\` and closes itself after a passing run.`
+            const body = `${marker}\nThe scheduled [Router Provider Drift](${runUrl}) check failed. The checked-in Router provider coverage may no longer match the published documentation or schemas, or a published source may be unavailable. See the run for the exact failure. This issue is maintained by \`.github/workflows/ci-router-provider-drift.yaml\` and closes itself after a passing run.`
             const openIssues = await github.paginate(github.rest.issues.listForRepo, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -47,7 +50,9 @@ jobs:
               labels: process.env.ISSUE_LABEL,
               per_page: 100
             })
-            const existing = openIssues.find((issue) => issue.title === title)
+            const existing = openIssues.find((issue) =>
+              !issue.pull_request && (issue.body ?? '').includes(marker)
+            )
             if (existing) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -70,6 +75,7 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
+            const marker = process.env.ISSUE_MARKER
             const openIssues = await github.paginate(github.rest.issues.listForRepo, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -77,7 +83,9 @@ jobs:
               labels: process.env.ISSUE_LABEL,
               per_page: 100
             })
-            const existing = openIssues.find((issue) => issue.title === process.env.ISSUE_TITLE)
+            const existing = openIssues.find((issue) =>
+              !issue.pull_request && (issue.body ?? '').includes(marker)
+            )
             if (!existing) return
             await github.rest.issues.createComment({
               owner: context.repo.owner,
