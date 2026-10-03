@@ -113,6 +113,7 @@ function createAgentProxy(
 
       const { dataDir } = tokenSource
       const authorize = (proxyReq: ClientRequest) => {
+        proxyReq.removeHeader('Authorization')
         const token = readAgentDiscoveryToken(dataDir)
         if (token) proxyReq.setHeader('Authorization', `Bearer ${token}`)
       }

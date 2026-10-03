@@ -33,8 +33,10 @@ import { createDevAgentConfig } from './devAgentConfig.ts'
 class FakeStandaloneAgent {
   private token = randomBytes(32).toString('hex')
   private readonly server: Server
+  readonly requestAuthorizations: Array<string | undefined> = []
   private constructor() {
     this.server = createServer((req, res) => {
+      this.requestAuthorizations.push(req.headers.authorization)
       if (!this.authorized(req.headers.authorization)) {
         res.statusCode = 401
         res.end('unauthorized')
@@ -252,6 +254,29 @@ describe('dev agent proxy across an agent restart', () => {
 
       await agent.publishDiscovery(dataDir)
       expect(await getThroughProxy(server, '/api/agent/threads')).toBe(200)
+    }
+  )
+
+  it(
+    'does not forward an inbound credential while discovery is unavailable',
+    { timeout: 60_000 },
+    async () => {
+      const agent = await FakeStandaloneAgent.start()
+      started.agent = agent
+      dataDir = await mkdtemp(join(tmpdir(), 'dev-agent-rotation-'))
+      const server = await startDevServer(
+        { DEV_AGENT_URL: agent.url, DEV_AGENT_DATA_DIR: dataDir },
+        resolve(import.meta.dirname, '..')
+      )
+      started.server = server
+
+      expect(
+        await getThroughProxy(server, '/api/agent/threads', {
+          Authorization: `Bearer ${agent.currentToken}`,
+          'Sec-Fetch-Site': 'same-origin'
+        })
+      ).toBe(401)
+      expect(agent.requestAuthorizations).toEqual([undefined])
     }
   )
 
