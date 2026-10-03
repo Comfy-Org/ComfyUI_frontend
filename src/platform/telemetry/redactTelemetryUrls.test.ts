@@ -1,9 +1,41 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import {
   redactTelemetryUrls,
   redactTelemetryValues
 } from './redactTelemetryUrls'
+
+function denselySharedValue(): Record<string, unknown> {
+  let shared: Record<string, unknown> = {
+    url: 'https://example.com/a?token=secret'
+  }
+  for (let depth = 0; depth < 30; depth++) {
+    shared = { left: shared, right: shared }
+  }
+  return shared
+}
+
+function overBudgetValue(): Record<string, unknown> {
+  const root: Record<string, unknown> = {}
+  let current = root
+  for (let depth = 0; depth < 100_000; depth++) {
+    const next: Record<string, unknown> = {}
+    current.next = next
+    current = next
+  }
+  current.url = 'https://user:secret@example.com/model.glb?token=private'
+  return root
+}
+
+function followNext(value: unknown, count: number): unknown {
+  let current = value
+  for (let depth = 0; depth < count; depth++) {
+    assert.isObject(current)
+    assert.property(current, 'next')
+    current = (current as Record<string, unknown>).next
+  }
+  return current
+}
 
 describe('redactTelemetryUrls', () => {
   describe.for([
@@ -143,20 +175,12 @@ describe('redactTelemetryValues', () => {
   })
 
   it('memoizes densely shared objects instead of rewalking every path', () => {
-    let shared: Record<string, unknown> = {
-      url: 'https://example.com/a?token=secret'
-    }
-    for (let depth = 0; depth < 30; depth++) {
-      shared = { left: shared, right: shared }
-    }
+    const redacted = redactTelemetryValues({ shared: denselySharedValue() })
+      ?.shared as Record<string, unknown>
 
-    const redacted = redactTelemetryValues({ shared })?.shared
-    if (typeof redacted !== 'object' || redacted === null) {
-      throw new Error('Expected a redacted shared object')
-    }
-    if (!('left' in redacted) || !('right' in redacted)) {
-      throw new Error('Expected the shared branches')
-    }
+    assert.isObject(redacted)
+    assert.property(redacted, 'left')
+    assert.property(redacted, 'right')
     expect(redacted.left).toBe(redacted.right)
   })
 
@@ -187,20 +211,15 @@ describe('redactTelemetryValues', () => {
     })
 
     const redacted = redactTelemetryValues({ error, date, url, value })
-    expect(redacted).toBeDefined()
-    if (!redacted) throw new Error('Expected redacted telemetry values')
+    assert.exists(redacted)
 
-    if (!(redacted.error instanceof Error)) {
-      throw new Error('Expected redacted Error')
-    }
+    assert.instanceOf(redacted.error, Error)
     expect(redacted.error.message).toBe('failed https://example.com/a.glb')
     expect(redacted.error.name).toBe('AssetLoadError https://example.com/name')
     expect(redacted.error.stack).toBe(
       'at load (https://example.com/load.js:1:2)'
     )
-    if (!(redacted.error.cause instanceof Error)) {
-      throw new Error('Expected redacted Error cause')
-    }
+    assert.instanceOf(redacted.error.cause, Error)
     expect(redacted.error.cause.message).toBe(
       'cause https://example.com/cause.glb'
     )
@@ -219,26 +238,7 @@ describe('redactTelemetryValues', () => {
   })
 
   it('fails closed for values beyond the traversal budgets', () => {
-    const root: Record<string, unknown> = {}
-    let current = root
-    for (let depth = 0; depth < 100_000; depth++) {
-      const next: Record<string, unknown> = {}
-      current.next = next
-      current = next
-    }
-    current.url = 'https://user:secret@example.com/model.glb?token=private'
-
-    let redacted: unknown = redactTelemetryValues(root)
-    for (let depth = 0; depth < 32; depth++) {
-      if (
-        typeof redacted !== 'object' ||
-        redacted === null ||
-        !('next' in redacted)
-      ) {
-        throw new Error(`Expected object with next at depth ${depth}`)
-      }
-      redacted = redacted.next
-    }
+    const redacted = followNext(redactTelemetryValues(overBudgetValue()), 32)
     expect(redacted).toBe('[Redacted]')
   })
 
@@ -252,12 +252,10 @@ describe('redactTelemetryValues', () => {
     })
 
     const redacted = redactTelemetryValues({ array: array.proxy, error })
-    if (!redacted) throw new Error('Expected redacted telemetry values')
+    assert.exists(redacted)
 
     expect(redacted.array).toBe('[Redacted]')
-    if (!(redacted.error instanceof Error)) {
-      throw new Error('Expected redacted Error')
-    }
+    assert.instanceOf(redacted.error, Error)
     expect(redacted.error.message).toBe('[Redacted]')
     expect(message).not.toHaveBeenCalled()
   })
