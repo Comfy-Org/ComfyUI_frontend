@@ -1,5 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
 
+import type { ComfyApp } from '@/scripts/app'
 import { reportError } from '@/platform/telemetry/reportError'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -11,6 +13,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 const errors = vi.hoisted(() => ({
   templates: new Error('Templates unavailable'),
   feedback: new Error('Feedback unavailable')
+}))
+
+const registeredNames = vi.hoisted((): string[] => [])
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
+    registerExtension(extension) {
+      registeredNames.push(extension.name)
+    }
+  })
 }))
 
 vi.mock(import('./clipspace'), () => ({}))
@@ -33,7 +44,6 @@ vi.mock(import('./painter'), () => ({}))
 vi.mock(import('./previewAny'), () => ({}))
 vi.mock(import('./saveText'), () => ({}))
 vi.mock(import('./rerouteNode'), () => ({}))
-vi.mock(import('./saveImageExtraOutput'), () => ({}))
 vi.mock(import('./selectionBorder'), () => ({}))
 vi.mock(import('./simpleTouchSupport'), () => ({}))
 vi.mock(import('./slotDefaults'), () => ({}))
@@ -53,14 +63,18 @@ await import('./index')
 const reportedErrors = vi.mocked(reportError).mock.calls.slice()
 
 it('completes core registration despite optional extension load failures', () => {
-  expect(reportedErrors).toEqual([
-    [
-      expect.objectContaining({ cause: errors.templates }),
-      { errorType: 'error_loading_optional_extension', surface: 'platform' }
-    ],
-    [
-      expect.objectContaining({ cause: errors.feedback }),
-      { errorType: 'error_loading_optional_extension', surface: 'platform' }
-    ]
-  ])
+  expect(registeredNames).toContain('Comfy.SaveImageExtraOutput')
+  expect(reportedErrors).toHaveLength(2)
+  expect(reportedErrors).toEqual(
+    expect.arrayContaining([
+      [
+        expect.objectContaining({ cause: errors.templates }),
+        { errorType: 'error_loading_optional_extension', surface: 'platform' }
+      ],
+      [
+        expect.objectContaining({ cause: errors.feedback }),
+        { errorType: 'error_loading_optional_extension', surface: 'platform' }
+      ]
+    ])
+  )
 })
