@@ -825,6 +825,30 @@ describe('LoaderManager', () => {
       expect(useToastStore().addAlert).not.toHaveBeenCalled()
     })
 
+    it('cancels a load disposed while model setup is settling', async () => {
+      const { lm, modelManager, eventManager } = makeLoaderManager()
+      let resolveSetup!: () => void
+      modelManager.setupModel.mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          resolveSetup = resolve
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
+
+      const load = lm.loadModel('api/view?filename=cube.glb')
+      await vi.waitFor(() =>
+        expect(modelManager.setupModel).toHaveBeenCalledOnce()
+      )
+      lm.dispose()
+      resolveSetup()
+
+      await expect(load).resolves.toBe('cancelled')
+      expect(eventManager.emitEvent).not.toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
+      )
+    })
+
     it('drops a load that fails after disposal without alerting', async () => {
       const { lm, modelManager } = makeLoaderManager()
       let rejectLoad!: (reason: Error) => void

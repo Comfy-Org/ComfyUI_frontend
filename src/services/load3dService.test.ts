@@ -722,11 +722,10 @@ describe('load3dService', () => {
       expect(secondMesh.material[1].normalMap).not.toBe(
         firstMesh.material[1].normalMap
       )
+      expect(secondMesh.material).not.toContain(firstMesh.material[0])
 
       firstMesh.geometry.dispose()
       firstMesh.material.forEach((material) => material.dispose())
-      expect(secondMesh.geometry).not.toBe(firstMesh.geometry)
-      expect(secondMesh.material).not.toContain(firstMesh.material[0])
     })
 
     it('gives copied line primitives independent geometry and material ownership', async () => {

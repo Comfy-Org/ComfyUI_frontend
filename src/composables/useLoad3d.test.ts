@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, ref, shallowRef, effectScope } from 'vue'
 import type { EffectScope } from 'vue'
@@ -1052,7 +1052,7 @@ describe('useLoad3d', () => {
       mockNode.widgets ??= []
       mockNode.widgets.push(modelWidget)
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded/model.glb')
-      if (!mockLoad3d.loadModel) throw new Error('Expected loadModel')
+      assert.exists(mockLoad3d.loadModel)
       vi.mocked(mockLoad3d.loadModel).mockResolvedValueOnce('cancelled')
 
       const composable = useLoad3d(mockNode)
