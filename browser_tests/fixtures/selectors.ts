@@ -17,7 +17,6 @@ export const TestIds = {
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
     nodePreviewInputs: 'node-preview-inputs',
-    nodePreviewBody: 'node-preview-body',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
     modeToggle: 'mode-toggle',

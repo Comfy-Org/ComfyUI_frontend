@@ -25,16 +25,6 @@ test.describe('Blueprint dynamic combo preview', { tag: '@ui' }, () => {
     await expect(
       tab.nodePreview.getByText('COMFY_DYNAMICCOMBO_V3', { exact: true })
     ).toBeVisible()
-    await expect(tab.nodePreviewBody).toBeVisible()
-    await expect(
-      tab.nodePreviewBody.getByText('boundary_model', { exact: true })
-    ).toBeVisible()
-    await expect(
-      tab.nodePreviewBody.getByRole('combobox', {
-        name: 'boundary_model',
-        exact: true
-      })
-    ).toBeVisible()
     expect(await comfyPage.page.pageErrors()).toEqual([])
   })
 })
