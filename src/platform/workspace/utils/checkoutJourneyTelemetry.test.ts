@@ -47,28 +47,33 @@ beforeEach(() => {
 })
 
 describe('reportCheckoutJourneyExit', () => {
+  function enterThenQuote(journey: CheckoutJourneyRecord) {
+    trackCheckoutJourneyPhase(journey, ENTERED)
+    trackCheckoutJourneyPhase(journey, PREVIEW_READY)
+  }
+
   it.for([
-    { phases: [ENTERED], exit: 'dialog_close', lastPhase: 'entered' },
     {
-      phases: [ENTERED, PREVIEW_READY],
       exit: 'dialog_close',
-      lastPhase: 'preview_ready'
+      lastPhase: 'entered',
+      reach: (journey: CheckoutJourneyRecord) =>
+        trackCheckoutJourneyPhase(journey, ENTERED)
     },
+    { exit: 'dialog_close', lastPhase: 'preview_ready', reach: enterThenQuote },
     {
-      phases: [ENTERED, PREVIEW_READY, SUBMITTED],
       exit: 'dialog_close',
-      lastPhase: 'submitted'
+      lastPhase: 'submitted',
+      reach: (journey: CheckoutJourneyRecord) => {
+        enterThenQuote(journey)
+        trackCheckoutJourneyPhase(journey, SUBMITTED)
+      }
     },
-    {
-      phases: [ENTERED, PREVIEW_READY],
-      exit: 'page_exit',
-      lastPhase: 'preview_ready'
-    }
+    { exit: 'page_exit', lastPhase: 'preview_ready', reach: enterThenQuote }
   ] as const)(
     'reports a $exit after $lastPhase on a journey with no operation',
-    ({ phases, exit, lastPhase }) => {
+    ({ exit, lastPhase, reach }) => {
       const journey = enterJourney()
-      for (const phase of phases) trackCheckoutJourneyPhase(journey, phase)
+      reach(journey)
 
       reportCheckoutJourneyExit(exit)
 
