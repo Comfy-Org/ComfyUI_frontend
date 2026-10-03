@@ -10,16 +10,19 @@ import { api } from '@/scripts/api'
 import {
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
+  zAgentDraft,
   zAgentError,
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
-  zCloudWorkflowIndex
+  zCloudWorkflowIndex,
+  zCloudWorkflowName
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
+  AgentDraft,
   AgentMessages,
   AgentRunModePreference,
   AgentThreadSummary,
@@ -442,6 +445,39 @@ export function createAgentRestClient() {
     )
   }
 
+  async function getDraft(workflowId: string): Promise<AgentDraft> {
+    return request(
+      `/agent/draft?workflow_id=${encodeURIComponent(workflowId)}`,
+      { method: 'GET' },
+      zAgentDraft
+    )
+  }
+
+  /**
+   * The cloud row's own display name for `workflowId`, or undefined when the
+   * row carries none.
+   *
+   * Read by id rather than out of the index because the index deliberately
+   * omits version-less rows - the agent's unsaved working copies - while the
+   * by-id read excludes only soft-deleted ones. For a workflow recovered from
+   * its draft snapshot this is therefore the only contract that names it.
+   *
+   * The name is load-bearing, not cosmetic: userdata->workflow sync joins on
+   * the derived filename, so a tab opened under any other name creates a
+   * second cloud workflow the first time the user saves it instead of
+   * promoting the draft row the chat is already bound to.
+   */
+  async function getWorkflowName(
+    workflowId: string
+  ): Promise<string | undefined> {
+    const { name } = await request(
+      `/workflows/${encodeURIComponent(workflowId)}`,
+      { method: 'GET' },
+      zCloudWorkflowName
+    )
+    return name
+  }
+
   async function listThreads(): Promise<AgentThreadSummary[]> {
     const page = await request(
       '/agent/threads',
@@ -538,6 +574,8 @@ export function createAgentRestClient() {
   return {
     postMessage,
     getMessages,
+    getDraft,
+    getWorkflowName,
     listThreads,
     getRunMode,
     putRunMode,

@@ -123,6 +123,62 @@ describe('agentRestClient route + method', () => {
     expect(lastCall().init.signal).toBe(signal)
   })
 
+  it('getDraft GETs and validates the encoded workflow snapshot', async () => {
+    const draft = {
+      content: { version: 0.4, nodes: [], links: [] },
+      version: 3
+    }
+    respond(jsonResponse(200, draft))
+
+    await expect(makeClient().getDraft('wf/x')).resolves.toEqual(draft)
+    expect(lastCall()).toMatchObject({
+      route: '/agent/draft?workflow_id=wf%2Fx',
+      init: { method: 'GET' }
+    })
+  })
+
+  it('rejects a malformed draft snapshot', async () => {
+    respond(jsonResponse(200, { content: [], version: -1 }))
+
+    await expect(makeClient().getDraft('wf-1')).rejects.toThrow()
+  })
+
+  // Read by id, not out of the index: the index deliberately omits
+  // version-less rows, so for a workflow recovered from its draft this is the
+  // only contract that names it.
+  it('getWorkflowName GETs the workflow by id and reads its name', async () => {
+    respond(
+      jsonResponse(200, {
+        id: 'wf/x',
+        name: 'Nebula pass',
+        created_by: 'user-1',
+        created_at: '2026-10-01T00:00:00Z',
+        updated_at: '2026-10-01T00:00:00Z',
+        latest_version: 0
+      })
+    )
+
+    await expect(makeClient().getWorkflowName('wf/x')).resolves.toBe(
+      'Nebula pass'
+    )
+    expect(lastCall()).toMatchObject({
+      route: '/workflows/wf%2Fx',
+      init: { method: 'GET' }
+    })
+  })
+
+  it('getWorkflowName reports a nameless row as undefined rather than inventing one', async () => {
+    respond(jsonResponse(200, { id: 'wf-1', latest_version: 0 }))
+
+    await expect(makeClient().getWorkflowName('wf-1')).resolves.toBeUndefined()
+  })
+
+  it('getWorkflowName surfaces a refused lookup instead of falling back', async () => {
+    respond(jsonResponse(404, { code: 'NOT_FOUND', message: 'not found' }))
+
+    await expect(makeClient().getWorkflowName('wf-1')).rejects.toThrow()
+  })
+
   it('gets and puts the run-mode preference using the API contract', async () => {
     const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
     const client: AgentRestClient = createAgentRestClient()

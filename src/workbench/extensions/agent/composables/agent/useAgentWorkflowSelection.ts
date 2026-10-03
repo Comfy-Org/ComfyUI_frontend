@@ -22,6 +22,7 @@ interface WorkflowSelectionOptions {
   canSelectTarget: () => boolean
   warnWorkflowUnavailable: () => void
   warnRestoreFailed: () => void
+  recoverWorkflow: (workflowId: string) => Promise<ComfyWorkflow | null>
   onTargetBound?: (
     workflowId: string,
     previousWorkflowId: string | null,
@@ -34,6 +35,7 @@ export function useAgentWorkflowSelection({
   canSelectTarget,
   warnWorkflowUnavailable,
   warnRestoreFailed,
+  recoverWorkflow,
   onTargetBound
 }: WorkflowSelectionOptions) {
   const workflowStore = useWorkflowStore()
@@ -214,6 +216,49 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
+  /**
+   * Resolves the tab a restored chat should bind to, most-local first: a tab
+   * already open, then a bound or stored local workflow, then the agent's
+   * durable draft snapshot.
+   *
+   * `absentFromCloudList` reports only what its name says. A successful
+   * listing that omits the id is NOT evidence of deletion: `GET /api/workflows`
+   * deliberately excludes version-less rows - the agent's own working copies,
+   * hidden "until they are saved/run" (cloud `common/workflow/repository.go`,
+   * `workflow.LatestVersionIDNotNil()`) - so every unsaved agent workflow is
+   * absent from it by design, and that population is exactly the one this path
+   * recovers. Absence therefore licenses neither skipping local resolution nor
+   * skipping recovery; it is carried out so the caller can tell a target that
+   * is genuinely unreachable from a listing failure that stays retryable.
+   */
+  async function resolveRestoredWorkflow(
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<{
+    recovered: boolean
+    target: ComfyWorkflow | null
+    absentFromCloudList: boolean
+  }> {
+    let target = cachedOpenWorkflowFor(workflowId)
+    let absentFromCloudList = false
+    if (target === null) {
+      const listed = await refreshCloudWorkflowIds()
+      if (!isCurrent())
+        return { recovered: false, target: null, absentFromCloudList: false }
+      absentFromCloudList = listed && !isCloudWorkflowListed(workflowId)
+      target =
+        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    }
+    if (target !== null)
+      return { recovered: false, target, absentFromCloudList }
+    try {
+      target = await recoverWorkflow(workflowId)
+      return { recovered: target !== null, target, absentFromCloudList }
+    } catch {
+      return { recovered: false, target: null, absentFromCloudList }
+    }
+  }
+
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
@@ -228,27 +273,35 @@ export function useAgentWorkflowSelection({
       isSessionCurrent() &&
       canRestoreWorkflow.value
     if (workflowId === undefined) return true
-    let target = cachedOpenWorkflowFor(workflowId)
-    if (target === null) {
-      const listed = await refreshCloudWorkflowIds()
-      if (!isCurrent()) return false
-      // A successful listing without the id means the workflow is gone, even
-      // when a stale local binding still names a tab; a failed listing stays
-      // a retryable restoration failure.
-      if (listed && !isCloudWorkflowListed(workflowId)) {
-        panelStore.markWorkflowTargetUnavailable()
-        return true
-      }
-      target =
-        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    const { target, recovered, absentFromCloudList } =
+      await resolveRestoredWorkflow(workflowId, isCurrent)
+    // Nothing local, no draft to recover from, and the listing did answer:
+    // the target is unreachable rather than pending, so it is marked
+    // unavailable instead of left as a retryable restoration failure.
+    if (target === null && absentFromCloudList) {
+      panelStore.markWorkflowTargetUnavailable()
+      return true
     }
-    return openRestoredWorkflow(target, workflowId, isCurrent)
+    if (!isCurrent()) {
+      await closeRecoveredWorkflow(target, recovered)
+      return false
+    }
+    return openRestoredWorkflow(target, workflowId, isCurrent, recovered)
+  }
+
+  async function closeRecoveredWorkflow(
+    target: ComfyWorkflow | null,
+    recovered: boolean
+  ): Promise<void> {
+    if (recovered && target !== null)
+      await workflowService.closeWorkflow(target, { warnIfUnsaved: false })
   }
 
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    recovered = false
   ): Promise<boolean> {
     try {
       if (target === null) {
@@ -262,8 +315,12 @@ export function useAgentWorkflowSelection({
         return false
       }
       const opened = await workflowService.openWorkflow(target, { isCurrent })
-      if (!isCurrent()) return false
+      if (!isCurrent()) {
+        await closeRecoveredWorkflow(target, recovered)
+        return false
+      }
       if (!opened) {
+        await closeRecoveredWorkflow(target, recovered)
         panelStore.setWorkflowTarget(null)
         warnRestoreFailed()
         return false
@@ -271,6 +328,7 @@ export function useAgentWorkflowSelection({
       commitWorkflowTarget(target, workflowId, 'restored')
       return true
     } catch {
+      await closeRecoveredWorkflow(target, recovered)
       if (!isCurrent()) return false
       warnRestoreFailed()
       return false

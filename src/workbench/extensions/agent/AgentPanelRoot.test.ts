@@ -1,4 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import type { InsertWorkflowOp } from '@comfyorg/comfy-multi-player'
+import { isPlainObject } from 'es-toolkit'
 
 import type {
   AgentThreadListResponse,
@@ -8,7 +11,15 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -28,8 +39,17 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -452,6 +472,22 @@ function json(status: number, body: unknown): Response {
     status,
     headers: { 'Content-Type': 'application/json' }
   })
+}
+
+/**
+ * A `GET /api/workflows/{id}` body. Version-less Agent drafts are excluded
+ * from the index but not from this read, so it is where a recovered tab's
+ * name comes from.
+ */
+function cloudWorkflowRow(id: string, name: string) {
+  return {
+    id,
+    name,
+    created_by: 'user-1',
+    created_at: '2026-10-01T00:00:00Z',
+    updated_at: '2026-10-01T00:00:00Z',
+    latest_version: 0
+  }
 }
 
 function agentThread({
@@ -6187,6 +6223,435 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
   })
 
+  it('recovers a closed unsaved workflow from its durable Agent draft under the name the cloud row carries', async () => {
+    const viewed = makeTab('wf-viewed')
+    useAgentConversationStore().setThreadId('th-history')
+    const recoveredGraph = {
+      version: 0.4,
+      last_node_id: 7,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 7,
+          type: 'KSampler',
+          pos: [0, 0],
+          size: [320, 300],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {}
+        }
+      ],
+      links: []
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/draft'))
+          return json(200, { content: recoveredGraph, version: 4 })
+        // The version-less row is hidden from the index but still readable by
+        // id, which is the only place its name exists.
+        if (url.includes('/workflows/wf-closed-unsaved'))
+          return json(200, cloudWorkflowRow('wf-closed-unsaved', 'Nebula pass'))
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-closed-unsaved',
+              content: { text: 'Continue the closed workflow' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow).toMatchObject({
+        filename: 'Nebula pass',
+        isTemporary: true
+      })
+    )
+    const recovered = useAgentPanelStore().selectedWorkflow
+    expect(recovered).not.toBe(viewed)
+    expect(recovered?.activeState?.nodes).toEqual(recoveredGraph.nodes)
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-closed-unsaved')
+    ).toBe(recovered?.path)
+    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
+  })
+
+  it('recovers a closed Agent workflow with string group IDs in a subgraph from chat history', async () => {
+    vi.mocked(validateComfyWorkflow).mockReset()
+    const viewed = makeTab('wf-viewed')
+    const blueprint = createTestRootGraph(
+      'a01f9532-0eb9-4770-a70d-3c6e9c5d455c'
+    )
+    const subgraph = createTestSubgraph({
+      rootGraph: blueprint,
+      name: 'Detail subgraph',
+      nodeCount: 1
+    })
+    blueprint.subgraphs.set(subgraph.id, subgraph)
+    blueprint.add(createTestSubgraphNode(subgraph, { id: 7 }))
+    const group = new LGraphGroup('Detail pass')
+    group.configure({
+      id: 0,
+      title: 'Detail pass',
+      bounding: [10, 20, 300, 200],
+      color: '#334455'
+    })
+    subgraph.add(group)
+    const { nodes, ...serialized } = blueprint.serialize()
+    const catalog = { types: {} }
+    const doc = mint(
+      {
+        version: 0.4,
+        last_node_id: 0,
+        last_link_id: 0,
+        nodes: [],
+        links: []
+      },
+      catalog
+    )
+    onTestFinished(() => doc.destroy())
+    const insert: InsertWorkflowOp = {
+      op_id: 'd67b35ea8e1546ee997ef6fa2f21a0f1',
+      actor: 'agent:test',
+      base_version: 1,
+      stamp: [1, 'agent:test'],
+      op: 'insert_workflow',
+      workflow: JSON.parse(
+        JSON.stringify({
+          ...serialized,
+          nodes: nodes.map(({ flags, ...node }) => ({
+            ...node,
+            flags: { ...flags }
+          }))
+        } satisfies InsertWorkflowOp['workflow'])
+      )
+    }
+    expect(applyOps(doc, [insert], catalog).outcomes).toEqual([
+      { op_id: insert.op_id, outcome: 'applied' }
+    ])
+    const insertedGraph = project(doc, catalog)
+    expect(insertedGraph).toMatchObject({
+      definitions: {
+        subgraphs: [{ groups: [{ id: expect.any(Number) }] }]
+      }
+    })
+    const insertedDefinition = insertedGraph.definitions?.subgraphs?.[0]
+    assert(isPlainObject(insertedDefinition))
+    const insertedGroups = insertedDefinition.groups
+    assert(Array.isArray(insertedGroups))
+    const insertedGroup = insertedGroups[0]
+    assert(isPlainObject(insertedGroup))
+    const legacyGroupId = `insert:${insert.op_id}:root/definition:${encodeURIComponent(JSON.stringify(subgraph.id))}:group:${encodeURIComponent(JSON.stringify(group.id))}`
+    const recoveredGraph = {
+      ...insertedGraph,
+      definitions: {
+        ...insertedGraph.definitions,
+        subgraphs: [
+          {
+            ...insertedDefinition,
+            groups: [{ ...insertedGroup, id: legacyGroupId }]
+          }
+        ]
+      }
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/draft'))
+          return json(200, { content: recoveredGraph, version: 4 })
+        if (url.includes('/workflows/wf-closed-unsaved'))
+          return json(200, cloudWorkflowRow('wf-closed-unsaved', 'Nebula pass'))
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-closed-unsaved',
+              content: { text: 'Continue the closed workflow' }
+            }
+          ] satisfies AgentMessages)
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-history',
+              title: 'Earlier chat',
+              last_message_at: '2026-09-25T00:00:00Z'
+            })
+          ])
+        )
+      })
+    )
+
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Earlier chat' })
+    )
+
+    await screen.findByTestId('user-message-bubble')
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_draft_validation_failed' })
+    )
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.filename).toBe(
+        'Nebula pass'
+      )
+    )
+    const recovered = useAgentPanelStore().selectedWorkflow
+    assert.exists(recovered)
+    expect(recovered).not.toBe(viewed)
+    expect(recovered).toMatchObject({
+      filename: 'Nebula pass',
+      isTemporary: true,
+      activeState: {
+        definitions: {
+          subgraphs: [
+            {
+              name: 'Detail subgraph',
+              groups: [
+                {
+                  title: 'Detail pass',
+                  bounding: [10, 20, 300, 200],
+                  color: '#334455'
+                }
+              ]
+            }
+          ]
+        }
+      }
+    })
+    expect(recovered.activeState?.nodes).toEqual(recoveredGraph.nodes)
+    expect(workflowStore.activeWorkflow?.path).toBe(recovered.path)
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-closed-unsaved')
+    ).toBe(recovered.path)
+    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
+  })
+
+  it('restores the previous workflow when draft recovery becomes stale while opening', async () => {
+    const viewed = makeTab('wf-viewed')
+    useAgentConversationStore().setThreadId('th-history')
+    let finishOpening = () => {}
+    const opening = new Promise<void>((resolve) => {
+      finishOpening = resolve
+    })
+    let recovered: ComfyWorkflow | null = null
+    vi.mocked(useWorkflowService()).openWorkflow.mockImplementationOnce(
+      async (tab) => {
+        recovered = tab
+        await opening
+        workflowStore.openWorkflowsInBackground({ right: [tab.path] })
+        workflowStore.activeWorkflow = await tab.load()
+        return true
+      }
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/draft'))
+          return json(200, {
+            content: {
+              version: 0.4,
+              last_node_id: 0,
+              last_link_id: 0,
+              nodes: [],
+              links: []
+            },
+            version: 1
+          })
+        if (url.includes('/workflows/wf-closed-unsaved'))
+          return json(200, cloudWorkflowRow('wf-closed-unsaved', 'Nebula pass'))
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-closed-unsaved',
+              content: { text: 'Continue the closed workflow' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    const view = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() =>
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'Nebula pass' }),
+        { isCurrent: expect.any(Function) }
+      )
+    )
+    view.unmount()
+    finishOpening()
+
+    await vi.waitFor(() => {
+      expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'Nebula pass' }),
+        { warnIfUnsaved: false }
+      )
+      expect(workflowStore.activeWorkflow?.path).toBe(viewed.path)
+      assert.exists(recovered)
+      expect(workflowStore.getWorkflowByPath(recovered.path)).toBeNull()
+      expect(
+        workflowStore.openWorkflows.filter(
+          ({ filename }) => filename === 'Nebula pass'
+        )
+      ).toHaveLength(0)
+    })
+  })
+
+  it('reopens a closed saved workflow before falling back to its Agent draft', async () => {
+    makeTab('wf-viewed')
+    const saved = addTab('workflows/saved.json')
+    await workflowStore.closeWorkflow(saved)
+    useAgentConversationStore().setThreadId('th-history')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/draft'))
+          throw new Error('The saved workflow should win')
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-saved',
+              content: { text: 'Continue the saved workflow' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-saved', name: 'saved' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(saved.path)
+    )
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(saved, {
+      isCurrent: expect.any(Function)
+    })
+    expect(
+      workflowStore.openWorkflows.filter(({ isTemporary }) => isTemporary)
+    ).toHaveLength(0)
+  })
+
+  it.for([
+    {
+      row: 'is refused',
+      respond: () => json(404, { code: 'NOT_FOUND', message: 'not found' })
+    },
+    {
+      row: 'carries no name',
+      respond: () => json(200, { id: 'wf-closed-unsaved', latest_version: 0 })
+    }
+  ])(
+    'declines recovery, rather than naming the tab itself, when the cloud row $row',
+    async ({ respond }) => {
+      makeTab('wf-viewed')
+      useAgentConversationStore().setThreadId('th-history')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/agent/draft'))
+            return json(200, {
+              content: {
+                version: 0.4,
+                last_node_id: 0,
+                last_link_id: 0,
+                nodes: [],
+                links: []
+              },
+              version: 1
+            })
+          if (url.includes('/workflows/wf-closed-unsaved')) return respond()
+          if (url.includes('/messages'))
+            return json(200, [
+              {
+                id: 'history-user',
+                thread_id: 'th-history',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'history-turn',
+                workflow_id: 'wf-closed-unsaved',
+                content: { text: 'Continue the closed workflow' }
+              }
+            ])
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [],
+              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+            })
+          return json(200, agentThreadList())
+        })
+      )
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await vi.waitFor(() =>
+        expect(useAgentPanelStore().targetUnavailable).toBe(true)
+      )
+      // An unnamed tab would fork a second cloud workflow the first time the
+      // user saved it, so no tab is better than a misnamed one.
+      expect(
+        workflowStore.openWorkflows.filter(({ isTemporary }) => isTemporary)
+      ).toHaveLength(0)
+      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    }
+  )
+
   it.for(['wf-old', '', 'missing'])(
     'retains the explicit target when reopening history for %s',
     async (restoredId) => {
@@ -9118,7 +9583,7 @@ describe('AgentPanelRoot workflow binding', () => {
     renderWithSelectedTarget()
     const conversation = useAgentConversationStore()
     useAgentPanelStore().retainWorkflowTarget()
-    const historyMessageId = 'history-message' as TurnId
+    const historyMessageId = toTurnId('history-message')
     conversation.startTurn(historyMessageId)
     conversation.recordUser(
       historyMessageId,
@@ -9145,6 +9610,144 @@ describe('AgentPanelRoot workflow binding', () => {
         name: i18n.global.t('agent.switchWorkflow')
       })
     ).toHaveTextContent(current.filename)
+  })
+
+  it('keeps only the latest recovery when a closed draft reference is opened twice', async () => {
+    const current = makeTab('wf-cloud-current')
+    mockMessagesEndpoint('wf-cloud-current')
+    renderWithSelectedTarget()
+    const conversation = useAgentConversationStore()
+    const historyMessageId = toTurnId('history-message')
+    conversation.startTurn(historyMessageId)
+    conversation.recordUser(
+      historyMessageId,
+      'Compare these',
+      undefined,
+      undefined,
+      [{ id: 'wf-reference', name: 'reference', textOffset: 0 }]
+    )
+    conversation.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'history-message', thread_id: 'th-history' }
+    })
+    let releaseDrafts = () => {}
+    const draftsReleased = new Promise<void>((resolve) => {
+      releaseDrafts = resolve
+    })
+    let draftRequests = 0
+    const existingFetch = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/agent/draft')) {
+          draftRequests++
+          await draftsReleased
+          return json(200, {
+            content: {
+              version: 0.4,
+              last_node_id: 0,
+              last_link_id: 0,
+              nodes: [],
+              links: []
+            },
+            version: 1
+          })
+        }
+        return existingFetch(url, init)
+      })
+    )
+
+    const openReference = await screen.findByRole('button', {
+      name: 'Open reference'
+    })
+    await userEvent.click(openReference)
+    await vi.waitFor(() => expect(draftRequests).toBe(1))
+    await userEvent.click(openReference)
+    await vi.waitFor(() => expect(draftRequests).toBe(2))
+    releaseDrafts()
+
+    await vi.waitFor(() => {
+      expect(
+        workflowStore.openWorkflows.filter(({ path }) => path !== current.path)
+      ).toHaveLength(1)
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-reference')).toBe(
+        workflowStore.activeWorkflow?.path
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+      expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'reference' }),
+        { warnIfUnsaved: false }
+      )
+    })
+  })
+
+  it('discards a pending draft reference recovery when the user starts a new chat', async () => {
+    const current = makeTab('wf-cloud-current')
+    mockMessagesEndpoint('wf-cloud-current')
+    renderWithSelectedTarget()
+    const conversation = useAgentConversationStore()
+    const historyMessageId = toTurnId('history-message')
+    conversation.startTurn(historyMessageId)
+    conversation.recordUser(
+      historyMessageId,
+      'Compare these',
+      undefined,
+      undefined,
+      [{ id: 'wf-reference', name: 'reference', textOffset: 0 }]
+    )
+    conversation.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'history-message', thread_id: 'th-history' }
+    })
+    let releaseDraft = () => {}
+    const draftReleased = new Promise<void>((resolve) => {
+      releaseDraft = resolve
+    })
+    let draftRequested = false
+    const existingFetch = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/agent/draft')) {
+          draftRequested = true
+          await draftReleased
+          return json(200, {
+            content: {
+              version: 0.4,
+              last_node_id: 0,
+              last_link_id: 0,
+              nodes: [],
+              links: []
+            },
+            version: 1
+          })
+        }
+        return existingFetch(url, init)
+      })
+    )
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open reference' })
+    )
+    await vi.waitFor(() => expect(draftRequested).toBe(true))
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    releaseDraft()
+
+    await vi.waitFor(() => {
+      expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ filename: 'reference' }),
+        { warnIfUnsaved: false }
+      )
+      expect(workflowStore.openWorkflows.map(({ path }) => path)).toEqual([
+        current.path
+      ])
+      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(
+        useAgentWorkflowTabBindingStore().tabPathFor('wf-reference')
+      ).toBeUndefined()
+    })
   })
 
   it('sends every open tab that has a cloud id with the message', async () => {

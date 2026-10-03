@@ -4,6 +4,7 @@ import { defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -40,6 +41,9 @@ function setup() {
   workflows.attachWorkflow(current)
   workflows.openWorkflowsInBackground({ right: [current.path] })
   workflows.activeWorkflow = current
+  const recoverWorkflow = vi.fn<
+    (workflowId: string) => Promise<LoadedComfyWorkflow | null>
+  >(async () => null)
   vi.mocked(workflows.syncWorkflows).mockResolvedValue(undefined)
   vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
     async (workflow) => {
@@ -56,7 +60,8 @@ function setup() {
           resolver,
           canSelectTarget: () => true,
           warnWorkflowUnavailable: vi.fn(),
-          warnRestoreFailed
+          warnRestoreFailed,
+          recoverWorkflow
         })
         return () => null
       }
@@ -72,7 +77,8 @@ function setup() {
     current,
     resolver,
     listCloudWorkflows,
-    warnRestoreFailed
+    warnRestoreFailed,
+    recoverWorkflow
   }
 }
 
@@ -378,24 +384,24 @@ describe('historical workflow restoration', () => {
     }
   )
 
+  // `GET /api/workflows` excludes version-less rows and silently caps the
+  // index, so a successful listing that omits an id says nothing about that
+  // workflow. A locally available tab therefore still wins, and the draft is
+  // consulted only when nothing local answers.
   it.for([
-    {
-      listing: 'omits it',
-      entries: [],
-      unavailable: true,
-      active: 'workflows/current.json'
-    },
-    {
-      listing: 'lists it without a name',
-      entries: [{ id: 'wf-stale' }],
-      unavailable: false,
-      active: 'workflows/bound.json'
-    }
+    { listing: 'omits it', entries: [] },
+    { listing: 'lists it without a name', entries: [{ id: 'wf-bound' }] }
   ])(
-    'lets a successful listing decide a stale binding when the listing $listing',
-    async ({ entries, unavailable, active }) => {
-      const { selection, workflows, bindings, panel, listCloudWorkflows } =
-        setup()
+    'opens the bound local tab, without recovering, when a successful listing $listing',
+    async ({ entries }) => {
+      const {
+        selection,
+        workflows,
+        bindings,
+        panel,
+        listCloudWorkflows,
+        recoverWorkflow
+      } = setup()
       const bound = createMockLoadedWorkflow({
         path: 'workflows/bound.json',
         filename: 'bound',
@@ -404,15 +410,72 @@ describe('historical workflow restoration', () => {
       bound.load = vi.fn(async () => bound)
       workflows.attachWorkflow(bound)
       workflows.openWorkflowsInBackground({ right: [bound.path] })
-      bindings.bind('wf-stale', bound.path)
+      bindings.bind('wf-bound', bound.path)
       listCloudWorkflows.mockImplementationOnce(async () => entries)
 
-      expect(await selection.restoreTarget('wf-stale', () => true)).toBe(true)
+      expect(await selection.restoreTarget('wf-bound', () => true)).toBe(true)
 
-      expect(panel.targetUnavailable).toBe(unavailable)
-      expect(workflows.activeWorkflow?.path).toBe(active)
+      expect(recoverWorkflow).not.toHaveBeenCalled()
+      expect(panel.targetUnavailable).toBe(false)
+      expect(workflows.activeWorkflow?.path).toBe(bound.path)
+      expect(panel.selectedWorkflow?.path).toBe(bound.path)
     }
   )
+
+  it('reopens a closed bound tab, without recovering, when the truncated listing omits its workflow', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      listCloudWorkflows,
+      recoverWorkflow
+    } = setup()
+    // The real shape of this: `/api/workflows` has no cursor pagination, so
+    // the index silently stops at one page and a saved workflow past the cap
+    // is missing from a listing that still reports success.
+    const capped = createMockLoadedWorkflow({
+      path: 'workflows/capped.json',
+      filename: 'capped',
+      isTemporary: false
+    })
+    capped.load = vi.fn(async () => capped)
+    workflows.attachWorkflow(capped)
+    bindings.bind('wf-capped', capped.path)
+    listCloudWorkflows.mockImplementationOnce(async () => [])
+
+    expect(await selection.restoreTarget('wf-capped', () => true)).toBe(true)
+
+    expect(recoverWorkflow).not.toHaveBeenCalled()
+    expect(panel.targetUnavailable).toBe(false)
+    expect(workflows.activeWorkflow?.path).toBe(capped.path)
+    expect(panel.selectedWorkflow?.path).toBe(capped.path)
+  })
+
+  it('recovers from the draft when a successful listing omits a workflow nothing local answers for', async () => {
+    const { selection, workflows, bindings, panel, recoverWorkflow } = setup()
+    const recovered = createMockLoadedWorkflow({
+      path: 'workflows/Nebula pass.json',
+      filename: 'Nebula pass',
+      isTemporary: true
+    })
+    recovered.load = vi.fn(async () => recovered)
+    recoverWorkflow.mockImplementationOnce(async () => {
+      // `createNewTemporary` attaches the tab it mints.
+      workflows.attachWorkflow(recovered)
+      return recovered
+    })
+
+    expect(await selection.restoreTarget('wf-unsaved', () => true)).toBe(true)
+
+    // Absence from the index is the normal state of an unsaved agent
+    // workflow, so it must not short-circuit into "unavailable".
+    expect(recoverWorkflow).toHaveBeenCalledWith('wf-unsaved')
+    expect(panel.targetUnavailable).toBe(false)
+    expect(panel.selectedWorkflow?.path).toBe(recovered.path)
+    expect(workflows.activeWorkflow?.path).toBe(recovered.path)
+    expect(bindings.tabPathFor('wf-unsaved')).toBe(recovered.path)
+  })
 
   it('does not mark a superseded restoration unavailable when its listing omits the workflow', async () => {
     const { selection, panel, current, listCloudWorkflows, warnRestoreFailed } =
