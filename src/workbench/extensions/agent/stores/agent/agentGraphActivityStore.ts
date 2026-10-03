@@ -78,16 +78,21 @@ export const useAgentGraphActivityStore = defineStore(
       () => canvasStore.currentGraph,
       (graph, _previous, onCleanup) => {
         if (!graph?.events) return
-        const events = graph.events as EventTarget
+        const graphs = new Set([graph, graph.rootGraph])
         const onNodeRemoved: EventListener = (event) => {
           if (!(event instanceof CustomEvent)) return
           const nodeId = parseNodeId(String(event.detail.node?.id))
           if (nodeId) removeNodes([nodeId])
         }
-        events.addEventListener('node:removed', onNodeRemoved)
-        onCleanup(() =>
-          events.removeEventListener('node:removed', onNodeRemoved)
-        )
+        for (const graphToWatch of graphs)
+          graphToWatch.events.addEventListener('node:removed', onNodeRemoved)
+        onCleanup(() => {
+          for (const graphToWatch of graphs)
+            graphToWatch.events.removeEventListener(
+              'node:removed',
+              onNodeRemoved
+            )
+        })
       },
       { immediate: true }
     )

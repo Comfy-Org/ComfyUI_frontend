@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // oxlint-disable-next-line comfy/no-restricted-paths -- exercise the production store's graph-removal subscription at its renderer boundary.
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
@@ -175,10 +176,14 @@ describe('agentGraphActivityStore', () => {
   it('forgets nodes removed after the active graph changes', async () => {
     const rootEvents = new EventTarget()
     const subgraphEvents = new EventTarget()
+    const rootGraph = fromPartial<LGraph>({
+      events: rootEvents,
+      rootGraph: fromPartial<LGraph>({ events: rootEvents })
+    })
     const canvasStore = useCanvasStore()
-    canvasStore.canvas = fromPartial({ graph: { events: rootEvents } })
+    canvasStore.canvas = fromPartial({ graph: rootGraph })
     await nextTick()
-    canvasStore.currentGraph = fromPartial({ events: rootEvents })
+    canvasStore.currentGraph = rootGraph
     useSettingStore().settingValues['Comfy.Minimap.Visible'] = true
     const activity = useAgentGraphActivityStore()
     activity.recordMaterialized(
@@ -186,9 +191,38 @@ describe('agentGraphActivityStore', () => {
       [toNodeId(1), toNodeId(2)]
     )
 
-    canvasStore.currentGraph = fromPartial({ events: subgraphEvents })
+    canvasStore.currentGraph = fromPartial({
+      events: subgraphEvents,
+      rootGraph
+    })
     await nextTick()
     subgraphEvents.dispatchEvent(
+      new CustomEvent('node:removed', { detail: { node: { id: 1 } } })
+    )
+
+    expect(activity.state).toMatchObject({ nodeIds: ['2'] })
+  })
+
+  it('forgets root nodes removed while a subgraph is active', async () => {
+    const rootEvents = new EventTarget()
+    const rootGraph = fromPartial<LGraph>({
+      events: rootEvents,
+      rootGraph: fromPartial<LGraph>({ events: rootEvents })
+    })
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial({ graph: rootGraph })
+    canvasStore.currentGraph = fromPartial({
+      events: new EventTarget(),
+      rootGraph
+    })
+    useSettingStore().settingValues['Comfy.Minimap.Visible'] = true
+    const activity = useAgentGraphActivityStore()
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
+      [toNodeId(1), toNodeId(2)]
+    )
+
+    rootEvents.dispatchEvent(
       new CustomEvent('node:removed', { detail: { node: { id: 1 } } })
     )
 
