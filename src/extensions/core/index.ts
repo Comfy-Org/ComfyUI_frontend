@@ -46,7 +46,7 @@ import './widgetInputs'
 // The literal __DISTRIBUTION__ comparison (not the isCloud const) is what
 // dead-code-eliminates this block from OSS builds.
 if (__DISTRIBUTION__ === 'cloud') {
-  await import('./cloudRemoteConfig').catch(reportOptionalExtensionError)
+  await import('./cloudRemoteConfig')
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
   await import('./cloudBadges').catch(reportOptionalExtensionError)

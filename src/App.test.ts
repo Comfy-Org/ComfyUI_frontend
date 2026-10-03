@@ -62,6 +62,25 @@ describe('App', () => {
     unmount()
   })
 
+  it('preserves rejection when an evaluation error merely mentions a stylesheet', () => {
+    const { unmount } = render(App, {
+      global: { stubs: { RouterView: true } }
+    })
+    const error = new Error(
+      'Module failed while using https://example.com/app.css'
+    )
+    const event = Object.assign(
+      new Event('vite:preloadError', { cancelable: true }),
+      { payload: error }
+    )
+
+    window.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(reportPreloadError).toHaveBeenCalledWith(error)
+    unmount()
+  })
+
   it('blocks existing dialogs while loading and keeps a stable readiness hook', async () => {
     const workspaceStore = useWorkspaceStore()
     workspaceStore.spinner = true

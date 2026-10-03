@@ -46,6 +46,40 @@ describe('parsePreloadError', () => {
     expect(result.chunkName).toBeNull()
   })
 
+  it.for(['http://host:99999', 'https://['])(
+    'keeps malformed URL details without throwing for %s',
+    (url) => {
+      const message = `Unable to contact ${url}`
+      expect(parsePreloadError(new Error(message))).toEqual({
+        kind: 'unknown',
+        url,
+        fileType: 'unknown',
+        chunkName: null,
+        message
+      })
+    }
+  )
+
+  it.for([
+    'Importing a module script failed.',
+    'error loading dynamically imported module',
+    'Failed to fetch dynamically imported module'
+  ])('recognizes a dynamic import failure without a URL: %s', (message) => {
+    expect(parsePreloadError(new TypeError(message))).toMatchObject({
+      kind: 'dynamic_import',
+      url: null,
+      fileType: 'unknown'
+    })
+  })
+
+  it('does not classify an arbitrary CSS URL as a Vite CSS preload failure', () => {
+    expect(
+      parsePreloadError(
+        new Error('Module failed while using https://example.com/app.css')
+      )
+    ).toMatchObject({ kind: 'unknown', fileType: 'css' })
+  })
+
   it('detects font file types', () => {
     const error = new Error(
       'Unable to preload CSS for /assets/inter-abc123.woff2'

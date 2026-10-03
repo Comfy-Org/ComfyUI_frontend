@@ -82,7 +82,7 @@ onMounted(() => {
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
   window.addEventListener('vite:preloadError', (event) => {
-    if (parsePreloadError(event.payload).fileType === 'css') {
+    if (parsePreloadError(event.payload).kind === 'css_preload') {
       event.preventDefault()
     }
     reportPreloadError(event.payload)

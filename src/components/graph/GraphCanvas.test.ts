@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -67,7 +67,7 @@ const mocks = vi.hoisted(() => ({
       typeof useWorkflowPersistenceV2
     >['loadSharedWorkflowFromUrlIfPresent']
   >(async () => 'not-present'),
-  runUrlActionLoaders: vi.fn(async () => undefined),
+  runUrlActionLoaders: vi.fn(async (): Promise<void> => undefined),
   setDirty: vi.fn()
 }))
 
@@ -212,10 +212,12 @@ describe('GraphCanvas first-run tour wiring', () => {
     mocks.loadSharedWorkflowFromUrlIfPresent.mockResolvedValue('not-present')
   })
 
-  it('offers reload guidance and stops startup when required core loading fails', async () => {
-    const error = new TypeError(
-      'Failed to fetch dynamically imported module: https://example.com/core.js'
-    )
+  it.for([
+    'Failed to fetch dynamically imported module: https://example.com/core.js',
+    'Importing a module script failed.',
+    'error loading dynamically imported module'
+  ])('offers reload guidance and stops startup for %s', async (message) => {
+    const error = new TypeError(message)
     vi.mocked(app.setup).mockRejectedValueOnce(error)
 
     const { emitted } = await mountGraphCanvas()
@@ -275,17 +277,71 @@ describe('GraphCanvas first-run tour wiring', () => {
       const { emitted } = await mountGraphCanvas()
 
       expect(emitted('ready')).toHaveLength(1)
-      expect(complete).toHaveBeenCalledWith('failed')
+      expect(complete).toHaveBeenCalledWith(
+        task === mocks.loadSharedWorkflowFromUrlIfPresent ||
+          task === mocks.runUrlActionLoaders
+          ? 'completed'
+          : 'failed'
+      )
       expect(useCanvasStore().canvas).toBe(app.canvas)
       expect(useWorkspaceStore().spinner).toBe(false)
       expect(reportError).toHaveBeenCalledWith(error, {
         errorType: 'failure_initializing_graph_canvas',
         surface: 'graph'
       })
+      expect(mocks.restoreWorkflowTabsState).toHaveBeenCalledOnce()
+      expect(mocks.loadTemplateFromUrlIfPresent).toHaveBeenCalledOnce()
+      if (task === mocks.initializeWorkflow) {
+        expect(mocks.handleStartupOutcome).not.toHaveBeenCalled()
+      } else {
+        expect(mocks.handleStartupOutcome).toHaveBeenCalledWith('url-intent')
+      }
       expect(mocks.runUrlActionLoaders).toHaveBeenCalledOnce()
       expect(useReleaseStore().initialize).toHaveBeenCalledOnce()
     }
   )
+
+  it('reports malformed backend addresses without losing functional readiness', async () => {
+    const error = new Error('Unable to contact http://host:99999')
+    mocks.restoreWorkflowTabsState.mockRejectedValueOnce(error)
+
+    const { emitted } = await mountGraphCanvas()
+
+    expect(emitted('ready')).toHaveLength(1)
+    expect(mocks.loadTemplateFromUrlIfPresent).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(error, {
+      errorType: 'failure_initializing_graph_canvas',
+      surface: 'graph'
+    })
+    expect(useToastStore().add).toHaveBeenCalledWith(
+      expect.objectContaining({ summary: 'g.error', detail: error.message })
+    )
+  })
+
+  it('finishes bootstrap when loading ends even while a URL dialog remains open', async () => {
+    const complete = vi.spyOn(bootstrapTracer, 'complete')
+    let closeDialog!: () => void
+    const dialog = new Promise<void>((resolve) => {
+      closeDialog = resolve
+    })
+    onTestFinished(() => {
+      closeDialog()
+    })
+    mocks.runUrlActionLoaders.mockReturnValueOnce(dialog)
+
+    const { emitted } = await mountGraphCanvas()
+
+    expect(useWorkspaceStore().spinner).toBe(false)
+    expect(complete).toHaveBeenCalledOnce()
+    expect(complete).toHaveBeenCalledWith('completed')
+    expect(emitted('ready')).toBeUndefined()
+    closeDialog()
+    for (let i = 0; i < 50; i++) {
+      await nextTick()
+      await Promise.resolve()
+    }
+    expect(emitted('ready')).toHaveLength(1)
+  })
 
   it('reports a release lookup failure without blocking readiness', async () => {
     const error = new Error('Release service unavailable')

@@ -539,8 +539,7 @@ onMounted(async () => {
       surface: 'graph'
     })
     const isPreloadError =
-      error instanceof Error &&
-      ['js', 'css'].includes(parsePreloadError(error).fileType)
+      error instanceof Error && parsePreloadError(error).kind !== 'unknown'
     toastStore.add({
       severity: 'error',
       summary: t(isPreloadError ? 'g.preloadErrorTitle' : 'g.error'),
@@ -606,17 +605,27 @@ onMounted(async () => {
     )
 
     // Restore saved workflow and workflow tabs state
-    startupOutcome = await workflowPersistence.initializeWorkflow()
-    await workflowPersistence.restoreWorkflowTabsState()
-    urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
-    await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     bootstrapOutcome = 'completed'
+    startupOutcome = await workflowPersistence
+      .initializeWorkflow()
+      .catch(reportStartupError)
+    await workflowPersistence
+      .restoreWorkflowTabsState()
+      .catch(reportStartupError)
+    urlTemplateId = await workflowPersistence
+      .loadTemplateFromUrlIfPresent()
+      .catch(reportStartupError)
+    if (startupOutcome !== undefined) {
+      await useFirstRunEntry()
+        .handleStartupOutcome(startupOutcome)
+        .catch(reportStartupError)
+    }
   } catch (error) {
     reportStartupError(error)
     if (!comfyAppReady.value) return
   } finally {
     workspaceStore.spinner = false
-    if (!comfyAppReady.value) bootstrapTracer.complete(bootstrapOutcome)
+    bootstrapTracer.complete(bootstrapOutcome)
   }
   const sharedStatus = await workflowPersistence
     .loadSharedWorkflowFromUrlIfPresent()
@@ -634,7 +643,6 @@ onMounted(async () => {
     reportStartupError(error)
   }
 
-  bootstrapTracer.complete(bootstrapOutcome)
   emit('ready')
 
   // The tour draws into an overlay that only mounts once `ready` has flushed.
