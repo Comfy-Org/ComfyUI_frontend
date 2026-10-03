@@ -94,14 +94,14 @@ function reportAgentProjection(
   update: ClassifiedDocUpdate,
   nodes: DocNodeDelta,
   failureCount: number,
-  graphAvailable: boolean
+  applied: boolean
 ): void {
   if (!update.actor?.startsWith('agent:')) return
   useTelemetry()?.trackAgentGraphProjection({
     op_id: update.opIds?.[0] ?? null,
     op_count: update.opIds?.length ?? 0,
     sequence: update.seq,
-    stage: graphAvailable ? 'applied' : 'received_no_graph',
+    stage: applied ? 'applied' : 'received_no_graph',
     added_count: nodes.added.length,
     removed_count: nodes.removed.length,
     apply_failure_count: failureCount
@@ -487,16 +487,22 @@ function startAgentCrdtFollower(
     !update.catchUp && update.actor === ownActor()
   const applyFrame = (
     update: ClassifiedDocUpdate
-  ): { created: NodeId[]; nodes: DocNodeDelta; failureCount: number } => {
+  ): {
+    applied: boolean
+    created: NodeId[]
+    nodes: DocNodeDelta
+    failureCount: number
+  } => {
     if (isOwnEcho(update) && getGraph() !== null) {
       const nodes = projection.discardPending(update.workflowId)
       incrementOutcome('skipped')
-      return { created: [], nodes, failureCount: 0 }
+      return { applied: false, created: [], nodes, failureCount: 0 }
     }
     const outcome = projection.applyFrame(update)
     incrementOutcome(outcome.applied ? 'applied' : 'skipped')
     if (outcome.applied && !update.catchUp) incrementOutcome('appliedLive')
     return {
+      applied: outcome.applied,
       created: outcome.applied ? outcome.createdNodeIds : [],
       nodes: outcome.nodes,
       failureCount: outcome.applied ? outcome.failureCount : 0
@@ -540,8 +546,8 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const { created, nodes, failureCount } = applyFrame(update)
-    reportAgentProjection(update, nodes, failureCount, getGraph() !== null)
+    const { applied, created, nodes, failureCount } = applyFrame(update)
+    reportAgentProjection(update, nodes, failureCount, applied)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
