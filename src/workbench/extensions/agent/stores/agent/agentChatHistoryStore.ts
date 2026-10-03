@@ -12,6 +12,7 @@ export interface ChatSession {
   id: string
   title: string
   updatedAt: number
+  isTitleFallback?: boolean
 }
 
 export interface HistoryGroups {
@@ -65,6 +66,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     StorageKeys.agentChatTitles(workspaceId),
     {}
   )
+  const derivedTitles = ref<Partial<Record<string, string>>>({})
   const deletedIds = useLocalStorage<string[]>(
     StorageKeys.agentDeletedThreads(workspaceId),
     []
@@ -73,7 +75,11 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const titled = computed(() =>
     sessions.value.map((session) => {
       const custom = customTitles.value[session.id]
-      return custom === undefined ? session : { ...session, title: custom }
+      const derived = session.isTitleFallback
+        ? derivedTitles.value[session.id]
+        : undefined
+      const title = custom ?? derived
+      return title === undefined ? session : { ...session, title }
     })
   )
 
@@ -106,6 +112,15 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     )
   }
 
+  // Ephemeral overlay for a title derived from the active transcript. Keeping
+  // it outside the server snapshot lets it survive refreshes and threads that
+  // have not appeared in the list yet.
+  function patchTitle(id: string, title: string): void {
+    const trimmed = title.trim()
+    if (trimmed === '') return
+    derivedTitles.value = { ...derivedTitles.value, [id]: trimmed }
+  }
+
   function setActive(id: string | null): void {
     activeId.value = id
   }
@@ -118,6 +133,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     rename,
     remove,
     replaceAll,
+    patchTitle,
     setActive
   }
 })

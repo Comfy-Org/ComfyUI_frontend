@@ -4009,6 +4009,52 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
+  it('patches the cached history title once the active chat learns a better one', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-active',
+                title: '',
+                preview: 'delete everything on this canvas',
+                last_message_at: '2026-07-07T10:00:00Z'
+              })
+            ])
+          )
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'active-user',
+              thread_id: 'th-active',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'active-turn',
+              content: { text: 'Clear entire canvas' }
+            }
+          ])
+        return json(200, [])
+      })
+    )
+    useAgentConversationStore().setThreadId('th-active')
+
+    renderWithSelectedTarget()
+
+    expect(
+      await screen.findByRole('button', { name: 'Clear entire canvas' })
+    ).toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().grouped.current[0]).toMatchObject({
+        id: 'th-active',
+        title: 'Clear entire canvas'
+      })
+    )
+  })
+
   it('surfaces a thread-list failure via the host error modal', async () => {
     executionErrors.showErrorOverlay.mockClear()
     telemetry.trackAgentError.mockClear()
