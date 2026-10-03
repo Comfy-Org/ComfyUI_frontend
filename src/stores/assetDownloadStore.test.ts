@@ -130,6 +130,26 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads).toHaveLength(1)
     })
 
+    it('preserves a completed download when a later event has an unknown status', () => {
+      const store = useAssetDownloadStore()
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+
+      dispatch(
+        createDownloadMessage({
+          status: 'unknown' as AssetDownloadWsMessage['status'],
+          error: 'Unsupported status'
+        })
+      )
+
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'completed',
+        progress: 100,
+        error: undefined
+      })
+      expect(store.sessionDownloadCount).toBe(1)
+      expect(store.isDownloadedThisSession('asset-456')).toBe(true)
+    })
+
     // REGRESSION COVERAGE PM-1302 / PM-1309: cloud's HandleDownloadFile
     // (download_file.go) can broadcast a terminal `failed` WS message for a
     // retryable error before asynq decides whether to retry, then

@@ -260,6 +260,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     // Unknown statuses must not create immortal, non-dismissible rows.
     if (!wireTaskStatuses.has(data.status)) {
       if (existing) {
+        if (isSettledDownload(existing)) return
         existing.status = 'failed'
         existing.error = data.error || `Unknown task status: ${data.status}`
         existing.lastUpdate = Date.now()
