@@ -92,18 +92,62 @@ describe('fetchModelMetadata', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('caches successful Civitai responses without a matching file', async () => {
+  it.for([
+    { reason: 'an empty file list', files: [] },
+    {
+      reason: 'only non-matching files',
+      files: [
+        {
+          sizeKB: 512,
+          downloadUrl: 'https://civitai.com/api/download/models/456'
+        }
+      ]
+    }
+  ])('retries Civitai metadata after $reason', async ({ files }) => {
     const url = 'https://civitai.com/api/download/models/123'
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ files: [] })
-    })
+    fetchMock
+      .mockResolvedValueOnce(Response.json({ files }))
+      .mockResolvedValueOnce(
+        Response.json({ files: [{ sizeKB: 1024, downloadUrl: url }] })
+      )
+
+    const first = await fetchModelMetadata(url)
+    const second = await fetchModelMetadata(url)
+    const cached = await fetchModelMetadata(url)
+
+    expect(first).toEqual({ fileSize: null, gatedRepoUrl: null })
+    expect(second).toEqual({ fileSize: 1048576, gatedRepoUrl: null })
+    expect(cached).toEqual(second)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('deduplicates in-flight Civitai lookups without a matching file', async () => {
+    const url = 'https://civitai.com/api/download/models/123'
+    fetchMock.mockResolvedValueOnce(Response.json({ files: [] }))
+
+    const results = await Promise.all([
+      fetchModelMetadata(url),
+      fetchModelMetadata(url)
+    ])
+
+    expect(results).toEqual([
+      { fileSize: null, gatedRepoUrl: null },
+      { fileSize: null, gatedRepoUrl: null }
+    ])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('caches matching Civitai files even when their size is unknown', async () => {
+    const url = 'https://civitai.com/api/download/models/123'
+    fetchMock.mockResolvedValueOnce(
+      Response.json({ files: [{ sizeKB: 0, downloadUrl: url }] })
+    )
 
     const first = await fetchModelMetadata(url)
     const second = await fetchModelMetadata(url)
 
-    expect(first.fileSize).toBeNull()
-    expect(second.fileSize).toBeNull()
+    expect(first).toEqual({ fileSize: null, gatedRepoUrl: null })
+    expect(second).toEqual(first)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
