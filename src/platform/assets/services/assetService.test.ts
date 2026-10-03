@@ -764,6 +764,11 @@ describe(assetService.getAssetModels, () => {
           id: 'chatglm3',
           name: 'chatglm3-checkpoint.safetensors',
           tags: ['models', 'LLM/checkpoints']
+        }),
+        validAsset({
+          id: 'llm-vae',
+          name: 'llm-vae.safetensors',
+          tags: ['models', 'LLM/vae']
         })
       ])
     )
