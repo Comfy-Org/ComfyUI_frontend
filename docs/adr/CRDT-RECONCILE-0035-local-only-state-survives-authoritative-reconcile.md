@@ -193,8 +193,9 @@ A1) to adopt — not yet reflected in that implementation:
   reopens of the same document.
 - **The ledger is the only source of pending-delete intent.**
   `pendingHumanDeletes()` becomes a read over the ledger: a `delete_node` in
-  any non-terminal state, including `applied` until its effect frame lands,
-  is a pending delete. This is the wiring CRDT-WRITE-0035 defers, and it
+  any reconcile-protected state (defined below: every non-terminal state,
+  including `applied` until its effect frame lands, plus `unresolved`) is a
+  pending delete. This is the wiring CRDT-WRITE-0035 defers, and it
   replaces the two-sources-that-can-disagree shape #18078 left behind.
 - **`unconfirmed` joins `unacknowledged` in the parked set as
   `delivery_unknown`, and a `doc_subscribed` acknowledgement never settles a
@@ -302,6 +303,16 @@ A1) to adopt — not yet reflected in that implementation:
   let this terminal outcome become a truthful revert instead of a standing
   `unresolved` state.
 
+  A ledger entry is **reconcile-protected** in every non-terminal state and
+  in `unresolved`. An entry is protected for exactly as long as its identity
+  stays registered and its optimistic projection is still standing, and
+  `unresolved` keeps both (see above). Protection ends only when the entry
+  settles `applied` or `reverted` (an `applied` entry stays protected until
+  its effect frame lands), or when a lineage break or the document's
+  destruction clears the registry. `pendingHumanDeletes()` above and the
+  retention rules in (b) below both read this set, so settling `unresolved`
+  does not remove an entry from the reconcile-protection predicates in (b).
+
 - **On a reactivation, a changed `seq` keeps parked entries parked; it is
   ordinary same-lineage progress, not proof of anything about them.** A
   resubscribe that follows a paused (tab-inactive) subscription checks
@@ -346,7 +357,8 @@ A1) to adopt — not yet reflected in that implementation:
 
 For #18063's shape (a `delete_node` still queued when the tab switches) this
 means: the delete is parked, (b) keeps the node out of the reconcile upsert
-while it is parked, and it settles `applied` once the per-kind document
+while it is parked (and after it settles `unresolved`, which stays
+reconcile-protected), and it settles `applied` once the per-kind document
 check finds the node absent. If the host still holds the node — the delete
 never took effect — the entry stays parked as `delivery_unknown`: it clears
 only on an explicit host rejection, which reverts the local delete and fires
@@ -358,9 +370,10 @@ in place.
 ### Durable guarantee vs. interim mechanism
 
 Four behavior requirements are durable and should outlive any one mechanism
-below: an unresolved human intent is never silently discarded by a reconcile;
-a host rejection is reported; an outcome whose delivery is unknown becomes a
-visible terminal outcome within a bounded time — `applied` or `reverted` when
+below: an unresolved human intent, including an entry that has settled
+`unresolved`, is never silently discarded by a reconcile; a host rejection is
+reported; an outcome whose delivery is unknown becomes a visible terminal
+outcome within a bounded time — `applied` or `reverted` when
 per-kind document presence or an explicit host rejection resolves it,
 otherwise a non-destructive `unresolved` outcome once the ledger's own
 bounded terminal path elapses — never settled by an acknowledgement alone,
@@ -376,7 +389,7 @@ recorded below.
 
 | Requirement                                                                                                                                                                                                                                                                                                                                                  | A                     | A1                    | B                                                  | C                                   |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- | --------------------- | -------------------------------------------------- | ----------------------------------- |
-| Unresolved intent survives a reconcile (queued/in-flight never discarded)                                                                                                                                                                                                                                                                                    | tab-deactivation only | + panel close/reopen  | + lineage-aware `removeMissing`/orphan sweep       | —                                   |
+| Unresolved intent survives a reconcile (queued, in-flight, delivery-unknown and timed-out `unresolved` entries are never discarded until a late echo or explicit rejection settles them, or a lineage break or destruction clears them)                                                                                                                      | tab-deactivation only | + panel close/reopen  | + lineage-aware `removeMissing`/orphan sweep       | —                                   |
 | A host rejection is reported                                                                                                                                                                                                                                                                                                                                 | yes                   | yes                   | yes                                                | —                                   |
 | Delivery-unknown becomes a visible terminal outcome within a bounded time: `applied` via per-kind document presence, `reverted` only via an explicit host rejection, or the ledger's own non-destructive `unresolved` outcome once its bounded lifetime elapses (never via an acknowledgement alone; absence never reverts, on any frame or at reactivation) | yes                   | yes                   | yes                                                | —                                   |
 | An identifiable collision is reported, not resolved silently                                                                                                                                                                                                                                                                                                 | incremental path only | incremental path only | + full-reconcile path, once the known-id set lands | —                                   |
@@ -402,14 +415,20 @@ change.
 
 Both scopes apply; neither alone covers the two repros.
 
-- **Ledger-aware.** A node with an `add_node` in any non-terminal ledger
-  state is retained by `removeMissing` and by the materializer's orphan
-  sweep; a node with a non-terminal `delete_node` is not re-created by a
-  reconcile upsert. This is the "lineage-aware retention of pending intent
-  through a full reconcile" requirement: it keeps #18063's deleted node
-  deleted and #18078's never-landed node alive until the ledger resolves. A
-  widget with a non-terminal `set_widget` keeps its local value through a
-  full reconcile the same way.
+- **Ledger-aware.** A node with an `add_node` in any reconcile-protected
+  ledger state (every non-terminal state, plus `unresolved`; see (a) above)
+  is retained by `removeMissing` and by the materializer's orphan sweep; a
+  node with a `delete_node` in a reconcile-protected state is not re-created
+  by a reconcile upsert. This is the "lineage-aware retention of pending
+  intent through a full reconcile" requirement: it keeps #18063's deleted
+  node deleted and #18078's never-landed node alive until the ledger
+  resolves. A widget with a `set_widget` in a reconcile-protected state
+  keeps its local value through a full reconcile the same way. The first full
+  reconcile after an entry's lifetime elapses therefore neither deletes an
+  unresolved add, re-creates an unresolved delete, nor overwrites an
+  unresolved widget value; a late echo then settles the entry `applied` with
+  no visible change, and only an explicit host rejection settles it
+  `reverted` and reverts the projection.
 - **Lineage-aware, deferred to PR B.** The session will keep a lineage-scoped
   **known-id set** in the same registry as the ledger: the node and link ids
   the document holds now, plus ids it held whose removal `removeMissing` has
@@ -517,7 +536,16 @@ the layer reaches general availability before the revert path has soaked.
   still owned inside the follower (survives tab deactivation, not yet panel
   unmount). Acceptance: a rejected human add is reverted and reported, an
   echo of the page's own accepted add reconciles instead of forcing a full
-  resync, and queued and open batches settle before the sender detaches.
+  resync, and queued and open batches settle before the sender detaches. For
+  each of `add_node`, `delete_node` and `set_widget`: the entry is parked,
+  its lifetime elapses and it settles `unresolved` with the unconfirmed-edit
+  notification, a full reconcile then runs and the optimistic projection is
+  retained unchanged, and then either a late echo settles it `applied` with
+  no visible change or an explicit host rejection settles it `reverted` with
+  the standard rejected-operation notification. PR A covers the timeout and
+  late-settlement steps for all three kinds and the reconcile step for
+  `delete_node` through `pendingHumanDeletes()`; the reconcile step for
+  `add_node` and `set_widget` lands with PR B's rules.
 - **PR A1**, after A: hoists the ledger's ownership from the follower to the
   bound workflow/document. Acceptance: closing the panel with a pending human
   delete and reopening on the same workflow does not restore the deleted
@@ -527,7 +555,8 @@ the layer reaches general availability before the revert path has soaked.
   full-reconcile collision classification (c) defers. Acceptance: a node the
   user added whose `add_node` never reached the doc survives a tab-return
   reconcile, and a node the user deleted stays deleted across a tab switch
-  even when the delete was still in flight.
+  even when the delete was still in flight, and an `unresolved` add or widget
+  value likewise survives a full reconcile.
 - **PR C**, independent of A, A1 and B: implements the (d) mint path in
   `layoutMintPort.ts`. No package-integration PR blocks it — the consumed
   comfy-multi-player package already carries `DefineSubgraphOp` and its
