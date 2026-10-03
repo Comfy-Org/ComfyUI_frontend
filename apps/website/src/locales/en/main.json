@@ -393,7 +393,8 @@
       "chooseValue": "Choose {label}",
       "defaultValue": "Default: {value}",
       "exactValue": "{label} value",
-      "off": "Off"
+      "off": "Off",
+      "chosenOfMax": "{count} of {max} chosen"
     },
     "run": {
       "signIn": "Sign in to run",
