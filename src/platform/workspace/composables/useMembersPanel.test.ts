@@ -454,7 +454,7 @@ describe('useMembersPanel', () => {
     workspaceMembers = []
     workspacePendingInvites = []
     updateWorkspaceStore()
-    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = true
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -878,7 +878,20 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
+      const panel = await setup()
+
+      expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
+        [
+          'workspacePanel.members.actions.changeRole',
+          'workspacePanel.members.actions.removeMember'
+        ]
+      )
+    })
+
+    it('omits the credit-limit action under billing controls alone', async () => {
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -890,7 +903,7 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
-      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
       setOriginalOwner()
       const panel = await setup()
 

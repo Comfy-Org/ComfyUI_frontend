@@ -10,6 +10,7 @@ const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockBillingControlEnabled = vi.hoisted(() => ({ value: false }))
+const mockMemberCreditLimitsEnabled = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -40,6 +41,9 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
     flags: {
       get billingControlEnabled() {
         return mockBillingControlEnabled.value
+      },
+      get memberCreditLimitsEnabled() {
+        return mockMemberCreditLimitsEnabled.value
       }
     }
   })
@@ -91,6 +95,7 @@ function resetStore() {
   mockIsCancelled.value = false
   mockIsTeamPlan.value = false
   mockBillingControlEnabled.value = false
+  mockMemberCreditLimitsEnabled.value = false
   mockIsCloud.value = true
   mockShouldUseWorkspaceBilling.value = true
 }
@@ -286,8 +291,15 @@ describe('useWorkspaceUI', () => {
       expect(ui.uiConfig.value.showCreditsColumn).toBe(false)
     })
 
-    it('adds the credits column when billing controls are enabled', async () => {
+    it('keeps the credits column hidden under billing controls alone', async () => {
       mockBillingControlEnabled.value = true
+      const ui = await loadComposable()
+
+      expect(ui.uiConfig.value.showCreditsColumn).toBe(false)
+    })
+
+    it('adds the credits column when member credit limits are enabled', async () => {
+      mockMemberCreditLimitsEnabled.value = true
       const ui = await loadComposable()
 
       expect(ui.uiConfig.value.showCreditsColumn).toBe(true)
