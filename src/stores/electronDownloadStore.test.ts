@@ -164,6 +164,28 @@ describe('useElectronDownloadStore progress observation', () => {
     )
   })
 
+  it('keeps notifying after a subscriber throws', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    downloadManager.getAllDownloads.mockResolvedValueOnce([downloadState()])
+    const store = useElectronDownloadStore()
+    await vi.waitFor(() => expect(store.downloads).toHaveLength(1))
+
+    const thrower = vi.fn(() => {
+      throw new Error('subscriber failed')
+    })
+    const survivor = vi.fn()
+    const stopThrower = store.subscribeToDownloadProgress(thrower)
+    const stopSurvivor = store.subscribeToDownloadProgress(survivor)
+
+    // One bad subscriber must not take the others down with it.
+    emitProgress(progressUpdate())
+
+    expect(thrower).toHaveBeenCalledOnce()
+    expect(survivor).toHaveBeenCalledOnce()
+    stopThrower()
+    stopSurvivor()
+  })
+
   it('notifies only the changed live item and clears restored byte details', async () => {
     downloadManager.getAllDownloads.mockResolvedValueOnce([downloadState()])
     const store = useElectronDownloadStore()
