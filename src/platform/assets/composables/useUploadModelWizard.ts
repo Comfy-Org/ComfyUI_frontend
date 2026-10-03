@@ -85,6 +85,7 @@ export function useUploadModelWizard(
   const uploadError = ref('')
   const uploadTypeMismatch = ref<UploadModelTypeMismatch | null>(null)
   let stopAsyncWatch: (() => void) | undefined
+  let activeAsyncTaskId: string | undefined
   onScopeDispose(() => stopAsyncWatch?.())
 
   const wizardData = ref<WizardData>({
@@ -322,6 +323,9 @@ export function useUploadModelWizard(
     }
 
     isUploading.value = true
+    stopAsyncWatch?.()
+    stopAsyncWatch = undefined
+    activeAsyncTaskId = undefined
     uploadTypeMismatch.value = null
     let uploadSuccess: UploadModelSuccess | null = null
 
@@ -367,14 +371,21 @@ export function useUploadModelWizard(
           status: 'processing'
         }
 
-        stopAsyncWatch?.()
-        const watchState = { resolved: false }
+        const taskId = result.task.task_id
+        activeAsyncTaskId = taskId
+        const watchState: {
+          resolved: boolean
+          stop?: () => void
+        } = { resolved: false }
         const stop = watch(
           () =>
-            assetDownloadStore.downloadList.find(
-              (d) => d.taskId === result.task.task_id
-            )?.status,
+            assetDownloadStore.downloadList.find((d) => d.taskId === taskId)
+              ?.status,
           async (status) => {
+            if (activeAsyncTaskId !== taskId) {
+              watchState.stop?.()
+              return
+            }
             if (status === 'completed') {
               // `completed` is the only status the download store treats as
               // immutable, so it is the only one worth stopping on.
@@ -382,8 +393,13 @@ export function useUploadModelWizard(
               uploadStatus.value = 'success'
               uploadError.value = ''
               await refreshModelCaches()
-              stopAsyncWatch?.()
-              stopAsyncWatch = undefined
+              watchState.stop?.()
+              if (stopAsyncWatch === watchState.stop) {
+                stopAsyncWatch = undefined
+              }
+              if (activeAsyncTaskId === taskId) {
+                activeAsyncTaskId = undefined
+              }
             } else if (
               status === 'failed' ||
               status === 'cancellation_pending' ||
@@ -393,7 +409,7 @@ export function useUploadModelWizard(
               // and lets an authoritative `completed` replace a confirmed
               // `cancelled`, so this error screen can still be recovered from.
               const download = assetDownloadStore.downloadList.find(
-                (d) => d.taskId === result.task.task_id
+                (d) => d.taskId === taskId
               )
               uploadStatus.value = 'error'
               uploadError.value =
@@ -407,6 +423,7 @@ export function useUploadModelWizard(
           },
           { immediate: true }
         )
+        watchState.stop = stop
         if (watchState.resolved) {
           stop()
           stopAsyncWatch = undefined
@@ -455,6 +472,7 @@ export function useUploadModelWizard(
   function resetWizard() {
     stopAsyncWatch?.()
     stopAsyncWatch = undefined
+    activeAsyncTaskId = undefined
     currentStep.value = 1
     isFetchingMetadata.value = false
     isUploading.value = false

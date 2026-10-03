@@ -201,6 +201,91 @@ describe('useUploadModelWizard', () => {
     expect(wizard.uploadError.value).toBe('Network error')
   })
 
+  it('keeps watching a new upload while the previous completion refreshes', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    vi.mocked(assetService.uploadAssetAsync)
+      .mockResolvedValueOnce({
+        type: 'async',
+        task: {
+          task_id: 'task-first',
+          status: 'created',
+          message: 'Download queued'
+        }
+      })
+      .mockResolvedValueOnce({
+        type: 'async',
+        task: {
+          task_id: 'task-second',
+          status: 'created',
+          message: 'Download queued'
+        }
+      })
+
+    let finishRefresh: (() => void) | undefined
+    const refreshPending = new Promise<void>((resolve) => {
+      finishRefresh = resolve
+    })
+    const assetsStore = useAssetsStore()
+    const modelToNodeStore = useModelToNodeStore()
+    vi.spyOn(modelToNodeStore, 'getAllNodeProviders').mockReturnValue([
+      fromPartial({ nodeDef: { name: 'CheckpointLoaderSimple' } })
+    ])
+    vi.spyOn(assetsStore, 'updateModelsForNodeType').mockReturnValueOnce(
+      refreshPending
+    )
+
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/first'
+    wizard.selectedModelType.value = 'checkpoints'
+    await wizard.uploadModel()
+
+    const handler = vi
+      .mocked(api.addEventListener)
+      .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
+    assert.exists(handler)
+    handler(
+      new CustomEvent('asset_download', {
+        detail: {
+          task_id: 'task-first',
+          asset_id: 'asset-first',
+          asset_name: 'first.safetensors',
+          bytes_total: 1000,
+          bytes_downloaded: 1000,
+          progress: 100,
+          status: 'completed'
+        }
+      })
+    )
+    await nextTick()
+
+    wizard.wizardData.value.url = 'https://civitai.com/models/second'
+    await wizard.uploadModel()
+    expect(wizard.uploadStatus.value).toBe('processing')
+
+    finishRefresh?.()
+    await refreshPending
+    await nextTick()
+
+    handler(
+      new CustomEvent('asset_download', {
+        detail: {
+          task_id: 'task-second',
+          asset_id: 'asset-second',
+          asset_name: 'second.safetensors',
+          bytes_total: 1000,
+          bytes_downloaded: 1000,
+          progress: 100,
+          status: 'completed'
+        }
+      })
+    )
+
+    await vi.waitFor(() => {
+      expect(wizard.uploadStatus.value).toBe('success')
+    })
+  })
+
   it('recovers a provisionally cancelled upload when it completes authoritatively', async () => {
     const { assetService } =
       await import('@/platform/assets/services/assetService')
