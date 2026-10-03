@@ -271,8 +271,9 @@ export function useTemplateWorkflows() {
         template_source: source
       })
 
+      const result = await loadTemplateGraph(data, workflowName, source)
       dialogStore.closeDialog()
-      return await loadTemplateGraph(data, workflowName, source)
+      return result
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'
