@@ -117,6 +117,14 @@ export const useLitegraphSettings = () => {
   })
 
   watchEffect(() => {
+    const hideLinksWhileMoving = settingStore.get(
+      'LiteGraph.Canvas.HideLinksWhileMoving'
+    )
+    const { canvas } = canvasStore
+    if (canvas) canvas.viewportMotion.enabled = hideLinksWhileMoving
+  })
+
+  watchEffect(() => {
     const dragZoomEnabled = settingStore.get('Comfy.Graph.CtrlShiftZoom')
     const { canvas } = canvasStore
     if (canvas) canvas.dragZoomEnabled = dragZoomEnabled
