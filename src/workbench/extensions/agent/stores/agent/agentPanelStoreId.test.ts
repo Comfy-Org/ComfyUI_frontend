@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 import { useAgentPanelStore } from './agentPanelStore'
@@ -75,8 +75,9 @@ describe('the agentPanel store id', () => {
     store.isOpen = true
     expect(docked.value).toBe(true)
 
-    const canvas = { canvas: { width: 1600, height: 900 } } as LGraphCanvas
-    const viewport = visibleCanvasViewport(canvas)
+    const viewport = visibleCanvasViewport({
+      ds: createTestDragAndScale(1600, 900)
+    })
 
     expect(viewport.every((value) => Number.isFinite(value))).toBe(true)
     expect(viewport).toEqual([0, 0, 1600 - store.width, 900])

@@ -66,6 +66,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import {
   createMockLoadedWorkflow,
   createMockChangeTracker,
@@ -1192,7 +1193,9 @@ function setupNodeSelectionCanvas() {
     multi_select: false,
     allow_dragnodes: true,
     selectOnly: false,
-    canvas: canvasElement
+    canvas: canvasElement,
+    // Framing reads the visible viewport off `ds`, not off the element.
+    ds: createTestDragAndScale(1600, 900)
   }
   appMock.canvas = canvas
   canvasStore.canvas = fromPartial(canvas)

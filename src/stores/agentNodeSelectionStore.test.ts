@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -56,7 +57,10 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
     selectedItems,
     deselectAll,
     animateToBounds,
-    canvas: element
+    canvas: element,
+    // Framing measures the visible viewport through `ds`, not through the
+    // element, so the stub has to carry one at the same 1600x900 surface.
+    ds: createTestDragAndScale(1600, 900)
   } as never
   return { animateToBounds, deselectAll, selectedItems }
 }
