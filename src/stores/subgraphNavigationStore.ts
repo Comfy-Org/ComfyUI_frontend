@@ -162,7 +162,10 @@ export const useSubgraphNavigationStore = defineStore(
         return
       }
 
-      // First visit — fit to content so subgraph nodes are visible
+      // First visit — fit to content so subgraph nodes are visible.
+      // The scheduler guarantees the canvas is laid out before `run` fires;
+      // refresh its viewport immediately, then let this release's Vue node
+      // layout settle for one frame before the fit measures node bounds.
       canvasScheduler.schedule({
         key: 'subgraph-navigation-fit',
         isCurrent: () => getActiveGraphId() === graphId,
@@ -172,7 +175,11 @@ export const useSubgraphNavigationStore = defineStore(
             canvas.canvas.offsetWidth,
             canvas.canvas.offsetHeight
           )
-          useLitegraphService().fitView()
+          requestAnimationFrame(() => {
+            if (getActiveGraphId() !== graphId) return
+            if (!canvas.graph?.nodes.length) return
+            useLitegraphService().fitView()
+          })
         }
       })
     }

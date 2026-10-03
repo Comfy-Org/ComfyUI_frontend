@@ -71,8 +71,21 @@ vi.mock('@/services/litegraphService', () => ({
 
 const mockCanvas = app.canvas
 
+/** Capture the release-line layout-settling frame without hiding it behind a synchronous stub. */
+let rafCallbacks: FrameRequestCallback[] = []
+function flushAnimationFrames(): void {
+  const pending = rafCallbacks
+  rafCallbacks = []
+  for (const callback of pending) callback(0)
+}
+
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
+    rafCallbacks = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb)
+      return rafCallbacks.length
+    })
     useCanvasStore().canvas = app.canvas
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     mockCanvas.canvas = createTestCanvasElement({ visible: true })
@@ -184,6 +197,8 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       useCanvasScheduler().flush()
 
       expect(mockSetViewportSize).toHaveBeenCalledWith(800, 600)
+      expect(mockFitView).not.toHaveBeenCalled()
+      flushAnimationFrames()
       expect(mockSetViewportSize).toHaveBeenCalledBefore(mockFitView)
 
       mockGraph.nodes = []
@@ -199,6 +214,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockGraph._nodes = mockGraph.nodes
 
       store.restoreViewport('root')
+      flushAnimationFrames()
 
       expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
 
@@ -219,7 +235,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
 
-    it('fits the first visit synchronously when the canvas is ready', () => {
+    it('fits the first visit on the next frame when the canvas is ready', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
 
@@ -228,6 +244,9 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockGraph._nodes = mockGraph.nodes
 
       store.restoreViewport('root')
+
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
+      flushAnimationFrames()
 
       expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
 
