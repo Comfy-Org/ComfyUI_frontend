@@ -3,7 +3,6 @@ import { $el, ComfyDialog } from '../../scripts/ui'
 
 /**
  * Exported through the legacy module shim for custom node extensions.
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export class ClipspaceDialog extends ComfyDialog {
   static items: Array<
