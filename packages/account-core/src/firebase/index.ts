@@ -260,14 +260,30 @@ export function createFirebaseIdentity(
 ): FirebaseIdentity {
   const { resolve: auth, peek } = authResolver(config)
   let signInsStarted = 0
+  let pendingPopup: Promise<UserCredential> | undefined
 
   function popupSignIn(
     createProvider: () => GoogleAuthProvider | GithubAuthProvider,
     options: PopupSignInOptions | undefined
   ): Promise<UserCredential> {
     const started = ++signInsStarted
+    if (pendingPopup) {
+      return Promise.reject(
+        new FirebaseError(
+          'auth/cancelled-popup-request',
+          'Another sign-in window is already open.'
+        )
+      )
+    }
     const provider = createProvider()
-    const signIn = () => signInWithPopup(auth(), provider)
+    const signIn = () => {
+      pendingPopup = signInWithPopup(auth(), provider)
+      const clearPending = () => {
+        pendingPopup = undefined
+      }
+      void pendingPopup.then(clearPending, clearPending)
+      return pendingPopup
+    }
     if (!config.watchPopupSignIn) return signIn()
     // Read once the session has restored, so a restore landing after the
     // popup opened is not taken for someone else signing in.

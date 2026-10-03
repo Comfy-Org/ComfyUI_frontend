@@ -464,6 +464,40 @@ describe('popup sign-in with the popup watched', () => {
     await expect(outcome).resolves.toBe(testCredential)
   })
 
+  it('keeps the first popup completing and permits another provider after it settles', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const first = identity.signInWithGoogle()
+
+    await expect(identity.signInWithGitHub()).rejects.toMatchObject({
+      code: 'auth/cancelled-popup-request'
+    })
+    popup.resolve(testCredential)
+    await expect(first).resolves.toBe(testCredential)
+    sdk.signInWithPopup.mockResolvedValueOnce(testCredential)
+
+    await expect(identity.signInWithGitHub()).resolves.toBe(testCredential)
+  })
+
+  it('waits for Firebase to settle an abandoned popup before opening another one', async () => {
+    const popup = pendingPopup()
+    const identity = await watchedIdentity()
+    const first = identity.signInWithGoogle()
+    watch.abandon()
+    await expect(first).rejects.toMatchObject({
+      code: 'auth/popup-closed-by-user'
+    })
+
+    await expect(identity.signInWithGoogle()).rejects.toMatchObject({
+      code: 'auth/cancelled-popup-request'
+    })
+    popup.reject({ code: 'auth/popup-closed-by-user' })
+    await vi.advanceTimersByTimeAsync(0)
+    sdk.signInWithPopup.mockResolvedValueOnce(testCredential)
+
+    await expect(identity.signInWithGoogle()).resolves.toBe(testCredential)
+  })
+
   it('swallows Firebase’s own rejection of a popup it already reported as closed', async () => {
     const popup = pendingPopup()
     const identity = await watchedIdentity()
