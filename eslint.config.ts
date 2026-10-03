@@ -119,10 +119,16 @@ const settings = {
   'vue-i18n': {
     localeDir: [
       {
-        pattern: './src/locales/**/*.json',
+        pattern: './src/locales/en/main.json',
         localeKey: 'path',
         localePattern:
           /^\.?\/?src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+      },
+      // src/i18n.ts nests the collect-i18n outputs under commands, settings and
+      // nodeDefs; the plugin has no namespace option, so this module mirrors it.
+      {
+        pattern: './scripts/i18n/eslint-generated-messages.js',
+        localeKey: 'key'
       }
     ],
     messageSyntaxVersion: '^9.0.0'
@@ -575,6 +581,35 @@ export default defineConfig([
     rules: {
       '@intlify/vue-i18n/no-raw-text': 'off',
       'vue/no-v-html': 'error'
+    }
+  },
+  // Scoped to src: localeDir is src/locales, and apps/billing-web and
+  // apps/website ship their own messages.
+  {
+    files: ['src/**/*.{ts,mts,vue}'],
+    rules: {
+      '@intlify/vue-i18n/no-missing-keys': 'error'
+    }
+  },
+  // billing-web keeps a single hand-authored catalog of its own, so it gets the
+  // rule with localeDir repointed at it.
+  {
+    files: ['apps/billing-web/**/*.{ts,mts,vue}'],
+    settings: {
+      'vue-i18n': {
+        localeDir: [
+          {
+            pattern: './apps/billing-web/src/locales/**/*.json',
+            localeKey: 'path',
+            localePattern:
+              /^\.?\/?apps\/billing-web\/src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+          }
+        ],
+        messageSyntaxVersion: '^9.0.0'
+      }
+    },
+    rules: {
+      '@intlify/vue-i18n/no-missing-keys': 'error'
     }
   },
   // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
