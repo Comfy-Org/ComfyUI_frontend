@@ -665,7 +665,8 @@ describe('ModelDetail', () => {
       name: 'api_snippet_copied',
       properties: expect.objectContaining({
         ...model,
-        snippet_language: 'curl'
+        snippet_language: 'curl',
+        copy_result: 'success'
       })
     })
     expect(captureWorkshopEvent).toHaveBeenCalledWith({
@@ -2582,6 +2583,24 @@ describe('ModelDetail', () => {
       expect(runWorkshopRouter).not.toHaveBeenCalled()
     }
   )
+
+  it('attributes a workflow clone download to the model page', async () => {
+    await mountDetail({ clone: { href: '/x.json' } })
+    const download = screen.getByTestId('clone-button')
+    download.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await user().click(download)
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'workflow_download_clicked',
+      properties: expect.objectContaining({
+        model_slug: model.slug,
+        page_type: 'model',
+        download_format: 'workflow_json',
+        entry_point: 'model_clone'
+      })
+    })
+  })
 
   it('shows a Details tab and the clone button when given workflow details', async () => {
     auth.session.value = credential

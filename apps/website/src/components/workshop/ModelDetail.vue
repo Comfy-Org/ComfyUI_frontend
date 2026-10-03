@@ -300,7 +300,22 @@ function captureSnippetCopy(language: SnippetLanguage) {
   if (workshopEnabled.value)
     captureWorkshopEvent({
       name: 'api_snippet_copied',
-      properties: { ...modelAnalytics, snippet_language: language }
+      properties: {
+        ...modelAnalytics,
+        snippet_language: language,
+        copy_result: 'success'
+      }
+    })
+}
+function captureWorkflowDownload() {
+  if (workshopEnabled.value)
+    captureWorkshopEvent({
+      name: 'workflow_download_clicked',
+      properties: {
+        ...modelAnalytics,
+        download_format: 'workflow_json',
+        entry_point: 'model_clone'
+      }
     })
 }
 const canRunModel = computed(
@@ -1183,6 +1198,7 @@ function useInCode() {
           download
           class="inline-flex w-fit items-center gap-2 self-end text-xs text-primary-warm-gray transition-colors hover:text-primary-warm-white"
           data-testid="clone-button"
+          @click="captureWorkflowDownload"
         >
           <Download class="size-3.5" aria-hidden="true" />
           {{ t('workshop.workflow.cloneCta') }}

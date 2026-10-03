@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
+import { ref } from 'vue'
 import { Check, Copy } from '@lucide/vue'
-import { useClipboard } from '@vueuse/core'
+import { useTimeoutFn } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -22,7 +23,49 @@ const {
   iconClass?: HTMLAttributes['class']
 }>()
 
-const { copy, copied } = useClipboard({ copiedDuring: 2000 })
+const emit = defineEmits<{ copied: [] }>()
+const copied = ref(false)
+const { start, stop } = useTimeoutFn(() => (copied.value = false), 2000, {
+  immediate: false
+})
+
+async function copy() {
+  stop()
+  copied.value = false
+  if (!(await writeClipboard(value))) return
+  copied.value = true
+  start()
+  emit('copied')
+}
+
+async function writeClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    return legacyCopy(text)
+  }
+  return legacyCopy(text)
+}
+
+function legacyCopy(text: string): boolean {
+  if (typeof document.execCommand !== 'function') return false
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.className = 'fixed opacity-0'
+  textarea.readOnly = true
+  document.body.appendChild(textarea)
+  try {
+    textarea.select()
+    return document.execCommand('copy')
+  } catch {
+    return false
+  } finally {
+    textarea.remove()
+  }
+}
 </script>
 
 <template>
@@ -39,7 +82,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
         className
       )
     "
-    @click="void copy(value)"
+    @click="copy"
   >
     <component :is="copied ? Check : Copy" :class="cn('size-5', iconClass)" />
     <span v-if="copied" class="text-sm whitespace-nowrap">

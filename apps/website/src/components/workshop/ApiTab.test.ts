@@ -13,6 +13,32 @@ const contract = workshopContract(routerId)
 const values = { prompt: 'a capybara', seed: 5 }
 
 describe('ApiTab', () => {
+  it('keeps the copied language when the tab changes during a clipboard write', async () => {
+    const visitor = userEvent.setup()
+    const pending = Promise.withResolvers<void>()
+    vi.spyOn(navigator.clipboard, 'writeText').mockReturnValue(pending.promise)
+    const { emitted } = render(ApiTab, { props: { contract, values } })
+    await visitor.click(
+      await screen.findByRole('button', { name: 'Copy snippet' })
+    )
+    await visitor.click(screen.getByRole('tab', { name: 'TypeScript' }))
+    expect(emitted('copy')).toBeUndefined()
+    pending.resolve()
+    await waitFor(() => expect(emitted('copy')).toEqual([['python']]))
+  })
+
+  it('does not report a snippet copy when clipboard access is denied', async () => {
+    const visitor = userEvent.setup()
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(
+      new DOMException('Denied', 'NotAllowedError')
+    )
+    const { emitted } = render(ApiTab, { props: { contract, values } })
+    await visitor.click(
+      await screen.findByRole('button', { name: 'Copy snippet' })
+    )
+    expect(emitted('copy')).toBeUndefined()
+  })
+
   it('reports the snippet language it copies and Get API key clicks', async () => {
     const visitor = userEvent.setup()
     const { emitted } = render(ApiTab, { props: { contract, values } })

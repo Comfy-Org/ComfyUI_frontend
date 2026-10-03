@@ -13,19 +13,35 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../../i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
+import { captureWorkshopEvent } from '../../../../scripts/posthog'
 
 const {
   href,
   fileName,
+  outputSource,
   locale = 'en'
 } = defineProps<{
   href: string
   fileName: string
+  outputSource: 'example' | 'generated'
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ reuse: [] }>()
+
+function captureDownload() {
+  captureWorkshopEvent({
+    name: 'output_download_clicked',
+    properties: {
+      model_slug: 'apps/reshoot',
+      page_type: 'app',
+      app_slug: 'apps/reshoot',
+      output_kind: 'video',
+      output_source: outputSource
+    }
+  })
+}
 
 const view = defineModel<ReshootView>('view', { required: true })
 const sound = defineModel<ReshootSound>('sound', { required: true })
@@ -101,6 +117,7 @@ const optionClass = (active: boolean) =>
         :href
         :download="fileName"
         class="flex h-10 items-center gap-1.5 rounded-full px-4 text-xs font-semibold text-primary-warm-white ring-1 ring-transparency-white-t20 transition-colors ring-inset hover:bg-transparency-white-t8"
+        @click="captureDownload"
       >
         <Download class="size-3.5" aria-hidden="true" />
         {{ t('reshoot.download') }}

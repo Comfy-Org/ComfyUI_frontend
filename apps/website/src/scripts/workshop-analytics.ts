@@ -90,7 +90,17 @@ export type WorkshopAnalyticsEvent =
     }
   | {
       name: 'api_snippet_copied'
-      properties: WorkshopModelAnalytics & { snippet_language: SnippetLanguage }
+      properties: WorkshopModelAnalytics & {
+        snippet_language: SnippetLanguage
+        copy_result: 'success'
+      }
+    }
+  | {
+      name: 'workflow_download_clicked'
+      properties: WorkshopModelAnalytics & {
+        download_format: 'workflow_json' | 'api_graph'
+        entry_point: 'workflow_preview' | 'api_tab' | 'model_clone'
+      }
     }
   | {
       name: 'run_validation_failed'
@@ -149,7 +159,10 @@ export type WorkshopAnalyticsEvent =
     }
   | {
       name: 'output_download_clicked'
-      properties: WorkshopModelAnalytics & { output_kind: RunOutput['kind'] }
+      properties: WorkshopModelAnalytics & {
+        output_kind: RunOutput['kind']
+        output_source?: 'example' | 'generated'
+      }
     }
 
 export function workshopModelAnalytics(

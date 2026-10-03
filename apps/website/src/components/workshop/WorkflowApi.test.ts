@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 import { h, markRaw } from 'vue'
 
@@ -19,6 +19,30 @@ const model = markRaw(fixture)
 const values = initialWorkshopPageState(model).values
 
 describe('WorkflowApi', () => {
+  it('keeps the copied language when the tab changes during a clipboard write', async () => {
+    const visitor = userEvent.setup()
+    const pending = Promise.withResolvers<void>()
+    vi.spyOn(navigator.clipboard, 'writeText').mockReturnValue(pending.promise)
+    const { emitted } = render(WorkflowApi, { props: { model, values } })
+    await visitor.click(
+      await screen.findByRole('button', { name: 'Copy snippet' })
+    )
+    await visitor.click(screen.getByRole('tab', { name: 'TypeScript' }))
+    expect(emitted('copy')).toBeUndefined()
+    pending.resolve()
+    await waitFor(() => expect(emitted('copy')).toEqual([['python']]))
+  })
+
+  it('does not report a snippet copy when clipboard access is denied', async () => {
+    const visitor = userEvent.setup()
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(
+      new DOMException('Denied', 'NotAllowedError')
+    )
+    const { emitted } = render(WorkflowApi, { props: { model, values } })
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    expect(emitted('copy')).toBeUndefined()
+  })
+
   // A developer opening this tab wants the address before they want the
   // snippet, and it was only ever readable by picking it out of the cURL.
   it('names the address a cURL run is posted to', async () => {
