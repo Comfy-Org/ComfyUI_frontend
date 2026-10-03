@@ -120,13 +120,18 @@ function devServerUrl(server: ViteDevServer): string {
 /** One same-origin REST call the panel makes, through the dev server. */
 async function getThroughProxy(
   server: ViteDevServer,
-  path: string
+  path: string,
+  headers: Record<string, string> = { 'Sec-Fetch-Site': 'same-origin' }
 ): Promise<number> {
   return new Promise((done, fail) => {
-    const req = request(`${devServerUrl(server)}${path}`, (res) => {
-      res.resume()
-      res.on('end', () => done(res.statusCode ?? 0))
-    })
+    const req = request(
+      `${devServerUrl(server)}${path}`,
+      { headers },
+      (res) => {
+        res.resume()
+        res.on('end', () => done(res.statusCode ?? 0))
+      }
+    )
     req.on('error', fail)
     req.end()
   })
@@ -134,10 +139,13 @@ async function getThroughProxy(
 
 /** The /api/agent/events upgrade the panel's event source opens. */
 async function upgradeThroughProxy(server: ViteDevServer): Promise<number> {
+  const origin = devServerUrl(server)
   return new Promise((done, fail) => {
     const req = request(`${devServerUrl(server)}/api/agent/events`, {
       headers: {
         Connection: 'Upgrade',
+        Origin: origin,
+        'Sec-Fetch-Site': 'same-origin',
         Upgrade: 'websocket',
         'Sec-WebSocket-Key': randomBytes(16).toString('base64'),
         'Sec-WebSocket-Version': '13'
@@ -268,6 +276,22 @@ describe('dev agent proxy across an agent restart', () => {
         req.end()
       })
       expect(status).toBe(403)
+    }
+  )
+
+  it(
+    'rejects requests without same-origin browser metadata',
+    { timeout: 60_000 },
+    async () => {
+      const { server } = await bringUpPair('discovery')
+
+      expect(await getThroughProxy(server, '/api/agent/threads', {})).toBe(403)
+      expect(
+        await getThroughProxy(server, '/api/agent/threads', {
+          origin: devServerUrl(server),
+          'Sec-Fetch-Site': 'cross-site'
+        })
+      ).toBe(403)
     }
   )
 })

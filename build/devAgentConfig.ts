@@ -6,7 +6,9 @@ import { readAgentDiscoveryToken } from './devAgentDiscovery.ts'
 // The agent proxy adds the session token, so only the dev server's own pages may use it.
 function isCrossOrigin(req: IncomingMessage): boolean {
   const origin = req.headers.origin
-  if (origin === undefined) return false
+  const fetchSite = req.headers['sec-fetch-site']
+  if (fetchSite !== undefined && fetchSite !== 'same-origin') return true
+  if (origin === undefined) return fetchSite !== 'same-origin'
   try {
     return new URL(origin).host !== req.headers.host
   } catch {
