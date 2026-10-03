@@ -75,6 +75,8 @@
     "feedbackCaption": "分享反馈",
     "focusNode": "在画布上显示",
     "focusNodeLabel": "在画布上显示 {node}",
+    "freeUseNotice": "在 BETA 期间，提示词和工作流运行均免费。",
+    "freeUseNoticeLabel": "免费使用通知",
     "friend": "您好",
     "gotIt": "知道了",
     "greeting": "你好，{name}，",
@@ -124,12 +126,16 @@
       "upgradePlan": "升级套餐"
     },
     "placeholder": "描述想法，使用 {'@'} 引用工作流，拖入媒体资源和文件，或\n提及节点",
+    "recoveredTurnFailed": "智能体无法完成此响应。",
     "reference": "引用",
     "remove": "移除",
     "removeNodeLabel": "移除 {node} 引用",
     "removeWorkflowReference": "移除对 {name} 的引用",
     "retryAfterSeconds": "您可以在 {seconds}s 后重试。",
     "runApproval": {
+      "answerFailed": "无法发送你的回答。请重新加载页面后重试。",
+      "answerSuperseded": "此请求已在其他地方得到回答，因此使用了该回答而非你的回答。",
+      "answerUncertain": "无法确认你的回答是否已送达智能体。它可能仍已被应用——请重新加载页面以查看当前状态。",
       "cancel": "取消",
       "lead": "此工具想要运行以下工作流：",
       "leadBound": "此工具想要运行此工作流。",
@@ -196,8 +202,11 @@
     "targetWorkflowUnavailable": "目标工作流已不可用。",
     "thinking": "思考中...",
     "title": "Comfy Agent",
+    "toolFailedSkill": "加载 {skill} 失败",
     "toolForgettingPreference": "正在删除偏好设置",
     "toolForgotPreference": "已忘记偏好设置",
+    "toolLoadedSkill": "已加载 {skill}",
+    "toolLoadingSkill": "正在加载 {skill}",
     "toolOpenedNewTab": "已打开新标签页",
     "toolOpeningNewTab": "正在打开新标签页",
     "toolSavedPreference": "已保存偏好设置",
@@ -464,6 +473,7 @@
       "generic": "登录时出现问题，请重试。",
       "signupBlocked": "我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。"
     },
+    "hidePassword": "隐藏密码",
     "login": {
       "andText": "和",
       "backToGithubLogin": "改用 Github 注册",
@@ -480,6 +490,7 @@
       "forgotPassword": "忘记密码？",
       "forgotPasswordError": "发送重置密码邮件失败",
       "freeRunsSuffix": "可获得 {count} 次免费运行。| 可获得 {count} 次免费运行。",
+      "freeRunsSuffixGoogle": "使用 Google 获取 {count} 次免费运行。|使用 Google 获取 {count} 次免费运行。",
       "freeTierBadge": "可享免费套餐",
       "freeTierDescription": "使用 Google 注册，每月可获得 {credits} 免费积分。无需绑定银行卡。",
       "freeTierDescriptionGeneric": "使用 Google 注册，每月可获得免费积分。无需绑定银行卡。",
@@ -524,6 +535,7 @@
       "message": "出于安全原因，此操作需要您重新登录。是否继续？",
       "title": "需要重新认证"
     },
+    "showPassword": "显示密码",
     "signOut": {
       "saveFailed": "由于保存“{workflow}”失败，已取消退出登录。",
       "signOut": "退出登录",
@@ -2195,6 +2207,7 @@
     "usageHint": "使用提示",
     "use": "使用",
     "user": "用户",
+    "validate": "验证",
     "versionMismatchWarning": "版本兼容性警告",
     "versionMismatchWarningMessage": "{warning}：{detail} 请参阅 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新说明。",
     "videoFailedToLoad": "视频加载失败",
@@ -4256,6 +4269,7 @@
     "assets": "资产",
     "backToAssets": "返回所有资产",
     "browseTemplates": "浏览示例模板",
+    "closeSidebar": "关闭侧边栏",
     "downloads": "下载",
     "folderView": {
       "errorDetail": "无法获取此任务的输出。请重试。",
@@ -5246,37 +5260,46 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "成员在此之前可保持完整访问权限。恢复订阅以保留共享额度和席位。",
+        "body": "成员在此之前仍可完全访问。恢复你的套餐以保留团队的共享额度。",
+        "contactSales": "联系销售团队",
         "enterpriseBody": "成员在此之前将保留完整访问权限。请联系销售团队以延长套餐。",
         "enterpriseTitle": "你的企业套餐将于 {date} 结束",
-        "reactivate": "恢复订阅",
+        "memberBody": "在此之前，你可以运行工作流。",
+        "reactivate": "恢复套餐",
         "title": "您的团队套餐将于 {date} 结束"
       },
       "outOfCredits": {
         "addCredits": "添加积分",
-        "body": "您的团队已用完所有积分。请添加更多积分以继续生成，或等待积分在 {date} 自动补充。",
-        "bodyNoDate": "您的团队已用完所有积分。请添加更多积分以继续生成。",
+        "body": "你的团队已用完所有额度。请添加更多额度，或等待额度于 {date} 充值。",
+        "bodyNoDate": "你的团队已用完所有额度。请添加更多额度。",
         "dismiss": "忽略",
-        "memberBody": "您的团队已用完所有积分。工作区管理员需要添加更多积分以继续生成。",
-        "title": "积分已用完",
-        "upgradeBody": "升级您的套餐以添加点数并继续生成。"
+        "memberBody": "你的团队已用完所有额度。请让你的工作区所有者添加更多额度，或等待额度于 {date} 充值。",
+        "memberBodyNoDate": "你的团队已用完所有额度。请让你的工作区所有者添加更多额度。",
+        "title": "积分已用完"
       },
       "paused": {
         "body": "此工作区的订阅已暂停。请更新付款方式以恢复。",
         "memberBody": "此工作区的订阅已暂停。工作区管理员需要更新付款方式。",
+        "personalBody": "你的订阅已暂停。请更新付款方式以恢复订阅。",
+        "personalPaymentFailedBody": "你的付款未成功。请更新付款方式以恢复订阅。",
         "title": "订阅已暂停"
       },
       "payInvoice": "支付账单",
       "planChange": {
         "body": "您当前的套餐将在此之前保持有效。",
-        "title": "您的套餐将于 {date} 变更为 {plan}"
+        "title": "你的套餐将于 {date} 变更为 {plan}。"
       },
-      "updatePayment": "更新付款方式",
-      "warning": {
-        "bodyNoDate": "您的上一次付款未成功。请更新付款方式以避免暂停。",
-        "bodyWithAmount": "你的 {amount} 付款处理失败。请支付账单或更新付款方式，以避免服务暂停。",
-        "title": "付款被拒绝"
-      }
+      "planEnded": {
+        "enterpriseBody": "联系销售团队以启动新的企业套餐。",
+        "enterpriseTitle": "你的企业套餐已于 {date} 结束",
+        "planTitle": "你的套餐已于 {date} 结束",
+        "salesBody": "联系销售团队以启动新套餐。",
+        "salesMemberBody": "请让你的工作区所有者联系销售团队。",
+        "teamBody": "重新订阅以再次运行工作流并获得共享额度。",
+        "teamMemberBody": "请让你的工作区所有者重新订阅。",
+        "teamTitle": "你的团队套餐已于 {date} 结束"
+      },
+      "updatePayment": "更新付款方式"
     },
     "changeRoleDialog": {
       "demoteConfirm": "降级为成员",
@@ -5397,6 +5420,7 @@
       "noMembers": "暂无成员",
       "noMembersMatch": "没有与“{query}”匹配的成员",
       "pendingInvitesCount": "{count} 个待处理邀请",
+      "planEndedFooter": "你的套餐已结束，因此无法添加新成员。",
       "reactivateTeam": "重新激活团队版",
       "resubscribe": "重新订阅",
       "searchPlaceholder": "搜索...",
@@ -5528,6 +5552,7 @@
     "hideMinimap": "隐藏小地图",
     "label": "缩放控制",
     "showMinimap": "显示小地图",
+    "zoomPercentage": "缩放百分比",
     "zoomToFit": "适合画面"
   }
 }

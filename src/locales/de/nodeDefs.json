@@ -5842,6 +5842,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "Generiert mit FLUX 3 ein Bild aus einem Prompt oder bearbeitet und kombiniert bis zu 10 Referenzbilder. Verweisen Sie im Prompt auf die Referenzen als Bild 1, Bild 2 usw.",
+    "display_name": "Flux 3 Bild",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "Seitenverhältnis",
+        "tooltip": "'auto' folgt dem ersten Referenzbild oder wählt ein Verhältnis aus dem Prompt."
+      },
+      "bounding_boxes": {
+        "name": "Begrenzungsrahmen",
+        "tooltip": "Optionale Rahmen aus „Create Bounding Boxes“, die Objekte oder Text in der Ausgabe platzieren. Die Positionen beziehen sich auf die Canvas, geben Sie daher das Seitenverhältnis der Ausgabe an."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "grounding": {
+        "name": "Grounding",
+        "tooltip": "Lassen Sie das Modell vor der Generierung mithilfe von Web- und Bildsuche zum Prompt recherchieren."
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Optionale Referenzbilder, insgesamt bis zu 10, jeweils mindestens 256 x 256 Pixel."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Was generiert oder bearbeitet werden soll. Der Prompt wird vor der Generierung interpretiert und erweitert."
+      },
+      "resolution": {
+        "name": "Auflösung",
+        "tooltip": "Ausgabegröße im gewählten Seitenverhältnis: 0.75K entspricht etwa 0.6 Megapixeln, 1K 1 MP, 1.5K 2.4 MP, 2K 4.2 MP, 4K 16.8 MP."
+      },
+      "safety_tolerance": {
+        "name": "Sicherheitstoleranz",
+        "tooltip": "Moderationstoleranz; 0 ist am strengsten."
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Seed, um festzulegen, ob der Node erneut ausgeführt werden soll; FLUX 3 wählt seinen eigenen Seed, daher sind die tatsächlichen Ergebnisse unabhängig von diesem Wert nicht deterministisch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "Animiert 1 bis 10 Bilder mit FLUX 3. Jedes Bild wird zu einem Frame des Clips: Ein Bild eröffnet ihn, zwei gehen vom ersten zum zweiten über, und weitere werden über ihn verteilt oder an von Ihnen gewählten Zeitpunkten fixiert.",
     "display_name": "Flux 3 Bild zu Video",
@@ -7434,7 +7480,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "Seitenverhältnis",
-        "tooltip": "Das Seitenverhältnis des Ausgabevideos."
+        "tooltip": "Das Seitenverhältnis des Ausgabevideos. Wird ignoriert, wenn ein Eingabebild bereitgestellt wird; das Video folgt dem Seitenverhältnis des Bildes."
       },
       "control_after_generate": {
         "name": "Steuerung nach Generierung"
@@ -7453,11 +7499,11 @@
       },
       "prompt": {
         "name": "Prompt",
-        "tooltip": "Textbeschreibung des gewünschten Videos. Optional für grok-imagine-video-1.5, wenn ein Eingabebild bereitgestellt wird."
+        "tooltip": "Textbeschreibung des gewünschten Videos. Optional für die Modelle grok-imagine-video-1.5, wenn ein Eingabebild bereitgestellt wird."
       },
       "resolution": {
         "name": "Auflösung",
-        "tooltip": "Die Auflösung des Ausgabevideos. 1080p ist nur für grok-imagine-video-1.5 verfügbar."
+        "tooltip": "Die Auflösung des Ausgabevideos. 1080p ist für grok-imagine-video nicht verfügbar."
       },
       "seed": {
         "name": "Seed",
@@ -18481,7 +18527,7 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "Steuerung nach Generierung"
       },
       "value": {
@@ -22372,7 +22418,7 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "Steuerung nach Generierung"
       },
       "seed": {

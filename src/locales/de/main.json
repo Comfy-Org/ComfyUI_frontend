@@ -75,6 +75,8 @@
     "feedbackCaption": "Feedback teilen",
     "focusNode": "Auf Canvas anzeigen",
     "focusNodeLabel": "{node} auf Canvas anzeigen",
+    "freeUseNotice": "Prompts und Workflow-Ausführungen sind während der BETA KOSTENLOS.",
+    "freeUseNoticeLabel": "Hinweis zur kostenlosen Nutzung",
     "friend": "da",
     "gotIt": "Verstanden",
     "greeting": "Hallo {name},",
@@ -124,12 +126,16 @@
       "upgradePlan": "Plan upgraden"
     },
     "placeholder": "Beschreiben Sie Ideen, verwenden Sie {'@'} zum Referenzieren von Workflows, ziehen Sie Medien-Assets und Dateien hinein oder\nerwähnen Sie Nodes",
+    "recoveredTurnFailed": "Der Agent konnte diese Antwort nicht abschließen.",
     "reference": "Referenz",
     "remove": "Entfernen",
     "removeNodeLabel": "Referenz zu {node} entfernen",
     "removeWorkflowReference": "Referenz von {name} entfernen",
     "retryAfterSeconds": "Sie können es in {seconds}s erneut versuchen.",
     "runApproval": {
+      "answerFailed": "Ihre Antwort konnte nicht gesendet werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
+      "answerSuperseded": "Diese Anfrage wurde bereits an anderer Stelle beantwortet, daher wurde diese Antwort statt Ihrer verwendet.",
+      "answerUncertain": "Es konnte nicht bestätigt werden, dass Ihre Antwort den Agenten erreicht hat. Sie wurde möglicherweise dennoch angewendet – laden Sie die Seite neu, um den aktuellen Stand zu sehen.",
       "cancel": "Abbrechen",
       "lead": "Dieses Tool möchte den Workflow ausführen:",
       "leadBound": "Dieses Tool möchte diesen Workflow ausführen.",
@@ -196,8 +202,11 @@
     "targetWorkflowUnavailable": "Der Ziel-Workflow ist nicht mehr verfügbar.",
     "thinking": "Denkt nach...",
     "title": "Comfy Agent",
+    "toolFailedSkill": "{skill} konnte nicht geladen werden",
     "toolForgettingPreference": "Vergisst eine Einstellung",
     "toolForgotPreference": "Eine Einstellung vergessen",
+    "toolLoadedSkill": "{skill} geladen",
+    "toolLoadingSkill": "{skill} wird geladen",
     "toolOpenedNewTab": "Einen neuen Tab geöffnet",
     "toolOpeningNewTab": "Öffnet einen neuen Tab",
     "toolSavedPreference": "Eine Einstellung gespeichert",
@@ -464,6 +473,7 @@
       "generic": "Bei der Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
       "signupBlocked": "Ihr Konto konnte derzeit nicht erstellt werden. Bitte versuchen Sie es später erneut. Wenn dies weiterhin passiert, schreiben Sie an support@comfy.org."
     },
+    "hidePassword": "Passwort ausblenden",
     "login": {
       "andText": "und",
       "backToGithubLogin": "Stattdessen mit Github registrieren",
@@ -480,6 +490,7 @@
       "forgotPassword": "Passwort vergessen?",
       "forgotPasswordError": "E-Mail zum Zurücksetzen des Passworts konnte nicht gesendet werden",
       "freeRunsSuffix": "um {count} kostenlosen Durchlauf zu erhalten. | um {count} kostenlose Durchläufe zu erhalten.",
+      "freeRunsSuffixGoogle": "mit Google, um {count} kostenlose Ausführung zu erhalten. | mit Google, um {count} kostenlose Ausführungen zu erhalten.",
       "freeTierBadge": "Für Free Tier berechtigt",
       "freeTierDescription": "Registrieren Sie sich mit Google und erhalten Sie jeden Monat {credits} kostenlose Credits. Keine Karte erforderlich.",
       "freeTierDescriptionGeneric": "Registrieren Sie sich mit Google und erhalten Sie jeden Monat kostenlose Credits. Keine Karte erforderlich.",
@@ -524,6 +535,7 @@
       "message": "Aus Sicherheitsgründen müssen Sie sich für diese Aktion erneut anmelden. Möchten Sie fortfahren?",
       "title": "Erneute Anmeldung erforderlich"
     },
+    "showPassword": "Passwort anzeigen",
     "signOut": {
       "saveFailed": "Abmeldung abgebrochen, da das Speichern von \"{workflow}\" fehlgeschlagen ist.",
       "signOut": "Abmelden",
@@ -2195,6 +2207,7 @@
     "usageHint": "Nutzungshinweis",
     "use": "Verwenden",
     "user": "Benutzer",
+    "validate": "Validieren",
     "versionMismatchWarning": "Warnung zur Versionskompatibilität",
     "versionMismatchWarningMessage": "{warning}: {detail} Anweisungen zum Update finden Sie unter https://docs.comfy.org/installation/update_comfyui#common-update-issues.",
     "videoFailedToLoad": "Video konnte nicht geladen werden",
@@ -4256,6 +4269,7 @@
     "assets": "Assets",
     "backToAssets": "Zurück zu allen Assets",
     "browseTemplates": "Beispielvorlagen durchsuchen",
+    "closeSidebar": "Seitenleiste schließen",
     "downloads": "Downloads",
     "folderView": {
       "errorDetail": "Die Outputs für diesen Job konnten nicht abgerufen werden. Bitte versuchen Sie es erneut.",
@@ -5246,37 +5260,46 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "Mitglieder behalten bis dahin vollen Zugriff. Setzen Sie Ihr Abonnement fort, um Ihre gemeinsamen Credits und Sitzplätze zu behalten.",
+        "body": "Mitglieder behalten bis dahin vollen Zugriff. Setzen Sie Ihren Plan fort, um die geteilten Credits Ihres Teams zu behalten.",
+        "contactSales": "Vertrieb kontaktieren",
         "enterpriseBody": "Mitglieder behalten bis dahin den vollen Zugriff. Wenden Sie sich an unser Vertriebsteam, um ihn zu verlängern.",
         "enterpriseTitle": "Ihr Enterprise-Plan endet am {date}",
-        "reactivate": "Abonnement fortsetzen",
+        "memberBody": "Sie können bis dahin Workflows ausführen.",
+        "reactivate": "Plan fortsetzen",
         "title": "Ihr Teamplan endet am {date}"
       },
       "outOfCredits": {
         "addCredits": "Credits hinzufügen",
-        "body": "Ihr Team hat alle Credits verbraucht. Fügen Sie weitere Credits hinzu, um weiter zu generieren, oder warten Sie, bis die Credits am {date} wieder aufgefüllt werden.",
-        "bodyNoDate": "Ihr Team hat alle Credits verbraucht. Fügen Sie weitere Credits hinzu, um weiter zu generieren.",
+        "body": "Ihr Team hat alle Credits aufgebraucht. Fügen Sie weitere Credits hinzu oder warten Sie, bis die Credits am {date} wieder aufgefüllt werden.",
+        "bodyNoDate": "Ihr Team hat alle Credits aufgebraucht. Fügen Sie weitere Credits hinzu.",
         "dismiss": "Schließen",
-        "memberBody": "Ihr Team hat alle Credits verbraucht. Ihre Workspace-Administratoren müssen weitere Credits hinzufügen, damit Sie weiter generieren können.",
-        "title": "Keine Credits mehr",
-        "upgradeBody": "Führen Sie ein Plan-Upgrade durch, um Credits hinzuzufügen und weiter zu generieren."
+        "memberBody": "Ihr Team hat alle Credits aufgebraucht. Bitten Sie den Besitzer Ihres Workspace, weitere Credits hinzuzufügen, oder warten Sie, bis die Credits am {date} wieder aufgefüllt werden.",
+        "memberBodyNoDate": "Ihr Team hat alle Credits aufgebraucht. Bitten Sie den Besitzer Ihres Workspace, weitere Credits hinzuzufügen.",
+        "title": "Keine Credits mehr"
       },
       "paused": {
         "body": "Das Abonnement dieses Workspace ist pausiert. Aktualisieren Sie die Zahlungsmethode, um es fortzusetzen.",
         "memberBody": "Bitten Sie den Besitzer Ihres Workspace, das Abonnement des Workspace wiederherzustellen.",
+        "personalBody": "Ihr Abonnement ist pausiert. Aktualisieren Sie Ihre Zahlungsmethode, um es fortzusetzen.",
+        "personalPaymentFailedBody": "Ihre Zahlung ist fehlgeschlagen. Aktualisieren Sie Ihre Zahlungsmethode, um fortzufahren.",
         "title": "Abonnement pausiert"
       },
       "payInvoice": "Rechnung bezahlen",
       "planChange": {
         "body": "Ihr aktueller Plan bleibt bis dahin aktiv.",
-        "title": "Ihr Plan wechselt am {date} zu {plan}"
+        "title": "Ihr Plan wechselt am {date} zu {plan}."
       },
-      "updatePayment": "Zahlungsmethode aktualisieren",
-      "warning": {
-        "bodyNoDate": "Ihre Zahlung konnte nicht verarbeitet werden. Aktualisieren Sie die Zahlungsmethode, um eine Unterbrechung zu vermeiden.",
-        "bodyWithAmount": "Ihre Zahlung über {amount} konnte nicht verarbeitet werden. Bezahlen Sie die Rechnung oder aktualisieren Sie die Zahlungsdaten, um eine Unterbrechung zu vermeiden.",
-        "title": "Zahlung fehlgeschlagen"
-      }
+      "planEnded": {
+        "enterpriseBody": "Kontaktieren Sie den Vertrieb, um einen neuen Enterprise-Plan zu starten.",
+        "enterpriseTitle": "Ihr Enterprise-Plan endete am {date}",
+        "planTitle": "Ihr Plan endete am {date}",
+        "salesBody": "Kontaktieren Sie den Vertrieb, um einen neuen Plan zu starten.",
+        "salesMemberBody": "Bitten Sie den Besitzer Ihres Workspace, den Vertrieb zu kontaktieren.",
+        "teamBody": "Abonnieren Sie erneut, um Workflows auszuführen und wieder geteilte Credits zu erhalten.",
+        "teamMemberBody": "Bitten Sie den Besitzer Ihres Workspace, erneut zu abonnieren.",
+        "teamTitle": "Ihr Team-Plan endete am {date}"
+      },
+      "updatePayment": "Zahlungsmethode aktualisieren"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Zum Mitglied herabstufen",
@@ -5397,6 +5420,7 @@
       "noMembers": "Keine Mitglieder",
       "noMembersMatch": "Keine Mitglieder entsprechen „{query}“",
       "pendingInvitesCount": "{count} ausstehende Einladung | {count} ausstehende Einladungen",
+      "planEndedFooter": "Ihr Plan ist beendet, daher können Sie keine neuen Mitglieder hinzufügen.",
       "reactivateTeam": "Team reaktivieren",
       "resubscribe": "Erneut abonnieren",
       "searchPlaceholder": "Suchen...",
@@ -5528,6 +5552,7 @@
     "hideMinimap": "Minimap ausblenden",
     "label": "Zoom-Steuerung",
     "showMinimap": "Minimap anzeigen",
+    "zoomPercentage": "Zoom-Prozentsatz",
     "zoomToFit": "Zoom anpassen"
   }
 }
