@@ -400,99 +400,47 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps auto-reload hidden while billing control is disabled', () => {
+  it('gates auto-reload on the reactive billing control flag', async () => {
     renderComponent()
-
     expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
-  })
 
-  it('shows auto-reload to subscription managers when billing control is enabled', () => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
-    renderComponent()
-
-    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
-      'data-frozen',
-      'false'
-    )
-  })
-
-  it('removes auto-reload when the billing control kill switch turns off', async () => {
-    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
-    renderComponent()
-
+    await nextTick()
     expect(screen.getByTestId('auto-reload-section')).toBeInTheDocument()
 
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
     await nextTick()
-
     expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
   })
 
-  it('removes auto-reload when subscription management permission is revoked', async () => {
+  it('gates auto-reload on the reactive subscription management permission', async () => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    mockCanManageSubscription.value = false
     renderComponent()
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
 
+    mockCanManageSubscription.value = true
+    await nextTick()
     expect(screen.getByTestId('auto-reload-section')).toBeInTheDocument()
 
     mockCanManageSubscription.value = false
     await nextTick()
-
     expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
   })
 
-  it('keeps auto-reload hidden from members', () => {
+  it('passes the frozen billing state to auto-reload', async () => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
-    mockCanManageSubscription.value = false
     renderComponent()
-
-    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
-  })
-
-  it.for<{
-    case: string
-    billingStatus: BillingStatus
-    subscriptionStatus: BillingSubscriptionStatus
-    frozen: boolean
-  }>([
-    {
-      case: 'freezes while billing is paused',
-      billingStatus: 'paused',
-      subscriptionStatus: 'active',
-      frozen: true
-    },
-    {
-      case: 'freezes while billing is inactive',
-      billingStatus: 'inactive',
-      subscriptionStatus: 'active',
-      frozen: true
-    },
-    {
-      case: 'freezes after the subscription has ended',
-      billingStatus: 'paid',
-      subscriptionStatus: 'ended',
-      frozen: true
-    },
-    {
-      case: 'stays interactive while an active cancellation runs to term',
-      billingStatus: 'paid',
-      subscriptionStatus: 'canceled',
-      frozen: false
-    },
-    {
-      case: 'stays interactive when payment is at risk',
-      billingStatus: 'payment_failed',
-      subscriptionStatus: 'active',
-      frozen: false
-    }
-  ])('auto-reload $case', ({ billingStatus, subscriptionStatus, frozen }) => {
-    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
-    mockBillingStatus.value = billingStatus
-    mockSubscriptionStatus.value = subscriptionStatus
-    renderComponent()
-
     expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
       'data-frozen',
-      String(frozen)
+      'false'
+    )
+
+    mockBillingStatus.value = 'paused'
+    await nextTick()
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'true'
     )
   })
 

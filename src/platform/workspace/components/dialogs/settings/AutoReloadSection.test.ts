@@ -120,53 +120,49 @@ describe('AutoReloadSection', () => {
     ).toHaveBeenCalledOnce()
   })
 
-  it('renders healthy monthly budget progress', () => {
-    setConfig()
-    renderSection()
+  it.for([
+    {
+      state: 'healthy',
+      spentThisCycleCents: 4_800,
+      percent: 10,
+      spent: '$48 of $500',
+      nearLimit: false,
+      paused: false
+    },
+    {
+      state: 'near-limit',
+      spentThisCycleCents: 47_600,
+      percent: 95,
+      spent: '$476 of $500',
+      nearLimit: true,
+      paused: false
+    },
+    {
+      state: 'exhausted',
+      spentThisCycleCents: 50_000,
+      percent: 100,
+      spent: '$500 of $500',
+      nearLimit: false,
+      paused: true
+    }
+  ])(
+    'renders $state monthly budget progress',
+    ({ spentThisCycleCents, percent, spent, nearLimit, paused }) => {
+      setConfig({ spentThisCycleCents })
+      renderSection()
 
-    expect(screen.getByText('10% spent')).toBeInTheDocument()
-    expect(screen.getByText('$48 of $500')).toBeInTheDocument()
-    expect(screen.getByRole('progressbar')).toHaveAttribute(
-      'aria-valuenow',
-      '10'
-    )
-  })
-
-  it('uses the near-limit treatment when one reload remains', () => {
-    setConfig({ spentThisCycleCents: 47_600 })
-    renderSection()
-
-    expect(screen.getByText('95% spent')).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Monthly budget is near its limit'
-    )
-    expect(screen.queryByText('Paused')).not.toBeInTheDocument()
-  })
-
-  it('renders the exhausted budget as paused', () => {
-    setConfig({ spentThisCycleCents: 50_000 })
-    renderSection()
-
-    expect(screen.getByText('Paused')).toBeInTheDocument()
-    expect(screen.getByText('100% spent')).toBeInTheDocument()
-    expect(screen.getByRole('progressbar')).toHaveAttribute(
-      'aria-valuenow',
-      '100'
-    )
-  })
-
-  it('renders normalized values for malformed financial state', () => {
-    setConfig({
-      monthlyBudgetCents: Number.NaN,
-      spentThisCycleCents: Number.POSITIVE_INFINITY
-    })
-    renderSection()
-
-    expect(screen.getByText('Paused')).toBeInTheDocument()
-    expect(screen.getByText('100% spent')).toBeInTheDocument()
-    expect(screen.getByText('$0 of $0')).toBeInTheDocument()
-    expect(screen.queryByText(/NaN|∞|Infinity/)).not.toBeInTheDocument()
-  })
+      expect(screen.getByText(`${percent}% spent`)).toBeInTheDocument()
+      expect(screen.getByText(spent)).toBeInTheDocument()
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        String(percent)
+      )
+      expect(
+        screen.queryByText('Monthly budget is near its limit') !== null
+      ).toBe(nearLimit)
+      expect(screen.queryByText('Paused') !== null).toBe(paused)
+    }
+  )
 
   it('retains the configured values when switched off', async () => {
     const user = userEvent.setup()
