@@ -3199,6 +3199,17 @@ describe('FullPageCheckoutView attempt telemetry', () => {
     ])
   })
 
+  it('reports no attempt for a payment this page only recovers', async () => {
+    await renderCheckout({
+      recover: { status: 'ok', value: succeededOperation('op_done') },
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    await screen.findByRole('heading', { name: 'Already completed' })
+
+    expect(reportedBillingEvents('subscription_checkout')).toEqual([])
+  })
+
   it('starts a second attempt only after the first reached its terminal', async () => {
     const fake = await readyToPay({ subscribe: SETTLED })
     fake.subscribe.mockResolvedValueOnce({

@@ -31,8 +31,12 @@ const translations = {
     'zh-CN': 'ComfyUI 模型'
   },
   'workshop.catalogue.directory': {
-    en: 'All models A to Z',
-    'zh-CN': '全部模型（A 到 Z）'
+    en: 'All models by provider',
+    'zh-CN': '全部模型（按提供商）'
+  },
+  'workshop.catalogue.directoryCount': {
+    en: '{count} models',
+    'zh-CN': '{count} 个模型'
   },
   'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.catalogue.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },

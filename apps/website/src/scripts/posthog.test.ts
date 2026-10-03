@@ -966,6 +966,27 @@ describe('shared auth telemetry events', () => {
     )
   })
 
+  it.for([
+    {
+      name: SESSION_TELEMETRY_EVENT.bootstrap,
+      properties: { outcome: 'signed_in', origin: 'https://www.comfy.org' }
+    },
+    {
+      name: SESSION_TELEMETRY_EVENT.signedOutRemotely,
+      properties: { origin: 'https://www.comfy.org' }
+    }
+  ] as const)('reports the web session event $name as is', async (event) => {
+    const { initPostHog, captureWebSessionEvent } = await import('./posthog')
+    initPostHog()
+
+    captureWebSessionEvent(event)
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      event.name,
+      event.properties
+    )
+  })
+
   it("reports sign-up opens and auth failures under the cloud app's event names", async () => {
     const {
       initPostHog,

@@ -160,6 +160,12 @@ export class AgentFollowerHostSocket {
     this.socket.send(JSON.stringify(frame))
   }
 
+  /** Emits a binary ComfyUI execution frame on the shared `/ws`. */
+  sendExecutionBinary(frame: Buffer): void {
+    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    this.socket.send(frame)
+  }
+
   async waitForSubscribe(): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined
     const timeout = new Promise<never>((_, reject) => {

@@ -125,7 +125,7 @@ describe('WidgetButton Interactions', () => {
       })
       const { container } = mountComponent(widget)
 
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(container.querySelector('i.pi.pi-star')).not.toBeNull()
     })
 
@@ -137,7 +137,7 @@ describe('WidgetButton Interactions', () => {
       const { container } = mountComponent(widget)
 
       expect(screen.getByRole('button')).toHaveTextContent('Save')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(container.querySelector('i.pi.pi-save')).not.toBeNull()
     })
 

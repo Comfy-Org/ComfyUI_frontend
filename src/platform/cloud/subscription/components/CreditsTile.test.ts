@@ -401,6 +401,40 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('253,200 left of 253,200')
   })
 
+  it('shows no credit pool total or allowance bar when the duration is unknown', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: null,
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 120000,
+      cloudCreditBalanceMicros: 120000
+    }
+    const { container } = renderTile()
+    expect(container.textContent).not.toContain('left of')
+    expect(container.textContent).not.toContain('Used after')
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
+  it('still flags an exhausted allowance when the duration is unknown', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: null,
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain("You're out of credits")
+    expect(container.textContent).not.toContain('left of')
+  })
+
   it('formats the renewal date in the local timezone, not UTC', () => {
     activeProSubscription()
     expect(renderTile().container.textContent).toContain('Refills Feb 20')

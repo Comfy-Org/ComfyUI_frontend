@@ -50,7 +50,8 @@ export {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   CHECKOUT_JOURNEY_SCHEMA_VERSION,
   getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload
+  getCheckoutJourneyTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
 } from './checkoutJourney.js'
 export type { TopupAmountPreset } from './topupEvent.js'
 export { getTopupAmountPreset, TOPUP_AMOUNT_PRESETS_USD } from './topupEvent.js'

@@ -17,9 +17,11 @@ import { useBillingClient, useCheckout } from '@comfyorg/account-ui/billing'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
+import { useBillingEntry } from '@/entry/billingEntry'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import { createCancelFlowTelemetry } from '@/telemetry/cancelTelemetry'
 import type { CancelledPlan } from '@/telemetry/cancelTelemetry'
+import { createResubscribeTelemetry } from '@/telemetry/resubscribeTelemetry'
 
 const { currentPlan } = defineProps<{
   /** The plan a cancel would end, for the cancel flow's telemetry. */
@@ -43,6 +45,8 @@ const checkout = useCheckout({
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
+const { entry } = useBillingEntry()
+const resubscribeAttempts = createResubscribeTelemetry()
 
 const cancelFlow = createCancelFlowTelemetry({ plan: () => currentPlan })
 onBeforeUnmount(() => cancelFlow.abandoned())
@@ -115,7 +119,7 @@ async function cancelSubscription() {
 
 async function resubscribe() {
   await settle(
-    () => checkout.resubscribe(),
+    () => resubscribeAttempts.run(entry.value, () => checkout.resubscribe()),
     t('hosted.subscription.resubscribed')
   )
 }

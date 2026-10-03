@@ -1484,7 +1484,8 @@ describe('useSubscriptionCheckout', () => {
     it.for([
       ['SUBSCRIPTION_PAYMENT_REQUIRED', null],
       ['OUTSTANDING_PAYMENT_REQUIRED', null],
-      ['TRANSITION_NOT_ALLOWED', 'payment_failed']
+      ['TRANSITION_NOT_ALLOWED', 'payment_failed'],
+      ['TRANSITION_NOT_ALLOWED', 'paused']
     ] as const)(
       'routes %s previews to the billing portal',
       async ([code, status]) => {
@@ -1704,17 +1705,32 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('opens the Stripe custom-domain portal returned in production', async () => {
+      const portalUrl =
+        'https://checkout.comfy.org/p/session?secret=live_portal_session'
+      mockGetPaymentPortalUrl.mockResolvedValueOnce({ url: portalUrl })
+
+      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+      expect(mockOpen).toHaveBeenCalledWith(portalUrl, '_blank')
+    })
+
     it.for([
       undefined,
       '',
       'javascript:alert(1)',
-      'https://billing.stripe.com.evil.test/portal'
+      'https://billing.stripe.com.evil.test/portal',
+      'https://checkout.comfy.org.evil.test/portal'
     ])('rejects an unsafe billing portal URL: %s', async (url) => {
       mockGetPaymentPortalUrl.mockResolvedValueOnce({ url })
       await submitRejectedPreview(
         'SUBSCRIPTION_PAYMENT_REQUIRED',
         'Update your payment method before changing plans'
       )
+      // The load-bearing half of "rejected": a look-alike origin must not be
+      // handed to a tab either. Asserting only the unchanged location and the
+      // toast would still pass if the URL were opened alongside them.
+      expect(mockOpen).not.toHaveBeenCalled()
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
