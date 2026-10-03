@@ -497,6 +497,7 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       lifecycle.onSubscribeConfirmed()
+      sender.resumeAfterLineage()
       resumeHeldOpsIfSubscribed()
     } else {
       const refusal = handleSubscribeRefusal(detail, lifecycle)
@@ -559,7 +560,7 @@ function startAgentCrdtFollower(
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
     projection.replaceOnNextFrame(detail.workflowId)
-    sender.abortAll()
+    sender.handleLineageReset()
     events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0

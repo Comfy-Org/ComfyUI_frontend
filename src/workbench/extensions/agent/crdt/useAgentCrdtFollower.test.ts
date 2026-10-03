@@ -1731,6 +1731,46 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('replays a pre-mint human batch with its original identity after reset and resubscribe', async () => {
+    const { enqueue, unmount } = mountWithHumanOps()
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const originalOps = clientState.sendOps.mock.calls[0][2]
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: originalOps[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      seq: 1,
+      lineageSeq: 1,
+      actor: 'system:mint'
+    })
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    expect(await settledHumanOpStates()).toEqual([])
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: true,
+      seq: 1
+    })
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+    expect(clientState.sendOps.mock.calls[1][2]).toEqual(originalOps)
+    unmount()
+  })
+
   it('a doc_reset cancels an admitted human edit before its deferred flush', async () => {
     const { enqueue, unmount } = mountWithHumanOps()
 

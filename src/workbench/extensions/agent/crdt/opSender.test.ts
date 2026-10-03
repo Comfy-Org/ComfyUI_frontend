@@ -208,6 +208,233 @@ describe('createOpSender', () => {
     expect(sent[1].ops[0].base_version).toBe(41)
   })
 
+  it('retains a pre-mint batch until the replacement lineage is subscribed', () => {
+    sender.enqueue([addNode(1), addNode(2)])
+    sender.enqueue([addNode(3)])
+    const original = sent[0].ops.map((op) => ({
+      id: op.op_id,
+      version: op.base_version
+    }))
+
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+    sender.handleLineageReset()
+
+    expect(sender.pending()).toBe(2)
+    expect(settled).toHaveLength(0)
+    expect(sent).toHaveLength(1)
+
+    sender.resumeAfterLineage()
+
+    expect(sent).toHaveLength(2)
+    expect(
+      sent[1].ops.map((op) => ({ id: op.op_id, version: op.base_version }))
+    ).toEqual(original)
+    ackInFlight()
+    expect(sent).toHaveLength(3)
+    expect(sent[2].ops[0].base_version).toBe(43)
+  })
+
+  it('retains a pre-mint batch when a replacement subscribe is refused', () => {
+    sender.enqueue([addNode(1)])
+    const originalOps = sent[0].ops
+
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: originalOps[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+    sender.handleLineageReset()
+    boundWorkflow = null
+    sender.abortIfUnbound()
+
+    expect(sender.pending()).toBe(1)
+    expect(settled).toHaveLength(0)
+
+    boundWorkflow = WORKFLOW
+    sender.resumeAfterLineage()
+
+    expect(sent).toHaveLength(2)
+    expect(sent[1].ops).toEqual(originalOps)
+  })
+
+  it('settles a pre-mint batch and its old-workflow successors after binding a different workflow', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(3)])
+
+    sender.abortIfUnbound()
+
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    expect(sent.map(({ workflowId }) => workflowId)).toEqual([WORKFLOW, 'wf-2'])
+    expect(sender.pending()).toBe(1)
+  })
+
+  it.for([
+    ['successful', true, [], [], 0],
+    ['prefix-applied', false, ['applied-op'], [], 0],
+    ['prefix-skipped', false, [], ['skipped-op'], 0],
+    ['noninitial', false, [], [], 1]
+  ] as const)(
+    'does not retain a %s pre-mint result',
+    ([_name, ok, applied, skipped, failedIndex]) => {
+      sender.enqueue([addNode(1), addNode(2)])
+      const opId = sent[0].ops[0].op_id
+
+      resultListener?.({
+        ok,
+        applied: [...applied],
+        skipped: [...skipped],
+        failed: {
+          index: failedIndex,
+          op_id: opId,
+          code: 'pre_mint',
+          message: 'rejected after reaching the applier'
+        }
+      })
+
+      expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+      expect(sender.pending()).toBe(0)
+    }
+  )
+
+  it('settles a pre-mint batch after a bounded lineage wait without extending the deadline for duplicates', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    const preMintResult: OpsResultView = {
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    }
+
+    resultListener?.(preMintResult)
+    vi.advanceTimersByTime(20_000)
+    resultListener?.(preMintResult)
+    vi.advanceTimersByTime(10_000)
+
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'unconfirmed', nodeIds: [1] }
+    ])
+    expect(sent.map(({ ops }) => nodeIdsOf(ops))).toEqual([[1], [2]])
+  })
+
+  it('cancels the lineage-wait timeout before retransmitting', () => {
+    sender.enqueue([addNode(1)])
+    const preMintResult: OpsResultView = {
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    }
+
+    resultListener?.(preMintResult)
+    sender.resumeAfterLineage()
+
+    ackInFlight()
+    vi.advanceTimersByTime(30_000)
+
+    expect(sent).toHaveLength(2)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
+  it('does not reserve a stale-result credit for an answered pre-mint send', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: sent[0].ops[0].op_id,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+
+    sender.resumeAfterLineage()
+    ackInFlight()
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'acknowledged', nodeIds: [1] },
+      { state: 'acknowledged', nodeIds: [2] }
+    ])
+  })
+
+  it('does not attribute later results to a batch waiting for lineage', () => {
+    sender.enqueue([addNode(1)])
+    const opId = sent[0].ops[0].op_id
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: opId,
+        code: 'pre_mint',
+        message: 'workflow document is not ready; retry after doc_reset'
+      }
+    })
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: {
+        index: 0,
+        op_id: opId,
+        code: 'opaque_widgets',
+        message: 'late duplicate result'
+      }
+    })
+
+    expect(settled).toHaveLength(0)
+    expect(sender.pending()).toBe(1)
+  })
+
   it('serializes batches: the next sends only after the result settles the first', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
@@ -1627,6 +1854,15 @@ describe('createOpSender', () => {
 
     sender.enqueue([addNode(4)])
     expect(sent).toHaveLength(2)
+  })
+
+  it('handles a lineage reset through a detached method reference', () => {
+    sender.enqueue([addNode(1)])
+    const { handleLineageReset } = sender
+
+    expect(() => handleLineageReset()).not.toThrow()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+    expect(sender.pending()).toBe(0)
   })
 
   it('abortAll settles every other batch when one settlement listener throws', () => {
