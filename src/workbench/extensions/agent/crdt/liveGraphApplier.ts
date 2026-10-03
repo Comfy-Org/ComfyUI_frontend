@@ -26,12 +26,12 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
+import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 
 import {
   allSubgraphDefinitions,
@@ -480,7 +480,7 @@ export class LiveGraphApplier {
         }
         touchedNodes.add(id)
         this.try(context, () => {
-          const result = this.upsertNode(graph, doc, id)
+          const result = this.upsertNode(graph, doc, id, mode)
           if (result === 'created') created.push(toNodeId(id))
           if (result === 'recreated') {
             for (const link of docLinksIncident(doc, id)) {
@@ -604,7 +604,8 @@ export class LiveGraphApplier {
   private upsertNode(
     graph: LGraph,
     doc: Y.Doc,
-    id: string
+    id: string,
+    mode: ApplyMode
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
@@ -615,11 +616,15 @@ export class LiveGraphApplier {
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.createNode(graph, docNode)
+    this.createNode(graph, docNode, mode)
     return live ? 'recreated' : 'created'
   }
 
-  private createNode(graph: LGraph, docNode: DocNode): LGraphNode {
+  private createNode(
+    graph: LGraph,
+    docNode: DocNode,
+    mode: ApplyMode
+  ): LGraphNode {
     const node =
       LiteGraph.createNode(docNode.type, docNode.serialised.title) ??
       missingNode(docNode)
@@ -648,10 +653,23 @@ export class LiveGraphApplier {
       node.last_serialization = info
       node.configure(info)
     } else {
-      node.configure({
-        ...info,
-        widgets_values: positionalWidgetValues(node, docNode.widgets)
-      })
+      const expectedPromotedIds = promotedWidgetIds(node.inputs)
+      node.configure(
+        node.isSubgraphNode()
+          ? info
+          : {
+              ...info,
+              widgets_values: positionalWidgetValues(node, docNode.widgets)
+            }
+      )
+      if (node.isSubgraphNode()) {
+        this.applyConfiguredHostWidgets(
+          node,
+          docNode.widgets,
+          expectedPromotedIds,
+          mode === 'replace' ? 'load' : 'incremental'
+        )
+      }
     }
     floorSizeToContent(node)
     return node
@@ -748,26 +766,60 @@ export class LiveGraphApplier {
     }
   }
 
-  private applyHostWidgets(
+  private applyConfiguredHostWidgets(
     node: LGraphNode,
-    widgets: DocNode['widgets']
+    widgets: DocNode['widgets'],
+    expectedPromotedIds: readonly string[],
+    phase: 'load' | 'incremental'
   ): void {
-    const promoted = node.inputs.filter((input) => input.widgetId)
-    if (Array.isArray(widgets) && widgets.length !== promoted.length) {
-      this.reportOnce(
-        `host-widgets:${String(node.id)}:${widgets.length}`,
-        `Subgraph host ${String(node.id)} carries ${widgets.length} opaque widget values for ${promoted.length} promoted widgets`,
-        'agent_graph_host_widgets_mismatch',
-        { nodeId: node.id, expected: promoted.length, actual: widgets.length }
+    const actualPromotedIds = promotedWidgetIds(node.inputs)
+    if (
+      Array.isArray(widgets) &&
+      (widgets.length !== actualPromotedIds.length ||
+        !sameSequence(expectedPromotedIds, actualPromotedIds))
+    ) {
+      this.reportHostWidgetDrift(
+        node,
+        widgets.length,
+        actualPromotedIds.length,
+        phase,
+        { expectedPromotedIds, actualPromotedIds }
       )
       return
     }
-    const store = useWidgetValueStore()
+    this.applyHostWidgets(node, widgets, phase)
+  }
+
+  private reportHostWidgetDrift(
+    node: LGraphNode,
+    actual: number,
+    expected: number,
+    phase: 'load' | 'incremental',
+    identity?: Record<string, unknown>
+  ): void {
+    this.reportOnce(
+      `host-widgets:${phase}:${String(node.id)}`,
+      `Subgraph host ${String(node.id)} (${node.type}) carries ${actual} opaque widget values for ${expected} promoted widgets`,
+      'agent_graph_host_widgets_mismatch',
+      { nodeId: node.id, type: node.type, expected, actual, phase, ...identity }
+    )
+  }
+
+  private applyHostWidgets(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    phase: 'load' | 'incremental' = 'incremental'
+  ): void {
+    const promoted = promotedInputs(node)
+    if (Array.isArray(widgets) && widgets.length !== promoted.length) {
+      this.reportHostWidgetDrift(node, widgets.length, promoted.length, phase)
+      return
+    }
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const widgetId = promoted.find((input) => input.name === name)?.widgetId
-      if (!widgetId) {
+      const widget = node.widgets?.find((candidate) => candidate.name === name)
+      if (!widget) {
         this.reportOnce(
           `widget:${String(node.id)}:${name}`,
           `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
@@ -776,9 +828,8 @@ export class LiveGraphApplier {
         )
         continue
       }
-      store.setValue(widgetId, value)
+      this.setWidgetValue(node, widget, value)
     }
-    node.graph?.incrementVersion()
   }
 
   private holdsLocalWrite(
@@ -910,6 +961,29 @@ function isLinkPresent(
     current !== undefined &&
     current.origin_id === origin.id &&
     current.origin_slot === originSlot
+  )
+}
+
+/** The host inputs that surface a promoted widget, in host slot order. */
+function promotedInputs(node: LGraphNode): INodeInputSlot[] {
+  return node.inputs.filter((input) => input.widgetId)
+}
+
+function promotedWidgetIds(inputs: readonly INodeInputSlot[]): string[] {
+  return inputs.flatMap((input) => {
+    if (!isWidgetId(input.widgetId)) return []
+    const { nodeId, name } = parseWidgetId(input.widgetId)
+    return [`${String(nodeId)}:${name}`]
+  })
+}
+
+function sameSequence(
+  expected: readonly string[],
+  actual: readonly string[]
+): boolean {
+  return (
+    expected.length === actual.length &&
+    expected.every((value, index) => value === actual[index])
   )
 }
 

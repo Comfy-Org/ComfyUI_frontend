@@ -29,6 +29,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
@@ -94,6 +95,36 @@ interface FixtureOptions {
   secondDefinition?: boolean
   /** Serialize the root `source` node with the interior node's id (7). */
   rootIdCollidesWithInterior?: boolean
+  /**
+   * Strip the definition's interior nodes and links, so it still declares
+   * `value` while nothing promotes it. Models the document behind PM-1902: a
+   * subgraph-interior create is unrepresentable as a wire op
+   * (`agent_crdt_unrepresentable_subgraph_node_create`), so the definition the
+   * doc carries never gets the interior that makes `value` promoted.
+   */
+  unpromotedDefinition?: boolean
+  /** Serialize the host with this positional widget array. */
+  hostWidgetValues?: WidgetValue[]
+  /** Reverse serialized inputs without changing their cardinality. */
+  reverseHostInputs?: boolean
+  /** Promote the extra input through a second interior widget. */
+  promoteExtra?: boolean
+  /** Mark the first delivered frame as a document-lineage replacement. */
+  replaceOnFirstFrame?: boolean
+}
+
+/**
+ * Options that deliberately break the host/document agreement `startFollower`
+ * otherwise asserts on load.
+ */
+function expectsDriftingHost(options: FixtureOptions): boolean {
+  const promotedCount = options.extraInput === true ? 2 : 1
+  return (
+    options.unpromotedDefinition === true ||
+    options.reverseHostInputs === true ||
+    (options.hostWidgetValues !== undefined &&
+      options.hostWidgetValues.length !== promotedCount)
+  )
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
@@ -117,6 +148,12 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   subgraph.add(interior)
   const valueSlot = subgraph.inputNode.slots[options.extraInput ? 1 : 0]
   valueSlot.connect(interior.inputs[0], interior)
+  if (options.promoteExtra) {
+    const extraInterior = LiteGraph.createNode('promoted-widget')!
+    extraInterior.id = toNodeId(9)
+    subgraph.add(extraInterior)
+    subgraph.inputNode.slots[0].connect(extraInterior.inputs[0], extraInterior)
+  }
 
   if (options.secondDefinition) {
     const second = createTestSubgraph({
@@ -150,13 +187,35 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   return reshapeSerialized(graph.serialize(), options)
 }
 
+type SerializedGraph = ReturnType<LGraph['serialize']>
+
+function reshapeHost(
+  hostNode: SerializedGraph['nodes'][number],
+  options: FixtureOptions
+): void {
+  if (options.stripHostInputs) hostNode.inputs = []
+  if (options.emptyHostWidgets) hostNode.widgets_values = []
+  if (options.hostWidgetValues) {
+    hostNode.widgets_values = options.hostWidgetValues
+  }
+  if (options.reverseHostInputs) hostNode.inputs?.reverse()
+}
+
+/** Leaves each definition declaring `value` with no interior to promote it. */
+function stripDefinitionInteriors(serialized: SerializedGraph): void {
+  for (const definition of serialized.definitions?.subgraphs ?? []) {
+    definition.nodes = []
+    definition.links = []
+  }
+}
+
 function reshapeSerialized(
-  serialized: ReturnType<LGraph['serialize']>,
+  serialized: SerializedGraph,
   options: FixtureOptions
 ): WorkflowJSON {
   const hostNode = serialized.nodes.find((n) => n.id === 1)
-  if (options.stripHostInputs && hostNode) hostNode.inputs = []
-  if (options.emptyHostWidgets && hostNode) hostNode.widgets_values = []
+  if (hostNode) reshapeHost(hostNode, options)
+  if (options.unpromotedDefinition) stripDefinitionInteriors(serialized)
   // litegraph remaps a root id that collides with an interior, so the
   // collision only exists in the serialized shape a document can carry.
   const sourceNode = serialized.nodes.find((n) => n.id === 2)
@@ -173,6 +232,7 @@ function startFollower(options: FixtureOptions = {}) {
   const follower = new FollowerDoc()
   const adapter = new AgentCrdtProjection(() => graph)
   adapter.bind('workflow', follower)
+  if (options.replaceOnFirstFrame) adapter.replaceOnNextFrame('workflow')
   const update = Y.encodeStateAsUpdate(hostDoc)
   follower.applyRemoteUpdate(update)
   expect(
@@ -180,11 +240,17 @@ function startFollower(options: FixtureOptions = {}) {
   ).not.toBeNull()
   const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
   expect(instance).toBeInstanceOf(SubgraphNode)
-  expect(instance.widgets[0]?.value).toBe(
-    options.emptyHostWidgets ? INTERIOR_DEFAULT_VALUE : HOST_INITIAL_VALUE
-  )
+  if (!expectsDriftingHost(options)) {
+    expect(instance.widgets[0]?.value).toBe(
+      options.emptyHostWidgets ? INTERIOR_DEFAULT_VALUE : HOST_INITIAL_VALUE
+    )
+  }
   expect(instance.inputs.map((i) => i.name)).toEqual(
-    options.extraInput ? ['extra', 'value'] : ['value']
+    options.reverseHostInputs
+      ? ['value', 'extra']
+      : options.extraInput
+        ? ['extra', 'value']
+        : ['value']
   )
   onTestFinished(disableSubgraphNodeCreation)
   return {
@@ -281,6 +347,83 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(widgetId).toBeDefined()
     expect(state.instance.widgets[0]?.value).toBe(42)
     expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
+  })
+
+  it('S1z runs the host widget hooks on an accepted promoted write', () => {
+    // An accepted host write takes the same widget setter a human edit takes,
+    // so the node learns its widget changed. Writing `widgetValueStore`
+    // directly reaches the same store key silently, and was the last direct
+    // store write left in this applier.
+    const state = startFollower()
+    const widget = state.instance.widgets[0]
+    const callback = vi.fn()
+    const changed = vi.fn()
+    widget.callback = callback
+    state.instance.onWidgetChanged = changed
+
+    deliver(
+      state,
+      {
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'value',
+        value: 42,
+        promoted: {
+          instance_path: [1],
+          value_index: 0,
+          host_widgets_values: [HOST_INITIAL_VALUE]
+        }
+      },
+      1
+    )
+
+    expect(widget.value).toBe(42)
+    expect(callback).toHaveBeenCalledWith(42, undefined, state.instance)
+    expect(changed).toHaveBeenCalledWith(
+      'value',
+      42,
+      HOST_INITIAL_VALUE,
+      widget
+    )
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('S1r rolls a host widget back when its change hook throws', () => {
+    // The host shares the plain-node contract already pinned in
+    // `liveGraphApplier.test.ts`: a throwing hook undoes the write and the
+    // frame is reported degraded. The host then disagrees with the document
+    // until a later op touches the widget, and that is the reported outcome,
+    // not a silent one.
+    const state = startFollower()
+    state.instance.onWidgetChanged = () => {
+      throw new Error('extension hook exploded')
+    }
+
+    deliver(
+      state,
+      {
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'value',
+        value: 42,
+        promoted: {
+          instance_path: [1],
+          value_index: 0,
+          host_widgets_values: [HOST_INITIAL_VALUE]
+        }
+      },
+      1
+    )
+
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+    expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'extension hook exploded' }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_apply_failed'
+      })
+    )
   })
 
   it('S1b keeps the promoted widget when cmp retires the empty named map in the same transaction', () => {
@@ -843,7 +986,11 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       expect.objectContaining({
         surface: 'agent',
         errorType: 'agent_graph_host_widgets_mismatch',
-        context: expect.objectContaining({ expected: 1, actual: 0 })
+        context: expect.objectContaining({
+          expected: 1,
+          actual: 0,
+          phase: 'incremental'
+        })
       })
     )
   })
@@ -872,6 +1019,175 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     forwardRaw(state, retypeNode3AsHost, 1)
 
     expectNode3RebuiltAsHost(state)
+  })
+
+  it('S1u reports drift on a catch-up frame when the definition promotes nothing', () => {
+    // PM-1902: the definition in the document carries no interior, so nothing
+    // on the host is promoted while its opaque array still carries a value.
+    // Before this guard the create path configured that array positionally over
+    // a host with no widgets, dropping the value with no telemetry at all.
+    // The frame is a catch-up rather than a lineage replace, so the drift is
+    // tagged `incremental`; S1w and S1y cover the `load` tag.
+    const state = startFollower({ unpromotedDefinition: true })
+
+    expect(state.instance.inputs.map((i) => i.widgetId)).toEqual([undefined])
+    expect(state.instance.widgets).toEqual([])
+    expect(storedHostWidgets(state)).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('carries 1 opaque widget values')
+      }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 0,
+          actual: 1,
+          phase: 'incremental'
+        })
+      })
+    )
+  })
+
+  it('S1v keeps host defaults on a catch-up frame when the opaque array is longer', () => {
+    // The create path handed the array straight to `configure`, which binds
+    // positionally over the host's widgets, so a two-value array landed its
+    // first value on the single promoted widget. `applyHostWidgets` refuses
+    // that same mapping on the incremental path (S1c); both paths must.
+    // Same catch-up framing as S1u: the assertion below is the `incremental`
+    // tag, not the `load` one.
+    const state = startFollower({ hostWidgetValues: [99, 77] })
+
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('carries 2 opaque widget values')
+      }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 1,
+          actual: 2,
+          phase: 'incremental'
+        })
+      })
+    )
+  })
+
+  it('S1x keeps host defaults when configure restores a different promoted order', () => {
+    const state = startFollower({
+      extraInput: true,
+      promoteExtra: true,
+      hostWidgetValues: [99, 77],
+      reverseHostInputs: true
+    })
+
+    expect(state.instance.inputs.map((input) => input.name)).toEqual([
+      'value',
+      'extra'
+    ])
+    expect(state.instance.widgets.map((widget) => widget.value)).toEqual([
+      INTERIOR_DEFAULT_VALUE,
+      INTERIOR_DEFAULT_VALUE
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 2,
+          actual: 2,
+          phase: 'incremental'
+        })
+      })
+    )
+  })
+
+  it('S1y keeps host defaults on load when the opaque array is shorter', () => {
+    // The production shape: a host carrying fewer opaque values than its
+    // definition promotes, arriving through a document-lineage replace. Index 0
+    // is only "obviously" the first promoted input while writer and reader
+    // agree on the promoted surface; a reorder or removal makes the prefix land
+    // on the wrong widget, so the load path refuses the whole array rather than
+    // applying part of it.
+    const state = startFollower({
+      extraInput: true,
+      promoteExtra: true,
+      hostWidgetValues: [99],
+      replaceOnFirstFrame: true
+    })
+
+    expect(state.instance.widgets.map((widget) => widget.name)).toEqual([
+      'extra',
+      'value'
+    ])
+    expect(state.instance.widgets.map((widget) => widget.value)).toEqual([
+      INTERIOR_DEFAULT_VALUE,
+      INTERIOR_DEFAULT_VALUE
+    ])
+    expect(storedHostWidgets(state)).toEqual([
+      ['extra', INTERIOR_DEFAULT_VALUE],
+      ['value', INTERIOR_DEFAULT_VALUE]
+    ])
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining(
+          'carries 1 opaque widget values for 2 promoted widgets'
+        )
+      }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 2,
+          actual: 1,
+          phase: 'load',
+          // The load/create guard is the site that must adjudicate, and it
+          // reports the two promoted surfaces it compared. Without these the
+          // refusal came from the incremental guard downstream, which sees only
+          // the post-configure surface and cannot name what the array was
+          // validated against.
+          expectedPromotedIds: ['1:extra', '1:value'],
+          actualPromotedIds: ['1:extra', '1:value']
+        })
+      })
+    )
+  })
+
+  it('S1w reports load and incremental drift once each', () => {
+    const state = startFollower({
+      hostWidgetValues: [99, 77],
+      replaceOnFirstFrame: true
+    })
+
+    forwardRaw(
+      state,
+      (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [99, 77]),
+      1
+    )
+    forwardRaw(
+      state,
+      (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [99, 77]),
+      2
+    )
+
+    expect(state.instance.widgets[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
+    expect(reportError).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ phase: 'load' })
+      })
+    )
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ phase: 'incremental' })
+      })
+    )
   })
 
   it('S1s rebuilds a retyped node through the reconcile path after a rebind', () => {
