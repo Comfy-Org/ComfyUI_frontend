@@ -74,6 +74,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     useCanvasStore().canvas = app.canvas
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     mockCanvas.canvas = createTestCanvasElement({ visible: true })
+    document.body.append(mockCanvas.canvas)
     mockCanvas.subgraph = undefined
     mockCanvas.graph = app.graph
     mockCanvas.ds.scale = 1
