@@ -98,7 +98,8 @@ function reportAgentProjection(
   failureCount: number,
   applied: boolean
 ): void {
-  if (!update.actor?.startsWith('agent:')) return
+  const actor = update.actor ?? 'agent-remote'
+  if (!actor.startsWith('agent:')) return
   useTelemetry()?.trackAgentGraphProjection({
     op_id: update.opIds?.[0] ?? null,
     op_count: update.opIds?.length ?? 0,
