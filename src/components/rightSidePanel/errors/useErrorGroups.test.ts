@@ -1223,6 +1223,42 @@ describe('useErrorGroups', () => {
     })
   })
 
+  describe('missingModelGroups node scoping (bug repro)', () => {
+    it.fails('KNOWN BUG: renders every candidate instead of scoping to the selected node', async () => {
+      const { store, groups } = createErrorGroups()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        fromAny<LGraphNode, unknown>({ id: nodeId.split(':').at(-1) })
+      )
+      store.surfaceMissingModels([
+        makeModel('selected_node_missing_checkpoint.safetensors', {
+          nodeId: '1',
+          directory: 'checkpoints'
+        }),
+        makeModel('unrelated_node_missing_checkpoint.safetensors', {
+          nodeId: '2',
+          directory: 'checkpoints'
+        })
+      ])
+      const canvasStore = useCanvasStore()
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
+      await nextTick()
+
+      // The panel should scope to the selected node's own missing model
+      // (as `missingModelGroupsForSelection` correctly does), not the
+      // whole workflow's candidates.
+      const displayedModelNames = groups.missingModelGroups.value.flatMap(
+        (group) => group.models.map((model) => model.name)
+      )
+      expect(displayedModelNames).toEqual([
+        'selected_node_missing_checkpoint.safetensors'
+      ])
+    })
+  })
+
   describe('missing media counting', () => {
     it('counts missing media by affected node rows, not grouped filenames', async () => {
       const { store, groups } = createErrorGroups()
