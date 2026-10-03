@@ -2,9 +2,9 @@ import { expect } from '@playwright/test'
 
 import type {
   AgentMessage,
-  AgentThreadListResponse,
-  AgentTurnAccepted
+  AgentThreadListResponse
 } from '@comfyorg/ingest-types'
+import { zAgentTurnAccepted } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -225,17 +225,20 @@ test(
         )
     )
     await sendTurn(panel, 'upscale this')
-    const accepted = (await (await turnAccepted).json()) as AgentTurnAccepted
+    const accepted = zAgentTurnAccepted.parse(await (await turnAccepted).json())
     liveTurnId = accepted.message_id
     await expect.poll(() => promptHistory.requests.length).toBe(1)
     await expect(panel.getByTestId('reply-image-preview')).toHaveCount(1)
     await expect
       .poll(() => page.evaluate((key) => localStorage.getItem(key), THREAD_KEY))
       .not.toBeNull()
-    attachmentThreadId = (await page.evaluate(
+    const storedThreadId = await page.evaluate(
       (key) => localStorage.getItem(key),
       THREAD_KEY
-    ))!
+    )
+    if (storedThreadId === null)
+      throw new Error('Expected the accepted turn to persist its thread ID')
+    attachmentThreadId = storedThreadId
 
     const openHistory = () =>
       panel
