@@ -173,6 +173,10 @@ export const useSubgraphNavigationStore = defineStore(
           requestAnimationFrame(() => {
             if (getActiveGraphId() !== graphId) return
             if (!canvas.graph?.nodes.length) return
+            canvas.ds.setViewportSize(
+              canvas.canvas.offsetWidth,
+              canvas.canvas.offsetHeight
+            )
             useLitegraphService().fitView()
           })
         }
