@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 
 const DISMISSED_SETTING = 'Comfy.PartnerNodesEducation.Dismissed'
 
@@ -32,7 +33,13 @@ export const usePartnerNodesEducationStore = defineStore(
 
     const dismissCard = () => {
       retireCard()
-      void settingStore.set(DISMISSED_SETTING, true)
+      settingStore.set(DISMISSED_SETTING, true).catch((error: unknown) =>
+        reportError(error, {
+          errorType: 'partner_nodes_education_dismiss_save_failed',
+          surface: 'platform',
+          level: 'warning'
+        })
+      )
     }
 
     return {

@@ -10,6 +10,7 @@ import * as runGateModule from '@/composables/billing/usePartnerNodesRunGate'
 import * as partnerNodesInGraphModule from '@/composables/node/usePartnerNodesInGraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -50,6 +51,7 @@ vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), async () => {
 })
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const { __setHasPartnerNodes } =
   partnerNodesInGraphModule as typeof partnerNodesInGraphModule & {
@@ -89,6 +91,7 @@ describe('PartnerNodesEducationCard', () => {
   beforeEach(() => {
     __setHasPartnerNodes(true)
     __setGate('none')
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
   })
 
   it('stays hidden until a paid template load requests it', () => {
@@ -115,21 +118,38 @@ describe('PartnerNodesEducationCard', () => {
   })
 
   it('stays closed on later paid template loads once the user closes it', async () => {
-    const storeSetting = vi
-      .spyOn(api, 'storeSetting')
-      .mockResolvedValue(new Response())
     renderCard()
     loadPaidTemplate('paid-wf')
     await nextTick()
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-dismiss'))
-    expect(storeSetting).toHaveBeenCalledWith(
+    expect(api.storeSetting).toHaveBeenCalledWith(
       'Comfy.PartnerNodesEducation.Dismissed',
       true
     )
     loadPaidTemplate('another-paid-wf')
     await nextTick()
     expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+  })
+
+  it('stays closed for the session and reports when saving the dismissal fails', async () => {
+    vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
+    renderCard()
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+
+    await userEvent.click(screen.getByTestId('partner-nodes-education-dismiss'))
+    loadPaidTemplate('another-paid-wf')
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'partner_nodes_education_dismiss_save_failed'
+        })
+      )
+    )
   })
 
   it('stays hidden for a user who closed it in an earlier session', async () => {
