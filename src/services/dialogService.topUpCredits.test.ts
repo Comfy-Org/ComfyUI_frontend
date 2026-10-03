@@ -177,6 +177,22 @@ describe('showTopUpCreditsDialog', () => {
     })
   })
 
+  it('opens the workspace content, never the legacy one, while routing is unknown', async () => {
+    useBillingContext().type = computed(() => 'unknown')
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+
+    // Only the workspace content receives the surface.
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+    expect(args.props).toEqual({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+  })
+
   it('withholds the surface from the legacy rail content', async () => {
     useBillingContext().type = computed(() => 'legacy')
 
