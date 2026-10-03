@@ -93,14 +93,16 @@ const HOST_SOURCE_VALUES: SourceValues = {
 
 const HOST_REF_IMAGE_SIZE = 'max'
 
+// The one source of the dimension link ids. Both origin maps below
+// `satisfies Record<DimensionLinkId, number>` rather than `as const`, so an
+// id dropped from here cannot typecheck while silently dropping a link from
+// node 1's outputs and leaving it in the link tuples.
 const DIMENSION_LINK_IDS = [276, 277, 275] as const
 type DimensionLinkId = (typeof DIMENSION_LINK_IDS)[number]
 
 /**
  * Origin slot each dimension link carries in the host document: `width`
- * reads node 1's `width` output, and so on down the three. `satisfies` so
- * that an id dropped from `DIMENSION_LINK_IDS` cannot leave a stale entry
- * here, or a link out of node 1's outputs while it stays in the tuples.
+ * reads node 1's `width` output, and so on down the three.
  */
 const HOST_ORIGIN_SLOT = {
   276: 0,
