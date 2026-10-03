@@ -14,7 +14,6 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
@@ -243,16 +242,13 @@ function calculateVueInputSlotPosition(
 
   const widgetSlotY = getWidgetSlotY(node, input)
   if (widgetSlotY !== undefined) {
-    return [nodeX, getVueNodeContentY(node, nodeY) + widgetSlotY]
+    return [nodeX, nodeY + widgetSlotY]
   }
 
   const renderedIndex = node.inputs
     .slice(0, slotIndex)
     .filter((candidate) => !isWidgetInputSlot(candidate)).length
-  return [
-    nodeX,
-    getVueNodeContentY(node, nodeY) + getVueSlotY(node, renderedIndex)
-  ]
+  return [nodeX, nodeY + getVueSlotY(renderedIndex)]
 }
 
 function getWidgetSlotY(
@@ -279,23 +275,11 @@ function calculateVueOutputSlotPosition(
     return [nodeX + nodeWidth, nodeY]
   }
 
-  return [
-    nodeX + nodeWidth,
-    getVueNodeContentY(node, nodeY) + getVueSlotY(node, slotIndex)
-  ]
+  return [nodeX + nodeWidth, nodeY + getVueSlotY(slotIndex)]
 }
 
-function getVueSlotY(node: LGraphNode, slotIndex: number): number {
-  return (
-    (slotIndex + (node.type === 'Reroute' ? 0.5 : 0.7)) *
-    LiteGraph.NODE_SLOT_HEIGHT
-  )
-}
-
-function getVueNodeContentY(node: LGraphNode, nodeY: number): number {
-  return node.title_mode === TitleMode.NO_TITLE
-    ? nodeY - LiteGraph.NODE_TITLE_HEIGHT
-    : nodeY
+function getVueSlotY(slotIndex: number): number {
+  return (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
 }
 
 export function getSlotLayout(

@@ -43,6 +43,26 @@ describe('syncSlotOffsets', () => {
     ).toEqual({ x: 200, y: 24 })
   })
 
+  it('measures headerless node offsets from the node top', () => {
+    const nodeId = toNodeId('headerless')
+    const node = document.createElement('div')
+    node.dataset.nodeId = String(nodeId)
+    node.dataset.noTitle = ''
+    Object.defineProperty(node, 'offsetWidth', { value: 75 })
+    setRect(node, new DOMRect(100, 200, 75, 26))
+
+    const input = document.createElement('div')
+    input.dataset.slotKey = slotId(nodeId, 'input', 0)
+    setRect(input, new DOMRect(94, 206, 12, 12))
+    node.append(input)
+
+    syncSlotOffsets(node, GRAPH_ID, nodeId)
+
+    expect(
+      layoutStore.getSlotOffset(GRAPH_ID, nodeId, 0, 'input', 'expanded')
+    ).toEqual({ x: 0, y: 12 })
+  })
+
   it('stores collapsed offsets separately from expanded geometry', () => {
     const nodeId = toNodeId('collapsed')
     const node = document.createElement('div')

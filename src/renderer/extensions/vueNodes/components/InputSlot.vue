@@ -8,7 +8,8 @@
       cn(
         'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
         'cursor-crosshair',
-        dotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
+        dotOnly ? 'lg-slot--dot-only' : 'pr-2',
+        !props.dotOnly && 'h-5',
         {
           'lg-slot--connected': props.connected,
           'lg-slot--compatible': props.compatible,
