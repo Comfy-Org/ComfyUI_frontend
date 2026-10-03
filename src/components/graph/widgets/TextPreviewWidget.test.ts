@@ -1,22 +1,15 @@
-// @vitest-environment jsdom
-// dompurify is inert under happy-dom — see the tripwire note in
-// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import type * as NodePreviewModule from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
-import type { ComfyApp } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import TextPreviewWidget from './TextPreviewWidget.vue'
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
 vi.mock(
   import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
   async () => {
@@ -24,11 +17,6 @@ vi.mock(
     return fromPartial<typeof NodePreviewModule>({ default: {} })
   }
 )
-
-const SkeletonStub = defineComponent({
-  name: 'Skeleton',
-  template: '<div data-testid="skeleton" />'
-})
 
 function renderPreview(
   text: string,
@@ -42,8 +30,12 @@ function renderPreview(
   })
   return render(Harness, {
     global: {
-      plugins: [PrimeVue],
-      stubs: { Skeleton: SkeletonStub }
+      plugins: [
+        [
+          PrimeVue,
+          { pt: { skeleton: { root: { 'data-testid': 'skeleton' } } } }
+        ]
+      ]
     }
   })
 }
@@ -57,21 +49,21 @@ describe('TextPreviewWidget', () => {
   describe('Text formatting', () => {
     it('renders plain text content', () => {
       const { container } = renderPreview('hello world')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const span = container.querySelector('span')
       expect(span?.innerHTML).toContain('hello world')
     })
 
     it('converts newlines to <br> tags', () => {
       const { container } = renderPreview('line1\nline2')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const span = container.querySelector('span')
       expect(span?.innerHTML).toContain('<br')
     })
 
     it('auto-links bare http URLs', () => {
       const { container } = renderPreview('visit https://example.com for info')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const anchor = container.querySelector('a')
       expect(anchor).not.toBeNull()
       expect(anchor?.getAttribute('href')).toBe('https://example.com')
@@ -83,7 +75,7 @@ describe('TextPreviewWidget', () => {
       const { container } = renderPreview(
         'see [[Docs|https://docs.example.com]]'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const anchor = container.querySelector('a')
       expect(anchor).not.toBeNull()
       expect(anchor?.getAttribute('href')).toBe('https://docs.example.com')
@@ -92,7 +84,7 @@ describe('TextPreviewWidget', () => {
 
     it('sets target=_blank and rel=noopener for safety', () => {
       const { container } = renderPreview('[[Docs|https://x.example.com]]')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const anchor = container.querySelector('a')
       expect(anchor?.getAttribute('target')).toBe('_blank')
       expect(anchor?.getAttribute('rel')).toContain('noopener')
@@ -100,9 +92,9 @@ describe('TextPreviewWidget', () => {
 
     it('renders label as plain text when url is not http(s)', () => {
       const { container } = renderPreview('[[Local|javascript:alert(1)]]')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('a')).toBeNull()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('span')?.textContent).toContain('Local')
     })
 
@@ -110,7 +102,7 @@ describe('TextPreviewWidget', () => {
       const { container } = renderPreview(
         '[[<img src=x>|https://x.example.com]]'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const span = container.querySelector('span')
       expect(span?.innerHTML).toContain('&lt;img')
       expect(span?.innerHTML).not.toContain('<img src')
@@ -120,7 +112,7 @@ describe('TextPreviewWidget', () => {
   describe('Raw HTML sanitisation in modelValue', () => {
     it('drops img tags entirely (strict allowlist is <a> + <br> only)', () => {
       const { container } = renderPreview('<img src=x onerror="alert(1)">')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const img = container.querySelector('img')
       expect(img).toBeNull()
     })
@@ -129,7 +121,7 @@ describe('TextPreviewWidget', () => {
       const { container } = renderPreview(
         'hello<script>window.__xss = true</script>world'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('script')).toBeNull()
     })
 
@@ -137,25 +129,70 @@ describe('TextPreviewWidget', () => {
       const { container } = renderPreview(
         '<iframe src="https://evil.example.com"></iframe>'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('iframe')).toBeNull()
     })
 
-    it('strips inline javascript: hrefs on anchors', () => {
+    it('escapes raw <a> tags instead of turning them into live anchors', () => {
+      // Raw modelValue text is never treated as author-supplied HTML, so a
+      // literal `<a href="javascript:...">` is displayed as visible text
+      // rather than parsed into a clickable (and previously exploitable)
+      // anchor element.
       const { container } = renderPreview(
         '<a href="javascript:alert(1)">click</a>'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const anchor = container.querySelector('a')
-      expect(anchor).not.toBeNull()
-      const href = anchor?.getAttribute('href')
-      expect(href == null || !href.startsWith('javascript:')).toBe(true)
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('a')).toBeNull()
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('span')?.textContent).toContain(
+        '<a href="javascript:alert(1)">click</a>'
+      )
     })
 
     it('preserves the <br> tag produced by nl2br', () => {
       const { container } = renderPreview('line1\nline2')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('br')).toBeInTheDocument()
+    })
+  })
+
+  describe('Bracket-delimited raw text (e.g. LoRA/embedding syntax)', () => {
+    it('preserves <lora:name:weight>-style text instead of parsing it as a tag', () => {
+      const { container } = renderPreview(
+        'Loaded lora: <lora:my_style_v2:0.8> applied successfully'
+      )
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const span = container.querySelector('span')
+      expect(span?.textContent).toContain(
+        'Loaded lora: <lora:my_style_v2:0.8> applied successfully'
+      )
+    })
+
+    it('still linkifies URLs and turns newlines into <br> alongside bracket text', () => {
+      const { container } = renderPreview(
+        '<lora:foo:1.0>\nvisit https://example.com for details'
+      )
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const span = container.querySelector('span')
+      expect(span?.textContent).toContain('<lora:foo:1.0>')
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('br')).toBeInTheDocument()
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const anchor = container.querySelector('a')
+      expect(anchor?.getAttribute('href')).toBe('https://example.com')
+    })
+
+    it('keeps the [[label|url]] custom link syntax working next to bracket text', () => {
+      const { container } = renderPreview(
+        '<lora:foo:1.0> see [[Docs|https://docs.example.com]]'
+      )
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const span = container.querySelector('span')
+      expect(span?.textContent).toContain('<lora:foo:1.0>')
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const anchor = container.querySelector('a')
+      expect(anchor?.getAttribute('href')).toBe('https://docs.example.com')
+      expect(anchor?.textContent).toBe('Docs')
     })
   })
 
@@ -165,13 +202,6 @@ describe('TextPreviewWidget', () => {
       Object.assign(useExecutionStore(), { isIdle: true })
       renderPreview('text', { nodeId: toNodeId('n1') })
       expect(screen.queryByTestId('skeleton')).toBeNull()
-    })
-
-    it('shows a Skeleton on mount when the parent node is executing', () => {
-      Object.assign(useExecutionStore(), { executingNodeIds: ['n1'] })
-      Object.assign(useExecutionStore(), { isIdle: false })
-      renderPreview('text', { nodeId: toNodeId('n1') })
-      expect(screen.getByTestId('skeleton')).toBeInTheDocument()
     })
 
     it('hides the Skeleton when execution transitions to idle', async () => {

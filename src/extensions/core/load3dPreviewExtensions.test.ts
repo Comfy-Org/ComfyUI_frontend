@@ -1,10 +1,15 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
+import type { useExtensionService } from '@/services/extensionService'
+import type { useLoad3dService } from '@/services/load3dService'
 import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import * as graphTraversal from '@/utils/graphTraversalUtil'
 
 const {
   capture,
@@ -13,7 +18,6 @@ const {
   onLoad3dReadyMock,
   configureForSaveMeshMock,
   getLoad3dMock,
-  getNodeByLocatorIdMock,
   nodeToLoad3dMapMock
 } = await vi.hoisted(async () => {
   const { createExtensionCapture } =
@@ -26,48 +30,50 @@ const {
     onLoad3dReadyMock: vi.fn(),
     configureForSaveMeshMock: vi.fn(),
     getLoad3dMock: vi.fn(),
-    getNodeByLocatorIdMock: vi.fn(),
     nodeToLoad3dMapMock: new Map<LGraphNode, FakeLoad3d>()
   }
 })
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({ registerExtension: registerExtensionMock })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: registerExtensionMock
+    })
 }))
 
-vi.mock('@/services/load3dService', () => ({
-  useLoad3dService: () => ({ getLoad3d: getLoad3dMock })
+vi.mock(import('@/services/load3dService'), () => ({
+  useLoad3dService: () =>
+    fromPartial<ReturnType<typeof useLoad3dService>>({
+      getLoad3d: getLoad3dMock
+    })
 }))
 
-vi.mock('@/composables/useLoad3d', () => ({
-  useLoad3d: () => ({
-    waitForLoad3d: waitForLoad3dMock,
-    onLoad3dReady: onLoad3dReadyMock
-  }),
-  nodeToLoad3dMap: nodeToLoad3dMapMock
+vi.mock(import('@/composables/useLoad3d'), () => ({
+  useLoad3d: () =>
+    fromPartial<ReturnType<typeof useLoad3d>>({
+      waitForLoad3d: waitForLoad3dMock,
+      onLoad3dReady: onLoad3dReadyMock
+    }),
+  nodeToLoad3dMap: fromAny(nodeToLoad3dMapMock)
 }))
 
-vi.mock('@/extensions/core/load3d/Load3DConfiguration', () => ({
-  default: class {
-    configureForSaveMesh = configureForSaveMeshMock
-  }
+vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
+  default: fromAny(
+    class {
+      configureForSaveMesh = configureForSaveMeshMock
+    }
+  )
 }))
 
-vi.mock('@/extensions/core/load3d/exportMenuHelper', () => ({
+vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
   createExportMenuItems: vi.fn(() => [{ content: 'Export' }])
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: {} }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  getNodeByLocatorId: getNodeByLocatorIdMock
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 await import('@/extensions/core/load3dPreviewExtensions')
 const splatExt = capture.getExtension('Comfy.PreviewGaussianSplat')
@@ -191,6 +197,58 @@ describe('load3dPreviewExtensions module registration', () => {
       expect.objectContaining({ silentOnNotFound: true })
     )
   })
+
+  it('loads a standard 3d item and remembers the folder it names', () => {
+    const node = makePreviewNode()
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
+
+    splatExt.onNodeOutputsUpdated!({
+      [createNodeLocatorId(null, toNodeId(4))]: {
+        '3d': [
+          { filename: 'preview_splat_1.spz', subfolder: '', type: 'temp' }
+        ],
+        camera_info: [null],
+        model_3d_info: []
+      }
+    })
+
+    expect(node.properties['Last Time Model File']).toBe('preview_splat_1.spz')
+    expect(node.properties['Last Time Model Folder']).toBe('temp')
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'temp',
+      'preview_splat_1.spz',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
+  })
+
+  it('restores from the persisted folder instead of the extension default', async () => {
+    const previewNode = makePreviewNode({
+      properties: {
+        'Last Time Model File': '3d/kept.spz',
+        'Last Time Model Folder': 'output'
+      }
+    })
+    await splatExt.nodeCreated!(previewNode, app)
+    expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
+      'output',
+      '3d/kept.spz',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
+
+    const saveNode = makePreviewNode({
+      comfyClass: 'SaveGaussianSplat',
+      properties: {
+        'Last Time Model File': 'preview_splat_1.spz',
+        'Last Time Model Folder': 'temp'
+      }
+    })
+    await saveSplatExt.nodeCreated!(saveNode, app)
+    expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
+      'temp',
+      'preview_splat_1.spz',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
+  })
 })
 
 describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
@@ -232,7 +290,8 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     const cameraState = {
       position: { x: 1, y: 2, z: 3 },
       target: { x: 0, y: 0, z: 0 },
-      zoom: 1
+      zoom: 1,
+      cameraType: 'perspective'
     }
 
     await splatExt.nodeCreated!(node, app)
@@ -271,7 +330,11 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
       cb(load3d)
     )
     const node = makePreviewNode({ comfyClass: 'SaveGaussianSplat' })
-    const transform = { position: { x: 1, y: 2, z: 3 } }
+    const transform = {
+      position: { x: 1, y: 2, z: 3 },
+      quaternion: { x: 0, y: 0, z: 0, w: 1 },
+      scale: { x: 1, y: 1, z: 1 }
+    }
 
     await saveSplatExt.nodeCreated!(node, app)
     node.onExecuted!({ result: ['scene.ply', undefined, [transform]] })
@@ -392,7 +455,9 @@ describe('Comfy.PreviewGaussianSplat.onNodeOutputsUpdated', () => {
   const nodeLocatorId = createNodeLocatorId(null, toNodeId(1))
 
   it('skips entries whose comfyClass is not PreviewGaussianSplat', async () => {
-    getNodeByLocatorIdMock.mockReturnValue(makePreviewNode({ comfyClass: 'X' }))
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(
+      makePreviewNode({ comfyClass: 'X' })
+    )
 
     splatExt.onNodeOutputsUpdated!({
       [nodeLocatorId]: { result: ['scene.ply'] }
@@ -402,7 +467,9 @@ describe('Comfy.PreviewGaussianSplat.onNodeOutputsUpdated', () => {
   })
 
   it('skips entries with no result file path', async () => {
-    getNodeByLocatorIdMock.mockReturnValue(makePreviewNode())
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(
+      makePreviewNode()
+    )
 
     splatExt.onNodeOutputsUpdated!({ [nodeLocatorId]: { result: [] } })
 

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const investors = [
   { name: 'CRAFT', icon: '/icons/investors/craft.svg' },
@@ -16,24 +17,24 @@ const investors = [
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
+  <section class="mx-auto max-w-9xl px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto text-center">
       <span
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
+        class="text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase"
       >
-        {{ t('about.story.label', locale) }}
+        {{ t('about.story.label') }}
       </span>
       <h2
         class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('about.story.headingBefore', locale)
+        {{ t('about.story.headingBefore')
         }}<span class="text-primary-comfy-yellow">{{
-          t('about.story.headingHighlight', locale)
+          t('about.story.headingHighlight')
         }}</span
-        >{{ t('about.story.headingAfter', locale) }}
+        >{{ t('about.story.headingAfter') }}
       </h2>
       <p class="mt-8 text-base/relaxed text-primary-warm-white lg:text-lg">
-        {{ t('about.story.body', locale) }}
+        {{ t('about.story.body') }}
       </p>
     </div>
 
@@ -46,7 +47,7 @@ const investors = [
         <div class="relative z-10 flex h-9 items-center">
           <img src="/icons/node-left.svg" alt="" class="h-full w-auto" />
           <span
-            class="bg-primary-comfy-yellow flex h-full items-center px-2 text-sm font-bold tracking-wider text-primary-comfy-ink"
+            class="flex h-full items-center bg-primary-comfy-yellow px-2 text-sm font-bold tracking-wider text-primary-comfy-ink"
           >
             OUR
           </span>
@@ -60,7 +61,7 @@ const investors = [
         <!-- INVESTORS badge (taller) -->
         <div class="relative z-10 flex h-12 items-center">
           <span
-            class="bg-primary-comfy-yellow flex h-full items-center px-3 text-lg font-bold tracking-wider text-primary-comfy-ink"
+            class="flex h-full items-center bg-primary-comfy-yellow px-3 text-lg font-bold tracking-wider text-primary-comfy-ink"
           >
             INVESTORS
           </span>
@@ -70,7 +71,7 @@ const investors = [
       <p
         class="mt-6 max-w-3xl text-sm/relaxed text-primary-warm-white lg:text-base"
       >
-        {{ t('about.story.investorsBody', locale) }}
+        {{ t('about.story.investorsBody') }}
       </p>
       <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:gap-6">
         <div
@@ -89,15 +90,15 @@ const investors = [
 
     <!-- Quote card -->
     <div
-      class="bg-primary-comfy-yellow mx-auto mt-12 max-w-5xl rounded-4xl p-10 lg:p-16"
+      class="mx-auto mt-12 max-w-5xl rounded-4xl bg-primary-comfy-yellow p-10 lg:p-16"
     >
       <p class="text-xl/relaxed font-medium text-primary-comfy-ink lg:text-3xl">
-        {{ t('about.quote.text', locale) }}
+        {{ t('about.quote.text') }}
       </p>
       <p
         class="mt-8 text-sm font-semibold text-primary-comfy-ink/70 lg:text-base"
       >
-        {{ t('about.quote.attribution', locale) }}
+        {{ t('about.quote.attribution') }}
       </p>
     </div>
   </section>

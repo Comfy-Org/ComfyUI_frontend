@@ -1,23 +1,22 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
-const lines = t('hero.title', locale).split('\n')
+const lines = t('hero.title').split('\n')
 
 // Sizing is em-relative to the inherited font size so the lockup scales with
 // whatever context renders it (canvas overlay or mobile flow).
 const cap = '-mx-px h-full w-auto self-stretch'
 
-// PP Formula Narrow sits high in its em box; nudge the glyphs down so they
-// read optically centred between the caps.
-const inner = 'inline-block translate-y-[0.11em] whitespace-nowrap'
+const inner = 'inline-block whitespace-nowrap'
 </script>
 
 <template>
   <h1
-    class="font-formula-narrow flex flex-col items-center font-semibold tracking-[-0.02em] uppercase"
+    class="flex flex-col items-center font-formula-narrow font-semibold tracking-[-0.02em] uppercase"
   >
     <template v-for="(line, i) in lines" :key="line">
       <!-- The link piece keeps a floor size: purely em-proportional it
@@ -37,7 +36,7 @@ const inner = 'inline-block translate-y-[0.11em] whitespace-nowrap'
           aria-hidden="true"
         />
         <span
-          class="bg-primary-comfy-yellow flex items-center leading-none text-primary-comfy-ink"
+          class="flex items-center bg-primary-comfy-yellow leading-none text-primary-comfy-ink"
         >
           <span :class="inner">{{ line }}</span>
         </span>

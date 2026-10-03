@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "Fügen Sie mit Bria ein in Klartext beschriebenes Objekt in ein Bild ein. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
+    "display_name": "Bria Objekt hinzufügen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "instruction": {
+        "name": "Anweisung",
+        "tooltip": "Was und wo hinzugefügt werden soll, z. B. „Stellen Sie eine rote Vase mit Blumen auf den Tisch“."
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Bria verwendet hier keinen Seed und interpretiert die Bearbeitung bei jedem Aufruf neu, daher können wiederholte Ausführungen abweichen. Der Wert wird nie gesendet: Er ändert nur den Cache-Schlüssel dieses Nodes, sodass ein ansonsten identischer Graph die Bearbeitung erneut ausführt, statt das zwischengespeicherte Ergebnis zurückzugeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "Entfernen Sie mit Bria ein in Klartext benanntes Objekt aus einem Bild. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
+    "display_name": "Bria Per Text löschen",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "Name des zu entfernenden Objekts, z. B. „die Lampe“. Es können mehrere Objekte gleichzeitig benannt werden, z. B. „das Telefon und die Bleistifte“. Wenn etwas benannt wird, das nicht im Bild ist, wird dennoch ein neu gerendertes Bild zurückgegeben und berechnet."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "Entfernen Sie mit Bria den Vordergrund eines Bildes und generieren Sie an seiner Stelle einen Hintergrund. Alles, was Bria als Vordergrund erkennt, wird entfernt, nicht nur Personen. Die unveränderten Pixel bleiben erhalten, aber die Ausgabe wird in einer Standardgröße von etwa 1 Megapixel neu gerendert.",
+    "display_name": "Bria Vordergrund entfernen",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Entfernt mit Bria Objekte oder Bereiche, die durch eine mask markiert sind, aus einem Bild.",
     "display_name": "Bria-Radierer",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "Ändern Sie mit Bria die Lichtstimmung und -richtung eines Bildes. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
+    "display_name": "Bria Beleuchtung ändern",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "Woher das Licht kommt. Hartlichtstimmungen wie Mittag, Spot auf das Motiv und hartes Studiolicht reagieren am stärksten darauf."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "Anzuwendende Lichtstimmung."
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "Entfernen Sie den Hintergrund eines Bildes mit Bria RMBG 2.0.",
     "display_name": "Bria Bildhintergrund entfernen",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "Ersetzen Sie mit Bria den Hintergrund eines Bildes, beschrieben durch einen Prompt oder gesteuert durch Referenzbilder. Die Pixel des Motivs bleiben erhalten; der Hintergrund wird darum herum generiert.",
+    "display_name": "Bria Bildhintergrund ersetzen",
+    "inputs": {
+      "background": {
+        "name": "Hintergrund",
+        "tooltip": "Beschreiben Sie den neuen Hintergrund mit einem Prompt oder steuern Sie ihn mit Referenzbildern."
+      },
+      "background_mode": {
+        "name": "Modus"
+      },
+      "background_prompt": {
+        "name": "Prompt"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "Gibt die exakte Pixelgröße der Eingabe zurück, anstatt das Ergebnis auf etwa 1 Megapixel zu skalieren. Eine große Eingabe liefert dann ein großes Bild."
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Derselbe Seed liefert in der Regel denselben Hintergrund; die automatische Prompt-Verfeinerung kann ihn jedoch weiterhin variieren."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "Der Prompt, den Bria generiert hat; beim Pfad mit Referenzbild leer."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "Ersetzen Sie mit Bria ein Objekt in einem Bild durch ein anderes, das in Klartext beschrieben wird. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zur Eingabe ausgerichtet.",
+    "display_name": "Bria Objekt ersetzen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "instruction": {
+        "name": "Anweisung",
+        "tooltip": "Was durch was ersetzt werden soll, z. B. „Ersetzen Sie den roten Apfel durch eine grüne Birne“."
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Bria verwendet hier keinen Seed und interpretiert die Bearbeitung bei jedem Aufruf neu, daher können wiederholte Ausführungen unterschiedlich ausfallen. Der Wert wird nie gesendet: Er ändert nur den Cache-Schlüssel dieses Nodes, damit ein ansonsten identischer Graph die Bearbeitung erneut ausführt, statt das zwischengespeicherte Ergebnis zurückzugeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine nachfolgende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "Versetzen Sie mit Bria ein Bild in eine andere Jahreszeit. Die gesamte Szene wird neu gerendert, daher kann sich die Umgebung über die Jahreszeit hinaus verändern. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zur Eingabe ausgerichtet.",
+    "display_name": "Bria Jahreszeit ändern",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "season": {
+        "name": "Jahreszeit",
+        "tooltip": "Anzuwendende Jahreszeit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine nachfolgende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "Reparieren Sie mit Bria ein altes oder beschädigtes Foto: Körnung, Kratzer und Unschärfe werden entfernt, und altersbedingte Farbstiche werden neutralisiert. Passepartouts und Studioumrandungen können abgeschnitten werden, und Gesichter werden neu gezeichnet. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zur Eingabe ausgerichtet. Verwenden Sie stattdessen Bria Increase Resolution zum Vergrößern.",
+    "display_name": "Bria Foto restaurieren",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "Entfernt mit Bria den Hintergrund aus einem Video und gibt die freigestellten Frames plus eine Alphamaske zurück. Verbinden Sie beide mit einem Compositing-Node oder führen Sie sie Save WEBM zu, um ein transparentes Video zu schreiben.",
     "display_name": "Bria Videohintergrund entfernen (transparent)",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "Maske",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "Löschen Sie mit Bria aus einem Video alles, was von einer Maske pro Frame abgedeckt wird, und füllen Sie die Lücke. Die Maske muss dort weiß sein, wo etwas entfernt werden soll, und andernorts schwarz. Bria akzeptiert Clips von maximal 5,1 Sekunden bei 20 bis 30 Frames pro Sekunde mit geraden Pixelabmessungen; Audio wird standardmäßig beibehalten. Der zurückgegebene Clip kann einige Frames kürzer als die Eingabe sein.",
+    "display_name": "Bria Video Eraser",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "Eine Maske pro Frame des Videos, weiß an den Stellen, an denen sich das zu löschende Objekt befindet. Geben Sie entweder eine Maske oder ein Maskenvideo an, nicht beides."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "Ein bereits kodiertes Maskenvideo mit denselben Abmessungen und derselben Frame-Anzahl wie das Video. Geben Sie entweder eine Maske oder ein Maskenvideo an, nicht beides."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "Audiospur der Eingabe beibehalten."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Clip, aus dem gelöscht werden soll."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1225,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Rendert das finale 1080p-Video eines Seedance-2.5-Drafts. Das finale Video behält Szene und Bewegung des Entwurfs bei und verwendet dessen Prompt, Referenzen, Dauer, Seitenverhältnis und Audioeinstellung erneut.",
+    "display_name": "ByteDance Seedance 2.5 Draft in finales Video",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Der Output draft_task_id eines Seedance-2.5-Node, der mit dem Modell Seedance 2.5 Draft ausgeführt wurde, oder eine eingefügte Entwurfs-Task-ID. Setzen Sie die Seed-Steuerung dieses Node auf „fest“, da der nächste Durchlauf sonst einen neuen Entwurf erzeugt, anstatt den von Ihnen überprüften wiederzuverwenden. Ein Entwurf kann 7 Tage nach seiner Erstellung gerendert werden."
+      },
+      "watermark": {
+        "name": "Wasserzeichen",
+        "tooltip": "Legt fest, ob dem Video ein Wasserzeichen hinzugefügt wird."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Generiert mit Seedance 2.5 oder 2.0 ein Video aus einem Bild des ersten Frames und einem optionalen Bild des letzten Frames.",
     "display_name": "ByteDance Seedance 2.5: Video aus erstem und letztem Frame",
@@ -1250,7 +1530,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Output; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das finale 1080p-Video im Node Seedance 2.5 Draft in finales Video rendert; Seedance 2.0 für maximale Qualität und 4k; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
       },
       "model_duration": {
         "name": "Dauer"
@@ -1279,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Task-ID eines Seedance-2.5-Draft-Durchlaufs. Verbinden Sie sie mit dem Node Seedance 2.5 Draft in finales Video, um das finale 1080p-Video zu rendern."
       }
     }
   },
@@ -1291,7 +1575,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Output; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das finale 1080p-Video im Node Seedance 2.5 Draft in finales Video rendert; Seedance 2.0 für maximale Qualität und 4k; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1344,7 +1628,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Output; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das finale 1080p-Video im Node Seedance 2.5 Draft in finales Video rendert; Seedance 2.0 für maximale Qualität und 4k; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1385,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Task-ID eines Seedance-2.5-Draft-Durchlaufs. Verbinden Sie sie mit dem Node Seedance 2.5 Draft in finales Video, um das finale 1080p-Video zu rendern."
       }
     }
   },
@@ -1397,7 +1685,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos mit bis zu 30 Sekunden und mp4/mov-Ausgabe; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden und mp4/mov-Output; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das finale 1080p-Video im Node Seedance 2.5 Draft in finales Video rendert; Seedance 2.0 für maximale Qualität und 4k; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste und kostengünstigste Generierung."
       },
       "model_duration": {
         "name": "Dauer"
@@ -1429,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Task-ID eines Seedance-2.5-Draft-Durchlaufs. Verbinden Sie sie mit dem Node Seedance 2.5 Draft in finales Video, um das finale 1080p-Video zu rendern."
       }
     }
   },
@@ -1671,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Zerlegt ein Bild in eine Hintergrundebene und bis zu 16 neu positionierbare transparente Ebenen, jeweils mit Stapelreihenfolge, Begrenzungsrahmen, Name und Beschreibung.",
-    "display_name": "ByteDance Seedream 5.0 Pro-Ebenentrennung",
+    "display_name": "ByteDance Seedream 5.0 Pro Ebenentrennung (Legacy)",
     "inputs": {
       "control_after_generate": {
         "name": "Steuerung nach Generierung"
@@ -1729,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Bearbeitungsfertiges Ebenendokument für Create Layered Image: die Basisplatte sowie jedes Element als eigene benannte, eng zugeschnittene Ebene an seiner tatsächlichen Position und in seiner Stapelreihenfolge. Direkt verbinden oder mit Add Layer erweitern."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Zerlegt ein Bild in eine Hintergrundplatte und bis zu 16 verschiebbare transparente Ebenen, jeweils mit Stapelreihenfolge, Begrenzungsrahmen, Namen und Beschreibung.",
+    "display_name": "ByteDance Seedream 5.0 Ebenentrennung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_size": {
+        "name": "Größe"
+      },
+      "model_watermark": {
+        "name": "Wasserzeichen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "Das Basisbild (Hintergrundplatte), auf dem die Ebenen gestapelt werden."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Transparenz des Basisbilds (1 = transparent, LoadImage-Konvention); derzeit immer vollständig deckend."
+      },
+      "2": {
+        "name": "Ebenen",
+        "tooltip": "Transparente Ebenen, von unten nach oben sortiert. Vollständiger Canvas-Modus: an ihrer Bounding-Box-Position auf einem schwarzen Canvas in Größe des Basisbilds platziert. Modus minimale Größe: auf ihre Bounding Box zugeschnitten, oben links verankert und auf die größte Ebene aufgefüllt."
+      },
+      "3": {
+        "name": "Masken",
+        "tooltip": "Transparenz pro Ebene, indexbündig mit dem Ebenen-Batch (1 = transparent, LoadImage-Konvention). Fügen Sie für Compositing im Stil von ImageCompositeMasked zuerst InvertMask hinzu."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Eine Platzierungsbox pro Ebene, indexbündig mit dem Ebenen-Batch (führen Sie beide zusammen mit masks in Layers From Bounding Boxes ein, um die Platzierung pro Ebene wiederherzustellen): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] ist der Inhaltsbereich der Ebene innerhalb ihres eigenen Frames; er wird auf dem Canvas an der Boxposition zuzüglich dieses Offsets platziert."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Bearbeitungsfertiges Ebenendokument für Create Layered Image: die Hintergrundplatte plus jedes Element als eigene benannte, eng zugeschnittene Ebene an seiner tatsächlichen Position und in seiner Stapelreihenfolge. Direkt verbinden oder mit Add Layer erweitern."
       }
     }
   },
@@ -3065,6 +3413,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "Fügt Videos der Reihe nach zusammen, ohne kompatible kodierte Eingaben zu dekodieren.",
+    "display_name": "Videos zusammenfügen",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Codec zum Kodieren von Videotensoren. Auto verwendet H.264; bereits kodierte Videos bleiben unverändert."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Optionaler vollständiger Soundtrack für das zusammengefügte Video. Überschreibt den von den Eingabevideos mitgeführten Ton."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Zusammenzufügende Videosegmente in der Reihenfolge der Eingabe."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Das zusammengefügte Video."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "Konditionierung (Durchschnitt)",
     "inputs": {
@@ -3098,6 +3469,20 @@
       },
       "conditioning_to": {
         "name": "conditioning_to"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "Lädt ein mit Save Conditioning gespeichertes Conditioning oder eine beliebige safetensors-Datei mit einem „conditioning“-Tensor aus dem embeddings-Ordner.",
+    "display_name": "Conditioning laden",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3909,6 +4294,10 @@
         "name": "Bittiefe",
         "tooltip": "Auto verwendet 8-Bit für sRGB und 10-Bit für HDR. Explizite 8-Bit- und 10-Bit-Auswahlen sind unabhängig vom Farbraum."
       },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Kodiert das Video optional sofort. None behält die Bilder in Tensorform; Auto verwendet H.264."
+      },
       "color_space": {
         "name": "Farbraum",
         "tooltip": "Farbraum der Eingabebilder. HDR wählt BT.2020/HLG und HDR PQ wählt BT.2020/PQ."
@@ -4700,7 +5089,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "Leeres Cosmos Latent-Video",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4761,7 +5150,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "Leeres Hunyuan Bild-Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4780,7 +5169,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Leeres HunyuanVideo 1.0 Latent",
+    "display_name": "Leeres Hunyuan Video 1.0 Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4802,7 +5191,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Leeres HunyuanVideo 1.5 Latent",
+    "display_name": "Leeres Hunyuan Video 1.5 Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4841,7 +5230,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "Leeres LTXV Latent-Video",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4880,7 +5269,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Leeres Hunyuan 3D v2 Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5021,7 +5410,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Leere Trellis2 Latent-Struktur",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5031,6 +5420,49 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Leeres YuE2-Latent-Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "Schleife beenden",
+    "inputs": {
+      "accumulate": {
+        "name": "akkumulieren",
+        "tooltip": "Gibt bei aktiviertem Akkumulieren den Ausgabewert jeder Iteration zurück; andernfalls nur den der letzten Iteration."
+      },
+      "next_iteration_value": {
+        "name": "Wert der nächsten Iteration",
+        "tooltip": "Wert, der von „Schleife beenden“ für die nächste Iteration zurück an „Schleife starten“ gesendet wird."
+      },
+      "output_value": {
+        "name": "Ausgabewert",
+        "tooltip": "Von „Schleife beenden“ zurückgegebener Wert. Gibt abhängig von Akkumulieren die letzte Iteration oder alle Iterationen zurück."
+      },
+      "terminations": {
+        "name": "Abschlüsse",
+        "tooltip": "Verbinden Sie Ausgaben, die bei jeder Iteration ausgeführt werden müssen. Ihre Werte werden nicht zurückgegeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Ausgaben",
+        "tooltip": "Der Ausgabewert der letzten Iteration oder die über Iterationen akkumulierten Werte, wenn Akkumulieren aktiviert ist."
       }
     }
   },
@@ -5898,6 +6330,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Bearbeitet einen clip anhand einer schriftlichen Anweisung: Objekte entfernen, hinzufügen oder ersetzen, die Umgebung ändern, das Material neu gestalten, Bildschirmtext ändern oder den gesprochenen Dialog ersetzen. Länge, Bildausschnitt, Kamerabewegung und Audio stammen aus dem Quell-clip.",
+    "display_name": "Flux Video Edit",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Skaliert Quellen mit einer Fläche von mehr als 1280x704 Pixeln vor dem Upload automatisch herunter. Das Seitenverhältnis bleibt erhalten; kleinere Videos bleiben unverändert."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Was in einfacher Sprache geändert werden soll, bis zu 4096 Zeichen. Alles, was Sie nicht erwähnen, soll unverändert bleiben. Ersatzdialoge müssen in die Dauer der ursprünglichen Sprache passen, und ein stummer clip bleibt stumm."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderationstoleranz, 0 ist am strengsten."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed zur Bestimmung, ob der Node erneut ausgeführt werden soll; FLUX wählt seinen eigenen Seed, daher sind die tatsächlichen Ergebnisse unabhängig von diesem Wert nicht deterministisch."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Quell-clip mit 0,7 bis 15 Sekunden und mindestens 160x160 Pixeln. Die Ausgabe wird mit 24 fps gerendert und auf etwa 0,9 Megapixel pro Frame begrenzt, daher wird eine größere Quelle kleiner zurückgegeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Skaliert ein Video mit FLUX-Super-Resolution um das 1,5- bis 3-Fache hoch und bewahrt dabei entweder die Quelle präzise oder verbessert ihre Details kreativ.",
     "display_name": "Flux Video Upscale",
@@ -6451,14 +6917,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "Temperatur"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -6471,6 +6931,42 @@
       "system_prompt": {
         "name": "system_prompt",
         "tooltip": "Grundlegende Anweisungen, die das Verhalten des Modells bestimmen."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV3": {
+    "description": "Generieren Sie Textantworten mit den Gemini-Modellen von Google. Geben Sie einen Text-Prompt und optional ein oder mehrere Bilder, Audioclips, Videos oder Dateien als multimodalen Kontext an.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Das Gemini-Modell, das zum Generieren der Antwort verwendet wird."
+      },
+      "model_max_output_tokens": {
+        "name": "maximale Ausgabetokens"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_system_prompt": {
+        "name": "System-Prompt"
+      },
+      "model_thinking_level": {
+        "name": "Denkstufe"
+      },
+      "model_video_processing": {
+        "name": "Videoverarbeitung"
       }
     },
     "outputs": {
@@ -6666,6 +7162,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Element aus Liste abrufen",
+    "inputs": {
+      "index": {
+        "name": "Index"
+      },
+      "list": {
+        "name": "Liste"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7251,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "Animiert ein Bild mit synchronisierten Dialogen und Ton mithilfe von HeyGen Video 1.0 zu einem Video. Das Bild wird als erstes Frame verwendet.",
+    "display_name": "HeyGen Video 1.0 Bild zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Generiert mithilfe von HeyGen Video 1.0 ein Video mit synchronisierten Dialogen und Ton aus einem Text-Prompt. Optional können Sie bis zu 12 Referenzbilder, Videos und Audioclips verbinden und sie im Prompt als {'@'}Image1, {'@'}Video1, {'@'}Audio1 erwähnen.",
+    "display_name": "HeyGen Video 1.0 Referenz zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "Animiert ein beliebiges Bild einer Person zu einem lippensynchronen Sprechvideo (HeyGen Avatar IV). Steuern Sie es mit einem Textskript oder eigenem Audio.",
     "display_name": "HeyGen-Sprechendes Foto",
@@ -7530,6 +8103,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Bearbeitet oder kombiniert bis zu 5 Referenzbilder anhand eines Text-Prompts mit dem Hunyuan Image-Modell von Tencent.",
+    "display_name": "Tencent HY Image: Bearbeiten",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "Höhe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_watermark": {
+        "name": "Wasserzeichen"
+      },
+      "model_width": {
+        "name": "Breite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Generiert Bilder aus einem Text-Prompt mit dem Hunyuan Image-Modell von Tencent.",
+    "display_name": "Tencent HY Image: Text zu Bild",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "Höhe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_watermark": {
+        "name": "Wasserzeichen"
+      },
+      "model_width": {
+        "name": "Breite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -7647,7 +8301,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent-Upscale mit Modell",
+    "display_name": "Hunyuan Video 1.5 Latent-Upscale mit Modell",
     "inputs": {
       "crop": {
         "name": "Zuschnitt"
@@ -7783,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Bearbeitet oder kombiniert mithilfe von Ideogram 4.5 bis zu 5 Bilder anhand eines Text-Prompts. Rendert das gesamte Bild neu und kann dessen Größe oder Seitenverhältnis ändern; verwenden Sie Ideogram 4.5 Precise Edit, damit unveränderte Pixel unverändert bleiben.",
+    "display_name": "Ideogram 4.5 Bearbeiten",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_height": {
+        "name": "Höhe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_quality": {
+        "name": "Qualität"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_size": {
+        "name": "Größe"
+      },
+      "model_width": {
+        "name": "Breite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Generiert Bilder mit P-Image, dem schnellen Text-zu-Bild-Modell von Ideogram. Starke Typografie und Fotorealismus; unterstützt strukturierte JSON-Beschriftungen von Ideogram 4.0 für exakten Text, Farben und Layout.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -7822,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Der Prompt, aus dem das Bild tatsächlich generiert wurde (die umgeschriebene strukturierte Beschriftung, wenn prompt_upsampling ausgeführt wurde, andernfalls Ihr Prompt). Geben Sie ihn mit prompt_upsampling OFF und demselben Seed zurück, um dieses Bild zu reproduzieren."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Bearbeitet mithilfe der präzisen Bearbeitung von Ideogram 4.5 ein Bild anhand eines Text-Prompts: Nur das vom Prompt angeforderte Element wird geändert, unveränderte Pixel bleiben identisch und die Ausgabe behält die Größe von Bild 1 bei (Bilder über ~4 MP werden zuerst herunterskaliert). Akzeptiert bis zu 4 Referenzbilder.",
+    "display_name": "Ideogram 4.5 Präzises Bearbeiten",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_quality": {
+        "name": "Qualität"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Generiert mithilfe von Ideogram 4.5 Bilder aus einem Text-Prompt.",
+    "display_name": "Ideogram 4.5 Text zu Bild",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_quality": {
+        "name": "Qualität"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_size": {
+        "name": "Größe"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "Die strukturierte Bildbeschreibung, aus der das Bild generiert wurde. Verwenden Sie sie erneut mit magic_prompt auf 'off' und demselben Seed, um das Bild zu reproduzieren."
       }
     }
   },
@@ -7985,12 +8739,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Konvertiert sRGB (Rec.709), HDR (Rec.2020 HLG) und HDR PQ (Rec.2020 PQ). Verwendet einen SDR-Weißpunkt von 203 Nit und ein HLG-Referenzdisplay mit 1000 Nit. Die Einengung führt für überschüssige Luminanz im gesamten Batch ein Tone-Mapping durch und komprimiert Farben außerhalb des Farbumfangs. Konvertierungen werden in float32 berechnet und geben Device und Datentyp des Zwischenergebnisses zurück. Straight Alpha wird nicht farbtransformiert.",
+    "description": "Konvertiert sRGB, lineares Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 und HDR ACEScct. LogC3 verwendet die EI-800-Kurve mit Rec.709-Primärfarben und auf [0, 1] begrenzten Werten. ACEScct verwendet AP1-Primärfarben und D60-Weißpunkt mit Bradford-Anpassung an D65. Konvertieren Sie LogC3 oder ACEScct zum Speichern als EXR in linear. Linear 1.0 verwendet dasselbe 203-Nit-Referenzweiß wie sRGB; HLG verwendet ein 1000-Nit-Referenzdisplay. Lineare und ACEScct-Outputs bewahren erweiterte Werte. Linear-zu-HDR-Konvertierungen bewahren Lichter ohne Tone Mapping; HLG- und PQ-Outputs clippen negative Kanäle. SDR-Output und die PQ-zu-HLG-Konvertierung führen Tone Mapping für übermäßige Luminanz über den Batch hinweg durch und komprimieren Farben außerhalb des Farbumfangs. Konvertierungen erfolgen in float32 und geben das Device und den dtype des Zwischenergebnisses zurück. Straight Alpha wird nicht farbtransformiert.",
     "display_name": "Bildfarbraum konvertieren",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Farbraum der Ausgabepixel. Stellen Sie den Speicher-Node auf denselben Farbraum ein."
+        "tooltip": "Farbraum der Ausgabepixel. Stellen Sie den Save-Node auf denselben Farbraum ein. Konvertieren Sie LogC3 oder ACEScct vor dem Speichern als EXR in linear oder vor dem Speichern von Video in sRGB/HDR/HDR PQ."
       },
       "image": {
         "name": "image"
@@ -8712,6 +9466,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Extrahiert den Wert eines Schlüssels aus dem ersten gültigen JSON-Objekt im Text, einschließlich Markdown-Codeblöcken.",
     "display_name": "Text aus JSON extrahieren",
     "inputs": {
       "json_string": {
@@ -10089,7 +10844,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Leeres latentes Audio",
+    "display_name": "Leeres LTXV Latent-Audio",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11280,6 +12035,73 @@
       }
     }
   },
+  "LoopIteration": {
+    "display_name": "Schleifeniteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "Wert der aktuellen Iteration"
+      },
+      "is_first": {
+        "name": "erste Iteration"
+      },
+      "is_last": {
+        "name": "letzte Iteration"
+      },
+      "iteration_index": {
+        "name": "Iterationsindex"
+      },
+      "list_item": {
+        "name": "Listenelement"
+      },
+      "reuse_cache": {
+        "name": "Cache wiederverwenden"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "Schleifenfortschritt",
+    "inputs": {
+      "position": {
+        "name": "Position"
+      },
+      "start_id": {
+        "name": "Start-ID"
+      },
+      "total": {
+        "name": "Gesamt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "Schleifenergebnis",
+    "inputs": {
+      "close_id": {
+        "name": "Abschluss-ID"
+      }
+    }
+  },
   "LoraLoader": {
     "description": "Dieser LoRA-Loader wird verwendet, um sowohl Diffusions- als auch CLIP-Modelle zu ändern und dadurch die Entrauschung von latents, etwa durch Anwenden von Stilen, zu verändern. Mehrere LoRA-Nodes können miteinander verknüpft werden.",
     "display_name": "LoRA laden (Modell und CLIP)",
@@ -12380,6 +13202,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "Wandelt eine dekodierte Marigold V2-Vorhersage in ein Bild um: normalisierte Tiefe mit hell dargestellter Nähe, Einheitsflächennormalen oder sRGB-Albedo.",
+    "display_name": "Marigold V2-Nachbearbeitung",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "Masken kombinieren",
     "inputs": {
@@ -12725,6 +13564,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Führt einen zusätzlichen Verfeinerungsdurchlauf für eine detailgetreuere Geometrie mit feineren Oberflächendetails aus."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Auflösung des Ultra-Durchlaufs: 2k führt ihn mit 2048³ aus, 4k mit 4096³ für feinste Oberflächendetails. 4k erfordert meshy-7.1 oder neuer. Wird nur verwendet, wenn ultra_mode aktiviert ist."
       }
     },
     "outputs": {
@@ -12791,6 +13634,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Führen Sie einen zusätzlichen Verfeinerungsdurchlauf mit 2048³ für detailgetreuere Geometrie mit feineren Oberflächendetails aus."
       }
     },
     "outputs": {
@@ -12932,6 +13779,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Führt einen zusätzlichen Verfeinerungsdurchlauf für eine detailgetreuere Geometrie mit feineren Oberflächendetails aus."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Auflösung des Ultra-Durchlaufs: 2k führt ihn mit 2048³ aus, 4k mit 4096³ für feinste Oberflächendetails. 4k erfordert meshy-7.1 oder neuer. Wird nur verwendet, wenn ultra_mode aktiviert ist."
       }
     },
     "outputs": {
@@ -13690,6 +14541,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Nur MoGe-3: spärliche volumetrische Verfeinerungsdurchgänge über die vorhergesagte Tiefe. Mehr Durchgänge schärfen feine Details und Kanten bei ungefähr linearen Kosten. 0 deaktiviert die Verfeinerung. Wird von MoGe-1 / MoGe-2 ignoriert."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = am schnellsten, 9 = die meisten Details."
@@ -13720,6 +14575,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Nur MoGe-3: spärliche volumetrische Verfeinerungsdurchgänge über die vorhergesagte Tiefe. Mehr Durchgänge schärfen feine Details und Kanten bei ungefähr linearen Kosten. 0 deaktiviert die Verfeinerung. Wird von MoGe-1 / MoGe-2 ignoriert."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -16028,6 +16887,9 @@
       "model": {
         "name": "model"
       },
+      "sampling": {
+        "name": "sampling"
+      },
       "shift": {
         "name": "shift"
       }
@@ -16279,7 +17141,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Wie intensiv das Modell vor der Antwort nachdenkt. „default“ überlässt die Wahl dem Modell. Unterstützte Stufen unterscheiden sich je nach Modell: GPT-6 Astra low-max, GPT-5.6 none-max (ohne minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 unterstützt kein Reasoning. Nicht unterstützte Stufen werden abgelehnt, bevor die Anfrage gesendet wird."
+        "tooltip": "Wie stark das Modell vor der Antwort schlussfolgert. 'default' überlässt die Wahl dem Modell. Unterstützte Stufen unterscheiden sich je nach Modell: GPT-6 Astra low-max, GPT-6 Sol/Luna und GPT-5.6 none-max (kein minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 verfügt über kein Reasoning. Nicht unterstützte Stufen werden abgelehnt, bevor die Anfrage gesendet wird."
       },
       "truncation": {
         "name": "truncation",
@@ -16439,40 +17301,6 @@
       "file": {
         "name": "file",
         "tooltip": "Eingabedateien, die als Kontext für das Modell einbezogen werden. Akzeptiert derzeit nur Text- (.txt) und PDF-Dateien (.pdf)."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "OpenAI-Video- und Audiogenerierung.\n\nHINWEIS ZUR EINSTELLUNG: OpenAI wird die Sora-v2-API im September 2026 nicht mehr bereitstellen. Dieser Node wird zu diesem Zeitpunkt aus ComfyUI entfernt.",
-    "display_name": "OpenAI Sora – Video (VERALTET)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Leittext; kann leer sein, wenn ein Eingabebild vorhanden ist."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed, der bestimmt, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
-      },
-      "size": {
-        "name": "size"
       }
     },
     "outputs": {
@@ -16910,7 +17738,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D-Konditionierung",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -17692,6 +18520,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "Animiert ein Bild mithilfe von Pruna-Videomodellen zu einem Video, mit optionalem letztem Frame, generiertem Sound oder einer Audiospur.",
+    "display_name": "Pruna P-Video-2 Bild zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_draft": {
+        "name": "Entwurf"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Generiert ein Video aus einem Text-Prompt mit Pruna-Videomodellen, optional mit generiertem Ton oder einer Audiospur zur Steuerung.",
+    "display_name": "Pruna P-Video-2 Text zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "Entwurf"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "Rezepte:\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "CLIP laden (vierfach)",
@@ -17746,6 +18661,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern Details und verbrauchen mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
+      },
       "seed": {
         "name": "Seed",
         "tooltip": "Seed, um festzulegen, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
@@ -17785,6 +18704,10 @@
         "name": "Prompt",
         "tooltip": "Textbeschreibung der gewünschten SVG-Ausgabe."
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern Details und verbrauchen mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
+      },
       "reference_images": {
         "name": "Referenzbilder",
         "tooltip": "Bis zu 4 Referenzbilder zur Steuerung der Generierung."
@@ -17800,9 +18723,34 @@
       }
     }
   },
+  "QwenImage21Cache": {
+    "description": "Ermöglicht das Festlegen von Gerät und Quantisierung für den KV-Cache; standardmäßig verwendet das Modell die Option auto. Quantisierung kann Bearbeitungs-Workflows bei Speichermangel beschleunigen.",
+    "display_name": "Qwen Image 2.1 Cache",
+    "inputs": {
+      "device": {
+        "name": "Gerät",
+        "tooltip": "auto verwendet verfügbaren VRAM, dann RAM. cpu (RAM) wird im Hintergrund der Berechnung vorab geladen und kostet kaum Geschwindigkeit. off berechnet das Präfix bei jedem Schritt neu, was langsamer ist, aber die einzige Möglichkeit, den Cache auszuschließen."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Speicherpräzision. default ist verlustfrei. int8 halbiert den Cache bei ungefähr bf16-Genauigkeit, int4 viertelt ihn, verdoppelt aber ungefähr den Fehler pro Schritt."
+      },
+      "model": {
+        "name": "Modell"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "Qwen Image DiffSynth ControlNet anwenden",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "Bild"
       },
@@ -17814,6 +18762,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "Stärke"
@@ -18433,7 +19384,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Das für die Generierung zu verwendende Modell. Die recraftv4_styles-Modelle sind für stilkonsistente Generierung ausgelegt und erfordern immer eine style_id oder style_references."
+        "tooltip": "Das für die Generierung zu verwendende Modell. Die Modelle recraftv4_styles sind für stilistisch konsistente Generierung ausgelegt und benötigen immer eine style_id oder style_references; recraftv4_1_flash ist das schnellste und günstigste Modell und unterstützt überhaupt keine Stile."
       },
       "model_size": {
         "name": "Größe"
@@ -20994,6 +21945,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "Speichert ein Conditioning als safetensors im Ausgabeordner; verschieben Sie die Datei nach models/embeddings, um sie mit Load Conditioning zu laden, z. B. um den Textencoder zu überspringen.",
+    "display_name": "Conditioning speichern",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "3D-Modell speichern",
     "inputs": {
@@ -21686,6 +22655,28 @@
       }
     }
   },
+  "SheetSage2AudioToABC": {
+    "description": "Transkribiert Gesangs- und Instrumentalmelodien aus Musik in ABC-Notation. Verbinden Sie die abc-Ausgabe mit dem YuE2 Generate Music-Node und verwenden Sie den passenden Modus.",
+    "display_name": "SheetSage2-Audio zu ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: erzeugt Melodie und Akkorde; melody: erzeugt nur eine Melodie, für Covers empfohlen."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
   "ShuffleDataset": {
     "description": "Die Reihenfolge der Bilder in einer Liste zufällig mischen.",
     "display_name": "Bilderliste mischen",
@@ -22112,7 +23103,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "Leeres Stable Cascade Latent-Bild",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -22155,7 +23146,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Stable Cascade Stage C VAE-Kodierung",
     "inputs": {
       "compression": {
         "name": "Komprimierung"
@@ -22292,6 +23283,52 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Loop starten",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Unveränderte Iterationsergebnisse aus vorherigen Ausführungen wiederverwenden. Deaktivieren Sie diese Option, um jede Iteration erneut auszuführen."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "Wert, der in der ersten Iteration als current_iteration_value bereitgestellt wird."
+      },
+      "mode": {
+        "name": "Modus",
+        "tooltip": "Der Iterationsmodus des Loops."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Verbinden Sie iteration_index aus einem äußeren Start Loop, um diesen Loop zu verschachteln."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Index der aktuellen Loop-Iteration."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "Bei der ersten Iteration des Loops wahr."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "Bei der letzten Iteration der Schleife wahr."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Aktuelles Element aus der Liste bei Verwendung des List-Modus. In den Modi Simple und For: None."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Durch die Schleife übergebener Wert für die aktuelle Iteration: initial_iteration_value bei der ersten Iteration, anschließend next_iteration_value von End Loop bei jeder weiteren Iteration."
       }
     }
   },
@@ -23071,8 +24108,71 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Text kodieren Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Optionale Referenzbilder, die vom Text-Encoder gesehen und als unveränderte Frames an die latent-Sequenz angehängt werden. Spätere Bilder werden auf die Größe des ersten angepasst, und das gesampelte latent sollte dieser Größe entsprechen."
+      },
+      "prompt": {
+        "name": "Prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Ohne VAE konditionieren die Bilder den Text-Encoder nur über den Vision-Tower."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "Text kodieren Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Referenzbilder, die vom Text-Encoder gesehen und als VAE-Latents in die Sequenz eingefügt werden."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "Prompt"
+      },
+      "resolution": {
+        "name": "Auflösung",
+        "tooltip": "Referenzbilder werden unter Beibehaltung des Seitenverhältnisses auf etwa Auflösung x Auflösung Pixel in Vielfachen von 32 skaliert. 0 behält jede Referenz in ihrer eigenen Größe bei, gerundet auf ein Vielfaches von 32."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Positiv",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Negativ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Leeres latent in der Größe des ersten Referenzbilds, passend zum Sampling, da jede andere Größe die Bearbeitung verschiebt."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Text kodieren Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23094,7 +24194,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Text kodieren Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23170,6 +24270,10 @@
       "max_length": {
         "name": "Maximale Länge"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Spekulatives Decoding mit dem Multi-Token-Prediction-Head des Checkpoints. Ohne MTP-Gewichte keine Wirkung. auto passt die Entwurfstiefe an; 2-5 legt sie fest. Die gesampelte Ausgabe bleibt korrekt verteilt, unterscheidet sich bei gleichem Seed jedoch von der Ausgabe ohne MTP."
+      },
       "prompt": {
         "name": "Prompt"
       },
@@ -23197,6 +24301,10 @@
       "sampling_mode_top_p": {
         "name": "Top P"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Ersetzt den System-Prompt in der Chat-Vorlage des Modells. Wird ignoriert, wenn nicht die Standardvorlage verwendet wird."
+      },
       "thinking": {
         "name": "Thinking",
         "tooltip": "Im Thinking-Modus arbeiten, falls das Modell diesen unterstützt."
@@ -23213,6 +24321,10 @@
     "outputs": {
       "0": {
         "name": "Generierter Text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Denken",
         "tooltip": null
       }
     }
@@ -23231,6 +24343,10 @@
       },
       "max_length": {
         "name": "Maximale Länge"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Spekulatives Decoding mit dem Multi-Token-Prediction-Head des Checkpoints. Ohne MTP-Gewichte ohne Wirkung. auto passt die Entwurfstiefe an; 2–5 legt sie fest. Die gesampelte Ausgabe bleibt korrekt verteilt, unterscheidet sich jedoch bei gleichem Seed von der Ausgabe ohne MTP."
       },
       "prompt": {
         "name": "Prompt"
@@ -23259,6 +24375,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Ersetzt den System-Prompt in der Chat-Vorlage des Modells. Wird ignoriert, wenn nicht die Standardvorlage verwendet wird."
+      },
       "thinking": {
         "name": "thinking",
         "tooltip": "Verwenden Sie den Denkmodus, wenn das Modell ihn unterstützt."
@@ -23275,6 +24395,10 @@
     "outputs": {
       "0": {
         "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Denken",
         "tooltip": null
       }
     }
@@ -23747,7 +24871,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2-Konditionierung",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -23769,7 +24893,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2-Formphase",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -23797,7 +24921,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2-Texturphase",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24029,7 +25153,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Bild zu Modell",
+    "display_name": "Tripo: Bild zu Modell (veraltet)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24102,6 +25226,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "Nur befüllt, wenn quad aktiviert ist."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Bild zu Modell",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Skaliert texturierte Modelle auf ihre reale Größe in Metern. Tripo speichert die Größe als Szenentransformation des Modells und backt sie beim Konvertieren, Riggen oder Retargeten des Modells ein; wird ohne texture ignoriert."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maximale Anzahl an Flächen. -1 lässt Tripo adaptiv wählen (etwa 1.4M Flächen bei v3.x standard, 2M bei detailed). Tripo begrenzt stillschweigend: v2.5 auf 500,000, Quad-Meshes auf 150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Die für die Generierung zu verwendende Modellversion"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR-Material-Maps (Basisfarbe, Metallisch, Rauheit, Normal). Erfordert texture."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad-Mesh-Ausgabe. Tripo liefert Quad-Meshes als FBX, daher erscheint das Ergebnis am FBX-Ausgang und der GLB-Ausgang bleibt leer."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Low-Poly-Mesh mit sauberer Topologie im handgefertigten Stil (500-20,000 Flächen, quad 500-10,000). Am besten für einfache Motive; komplexe können fehlschlagen."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Textur-Maps generieren. Aus gibt reine Geometrie zurück und ignoriert pbr."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD-Texturen, extreme = 8K-Ultra-Texturen."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Nur belegt, wenn quad aktiviert ist."
       }
     }
   },
@@ -24424,6 +25617,192 @@
       }
     }
   },
+  "TripoPSeriesImageToModelNode": {
+    "description": "Erzeugt aus einem Bild ein Low-Poly-3D-Modell mit sauberer Topologie als Dreiecks-Mesh (GLB) oder als quad-dominantes Mesh (FBX).",
+    "display_name": "Tripo P2: Bild zu Modell",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Tripo-P-Serie-Modell."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "Ausrichtung"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "Textur"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Modellaufgaben-ID",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Wird nur befüllt, wenn quad aktiviert ist."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "Erzeugt aus einer Vorderansicht sowie ein bis drei Ansichten von links, hinten und rechts ein Low-Poly-3D-Modell mit sauberer Topologie als Dreiecks-Mesh (GLB) oder als quad-dominantes Mesh (FBX).",
+    "display_name": "Tripo P2: Mehransicht zu Modell",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Tripo-P-Serie-Modell."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "Ausrichtung"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "Textur"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Modell task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Nur ausgefüllt, wenn quad aktiviert ist."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "Generiert aus einem Text-Prompt ein Low-Poly-3D-Modell mit sauberer Topologie als Dreiecks-Mesh (GLB) oder Quad-dominiertes Mesh (FBX).",
+    "display_name": "Tripo P2: Text zu Modell",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Tripo-Modell der P-Serie."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "Textur"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Modell task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Nur ausgefüllt, wenn quad aktiviert ist."
+      }
+    }
+  },
   "TripoRetargetNode": {
     "display_name": "Tripo: Geriggtes Modell retargeten",
     "inputs": {
@@ -24433,7 +25812,7 @@
       },
       "animation": {
         "name": "animation",
-        "tooltip": "Animationen preset:* funktionieren mit beiden Rig-Modellen; Animationen preset:biped:* erfordern ein mit Modell v1.0-20240301 erstelltes Rig."
+        "tooltip": "preset:* Animationen funktionieren mit beiden Rig-Modellen. preset:biped:* Animationen sind für Rigs aus Modell v1.0-20240301 erstellt; ein v2.5-Rig akzeptiert nur chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn und walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +25976,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Teilt ein Modell in semantisch sinnvolle Teile auf und benennt sie. Aus einem Bild generiert Tripo zunächst das Modell. Die Segment-task_id speist Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model und Tripo: Convert model wie ein Ergebnis von Tripo: Segment Model.",
+    "display_name": "Tripo: Intelligente Segmentierung",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Segmentiert ein vorhandenes Modell oder generiert ein Modell aus einem Bild und segmentiert es."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": "Das segmentierte Modell (aus dem Bild generiert oder importiert)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "Teilnamen",
+        "tooltip": "Durch Kommas getrennte Namen der Teile."
+      },
+      "4": {
+        "name": "Teile",
+        "tooltip": "Tripo-Beschreibung der gefundenen Teile."
+      },
+      "5": {
+        "name": "Maske",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Kodiert das Bild mit DINOv3 und dem Flux2 VAE in positive/negative TripoSplat-Konditionierung und erstellt das Rauschziel fester Größe (latent + Kamera) für den KSampler",
     "display_name": "TripoSplat-Konditionierung",
@@ -24693,7 +26114,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Text zu Modell",
+    "display_name": "Tripo: Text zu Modell (veraltet)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +26190,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Text zu Modell",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Skaliert texturierte Modelle auf ihre reale Größe in Metern. Tripo speichert die Größe als Szenentransformation des Modells und übernimmt sie beim Konvertieren, Rigging oder Retargeting des Modells; wird ohne texture ignoriert."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maximale Anzahl an Flächen. -1 lässt Tripo adaptiv wählen (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt stillschweigend: v2.5 auf 500.000, Quad-Meshes auf 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bis zu 255 Zeichen."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR-Materialkarten (Basisfarbe, Metallic, Rauheit, Normalen). Erfordert texture."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad-Mesh-Ausgabe. Tripo liefert Quad-Meshes als FBX, daher erscheint das Ergebnis am FBX-Ausgang und der GLB-Ausgang bleibt leer."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Low-Poly-Mesh mit sauberer Topologie im handgefertigten Stil (500-20.000 Flächen, quad 500-10.000). Am besten für einfache Motive; komplexe können fehlschlagen."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Texturkarten generieren. Aus gibt reine Geometrie zurück und ignoriert pbr."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD-Texturen, extreme = 8K-Ultra-Texturen."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Nur belegt, wenn quad aktiviert ist."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Modell texturieren",
+    "display_name": "Tripo: Modell texturieren (veraltet)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24828,6 +26318,62 @@
         "tooltip": "Leer, wenn die Quelle ein Quad-Mesh oder ein FBX-Import ist."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Tripo gibt FBX für Quad-Meshes und FBX-Importe zurück; andernfalls leer."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Modell texturieren",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Texturmodell: v3.0 für mit v3.x generierte Meshes, v2.5 für mit v2.5 generierte Meshes."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Durch Kommas getrennte Teilnamen aus Tripo: Segment Model zur Texturierung. Leer texturiert jeden Teil."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR-Materialkarten (Basisfarbe, Metallic, Rauheit, Normalen); aus ergibt eine einfache Farbtextur."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Referenzbilder zur Steuerung der Texturen. Kann nicht mit texture_prompt oder style_image kombiniert werden."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Referenzbild für den künstlerischen Stil der Texturen. Wird nur zusammen mit texture_prompt verwendet."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Optionale Textanleitung für die Texturierung. In der Praxis für importierte Modelle erforderlich (Tripo: Import Model), da diese kein Quellbild besitzen, aus dem Farben abgeleitet werden können. Kann nicht mit Referenzbildern kombiniert werden."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD-Texturen, extreme = 8K-Ultra-Texturen."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Modell task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn die Quelle ein Quad-Mesh oder ein FBX-Import ist."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Tripo gibt FBX für Quad-Meshes und FBX-Importe zurück; andernfalls leer."
       }
@@ -25055,7 +26601,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Hunyuan 3D VAE-Dekodierung",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -25363,7 +26909,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE-Formdekodierung",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -25384,7 +26930,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE-Strukturdekodierung",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -25404,7 +26950,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE-Texturdekodierung",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -27431,6 +28977,10 @@
       "positive": {
         "name": "Positiv"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "Füllt die Padding-Frames der Bildkonditionierung mit diesem Bild statt mit Grau und verankert die Identität, ohne Frames festzulegen (SVI-artiges Anti-Drift-Padding, verwendet von Modellen wie ID-V2V)."
+      },
       "start_image": {
         "name": "start_image"
       },
@@ -28302,9 +29852,121 @@
       }
     }
   },
-  "ZImageFunControlnet": {
-    "display_name": "Z-Image Fun ControlNet anwenden",
+  "YuE2GenerateABC": {
+    "description": "Generiert die ABC-Notation eines Songs aus Stil und Liedtext. Verbinden Sie abc mit dem YuE2 Generate Music-Node.",
+    "display_name": "YuE2 ABC generieren",
     "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "Modus",
+        "tooltip": "full: generiert Melodie und Akkorde; melody: generiert nur die Melodie, empfohlen für Coverversionen."
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "Anzahl der zuletzt verwendeten ABC-Tokens, die zur Bestrafung von Wiederholungen verwendet werden."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "Seed"
+      },
+      "style": {
+        "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "Generiert Musik-Token und akustische Konditionierung aus Stil, Liedtext und einer ABC-Notation. Geben Sie die generierten Sekunden an den Node „Empty YuE2 Latent Audio“ weiter. Eine leere ABC-Eingabe ignoriert den ausgewählten Modus.",
+    "display_name": "YuE2 Musik generieren",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "Verbinden Sie den ABC-Generator oder geben Sie eine bearbeitete Partitur an. Lassen Sie das Feld leer, um automatisch den Modus „off“ zu verwenden."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Autoregressive Guidance für Stil und Liedtext. 1.0 deaktiviert CFG und entspricht dem ABC-Workflow. Verwenden Sie 1.01, um der Guidance des ursprünglichen Deaktivierungsmodus zu entsprechen."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "lyrics": {
+        "name": "Liedtext"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Maximale Dauer in Sekunden. Wird bei langen Prompts automatisch reduziert; die Generierung kann früher enden."
+      },
+      "mode": {
+        "name": "Modus",
+        "tooltip": "full: generiert Melodie und Akkorde; melody: generiert nur die Melodie, empfohlen für Coverversionen."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "Seed"
+      },
+      "style": {
+        "name": "Stil"
+      },
+      "temperature": {
+        "name": "Temperatur"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "Sekunden",
+        "tooltip": null
+      }
+    }
+  },
+  "ZImageFunControlnet": {
+    "description": "Wendet ein mit Load Model Patch geladenes Z-Image- oder Qwen Image 2.1 Fun ControlNet an.",
+    "display_name": "Fun ControlNet anwenden",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "image"
       },
@@ -28319,6 +29981,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "strength"

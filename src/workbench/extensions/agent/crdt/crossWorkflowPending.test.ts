@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { GraphMutations } from '@/core/graph/graphMutations'
 import { render } from '@testing-library/vue'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { GraphOperation } from './graphOperations'
 
@@ -54,12 +54,19 @@ const clientState = vi.hoisted(() => ({
   })
 }))
 
-const adapterState = vi.hoisted(() => ({
+const projectionState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
+  applyFrame: vi.fn(() => ({
+    applied: false as const,
+    nodes: { added: [], removed: [] }
+  })),
+  applyCollected: vi.fn(() => []),
+  revertRejected: vi.fn(() => []),
+  replaceOnNextFrame: vi.fn(),
+  discardPending: vi.fn(() => ({ added: [], removed: [] })),
+  noteLocalWrites: vi.fn(),
+  settleLocalWrites: vi.fn(),
   destroy: vi.fn()
 }))
 
@@ -101,14 +108,18 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
-  EcsFollowerAdapter: class {
-    bind = adapterState.bind
-    unbind = adapterState.unbind
-    applyFrame = adapterState.applyFrame
-    clearForReset = adapterState.clearForReset
-    discardPending = adapterState.discardPending
-    destroy = adapterState.destroy
+vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
+  AgentCrdtProjection: class {
+    bind = projectionState.bind
+    unbind = projectionState.unbind
+    applyFrame = projectionState.applyFrame
+    applyCollected = projectionState.applyCollected
+    revertRejected = projectionState.revertRejected
+    replaceOnNextFrame = projectionState.replaceOnNextFrame
+    discardPending = projectionState.discardPending
+    noteLocalWrites = projectionState.noteLocalWrites
+    settleLocalWrites = projectionState.settleLocalWrites
+    destroy = projectionState.destroy
   }
 }))
 
@@ -124,8 +135,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
-const graphMutations = {} as GraphMutations
-
 function deleteNode(nodeId: string): GraphOperation {
   return {
     op: 'delete_node',
@@ -137,19 +146,20 @@ function deleteNode(nodeId: string): GraphOperation {
 function mountFollower(initial: string): {
   unmount: () => void
   workflowId: Ref<string | null>
-  enqueue: (operations: GraphOperation[]) => void
+  enqueue: (operations: GraphOperation[]) => Promise<void>
   status: () => AgentCrdtStatus
 } {
   const workflowId = ref<string | null>(initial)
-  let enqueue!: (operations: GraphOperation[]) => void
+  let enqueue!: (operations: GraphOperation[]) => Promise<void>
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
-      const { enqueueHumanOperations, status } = useAgentCrdtFollower(
-        workflowId,
-        graphMutations
-      )
-      enqueue = enqueueHumanOperations
+      const { enqueueHumanOperations, status } =
+        useAgentCrdtFollower(workflowId)
+      enqueue = async (operations) => {
+        enqueueHumanOperations(operations)
+        await Promise.resolve()
+      }
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
     }
@@ -174,16 +184,40 @@ function dispatchOpsResult(detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent('doc_ops_result', { detail }))
 }
 
-describe('R-73 cross-workflow pending operation characterization', () => {
-  beforeEach(() => {
-    bridgeState.current = null
-    bridgeState.transport.up = true
+beforeEach(() => {
+  useAgentPanelStore().enabled = true
+  bridgeState.current = null
+  bridgeState.transport.up = true
+  clientState.transportUp = true
+  clientState.attempts = []
+  clientState.sent = []
+  clientState.sendOps.mockClear()
+  devLogState.recordDevEvent.mockClear()
+  vi.useFakeTimers()
+})
+
+describe('R-73 cross-workflow pending operations', () => {
+  it('cancels pending sends and rejects new operations while the product gate is off', async () => {
+    const store = useAgentPanelStore()
+    const { enqueue, status } = mountFollower('wf-a')
+    clientState.transportUp = false
+    await enqueue([deleteNode('queued-before-revocation')])
+    expect(clientState.attempts).toHaveLength(1)
+
+    store.enabled = false
     clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
+    await enqueue([deleteNode('attempted-while-disabled')])
+    vi.advanceTimersByTime(60_000)
+    expect(status().enabled).toBe(false)
+    expect(clientState.attempts).toHaveLength(1)
+    expect(clientState.sent).toHaveLength(0)
+
+    store.enabled = true
+    await enqueue([deleteNode('new-lifetime')])
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops).toMatchObject([
+      { op: 'delete_node', node_id: 'new-lifetime' }
+    ])
   })
 
   it('does not retarget a transport retry after workflow A switches to workflow B', async () => {
@@ -191,7 +225,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     bridgeState.transport.up = false
     clientState.transportUp = false
 
-    enqueue([deleteNode('a-queued')])
+    await enqueue([deleteNode('a-queued')])
     expect(clientState.sent).toHaveLength(0)
     expect(clientState.attempts).toHaveLength(1)
     const operationId = clientState.attempts[0].ops[0].op_id
@@ -218,23 +252,23 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const { workflowId, enqueue, status } = mountFollower('wf-a')
 
     bridge().lastSequence = 41
-    enqueue([deleteNode('a-inflight')])
+    await enqueue([deleteNode('a-inflight')])
     expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 41 })
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
 
-    // The switch itself settles A's in-flight batch undeliverable (the
-    // composable calls sender.abortIfUnbound() after retargeting the bridge),
-    // so B's batch goes out at once instead of queueing behind A for the
-    // 10 s result-silence window.
+    // The switch itself settles A's transmitted in-flight batch unconfirmed
+    // (the composable calls sender.abortIfUnbound() after retargeting the
+    // bridge), so B's batch goes out at once instead of queueing behind A for
+    // the 10 s result-silence window.
     expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
       'human_ops_settled',
       {
-        state: 'undeliverable',
+        state: 'unconfirmed',
         ops: [expect.objectContaining({ op_id: operationAId })]
       }
     )
-    enqueue([deleteNode('b-pending')])
+    await enqueue([deleteNode('b-pending')])
     expect(clientState.sent).toHaveLength(2)
     expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
     expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 0 })
@@ -280,11 +314,11 @@ describe('R-73 cross-workflow pending operation characterization', () => {
   it('does not settle workflow B from an anonymous workflow A result', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
-    enqueue([deleteNode('a-inflight')])
+    await enqueue([deleteNode('a-inflight')])
     const operationAId = clientState.sent[0].ops[0].op_id
-    // The switch settles A undeliverable (settlement 0) and B goes out at once.
+    // The switch settles A unconfirmed (settlement 0) and B goes out at once.
     await switchWorkflow(workflowId, 'wf-b')
-    enqueue([deleteNode('b-pending')])
+    await enqueue([deleteNode('b-pending')])
     const operationBId = clientState.sent[1].ops[0].op_id
 
     // A's identified late result is ignored: its op_id is not in B's batch.
@@ -324,5 +358,140 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       ops: [expect.objectContaining({ op_id: operationBId })],
       result: { workflowId: 'wf-b', ok: false, applied: [], skipped: [] }
     })
+  })
+})
+
+// `abortIfUnbound()` (opSender.ts) settles an in-flight batch
+// 'undeliverable' purely because its mint-time workflow no longer matches
+// the currently bound one - without checking whether the transport had
+// already carried it, or whether the server ever committed it. A batch that
+// was accepted by `sendOps()` (so it left the client) and that the server
+// later confirms applying is still reported 'undeliverable', contradicting
+// that outcome's own contract ("the transport never carried it ... or no doc
+// was bound", opSender.ts:57-58). For a bulk add (paste/insert-workflow)
+// racing a doc unbind/resubscribe, this is the mechanism that leaves an
+// orphaned node in the CRDT doc while the client believes the add failed.
+describe('abortIfUnbound settles delivered ops as undeliverable', () => {
+  it('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
+    const { workflowId, enqueue } = mountFollower('wf-a')
+
+    await enqueue([deleteNode('a-inflight')])
+    // The transport accepted the batch: sendOps() returned true and it is
+    // recorded as sent, not merely attempted.
+    expect(clientState.sent).toHaveLength(1)
+    const operationAId = clientState.sent[0].ops[0].op_id
+
+    // Retargeting the bound doc calls sender.abortIfUnbound(), which settles
+    // the still in-flight, already-transmitted batch at once without asking
+    // the server what happened to it.
+    await switchWorkflow(workflowId, 'wf-b')
+
+    const settlement = devLogState.recordDevEvent.mock.calls.find(
+      ([event]) => event === 'human_ops_settled'
+    )
+    expect(settlement).toBeDefined()
+
+    // The server now confirms, after the fact, that it DID commit the op.
+    dispatchOpsResult({
+      workflowId: 'wf-a',
+      ok: true,
+      applied: [operationAId],
+      skipped: []
+    })
+
+    // Desired behavior: a batch the transport already carried, and that
+    // the server confirms applying, must never have been reported
+    // 'undeliverable'. It was today.
+    expect(settlement?.[1].state).not.toBe('undeliverable')
+  })
+})
+
+/**
+ * The FakeBridge's `resubscribe` is a bare vi.fn, so a test that wants the
+ * post-reconnect subscribe ack must play the host's part itself: mark the
+ * workflow subscribed again and forward the `doc_subscribed` ok frame the
+ * bridge would have re-emitted.
+ */
+function ackResubscribe(workflowId: string): void {
+  bridge().subscribedWorkflowId = workflowId
+  bridge().dispatchEvent(
+    new CustomEvent('doc_subscribed', {
+      detail: { workflowId, ok: true, seq: 0 }
+    })
+  )
+}
+
+/**
+ * These pins exercise retry identity and acknowledgment within the active
+ * retry budget. Post-exhaustion retention and replay belong to the separately
+ * reviewed replay-policy change, not this current-behavior pin carrier.
+ */
+describe('a human edit made while the document connection is down', () => {
+  it('does not flush a pending batch on reconnect before the resubscribe ack', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+    expect(devLogState.recordDevEvent).not.toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({ state: 'undeliverable' })
+    )
+    expect(clientState.sent).toHaveLength(0)
+
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    expect(clientState.sent).toHaveLength(0)
+  })
+
+  it('keeps the original op_id when a transport retry succeeds', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+    const operationId = clientState.attempts[0].ops[0].op_id
+
+    clientState.transportUp = true
+    vi.advanceTimersToNextTimer()
+
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops[0]).toMatchObject({
+      op_id: operationId,
+      op: 'delete_node',
+      node_id: 'edited-during-outage'
+    })
+  })
+
+  it('does not resend an acknowledged retry on a later reconnect', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+
+    clientState.transportUp = true
+    vi.advanceTimersToNextTimer()
+    expect(clientState.sent).toHaveLength(1)
+    const replayedOperationId = clientState.sent[0].ops[0].op_id
+
+    dispatchOpsResult({
+      workflowId: 'wf-a',
+      ok: true,
+      applied: [replayedOperationId],
+      skipped: []
+    })
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({
+        state: 'acknowledged',
+        ops: [expect.objectContaining({ op_id: replayedOperationId })]
+      })
+    )
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+
+    expect(clientState.sent).toHaveLength(1)
   })
 })

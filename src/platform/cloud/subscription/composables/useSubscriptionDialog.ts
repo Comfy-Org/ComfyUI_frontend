@@ -7,12 +7,14 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
-} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+} from '@comfyorg/account-ui/billing/catalog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { toCurrentTier } from '@/platform/cloud/subscription/utils/billingPlanTelemetry'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -28,6 +30,7 @@ const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
 export interface SubscriptionDialogOptions {
   reason?: PaymentIntentSource
+  paymentIntentSource?: PaymentIntentSource
   /**
    * Forces the unified pricing dialog to open on a specific plan tab,
    * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
@@ -36,6 +39,12 @@ export interface SubscriptionDialogOptions {
   planMode?: 'personal' | 'team'
   /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
   initialCheckout?: SubscriptionCheckoutSelection
+}
+
+function paymentIntentSourceOf(
+  options?: SubscriptionDialogOptions
+): PaymentIntentSource | undefined {
+  return options?.paymentIntentSource ?? options?.reason
 }
 
 function getInitialPlanMode(
@@ -73,12 +82,26 @@ export const useSubscriptionDialog = () => {
     })
   }
 
-  function showInactiveMemberDialog(): boolean {
+  function trackPaywallShown(paymentIntentSource?: PaymentIntentSource) {
+    const { tier } = useBillingContext()
+    useTelemetry()?.trackBillingEvent({
+      operation: 'entry',
+      stage: 'paywall_shown',
+      outcome: 'pending',
+      payment_intent_source: paymentIntentSource,
+      current_tier: toCurrentTier(tier.value)
+    })
+  }
+
+  function showInactiveMemberDialog(
+    paymentIntentSource?: PaymentIntentSource
+  ): boolean {
     if (!shouldUseWorkspaceBilling.value) return false
 
     const { permissions } = useWorkspaceUI()
     if (permissions.value.canManageSubscription) return false
 
+    trackPaywallShown(paymentIntentSource)
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: defineAsyncComponent(
@@ -97,9 +120,11 @@ export const useSubscriptionDialog = () => {
 
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
-    if (showInactiveMemberDialog()) return
+    const paymentIntentSource = paymentIntentSourceOf(options)
+    if (showInactiveMemberDialog(paymentIntentSource)) return
 
     trackModalOpened(options?.reason)
+    trackPaywallShown(paymentIntentSource)
 
     const legacyPricingDialogProps = {
       renderer: 'reka',
@@ -135,6 +160,7 @@ export const useSubscriptionDialog = () => {
           props: {
             onClose: hide,
             reason: options?.reason,
+            paymentIntentSource,
             ...(personalInitialCheckout
               ? {
                   initialCheckout: personalInitialCheckout,
@@ -162,6 +188,7 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
+          paymentIntentSource,
           embeddedCheckoutEnabled: flags.embeddedCheckoutEnabled,
           initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
@@ -198,6 +225,7 @@ export const useSubscriptionDialog = () => {
       props: {
         onClose: hide,
         reason: options?.reason,
+        paymentIntentSource,
         onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
       },
       dialogComponentProps: legacyPricingDialogProps
@@ -205,7 +233,9 @@ export const useSubscriptionDialog = () => {
   }
 
   function show(options?: SubscriptionDialogOptions) {
-    if (isCloud && showInactiveMemberDialog()) return
+    if (isCloud && showInactiveMemberDialog(paymentIntentSourceOf(options))) {
+      return
+    }
 
     showPricingTable(options)
   }
@@ -289,19 +319,29 @@ export const useSubscriptionDialog = () => {
       return
     }
 
-    const billingOperationStore = useBillingOperationStore()
-    const operation = await billingOperationStore.startOperation(
-      pending.operationId,
-      'subscription',
-      {
-        tier:
-          pending.selection.planMode === 'personal'
-            ? pending.selection.tierKey
-            : 'team',
-        cycle: pending.selection.billingCycle,
-        attemptStartedAt: pending.attemptedAt
-      }
-    )
+    // The host pointer stays as it is: it carries the tier/cycle selection the
+    // pricing dialog restores below, which the SDK's scope-keyed pointer
+    // deliberately does not. Only who drives the operation moves.
+    const operation = flags.billingSdkSubscriptionRailEnabled
+      ? await useBillingSdkStore().recoverPendingOperation(pending.operationId)
+      : await useBillingOperationStore().startOperation(
+          pending.operationId,
+          'subscription',
+          {
+            tier:
+              pending.selection.planMode === 'personal'
+                ? pending.selection.tierKey
+                : 'team',
+            cycle: pending.selection.billingCycle,
+            attemptStartedAt: pending.attemptedAt
+          }
+        )
+    // Nothing to adopt: the server names no pending operation for this scope,
+    // so the parked pointer is stale and the customer is not mid-checkout.
+    if (!operation) {
+      clearPendingSubscriptionCheckout(pending.operationId)
+      return
+    }
     clearPendingSubscriptionCheckoutIfTerminal(
       pending.operationId,
       operation.status

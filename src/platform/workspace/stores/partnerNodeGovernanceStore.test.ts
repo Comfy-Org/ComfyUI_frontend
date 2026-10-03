@@ -2,35 +2,35 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as PartnerNodePolicyApi from '@/platform/workspace/api/partnerNodePolicyApi'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   PartnerNodePolicy,
   PartnerProvider
 } from '@/platform/workspace/api/partnerNodePolicyApi'
-import { PartnerNodePolicyApiError } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
 const mockUpdatePartnerNodePolicy = vi.hoisted(() => vi.fn())
-const mockFlags = vi.hoisted(() => ({
-  partnerNodeGovernanceEnabled: true
-}))
-
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
-}))
-
-vi.mock(
-  import('@/platform/workspace/api/partnerNodePolicyApi'),
-  async (importOriginal) =>
-    ({
-      ...(await importOriginal<typeof PartnerNodePolicyApi>()),
-      getPartnerNodePolicy: mockGetPartnerNodePolicy,
-      getPartnerProviders: mockGetPartnerProviders,
-      updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
-    }) satisfies typeof PartnerNodePolicyApi
+const PartnerNodePolicyApiError = vi.hoisted(
+  () =>
+    class PartnerNodePolicyApiError extends Error {
+      constructor(
+        public readonly status: number,
+        message: string
+      ) {
+        super(message)
+        this.name = 'PartnerNodePolicyApiError'
+      }
+    }
 )
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/workspace/api/partnerNodePolicyApi'), () => ({
+  getPartnerNodePolicy: mockGetPartnerNodePolicy,
+  getPartnerProviders: mockGetPartnerProviders,
+  PartnerNodePolicyApiError,
+  updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
+}))
 
 const providers: PartnerProvider[] = [
   {
@@ -59,7 +59,7 @@ describe('partnerNodeGovernanceStore', () => {
   let store: ReturnType<typeof usePartnerNodeGovernanceStore> | undefined
 
   beforeEach(() => {
-    mockFlags.partnerNodeGovernanceEnabled = true
+    vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = true
     mockGetPartnerProviders.mockResolvedValue(providers)
     mockGetPartnerNodePolicy.mockResolvedValue(null)
     activateWorkspace('workspace-one')
@@ -474,7 +474,7 @@ describe('partnerNodeGovernanceStore', () => {
   })
 
   it('stays inactive when partner-provider governance is disabled', async () => {
-    mockFlags.partnerNodeGovernanceEnabled = false
+    vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = false
 
     store = usePartnerNodeGovernanceStore()
     await nextTick()

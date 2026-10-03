@@ -186,6 +186,27 @@ export const zWorkflowApiAssetsRequest = z.object({
 })
 
 /**
+ * The user a web session belongs to
+ */
+export const zWebSessionUser = z.object({
+  email: z.string(),
+  email_verified: z.boolean(),
+  id: z.string(),
+  name: z.string().optional(),
+  sign_in_provider: z.string().optional()
+})
+
+/**
+ * The live web session and the user it belongs to
+ */
+export const zWebSessionResponse = z.object({
+  absolute_expires_at: z.string().datetime(),
+  csrf_token: z.string(),
+  expires_at: z.string().datetime(),
+  user: zWebSessionUser
+})
+
+/**
  * Details of a single validation error encountered during asset operations.
  */
 export const zValidationError = z.object({
@@ -240,6 +261,23 @@ export const zUsageSummary = z.object({
   spend_micros: z.number()
 })
 
+/**
+ * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ */
+export const zUsageNotAvailable = z.object({
+  reason: z.enum(['no_attribution_source'])
+})
+
+export const zUsageGroupLabel = z.object({
+  display_name: z.string().optional(),
+  key: z.string(),
+  key_name: z.string().optional(),
+  key_prefix: z.string().optional(),
+  kind: z.enum(['api_key', 'session', 'deployment']).optional(),
+  owner_display_name: z.string().optional(),
+  owner_user_id: z.string().optional()
+})
+
 export const zUsageBucket = z.object({
   cost_micros: z.number(),
   group_key: z.string(),
@@ -258,8 +296,17 @@ export const zUsageTimeSeries = z.object({
   buckets: z.array(zUsageBucket),
   ending_before: z.string().datetime(),
   granularity: z.enum(['hour', 'day', 'month']),
-  group_by: z.enum(['model', 'endpoint', 'product']),
+  group_by: z.enum([
+    'model',
+    'endpoint',
+    'product',
+    'product_line',
+    'person',
+    'source'
+  ]),
+  group_labels: z.array(zUsageGroupLabel).optional(),
   groups: z.array(z.string()),
+  not_available: zUsageNotAvailable.optional(),
   starting_on: z.string().datetime(),
   summary: zUsageSummary
 })
@@ -311,6 +358,43 @@ export const zUpdateHubProfileRequest = z.object({
   description: z.string().optional(),
   display_name: z.string().optional(),
   website_urls: z.array(z.string()).optional()
+})
+
+/**
+ * What a credit top-up of the requested amount would grant.
+ */
+export const zTopupQuoteResponse = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  expires_at: z.string().datetime()
+})
+
+/**
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ */
+export const zToolCallSummary = z.object({
+  duration_ms: z.number().int().optional(),
+  error_code: z.string().optional(),
+  finished_at: z.string().datetime().optional(),
+  id: z.string(),
+  started_at: z.string().datetime().optional(),
+  status: z.enum(['success', 'error']),
+  tool_call_id: z.string(),
+  tool_name: z.string()
 })
 
 /**
@@ -400,7 +484,7 @@ export const zTaskEntry = z.object({
   create_time: z.string().datetime(),
   id: z.string().uuid(),
   started_at: z.string().datetime().optional(),
-  status: z.enum(['created', 'running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
   task_name: z.string()
 })
 
@@ -424,7 +508,7 @@ export const zTaskResponse = z.object({
   payload: z.record(z.unknown()),
   result: z.record(z.unknown()).optional(),
   started_at: z.string().datetime().optional(),
-  status: z.enum(['created', 'running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
   task_name: z.string(),
   update_time: z.string().datetime()
 })
@@ -492,8 +576,21 @@ export const zSubscriptionDiscount = z.object({
     })
     .optional(),
   code: z.string(),
+  duration: z.enum(['once', 'repeating', 'forever']).optional(),
+  duration_in_months: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   kind: z.enum(['plan', 'promotion']),
-  name: z.string().optional()
+  name: z.string().optional(),
+  term: z
+    .enum(['this_payment', 'first_month', 'first_year', 'months', 'ongoing'])
+    .optional()
 })
 
 /**
@@ -588,6 +685,14 @@ export const zDocOpsResultFrame = z.object({
 
 export const zDocResetData = z.object({
   actor: z.string().max(256).optional(),
+  lineage_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   seq: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -610,6 +715,15 @@ export const zDocResetFrame = z.object({
 
 export const zDocUpdateData = z.object({
   actor: z.string().max(256).optional(),
+  lineage_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  op_ids: z.array(z.string().min(1).max(128)).max(256).optional(),
   seq: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -706,6 +820,28 @@ export const zSavedPaymentMethod = z.object({
 })
 
 /**
+ * Response after signing out of all devices
+ */
+export const zRevokeAllSessionsResponse = z.object({
+  revoked: z.number().int()
+})
+
+/**
+ * Response after accepting a scheduled-change revert.
+ */
+export const zRevertScheduledChangeResponse = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['reverted', 'pending'])
+})
+
+/**
+ * Request body for undoing a pending scheduled plan change.
+ */
+export const zRevertScheduledChangeRequest = z.object({
+  idempotency_key: z.string().optional()
+})
+
+/**
  * Response after accepting a resubscribe request.
  */
 export const zResubscribeResponse = z.object({
@@ -719,6 +855,23 @@ export const zResubscribeResponse = z.object({
  */
 export const zResubscribeRequest = z.object({
   idempotency_key: z.string().optional()
+})
+
+/**
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ */
+export const zRenewalInvoice = z.object({
+  amount_due: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  currency: z.string(),
+  hosted_invoice_url: z.string(),
+  next_payment_attempt: z.string().datetime().optional()
 })
 
 /**
@@ -899,6 +1052,33 @@ export const zPreviewPlanInfo = z.object({
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   duration: zSubscriptionDuration,
+  list_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  monthly_list_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  monthly_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   period_end: z.string().datetime().optional(),
   period_start: z.string().datetime().optional(),
   price_cents: z.coerce
@@ -920,6 +1100,15 @@ export const zPreviewPlanInfo = z.object({
 export const zPreviewSubscribeResponse = z.object({
   allowed: z.boolean(),
   amount_due_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  balance_applied_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
       message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
@@ -969,6 +1158,24 @@ export const zPreviewSubscribeResponse = z.object({
   payment_method_configuration_id: z.string().optional(),
   promotion_code: z.string().optional(),
   proration_at: z.string().datetime().optional(),
+  proration_remaining_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  proration_unused_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   quote_id: z.string().optional(),
   quote_version: z.number().int().optional(),
   reason: z.string().optional(),
@@ -983,6 +1190,15 @@ export const zPreviewSubscribeResponse = z.object({
     .optional(),
   renewal_at: z.string().datetime().optional(),
   requires_reactivation_confirmation: z.boolean().optional(),
+  subtotal_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   transition_type: z.enum([
     'new_subscription',
     'upgrade',
@@ -1025,6 +1241,15 @@ export const zPlanAvailability = z.object({
  */
 export const zPlan = z.object({
   availability: zPlanAvailability,
+  credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   credits_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -1271,13 +1496,25 @@ export const zModelFile = z.object({
  * Workspace member with profile and role information.
  */
 export const zMember = z.object({
-  email: z.string().email(),
+  email: z.string(),
   id: z.string(),
   is_original_owner: z.boolean(),
   joined_at: z.string().datetime(),
   name: z.string(),
   role: z.enum(['owner', 'member'])
 })
+
+/**
+ * 400 for a missing `filename` or a `res` that is not a number, on the media routes served outside the generated wrapper.
+ */
+export const zMediaQueryError = z.object({
+  error: z.string()
+})
+
+/**
+ * A 400 from a media route served outside the generated wrapper: ErrorResponse, or MediaQueryError for a bad query parameter.
+ */
+export const zMediaBadRequestError = z.union([zErrorResponse, zMediaQueryError])
 
 /**
  * Paginated list of workspaces the authenticated user belongs to.
@@ -1599,7 +1836,7 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Request body for minting an input-image or input-audio upload grant.
+ * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export const zInputUploadUrlRequest = z.object({
   content_type: z.string().max(64)
@@ -1990,6 +2227,25 @@ export const zForkWorkflowRequest = z.object({
 })
 
 /**
+ * 403 for a credential the route does not take. `accepted` names the ones it does, as `WWW-Authenticate` does.
+ */
+export const zAuthTypeNotAllowedError = z.object({
+  accepted: z.array(z.string()),
+  error: z.object({
+    message: z.string(),
+    type: z.enum(['auth_type_not_allowed'])
+  })
+})
+
+/**
+ * A 403 body: ErrorResponse, or AuthTypeNotAllowedError for a credential the route does not take.
+ */
+export const zForbiddenError = z.union([
+  zErrorResponse,
+  zAuthTypeNotAllowedError
+])
+
+/**
  * Response after submitting feedback
  */
 export const zFeedbackResponse = z.record(z.unknown())
@@ -2101,6 +2357,7 @@ export const zCurrentWorkspaceResponse = z.object({
   auth_method: z.string(),
   id: z.string(),
   name: z.string(),
+  permissions: z.array(z.string()).optional(),
   role: z.enum(['owner', 'member']).optional(),
   type: z.enum(['personal', 'team'])
 })
@@ -2186,6 +2443,37 @@ export const zCreateTopupRequest = z.object({
 })
 
 /**
+ * Request body for previewing a credit top-up.
+ */
+export const zCreateTopupQuoteRequest = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
+ * A hosted Stripe Checkout session for a credit top-up.
+ */
+export const zCreateTopupCheckoutResponse = z.object({
+  checkout_url: z.string().url(),
+  session_id: z.string().optional()
+})
+
+/**
+ * Request body for creating a hosted credit top-up checkout session.
+ */
+export const zCreateTopupCheckoutRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(1600000)),
+  idempotency_key: z.string().optional(),
+  return_url: z.string().url()
+})
+
+/**
  * Response after creating a session cookie
  */
 export const zCreateSessionResponse = z.object({
@@ -2235,7 +2523,8 @@ export const zCreateHubProfileRequest = z.object({
 export const zChurnkeyAuthResponse = z.object({
   auth_hash: z.string(),
   customer_id: z.string(),
-  mode: z.enum(['live', 'test', 'sandbox'])
+  mode: z.enum(['live', 'test', 'sandbox']),
+  offer_subscription_id: z.string().min(1).optional()
 })
 
 /**
@@ -2308,7 +2597,10 @@ export const zBillingStatusResponse = z.object({
   pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
+  renewal_invoice: zRenewalInvoice.optional(),
   scheduled_change: zScheduledPlanChange.nullable(),
+  scoped_effective_has_funds: z.record(z.boolean()).optional(),
+  scoped_has_funds: z.record(z.boolean()).optional(),
   subscription_duration: zSubscriptionDuration.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
@@ -2325,10 +2617,77 @@ export const zBillingPlansResponse = z.object({
 })
 
 /**
+ * Display only. The plan the operation targets; for a scheduled change,
+ * the plan it switches to at period end. Present only for succeeded
+ * plan changes, initial subscriptions and resubscribes. Visible to any
+ * workspace member who can read the operation.
+ *
+ */
+export const zBillingOpReceiptPlan = z.object({
+  duration: zSubscriptionDuration,
+  slug: z.string()
+})
+
+/**
+ * One deduction from today's charge. discount is the promotion in the
+ * quote's discount shape (kind promotion, without amount_off_cents; the
+ * amount is amount_cents), present exactly for promo_code and
+ * subscription_discount. Its duration_in_months is set only for
+ * promo_code: a carried promotion's remaining term is not the coupon's.
+ *
+ */
+export const zBillingOpChargeReason = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  discount: zSubscriptionDiscount.optional(),
+  kind: z.enum(['promo_code', 'subscription_discount', 'account_balance'])
+})
+
+/**
+ * Display only. Why a succeeded subscription operation charged other
+ * than its plan rate, read from the operation's paid Stripe invoice.
+ * Present only when that invoice collected more than zero and a
+ * promotion, the account balance or proration moved the charge off the
+ * plan rate; absent means no rows. Plan coupons (the annual or team
+ * commitment rate) are part of the rate and are never a reason. Never
+ * present for top-ups. Returned only to workspace billing managers,
+ * like amount_charged_cents.
+ *
+ */
+export const zBillingOpChargeBreakdown = z.object({
+  amount_charged_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  currency: z.string(),
+  prorated: z.boolean(),
+  reasons: z.array(zBillingOpChargeReason)
+})
+
+/**
  * Status of an asynchronous billing operation.
  */
 export const zBillingOpStatusResponse = z.object({
   action_url: z.string().optional(),
+  amount_charged_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   authentication_state: z
     .enum([
       'requires_action',
@@ -2338,7 +2697,17 @@ export const zBillingOpStatusResponse = z.object({
       'reconciliation_needed'
     ])
     .optional(),
+  charge_breakdown: zBillingOpChargeBreakdown.optional(),
   completed_at: z.string().datetime().optional(),
+  credits_added: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   decline_reason: z
     .enum([
       'card_declined',
@@ -2348,6 +2717,7 @@ export const zBillingOpStatusResponse = z.object({
       'authentication_required',
       'authentication_failed',
       'processing_error',
+      'payment_not_completed',
       'generic'
     ])
     .optional(),
@@ -2361,6 +2731,7 @@ export const zBillingOpStatusResponse = z.object({
       'in_progress'
     ])
     .optional(),
+  plan: zBillingOpReceiptPlan.optional(),
   recovery_action: z
     .enum([
       'retry',
@@ -2372,6 +2743,11 @@ export const zBillingOpStatusResponse = z.object({
   retryable: z.boolean().optional(),
   started_at: z.string().datetime(),
   status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed'])
+})
+
+export const zBillingOpCancelResponse = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['canceled', 'cancel_requested'])
 })
 
 /**
@@ -2462,6 +2838,7 @@ export const zBillingCapabilities = z.object({
   can_downgrade_to_personal: z.boolean(),
   can_invite_members: z.boolean(),
   can_reactivate: z.boolean(),
+  can_revert_scheduled_change: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
   can_top_up: z.boolean()
 })
@@ -2546,7 +2923,7 @@ export const zAssetMetadataResponse = z.object({
  */
 export const zAssetDownloadResponse = z.object({
   message: z.string().optional(),
-  status: z.enum(['created', 'running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
   task_id: z.string().uuid()
 })
 
@@ -2660,10 +3037,10 @@ export const zAgentPostMessageRequest = z.object({
   attachments: z.array(z.string()).optional(),
   content: z.string(),
   current_tab: z.string().optional(),
+  current_tab_unbound: z.boolean().optional(),
   draft: z
     .object({
-      content: z.record(z.unknown()).optional(),
-      version: z.number().int().nullish()
+      content: z.record(z.unknown()).optional()
     })
     .optional(),
   open_tabs: z
@@ -2675,7 +3052,15 @@ export const zAgentPostMessageRequest = z.object({
     )
     .optional(),
   selection: z.record(z.unknown()).optional(),
-  workflow_id: z.string().optional()
+  workflow_id: z.string().optional(),
+  workflow_references: z
+    .array(
+      z.object({
+        name: z.string().optional(),
+        workflow_id: z.string()
+      })
+    )
+    .optional()
 })
 
 /**
@@ -2697,7 +3082,11 @@ export const zAgentPendingAsk = z.object({
  * A persisted message in an agent thread.
  */
 export const zAgentMessage = z.object({
-  content: z.record(z.unknown()).optional(),
+  content: z
+    .object({
+      tool_calls: z.array(zToolCallSummary).optional()
+    })
+    .optional(),
   id: z.string(),
   pending_ask: zAgentPendingAsk.optional(),
   role: z.enum(['user', 'assistant', 'tool', 'system']),
@@ -2817,6 +3206,23 @@ export const zAssetCreatedWritable = zAssetWritable.and(
     created_new: z.boolean()
   })
 )
+
+/**
+ * The workspace a media request reads from, where a media tag cannot
+ * send `X-Comfy-Workspace-ID`. It applies only while
+ * `web_session_enabled` is on for the user; with it off, and always on
+ * the `CookieAuth` cookie, it is ignored.
+ *
+ * On a `WebSessionAuth` request it selects the workspace: a workspace
+ * the user cannot access is 403 `workspace_access_denied`, and a
+ * malformed value, or one that disagrees with `X-Comfy-Workspace-ID`,
+ * is 400 `workspace_id_invalid`. A token or API key keeps its own
+ * workspace, and naming another is 400 `workspace_id_invalid`. A cookie
+ * request that names no workspace looks a filename up across all of the
+ * user's workspaces, and an asset id up in the personal one.
+ *
+ */
+export const zMediaWorkspaceId = z.string()
 
 /**
  * JWKS response
@@ -3069,7 +3475,11 @@ export const zGetAssetContentPath = z.object({
 })
 
 export const zGetAssetContentQuery = z.object({
-  disposition: z.enum(['inline', 'attachment']).optional().default('attachment')
+  disposition: z
+    .enum(['inline', 'attachment'])
+    .optional()
+    .default('attachment'),
+  workspace_id: z.string().optional()
 })
 
 /**
@@ -3258,9 +3668,19 @@ export const zRedeemDesktopLoginCodeResponse = zDesktopLoginCodeRedeemResponse
 export const zDeleteSessionResponse2 = zDeleteSessionResponse
 
 /**
+ * The live session
+ */
+export const zGetSessionResponse = zWebSessionResponse
+
+/**
  * Session created successfully
  */
 export const zCreateSessionResponse2 = zCreateSessionResponse
+
+/**
+ * Every session ended
+ */
+export const zRevokeAllSessionsResponse2 = zRevokeAllSessionsResponse
 
 export const zExchangeTokenBody = zExchangeTokenRequest
 
@@ -3322,6 +3742,15 @@ export const zGetBillingOpStatusPath = z.object({
  */
 export const zGetBillingOpStatusResponse = zBillingOpStatusResponse
 
+export const zCancelBillingOpPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Canceled; nothing was charged. Also returned for an operation already discarded or expired without authentication, so a repeat is safe.
+ */
+export const zCancelBillingOpResponse = zBillingOpCancelResponse
+
 /**
  * Saved payment methods
  */
@@ -3372,6 +3801,13 @@ export const zResubscribeBody = zResubscribeRequest
  */
 export const zResubscribeResponse2 = zResubscribeResponse
 
+export const zRevertScheduledChangeBody = zRevertScheduledChangeRequest
+
+/**
+ * Revert accepted
+ */
+export const zRevertScheduledChangeResponse2 = zRevertScheduledChangeResponse
+
 export const zCreateTopupBody = zCreateTopupRequest
 
 /**
@@ -3379,9 +3815,23 @@ export const zCreateTopupBody = zCreateTopupRequest
  */
 export const zCreateTopupResponse2 = zCreateTopupResponse
 
+export const zCreateTopupCheckoutBody = zCreateTopupCheckoutRequest
+
+/**
+ * Checkout session created
+ */
+export const zCreateTopupCheckoutResponse2 = zCreateTopupCheckoutResponse
+
+export const zCreateTopupQuoteBody = zCreateTopupQuoteRequest
+
+/**
+ * Top-up quote
+ */
+export const zCreateTopupQuoteResponse = zTopupQuoteResponse
+
 export const zGetBillingUsageTimeSeriesQuery = z.object({
   group_by: z
-    .enum(['model', 'endpoint', 'product'])
+    .enum(['model', 'endpoint', 'product', 'product_line', 'person', 'source'])
     .optional()
     .default('model'),
   granularity: z.enum(['hour', 'day', 'month']).optional().default('month'),
@@ -3433,6 +3883,16 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  'agent-free-use-message-placement': z
+    .enum([
+      'control',
+      'top-banner',
+      'near-composer',
+      'above-input',
+      'inside-input'
+    ])
+    .default('control'),
+  billing_web_url: z.string().optional(),
   free_tier_balance: z
     .object({
       allowance: z.number().int(),
@@ -3440,8 +3900,17 @@ export const zGetFeaturesResponse = z.object({
       used: z.number().int()
     })
     .optional(),
+  free_tier_offer: z
+    .object({
+      job_allowance: z.number().int(),
+      requires_google_sign_in: z.boolean()
+    })
+    .optional(),
   max_upload_size: z.number().int().optional(),
-  supports_preview_metadata: z.boolean().optional()
+  new_free_tier_subscriptions: z.boolean().optional(),
+  stripe_publishable_key: z.string().optional(),
+  supports_preview_metadata: z.boolean().optional(),
+  web_session_probe: z.boolean().optional()
 })
 
 export const zSubmitFeedbackBody = zFeedbackRequest
@@ -3914,6 +4383,15 @@ export const zListTasksQuery = z.object({
  */
 export const zListTasksResponse = zTasksListResponse
 
+export const zCancelTaskPath = z.object({
+  task_id: z.string().uuid()
+})
+
+/**
+ * Cancellation accepted
+ */
+export const zCancelTaskResponse = z.void()
+
 export const zGetTaskPath = z.object({
   task_id: z.string().uuid()
 })
@@ -4058,7 +4536,8 @@ export const zGetUsersInfoResponse = z.object({
 })
 
 export const zGetVhsQueryVideoQuery = z.object({
-  filename: z.string()
+  filename: z.string(),
+  workspace_id: z.string().optional()
 })
 
 /**
@@ -4076,14 +4555,30 @@ export const zGetVhsQueryVideoResponse = z.object({
 export const zGetVhsViewAudioQuery = z.object({
   filename: z.string(),
   type: z.string().optional(),
-  subfolder: z.string().optional()
+  subfolder: z.string().optional(),
+  channel: z.string().optional(),
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
+
+/**
+ * JPEG thumbnail for `res`
+ */
+export const zGetVhsViewAudioResponse = z.string()
 
 export const zGetVhsViewVideoQuery = z.object({
   filename: z.string(),
   type: z.string().optional(),
-  subfolder: z.string().optional()
+  subfolder: z.string().optional(),
+  channel: z.string().optional(),
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
+
+/**
+ * JPEG thumbnail for `res`
+ */
+export const zGetVhsViewVideoResponse = z.string()
 
 export const zViewFileQuery = z.object({
   filename: z.string(),
@@ -4095,7 +4590,8 @@ export const zViewFileQuery = z.object({
   workflow: z.string().optional(),
   timestamp: z.number().int().optional(),
   channel: z.string().optional(),
-  res: z.number().int().gte(64).lte(1024).optional()
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
 
 /**
@@ -4108,8 +4604,16 @@ export const zGetLegacyViewMetadataPath = z.object({
 })
 
 export const zGetApiViewVideoAliasQuery = z.object({
-  filename: z.string()
+  filename: z.string(),
+  channel: z.string().optional(),
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
+
+/**
+ * JPEG thumbnail for `res`
+ */
+export const zGetApiViewVideoAliasResponse = z.string()
 
 /**
  * Empty object for workflow templates
@@ -4486,9 +4990,19 @@ export const zGetTemplateProxyPath = z.object({
 })
 
 export const zGetViewCompatAliasQuery = z.object({
-  filename: z.string()
+  filename: z.string(),
+  channel: z.string().optional(),
+  res: z.number().int().gte(64).lte(1024).optional(),
+  workspace_id: z.string().optional()
 })
 
+/**
+ * JPEG thumbnail for `res`
+ */
+export const zGetViewCompatAliasResponse = z.string()
+
 export const zGetWebsocketQuery = z.object({
+  token: z.string().optional(),
+  workspace_id: z.string().optional(),
   clientId: z.string().optional()
 })

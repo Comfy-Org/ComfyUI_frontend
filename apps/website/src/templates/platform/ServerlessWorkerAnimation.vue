@@ -5,9 +5,10 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const WORKER_COUNT = 3
 const COLS_PER_WORKER = 4
@@ -187,7 +188,7 @@ watch(
   <div
     ref="stageRef"
     role="img"
-    :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
+    :aria-label="t('platform.serverlessVisual.ariaLabel')"
     class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink font-mono"
   >
     <div
@@ -202,13 +203,13 @@ watch(
     </div>
 
     <div
-      class="bg-primary-comfy-plum absolute top-1/2 left-[14%] h-px w-[16%] -translate-y-1/2"
+      class="absolute top-1/2 left-[14%] h-px w-[16%] -translate-y-1/2 bg-primary-comfy-plum"
       aria-hidden="true"
     >
       <span
         v-for="packet in dataPackets"
         :key="packet.id"
-        class="bg-primary-comfy-yellow absolute top-1/2 size-2 -translate-1/2 rounded-full"
+        class="absolute top-1/2 size-2 -translate-1/2 rounded-full bg-primary-comfy-yellow"
         :style="{
           left: `${packet.progress * 100}%`,
           opacity: packet.opacity
@@ -226,9 +227,9 @@ watch(
         data-testid="activity-cell"
         :class="
           cn(
-            'bg-primary-comfy-yellow rounded-sm transition-[opacity,box-shadow] duration-150',
+            'rounded-sm bg-primary-comfy-yellow transition-[opacity,box-shadow] duration-150',
             (cell.state === 'hot' || cell.isLeading) &&
-              'shadow-primary-comfy-yellow/35 shadow-md'
+              'shadow-md shadow-primary-comfy-yellow/35'
           )
         "
         :style="{ opacity: cell.displayOpacity }"
@@ -236,7 +237,7 @@ watch(
     </div>
 
     <div
-      class="text-primary-comfy-yellow/80 absolute right-[5%] bottom-[6%] left-3/10 grid grid-cols-3 text-[7px] tracking-widest uppercase sm:text-[9px] lg:text-[10px]"
+      class="absolute right-[5%] bottom-[6%] left-3/10 grid grid-cols-3 text-[7px] tracking-widest text-primary-comfy-yellow/80 uppercase sm:text-[9px] lg:text-[10px]"
     >
       <span
         v-for="workerIndex in workerIndexes"
@@ -249,7 +250,7 @@ watch(
           )
         "
       >
-        {{ t('platform.serverlessVisual.worker', locale) }}
+        {{ t('platform.serverlessVisual.worker') }}
       </span>
     </div>
   </div>

@@ -3,26 +3,27 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en', active } = defineProps<{
   locale?: Locale
   active: 'mcp' | 'cli'
 }>()
+const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
 
 const surfaces = [
   {
     id: 'mcp' as const,
-    name: t('surfaces.mcp.name', locale),
-    tagline: t('surfaces.mcp.tagline', locale),
+    name: t('surfaces.mcp.name'),
+    tagline: t('surfaces.mcp.tagline'),
     href: routes.mcp
   },
   {
     id: 'cli' as const,
-    name: t('surfaces.cli.name', locale),
-    tagline: t('surfaces.cli.tagline', locale),
+    name: t('surfaces.cli.name'),
+    tagline: t('surfaces.cli.tagline'),
     href: routes.cli
   }
 ]
@@ -33,7 +34,7 @@ const surfaceClass =
 
 <template>
   <nav
-    :aria-label="t('surfaces.tabsLabel', locale)"
+    :aria-label="t('surfaces.tabsLabel')"
     class="inline-flex flex-wrap gap-2"
   >
     <template v-for="surface in surfaces" :key="surface.id">
@@ -55,7 +56,7 @@ const surfaceClass =
         :class="
           cn(
             surfaceClass,
-            'focus-visible:ring-primary-comfy-yellow/50 border-white/15 bg-white/4 transition-colors hover:bg-white/8 focus-visible:ring-2 focus-visible:outline-none'
+            'border-white/15 bg-white/4 transition-colors hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none'
           )
         "
       >

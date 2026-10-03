@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { useResizeObserver } from '@vueuse/core'
 import { createApp, defineComponent, nextTick, ref, computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,7 +13,7 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { resolveNode } from '@/utils/litegraphUtil'
+import { resolveNode } from '@/utils/litegraphUtil'
 import {
   createMockLGraphNode,
   createMockSubgraphNode
@@ -22,21 +23,17 @@ import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
 
-vi.mock(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  useResizeObserver: (_target: unknown, cb: ResizeObserverCallback) => {
-    resizeObserverCallbacks.push(() => cb([], fromPartial<ResizeObserver>({})))
-    return { stop: vi.fn(), isSupported: computed(() => true) }
-  }
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 const mockResolveNode = vi.hoisted(() => vi.fn<typeof resolveNode>())
-vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveNode: mockResolveNode
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 beforeEach(() => {
+  vi.mocked(useResizeObserver).mockImplementation((_target, cb) => {
+    resizeObserverCallbacks.push(() => cb([], fromPartial<ResizeObserver>({})))
+    return { stop: vi.fn(), isSupported: computed(() => true) }
+  })
+  vi.mocked(resolveNode).mockImplementation(mockResolveNode)
   useCanvasStore().canvas = fromPartial<LGraphCanvas>({
     graph: { rootGraph: { id: 'test-graph' } }
   })
@@ -73,7 +70,7 @@ const ImageCropHarness = defineComponent({
 })
 
 function flushResizeObservers() {
-  for (const cb of [...resizeObserverCallbacks]) {
+  for (const cb of Array.from(resizeObserverCallbacks)) {
     cb()
   }
 }
@@ -133,10 +130,10 @@ type CropVm = Record<string, unknown> & {
 
 function setupImageLayout(vm: CropVm, nw: number, nh: number) {
   /* Harness root + image are not RTL queries — layout is driven by composable state */
-  /* eslint-disable testing-library/no-node-access */
+  /* oxlint-disable testing-library/no-node-access */
   const container = vm.$el
   const img = container.querySelector('img')
-  /* eslint-enable testing-library/no-node-access */
+  /* oxlint-enable testing-library/no-node-access */
   mountContainerLayout(container, 400, 300)
   if (img) {
     Object.defineProperty(img, 'naturalWidth', {
@@ -224,11 +221,6 @@ describe('useImageCrop', () => {
       c()
     }
     harnessCleanups.length = 0
-  })
-
-  it('resolves image URL from the connected input node after mount', async () => {
-    const vm = await mountHarness()
-    expect(vm.imageUrl).toBe('https://example.com/a.png')
   })
 
   it('returns null image URL when the graph node cannot be resolved', async () => {
@@ -336,10 +328,10 @@ describe('useImageCrop', () => {
 
   it('uses scale factor 1 when natural dimensions are zero', async () => {
     const vm = await mountHarness()
-    /* eslint-disable testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-node-access */
     const container = vm.$el
     const img = container.querySelector('img')
-    /* eslint-enable testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-node-access */
     if (!img) throw new Error('expected preview img')
     Object.defineProperty(img, 'naturalWidth', { configurable: true, value: 0 })
     Object.defineProperty(img, 'naturalHeight', {

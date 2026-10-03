@@ -23,22 +23,38 @@ const ANALYTICS_HOSTS = new Set([
   'cdp.customer.io'
 ])
 const EMBED_HOSTS = new Set([
+  'www.youtube.com',
   'www.youtube-nocookie.com',
   'demo.arcade.software'
 ])
-const MEDIA_PATTERN =
-  /^https:\/\/(media|comfy-hub-assets)\.comfy\.org\/.*\.(webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(\?.*)?$/i
+const SCRIPT_HOSTS = new Set(['js-na2.hsforms.net'])
+const GITHUB_ATTACHMENT_URLS = new Set([
+  'https://github.com/user-attachments/assets/07c6b3bf-9aa3-49b7-b8ad-1b4300802473',
+  'https://github.com/user-attachments/assets/916211b0-5da9-4c91-b817-bc898a36cfca'
+])
+const MEDIA_PATTERNS = [
+  /^https:\/\/media\.comfy\.org\/website\/comfy-agent\/[^/?]+\.svg(?:\?.*)?$/i,
+  /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/cloud\.comfy\.org\/templates\/[^/]+\.(?:webp|png|jpg|jpeg|gif|avif)(?:\?.*)?$/i,
+  /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@(?:main|[0-9a-f]{40})\/(?:input|output|templates)\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/assets\.sync\.so\/docs\/example-(?:audio\.wav|video\.mp4)$/i
+]
 const NODE_IMAGE_HOSTS = new Set([
   'avatars.githubusercontent.com',
   'raw.githubusercontent.com'
 ])
 const VIDEO_PATTERN = /\.(webm|mp4)(\?|$)/i
+const AUDIO_PATTERN = /\.wav(\?|$)/i
 const SUBTITLE_PATTERN = /\.vtt(\?|$)/i
 
 async function fulfillMedia(route: Route) {
   const url = route.request().url()
   if (VIDEO_PATTERN.test(url))
     return route.fulfill({ path: VIDEO_PLACEHOLDER, status: 200 })
+
+  if (AUDIO_PATTERN.test(url))
+    return route.fulfill({ status: 200, contentType: 'audio/wav', body: '' })
 
   if (SUBTITLE_PATTERN.test(url))
     return route.fulfill({
@@ -48,6 +64,92 @@ async function fulfillMedia(route: Route) {
     })
 
   await route.fulfill({ path: IMAGE_PLACEHOLDER, status: 200 })
+}
+
+function isNodeImage(route: Route, url: URL): boolean {
+  return (
+    NODE_IMAGE_HOSTS.has(url.hostname) &&
+    route.request().resourceType() === 'image'
+  )
+}
+
+type ExternalRouteRule = {
+  matches: (route: Route, url: URL) => boolean
+  handle: (route: Route) => Promise<unknown>
+}
+
+const EXTERNAL_ROUTE_RULES: readonly ExternalRouteRule[] = [
+  {
+    matches: (_route, url) => ANALYTICS_HOSTS.has(url.hostname),
+    handle: (route) => route.abort('blockedbyclient')
+  },
+  {
+    matches: (_route, url) => EMBED_HOSTS.has(url.hostname),
+    handle: (route) => route.fulfill({ contentType: 'text/html', body: '' })
+  },
+  {
+    matches: (route, url) =>
+      url.hostname === 'apis.google.com' &&
+      url.pathname === '/js/api.js' &&
+      route.request().resourceType() === 'script',
+    handle: (route) =>
+      route.fulfill({ contentType: 'text/javascript', body: '' })
+  },
+  {
+    matches: (_route, url) => SCRIPT_HOSTS.has(url.hostname),
+    handle: (route) =>
+      route.fulfill({ contentType: 'text/javascript', body: '' })
+  },
+  {
+    matches: (route, url) =>
+      route.request().resourceType() === 'image' &&
+      GITHUB_ATTACHMENT_URLS.has(url.href),
+    handle: fulfillMedia
+  },
+  {
+    matches: (_route, url) => url.hostname === 'fonts.googleapis.com',
+    handle: (route) =>
+      route.fulfill({
+        contentType: 'text/css',
+        body: `@font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url(data:font/woff2;base64,${INTER_FONT}) format('woff2');
+          }`
+      })
+  },
+  {
+    matches: (_route, url) =>
+      MEDIA_PATTERNS.some((pattern) => pattern.test(url.href)),
+    handle: fulfillMedia
+  },
+  {
+    matches: isNodeImage,
+    handle: (route) => route.fulfill({ path: IMAGE_PLACEHOLDER })
+  },
+  {
+    matches: (_route, url) =>
+      url.hostname.endsWith('cloud.comfy.org') &&
+      url.pathname === '/api/features',
+    handle: (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: '{}'
+      })
+  }
+]
+
+async function handleAllowedExternalRequest(route: Route, url: URL) {
+  const rule = EXTERNAL_ROUTE_RULES.find((candidate) =>
+    candidate.matches(route, url)
+  )
+  if (!rule) return false
+
+  await rule.handle(route)
+  return true
 }
 
 export const test = base.extend({
@@ -76,29 +178,7 @@ export const test = base.extend({
     await context.route('**/*', async (route) => {
       const url = new URL(route.request().url())
       if (url.origin === localOrigin) return route.continue()
-      if (ANALYTICS_HOSTS.has(url.hostname))
-        return route.abort('blockedbyclient')
-      if (EMBED_HOSTS.has(url.hostname))
-        return route.fulfill({ contentType: 'text/html', body: '' })
-      if (url.hostname === 'js-na2.hsforms.net')
-        return route.fulfill({ contentType: 'text/javascript', body: '' })
-      if (url.hostname === 'fonts.googleapis.com')
-        return route.fulfill({
-          contentType: 'text/css',
-          body: `@font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 100 900;
-            font-display: swap;
-            src: url(data:font/woff2;base64,${INTER_FONT}) format('woff2');
-          }`
-        })
-      if (MEDIA_PATTERN.test(url.href)) return fulfillMedia(route)
-      if (
-        NODE_IMAGE_HOSTS.has(url.hostname) &&
-        route.request().resourceType() === 'image'
-      )
-        return route.fulfill({ path: IMAGE_PLACEHOLDER })
+      if (await handleAllowedExternalRequest(route, url)) return
 
       unexpectedRequests.add(url.href)
       return route.abort('blockedbyclient')

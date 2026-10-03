@@ -7,7 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver, useTemplateRefsList } from '@vueuse/core'
 import { computed, onMounted, ref, useSlots } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 type TranslationKey = Parameters<typeof t>[0]
 type Point = { x: number; y: number }
@@ -34,6 +34,7 @@ const {
   variant?: 'split' | 'node'
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const slots = useSlots()
 const hasRightCard = computed(() => !!slots['right-card'])
@@ -176,12 +177,12 @@ onMounted(() => {
       <div v-if="variant === 'split'" class="flex w-64 shrink-0 flex-col gap-3">
         <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
           <p class="text-2xl font-light text-primary-comfy-canvas">
-            {{ t(titleBeforeKey, locale) }}
+            {{ t(titleBeforeKey) }}
             <br />
             <span
-              class="bg-primary-comfy-yellow mb-0.5 inline-block h-5 w-16 align-middle"
+              class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
               style="mask: url(/icons/logo.svg) no-repeat center / contain"
-            />{{ t(titleAfterKey, locale) }}
+            />{{ t(titleAfterKey) }}
           </p>
         </div>
         <div
@@ -190,11 +191,11 @@ onMounted(() => {
           <span
             class="text-xs font-bold tracking-wider text-primary-comfy-canvas"
           >
-            {{ t(labelKey, locale) }}
+            {{ t(labelKey) }}
           </span>
           <span
             ref="ifYouDotRef"
-            class="bg-primary-comfy-yellow ml-3 size-3 shrink-0 rounded-full"
+            class="ml-3 size-3 shrink-0 rounded-full bg-primary-comfy-yellow"
           />
         </div>
       </div>
@@ -203,11 +204,11 @@ onMounted(() => {
         class="flex w-72 shrink-0 items-center justify-between gap-3 rounded-[40px] border border-white/10 bg-white/5 p-8"
       >
         <span class="text-2xl font-light text-primary-warm-white">
-          {{ t(labelKey, locale) }}
+          {{ t(labelKey) }}
         </span>
         <span
           ref="ifYouDotRef"
-          class="bg-primary-comfy-yellow size-3 shrink-0 rounded-full"
+          class="size-3 shrink-0 rounded-full bg-primary-comfy-yellow"
         />
       </div>
 
@@ -216,7 +217,7 @@ onMounted(() => {
         <span
           v-if="hasRightCard"
           ref="reasonOutputDotRef"
-          class="bg-primary-comfy-yellow absolute top-1/3 right-0 z-20 size-3 translate-x-1/2 -translate-y-1/2 rounded-full"
+          class="absolute top-1/3 right-0 z-20 size-3 translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-comfy-yellow"
         />
         <div
           :class="
@@ -238,10 +239,10 @@ onMounted(() => {
             >
               <span
                 :ref="reasonDots.set"
-                class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
+                class="mt-1.5 size-2.5 shrink-0 rounded-full bg-primary-comfy-yellow"
               />
               <p class="text-base text-primary-comfy-canvas">
-                {{ t(reason, locale) }}
+                {{ t(reason) }}
               </p>
             </div>
           </div>
@@ -259,7 +260,7 @@ onMounted(() => {
         "
       >
         <span
-          class="bg-primary-comfy-yellow inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5"
+          class="inline-flex items-center gap-1.5 rounded-lg bg-primary-comfy-yellow px-3 py-1.5"
         >
           <span
             ref="comfyDotRef"
@@ -303,12 +304,12 @@ onMounted(() => {
     <template v-if="variant === 'split'">
       <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
         <p class="text-2xl font-light text-primary-comfy-canvas">
-          {{ t(titleBeforeKey, locale) }}
+          {{ t(titleBeforeKey) }}
           <br />
           <span
-            class="bg-primary-comfy-yellow mb-0.5 inline-block h-5 w-16 align-middle"
+            class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
             style="mask: url(/icons/logo.svg) no-repeat center / contain"
-          />{{ t(titleAfterKey, locale) }}
+          />{{ t(titleAfterKey) }}
         </p>
       </div>
 
@@ -318,11 +319,11 @@ onMounted(() => {
         <span
           class="text-xs font-bold tracking-wider text-primary-comfy-canvas"
         >
-          {{ t(labelKey, locale) }}
+          {{ t(labelKey) }}
         </span>
         <span
           ref="mobileIfYouDotRef"
-          class="bg-primary-comfy-yellow ml-3 size-3 shrink-0 rounded-full"
+          class="ml-3 size-3 shrink-0 rounded-full bg-primary-comfy-yellow"
         />
       </div>
     </template>
@@ -331,16 +332,16 @@ onMounted(() => {
       class="relative rounded-[40px] border border-white/10 bg-white/5 px-8 py-7"
     >
       <span class="text-2xl font-light text-primary-warm-white">
-        {{ t(labelKey, locale) }}
+        {{ t(labelKey) }}
       </span>
       <span
-        class="bg-primary-comfy-yellow absolute bottom-0 left-1/2 z-20 size-3 -translate-x-1/2 translate-y-1/2 rounded-full"
+        class="absolute bottom-0 left-1/2 z-20 size-3 -translate-x-1/2 translate-y-1/2 rounded-full bg-primary-comfy-yellow"
       />
     </div>
 
     <span
       v-if="variant === 'node'"
-      class="bg-primary-comfy-yellow mx-auto block h-12 w-px"
+      class="mx-auto block h-12 w-px bg-primary-comfy-yellow"
     />
 
     <div
@@ -353,12 +354,12 @@ onMounted(() => {
     >
       <span
         v-if="variant === 'node'"
-        class="bg-primary-comfy-yellow absolute top-0 left-1/2 z-20 size-3 -translate-1/2 rounded-full"
+        class="absolute top-0 left-1/2 z-20 size-3 -translate-1/2 rounded-full bg-primary-comfy-yellow"
       />
       <span
         v-if="hasMobileRightCard"
         ref="mobileOutputDotRef"
-        class="bg-primary-comfy-yellow absolute right-1/3 bottom-0 z-20 size-3 translate-y-1/2 rounded-full"
+        class="absolute right-1/3 bottom-0 z-20 size-3 translate-y-1/2 rounded-full bg-primary-comfy-yellow"
       />
       <div class="flex flex-col gap-6">
         <div
@@ -373,15 +374,15 @@ onMounted(() => {
         >
           <span
             v-if="variant === 'node'"
-            class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
+            class="mt-1.5 size-2.5 shrink-0 rounded-full bg-primary-comfy-yellow"
           />
           <p class="text-base text-primary-comfy-canvas">
-            {{ t(reason, locale) }}
+            {{ t(reason) }}
           </p>
           <span
             v-if="variant === 'split'"
             :ref="mobileReasonDots.set"
-            class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
+            class="mt-1.5 size-2.5 shrink-0 rounded-full bg-primary-comfy-yellow"
           />
         </div>
       </div>
@@ -397,7 +398,7 @@ onMounted(() => {
       "
     >
       <span
-        class="bg-primary-comfy-yellow inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5"
+        class="inline-flex items-center gap-1.5 rounded-lg bg-primary-comfy-yellow px-3 py-1.5"
       >
         <span
           ref="mobileComfyDotRef"

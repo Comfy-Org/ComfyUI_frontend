@@ -2,20 +2,31 @@ import type * as Litegraph from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
+import * as VueUse from '@vueuse/core'
+import {
+  computed,
+  effectScope,
+  nextTick,
+  onScopeDispose,
+  reactive,
+  shallowRef
+} from 'vue'
 
 import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import type { NodeLayout } from '@/renderer/core/layout/types'
 
 import { canvasNodeTarget } from './canvasCoachTarget'
 
-const { TITLE_HEIGHT } = vi.hoisted(() => ({ TITLE_HEIGHT: 30 }))
+const TITLE_HEIGHT = 30
 
 const state = vi.hoisted(() => ({
-  camera: null as Record<string, number> | null,
+  camera: { x: 0, y: 0, z: 1 },
 
   collapsed: new Set<string>(),
-  layout: null as { value: unknown } | null,
+  layout: null as ReturnType<typeof shallowRef<NodeLayout | null>> | null,
   layoutReads: vi.fn(),
   canvasOffset: { left: 0, top: 0 },
   releaseBounds: vi.fn()
@@ -33,57 +44,40 @@ function graph(id: string) {
   })
 }
 
-vi.mock<unknown>(
-  import('@/lib/litegraph/src/litegraph'),
-  async (importOriginal) => ({
-    ...(await importOriginal<typeof Litegraph>()),
-    LiteGraph: { NODE_TITLE_HEIGHT: TITLE_HEIGHT }
-  })
-)
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  async () => {
-    const { reactive } = await import('vue')
-    state.camera = reactive({ x: 0, y: 0, z: 1 })
-    return { useTransformState: () => ({ camera: state.camera }) }
-  }
-)
+vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/store/layoutStore'),
-  async () => {
-    const { shallowRef } = await import('vue')
-    state.layout = shallowRef<unknown>(null)
-    return {
-      layoutStore: {
-        getNodeLayoutRef: (graphId: unknown, nodeId: unknown) => {
-          state.layoutReads(graphId, nodeId)
-          return state.layout
-        }
-      }
-    }
-  }
-)
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  const { computed, onScopeDispose } = await import('vue')
-  return {
-    ...actual,
-    useElementBounding: () => {
-      onScopeDispose(state.releaseBounds)
-      return {
-        left: computed(() => state.canvasOffset.left),
-        top: computed(() => state.canvasOffset.top)
-      }
-    }
-  }
-})
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function placeNode(bounds = { x: 100, y: 200, width: 80, height: 40 }) {
-  state.layout!.value = { bounds }
+  if (!state.layout) throw new Error('Expected layout state to be initialized')
+  state.layout.value = fromPartial<NodeLayout>({ bounds })
 }
 
 beforeEach(() => {
+  state.camera = reactive({ x: 0, y: 0, z: 1 })
+  state.layout = shallowRef<NodeLayout | null>(null)
+  vi.mocked(useTransformState()).camera = state.camera
+  vi.mocked(layoutStore.getNodeLayoutRef).mockImplementation(
+    (graphId, nodeId) => {
+      state.layoutReads(graphId, nodeId)
+      return computed(() => state.layout?.value ?? null)
+    }
+  )
+  vi.mocked(VueUse.useElementBounding).mockImplementation(() => {
+    onScopeDispose(state.releaseBounds)
+    return {
+      bottom: computed(() => 0),
+      height: computed(() => 0),
+      left: computed(() => state.canvasOffset.left),
+      right: computed(() => 0),
+      top: computed(() => state.canvasOffset.top),
+      width: computed(() => 0),
+      x: computed(() => 0),
+      y: computed(() => 0),
+      update: vi.fn()
+    }
+  })
   useCanvasStore().canvas = fromPartial({
     graph: graph('root'),
     canvas: document.createElement('canvas')
@@ -96,7 +90,7 @@ describe('canvasNodeTarget', () => {
     useCanvasStore().currentGraph = graph('root')
     state.collapsed.clear()
     state.canvasOffset = { left: 0, top: 0 }
-    if (state.camera) Object.assign(state.camera, { x: 0, y: 0, z: 1 })
+    Object.assign(state.camera, { x: 0, y: 0, z: 1 })
     if (state.layout) state.layout.value = null
     state.layoutReads.mockClear()
     state.releaseBounds.mockClear()
@@ -128,7 +122,7 @@ describe('canvasNodeTarget', () => {
   it('carries the node through pan and zoom', () => {
     useCanvasStore().currentGraph = graph('root')
     placeNode({ x: 100, y: 200, width: 80, height: 40 })
-    Object.assign(state.camera!, { x: 10, y: 20, z: 2 })
+    Object.assign(state.camera, { x: 10, y: 20, z: 2 })
     state.canvasOffset = { left: 5, top: 7 }
 
     expect(
@@ -215,7 +209,7 @@ describe('canvasNodeTarget', () => {
     const notify = vi.fn()
     scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))
 
-    state.camera!.x = 250
+    state.camera.x = 250
     await nextTick()
 
     expect(
@@ -231,7 +225,7 @@ describe('canvasNodeTarget', () => {
     const stop = scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))!
     stop()
 
-    state.camera!.x = 120
+    state.camera.x = 120
     placeNode({ x: 1, y: 2, width: 3, height: 4 })
     await nextTick()
     window.dispatchEvent(new Event('resize'))

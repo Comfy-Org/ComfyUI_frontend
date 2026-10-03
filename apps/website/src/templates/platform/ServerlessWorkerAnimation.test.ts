@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -11,7 +10,7 @@ describe('ServerlessWorkerAnimation', () => {
 
     expect(
       screen.getByRole('img', {
-        name: t('platform.serverlessVisual.ariaLabel', 'en')
+        name: t('platform.serverlessVisual.ariaLabel', {}, { locale: 'en' })
       })
     ).toBeTruthy()
   })
@@ -28,7 +27,9 @@ describe('ServerlessWorkerAnimation', () => {
     render(ServerlessWorkerAnimation, { props: { locale: 'en' } })
 
     expect(
-      screen.getAllByText(t('platform.serverlessVisual.worker', 'en'))
+      screen.getAllByText(
+        t('platform.serverlessVisual.worker', {}, { locale: 'en' })
+      )
     ).toHaveLength(3)
   })
 })

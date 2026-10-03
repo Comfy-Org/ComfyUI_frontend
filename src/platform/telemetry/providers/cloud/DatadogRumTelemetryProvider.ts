@@ -1,8 +1,21 @@
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
-import { datadogRum } from '@datadog/browser-rum'
-
+import {
+  getBillingTelemetryEventName,
+  getCheckoutJourneyTelemetryEventName,
+  getCloudAppBillingTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
 import type {
   BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+import { datadogRum } from '@datadog/browser-rum'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+
+import type {
+  AuthMetadata,
   ExecutionOutcomeMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
@@ -10,13 +23,30 @@ import type {
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata
 } from '../../types'
-import {
-  getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload,
-  TelemetryEvents
-} from '../../types'
+import { TelemetryEvents } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  private isWatchingLogout = false
+
+  trackAuth({ user_id, email }: AuthMetadata): void {
+    this.setUser(user_id, email)
+  }
+
+  trackUserLoggedIn(): void {
+    const { resolvedUserInfo, userEmail } = useCurrentUser()
+    this.setUser(resolvedUserInfo.value?.id, userEmail.value)
+  }
+
+  private setUser(userId: string | undefined, email?: string | null): void {
+    if (!userId) return
+
+    datadogRum.setUser({ id: userId, ...(email && { email }) })
+    if (this.isWatchingLogout) return
+
+    this.isWatchingLogout = true
+    useCurrentUser().onUserLogout(() => datadogRum.clearUser())
+  }
+
   trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
     datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
   }
@@ -39,6 +69,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    datadogRum.addAction(event.name, event.properties)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
@@ -53,7 +87,14 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
   trackBillingEvent(event: BillingTelemetryEvent): void {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),
-      getBillingTelemetryEventPayload(event)
+      getCloudAppBillingTelemetryEventPayload(event)
+    )
+  }
+
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
+    datadogRum.addAction(
+      getCheckoutJourneyTelemetryEventName(event),
+      getCloudAppCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 
@@ -115,7 +156,7 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
         ...(executionStageStartedAt !== undefined && {
           execution_duration_ms: workflowEndedAt - executionStageStartedAt
         }),
-        ...(workflowContext ?? {}),
+        ...workflowContext,
         ...(originViewId && { origin_view_id: originViewId })
       }
     })

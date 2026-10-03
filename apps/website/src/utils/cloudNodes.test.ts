@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { sanitizeUserContent } from '@comfyorg/object-info-parser'
 
 import type { NodesSnapshot } from '../data/cloudNodes'
 
@@ -12,25 +13,13 @@ import type { RegistryPackWithNodes } from './cloudNodes.registry'
 const fetchRegistryPacksWithNodesMock = vi.hoisted(() =>
   vi.fn(async () => new Map<string, RegistryPackWithNodes | null>())
 )
-const sanitizeCallSpy = vi.hoisted(() => vi.fn())
 
 vi.mock(import('./cloudNodes.registry'), () => ({
   DEFAULT_REGISTRY_BASE_URL: 'https://api.comfy.org' as const,
   fetchRegistryPacksWithNodes: fetchRegistryPacksWithNodesMock
 }))
 
-vi.mock(import('@comfyorg/object-info-parser'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    sanitizeUserContent: (
-      defs: Parameters<typeof actual.sanitizeUserContent>[0]
-    ) => {
-      sanitizeCallSpy(defs)
-      return actual.sanitizeUserContent(defs)
-    }
-  }
-})
+vi.mock(import('@comfyorg/object-info-parser'), { spy: true })
 
 import {
   fetchCloudNodesForBuild,
@@ -196,7 +185,7 @@ describe('fetchCloudNodesForBuild', () => {
       fetchImpl: fetchImpl
     })
 
-    expect(sanitizeCallSpy).toHaveBeenCalledTimes(1)
+    expect(sanitizeUserContent).toHaveBeenCalledTimes(1)
   })
 
   it('returns stale with missing env when snapshot is present', async () => {

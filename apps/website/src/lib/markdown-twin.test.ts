@@ -1,12 +1,39 @@
 import { mkdtemp, readFile, mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 
+import ModelPage from '../components/workshop/ModelPage.vue'
+import WorkshopLoading from '../components/workshop/WorkshopLoading.vue'
+import { hubModelSlugs } from '../config/hub-models'
+import { isExcludedFromSitemap } from '../config/indexing'
+import type { ModelPageLaunch } from '../config/model-page-launch'
+import {
+  routerModelSlugAliases,
+  workshopModels
+} from '../config/workshop-browse-content'
 import { writeMarkdownTwins } from '../integrations/markdown-twins'
+import { prepareModelPage } from '../routes/models/model-page'
 import { writeSectionIndexes } from './section-index'
 import { htmlToTwin, renderTwin } from './markdown-twin'
 import { markdownTwinPath } from './markdown-twin-path'
+
+const launch = vi.hoisted(
+  (): {
+    launchedModelPages: ModelPageLaunch
+    launchedWorkflowPages: boolean
+  } => ({
+    launchedModelPages: new Set(),
+    launchedWorkflowPages: false
+  })
+)
+vi.mock(import('../config/model-page-launch'), () => launch)
+
+const loadingSpinner = await renderToString(
+  h(WorkshopLoading, { label: 'Loading' })
+)
 
 const PAGE = `<!doctype html>
 <html lang="en">
@@ -16,10 +43,11 @@ const PAGE = `<!doctype html>
   <link rel="canonical" href="https://comfy.org/cli/">
 </head>
 <body>
+  <header><a href="/">Comfy home</a></header>
   <astro-island><nav><a href="/mcp/">Comfy MCP</a><a href="/cloud/">Comfy Cloud</a></nav></astro-island>
   <main>
     <section>
-      <h1>Drive ComfyUI from your terminal. <br>Or your agent's.</h1>
+      <header><h1>Drive ComfyUI from your terminal. <br>Or your agent's.</h1></header>
       <p>Generate from <a href="/cloud/">Comfy Cloud</a> or <a href="#setup">your own GPU</a> with <strong>comfy-cli</strong>.</p>
       <div aria-hidden="true"><p>Claude Code Codex Cursor</p></div>
       <div aria-hidden="true"><p>Claude Code Codex Cursor</p></div>
@@ -29,6 +57,8 @@ const PAGE = `<!doctype html>
       <svg><title>icon</title></svg>
       <video src="/clip.mp4"></video>
       <button>Copy</button>
+      ${loadingSpinner}
+      <p role="status">Saved to your library.</p>
     </section>
     <section>
       <h2>Set up Comfy CLI</h2>
@@ -79,11 +109,17 @@ describe('htmlToTwin', () => {
       "# Drive ComfyUI from your terminal. Or your agent's."
     )
     expect(page.body).not.toContain('Comfy MCP')
+    expect(page.body).not.toContain('Comfy home')
     expect(page.body).not.toContain('Products')
     expect(page.body).not.toContain('window.track')
     expect(page.body).not.toContain('icon')
     expect(page.body).not.toContain('Copy')
     expect(page.body).not.toContain('clip.mp4')
+  })
+
+  it('drops the Workshop loading spinner but keeps other status copy', () => {
+    expect(page.body).not.toContain('Loading')
+    expect(page.body).toContain('Saved to your library.')
   })
 
   it('makes links absolute, drops anchor links, and keeps emphasis', () => {
@@ -115,6 +151,14 @@ describe('htmlToTwin', () => {
       '| Plan | Credits |\n| --- | --- |\n| Pro | 1,000 \\| more |'
     )
     expect(page.body).toContain('> Method, not magic.')
+  })
+
+  it('drops the site banner but keeps page headers when there is no main', () => {
+    const noMain = htmlToTwin(
+      '<html><body><header><a href="/">Comfy home</a></header><article><header><h1>Pack</h1></header><p>Nodes.</p></article></body></html>',
+      'https://comfy.org/x/'
+    )
+    expect(noMain.body).toBe('# Pack\n\nNodes.')
   })
 
   it('falls back to the route when the page has no canonical link', () => {
@@ -199,6 +243,35 @@ describe('writeMarkdownTwins', () => {
     expect(report.skipped).toEqual([])
   })
 
+  it('writes the Models twin from the catalogue page itself', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'twins-'))
+    await mkdir(join(root, 'hub', 'models'), { recursive: true })
+    await mkdir(join(root, 'models', 'showcase'), { recursive: true })
+    await writeFile(
+      join(root, 'hub', 'models', 'index.html'),
+      '<html><head><title>Models - Comfy</title><link rel="canonical" href="https://comfy.org/hub/models/"></head><body><main><h1>ComfyUI models</h1><a href="/models/bfl--flux-2-max--generate-images/">FLUX 2 Max Text-to-Image</a></main></body></html>'
+    )
+    await writeFile(
+      join(root, 'models', 'showcase', 'index.html'),
+      '<html><head><title>Models - Comfy</title><link rel="canonical" href="https://comfy.org/models/showcase/"></head><body><main><h1>Grok Imagine in ComfyUI</h1></main></body></html>'
+    )
+
+    const report = await writeMarkdownTwins(root, [
+      'hub/models/',
+      'models/showcase/'
+    ])
+    const twin = await readFile(join(root, 'hub', 'models.md'), 'utf8')
+
+    expect(report.written).toEqual(['/hub/models.md'])
+    expect(report.skipped).toEqual(['/models/showcase.md'])
+    expect(twin).toContain('canonical: https://comfy.org/hub/models/')
+    expect(twin).toContain('# ComfyUI models')
+    expect(twin).toContain(
+      '[FLUX 2 Max Text-to-Image](https://comfy.org/models/bfl--flux-2-max--generate-images/)'
+    )
+    expect(twin).not.toContain('Grok Imagine')
+  })
+
   it('feeds section indexes and llms-full.txt from written and existing twins alike', async () => {
     // Regression test for a bug where astro:build:done only passed
     // report.written downstream: a page endpoint's pre-existing twin
@@ -226,5 +299,171 @@ describe('writeMarkdownTwins', () => {
     expect(indexes).toEqual(['/learning/llms.txt'])
     const index = await readFile(join(root, 'learning', 'llms.txt'), 'utf8')
     expect(index).toContain('[Learning](https://comfy.org/learning.md)')
+  })
+
+  describe('Models pages', () => {
+    const [{ slug: modelSlug }] = workshopModels
+    const [[aliasSlug]] = routerModelSlugAliases
+    const hubSlug = hubModelSlugs.get(modelSlug)
+    const modelsPages = [
+      'hub/models/',
+      'models/showcase/',
+      `hub/models/${hubSlug}/`,
+      `models/${aliasSlug}/`
+    ]
+    const modelTwin = `/hub/models/${hubSlug}.md`
+
+    afterEach(() => {
+      launch.launchedModelPages = new Set()
+    })
+
+    it.for([false, true])(
+      'twins exactly the Models pages the sitemap lists (launched: %s)',
+      async (launched) => {
+        launch.launchedModelPages = launched ? 'all' : new Set()
+        const root = await mkdtemp(join(tmpdir(), 'twins-'))
+        for (const pathname of modelsPages) {
+          await mkdir(join(root, pathname), { recursive: true })
+          await writeFile(
+            join(root, pathname, 'index.html'),
+            `<html lang="en"><head><title>${pathname}</title></head><body><main><h1>${pathname}</h1></main></body></html>`
+          )
+        }
+        const listedInSitemap = modelsPages
+          .filter(
+            (pathname) =>
+              !isExcludedFromSitemap(
+                new URL(pathname, 'https://comfy.org').href
+              )
+          )
+          .map((pathname) => markdownTwinPath(`/${pathname}`))
+
+        const report = await writeMarkdownTwins(root, modelsPages)
+
+        expect(report.written).toEqual(listedInSitemap)
+        expect(report.written.includes(modelTwin)).toBe(launched)
+      }
+    )
+  })
+
+  describe('model pages', () => {
+    const [{ slug: modelSlug }] = workshopModels
+    const hubSlug = hubModelSlugs.get(modelSlug)
+    const route = `hub/models/${hubSlug}/`
+    const twinPath = `/hub/models/${hubSlug}.md`
+
+    async function buildModelPage(
+      main: string,
+      twinLink = `<link rel="alternate" type="text/markdown" href="${twinPath}">`
+    ) {
+      const root = await mkdtemp(join(tmpdir(), 'twins-'))
+      await mkdir(join(root, route), { recursive: true })
+      await writeFile(
+        join(root, route, 'index.html'),
+        `<html lang="en"><head><title>${modelSlug}</title><link rel="canonical" href="https://comfy.org/${route}">${twinLink}</head><body><header><a href="/">Comfy home</a></header><main>${main}</main></body></html>`
+      )
+      return root
+    }
+
+    const readPage = (root: string) =>
+      readFile(join(root, route, 'index.html'), 'utf8')
+
+    beforeEach(() => {
+      launch.launchedModelPages = 'all'
+    })
+
+    afterEach(() => {
+      launch.launchedModelPages = new Set()
+    })
+
+    it('writes no twin and drops the markdown link for a spinner-only page', async () => {
+      const root = await buildModelPage(
+        `<astro-island>${loadingSpinner}</astro-island><noscript><h1>Grok Imagine in ComfyUI</h1></noscript>`
+      )
+
+      const report = await writeMarkdownTwins(root, [route])
+
+      expect(report.written).toEqual([])
+      expect(report.skipped).toEqual([twinPath])
+      await expect(readFile(join(root, twinPath))).rejects.toThrow()
+      const html = await readPage(root)
+      expect(html).not.toContain('text/markdown')
+      expect(html).toContain('rel="canonical"')
+    })
+
+    it('drops the markdown link whatever its attribute order', async () => {
+      const root = await buildModelPage(
+        `<astro-island>${loadingSpinner}</astro-island>`,
+        `<link href="${twinPath}"\n  type="text/markdown" rel="alternate">`
+      )
+
+      await writeMarkdownTwins(root, [route])
+
+      expect(await readPage(root)).not.toContain('text/markdown')
+    })
+
+    it('leaves a contentless page that never linked a twin untouched', async () => {
+      const root = await buildModelPage(
+        `<astro-island>${loadingSpinner}</astro-island>`,
+        ''
+      )
+      const before = await readPage(root)
+
+      const report = await writeMarkdownTwins(root, [route])
+
+      expect(report.skipped).toEqual([twinPath])
+      expect(await readPage(root)).toBe(before)
+    })
+
+    it('fails the build when a contentless page keeps a markdown link it cannot drop', async () => {
+      const root = await buildModelPage(
+        `<astro-island>${loadingSpinner}</astro-island>`,
+        `<LINK rel="alternate" type="text/markdown" href="${twinPath}">`
+      )
+
+      await expect(writeMarkdownTwins(root, [route])).rejects.toThrow(
+        join(root, route, 'index.html')
+      )
+    })
+
+    it('twins the real server-rendered model page with its name as the heading', async () => {
+      const page = await prepareModelPage(modelSlug)
+      if (page.kind !== 'page' || page.model.routerId === undefined)
+        throw new Error(`${modelSlug} is not a model page`)
+      const root = await buildModelPage(
+        await renderToString(
+          h(ModelPage, {
+            page: { ...page, model: { ...page.model, form: undefined } }
+          })
+        )
+      )
+
+      const report = await writeMarkdownTwins(root, [route])
+
+      expect(report.written).toEqual([twinPath])
+      const twin = await readFile(join(root, twinPath), 'utf8')
+      const body = twin.slice(twin.indexOf('\n---\n') + 5).trim()
+      expect(body).toContain(`# ${page.model.name}`)
+      expect(body).not.toContain('Loading')
+      expect(body).not.toContain('Grok Imagine in ComfyUI')
+    })
+
+    it('twins the server-rendered hero and drops the spinner (post-FE-2942 (#18899) shape)', async () => {
+      const root = await buildModelPage(
+        `<header data-testid="model-hero"><p>Provider</p><h1>Model name</h1><p>Model summary.</p></header><astro-island>${loadingSpinner}</astro-island>`
+      )
+
+      const report = await writeMarkdownTwins(root, [route])
+
+      expect(report.written).toEqual([twinPath])
+      const twin = await readFile(join(root, twinPath), 'utf8')
+      expect(twin).toContain(`canonical: https://comfy.org/${route}\n`)
+      expect(twin).toContain(
+        '---\n\nProvider\n\n# Model name\n\nModel summary.\n'
+      )
+      expect(twin).not.toContain('Loading')
+      expect(twin).not.toContain('Comfy home')
+      expect(await readPage(root)).toContain('text/markdown')
+    })
   })
 })

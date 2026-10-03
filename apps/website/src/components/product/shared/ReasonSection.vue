@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../../i18n/translations'
 
-import { t } from '../../../i18n/translations'
+import { translationsFor } from '../../../i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
 export interface Reason {
@@ -26,11 +26,12 @@ const {
   highlightClass?: string
   reasons: Reason[]
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col gap-4 px-4 py-24 lg:flex-row lg:gap-16 lg:px-20 lg:py-40"
+    class="mx-auto flex max-w-9xl flex-col gap-4 px-4 py-24 lg:flex-row lg:gap-16 lg:px-20 lg:py-40"
   >
     <!-- Left heading -->
     <div
@@ -39,16 +40,14 @@ const {
       <h2
         class="text-4xl/16 font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl/16"
       >
-        {{ t(headingKey, locale)
+        {{ t(headingKey)
         }}<span v-if="headingHighlightKey" :class="highlightClass">{{
-          t(headingHighlightKey, locale)
+          t(headingHighlightKey)
         }}</span
-        ><template v-if="headingSuffixKey">{{
-          t(headingSuffixKey, locale)
-        }}</template>
+        ><template v-if="headingSuffixKey">{{ t(headingSuffixKey) }}</template>
       </h2>
       <p v-if="subtitleKey" class="mt-6 text-sm text-primary-comfy-canvas/70">
-        {{ t(subtitleKey, locale) }}
+        {{ t(subtitleKey) }}
       </p>
     </div>
 
@@ -63,12 +62,12 @@ const {
           <SafeRichText
             as="h3"
             class="text-2xl font-light whitespace-pre-line text-primary-comfy-canvas"
-            :html="t(reason.titleKey, locale)"
+            :html="t(reason.titleKey)"
           />
           <slot name="reason-extra" :reason="reason" />
         </div>
         <p class="flex-1 text-sm text-primary-comfy-canvas/70">
-          {{ t(reason.descriptionKey, locale) }}
+          {{ t(reason.descriptionKey) }}
         </p>
       </div>
     </div>

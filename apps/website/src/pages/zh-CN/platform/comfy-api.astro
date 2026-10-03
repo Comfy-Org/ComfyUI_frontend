@@ -1,25 +1,32 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
+import ComfyApiPricingSection from '../../../components/pricing/ComfyApiPricingSection.vue'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
+import ServerlessCustomerProofSection from '../../../templates/platform/ServerlessCustomerProofSection.vue'
 import ServerlessDeploySection from '../../../templates/platform/ServerlessDeploySection.vue'
 import ServerlessHero from '../../../templates/platform/ServerlessHero.vue'
 import ServerlessHowItWorksSection from '../../../templates/platform/ServerlessHowItWorksSection.vue'
+import ServerlessProductVideoSection from '../../../templates/platform/ServerlessProductVideoSection.vue'
 import ServerlessScaleSection from '../../../templates/platform/ServerlessScaleSection.vue'
-import { t } from '../../../i18n/translations'
+import ServerlessSkipSetupBanner from '../../../templates/platform/ServerlessSkipSetupBanner.vue'
 ---
 
 <BaseLayout
-  title={`${t('platform.products.serverless.title', 'zh-CN')} · ${t('platform.meta.title', 'zh-CN')}`}
-  description={t('platform.products.serverless.description', 'zh-CN')}
+  title={`${Astro.locals.t('platform.products.serverless.title')} · ${Astro.locals.t('platform.meta.title')}`}
+  description={Astro.locals.t('platform.products.serverless.description')}
 >
   <ServerlessHero locale="zh-CN" client:load />
   <ServerlessHowItWorksSection locale="zh-CN" client:visible />
   <ServerlessDeploySection locale="zh-CN" client:visible />
+  <ServerlessSkipSetupBanner locale="zh-CN" client:visible />
   <ServerlessScaleSection locale="zh-CN" client:visible />
+  <ServerlessCustomerProofSection locale="zh-CN" showCustomerProof />
+  <ComfyApiPricingSection locale="zh-CN" />
+  <ServerlessProductVideoSection locale="zh-CN" client:visible />
   <ClosingCtaSection
     locale="zh-CN"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    heading-after-badge={Astro.locals.t('platform.closing.headingAfterBadge')}
     client:visible
   />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />

@@ -2,8 +2,9 @@ import type { Page } from '@playwright/test'
 
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
+import { test } from './fixtures/workshopVisibility'
 import { waitForIsland } from './fixtures/islands'
+import { waitForPpFormulaLight } from './fixtures/visualFonts'
 import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })
@@ -29,6 +30,12 @@ async function assertNoOverflow(page: Page) {
 async function navigateAndSettle(page: Page, url: string) {
   await page.goto(url, { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('load')
+  await expect(
+    page
+      .getByTestId('desktop-nav-links')
+      .getByRole('link', { name: 'Hub', includeHidden: true })
+  ).toBeAttached()
+  await waitForPpFormulaLight(page)
 }
 
 test.describe('Home', { tag: '@visual' }, () => {
@@ -118,6 +125,15 @@ for (const { name, url, island, trigger, opened } of FAQ_PAGES) {
         await triggers.nth(0).click()
         await triggers.nth(1).click()
         await expect(faq.locator(opened)).toHaveCount(2)
+        // The sticky header overlays this capture, so pin the scroll offset.
+        await expect
+          .poll(() =>
+            faq.evaluate((el) => el.getAnimations({ subtree: true }).length)
+          )
+          .toBe(0)
+        await faq.evaluate((el) =>
+          el.scrollIntoView({ block: 'start', behavior: 'instant' })
+        )
 
         await expect(faq).toHaveScreenshot(`${name}-faq-${vp.name}.png`)
       })

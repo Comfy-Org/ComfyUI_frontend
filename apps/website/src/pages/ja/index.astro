@@ -10,7 +10,6 @@ import ModelReleaseSection from '../../components/home/ModelReleaseSection.vue'
 import ProductCardsSection from '../../components/home/ProductCardsSection.vue'
 import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
 import HeroGraphSection from '../../components/hero/HeroGraphSection.vue'
-import { t } from '../../i18n/translations'
 import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
@@ -27,9 +26,13 @@ const { siteUrl } = pageContext(
 
 <BaseLayout
   title="Comfy - ビジュアルAIを自在にコントロール"
-  description={t('hero.subtitle', 'ja')}
+  pageName="ビジュアルAIを自在にコントロール"
+  description={Astro.locals.t('hero.subtitle')}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
-  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
+  extraJsonLd={[
+    comfyUiApplicationNode(siteUrl),
+    comfyUiSourceCodeNode(siteUrl)
+  ]}
   keywords={[
     'ComfyUI',
     'ComfyUI アプリ',

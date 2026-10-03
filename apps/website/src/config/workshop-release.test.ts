@@ -5,18 +5,21 @@ import {
   isWorkshopInBuild,
   isWorkshopRoute
 } from './workshop-release'
+import { hubModelSlugs } from './hub-models'
+
+const [hubModelSlug] = hubModelSlugs.values()
 
 describe('isWorkshopInBuild', () => {
   it.for([
     {
-      name: 'production excludes Workshop',
+      name: 'production includes Workshop',
       vercelEnv: 'production',
-      expected: false
+      expected: true
     },
     {
-      name: 'preview excludes Workshop',
+      name: 'preview includes Workshop',
       vercelEnv: 'preview',
-      expected: false
+      expected: true
     },
     { name: 'an unset environment includes Workshop', expected: true },
     {
@@ -55,6 +58,13 @@ describe('isWorkshopRoute', () => {
   it('claims the Workshop tree and nothing else', () => {
     expect(isWorkshopRoute('/workshop')).toBe(true)
     expect(isWorkshopRoute('/workshop/models/[slug]')).toBe(true)
+    expect(isWorkshopRoute(`/hub/models/${hubModelSlug}/`)).toBe(true)
+    expect(isWorkshopRoute('/models/local/')).toBe(false)
+    expect(isWorkshopRoute('/models/showcase/')).toBe(true)
+    expect(isWorkshopRoute('/cinematic-studio/')).toBe(true)
+    expect(isWorkshopRoute('/models')).toBe(true)
+    expect(isWorkshopRoute('/hub/models')).toBe(false)
+    expect(isWorkshopRoute('/hub/models/')).toBe(false)
 
     expect(isWorkshopRoute('/')).toBe(false)
     expect(isWorkshopRoute('/pricing')).toBe(false)
@@ -67,17 +77,6 @@ describe('assertWorkshopCloudEnvForBuild', () => {
   it.for([
     { name: 'a local build needs no family' },
     { name: 'a local build may name one', family: 'test' },
-    {
-      name: 'a disabled production build ignores an invalid family',
-      vercelEnv: 'production',
-      inBuild: '0',
-      family: 'production'
-    },
-    {
-      name: 'a preview without Workshop ignores the family',
-      vercelEnv: 'preview',
-      family: 'prod'
-    },
     {
       name: 'a production build with Workshop targets prod',
       vercelEnv: 'production',
@@ -144,6 +143,19 @@ describe('assertWorkshopCloudEnvForBuild', () => {
       inBuild: '1',
       family: '',
       message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
+    },
+    {
+      name: 'a production build without Workshop must still name its family for sign-in',
+      vercelEnv: 'production',
+      inBuild: '0',
+      message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
+    },
+    {
+      name: 'a preview without Workshop may not reach prod',
+      vercelEnv: 'preview',
+      inBuild: '0',
+      family: 'prod',
+      message: /may only reach staging or test Cloud/
     },
     {
       name: 'a preview may not reach prod',

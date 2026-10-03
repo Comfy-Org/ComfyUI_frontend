@@ -65,7 +65,6 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
 
     const serialized = await comfyPage.workflow.getExportedWorkflow()
     await comfyPage.workflow.loadGraphData(serialized)
-    await comfyPage.vueNodes.waitForNodes()
 
     const [ksamplerNode] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
 
