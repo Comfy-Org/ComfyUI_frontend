@@ -3,7 +3,9 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.use({ deviceScaleFactor: 2 })
+const DPR = 2
+
+test.use({ deviceScaleFactor: DPR })
 
 interface CanvasBox {
   readonly layoutWidth: number
@@ -22,14 +24,24 @@ async function readCanvasBox(comfyPage: ComfyPage): Promise<CanvasBox> {
     const rect = canvas.getBoundingClientRect()
     const containerRect = container.getBoundingClientRect()
     return {
-      layoutWidth: Math.round(rect.width),
-      layoutHeight: Math.round(rect.height),
+      layoutWidth: rect.width,
+      layoutHeight: rect.height,
       backingWidth: canvas.width,
       backingHeight: canvas.height,
-      containerWidth: Math.round(containerRect.width),
-      containerHeight: Math.round(containerRect.height)
+      containerWidth: containerRect.width,
+      containerHeight: containerRect.height
     }
   })
+}
+
+/**
+ * The backing store holds one pixel per device pixel of the layout box. Stated
+ * against the measured box rather than a fixed size, because a fractional
+ * viewport rounds and the contract is the ratio, not the number.
+ */
+function expectDevicePixelBackingStore(box: CanvasBox): void {
+  expect(box.backingWidth).toBe(Math.round(box.layoutWidth * DPR))
+  expect(box.backingHeight).toBe(Math.round(box.layoutHeight * DPR))
 }
 
 test.describe(
@@ -40,15 +52,36 @@ test.describe(
       comfyPage
     }) => {
       expect(await comfyPage.page.evaluate(() => window.devicePixelRatio)).toBe(
-        2
+        DPR
       )
 
       const box = await readCanvasBox(comfyPage)
 
-      expect(box.layoutWidth).toBe(box.containerWidth)
-      expect(box.layoutHeight).toBe(box.containerHeight)
-      expect(box.backingWidth).toBe(box.layoutWidth * 2)
-      expect(box.backingHeight).toBe(box.layoutHeight * 2)
+      expect(box.layoutWidth).toBeCloseTo(box.containerWidth, 0)
+      expect(box.layoutHeight).toBeCloseTo(box.containerHeight, 0)
+      expectDevicePixelBackingStore(box)
+    })
+
+    test('leaves the shipped canvas to its stylesheet when a legacy resize() runs', async ({
+      comfyPage
+    }) => {
+      // The shipped canvas is sized by its classes, so the same legacy path must
+      // not pin it to pixels: pinning freezes it at one size and it stops
+      // following its container. Nothing in the app calls resize() on boot, so
+      // this drives it the way an extension would.
+      const inlineSize = await comfyPage.page.evaluate(() => {
+        const { style } =
+          document.querySelector<HTMLCanvasElement>('#graph-canvas')!
+        window.app!.canvas.resize()
+        return [style.width, style.height]
+      })
+      await comfyPage.nextFrame()
+
+      expect(inlineSize).toEqual(['', ''])
+      const box = await readCanvasBox(comfyPage)
+      expect(box.layoutWidth).toBeCloseTo(box.containerWidth, 0)
+      expect(box.layoutHeight).toBeCloseTo(box.containerHeight, 0)
+      expectDevicePixelBackingStore(box)
     })
 
     test('keeps its logical size when a legacy resize() runs on a canvas with no CSS dimensions', async ({
@@ -82,13 +115,11 @@ test.describe(
       await expect
         .poll(async () => {
           const box = await readCanvasBox(comfyPage)
-          return [box.layoutWidth, box.layoutHeight]
+          return [Math.round(box.layoutWidth), Math.round(box.layoutHeight)]
         })
         .toEqual(expected)
 
-      const after = await readCanvasBox(comfyPage)
-      expect(after.backingWidth).toBe(after.layoutWidth * 2)
-      expect(after.backingHeight).toBe(after.layoutHeight * 2)
+      expectDevicePixelBackingStore(await readCanvasBox(comfyPage))
     })
   }
 )
