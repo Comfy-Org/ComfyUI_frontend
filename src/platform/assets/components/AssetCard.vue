@@ -16,7 +16,7 @@
     "
     @click.stop="interactive && $emit('focus', asset)"
     @focus="interactive && $emit('focus', asset)"
-    @keydown.enter.self="interactive && handleSelect()"
+    @keydown.enter.self="interactive && handleKeyboardSelect()"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
@@ -225,6 +225,11 @@ const { isLoading, error } = useImageQuiet({
 function handleSelect() {
   if (!canUseAsset.value) return
   acknowledgeAsset(asset.id)
+  emit('select', asset)
+}
+
+function handleKeyboardSelect() {
+  if (!canUseAsset.value) return
   emit('select', asset)
 }
 

@@ -116,6 +116,18 @@ describe('AssetCard', () => {
     expect(emitted()).not.toHaveProperty('select')
   })
 
+  it('keeps keyboard selection from acknowledging a newly imported asset', async () => {
+    const user = userEvent.setup()
+    const acknowledgeAsset = vi.mocked(useAssetDownloadStore().acknowledgeAsset)
+    const { emitted } = renderCard(createDisplayAsset())
+
+    screen.getByTestId('asset-card').focus()
+    await user.keyboard('{Enter}')
+
+    expect(emitted()).toHaveProperty('select')
+    expect(acknowledgeAsset).not.toHaveBeenCalled()
+  })
+
   describe('FE-228: filename rendering', () => {
     it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()
