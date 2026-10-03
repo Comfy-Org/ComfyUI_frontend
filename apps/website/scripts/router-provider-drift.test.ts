@@ -12,7 +12,6 @@ import {
   parseCoverageTable
 } from './router-provider-drift'
 
-
 describe('fetchText', () => {
   it('recovers when a source fails once and then responds', async () => {
     const fetchImpl = vi
