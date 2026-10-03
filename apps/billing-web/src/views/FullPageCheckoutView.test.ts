@@ -2108,6 +2108,24 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(footnote()).toHaveTextContent(PHASE_A)
   })
 
+  it('offers Cancel payment again when the cancel request throws', async () => {
+    const fake = await payReady()
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    fake.cancelOperation.mockRejectedValue(new Error('network down'))
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    ).toBeEnabled()
+    expect(fake.cancelOperation).toHaveBeenCalledExactlyOnceWith('op_3ds')
+    expect(footnote()).toHaveTextContent(PHASE_A)
+  })
+
   it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
     const fake = await payReady()
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()

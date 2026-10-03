@@ -708,12 +708,22 @@ export function useFullPageCheckout() {
     canceling = undefined
   }
 
+  const askOnce = (operationId: string) =>
+    commands
+      .cancelOperation(operationId)
+      .catch(
+        (): CancelOperationResult => ({
+          status: 'error',
+          code: 'REQUEST_FAILED'
+        })
+      )
+
   async function askToCancel(operationId: string) {
-    let answer = await commands.cancelOperation(operationId)
+    let answer = await askOnce(operationId)
     for (let asked = 1; asksAgain(answer, asked); asked++) {
       await new Promise((resolve) => setTimeout(resolve, CANCEL_REASK_MS))
       if (disposed) return
-      answer = await commands.cancelOperation(operationId)
+      answer = await askOnce(operationId)
     }
     if (disposed) return
     if (answer.status === 'canceled' || isCanceling(page.value))
