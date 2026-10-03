@@ -2436,7 +2436,10 @@ describe('AgentPanelRoot attach flow', () => {
     await userEvent.paste('make me a workflow')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
-    expect(messageBodies).toHaveLength(1)
+    await waitFor(() => {
+      expect(messageBodies).toHaveLength(1)
+      expect(telemetry.trackAgentMessageSent).toHaveBeenCalled()
+    })
     const posted = messageBodies[0].client_message_id
     expect(posted).toBeTypeOf('string')
     expect(posted).not.toBe('')
