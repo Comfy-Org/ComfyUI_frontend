@@ -111,7 +111,7 @@ type BillingOperationTelemetryEventName = Exclude<
 >
 
 /** A hosted step this tab handed the customer to. */
-export interface HostedStepVisit {
+interface HostedStepVisit {
   readonly destination: HostedBillingDestination
   readonly step: CheckoutHostedStep
   readonly navigation: CheckoutRedirectNavigation
@@ -282,6 +282,28 @@ interface AdoptInput {
   readonly initialStatus?: BillingOpStatus
   /** The hosted step a redirect left this page for; adopting it is the return. */
   readonly returnedFrom?: BillingOperationPointer['redirect']
+}
+
+type ResumedAttempt = Pick<
+  AdoptInput,
+  | 'presentation'
+  | 'attemptStartedAt'
+  | 'resumed'
+  | 'awaitedHere'
+  | 'returnedFrom'
+>
+
+/** The attempt a pointer remembers, picked up again by this tab. */
+function resumedFrom(pointer: BillingOperationPointer): ResumedAttempt {
+  return {
+    presentation: pointer.presentation,
+    attemptStartedAt: pointer.attemptStartedAt,
+    resumed: true,
+    awaitedHere: pointer.awaited === true,
+    ...(pointer.redirect === undefined
+      ? {}
+      : { returnedFrom: pointer.redirect })
+  }
 }
 
 interface ServerPendingOperation {
@@ -877,13 +899,7 @@ export function createBillingOperationLifecycle(
       id: pointer.operationId,
       kind: pointer.kind,
       context,
-      presentation: pointer.presentation,
-      attemptStartedAt: pointer.attemptStartedAt,
-      resumed: true,
-      awaitedHere: pointer.awaited === true,
-      ...(pointer.redirect === undefined
-        ? {}
-        : { returnedFrom: pointer.redirect })
+      ...resumedFrom(pointer)
     }
   }
 
@@ -914,13 +930,14 @@ export function createBillingOperationLifecycle(
       {
         ...pending,
         context,
-        presentation: known?.presentation ?? routeFor(rail, pending),
-        attemptStartedAt: known?.attemptStartedAt ?? now(),
-        resumed: true,
-        awaitedHere: known?.awaited === true,
-        ...(known?.redirect === undefined
-          ? {}
-          : { returnedFrom: known.redirect })
+        ...(known === undefined
+          ? {
+              presentation: routeFor(rail, pending),
+              attemptStartedAt: now(),
+              resumed: true,
+              awaitedHere: false
+            }
+          : resumedFrom(known))
       },
       includeSettled
     )
