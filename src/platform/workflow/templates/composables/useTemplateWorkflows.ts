@@ -32,7 +32,7 @@ function updateTemplateEducation(
   if (isPartnerNode && typeof loadedWorkflow === 'object') {
     educationStore.requestCard(loadedWorkflow.key)
   } else {
-    educationStore.dismissCard()
+    educationStore.retireCard()
   }
 }
 
