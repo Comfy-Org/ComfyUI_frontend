@@ -311,6 +311,12 @@ function appendAssistantContent(
  * A row's `pending_ask` is present only while that row is still mid-ask; this
  * reads it into the card it renders (`runApproval` or `askUser`), a notice
  * when the panel cannot render it, or `undefined` once it is resolved.
+ *
+ * The server persists no record of a resolved ask on the row, so the
+ * read-only answered `ask_user` card is session-only: after a reload the
+ * transcript's own text (the agent's reply to the answer) carries it. Within
+ * a session the conversation store keeps each retired resolution, so a
+ * refetch that still lists the ask rebuilds the card read-only, not armed.
  */
 function pendingAskPart(
   row: AgentMessages[number]

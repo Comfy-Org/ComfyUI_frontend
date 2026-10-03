@@ -78,6 +78,11 @@ const describedBy = (option: AskUserOption, index: number) =>
 const promptId = `${baseId}-prompt`
 const hintId = `${baseId}-hint`
 const otherId = `${baseId}-other`
+// The Other box sits outside the option group, so it needs the prompt and
+// the selection hint spelled out for assistive technology itself.
+const otherDescribedBy = computed(() =>
+  hint.value ? `${promptId} ${hintId}` : promptId
+)
 
 const singleValue = computed(() => selected.value[0] ?? undefined)
 
@@ -217,6 +222,7 @@ const rowClass =
           type="text"
           :placeholder="t('agent.askUser.otherPlaceholder')"
           :disabled="otherDisabled"
+          :aria-describedby="otherDescribedBy"
           class="h-8 bg-component-node-background px-3"
           @keydown.enter="onOtherEnter"
         />

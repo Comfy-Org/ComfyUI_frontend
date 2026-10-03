@@ -41,13 +41,16 @@ describe('AskUserCard', () => {
     renderCard()
 
     expect(screen.getByText('Which model should I use?')).toBeInTheDocument()
-    for (const { label, description } of options) {
-      expect(screen.getByRole('radio', { name: label })).toBeInTheDocument()
-      if (description)
-        expect(
-          screen.getByRole('radio', { name: label })
-        ).toHaveAccessibleDescription(description)
-    }
+    // Every option, in order, named by its label and described by its
+    // description (or by nothing when it has none).
+    expect(screen.getAllByRole('radio')).toEqual(
+      options.map(({ label, description }) =>
+        screen.getByRole('radio', {
+          name: label,
+          description: description ?? ''
+        })
+      )
+    )
     expect(screen.getByRole('radiogroup')).toHaveAccessibleName(
       'Which model should I use?'
     )
@@ -130,6 +133,14 @@ describe('AskUserCard', () => {
     expect(emitted().answer).toEqual([
       ['ask-1', { selected: ['sdxl'], otherText: 'a LoRA' }]
     ])
+  })
+
+  it('describes the Other box with the prompt and the selection hint', () => {
+    renderCard({ maxSelections: 2, allowOther: true })
+
+    expect(
+      screen.getByRole('textbox', { name: 'Other' })
+    ).toHaveAccessibleDescription('Which model should I use? Choose up to 2')
   })
 
   it('disables an empty Other box once the options fill the cap', async () => {
@@ -221,8 +232,9 @@ describe('AskUserCard', () => {
   it('disables every control while the answer is in flight', () => {
     const { submit } = renderCard({ maxSelections: 2, allowOther: true }, true)
 
-    for (const checkbox of screen.getAllByRole('checkbox'))
-      expect(checkbox).toBeDisabled()
+    expect(
+      screen.getAllByRole('checkbox').filter((box) => !box.matches(':disabled'))
+    ).toEqual([])
     expect(screen.getByRole('textbox', { name: 'Other' })).toBeDisabled()
     expect(submit()).toBeDisabled()
     expect(submit()).toHaveAttribute('aria-busy', 'true')
@@ -231,8 +243,11 @@ describe('AskUserCard', () => {
   it('disables the radios while the answer is in flight', () => {
     renderCard({}, true)
 
-    for (const radio of screen.getAllByRole('radio'))
-      expect(radio).toBeDisabled()
+    expect(
+      screen
+        .getAllByRole('radio')
+        .filter((radio) => !radio.matches(':disabled'))
+    ).toEqual([])
   })
 
   describe('once resolved', () => {
