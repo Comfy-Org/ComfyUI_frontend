@@ -142,6 +142,26 @@ classDiagram
     VueComponent --> useFeatureFlags
 ```
 
+### Negotiation May Not Complete
+
+The sequence above is the happy path. `api.serverFeatureFlagsSettled` (a
+`Ref<boolean>`) reports whether negotiation for the _current_ socket has
+finished — either the server delivered a map, or delivery was abandoned after a
+5s timeout or because the socket closed first.
+
+Three properties matter for code that reads it:
+
+- **It is not monotonic.** Each replacement socket resets it to `false`, so it
+  can flip repeatedly while a connection is reconnecting.
+- **`true` does not imply the map is non-empty.** An abandoned negotiation also
+  settles.
+- **`resetSocket()` does not clear the map.** `serverFeatureFlags` keeps the
+  previous identity's values until the next `feature_flags` message replaces
+  them.
+
+Treat a settled-but-empty map as "server told us nothing", which is what the
+`defaultValue` argument on every read is for.
+
 ## Examples
 
 ### 1. Preview Metadata Support

@@ -1,373 +1,361 @@
 # Component Testing Guide
 
-> **Note**: New component tests must use `@testing-library/vue` with `@testing-library/user-event`. The examples below that use `@vue/test-utils` (`mount`, `wrapper`) are from legacy tests. An ESLint rule enforces this — importing from `@vue/test-utils` in `*.test.ts` files produces a lint error.
+> **Note**: Component tests use `@testing-library/vue` with
+> `@testing-library/user-event`. An ESLint rule enforces this — importing from
+> `@vue/test-utils` in a `*.test.ts` file is an error
+> (`no-restricted-imports`, see `eslint.config.ts`). There is no `mount()` /
+> `wrapper` API in this codebase; render the component and query it the way a
+> user would.
 
-This guide covers patterns and examples for testing Vue components in the ComfyUI Frontend codebase.
+This guide covers patterns and examples for testing Vue components in the
+ComfyUI Frontend codebase. The rules that apply at every test level
+(behavioral assertions, tables over copied bodies, mock only what you own, no
+sleeps) live in [`docs/guidance/testing-principles.md`](../guidance/testing-principles.md);
+mocking and setup mechanics live in [`vitest-patterns.md`](./vitest-patterns.md).
 
 ## Table of Contents
 
-1. [Basic Component Testing](#basic-component-testing)
-2. [PrimeVue Components Testing](#primevue-components-testing)
-3. [Tooltip Directives](#tooltip-directives)
-4. [Component Events Testing](#component-events-testing)
-5. [User Interaction Testing](#user-interaction-testing)
-6. [Asynchronous Component Testing](#asynchronous-component-testing)
-7. [Working with Vue Reactivity](#working-with-vue-reactivity)
+1. [The render helper pattern](#the-render-helper-pattern)
+2. [Querying the rendered output](#querying-the-rendered-output)
+3. [PrimeVue components](#primevue-components)
+4. [Tooltip directives](#tooltip-directives)
+5. [Component events](#component-events)
+6. [User interaction](#user-interaction)
+7. [Asynchronous components](#asynchronous-components)
+8. [Working with Vue reactivity](#working-with-vue-reactivity)
 
-## Basic Component Testing
+## The render helper pattern
 
-Basic approach to testing a component's rendering and structure:
+Every component test file defines a local `render*` helper that applies the
+default props and the global plugins/directives the component needs, calls
+`userEvent.setup()`, and returns the render result spread together with `user`.
+Typing the props off the component with `ComponentProps` keeps the defaults
+honest when the component's interface changes.
 
 ```typescript
-// Example from: src/components/sidebar/SidebarIcon.spec.ts
-import { mount } from '@vue/test-utils'
+// Example from: src/components/sidebar/SidebarIcon.test.ts
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
+import { describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
+import { createI18n } from 'vue-i18n'
+
 import SidebarIcon from './SidebarIcon.vue'
 
+type SidebarIconProps = ComponentProps<typeof SidebarIcon>
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
 describe('SidebarIcon', () => {
-  const exampleProps = {
+  const exampleProps: SidebarIconProps = {
     icon: 'pi pi-cog',
     selected: false
   }
 
-  const mountSidebarIcon = (props, options = {}) => {
-    return mount(SidebarIcon, {
-      props: { ...exampleProps, ...props },
-      ...options
+  function renderSidebarIcon(props: Partial<SidebarIconProps> = {}) {
+    const user = userEvent.setup()
+
+    const result = render(SidebarIcon, {
+      global: {
+        plugins: [PrimeVue, i18n],
+        directives: { tooltip: Tooltip }
+      },
+      props: { ...exampleProps, ...props }
     })
+
+    return { ...result, user }
   }
 
-  it('renders label', () => {
-    const wrapper = mountSidebarIcon({})
-    expect(wrapper.find('.p-button.p-component').exists()).toBe(true)
-    expect(wrapper.find('.p-button-label').exists()).toBe(true)
+  it('renders button element', () => {
+    renderSidebarIcon()
+    expect(screen.getByRole('button')).toBeInTheDocument()
+  })
+
+  it('creates badge when iconBadge prop is set', () => {
+    const badge = '2'
+    renderSidebarIcon({ iconBadge: badge })
+    expect(screen.getByText(badge)).toBeInTheDocument()
   })
 })
 ```
 
-## PrimeVue Components Testing
+Use a real `createI18n` plugin rather than mocking `vue-i18n` — see
+[Don't Mock `vue-i18n`](./vitest-patterns.md#dont-mock-vue-i18n--use-a-real-plugin).
 
-Setting up and testing PrimeVue components:
+## Querying the rendered output
+
+Prefer semantic queries (`getByRole`, `getByText`, `getByLabelText`) over
+class-name or DOM traversal. `@testing-library/jest-dom` matchers are
+registered globally in `vitest.setup.ts`, so `toBeInTheDocument`,
+`toHaveAttribute`, `toHaveValue` and friends are available without an import.
+
+An ESLint rule enforces the query rules. When a component genuinely has no
+accessible handle — an iconify icon, or a PrimeVue internal that renders no
+standard role — scope a single-line disable to that expression and say why:
 
 ```typescript
-// Example from: src/components/common/ColorCustomizationSelector.spec.ts
-import { mount } from '@vue/test-utils'
-import ColorPicker from 'primevue/colorpicker'
+// Example from: src/components/sidebar/SidebarIcon.test.ts
+it('renders icon', () => {
+  const { container } = renderSidebarIcon()
+  // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Icon escape hatch: iconify icons have no ARIA role
+  expect(container.querySelector('.side-bar-button-icon')).not.toBeNull()
+})
+```
+
+## PrimeVue components
+
+PrimeVue components are registered through `global.plugins` and
+`global.components`. Because PrimeVue renders its own internal markup, assert
+against the attributes it actually emits (`aria-pressed` on a `SelectButton`'s
+toggle buttons) rather than reaching for component instances.
+
+```typescript
+// Example from: src/components/common/ColorCustomizationSelector.test.ts
+import { render } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import SelectButton from 'primevue/selectbutton'
-import { createApp } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import ColorCustomizationSelector from './ColorCustomizationSelector.vue'
 
-describe('ColorCustomizationSelector', () => {
-  beforeEach(() => {
-    // Setup PrimeVue
-    const app = createApp({})
-    app.use(PrimeVue)
+const colorOptions = [
+  { name: 'Blue', value: '#0d6efd' },
+  { name: 'Green', value: '#28a745' }
+]
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: { color: { hex: 'Hex', rgba: 'RGBA' } } }
+})
+
+function renderComponent(
+  props: Record<string, unknown> = {},
+  callbacks: { 'onUpdate:modelValue'?: (value: string | null) => void } = {}
+) {
+  const user = userEvent.setup()
+
+  const result = render(ColorCustomizationSelector, {
+    global: {
+      plugins: [PrimeVue, i18n],
+      components: { SelectButton }
+    },
+    props: { modelValue: null, colorOptions, ...props, ...callbacks }
   })
 
-  const mountComponent = (props = {}) => {
-    return mount(ColorCustomizationSelector, {
-      global: {
-        plugins: [PrimeVue],
-        components: { SelectButton, ColorPicker }
-      },
-      props: {
-        modelValue: null,
-        colorOptions: [
-          { name: 'Blue', value: '#0d6efd' },
-          { name: 'Green', value: '#28a745' }
-        ],
-        ...props
-      }
-    })
-  }
+  return { ...result, user }
+}
 
-  it('initializes with predefined color when provided', async () => {
-    const wrapper = mountComponent({
-      modelValue: '#0d6efd'
-    })
+/** PrimeVue SelectButton renders toggle buttons with aria-pressed */
+function getToggleButtons(container: Element) {
+  return container.querySelectorAll<HTMLButtonElement>( // eslint-disable-line testing-library/no-node-access -- PrimeVue SelectButton renders toggle buttons without standard ARIA radiogroup roles
+    '[data-pc-name="pctogglebutton"]'
+  )
+}
 
-    await nextTick()
-    const selectButton = wrapper.findComponent(SelectButton)
-    expect(selectButton.props('modelValue')).toEqual({
-      name: 'Blue',
-      value: '#0d6efd'
-    })
-  })
+it('initializes with predefined color when provided', async () => {
+  const { container } = renderComponent({ modelValue: '#0d6efd' })
+  await nextTick()
+
+  expect(getToggleButtons(container)[0]).toHaveAttribute('aria-pressed', 'true')
 })
 ```
 
-## Tooltip Directives
+## Tooltip directives
 
-Testing components with tooltip directives:
+Register the directive under `global.directives`, drive the hover with
+`user.hover()`, and wait for the tooltip to appear with `waitFor` — never a
+fixed `setTimeout` matching the show delay.
 
 ```typescript
-// Example from: src/components/sidebar/SidebarIcon.spec.ts
-import { mount } from '@vue/test-utils'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
+// Example from: src/components/sidebar/SidebarIcon.test.ts
+it('shows tooltip on hover', async () => {
+  const tooltipText = 'Settings'
+  const { user } = renderSidebarIcon({ tooltip: tooltipText })
 
-describe('SidebarIcon with tooltip', () => {
-  it('shows tooltip on hover', async () => {
-    const tooltipShowDelay = 300
-    const tooltipText = 'Settings'
+  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 
-    const wrapper = mount(SidebarIcon, {
-      global: {
-        plugins: [PrimeVue],
-        directives: { tooltip: Tooltip }
-      },
-      props: {
-        icon: 'pi pi-cog',
-        selected: false,
-        tooltip: tooltipText
-      }
-    })
+  await user.hover(screen.getByRole('button'))
 
-    // Hover over the icon
-    await wrapper.trigger('mouseenter')
-    await new Promise((resolve) => setTimeout(resolve, tooltipShowDelay + 16))
+  await waitFor(
+    () => {
+      expect(screen.getByRole('tooltip')).toBeInTheDocument()
+    },
+    { timeout: 1000 }
+  )
+})
 
-    const tooltipElAfterHover = document.querySelector('[role="tooltip"]')
-    expect(tooltipElAfterHover).not.toBeNull()
-  })
-
-  it('sets aria-label attribute when tooltip is provided', () => {
-    const tooltipText = 'Settings'
-    const wrapper = mount(SidebarIcon, {
-      global: {
-        plugins: [PrimeVue],
-        directives: { tooltip: Tooltip }
-      },
-      props: {
-        icon: 'pi pi-cog',
-        selected: false,
-        tooltip: tooltipText
-      }
-    })
-
-    expect(wrapper.attributes('aria-label')).toEqual(tooltipText)
-  })
+it('sets aria-label attribute when tooltip is provided', () => {
+  const tooltipText = 'Settings'
+  renderSidebarIcon({ tooltip: tooltipText })
+  expect(screen.getByRole('button')).toHaveAttribute('aria-label', tooltipText)
 })
 ```
 
-## Component Events Testing
+## Component events
 
-Testing component events:
+Testing Library has no `emitted()`. Pass a `vi.fn()` as the corresponding
+`on*` prop and assert it was called. This works for both plain emits
+(`edit` → `onEdit`) and `v-model` updates
+(`update:modelValue` → `'onUpdate:modelValue'`).
 
 ```typescript
-// Example from: src/components/common/ColorCustomizationSelector.spec.ts
+// Example from: src/components/common/EditableText.test.ts
+it('emits edit event when input is submitted', async () => {
+  const onEdit = vi.fn()
+  const { user } = renderComponent(
+    { modelValue: 'Test Text', isEditing: true },
+    { onEdit }
+  )
+
+  const input = screen.getByRole('textbox')
+  await user.clear(input)
+  await user.type(input, 'New Text')
+  await user.keyboard('{Enter}')
+
+  expect(onEdit).toHaveBeenCalledWith('New Text')
+})
+```
+
+```typescript
+// Example from: src/components/common/ColorCustomizationSelector.test.ts
 it('emits update when predefined color is selected', async () => {
-  const wrapper = mountComponent()
-  const selectButton = wrapper.findComponent(SelectButton)
+  const onUpdate = vi.fn()
+  const { container, user } = renderComponent(
+    {},
+    { 'onUpdate:modelValue': onUpdate }
+  )
 
-  await selectButton.setValue(colorOptions[0])
+  await user.click(getToggleButtons(container)[0])
 
-  expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['#0d6efd'])
-})
-
-it('emits update when custom color is changed', async () => {
-  const wrapper = mountComponent()
-  const selectButton = wrapper.findComponent(SelectButton)
-
-  // Select custom option
-  await selectButton.setValue({ name: '_custom', value: '' })
-
-  // Change custom color
-  const colorPicker = wrapper.findComponent(ColorPicker)
-  await colorPicker.setValue('ff0000')
-
-  expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['#ff0000'])
+  expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
 })
 ```
 
-## User Interaction Testing
+## User interaction
 
-Testing user interactions:
+Drive interactions through `user` from `userEvent.setup()` — it dispatches the
+full event sequence a real user produces. Reach for `fireEvent` only for events
+`user-event` does not model directly, such as a bare `blur`.
 
 ```typescript
-// Example from: src/components/common/EditableText.spec.ts
-describe('EditableText', () => {
-  it('switches to edit mode on click', async () => {
-    const wrapper = mount(EditableText, {
-      props: {
-        modelValue: 'Initial Text',
-        editable: true
-      }
-    })
+// Example from: src/components/common/EditableText.test.ts
+it('cancels editing on escape key', async () => {
+  const onEdit = vi.fn()
+  const onCancel = vi.fn()
+  const { user } = renderComponent(
+    { modelValue: 'Original Text', isEditing: true },
+    { onEdit, onCancel }
+  )
 
-    // Initially in view mode
-    expect(wrapper.find('input').exists()).toBe(false)
+  const input = screen.getByRole('textbox')
+  await user.clear(input)
+  await user.type(input, 'Modified Text')
+  await user.keyboard('{Escape}')
 
-    // Click to edit
-    await wrapper.find('.editable-text').trigger('click')
+  expect(onCancel).toHaveBeenCalled()
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(input).toHaveValue('Original Text')
+})
 
-    // Should switch to edit mode
-    expect(wrapper.find('input').exists()).toBe(true)
-    expect(wrapper.find('input').element.value).toBe('Initial Text')
-  })
+it('finishes editing on blur', async () => {
+  const onEdit = vi.fn()
+  renderComponent({ modelValue: 'Test Text', isEditing: true }, { onEdit })
 
-  it('saves changes on enter key press', async () => {
-    const wrapper = mount(EditableText, {
-      props: {
-        modelValue: 'Initial Text',
-        editable: true
-      }
-    })
+  await fireEvent.blur(screen.getByRole('textbox'))
 
-    // Switch to edit mode
-    await wrapper.find('.editable-text').trigger('click')
-
-    // Change input value
-    const input = wrapper.find('input')
-    await input.setValue('New Text')
-
-    // Press enter to save
-    await input.trigger('keydown.enter')
-
-    // Check if event was emitted with new value
-    expect(wrapper.emitted('update:modelValue')[0]).toEqual(['New Text'])
-
-    // Should switch back to view mode
-    expect(wrapper.find('input').exists()).toBe(false)
-  })
+  expect(onEdit).toHaveBeenCalledWith('Test Text')
 })
 ```
 
-## Asynchronous Component Testing
+## Asynchronous components
 
-Testing components with async behavior:
+For a component that fetches on mount, prefer the `find*` queries — they retry
+until the element appears, so no explicit wait helper is needed:
 
 ```typescript
-// Example from: src/components/dialog/content/manager/PackVersionSelectorPopover.test.ts
-import { nextTick } from 'vue'
+// Example from: src/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.test.ts
+it('disables the Active default when the pack has no Active releases', async () => {
+  mockGetPackVersions.mockResolvedValueOnce([])
+  renderComponent()
 
-it('shows dropdown options when clicked', async () => {
-  const wrapper = mount(PackVersionSelectorPopover, {
-    props: {
-      versions: ['1.0.0', '1.1.0', '2.0.0'],
-      selectedVersion: '1.1.0'
-    }
-  })
+  const latest = await screen.findByRole('option', { name: 'Latest' })
 
-  // Initially dropdown should be hidden
-  expect(wrapper.find('.p-dropdown-panel').isVisible()).toBe(false)
-
-  // Click dropdown
-  await wrapper.find('.p-dropdown').trigger('click')
-  await nextTick() // Wait for Vue to update the DOM
-
-  // Dropdown should be visible now
-  expect(wrapper.find('.p-dropdown-panel').isVisible()).toBe(true)
-
-  // Options should match the provided versions
-  const options = wrapper.findAll('.p-dropdown-item')
-  expect(options.length).toBe(3)
-  expect(options[0].text()).toBe('1.0.0')
-  expect(options[1].text()).toBe('1.1.0')
-  expect(options[2].text()).toBe('2.0.0')
+  expect(latest).toHaveAttribute('aria-disabled', 'true')
+  expect(screen.getByRole('button', { name: 'Install' })).toBeDisabled()
 })
 ```
 
-## Working with Vue Reactivity
-
-Testing components with complex reactive behavior can be challenging. Here are patterns to help manage reactivity issues in tests:
-
-### Helper Function for Waiting on Reactivity
-
-Use a helper function to wait for both promises and the Vue reactivity cycle:
+When you must assert on something that is not a DOM query — that a mocked
+service was called, for instance — flush the microtask queue and the render
+cycle together:
 
 ```typescript
-// Example from: src/components/dialog/content/manager/PackVersionSelectorPopover.test.ts
+// Example from: src/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.test.ts
 const waitForPromises = async () => {
-  // Wait for any promises in the microtask queue
   await new Promise((resolve) => setTimeout(resolve, 16))
-  // Wait for Vue to update the DOM
   await nextTick()
 }
 
 it('fetches versions on mount', async () => {
   mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
-  mountComponent()
-  await waitForPromises() // Wait for async operations and reactivity
+  renderComponent()
+  await waitForPromises()
 
   expect(mockGetPackVersions).toHaveBeenCalledWith(mockNodePack.id)
 })
 ```
 
-### Testing Components with Async Lifecycle Hooks
+## Working with Vue reactivity
 
-When components use `onMounted` or other lifecycle hooks with async operations:
+### Waiting for reactivity
 
-```typescript
-it('shows loading state while fetching versions', async () => {
-  // Delay the promise resolution
-  mockGetPackVersions.mockImplementationOnce(
-    () =>
-      new Promise((resolve) =>
-        setTimeout(() => resolve(defaultMockVersions), 1000)
-      )
-  )
+`await nextTick()` after a state change is enough when nothing async is
+pending. Use `waitFor` when the assertion depends on work that settles over an
+unknown number of ticks, and `find*` queries when you are waiting for an
+element.
 
-  const wrapper = mountComponent()
+### Testing prop changes
 
-  // Check loading state before promises resolve
-  expect(wrapper.text()).toContain('Loading versions...')
-})
-```
-
-### Testing Prop Changes
-
-Test components' reactivity to prop changes:
+Testing Library returns `rerender` for updating props on an already-rendered
+component:
 
 ```typescript
-// Example from: src/components/dialog/content/manager/PackVersionSelectorPopover.test.ts
-it('is reactive to nodePack prop changes', async () => {
-  // Set up the mock for the initial fetch
-  mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+const { rerender } = renderComponent()
+await rerender({ nodePack: { ...mockNodePack, id: 'new-test-pack' } })
+await waitForPromises()
 
-  const wrapper = mountComponent()
-  await waitForPromises()
-
-  // Set up the mock for the second fetch after prop change
-  mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
-
-  // Update the nodePack prop
-  const newNodePack = { ...mockNodePack, id: 'new-test-pack' }
-  await wrapper.setProps({ nodePack: newNodePack })
-  await waitForPromises()
-
-  // Should fetch versions for the new nodePack
-  expect(mockGetPackVersions).toHaveBeenCalledWith(newNodePack.id)
-})
+expect(mockGetPackVersions).toHaveBeenCalledWith('new-test-pack')
 ```
 
-### Handling Computed Properties
+### Table-driven cases
 
-Testing components with computed properties that depend on async data:
+When several scenarios differ only in data, use `it.for` with a `satisfies`
+annotation rather than copying the body — see
+[`testing-principles.md`](../guidance/testing-principles.md). The
+`PackVersionSelectorPopover` suite covers "only Flagged releases", "an empty
+version list" and "a failed version lookup" through one `it.for` table.
 
-```typescript
-it('displays special options and version options in the listbox', async () => {
-  mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+### Common reactivity pitfalls
 
-  const wrapper = mountComponent()
-  await waitForPromises() // Wait for data fetching and computed property updates
-
-  const listbox = wrapper.findComponent(Listbox)
-  const options = listbox.props('options')!
-
-  // Now options should be populated through computed properties
-  expect(options.length).toBe(defaultMockVersions.length + 2)
-})
-```
-
-### Common Reactivity Pitfalls
-
-1. **Not waiting for all promises**: Ensure you wait for both component promises and Vue's reactivity system
-2. **Timing issues with component mounting**: Components might not be fully mounted when assertions run
-3. **Async lifecycle hooks**: Components using async `onMounted` require careful handling
-4. **PrimeVue components**: PrimeVue components often have their own internal state and reactivity that needs time to update
-5. **Computed properties depending on async data**: Always ensure async data is loaded before testing computed properties
-
-By using the `waitForPromises` helper and being mindful of these patterns, you can write more robust tests for components with complex reactivity.
+1. **Not waiting for all promises**: an assertion on a mock call may run before
+   the component's `onMounted` promise settles — flush with `waitForPromises`
+   or assert through a `find*` query instead.
+2. **Async lifecycle hooks**: components using async `onMounted` need the fetch
+   mock primed _before_ `render`.
+3. **PrimeVue components**: they carry their own internal state; assert on the
+   attributes they render rather than on component internals.
+4. **Computed properties depending on async data**: ensure the data has loaded
+   before asserting, or the computed still holds its initial value.
+5. **Fixed sleeps**: never `setTimeout` for a component's animation or show
+   delay. Use `waitFor`, which retries until the condition holds.
