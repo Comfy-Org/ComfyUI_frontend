@@ -13,7 +13,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useCommandStore } from '@/stores/commandStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
 
 function createMockExtensionService(): ReturnType<typeof useExtensionService> {

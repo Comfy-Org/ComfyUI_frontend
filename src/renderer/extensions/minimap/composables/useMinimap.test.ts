@@ -13,9 +13,9 @@ import { toLinkId } from '@/types/linkId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import {
-  createMockCanvas2DContext,
+  createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 import type { UUID } from '@/utils/uuid'
 
 interface MockNode {
@@ -252,7 +252,7 @@ describe('useMinimap', () => {
     setupVueUseMocks()
     registerMockLink(1, 'node2')
 
-    mockContext2D = createMockCanvas2DContext()
+    mockContext2D = createMockCanvasRenderingContext2D()
 
     moduleMockCanvasElement = createMockMinimapCanvas({
       getContext: vi

@@ -428,7 +428,7 @@ describe('useTemplateWorkflows', () => {
     )
   })
 
-  it('retires the card instead of requesting it when no workflow was activated', async () => {
+  it('leaves education state unchanged when the load was superseded', async () => {
     const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
     mockWorkflowTemplatesStore.isLoaded = true
     mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
@@ -438,7 +438,9 @@ describe('useTemplateWorkflows', () => {
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
+      'previous-template'
+    )
   })
 
   it('binds to the workflow this load activated, resolved by loadGraphData', async () => {
