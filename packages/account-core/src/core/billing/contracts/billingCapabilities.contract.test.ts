@@ -4,6 +4,8 @@ import type {
   zBillingCapabilityRolloutDefaults,
   zBillingCapabilityScope
 } from '@comfyorg/ingest-types/zod'
+// @ts-expect-error The strict generated denial enum is intentionally not public.
+import type { BillingCapabilityDenials as PublishedBillingCapabilityDenials } from '@comfyorg/ingest-types'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
@@ -75,6 +77,7 @@ expectTypeOf<RolloutDefaults>().toEqualTypeOf<{
   can_subscribe_self_serve: boolean
   can_top_up: boolean
 }>()
+expectTypeOf<PublishedBillingCapabilityDenials>()
 // The expiry the reader paces freshness from; the revision it reads as a number.
 expectTypeOf<CapabilitiesResponse['expires_at']>().toEqualTypeOf<string>()
 expectTypeOf<CapabilitiesResponse['revision']>().toEqualTypeOf<bigint>()
