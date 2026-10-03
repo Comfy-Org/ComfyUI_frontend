@@ -25,74 +25,33 @@
         >
           {{ $t('workspacePanel.autoReload.dialog.thresholdLabel') }}
         </label>
-        <div :class="cn(fieldClass, thresholdError && 'ring-1 ring-red-500')">
-          <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
-          <input
-            id="auto-reload-threshold"
-            :value="thresholdModel"
-            inputmode="numeric"
-            :aria-invalid="!!thresholdError"
-            :aria-describedby="
-              thresholdError ? 'auto-reload-threshold-error' : undefined
-            "
-            class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none"
-            @input="onThresholdInput"
-            @blur="formatThresholdModel"
-          />
-        </div>
-        <p
-          v-if="thresholdError"
-          id="auto-reload-threshold-error"
-          class="m-0 text-xs text-red-500"
-        >
-          {{ thresholdError }}
-        </p>
+        <AutoReloadAmountField
+          input-id="auto-reload-threshold"
+          error-id="auto-reload-threshold-error"
+          currency="credits"
+          :value="thresholdModel"
+          :usd-symbol="usdSymbol"
+          :error="thresholdError"
+          @input="onThresholdInput"
+          @blur="formatThresholdModel"
+        />
       </div>
 
       <div class="flex flex-col gap-2">
         <label for="auto-reload-amount" class="text-sm text-muted-foreground">
           {{ $t('workspacePanel.autoReload.dialog.amountLabel') }}
         </label>
-        <div :class="cn(fieldClass, reloadError && 'ring-1 ring-red-500')">
-          <i
-            v-if="unit === 'credits'"
-            class="icon-[lucide--coins] size-4 shrink-0 text-credit"
-          />
-          <span v-else class="shrink-0 text-sm text-muted-foreground">
-            {{ usdSymbol }}
-          </span>
-          <input
-            id="auto-reload-amount"
-            :value="reloadModel"
-            inputmode="numeric"
-            :aria-invalid="!!reloadError"
-            :aria-describedby="
-              reloadError ? 'auto-reload-amount-error' : undefined
-            "
-            class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none"
-            @input="onReloadInput"
-            @blur="formatReloadModel"
-          />
-          <span
-            class="flex shrink-0 items-center gap-1 text-sm text-muted-foreground tabular-nums"
-          >
-            <template v-if="unit === 'credits'">
-              ≈ {{ reloadCostLabel }}
-            </template>
-            <template v-else>
-              ≈
-              <i class="icon-[lucide--coins] size-3.5 text-muted-foreground" />
-              {{ reloadCreditsLabel }}
-            </template>
-          </span>
-        </div>
-        <p
-          v-if="reloadError"
-          id="auto-reload-amount-error"
-          class="m-0 text-xs text-red-500"
-        >
-          {{ reloadError }}
-        </p>
+        <AutoReloadAmountField
+          input-id="auto-reload-amount"
+          error-id="auto-reload-amount-error"
+          :currency="unit"
+          :value="reloadModel"
+          :usd-symbol="usdSymbol"
+          :approx-label="reloadApproxLabel"
+          :error="reloadError"
+          @input="onReloadInput"
+          @blur="formatReloadModel"
+        />
       </div>
     </div>
 
@@ -119,55 +78,20 @@
       <p class="m-0 text-sm text-muted-foreground">
         {{ $t('workspacePanel.autoReload.dialog.budgetToggleHint') }}
       </p>
-      <div
-        :class="
-          cn(
-            fieldClass,
-            !budgetEnabled && 'opacity-50',
-            budgetError && 'ring-1 ring-red-500',
-            budgetWarning && 'ring-1 ring-warning-background'
-          )
-        "
-      >
-        <i
-          v-if="unit === 'credits'"
-          class="icon-[lucide--coins] size-4 shrink-0 text-credit"
-        />
-        <span v-else class="shrink-0 text-sm text-muted-foreground">
-          {{ usdSymbol }}
-        </span>
-        <input
-          :value="budgetModel"
-          :disabled="!budgetEnabled"
-          aria-labelledby="auto-reload-budget-label"
-          inputmode="numeric"
-          :aria-invalid="budgetError ? 'true' : undefined"
-          :aria-describedby="
-            budgetError
-              ? 'auto-reload-budget-error'
-              : budgetWarning
-                ? 'auto-reload-budget-warning'
-                : undefined
-          "
-          :placeholder="budgetPlaceholder"
-          class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none disabled:cursor-not-allowed"
-          @input="onBudgetInput"
-          @blur="formatBudgetModel"
-        />
-        <span
-          v-if="budgetEnabled && budgetCents > 0"
-          class="flex shrink-0 items-center gap-1 text-sm text-muted-foreground tabular-nums"
-        >
-          <template v-if="unit === 'credits'">
-            ≈ {{ budgetUsdLabel }}
-          </template>
-          <template v-else>
-            ≈
-            <i class="icon-[lucide--coins] size-3.5 text-muted-foreground" />
-            {{ budgetCreditsLabel }}
-          </template>
-        </span>
-      </div>
+      <AutoReloadAmountField
+        labelledby="auto-reload-budget-label"
+        error-id="auto-reload-budget-error"
+        :currency="unit"
+        :value="budgetModel"
+        :usd-symbol="usdSymbol"
+        :approx-label="budgetApproxLabel"
+        :error="budgetError"
+        :warning-id="budgetWarning ? 'auto-reload-budget-warning' : undefined"
+        :placeholder="budgetPlaceholder"
+        :disabled="!budgetEnabled"
+        @input="onBudgetInput"
+        @blur="formatBudgetModel"
+      />
       <p
         v-if="budgetWarning"
         id="auto-reload-budget-warning"
@@ -177,17 +101,10 @@
         {{ budgetWarning }}
       </p>
       <p
-        v-else-if="budgetEnabled && budgetCents > 0"
+        v-else-if="budgetApproxLabel"
         class="m-0 text-xs text-muted-foreground"
       >
         {{ allowsReloadsLabel }}
-      </p>
-      <p
-        v-if="budgetError"
-        id="auto-reload-budget-error"
-        class="m-0 text-xs text-red-500"
-      >
-        {{ budgetError }}
       </p>
     </div>
 
@@ -246,10 +163,10 @@ import {
   getAffordableReloadCount,
   useAutoReload
 } from '@/platform/workspace/composables/useAutoReload'
+import AutoReloadAmountField from '@/platform/workspace/components/dialogs/AutoReloadAmountField.vue'
 import { useAutoReloadAccess } from '@/platform/workspace/composables/useAutoReloadAccess'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 
 const { t, n: fmtNumber, locale } = useI18n()
@@ -270,9 +187,6 @@ const budgetEnabled = ref(config.monthlyBudgetCents != null)
 const thresholdCredits = ref(config.thresholdCredits)
 const reloadCredits = ref(config.reloadCredits)
 const budgetCents = ref(config.monthlyBudgetCents ?? 0)
-
-const fieldClass =
-  'flex items-center gap-2 rounded-lg bg-secondary-background px-3 py-2.5'
 
 function fmtInt(value: number) {
   return fmtNumber(value, { maximumFractionDigits: 0 })
@@ -426,14 +340,17 @@ function formatBudgetModel() {
       : fmtInt(Math.round(budgetCents.value / 100))
 }
 
-const reloadCostLabel = computed(() =>
-  fmtUsd(creditsToCents(reloadCredits.value))
+const reloadApproxLabel = computed(() =>
+  unit.value === 'credits'
+    ? fmtUsd(creditsToCents(reloadCredits.value))
+    : fmtInt(reloadCredits.value)
 )
-const reloadCreditsLabel = computed(() => fmtInt(reloadCredits.value))
-const budgetUsdLabel = computed(() => fmtUsd(budgetCents.value))
-const budgetCreditsLabel = computed(() =>
-  fmtInt(centsToCredits(budgetCents.value))
-)
+const budgetApproxLabel = computed(() => {
+  if (!budgetEnabled.value || budgetCents.value <= 0) return ''
+  return unit.value === 'credits'
+    ? fmtUsd(budgetCents.value)
+    : fmtInt(centsToCredits(budgetCents.value))
+})
 const budgetPlaceholder = computed(() =>
   unit.value === 'credits'
     ? t('workspacePanel.autoReload.dialog.budgetPlaceholderCredits')
