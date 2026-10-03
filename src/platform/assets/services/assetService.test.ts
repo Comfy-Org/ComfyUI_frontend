@@ -744,7 +744,9 @@ describe(assetService.getAssetModels, () => {
 
     const models = await assetService.getAssetModels(category!)
 
-    expect(models).not.toEqual([])
+    expect(models).toEqual([
+      { name: 'chatglm3-checkpoint.safetensors', pathIndex: 0 }
+    ])
   })
 })
 
