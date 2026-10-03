@@ -124,6 +124,10 @@ const i18n = createI18n({
           paused: {
             title: 'Subscription paused',
             body: "This workspace's subscription is paused. Update payment to resume.",
+            personalBody:
+              'Your subscription is paused. Update your payment method to resume.',
+            personalPaymentFailedBody:
+              "Your payment didn't go through. Update your payment method to resume.",
             memberBody:
               "Ask your workspace owner to restore the workspace's subscription."
           },
@@ -376,6 +380,16 @@ describe('BillingStatusBanner', () => {
       ).toBeInTheDocument()
     })
 
+    it('offers Pay invoice on a paused workspace', () => {
+      pausedState()
+      state.renewalInvoice = invoice
+      renderBanner()
+
+      expect(
+        screen.getByRole('button', { name: 'Pay invoice' })
+      ).toBeInTheDocument()
+    })
+
     it('omits Pay invoice when there is no renewal invoice', () => {
       paymentFailedState()
       renderBanner()
@@ -443,6 +457,28 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Your payment didn't go through. Update your payment method to resume."
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent('workspace')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    expect(state.manageSubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the paused banner to personal workspace owners', async () => {
+    pausedState()
+    state.isTeamPlan = false
+    state.workspaceType = 'personal'
+    state.subscription = { ...state.subscription!, tier: 'PRO' }
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your subscription is paused. Update your payment method to resume.'
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent('workspace')
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment' })
     )

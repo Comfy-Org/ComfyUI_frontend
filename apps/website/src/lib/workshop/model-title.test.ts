@@ -6,11 +6,11 @@ import { modelTitle } from './model-title'
 
 const nameOfLength = (length: number) => 'x'.repeat(length)
 const full = (name: string, locale: Locale = 'en') =>
-  t('workshop.model.meta.title', locale, { name })
+  t('workshop.model.meta.title', { name }, { locale })
 const unbranded = (name: string) =>
-  t('workshop.model.meta.titleUnbranded', 'en', { name })
+  t('workshop.model.meta.titleUnbranded', { name }, { locale: 'en' })
 const apiOnly = (name: string) =>
-  t('workshop.model.meta.titleApi', 'en', { name })
+  t('workshop.model.meta.titleApi', { name }, { locale: 'en' })
 
 describe('modelTitle', () => {
   it.for([

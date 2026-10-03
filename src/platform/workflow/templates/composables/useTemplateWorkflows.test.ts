@@ -540,7 +540,7 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('Failed to fetch workflow template'),
-      { surface: 'graph', errorType: 'workflow_template_fetch_failed' }
+      { surface: 'graph', errorType: 'error_fetching_workflow_template' }
     )
     expect(useToastStore().messagesToAdd).toContainEqual({
       severity: 'error',
@@ -569,6 +569,11 @@ describe('useTemplateWorkflows', () => {
       'template1',
       { openSource: 'template' }
     )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'graph',
+      errorType: 'error_validating_workflow_template_schema',
+      level: 'warning'
+    })
   })
 
   describe('prepared template lifecycle', () => {
@@ -642,7 +647,7 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('not a loadable workflow'),
-      { surface: 'graph', errorType: 'workflow_template_invalid' }
+      { surface: 'graph', errorType: 'error_validating_workflow_template' }
     )
   })
 
@@ -660,7 +665,7 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('not a loadable workflow'),
-      { surface: 'graph', errorType: 'workflow_template_invalid' }
+      { surface: 'graph', errorType: 'error_validating_workflow_template' }
     )
   })
 

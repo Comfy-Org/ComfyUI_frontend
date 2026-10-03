@@ -36,14 +36,16 @@ test.describe('Customer watch pages @smoke', () => {
       )
 
       const breadcrumb = page.getByRole('navigation', {
-        name: t('ui.breadcrumb', 'en')
+        name: t('ui.breadcrumb', {}, { locale: 'en' })
       })
       await expect(
-        breadcrumb.getByRole('link', { name: t('breadcrumb.home', 'en') })
+        breadcrumb.getByRole('link', {
+          name: t('breadcrumb.home', {}, { locale: 'en' })
+        })
       ).toHaveAttribute('href', '/')
       await expect(
         breadcrumb.getByRole('link', {
-          name: t('nav.customerStories', 'en')
+          name: t('nav.customerStories', {}, { locale: 'en' })
         })
       ).toHaveAttribute('href', '/customers/')
       // The current page is plain text, never a link, in both the visible
@@ -67,8 +69,8 @@ test.describe('Customer watch pages @smoke', () => {
         | { name: string; item?: string }[]
         | undefined
       expect(items?.map((item) => item.name)).toEqual([
-        t('breadcrumb.home', 'en'),
-        t('nav.customerStories', 'en'),
+        t('breadcrumb.home', {}, { locale: 'en' }),
+        t('nav.customerStories', {}, { locale: 'en' }),
         story.title
       ])
       expect(items?.at(-1)?.item).toBeUndefined()
@@ -101,7 +103,9 @@ test.describe('Customer watch pages @smoke', () => {
       await expect(track).toHaveAttribute('kind', 'subtitles')
 
       await expect(
-        page.getByRole('link', { name: t('customers.watch.browseAll', 'en') })
+        page.getByRole('link', {
+          name: t('customers.watch.browseAll', {}, { locale: 'en' })
+        })
       ).toHaveAttribute('href', '/customers/')
     })
   }
@@ -122,7 +126,7 @@ test.describe('Customer watch pages @smoke', () => {
     expect(silverside.relatedStorySlug).toBe('svedka-silverside')
     await expect(
       page.locator(`a[href="/customers/${silverside.relatedStorySlug}/"]`, {
-        hasText: t('customers.watch.readWrittenStory', 'en')
+        hasText: t('customers.watch.readWrittenStory', {}, { locale: 'en' })
       })
     ).toBeVisible()
   })

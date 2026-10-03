@@ -385,8 +385,19 @@ export type UsageTimeSeries = {
   buckets: Array<UsageBucket>
   ending_before: string
   granularity: 'hour' | 'day' | 'month'
-  group_by: 'model' | 'endpoint' | 'product'
+  group_by:
+    | 'model'
+    | 'endpoint'
+    | 'product'
+    | 'product_line'
+    | 'person'
+    | 'source'
+  /**
+   * One entry per value in `groups` for `product_line`, `person` and `source`; absent for the other groupings.
+   */
+  group_labels?: Array<UsageGroupLabel>
   groups: Array<string>
+  not_available?: UsageNotAvailable
   starting_on: string
   summary: UsageSummary
 }
@@ -401,6 +412,44 @@ export type UsageBalance = {
 export type UsageSummary = {
   balance?: UsageBalance
   spend_micros: number
+}
+
+/**
+ * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ */
+export type UsageNotAvailable = {
+  reason: 'no_attribution_source'
+}
+
+export type UsageGroupLabel = {
+  /**
+   * Human-readable name for the key: a person's name, a product line's label, or the key's owner and prefix.
+   */
+  display_name?: string
+  /**
+   * The value as it appears in `groups`, `buckets` and `breakdown`.
+   */
+  key: string
+  /**
+   * Only for `source` when the key is known to this workspace.
+   */
+  key_name?: string
+  /**
+   * Only for `source` when kind is `api_key`.
+   */
+  key_prefix?: string
+  /**
+   * Only for `source`.
+   */
+  kind?: 'api_key' | 'session' | 'deployment'
+  /**
+   * Only for `source` when the key's owner is known.
+   */
+  owner_display_name?: string
+  /**
+   * Only for `source` when the key is known to this workspace.
+   */
+  owner_user_id?: string
 }
 
 export type UsageBucket = {
@@ -640,7 +689,7 @@ export type TasksListResponse = {
  */
 export type TaskEntry = {
   /**
-   * When task completed or failed (null if not finished)
+   * When task completed, failed, or was cancelled (null if not finished)
    */
   completed_at?: string
   /**
@@ -658,7 +707,7 @@ export type TaskEntry = {
   /**
    * Current task status
    */
-  status: 'created' | 'running' | 'completed' | 'failed'
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
   /**
    * Task type name (e.g., model_upload)
    */
@@ -708,7 +757,7 @@ export type TaskResponse = {
   /**
    * Current task status
    */
-  status: 'created' | 'running' | 'completed' | 'failed'
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
   /**
    * Task type name (e.g., model_upload)
    */
@@ -865,6 +914,17 @@ export type SubscriptionDiscount = {
    *
    */
   name?: string
+  /**
+   * How long the discount applies, as the checkout should state it.
+   * this_payment: a one-time code on a change to a monthly plan, which
+   * covers only today's charge. first_month / first_year: a one-time
+   * code on a new monthly or yearly subscription, or on a change to a
+   * yearly plan. months: a repeating discount, for duration_in_months
+   * months. ongoing: a forever discount. Absent when the term is not
+   * known.
+   *
+   */
+  term?: 'this_payment' | 'first_month' | 'first_year' | 'months' | 'ongoing'
 }
 
 /**
@@ -1236,6 +1296,24 @@ export type RevokeAllSessionsResponse = {
    * How many web sessions were ended
    */
   revoked: number
+}
+
+/**
+ * Response after accepting a scheduled-change revert.
+ */
+export type RevertScheduledChangeResponse = {
+  billing_op_id: string
+  /**
+   * `pending`: poll GET /api/billing/ops/{id}.
+   */
+  status: 'reverted' | 'pending'
+}
+
+/**
+ * Request body for undoing a pending scheduled plan change.
+ */
+export type RevertScheduledChangeRequest = {
+  idempotency_key?: string
 }
 
 /**
@@ -2279,7 +2357,7 @@ export type ModelFile = {
  */
 export type Member = {
   /**
-   * User's email address
+   * User's email address, or an empty string if none is on file.
    */
   email: string
   /**
@@ -4563,6 +4641,10 @@ export type BillingCapabilities = {
   can_downgrade_to_personal: boolean
   can_invite_members: boolean
   can_reactivate: boolean
+  /**
+   * Stripe-billed only; false within 1 hour of the change.
+   */
+  can_revert_scheduled_change: boolean
   can_subscribe_self_serve: boolean
   can_top_up: boolean
 }
@@ -4706,7 +4788,7 @@ export type AssetDownloadResponse = {
   /**
    * Current task status
    */
-  status: 'created' | 'running' | 'completed' | 'failed'
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
   /**
    * Task ID for tracking download progress via GET /api/tasks/{task_id}
    */
@@ -8403,6 +8485,48 @@ export type ResubscribeResponses = {
 export type ResubscribeResponse2 =
   ResubscribeResponses[keyof ResubscribeResponses]
 
+export type RevertScheduledChangeData = {
+  body: RevertScheduledChangeRequest
+  path?: never
+  query?: never
+  url: '/api/billing/subscription/revert-scheduled-change'
+}
+
+export type RevertScheduledChangeErrors = {
+  /**
+   * `NO_SCHEDULED_CHANGE`, `SCHEDULED_CHANGE_REVERT_CLOSED`,
+   * `SUBSCRIPTION_CHANGE_IN_PROGRESS`, `BILLING_RECONCILIATION_REQUIRED`,
+   * `PREVIOUS_OPERATION_FAILED`, `TRANSITION_NOT_ALLOWED`.
+   *
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type RevertScheduledChangeError =
+  RevertScheduledChangeErrors[keyof RevertScheduledChangeErrors]
+
+export type RevertScheduledChangeResponses = {
+  /**
+   * Revert accepted
+   */
+  200: RevertScheduledChangeResponse
+}
+
+export type RevertScheduledChangeResponse2 =
+  RevertScheduledChangeResponses[keyof RevertScheduledChangeResponses]
+
 export type CreateTopupData = {
   body: CreateTopupRequest
   path?: never
@@ -8535,7 +8659,23 @@ export type GetBillingUsageTimeSeriesData = {
   body?: never
   path?: never
   query?: {
-    group_by?: 'model' | 'endpoint' | 'product'
+    /**
+     * `product_line` folds products into the customer-facing lines (Agent,
+     * Third-Party Partner API, Comfy Cloud, Serverless) plus an
+     * `unattributed` bucket that is always counted in the total.
+     * `person` and `source` attribute spend to the member or to the API
+     * key (`spend_source`) that caused it; until a data source serves
+     * them the response is an empty series with `not_available` set.
+     * Group keys for those three carry a matching entry in `group_labels`.
+     *
+     */
+    group_by?:
+      | 'model'
+      | 'endpoint'
+      | 'product'
+      | 'product_line'
+      | 'person'
+      | 'source'
     granularity?: 'hour' | 'day' | 'month'
     starting_on?: string
     ending_before?: string
@@ -8844,9 +8984,26 @@ export type GetFeaturesResponses = {
       used: number
     }
     /**
+     * The free-tier job allowance offered to new users, so a signed-out visitor sees the real offer before signing up. Same value for authenticated and unauthenticated requests. Absent when the free-tier allowance is disabled or zero.
+     */
+    free_tier_offer?: {
+      /**
+       * Number of free jobs granted to a new FREE-tier user
+       */
+      job_allowance: number
+      /**
+       * True when only Google-authenticated sessions receive the allowance; email/password signups get none.
+       */
+      requires_google_sign_in: boolean
+    }
+    /**
      * Maximum upload size in bytes
      */
     max_upload_size?: number
+    /**
+     * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
+     */
+    new_free_tier_subscriptions?: boolean
     /**
      * Stripe publishable key (pk_...) for the environment's Stripe account. Public by design (the secret key is never exposed here). Absent when STRIPE_PUBLISHABLE_KEY is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */
@@ -11369,6 +11526,57 @@ export type ListTasksResponses = {
 }
 
 export type ListTasksResponse = ListTasksResponses[keyof ListTasksResponses]
+
+export type CancelTaskData = {
+  body?: never
+  path: {
+    task_id: string
+  }
+  query?: never
+  url: '/api/tasks/{task_id}'
+}
+
+export type CancelTaskErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Task not found
+   */
+  404: ErrorResponse
+  /**
+   * Task cannot be cancelled
+   */
+  409: ErrorResponse
+  /**
+   * Cancellation failed
+   */
+  500: ErrorResponse
+  /**
+   * Task queue unavailable
+   */
+  503: ErrorResponse
+}
+
+export type CancelTaskError = CancelTaskErrors[keyof CancelTaskErrors]
+
+export type CancelTaskResponses = {
+  /**
+   * Cancellation accepted
+   */
+  204: void
+}
+
+export type CancelTaskResponse = CancelTaskResponses[keyof CancelTaskResponses]
 
 export type GetTaskData = {
   body?: never
