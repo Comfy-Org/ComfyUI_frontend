@@ -421,7 +421,7 @@ describe('useAuthActions.logout', () => {
     await logout({ beforeSignOut: async () => false })
 
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(mockClearWorkflowStorageForScope).not.toHaveBeenCalled()
     expect(mockToastStore.add).not.toHaveBeenCalled()
   })
 

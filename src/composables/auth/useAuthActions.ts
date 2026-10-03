@@ -112,9 +112,7 @@ export const useAuthActions = () => {
     async ({
       beforeSignOut
     }: { beforeSignOut?: () => Promise<boolean> } = {}) => {
-      const departingIdentity = isCloud
-        ? authStore.currentUserIdentity()
-        : null
+      const departingIdentity = isCloud ? authStore.currentUserIdentity() : null
       const departingScope = isCloud ? getStorageScope() : null
 
       if (isCloud) {
@@ -145,9 +143,6 @@ export const useAuthActions = () => {
           }
         }
       }
-
-      if (isCloud && authStore.currentUserIdentity() !== departingIdentity)
-        return
 
       if (beforeSignOut && !(await beforeSignOut())) return
 
