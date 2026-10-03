@@ -62,39 +62,20 @@ describe('useSettingsDialog', () => {
       args.dialogComponentProps.contentClass
     )
 
-  const maxWidthCapsFromLastShow = (): string[] =>
-    String(showDialog.mock.lastCall?.[0].dialogComponentProps.contentClass)
-      .split(' ')
-      .filter((utility) => /(^|:)max-w-\[/.test(utility))
-
-  it("show() opens the Reka renderer with size 'full' and 1280px content sizing", () => {
+  it("show() opens the Reka renderer with size 'full'", () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-settings')
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('full')
     expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')
-
-    const caps = maxWidthCapsFromLastShow()
-    expect(caps).not.toHaveLength(0)
-    expect(caps.filter((cap) => !cap.includes('1280px'))).toEqual([])
-    expect(caps.filter((cap) => cap.includes('960px'))).toEqual([])
   })
 
-  it('show() reserves the docked Agent panel width in every max-width cap', () => {
-    useSettingsDialog().show()
-
-    const caps = maxWidthCapsFromLastShow()
-    expect(caps).not.toHaveLength(0)
-    expect(caps.filter((cap) => !RESERVES_INSET.test(cap))).toEqual([])
-  })
-
-  it("show() keeps both caps after cn() resolves them against the 'full' variant", () => {
+  it('show() caps both breakpoints at 1280px within the docked Agent panel inset', () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
 
-    const resolved = resolveAgainstVariant(args)
-    const survivingCaps = resolved
+    const survivingCaps = resolveAgainstVariant(args)
       .split(' ')
       .filter((utility) => /(^|:)max-w-\[/.test(utility))
 
