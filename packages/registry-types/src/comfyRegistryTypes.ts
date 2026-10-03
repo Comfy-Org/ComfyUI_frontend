@@ -4,6 +4,126 @@
  */
 
 export interface paths {
+    "/app-proxy/{proxy_id}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload an input asset to an app's deployment.
+         * @description Streams a multipart upload to the app's deployment (`POST /api/v2/assets` of the Comfy API v2 contract) under the sponsor key. Bounded by the app's upload cap and never buffered whole. Uploads are free. Assets are content-addressed by the deployment, so identical bytes come back as the existing asset: bind the returned `file_path` in the workflow. Limited per user per hour (429 `upload_rate_limited` with `Retry-After`).
+         */
+        post: operations["uploadAppProxyAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/app-proxy/{proxy_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run an app.
+         * @description Admits the run, then submits the workflow to the app's deployment under the sponsor key. Admission takes one of the caller's free runs for the rolling period if any remain; otherwise, for a priced app, it requires the caller's balance to cover the run's price (402 `insufficient_credits`) and the run is charged that price when it succeeds (a failed or cancelled run is not charged); otherwise it is refused 429 `free_runs_exhausted` with `Retry-After`. A per-second app prices each metered job from its workflow (seconds x the rate for its tier, rounded up to whole credits); a metered job whose price cannot be read from the workflow is refused 400 `unpriceable_workflow` before anything is reserved. A free run is consumed once the deployment accepts it, even if it later fails. Only `workflow` is forwarded. `Idempotency-Key` is scoped to the caller and this app: a repeat returns the original job with 200 and takes nothing again. An app may declare node classes whose jobs are UNMETERED (a multi-stage app's preparation step): a workflow made only of those classes spends no free run and is never charged, and is capped per user per hour instead (429 `unmetered_rate_limited`).
+         */
+        post: operations["submitAppProxyJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/app-proxy/{proxy_id}/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Poll one of the caller's app runs.
+         * @description The deployment's job object for a run the caller submitted, with its follow-up links rewritten to this proxy. `outputs` stays empty, and the body carries no URL, until the job has succeeded: only a succeeded run is charged. Any other job answers 404.
+         */
+        get: operations["getAppProxyJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/app-proxy/{proxy_id}/jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel one of the caller's app runs.
+         * @description Requests cancellation of a run the caller submitted and returns the current job. A cancelled paid run is not charged; a cancelled free run still counts against the free-run allowance. Any other job answers 404.
+         */
+        post: operations["cancelAppProxyJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/app-proxy/{proxy_id}/jobs/{job_id}/outputs/{output_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download one output of the caller's app run.
+         * @description Streams the bytes of an output of a run the caller submitted, always on this origin: comfy-api reads the output's signed storage URL itself rather than redirecting, so a browser fetch() can read the response under comfy-api's CORS policy (the storage bucket sends none). `output_id` is the output's `id` on the job object. Answers 404, like any other job or output, until the job has succeeded.
+         */
+        get: operations["getAppProxyJobOutputContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/app-proxy/{proxy_id}/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quote the caller's next run of an app.
+         * @description What the caller's next run of this app would cost: how many of their free runs remain in the rolling free-run period, when the next one frees up, the credit price of a paid run (flat, or per second of output by tier), and whether the next run would be free, paid or refused. Starts no compute and consumes nothing. An unknown or disabled app answers 404, indistinguishable from each other.
+         */
+        get: operations["getAppProxyQuote"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bulk/nodes/versions": {
         parameters: {
             query?: never;
@@ -674,46 +794,6 @@ export interface paths {
          * @description Forwards image editing requests to BFL's Flux Kontext Pro API and returns the results.
          */
         post: operations["bflFluxKontextProGenerate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/proxy/bfl/flux-pro-1.0-canny/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Generate an image with FLUX.1 Canny [pro] using a control image.
-         * @description Submits an image generation task with FLUX.1 Canny [pro].
-         */
-        post: operations["BFLPro_canny_v1_flux_pro_1_0_canny_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/proxy/bfl/flux-pro-1.0-depth/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Generate an image with FLUX.1 Depth [pro] using a control image.
-         * @description Submits an image generation task with FLUX.1 Depth [pro].
-         */
-        post: operations["BFLPro_depth_v1_flux_pro_1_0_depth_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5737,6 +5817,62 @@ export interface components {
             input_tokens?: number;
             output_tokens?: number;
         };
+        AppProxyErrorBody: {
+            detail: string;
+            details?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Machine-readable code, repeated on `X-Comfy-Error-Type`: `unauthorized`, `not_found`, `invalid_input`, `unpriceable_workflow`, `upload_too_large`, `upload_rate_limited`, `insufficient_credits`, `free_runs_exhausted`, `concurrent_run_limit`, `unmetered_rate_limited`, `idempotency_key_in_flight`, `app_unavailable`, `upstream_error`, `internal_error`, or a Comfy API v2 code the deployment returned (`invalid_workflow`, `missing_asset`, `deployment_not_ready`, ...). */
+            error_type: string;
+        };
+        /** @description The app's free-run allowance: `runs` free runs per rolling `period`. Absent for an app with no free runs. */
+        AppProxyFreeRunsAllowance: {
+            /** @description The rolling period as an ISO 8601 duration, e.g. P1D, P7D, PT12H. */
+            period: string;
+            /** Format: int64 */
+            period_seconds: number;
+            runs: number;
+        };
+        AppProxyJobRequest: {
+            /** @description API-format workflow graph, forwarded verbatim. */
+            workflow: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description A Comfy API v2 object (Job or Asset) as the deployment returned it, with its follow-up `urls` rewritten to this proxy and anything naming the deployment host removed. Output `url`s are short-lived signed URLs. Submit responses add `app_run`: the run's `kind` (free, paid or unmetered), `metered` (false only for an unmetered job), its `price_credits` (the price this run is charged on success) when paid, and the app's `free_runs_allowance` and the caller's `free_runs_remaining`. */
+        AppProxyObject: {
+            [key: string]: unknown;
+        };
+        /** @description Per-second pricing of a paid run, absent for a flat-priced app. A paid run costs its output seconds times the rate for its tier, rounded up to whole credits. */
+        AppProxyPricePerSecond: {
+            /** @description Credits per second of output, keyed by the tier input's value in canonical decimal form, e.g. `{"0.4": 18, "1": 45}`. */
+            credits: {
+                [key: string]: number;
+            };
+            /** @description The workflow input whose value selects the rate, e.g. `megapixels`. */
+            tier_input: string;
+        };
+        /** @description What the caller's next run of an app would cost (FE-2737). */
+        AppProxyQuote: {
+            /** @description Why the next run would be refused, when `next_run` is `blocked`: `free_runs_exhausted`, `insufficient_credits` or `concurrent_run_limit`. For a per-second app `insufficient_credits` means the balance does not cover even its cheapest run (the lowest rate for one second, rounded up); the submit checks the real price. */
+            blocked_reason?: string;
+            free_runs_allowance?: components["schemas"]["AppProxyFreeRunsAllowance"];
+            /** @description Free runs left in the current rolling period. */
+            free_runs_remaining: number;
+            /** @enum {string} */
+            next_run: "free" | "paid" | "blocked";
+            /**
+             * Format: double
+             * @description Flat price of a paid run in Comfy credits; 0 when the app has no paid runs or is priced per second (see `price_per_second`).
+             */
+            price_credits: number;
+            price_per_second?: components["schemas"]["AppProxyPricePerSecond"];
+            /**
+             * Format: date-time
+             * @description When the next free run frees up - the oldest counted free run's admission time plus the period. Absent while free runs remain, and for an app with no free runs.
+             */
+            resets_at?: string | null;
+        };
         AuditLog: {
             /**
              * Format: date-time
@@ -5767,158 +5903,6 @@ export interface components {
             status: string;
             /** Webhook Url */
             webhook_url: string;
-        };
-        /**
-         * CannyInputs
-         * @example {
-         *       "control_image": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg==",
-         *       "prompt": "A single red maple leaf on a plain white background."
-         *     }
-         */
-        BFLCannyInputs: {
-            /**
-             * Canny High Threshold
-             * @description High threshold for Canny edge detection
-             * @default 200
-             */
-            canny_high_threshold: number;
-            /**
-             * Canny Low Threshold
-             * @description Low threshold for Canny edge detection
-             * @default 50
-             */
-            canny_low_threshold: number;
-            /**
-             * Control Image
-             * @description Base64 encoded image to use as control input if no preprocessed image is provided
-             */
-            control_image?: string;
-            /**
-             * Guidance
-             * @description Guidance strength for the image generation process
-             * @default 30
-             */
-            guidance: number;
-            /**
-             * @description Output format for the generated image. Can be 'jpeg' or 'png'.
-             * @default jpeg
-             */
-            output_format: components["schemas"]["BFLOutputFormat"];
-            /**
-             * Preprocessed Image
-             * @description Optional pre-processed image that will bypass the control preprocessing step
-             */
-            preprocessed_image?: string;
-            /**
-             * Prompt
-             * @description Text prompt for image generation
-             * @example ein fantastisches bild
-             */
-            prompt: string;
-            /**
-             * Prompt Upsampling
-             * @description Whether to perform upsampling on the prompt
-             * @default false
-             */
-            prompt_upsampling: boolean;
-            /**
-             * Safety Tolerance
-             * @description Tolerance level for input and output moderation. Between 0 and 6, 0 being most strict, 6 being least strict.
-             * @default 2
-             */
-            safety_tolerance: number;
-            /**
-             * Seed
-             * @description Optional seed for reproducibility
-             * @example 42
-             */
-            seed?: number;
-            /**
-             * Steps
-             * @description Number of steps for the image generation process
-             * @default 50
-             */
-            steps: number;
-            /**
-             * Webhook Secret
-             * @description Optional secret for webhook signature verification
-             */
-            webhook_secret?: string;
-            /**
-             * Webhook Url
-             * @description URL to receive webhook notifications
-             */
-            webhook_url?: string;
-        };
-        /**
-         * DepthInputs
-         * @example {
-         *       "control_image": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg==",
-         *       "prompt": "A single red maple leaf on a plain white background."
-         *     }
-         */
-        BFLDepthInputs: {
-            /**
-             * Control Image
-             * @description Base64 encoded image to use as control input
-             */
-            control_image?: string;
-            /**
-             * Guidance
-             * @description Guidance strength for the image generation process
-             * @default 15
-             */
-            guidance: number;
-            /**
-             * @description Output format for the generated image. Can be 'jpeg' or 'png'.
-             * @default jpeg
-             */
-            output_format: components["schemas"]["BFLOutputFormat"];
-            /**
-             * Preprocessed Image
-             * @description Optional pre-processed image that will bypass the control preprocessing step
-             */
-            preprocessed_image?: string;
-            /**
-             * Prompt
-             * @description Text prompt for image generation
-             * @example ein fantastisches bild
-             */
-            prompt: string;
-            /**
-             * Prompt Upsampling
-             * @description Whether to perform upsampling on the prompt
-             * @default false
-             */
-            prompt_upsampling: boolean;
-            /**
-             * Safety Tolerance
-             * @description Tolerance level for input and output moderation. Between 0 and 6, 0 being most strict, 6 being least strict.
-             * @default 2
-             */
-            safety_tolerance: number;
-            /**
-             * Seed
-             * @description Optional seed for reproducibility
-             * @example 42
-             */
-            seed?: number;
-            /**
-             * Steps
-             * @description Number of steps for the image generation process
-             * @default 50
-             */
-            steps: number;
-            /**
-             * Webhook Secret
-             * @description Optional secret for webhook signature verification
-             */
-            webhook_secret?: string;
-            /**
-             * Webhook Url
-             * @description URL to receive webhook notifications
-             */
-            webhook_url?: string;
         };
         /**
          * @description Request body for the BFL Flux Tools Erase v1 object removal API.
@@ -6686,17 +6670,7 @@ export interface components {
             image: string;
             /** @description Controls whether partially transparent areas from the input image are retained in the output after background removal. */
             preserve_alpha?: boolean;
-            /**
-             * @description When false (default), the request is processed asynchronously. When
-             *     true, the API holds the connection open until complete. ON COMFY
-             *     ROUTER that second mode is refused rather than forwarded: Router
-             *     fixes the return mode before dispatch and polls for the result
-             *     inside the call, so `POST /v2/models/bria/{model}` answers 422
-             *     invalid_input for any `sync` this route carries other than `false`
-             *     or `null` (routerForbiddenBodyFields). The synchronous call is
-             *     still available on this operation's own `/proxy/` route, which is
-             *     the surface this schema also describes.
-             */
+            /** @description When false (default), the request is processed asynchronously. When true, the API holds the connection open until complete. ON COMFY ROUTER that second mode is refused rather than forwarded: Router fixes the return mode before dispatch and polls for the result inside the call, so `POST /v2/models/bria/{model}` answers 422 invalid_input for any `sync` this route carries other than `false` or `null`. The synchronous call is still available on this operation's own `/proxy/` route, which is the surface this schema also describes. */
             sync?: boolean | null;
             /** @description When enabled, applies content moderation to input visual. Returns 422 if the image fails moderation. */
             visual_input_content_moderation?: boolean;
@@ -6956,7 +6930,7 @@ export interface components {
              *     • Image URL: Make sure that the image URL is accessible.
              *     • Base64 encoding: The format must be data:image/<image format>;base64,<Base64 encoding>. Note: <image format> must be in lowercase, e.g., data:image/png;base64,<base64_image>.
              *
-             *     Comfy Router limits the entire JSON request to 20 MiB, including base64 expansion and all reference images. Use URLs for inputs that would exceed this transport limit.
+             *     Comfy Router limits the entire JSON request to 100 MiB, including base64 expansion and all reference images. Use URLs for inputs that would exceed this transport limit.
              *
              *     An input image must meet the following requirements:
              *     • Image format: jpeg, png (seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 also support webp, bmp, tiff and gif; seedream-5.0-pro also supports heic and heif)
@@ -6964,20 +6938,20 @@ export interface components {
              *     • Width and height (px): > 14
              *     • Size: No more than 10 MB (30 MB for seedream-5.0-pro)
              *     • Total pixels: No more than 6000x6000 (36,000,000 px) for seedream-5.0-pro
-             *     • Maximum of 14 reference images (10 for seedream-5.0-pro)
+             *     • Maximum of 14 reference images (10 for seedream-5.0-pro and 5.0-flash)
              *
              *     In the layer-separation scenario (layer_decomposition enabled), image is required and only a single input image is supported (passing multiple images returns an error). Input images must be png, jpeg, webp, bmp, tiff or gif (heic and heif are not supported), up to 30 MB, with total pixels in the range [512x512, 6000x6000] and aspect ratio in [1/16, 16].
              */
             image?: string | string[];
             /**
-             * @description Controls whether layer separation is enabled. Only seedream-5.0-pro supports this parameter.
+             * @description Controls whether layer separation is enabled. Only seedream-5.0-pro and 5.0-flash support this parameter.
              *     true: Layer-separation mode. The model decomposes the single input image into one base image plus multiple layers (up to 16), and returns the position and content information of each produced layer, including the stacking order (z_index), bounding box (bounding_box), name (name) and description (description).
              *     false: Standard image-generation mode; no layer separation is performed.
              *     Notes on layer-separation mode: only a single input image is supported (passing multiple images returns an error); if any single layer fails to generate, the whole request fails — partial success is not supported; at most 17 images are returned (1 base image + 16 layers). sequential_image_generation, sequential_image_generation_options, tools and stream return an error if passed.
              * @default false
              */
             layer_decomposition: boolean;
-            /** @description Model identifier. Supported models: seedream-4-0-250828, seedream-4-5-251128, seedream-5-0-260128 and seedream-5-0-pro-260628. A direct v1 call to POST /proxy/byteplus/api/v3/images/generations MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
+            /** @description Model identifier. Supported models: seedream-4-0-250828, seedream-4-5-251128, seedream-5-0-260128, seedream-5-0-pro-260628 and seedream-5-0-flash-260915. A direct v1 call to POST /proxy/byteplus/api/v3/images/generations MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
             model?: string | null;
             /** @description Configuration for prompt optimization feature. Only seedream-5.0-pro/5.0-lite/4.5 (only support standard mode) and seedream-4.0 support this parameter. */
             optimize_prompt_options?: {
@@ -6989,14 +6963,14 @@ export interface components {
                 mode: "standard" | "fast";
             };
             /**
-             * @description Specifies the format of the output image. Only seedream-5.0-pro and 5.0-lite support this parameter. In the layer-separation scenario, output_format only controls the format of the base image; every layer is always output as png.
+             * @description Specifies the format of the output image. Only seedream-5.0-pro, 5.0-flash and 5.0-lite support this parameter. In the layer-separation scenario, output_format only controls the format of the base image; every layer is always output as png.
              * @default jpeg
              * @enum {string}
              */
             output_format: "png" | "jpeg";
             /**
              * @description Text description for image generation or transformation.
-             *     Optional in the layer-separation scenario (seedream-5.0-pro with layer_decomposition enabled): if a prompt is provided, the model recognizes and separates the elements you specify according to the prompt intent; if no prompt is provided, the model automatically detects all major elements in the image and separates them into independent layers.
+             *     Optional in the layer-separation scenario (seedream-5.0-pro or 5.0-flash with layer_decomposition enabled): if a prompt is provided, the model recognizes and separates the elements you specify according to the prompt intent; if no prompt is provided, the model automatically detects all major elements in the image and separates them into independent layers.
              */
             prompt?: string;
             /**
@@ -7011,14 +6985,14 @@ export interface components {
              */
             seed: number;
             /**
-             * @description Controls whether to disable the batch generation feature. This parameter is only supported on seedream-5.0-lite, 4.5 and 4.0 (not supported by seedream-5.0-pro). Valid values:
+             * @description Controls whether to disable the batch generation feature. This parameter is only supported on seedream-5.0-lite, 4.5 and 4.0 (not supported by seedream-5.0-pro or 5.0-flash). Valid values:
              *     auto: In automatic mode, the model automatically determines whether to return multiple images and how many images it will contain based on the user's prompt.
              *     disabled: Disables batch generation feature. The model will only generate one image.
              * @enum {string}
              */
             sequential_image_generation?: "auto" | "disabled";
             /**
-             * @description Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro).
+             * @description Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro or 5.0-flash).
              *     Configuration for the batch image generation feature. This parameter is only effective when sequential_image_generation is set to auto.
              */
             sequential_image_generation_options?: {
@@ -7041,13 +7015,16 @@ export interface components {
              *     "seedream-5-0-pro-260628": Two methods available (cannot be used together).
              *       Method 1 | Specify the resolution and describe the aspect ratio, shape or purpose of the image in the prompt; the model decides the final size. Optional values: 1K, 2K
              *       Method 2 | Specify width and height in pixels. Default: 1024x1024, total pixels: [1024x1024 (1048576), 2048x2048 (4194304)], aspect ratio: [1/16, 16]
-             *     "seedream-5-0-pro-260628" with layer_decomposition enabled: Only the resolution-level method is supported. Optional values: 1K, 1.5K, 2K, auto. Default: auto.
+             *     "seedream-5-0-flash-260915": Two methods available (cannot be used together).
+             *       Method 1 | Specify the resolution and describe the aspect ratio, shape or purpose of the image in the prompt; the model decides the final size. Optional values: 1K, 1.5K, 2K. Default: 2K
+             *       Method 2 | Specify width and height in pixels. Total pixels: [1280x720 (921600), 2048x2048x1.1025 (4624220)], aspect ratio: [1/16, 16]
+             *     "seedream-5-0-pro-260628" and "seedream-5-0-flash-260915" with layer_decomposition enabled: Only the resolution-level method is supported. Optional values: 1K, 1.5K, 2K, auto. Default: auto.
              *       The base image is output at the specified resolution with the aspect ratio of the original input image; each layer is output close to the specified resolution, keeping the aspect ratio it had in the original image.
              *       auto: Output is based on the size and aspect ratio of the input image. Inputs within [1280x720, ~2048x2048] are output at the original input size; inputs smaller than 1K are output at 1K; inputs larger than 2K are output at 2K.
              */
             size?: string;
             /**
-             * @description Comfy Router settles an explicitly supplied stream flag to false because it captures a complete JSON result. On the v1 proxy, this field controls whether to enable streaming output mode. Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro). false = All output images are returned at once. true = Each output image is returned immediately after generated.
+             * @description Comfy Router settles an explicitly supplied stream flag to false because it captures a complete JSON result. On the v1 proxy, this field controls whether to enable streaming output mode. Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro or 5.0-flash). false = All output images are returned at once. true = Each output image is returned immediately after generated.
              * @default false
              */
             stream: boolean;
@@ -7059,7 +7036,7 @@ export interface components {
         } | unknown | unknown;
         /**
          * @description Request body for the v1 `POST /proxy/byteplus/api/v3/images/generations` proxy.
-         *     It composes `BytePlusImageGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the four allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes, so either constraint would refuse every Router call that exercises the documented contract — BE-11167).
+         *     It composes `BytePlusImageGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the five allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes, so either constraint would refuse every Router call that exercises the documented contract — BE-11167).
          *     The component has required `model` since the provider was added on 2025-08-21 (#634) and has carried the enum since the same commit, so this wrapper RESTORES a published requirement rather than inventing one. (`prompt` was required alongside it until #6331 on 2026-08-06 dropped it for the seedream-5.0-pro layer-separation path; that relaxation is not this change's and is not re-imposed here.) Read the note above `BytePlusImageGenerationInputs` for the full rule and the guard that enforces it.
          */
         BytePlusImageGenerationRequest: components["schemas"]["BytePlusImageGenerationInputs"] & {
@@ -7067,7 +7044,7 @@ export interface components {
              * @description The ID of the model to call. Required on this route, which has no path segment supplying it.
              * @enum {string}
              */
-            model: "seedream-4-0-250828" | "seedream-4-5-251128" | "seedream-5-0-260128" | "seedream-5-0-pro-260628";
+            model: "seedream-4-0-250828" | "seedream-4-5-251128" | "seedream-5-0-260128" | "seedream-5-0-pro-260628" | "seedream-5-0-flash-260915";
         };
         BytePlusImageGenerationResponse: {
             /** @description Unix timestamp (in seconds) indicating the time when the request was created */
@@ -7761,7 +7738,7 @@ export interface components {
             audio_config?: components["schemas"]["BytePlusTTSAudioConfig"];
             /** @description Model identifier. Supported models: seed-audio-1.0 and seed-audio-1.0-multilingual. A direct v1 call to POST /proxy/byteplus/api/v3/tts/create MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
             model?: string | null;
-            /** @description Reference resources. Omit for text-only generation. Up to 3 audio references (each up to 30 seconds and 10 MB decoded; wav, mp3, pcm or ogg_opus) or exactly 1 image reference (up to 10 MB decoded; jpeg, png or webp). Image references cannot be mixed with audio references. Those ceilings are BytePlus's and are stated in DECODED bytes: base64 inflates an asset by about 4/3, and a Comfy Router call is capped at 20 MiB for the whole JSON document, so an inline `audio_data`/`image_data` reference sent to /v2/models/byteplus/{model} has to stay under roughly 15 MB decoded. Use `audio_url`/`image_url` for anything larger — three audio references at BytePlus's own 10 MB maximum are refused 413 before validation runs if they are inlined. */
+            /** @description Reference resources. Omit for text-only generation. Up to 3 audio references (each up to 30 seconds and 10 MB decoded; wav, mp3, pcm or ogg_opus) or exactly 1 image reference (up to 10 MB decoded; jpeg, png or webp). Image references cannot be mixed with audio references. Those ceilings are BytePlus's and are stated in DECODED bytes: base64 inflates an asset by about 4/3, and a Comfy Router call is capped at 100 MiB for the whole JSON document, so an inline `audio_data`/`image_data` reference sent to /v2/models/byteplus/{model} may carry roughly 75 MB decoded before the transport limit refuses it. BytePlus's own 10 MB per-reference ceiling is therefore what binds first for any single inlined reference, and three audio references at that ceiling now fit in one body; use `audio_url`/`image_url` to keep large assets out of the request entirely. */
             references?: components["schemas"]["BytePlusTTSReference"][];
             /** @description Prompt or text to synthesize (1 to 3,000 characters; an empty string is refused). When audio references are provided, reference them by order using @Audio1, @Audio2 and @Audio3. */
             text_prompt: string;
@@ -7847,7 +7824,7 @@ export interface components {
             aigc_watermark?: boolean;
         };
         BytePlusVideoGenerationContent: {
-            /** @description Input audio object. Only Seedance 2.5, 2.0 & 2.0 fast support audio input. Seedance 2.0 & 2.0 fast cannot use audio alone - they must include at least 1 image or video; Seedance 2.5 supports audio-only input. */
+            /** @description Input audio object. Only Seedance 2.5, 2.0, 2.0 fast & 2.0 mini support audio input. Seedance 2.0, 2.0 fast & 2.0 mini cannot use audio alone - they must include at least 1 image or video; Seedance 2.5 supports audio-only input. */
             audio_url?: {
                 /**
                  * @description Audio URL, Base64 encoding, or Asset ID.
@@ -7856,6 +7833,14 @@ export interface components {
                  *     Asset ID: Format asset://<ASSET_ID>
                  */
                 url: string;
+            };
+            /**
+             * @description Seedance 2.5 only. The Draft task to render as the final video. It must be the only content item.
+             *     The final video reuses the Draft task's prompt, input assets, duration, ratio, seed, generate_audio and omni_reference_task_type; do not send them again. resolution defaults to and only supports 1080p.
+             */
+            draft_task?: {
+                /** @description The task ID returned when the Draft video was created with `draft` set to true. */
+                id: string;
             };
             image_url?: {
                 /**
@@ -7869,8 +7854,8 @@ export interface components {
             /**
              * @description The role/position of the content item.
              *     For images: first_frame, last_frame, or reference_image.
-             *     For videos: reference_video (Seedance 2.5, 2.0 & 2.0 fast only).
-             *     For audio: reference_audio (Seedance 2.5, 2.0 & 2.0 fast only).
+             *     For videos: reference_video (Seedance 2.5, 2.0, 2.0 fast & 2.0 mini only).
+             *     For audio: reference_audio (Seedance 2.5, 2.0, 2.0 fast & 2.0 mini only).
              * @enum {string}
              */
             role?: "first_frame" | "last_frame" | "reference_image" | "reference_video" | "reference_audio";
@@ -7905,8 +7890,8 @@ export interface components {
              * @description The type of the input content
              * @enum {string}
              */
-            type: "text" | "image_url" | "video_url" | "audio_url";
-            /** @description Input video object. Only Seedance 2.5, 2.0 & 2.0 fast support video input. */
+            type: "text" | "image_url" | "video_url" | "audio_url" | "draft_task";
+            /** @description Input video object. Only Seedance 2.5, 2.0, 2.0 fast & 2.0 mini support video input. */
             video_url?: {
                 /**
                  * @description Video URL or Asset ID.
@@ -7927,6 +7912,9 @@ export interface components {
         } | {
             /** @enum {unknown} */
             type?: "audio_url";
+        } | {
+            /** @enum {unknown} */
+            type?: "draft_task";
         });
         /**
          * @description Request body for a BytePlus Seedance / Dreamina video generation task. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks must add `model` to it. This text-to-video example omits the `content` item with `type: image_url` and an `image_url.url` that an image-to-video call supplies; text-only models must omit that image item.
@@ -7951,14 +7939,21 @@ export interface components {
             callback_url?: string;
             /** @description The input content for the model to generate a video */
             content: components["schemas"]["BytePlusVideoGenerationContent"][];
-            /** @description Video duration in seconds. Seedance 2.5: [4,30] or -1 (auto; video editing tasks support only -1). Seedance 2.0 & 2.0 fast: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12]. */
+            /**
+             * @description Seedance 2.5 only. Generates a 480p Draft video; resolution must be 480p.
+             *     Pass the returned task ID in a `draft_task` content item to render the final 1080p video. The Draft task ID stays valid for 7 days.
+             * @default false
+             */
+            draft: boolean;
+            /** @description Video duration in seconds. Seedance 2.5: [4,30] or -1 (auto; video editing tasks support only -1). Seedance 2.0, 2.0 fast & 2.0 mini: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12]. */
             duration?: number | -1 | unknown;
             /** @description Task timeout threshold in seconds. Default 172800 (48h). Range: [3600, 259200]. */
             execution_expires_after?: number;
             /**
-             * @description Supported by Seedance 2.5, 2.0, 2.0 fast, and 1.5 pro. Whether the generated video includes audio synchronized with the visuals.
+             * @description Supported by Seedance 2.5, 2.0, 2.0 fast, 2.0 mini, and 1.5 pro. Whether the generated video includes audio synchronized with the visuals.
              *     true: The model outputs a video with synchronized audio.
              *     false: The model outputs a silent video.
+             *     On models that support it, the generated audio track is content-checked by the provider separately from the video; a refusal there is reported as `content_policy_violation` and, because the audio differs each run, can be intermittent for an input the provider otherwise accepts. Send `false` for a silent video if that happens; this helps only when the audio was the refused modality, which a synchronous Router response names as `refusal_subject: output_audio` (a queued request does not identify it yet). A Seedance 2.5 final render inherits `generate_audio` from its Draft task, so recreate the Draft with `false` instead.
              * @default true
              */
             generate_audio: boolean;
@@ -7973,13 +7968,14 @@ export interface components {
              */
             output_format: "mp4" | "mov";
             /**
-             * @description Aspect ratio of the generated video. Seedance 2.0 & 2.0 fast, 1.5 pro default: adaptive.
+             * @description Aspect ratio of the generated video. Seedance 2.0, 2.0 fast & 2.0 mini, 1.5 pro default: adaptive.
+             *     Seedance 2.5 first-frame / first-last-frame generation: the output follows the first frame's aspect ratio, so only `adaptive` (or omitting the field) is accepted; a concrete ratio is refused with a 400 before dispatch. Seedance 2.0 accepts a concrete ratio in those modes.
              * @enum {string}
              */
             ratio?: "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "21:9" | "9:21" | "adaptive";
             /**
-             * @description Video resolution. Seedance 2.5, 2.0 & 2.0 fast, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.
-             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p. Seedance 2.5 supports 480p, 720p, and 1080p.
+             * @description Video resolution. Seedance 2.5, 2.0, 2.0 fast & 2.0 mini, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.
+             *     Note: Seedance 2.0, 2.0 fast & 2.0 mini do not support 1080p. Seedance 2.5 supports 480p, 720p, and 1080p.
              * @enum {string}
              */
             resolution?: "480p" | "720p" | "1080p" | "4k";
@@ -8767,7 +8763,7 @@ export interface components {
             voice_settings?: components["schemas"]["ElevenLabsVoiceSettings"];
         };
         /**
-         * @description Request body for ElevenLabs Text-to-Dialogue (multi-voice TTS). The `example` below is the COMFY ROUTER form and omits `model_id`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/elevenlabs/v1/text-to-dialogue may send it, and the route admits `eleven_v3` alone.
+         * @description Request body for ElevenLabs Text-to-Dialogue (multi-voice TTS). The `example` below is the COMFY ROUTER form and omits `model_id`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/elevenlabs/v1/text-to-dialogue may send it, and the route admits `eleven_v3`, `eleven_v4` and `eleven_v4_turbo`.
          * @example {
          *       "inputs": [
          *         {
@@ -8799,10 +8795,12 @@ export interface components {
             language_code?: string | null;
             /**
              * @description Identifier of the model that will be used. This route admits
-             *     'eleven_v3' and nothing else; any other value is rejected with 400
-             *     before the request reaches ElevenLabs.
+             *     'eleven_v3', 'eleven_v4' and 'eleven_v4_turbo' and nothing else;
+             *     any other value is rejected with 400 before the request reaches
+             *     ElevenLabs.
              *     The upstream ElevenLabs advice to query GET /v1/models for the
-             *     available set does NOT describe this route, which serves one model.
+             *     available set does NOT describe this route, which serves only these
+             *     models.
              *     It is NOT in this schema's `required` list because Comfy Router
              *     fills it from the `{model}` path segment of
              *     /v2/models/elevenlabs/{model}, so a Router caller omits it.
@@ -8827,7 +8825,7 @@ export interface components {
              * @default eleven_v3
              * @enum {string}
              */
-            model_id: "eleven_v3";
+            model_id: "eleven_v3" | "eleven_v4" | "eleven_v4_turbo";
         };
         /** @description Validation error response from ElevenLabs */
         ElevenLabsValidationError: {
@@ -9686,7 +9684,7 @@ export interface components {
                 imageOutputOptions?: {
                     /** @description Optional. The compression quality of the output image. */
                     compressionQuality?: number;
-                    /** @description Optional. The image format that the output should be saved as. */
+                    /** @description Optional. The image format that the output should be saved as, on the Vertex AI paths: requests served by Comfy's own credentials, and BYOK requests authenticated with a GCP service account. Accepted values there are `image/png` and `image/jpeg`, matched case-insensitively and normalised to lower case before the request is forwarded; any other value is rejected with a 400 naming this field. Defaults to `image/png` when omitted. A BYOK request authenticated with a Google AI Studio API key is the exception: that upstream has no such property and rejects the whole call if it is present, so the field is dropped from the request rather than honoured or rejected, and the output format is whatever AI Studio chooses. On every path, read the media type back from the response part you are given (`inlineData.mimeType`, or `fileData.mimeType` when `uploadImagesToStorage` is set) rather than assuming the value you sent. */
                     mimeType?: string;
                 };
                 /** @description Optional. Specifies the size of generated images. Supported values are 1K, 2K, 4K. If not specified, the model will use default value 1K. */
@@ -11965,6 +11963,11 @@ export interface components {
              * @enum {string}
              */
             sound: "on" | "off";
+            /** @description List of voices referenced when generating videos. Supports up to 2 voices; reference them in `prompt` as <<<voice_1>>> and <<<voice_2>>> in list order. Requires `sound` set to "on", which only V2.6 and subsequent versions of the model support; on an earlier model, or with `sound` left at its "off" default, voices are not applied. */
+            voice_list?: {
+                /** @description Voice ID returned through the voice customization API or a system preset voice ID. */
+                voice_id: string;
+            }[];
             /** @description Whether to generate watermarked results simultaneously. Custom watermark is not supported at this time. */
             watermark_info?: {
                 /** @description true means generate watermark, false means do not generate. */
@@ -12127,6 +12130,8 @@ export interface components {
          *     }
          */
         KlingV2Text2VideoRequest: {
+            aspect_ratio?: components["schemas"]["KlingVideoGenAspectRatio"];
+            duration?: components["schemas"]["KlingVideoGenDuration"];
             options?: components["schemas"]["KlingV2Options"];
             /** @description Prompt that may include both positive and negative descriptions. Recommended length under 2500 characters. Multi-shot videos use the format "shot n, m, words; shot n, m, words;". */
             prompt: string;
@@ -13616,11 +13621,11 @@ export interface components {
              */
             moderation: boolean;
             pose_mode?: components["schemas"]["MeshyPoseMode"];
-            /** @description Describe what kind of object the 3D model is. Maximum 600 characters. */
+            /** @description Describe what kind of object the 3D model is. Maximum 800 characters. */
             prompt: string;
             /**
-             * @description Controls whether to enable the remesh phase. When false, returns highest-precision triangular mesh.
-             * @default true
+             * @description Controls whether to enable the remesh phase. When false, returns highest-precision triangular mesh. Defaults to true for Meshy 5 and false for Meshy 6 and 7.
+             * @default false
              */
             should_remesh: boolean;
             symmetry_mode?: components["schemas"]["MeshySymmetryMode"];
@@ -13676,7 +13681,7 @@ export interface components {
             preview_task_id: string;
             /** @description Provide a 2d image to guide the texturing process. Supports .jpg, .jpeg, .png formats or base64-encoded data URI. */
             texture_image_url?: string;
-            /** @description Provide an additional text prompt to guide the texturing process. Maximum 600 characters. */
+            /** @description Provide an additional text prompt to guide the texturing process. Maximum 800 characters. */
             texture_prompt?: string;
             /**
              * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7, meshy-7.1 or latest.
@@ -13895,14 +13900,17 @@ export interface components {
             callback_url?: string;
             /** @description Content items driving the generation. Must contain one non-empty text item; optionally add first_frame/last_frame images or reference_* media. */
             content: components["schemas"]["MinimaxV2ContentItem"][];
-            /** @description Video length in seconds, 5 to 15. */
+            /** @description Video length in seconds. Comfy Router accepts 4 to 15 and refuses anything outside it before the provider is called. MiniMax's own documentation for this model states 5 to 15; the ComfyUI MiniMax H3 nodes offer 4 to 15 and a 4-second generation has been observed to succeed, so 4 is accepted here. */
             duration: number;
             /** @description ID of model. Options: MiniMax-H3. Router callers may omit this field or send null; Router injects the model selected by the request path before provider dispatch. */
             model?: string | null;
             /** @description Aspect ratio. Options: adaptive (default), 21:9, 16:9, 4:3, 1:1, 3:4, 9:16. Required and must not be adaptive for text-to-video; ignored (treated as adaptive) for first-frame or last-frame generation. */
             ratio?: string;
-            /** @description Video resolution. Options: 2K, 768P. */
-            resolution: string;
+            /**
+             * @description Video resolution. Options: 2K, 768P. The value is matched case-insensitively and canonicalised before dispatch, so `2k` and `768p` are accepted and sent as `2K` and `768P`.
+             * @enum {string}
+             */
+            resolution: "2K" | "2k" | "768P" | "768p";
             /**
              * Format: int64
              * @description Random seed in [-1, 2^32 - 1]; omitted or -1 is random.
@@ -14337,6 +14345,18 @@ export interface components {
              */
             background?: string;
             /**
+             * Format: binary
+             * @description The single image to edit, sent as one multipart file part. Accepted types are png, webp and jpeg, each under 50 MB. Required unless the body instead carries the repeated `image[]` parts below; send one spelling or the other, never both. The size limit is enforced by OpenAI, not by this proxy.
+             */
+            image?: string;
+            /** @description The images to edit, sent as repeated `image[]` multipart file parts. Accepted types are png, webp and jpeg, each under 50 MB. This is the multi-image alternative to the single `image` part above -- a body carries one spelling or the other, never both. gpt-image-1 and later accept up to 16; that cap and the per-part size limit are enforced by OpenAI, not by this proxy. */
+            "image[]"?: string[];
+            /**
+             * Format: binary
+             * @description Optional multipart file part marking the region to edit -- its fully transparent areas mark what the model replaces. It must be a PNG under 4 MB, it must carry an alpha channel, and it must have the same dimensions as the first image part. The size limit is enforced by OpenAI, not by this proxy.
+             */
+            mask?: string;
+            /**
              * @description The model to use for image editing (e.g., gpt-image-1, gpt-image-1.5, gpt-image-2, gpt-image-2.5-flare, gpt-image-2.5-sunburst)
              * @example gpt-image-2.5-flare
              */
@@ -14394,11 +14414,11 @@ export interface components {
          */
         OpenAIImageGenerationRequest: {
             /**
-             * @description Background transparency
+             * @description Background transparency. `auto` lets the model choose.
              * @example opaque
              * @enum {string}
              */
-            background?: "transparent" | "opaque";
+            background?: "transparent" | "opaque" | "auto";
             /**
              * @description The model to use for image generation (e.g., gpt-image-1, gpt-image-1.5, gpt-image-2, gpt-image-2.5-flare, gpt-image-2.5-sunburst)
              * @example gpt-image-2.5-flare
@@ -14427,19 +14447,24 @@ export interface components {
              */
             output_format?: "png" | "webp" | "jpeg";
             /**
+             * @description Not supported on this proxy. Partial images are emitted only alongside a live stream, which this proxy does not serve, so any value other than `0` or `null` is refused with 400 and the request is never forwarded upstream; omit the field or send `0` or `null`.
+             * @example 0
+             */
+            partial_images?: number | null;
+            /**
              * @description A text description of the desired image
              * @example Draw a rocket in front of a blackhole in deep space
              */
             prompt: string;
             /**
-             * @description The quality of the generated image
+             * @description The quality of the generated image. `xhigh` and `max` are the two tiers gpt-image-2.5-flare and gpt-image-2.5-sunburst were added for; `standard` and `hd` are dall-e-era spellings no admitted model reads.
              * @example high
              * @enum {string}
              */
-            quality?: "low" | "medium" | "high" | "standard" | "hd";
+            quality?: "auto" | "low" | "medium" | "high" | "xhigh" | "max" | "standard" | "hd";
             /**
-             * @description Response format of image data
-             * @example b64_json
+             * @deprecated
+             * @description Response format of image data. No model this operation admits honours it. OpenAI rejects the parameter outright on every gpt-image id -- its own spec says "This parameter isn't supported for the GPT image models, which always return base64-encoded images" -- so a body carrying it is a provider 400 on the native path, whichever value it names. On `openai/gpt-image-2`'s alt-provider legs (fal, wavespeed and runware, reached by `model_provider=` or `fallback_provider`) every one of them only ever returns hosted URLs, so `url` is a no-op and `b64_json` is dropped with disclosure.
              * @enum {string}
              */
             response_format?: "url" | "b64_json";
@@ -14448,6 +14473,11 @@ export interface components {
              * @example 1024x1536
              */
             size?: string;
+            /**
+             * @description Not supported on this proxy. `stream: true` is refused with 400 and the request is never forwarded upstream; omit the field or send `false` or `null` to receive the completed generation as a single JSON body. Upstream, this field would stream partial images back as they are generated.
+             * @example false
+             */
+            stream?: boolean | null;
             /**
              * @deprecated
              * @description Style of the image. Unused by the gpt-image models this operation admits; it was a dall-e-3-only parameter and those ids were retired when OpenAI shut them down on 2026-05-12.
@@ -14485,7 +14515,7 @@ export interface components {
             };
         };
         /** @enum {string} */
-        OpenAIModels: "gpt-4" | "gpt-4-0314" | "gpt-4-0613" | "gpt-4-32k" | "gpt-4-32k-0314" | "gpt-4-32k-0613" | "gpt-4-0125-preview" | "gpt-4-turbo" | "gpt-4-turbo-2024-04-09" | "gpt-4-turbo-preview" | "gpt-4-1106-preview" | "gpt-4-vision-preview" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo-0301" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-1106" | "gpt-3.5-turbo-0125" | "gpt-3.5-turbo-16k-0613" | "gpt-4.1" | "gpt-4.1-mini" | "gpt-4.1-nano" | "gpt-4.1-2025-04-14" | "gpt-4.1-mini-2025-04-14" | "gpt-4.1-nano-2025-04-14" | "o1" | "o1-mini" | "o1-preview" | "o1-pro" | "o1-2024-12-17" | "o1-preview-2024-09-12" | "o1-mini-2024-09-12" | "o1-pro-2025-03-19" | "o3" | "o3-mini" | "o3-2025-04-16" | "o3-mini-2025-01-31" | "o4-mini" | "o4-mini-2025-04-16" | "gpt-4o" | "gpt-4o-mini" | "gpt-4o-2024-11-20" | "gpt-4o-2024-08-06" | "gpt-4o-2024-05-13" | "gpt-4o-mini-2024-07-18" | "gpt-4o-audio-preview" | "gpt-4o-audio-preview-2024-10-01" | "gpt-4o-audio-preview-2024-12-17" | "gpt-4o-mini-audio-preview" | "gpt-4o-mini-audio-preview-2024-12-17" | "gpt-4o-search-preview" | "gpt-4o-mini-search-preview" | "gpt-4o-search-preview-2025-03-11" | "gpt-4o-mini-search-preview-2025-03-11" | "computer-use-preview" | "computer-use-preview-2025-03-11" | "gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "gpt-5.5" | "gpt-5.5-pro" | "gpt-5.6" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna" | "gpt-6-astra" | "chatgpt-4o-latest";
+        OpenAIModels: "gpt-4" | "gpt-4-0314" | "gpt-4-0613" | "gpt-4-32k" | "gpt-4-32k-0314" | "gpt-4-32k-0613" | "gpt-4-0125-preview" | "gpt-4-turbo" | "gpt-4-turbo-2024-04-09" | "gpt-4-turbo-preview" | "gpt-4-1106-preview" | "gpt-4-vision-preview" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo-0301" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-1106" | "gpt-3.5-turbo-0125" | "gpt-3.5-turbo-16k-0613" | "gpt-4.1" | "gpt-4.1-mini" | "gpt-4.1-nano" | "gpt-4.1-2025-04-14" | "gpt-4.1-mini-2025-04-14" | "gpt-4.1-nano-2025-04-14" | "o1" | "o1-mini" | "o1-preview" | "o1-pro" | "o1-2024-12-17" | "o1-preview-2024-09-12" | "o1-mini-2024-09-12" | "o1-pro-2025-03-19" | "o3" | "o3-mini" | "o3-2025-04-16" | "o3-mini-2025-01-31" | "o4-mini" | "o4-mini-2025-04-16" | "gpt-4o" | "gpt-4o-mini" | "gpt-4o-2024-11-20" | "gpt-4o-2024-08-06" | "gpt-4o-2024-05-13" | "gpt-4o-mini-2024-07-18" | "gpt-4o-audio-preview" | "gpt-4o-audio-preview-2024-10-01" | "gpt-4o-audio-preview-2024-12-17" | "gpt-4o-mini-audio-preview" | "gpt-4o-mini-audio-preview-2024-12-17" | "gpt-4o-search-preview" | "gpt-4o-mini-search-preview" | "gpt-4o-search-preview-2025-03-11" | "gpt-4o-mini-search-preview-2025-03-11" | "computer-use-preview" | "computer-use-preview-2025-03-11" | "gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "gpt-5.5" | "gpt-5.5-pro" | "gpt-5.6" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna" | "gpt-6-astra" | "gpt-6-sol" | "gpt-6-luna" | "chatgpt-4o-latest";
         /** @description A response from the model */
         OpenAIResponse: components["schemas"]["ModelResponseProperties"] & components["schemas"]["ResponseProperties"] & {
             /** @description Whether the model response runs in the background. */
@@ -15287,7 +15317,9 @@ export interface components {
          *         {
          *           "finish_reason": "stop",
          *           "index": 0,
-         *           "message": {}
+         *           "message": {
+         *             "content": "ok"
+         *           }
          *         }
          *       ],
          *       "created": 1750000000,
@@ -16506,7 +16538,7 @@ export interface components {
             max_output_tokens?: number;
             /**
              * @description Model identifier for SVG vectorization
-             * @example arrow-1.1
+             * @example arrow-2
              */
             model: string;
             /**
@@ -16536,7 +16568,7 @@ export interface components {
         QuiverSVGResponse: {
             /** @description Unix timestamp of creation */
             created: number;
-            /** @description Credit cost for this request. Use this for billing instead of usage tokens. */
+            /** @description Credit cost for fixed-credit models such as arrow-1.1. Omitted for token-priced models such as arrow-2, which report measured token totals in usage. */
             credits?: number;
             data: {
                 /**
@@ -16549,25 +16581,13 @@ export interface components {
             }[];
             /** @description Unique identifier for the generation */
             id: string;
-            /**
-             * @deprecated
-             * @description Deprecated. Use credits for billing values.
-             */
+            /** @description Token totals for token-priced models such as arrow-2. Fixed-credit models may report zeros here. */
             usage?: {
-                /**
-                 * @deprecated
-                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
-                 */
+                /** @description Input token count for token-priced models. */
                 input_tokens?: number;
-                /**
-                 * @deprecated
-                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
-                 */
+                /** @description Output token count for token-priced models. */
                 output_tokens?: number;
-                /**
-                 * @deprecated
-                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
-                 */
+                /** @description Total token count for token-priced models. */
                 total_tokens?: number;
             };
         };
@@ -16579,7 +16599,7 @@ export interface components {
             max_output_tokens?: number;
             /**
              * @description Model identifier for SVG generation
-             * @example arrow-1.1
+             * @example arrow-2
              */
             model: string;
             /**
@@ -17401,7 +17421,7 @@ export interface components {
             publicFigureThreshold?: "auto" | "low";
         };
         /** @enum {integer} */
-        RunwayDurationEnum: 5 | 10;
+        RunwayDurationEnum: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
         /**
          * @example {
          *       "duration": 5,
@@ -17777,7 +17797,7 @@ export interface components {
          * @description The subscription tier level
          * @enum {string}
          */
-        SubscriptionTier: "FREE" | "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION";
+        SubscriptionTier: "FREE" | "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION" | "TEAM" | "ENTERPRISE";
         /** @description Active speaker detection configuration */
         SyncLabsActiveSpeaker: {
             /** @description Whether to automatically detect and apply generation to the active speaker */
@@ -17804,13 +17824,31 @@ export interface components {
             /** @description Target language code for dubbing */
             targetLang: string;
         };
-        /** @description Request body for creating a Sync Labs lipsync generation */
-        SyncLabsGenerateRequest: {
+        /**
+         * @description The Sync Labs lipsync generation fields, shared by the v1 `POST /proxy/synclabs/v2/generate` request body and the Comfy Router input schema for `synclabs/sync-3`. See the note above this component for why the two surfaces share properties but not `required`.
+         *     `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes. The v1 wrapper `SyncLabsGenerateRequest` re-adds it.
+         * @example {
+         *       "input": [
+         *         {
+         *           "type": "video",
+         *           "url": "https://example.invalid/synclabs/sync-3/speaker.mp4"
+         *         },
+         *         {
+         *           "type": "audio",
+         *           "url": "https://example.invalid/synclabs/sync-3/voiceover.wav"
+         *         }
+         *       ],
+         *       "options": {
+         *         "sync_mode": "bounce"
+         *       }
+         *     }
+         */
+        SyncLabsGenerateInputs: {
             dubParams?: components["schemas"]["SyncLabsDubParams"];
             /** @description Input items; exactly one visual input (video or image) and one audio or text input */
             input: components["schemas"]["SyncLabsGenerationInput"][];
-            /** @description Name of the model to use for generation; only sync-3 is supported */
-            model: string;
+            /** @description Name of the model to use for generation; only sync-3 is supported. On the Comfy Router route `POST /v2/models/synclabs/{model}` this field is supplied from the path and may be omitted. */
+            model?: string | null;
             options?: components["schemas"]["SyncLabsGenerationOptions"];
             /** @description Base filename for the generated output without extension */
             outputFileName?: string;
@@ -17820,6 +17858,31 @@ export interface components {
             segments?: components["schemas"]["SyncLabsGenerationSegment"][];
             /** @description Webhook URL for generation status updates */
             webhookUrl?: string;
+        };
+        /**
+         * @description Request body for the v1 `POST /proxy/synclabs/v2/generate` operation.
+         *     It composes `SyncLabsGenerateInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is load-bearing: this route carries no path segment supplying it, so a caller must send it and the Rewrite refuses a body whose model is not `sync-3`, whereas the Comfy Router route `POST /v2/models/synclabs/{model}` supplies it from the path and its input schema must neither require nor enum-constrain it.
+         *     Read the note above `SyncLabsGenerateInputs` for the full rule and the guards that enforce it.
+         * @example {
+         *       "input": [
+         *         {
+         *           "type": "video",
+         *           "url": "https://example.invalid/synclabs/sync-3/speaker.mp4"
+         *         },
+         *         {
+         *           "type": "audio",
+         *           "url": "https://example.invalid/synclabs/sync-3/voiceover.wav"
+         *         }
+         *       ],
+         *       "model": "sync-3",
+         *       "options": {
+         *         "sync_mode": "bounce"
+         *       }
+         *     }
+         */
+        SyncLabsGenerateRequest: components["schemas"]["SyncLabsGenerateInputs"] & {
+            /** @description Name of the model to use for generation; only sync-3 is supported */
+            model: string;
         };
         /** @description A Sync Labs lipsync generation */
         SyncLabsGeneration: {
@@ -20070,12 +20133,14 @@ export interface components {
                  *     The per-asset "max 20MB" figures above are the PARTNER's ceiling on the image it
                  *     ends up with, and they apply as written when the asset is a public URL, because
                  *     those bytes never travel through Comfy. An INLINE data: URL does travel through
-                 *     Comfy and meets a lower transport ceiling first: a Comfy Router POST body is
-                 *     capped at 20 MiB in total and answered 413 past it, and base64 inflates a payload
-                 *     by about 4/3, so a single inline asset above roughly 15 MB is refused before
-                 *     any of the partner rules here are reached — sooner still when the body carries
-                 *     several of them, since the 20 MiB Router cap bounds the WHOLE request
-                 *     rather than each element. Send anything near these ceilings as a public URL.
+                 *     Comfy and meets a transport ceiling as well: a Comfy Router POST body is
+                 *     capped at 100 MiB in total and answered 413 past it, and base64 inflates a payload
+                 *     by about 4/3, so a single inline asset above roughly 75 MB is refused before
+                 *     any of the partner rules here are reached. At that size a single asset at the
+                 *     partner's own 20MB ceiling fits inline comfortably, so the partner rule is what
+                 *     binds for one asset — the transport ceiling binds across several of them, since
+                 *     the 100 MiB Router cap bounds the WHOLE request rather than each element. Send
+                 *     anything near these ceilings as a public URL.
                  */
                 media?: {
                     /**
@@ -20083,7 +20148,7 @@ export interface components {
                      * @enum {string}
                      */
                     type: "first_frame" | "last_frame" | "driving_audio" | "first_clip" | "reference_image" | "reference_video" | "reference_audio" | "video" | "file" | "link";
-                    /** @description URL of the media file: a public HTTP/HTTPS URL, an OSS temporary URL, or — where the model's entry in the `media` description above says so, as the happyhorse-1.x i2v and r2v spellings do — an inline `data:{MIME_type};base64,...` URL. See that description for the per-model size and pixel floors, and for the 20 MiB Router request-body cap that bounds an inline payload before any partner rule applies. */
+                    /** @description URL of the media file: a public HTTP/HTTPS URL, an OSS temporary URL, or — where the model's entry in the `media` description above says so, as the happyhorse-1.x i2v and r2v spellings do — an inline `data:{MIME_type};base64,...` URL. See that description for the per-model size and pixel floors, and for the 100 MiB Router request-body cap that bounds an inline payload in aggregate. */
                     url: string;
                 }[];
                 /** @description Reverse prompt words are used to describe content that you do not want to see in the video screen */
@@ -20117,7 +20182,7 @@ export interface components {
             /** @description Video processing parameters */
             parameters?: {
                 /**
-                 * @description Whether to add audio to the video
+                 * @description Whether to add audio to the video. Supported for wan3.0-video and wan3.0-video-prime only; the provider documents no such switch for the other wan models.
                  * @default true
                  */
                 audio?: boolean;
@@ -20422,7 +20487,7 @@ export interface components {
              */
             resolution: "1k" | "2k";
             /**
-             * @description Response format to return the image in. Can be url or b64_json. Comfy coerces this to `url` on the outbound request because image results are served as re-hosted URLs either way. The field is accepted and ignored rather than rejected; send it or omit it, the answer is the same.
+             * @description Response format to return the image in. Can be url or b64_json. Comfy coerces this to `url` on the outbound request because image results are served as re-hosted URLs either way. A value IN the enum is therefore accepted and ignored; send `url` or `b64_json` or omit the field, and the answer is the same. A value OUTSIDE the enum is REJECTED with a 400 at ingress rather than coerced, unless it is one of the UNSET spellings: an unset field — omitted, `null`, or `""` — is treated as unset and coerced like any accepted value. Both rules are this `/proxy/` edits route's own: no Comfy Router model dispatches through this component, so neither describes a `POST /v2/models/xai/{model}` call.
              * @default url
              * @enum {string}
              */
@@ -20472,7 +20537,7 @@ export interface components {
              */
             resolution: "1k" | "2k";
             /**
-             * @description Response format to return the image in. Can be url or b64_json. Comfy coerces this to `url` on the outbound request — on the Comfy Router dispatch (`POST /v2/models/xai/{model}`) and on this `/proxy/` route too — because image results are served as re-hosted URLs either way. The field is accepted and ignored rather than rejected; send it or omit it, the answer is the same.
+             * @description Response format to return the image in. Can be url or b64_json. Comfy coerces this to `url` on the outbound request — on the Comfy Router dispatch (`POST /v2/models/xai/{model}`) and on this `/proxy/` route too — because image results are served as re-hosted URLs either way. A value IN the enum is therefore accepted and ignored; send `url` or `b64_json` or omit the field, and the answer is the same. A value OUTSIDE the enum — excluding the UNSET spellings each surface recognises, described next — is REJECTED rather than coerced on BOTH surfaces, and only the shape of the refusal differs: this `/proxy/` route answers a `400` at ingress, and the `POST /v2/models/xai/{model}` Router dispatch answers the per-field `422` it owes the enum published here, before any partner call is made. The two surfaces differ on what counts as UNSET. On this `/proxy/` route an omitted field, an explicit `null` and `""` all mean unset and are coerced like any accepted value. The Router dispatch enforces the enum exactly as published, so `null` and `""` are non-members there like any other: OMIT the field to leave it unset on that surface.
              * @default url
              * @enum {string}
              */
@@ -20519,7 +20584,7 @@ export interface components {
         };
         /** @description Request body for xAI Grok Imagine video editing */
         XAIVideoEditRequest: {
-            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
+            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5, grok-imagine-video-1.5-lite. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
             model?: string | null;
             /** @description Optional output destination for generated video */
             output?: Record<string, never> | null;
@@ -20536,7 +20601,7 @@ export interface components {
              * @default 6
              */
             duration: number | null;
-            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
+            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5, grok-imagine-video-1.5-lite. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
             model?: string | null;
             /** @description Text description of what should happen next in the video */
             prompt: string;
@@ -20565,7 +20630,7 @@ export interface components {
              */
             duration: number | null;
             image?: components["schemas"]["XAIImageObject"];
-            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
+            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5, grok-imagine-video-1.5-lite. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
             model?: string | null;
             /** @description Optional output destination for generated video */
             output?: Record<string, never> | null;
@@ -20605,8 +20670,26 @@ export interface components {
             cost_in_usd_ticks?: number;
         };
     };
-    responses: never;
+    responses: {
+        /** @description An app proxy refusal or failure. `Retry-After` accompanies `free_runs_exhausted`, `concurrent_run_limit`, `upload_rate_limited` and the deployment's own back-off codes. */
+        AppProxyError: {
+            headers: {
+                /** @description Seconds to wait before retrying, when retrying can help. */
+                "Retry-After"?: number;
+                /** @description Repeats the body's `error_type`. */
+                "X-Comfy-Error-Type"?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AppProxyErrorBody"];
+            };
+        };
+    };
     parameters: {
+        /** @description The app's public id (a random UUID) from the app proxy catalog. */
+        AppProxyId: string;
+        /** @description The job id the submit returned. */
+        AppProxyJobId: string;
         /** @description Unique UUID for each request. */
         PixverseAiTraceId: string;
     };
@@ -20616,6 +20699,224 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    uploadAppProxyAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The app's public id (a random UUID) from the app proxy catalog. */
+                proxy_id: components["parameters"]["AppProxyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    content_type: string;
+                    expected_hash?: string;
+                    expires_in?: number;
+                    /** Format: binary */
+                    file: string;
+                    file_path: string;
+                    tags?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Bytes deduplicated to an existing blob; asset minted over it. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppProxyObject"];
+                };
+            };
+            /** @description New blob stored; asset minted. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppProxyObject"];
+                };
+            };
+            400: components["responses"]["AppProxyError"];
+            401: components["responses"]["AppProxyError"];
+            404: components["responses"]["AppProxyError"];
+            409: components["responses"]["AppProxyError"];
+            413: components["responses"]["AppProxyError"];
+            422: components["responses"]["AppProxyError"];
+            429: components["responses"]["AppProxyError"];
+            502: components["responses"]["AppProxyError"];
+            503: components["responses"]["AppProxyError"];
+        };
+    };
+    submitAppProxyJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Client-generated key (a UUID is recommended), max 255 characters. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description The app's public id (a random UUID) from the app proxy catalog. */
+                proxy_id: components["parameters"]["AppProxyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppProxyJobRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent replay - the job this key already created. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppProxyObject"];
+                };
+            };
+            /** @description Job accepted by the deployment. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppProxyObject"];
+                };
+            };
+            400: components["responses"]["AppProxyError"];
+            401: components["responses"]["AppProxyError"];
+            402: components["responses"]["AppProxyError"];
+            404: components["responses"]["AppProxyError"];
+            409: components["responses"]["AppProxyError"];
+            413: components["responses"]["AppProxyError"];
+            422: components["responses"]["AppProxyError"];
+            429: components["responses"]["AppProxyError"];
+            500: components["responses"]["AppProxyError"];
+            502: components["responses"]["AppProxyError"];
+            503: components["responses"]["AppProxyError"];
+        };
+    };
+    getAppProxyJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The app's public id (a random UUID) from the app proxy catalog. */
+                proxy_id: components["parameters"]["AppProxyId"];
+                /** @description The job id the submit returned. */
+                job_id: components["parameters"]["AppProxyJobId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppProxyObject"];
+                };
+            };
+            401: components["responses"]["AppProxyError"];
+            404: components["responses"]["AppProxyError"];
+            502: components["responses"]["AppProxyError"];
+            503: components["responses"]["AppProxyError"];
+        };
+    };
+    cancelAppProxyJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The app's public id (a random UUID) from the app proxy catalog. */
+                proxy_id: components["parameters"]["AppProxyId"];
+                /** @description The job id the submit returned. */
+                job_id: components["parameters"]["AppProxyJobId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job after the cancel request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppProxyObject"];
+                };
+            };
+            401: components["responses"]["AppProxyError"];
+            404: components["responses"]["AppProxyError"];
+            502: components["responses"]["AppProxyError"];
+            503: components["responses"]["AppProxyError"];
+        };
+    };
+    getAppProxyJobOutputContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The app's public id (a random UUID) from the app proxy catalog. */
+                proxy_id: components["parameters"]["AppProxyId"];
+                /** @description The job id the submit returned. */
+                job_id: components["parameters"]["AppProxyJobId"];
+                /** @description The output's asset id, from the job object's `outputs[].id`. */
+                output_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The output bytes, as an attachment (`Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-store`) with the deployment's content type. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            401: components["responses"]["AppProxyError"];
+            404: components["responses"]["AppProxyError"];
+            502: components["responses"]["AppProxyError"];
+            503: components["responses"]["AppProxyError"];
+        };
+    };
+    getAppProxyQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The app's public id (a random UUID) from the app proxy catalog. */
+                proxy_id: components["parameters"]["AppProxyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's quote. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppProxyQuote"];
+                };
+            };
+            401: components["responses"]["AppProxyError"];
+            404: components["responses"]["AppProxyError"];
+            500: components["responses"]["AppProxyError"];
+        };
+    };
     getBulkNodeVersions: {
         parameters: {
             query?: never;
@@ -22797,72 +23098,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    BFLPro_canny_v1_flux_pro_1_0_canny_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BFLCannyInputs"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BFLAsyncResponse"] | components["schemas"]["BFLAsyncWebhookResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BFLHTTPValidationError"];
-                };
-            };
-        };
-    };
-    BFLPro_depth_v1_flux_pro_1_0_depth_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BFLDepthInputs"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BFLAsyncResponse"] | components["schemas"]["BFLAsyncWebhookResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BFLHTTPValidationError"];
                 };
             };
         };
