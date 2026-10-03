@@ -8,11 +8,7 @@ import type {
   TaskResult,
   TaskStatus
 } from '@/platform/tasks/services/taskService'
-import {
-  TaskNotFoundError,
-  parseDownloadFileResult,
-  taskService
-} from '@/platform/tasks/services/taskService'
+import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 
@@ -31,13 +27,10 @@ const recheckableStatuses = new Set<AssetDownloadStatus>([
   'cancellation_pending'
 ])
 const reconcilableTaskStatuses = new Set<TaskStatus>([
-  'created',
-  'running',
   'completed',
   'failed',
   'cancelled'
 ])
-const wireTaskStatuses = new Set<string>(reconcilableTaskStatuses)
 
 function isDownloadActive(status: AssetDownloadStatus) {
   return activeStatuses.has(status)
@@ -67,11 +60,6 @@ export interface AssetDownload {
   error?: string
   modelType?: string
   acknowledged?: boolean
-  /**
-   * Reconciliation attempts made since this download entered
-   * `cancellation_pending` that did not produce a terminal task status.
-   */
-  cancellationReconcileAttempts?: number
 }
 
 interface CompletedDownload {
@@ -81,13 +69,6 @@ interface CompletedDownload {
 }
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
-/**
- * `cancellation_pending` is not a finished status, so the dialog withholds its
- * Close control while a download is in it. Bounding how long we wait for the
- * backend to confirm keeps a backend that accepts the DELETE and then never
- * reports a terminal status from pinning the toast open until a page reload.
- */
-const MAX_CANCELLATION_RECONCILE_ATTEMPTS = 6
 
 function generateDownloadTrackingPlaceholder(
   taskId: TaskId,
@@ -118,82 +99,26 @@ function shouldIgnoreDownloadUpdate(
   return false
 }
 
-/**
- * Settle a cancellation the backend will never confirm. `cancelled` is not
- * immutable in `shouldIgnoreDownloadUpdate`, so a later authoritative
- * `completed` still replaces it; the stale error from any premature `failed`
- * message is dropped because it no longer describes this entry.
- */
-function finalizeCancellation(download: AssetDownload) {
-  download.status = 'cancelled'
-  download.error = undefined
-  download.lastUpdate = Date.now()
-}
-
-/**
- * Record a reconciliation attempt that left a pending cancellation unresolved,
- * settling it locally once the attempts are exhausted.
- */
-function noteAuthoritativePendingCancellation(download: AssetDownload) {
-  if (download.status !== 'cancellation_pending') return
-
-  const attempts = (download.cancellationReconcileAttempts ?? 0) + 1
-  download.cancellationReconcileAttempts = attempts
-  if (attempts >= MAX_CANCELLATION_RECONCILE_ATTEMPTS) {
-    finalizeCancellation(download)
-  }
-}
-
-function resultValue<T>(value: T | undefined, fallback: T | undefined) {
-  return value === undefined ? fallback : value
-}
-
 function createReconciledDownloadMessage(
   download: AssetDownload,
   task: TaskResponse
-): AssetDownloadWsMessage | undefined {
-  const result = parseDownloadFileResult(task.result)
-  // A completed download needs a valid result (or an asset id already learned
-  // from the socket) before it can be recorded as a completed asset.
-  if (task.status === 'completed' && !result && !download.assetId) return
-  const assetId = resultValue(result?.asset_id, download.assetId)
-  const assetName = result?.filename ?? download.assetName
-  const bytesDownloaded = result?.bytes_downloaded ?? download.bytesDownloaded
-  const error = resultValue(task.error_message, result?.error)
+): AssetDownloadWsMessage {
+  const result = task.result
   return {
     task_id: download.taskId,
-    asset_id: assetId,
-    asset_name: assetName,
+    asset_id: result?.asset_id ?? download.assetId,
+    asset_name: result?.filename ?? download.assetName,
     bytes_total: download.bytesTotal,
-    bytes_downloaded: bytesDownloaded,
+    bytes_downloaded: result?.bytes_downloaded ?? download.bytesDownloaded,
     progress: task.status === 'completed' ? 100 : download.progress,
     status: task.status,
-    error
+    error: task.error_message ?? result?.error
   }
-}
-
-function canCancelDownload(
-  download: AssetDownload | undefined,
-  isCancelling: boolean
-) {
-  if (!download || isCancelling) return false
-  return activeStatuses.has(download.status) || download.status === 'failed'
-}
-
-function isSettledDownload(download: AssetDownload) {
-  return download.status === 'completed' || download.status === 'cancelled'
-}
-
-function beginPendingCancellation(download: AssetDownload) {
-  download.status = 'cancellation_pending'
-  download.cancellationReconcileAttempts = 0
-  download.lastUpdate = Date.now()
 }
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
   const cancellingTaskIds = ref(new Set<TaskId>())
-  const reconcilingTaskIds = new Set<TaskId>()
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
@@ -252,17 +177,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     const data = e.detail
     const existing = downloads.value.get(data.task_id)
 
-    // WebSocket payloads are not runtime-validated at the event boundary.
-    // Unknown statuses must not create immortal, non-dismissible rows.
-    if (!wireTaskStatuses.has(data.status)) {
-      if (existing) {
-        existing.status = 'failed'
-        existing.error = data.error || `Unknown task status: ${data.status}`
-        existing.lastUpdate = Date.now()
-      }
-      return
-    }
-
     if (shouldIgnoreDownloadUpdate(existing?.status, data.status)) return
 
     const download: AssetDownload = {
@@ -289,47 +203,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
-  async function reconcileDownload(download: AssetDownload) {
-    if (reconcilingTaskIds.has(download.taskId)) return
-    reconcilingTaskIds.add(download.taskId)
-    try {
-      const result = await taskService.getTask(download.taskId)
-      if (downloads.value.get(download.taskId) !== download) return
-
-      if (!result.ok) {
-        // A 404 is authoritative: the task row is gone, so a pending
-        // cancellation has nothing left to wait for. Other lookup failures are
-        // transient and must not consume the authoritative reconciliation bound.
-        if (result.error instanceof TaskNotFoundError) {
-          if (download.status === 'cancellation_pending') {
-            finalizeCancellation(download)
-          }
-          return
-        }
-        return
-      }
-
-      const task = result.value
-      if (
-        download.status === 'cancellation_pending' &&
-        activeStatuses.has(task.status)
-      ) {
-        noteAuthoritativePendingCancellation(download)
-        return
-      }
-
-      const message = createReconciledDownloadMessage(download, task)
-      if (!message) return
-      handleAssetDownload(
-        new CustomEvent('asset_download', {
-          detail: message
-        })
-      )
-    } finally {
-      reconcilingTaskIds.delete(download.taskId)
-    }
-  }
-
   async function pollStaleDownloads() {
     const now = Date.now()
     const staleDownloads = recheckableDownloads.value.filter(
@@ -338,7 +211,26 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     if (staleDownloads.length === 0) return
 
-    await Promise.all(staleDownloads.map(reconcileDownload))
+    async function pollSingleDownload(download: AssetDownload) {
+      const result = await taskService.getTask(download.taskId)
+      if (!result.ok) return
+      if (downloads.value.get(download.taskId) !== download) return
+
+      const task = result.value
+      if (!reconcilableTaskStatuses.has(task.status)) return
+      if (task.status === 'cancelled') {
+        download.status = 'cancelled'
+        download.lastUpdate = Date.now()
+        return
+      }
+      handleAssetDownload(
+        new CustomEvent('asset_download', {
+          detail: createReconciledDownloadMessage(download, task)
+        })
+      )
+    }
+
+    await Promise.all(staleDownloads.map(pollSingleDownload))
   }
 
   const { pause, resume } = useIntervalFn(
@@ -366,7 +258,11 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   async function cancelDownload(taskId: TaskId): Promise<TaskResult<boolean>> {
     const download = downloads.value.get(taskId)
-    if (!canCancelDownload(download, cancellingTaskIds.value.has(taskId))) {
+    if (
+      cancellingTaskIds.value.has(taskId) ||
+      !download ||
+      !activeStatuses.has(download.status)
+    ) {
       return { ok: true, value: false }
     }
     cancellingTaskIds.value.add(taskId)
@@ -375,28 +271,12 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       if (!result.ok) return result
 
       const current = downloads.value.get(taskId)
-      if (!current) return { ok: true, value: false }
-      if (isSettledDownload(current)) {
-        return { ok: true, value: result.value === 'cancelling' }
+      if (!result.value || !current || finishedStatuses.has(current.status)) {
+        return result
       }
-
-      // A DELETE 404 can mean the cancellation route is unavailable, not that
-      // the task is gone. Re-read the task before deciding how to settle it.
-      if (result.value === 'missing') {
-        beginPendingCancellation(current)
-        await reconcileDownload(current)
-        return { ok: true, value: false }
-      }
-
-      // The backend refused. Re-read the task so the row moves to whatever
-      // status it is really in, instead of silently re-enabling Cancel.
-      if (result.value === 'not-cancellable') {
-        await reconcileDownload(current)
-        return { ok: true, value: false }
-      }
-
-      beginPendingCancellation(current)
-      return { ok: true, value: true }
+      current.status = 'cancellation_pending'
+      current.lastUpdate = Date.now()
+      return result
     } finally {
       cancellingTaskIds.value.delete(taskId)
     }

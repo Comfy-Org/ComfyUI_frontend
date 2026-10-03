@@ -137,7 +137,7 @@ export interface AssetExportWsMessage {
   bytes_total: number
   bytes_processed: number
   progress: number
-  status: TaskStatus
+  status: Exclude<TaskStatus, 'cancelled'>
   error?: string
 }
 
