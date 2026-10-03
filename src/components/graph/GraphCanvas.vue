@@ -217,6 +217,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
+import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import SelectionRectangle from './SelectionRectangle.vue'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
@@ -531,6 +532,26 @@ onMounted(async () => {
   let startupOutcome: StartupOutcome | undefined
   let urlTemplateId: string | undefined
   let bootstrapOutcome: 'completed' | 'failed' = 'failed'
+  const reportStartupError = (error: unknown): undefined => {
+    bootstrapOutcome = 'failed'
+    reportError(error, {
+      errorType: 'failure_initializing_graph_canvas',
+      surface: 'graph'
+    })
+    const isPreloadError =
+      error instanceof Error &&
+      ['js', 'css'].includes(parsePreloadError(error).fileType)
+    toastStore.add({
+      severity: 'error',
+      summary: t(isPreloadError ? 'g.preloadErrorTitle' : 'g.error'),
+      detail: isPreloadError
+        ? t('g.preloadError')
+        : error instanceof Error
+          ? error.message
+          : t('g.unknownError')
+    })
+    return undefined
+  }
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -591,32 +612,29 @@ onMounted(async () => {
     await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     bootstrapOutcome = 'completed'
   } catch (error) {
-    reportError(error, {
-      errorType: 'failure_initializing_graph_canvas',
-      surface: 'graph'
-    })
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.preloadErrorTitle'),
-      detail: t('g.preloadError')
-    })
-    return
+    reportStartupError(error)
+    if (!comfyAppReady.value) return
   } finally {
     workspaceStore.spinner = false
-    bootstrapTracer.complete(bootstrapOutcome)
+    if (!comfyAppReady.value) bootstrapTracer.complete(bootstrapOutcome)
   }
-  const sharedStatus =
-    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+  const sharedStatus = await workflowPersistence
+    .loadSharedWorkflowFromUrlIfPresent()
+    .catch(reportStartupError)
 
   // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
-  await runUrlActionLoaders()
+  await runUrlActionLoaders().catch(reportStartupError)
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
-  const { useReleaseStore } =
-    await import('@/platform/updates/common/releaseStore')
-  const releaseStore = useReleaseStore()
-  void releaseStore.initialize()
+  try {
+    const { useReleaseStore } =
+      await import('@/platform/updates/common/releaseStore')
+    void useReleaseStore().initialize().catch(reportStartupError)
+  } catch (error) {
+    reportStartupError(error)
+  }
 
+  bootstrapTracer.complete(bootstrapOutcome)
   emit('ready')
 
   // The tour draws into an overlay that only mounts once `ready` has flushed.

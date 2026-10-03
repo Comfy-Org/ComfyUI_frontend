@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
@@ -9,10 +10,14 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { useWorkflowPersistenceV2 } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
+import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -50,12 +55,19 @@ vi.mock(import('@/platform/telemetry/reportError'))
  * on top of the overlays `handleStartupOutcome` establishes.
  */
 const mocks = vi.hoisted(() => ({
-  handleStartupOutcome: vi.fn(),
-  handleUrlWorkflow: vi.fn(),
-  initializeWorkflow: vi.fn(),
-  loadTemplateFromUrlIfPresent: vi.fn(),
-  loadSharedWorkflowFromUrlIfPresent: vi.fn(),
-  runUrlActionLoaders: vi.fn(),
+  handleStartupOutcome: vi.fn(async () => undefined),
+  handleUrlWorkflow: vi.fn(async () => undefined),
+  initializeWorkflow: vi.fn(async (): Promise<StartupOutcome> => 'url-intent'),
+  restoreWorkflowTabsState: vi.fn(async () => undefined),
+  loadTemplateFromUrlIfPresent: vi.fn(
+    async (): Promise<string | undefined> => undefined
+  ),
+  loadSharedWorkflowFromUrlIfPresent: vi.fn<
+    ReturnType<
+      typeof useWorkflowPersistenceV2
+    >['loadSharedWorkflowFromUrlIfPresent']
+  >(async () => 'not-present'),
+  runUrlActionLoaders: vi.fn(async () => undefined),
   setDirty: vi.fn()
 }))
 
@@ -76,7 +88,7 @@ vi.mock(
   () => ({
     useWorkflowPersistenceV2: () => ({
       initializeWorkflow: mocks.initializeWorkflow,
-      restoreWorkflowTabsState: vi.fn(),
+      restoreWorkflowTabsState: mocks.restoreWorkflowTabsState,
       loadTemplateFromUrlIfPresent: mocks.loadTemplateFromUrlIfPresent,
       loadSharedWorkflowFromUrlIfPresent:
         mocks.loadSharedWorkflowFromUrlIfPresent
@@ -161,6 +173,9 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
+  vi.spyOn(api, 'getSystemStats').mockResolvedValue(
+    fromPartial<Awaited<ReturnType<typeof api.getSystemStats>>>({})
+  )
   vi.mocked(useReleaseStore().initialize).mockResolvedValue(undefined)
   app.canvas.graph = null
 
@@ -194,11 +209,13 @@ describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
     mocks.initializeWorkflow.mockResolvedValue('url-intent')
     mocks.loadTemplateFromUrlIfPresent.mockResolvedValue('image_to_image')
-    mocks.loadSharedWorkflowFromUrlIfPresent.mockResolvedValue(undefined)
+    mocks.loadSharedWorkflowFromUrlIfPresent.mockResolvedValue('not-present')
   })
 
   it('offers reload guidance and stops startup when required core loading fails', async () => {
-    const error = new SyntaxError("Unexpected token '}'")
+    const error = new TypeError(
+      'Failed to fetch dynamically imported module: https://example.com/core.js'
+    )
     vi.mocked(app.setup).mockRejectedValueOnce(error)
 
     const { emitted } = await mountGraphCanvas()
@@ -216,6 +233,67 @@ describe('GraphCanvas first-run tour wiring', () => {
     expect(mocks.initializeWorkflow).not.toHaveBeenCalled()
     expect(mocks.handleStartupOutcome).not.toHaveBeenCalled()
     expect(mocks.runUrlActionLoaders).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(error, {
+      errorType: 'failure_initializing_graph_canvas',
+      surface: 'graph'
+    })
+  })
+
+  it('shows the actual setup error instead of resource reload guidance', async () => {
+    const error = new Error('Graph initialization failed')
+    vi.mocked(app.setup).mockRejectedValueOnce(error)
+
+    const { emitted } = await mountGraphCanvas()
+
+    expect(emitted('ready')).toBeUndefined()
+    expect(useToastStore().add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        summary: 'g.error',
+        detail: 'Graph initialization failed'
+      })
+    )
+    expect(reportError).toHaveBeenCalledWith(error, {
+      errorType: 'failure_initializing_graph_canvas',
+      surface: 'graph'
+    })
+  })
+
+  it.for([
+    ['workflow initialization', mocks.initializeWorkflow],
+    ['tab restoration', mocks.restoreWorkflowTabsState],
+    ['template loading', mocks.loadTemplateFromUrlIfPresent],
+    ['startup tour', mocks.handleStartupOutcome],
+    ['shared workflow loading', mocks.loadSharedWorkflowFromUrlIfPresent],
+    ['URL actions', mocks.runUrlActionLoaders]
+  ] as const)(
+    'keeps a functional canvas ready when %s fails',
+    async ([, task]) => {
+      const complete = vi.spyOn(bootstrapTracer, 'complete')
+      const error = new Error('Startup data unavailable')
+      task.mockRejectedValueOnce(error)
+
+      const { emitted } = await mountGraphCanvas()
+
+      expect(emitted('ready')).toHaveLength(1)
+      expect(complete).toHaveBeenCalledWith('failed')
+      expect(useCanvasStore().canvas).toBe(app.canvas)
+      expect(useWorkspaceStore().spinner).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(error, {
+        errorType: 'failure_initializing_graph_canvas',
+        surface: 'graph'
+      })
+      expect(mocks.runUrlActionLoaders).toHaveBeenCalledOnce()
+      expect(useReleaseStore().initialize).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('reports a release lookup failure without blocking readiness', async () => {
+    const error = new Error('Release service unavailable')
+    vi.mocked(useReleaseStore().initialize).mockRejectedValueOnce(error)
+
+    const { emitted } = await mountGraphCanvas()
+
+    expect(emitted('ready')).toHaveLength(1)
     expect(reportError).toHaveBeenCalledWith(error, {
       errorType: 'failure_initializing_graph_canvas',
       surface: 'graph'
@@ -242,7 +320,7 @@ describe('GraphCanvas first-run tour wiring', () => {
     expect(mocks.handleUrlWorkflow).toHaveBeenCalledWith(
       'url-intent',
       'image_to_image',
-      undefined
+      'not-present'
     )
   })
 })

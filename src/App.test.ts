@@ -45,6 +45,23 @@ describe('App', () => {
     unmount()
   })
 
+  it('keeps CSS preload failures from blocking module execution', () => {
+    const { unmount } = render(App, {
+      global: { stubs: { RouterView: true } }
+    })
+    const error = new Error('Unable to preload CSS for /assets/graph.css')
+    const event = Object.assign(
+      new Event('vite:preloadError', { cancelable: true }),
+      { payload: error }
+    )
+
+    window.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(reportPreloadError).toHaveBeenCalledWith(error)
+    unmount()
+  })
+
   it('blocks existing dialogs while loading and keeps a stable readiness hook', async () => {
     const workspaceStore = useWorkspaceStore()
     workspaceStore.spinner = true

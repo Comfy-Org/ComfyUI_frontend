@@ -1,3 +1,4 @@
+import { reportError } from '@/platform/telemetry/reportError'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 
 import './clipspace'
@@ -17,8 +18,14 @@ import './layerEditor'
 // The lazy loader triggers loading when a 3D node is used
 import './load3dLazy'
 import './maskeditor'
+const reportOptionalExtensionError = (error: unknown) =>
+  reportError(error, {
+    errorType: 'error_loading_optional_extension',
+    surface: 'platform'
+  })
+
 if (!isCloud) {
-  await import('./nodeTemplates')
+  await import('./nodeTemplates').catch(reportOptionalExtensionError)
 }
 import './noteNode'
 import './painter'
@@ -39,10 +46,10 @@ import './widgetInputs'
 // The literal __DISTRIBUTION__ comparison (not the isCloud const) is what
 // dead-code-eliminates this block from OSS builds.
 if (__DISTRIBUTION__ === 'cloud') {
-  await import('./cloudRemoteConfig')
+  await import('./cloudRemoteConfig').catch(reportOptionalExtensionError)
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
-  await import('./cloudBadges')
+  await import('./cloudBadges').catch(reportOptionalExtensionError)
   await import('./cloudSessionCookie')
 } else if (import.meta.env.VITE_AGENT_STANDALONE === 'true') {
   // The local agent harness mounts the panel in any distribution.
@@ -52,5 +59,7 @@ if (__DISTRIBUTION__ === 'cloud') {
 
 // Feedback button for cloud and nightly builds
 if (isCloud || isNightly) {
-  await import('./cloudFeedbackTopbarButton')
+  await import('./cloudFeedbackTopbarButton').catch(
+    reportOptionalExtensionError
+  )
 }
