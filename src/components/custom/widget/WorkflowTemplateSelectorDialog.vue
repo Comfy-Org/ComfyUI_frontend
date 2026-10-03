@@ -421,7 +421,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CardBottom from '@/components/card/CardBottom.vue'
@@ -447,7 +447,6 @@ import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
-import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type {
   TemplateInfo,
@@ -465,32 +464,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 
-const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
+const {
+  onClose,
+  onTemplateSelected,
+  initialCategory = 'all'
+} = defineProps<{
   onClose: () => void
+  onTemplateSelected: (selected: boolean) => void
   initialCategory?: string
 }>()
-
-// Track session time for telemetry
-const sessionStartTime = ref<number>(0)
-const templateWasSelected = ref(false)
-
-onMounted(() => {
-  sessionStartTime.value = Date.now()
-})
-
-// Wrap onClose to track session end
-const onClose = () => {
-  const timeSpentSeconds = Math.floor(
-    (Date.now() - sessionStartTime.value) / 1000
-  )
-
-  useTelemetry()?.trackTemplateLibraryClosed({
-    template_selected: templateWasSelected.value,
-    time_spent_seconds: timeSpentSeconds
-  })
-
-  originalOnClose()
-}
 
 provide(OnCloseKey, onClose)
 
@@ -893,13 +875,16 @@ watch(
 
 // Methods
 async function onLoadWorkflow(template: TemplateInfo) {
+  onTemplateSelected(true)
   const result = await loadWorkflowTemplate(
     template.name,
     getEffectiveSourceModule(template)
   )
-  if (result === 'not-started') return
+  if (result === 'not-started') {
+    onTemplateSelected(false)
+    return
+  }
 
-  templateWasSelected.value = result === 'loaded'
   onClose()
 }
 

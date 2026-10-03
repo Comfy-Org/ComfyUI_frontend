@@ -82,12 +82,10 @@ describe('template picker close lifecycle', () => {
   it.for([
     {
       outcome: 'success',
-      loaded: true,
       settle: (load: ReturnType<typeof deferred<boolean>>) => load.resolve(true)
     },
     {
       outcome: 'rejection',
-      loaded: false,
       settle: (load: ReturnType<typeof deferred<boolean>>) => {
         vi.spyOn(console, 'error').mockImplementation(() => {})
         load.reject(new Error('Graph load failed'))
@@ -95,7 +93,6 @@ describe('template picker close lifecycle', () => {
     },
     {
       outcome: 'false result',
-      loaded: false,
       settle: (load: ReturnType<typeof deferred<boolean>>) =>
         load.resolve(false)
     }
@@ -115,10 +112,17 @@ describe('template picker close lifecycle', () => {
     row.settle(graphLoad)
 
     await waitFor(() => expect(afterClose).toHaveBeenCalledOnce())
+    // The library is already gone before the graph load settles, so the close
+    // records the pick, not the load outcome — true on all three rows. Exactly
+    // once: the load path's own closeDialog and the later onClose are one
+    // dismissal.
     expect(
       useTelemetry()?.trackTemplateLibraryClosed
     ).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ template_selected: row.loaded })
+      expect.objectContaining({
+        template_selected: true,
+        close_method: 'in_dialog'
+      })
     )
   })
 
