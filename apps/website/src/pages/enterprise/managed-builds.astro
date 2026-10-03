@@ -11,7 +11,6 @@ import StepsCards01 from '../../components/blocks/StepsCards01.vue'
 import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
 import Button from '../../components/ui/button/Button.vue'
-import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
@@ -303,9 +302,8 @@ const faqPage = buildFaqPageNode(url, faqs)
 
   <ClosingCtaSection
     locale="en"
-    heading-after-badge={t(
-      'enterprise.managedBuilds.closing.headingAfterBadge',
-      'en'
+    heading-after-badge={Astro.locals.t(
+      'enterprise.managedBuilds.closing.headingAfterBadge'
     )}
     client:visible
   />

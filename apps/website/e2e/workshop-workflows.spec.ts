@@ -559,15 +559,38 @@ test('@mobile keeps the catalogue tabs in place from one hub page to the next', 
   const models = page.getByTestId('catalogue-tab-models')
   const workflows = page.getByTestId('catalogue-tab-workflows')
   await expect(workflows).toBeVisible()
+  // Stuck under the header is where a reader meets the tabs on a phone, and
+  // the position a tab has to hold is the one it is clicked in.
+  await page.evaluate(() => window.scrollBy(0, 1200))
+  await expect
+    .poll(async () => (await workflows.boundingBox())?.y)
+    .toBeLessThan(200)
   const before = await workflows.boundingBox()
 
-  await workflows.click()
+  // A reader taps the tab where they can see it. Playwright scrolls a target
+  // into view first, and on a toolbar still settling it sometimes scrolls a
+  // pinned one — which is the state under test. Only that scrolling is turned
+  // off: every other check it makes before tapping, the hit test included,
+  // still runs, and a tab out of the viewport now fails rather than being
+  // fetched into it.
+  //
+  // The tabs sit in the same place on both pages and mark themselves current
+  // as soon as they render, so neither tells the page apart from the one it
+  // replaced. The address does, and the place they come to rest is reached
+  // after it — a measurement taken before either is of the page being left.
+  await workflows.click({ scroll: 'none' })
+  await expect(page).toHaveURL('/hub/workflows/')
   await expect(workflows).toHaveAttribute('aria-current', 'page')
-  expect((await workflows.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+  await expect
+    .poll(async () => (await workflows.boundingBox())?.y)
+    .toBeCloseTo(before?.y ?? 0, 0)
 
-  await models.click()
+  await models.click({ scroll: 'none' })
+  await expect(page).toHaveURL('/hub/models/')
   await expect(models).toHaveAttribute('aria-current', 'page')
-  expect((await models.boundingBox())?.y).toBeCloseTo(before?.y ?? 0, 0)
+  await expect
+    .poll(async () => (await models.boundingBox())?.y)
+    .toBeCloseTo(before?.y ?? 0, 0)
 })
 
 test('@mobile stretches the catalogue tabs across the toolbar on a phone', async ({

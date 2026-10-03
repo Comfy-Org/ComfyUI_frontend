@@ -1,5 +1,5 @@
 import type { RumEvent } from '@datadog/browser-rum'
-// eslint-disable-next-line no-restricted-imports -- billing web's telemetry layer owns the RUM sink that reportBillingWebError() and billing events go through
+// oxlint-disable-next-line no-restricted-imports -- billing web's telemetry layer owns the RUM sink that reportBillingWebError() and billing events go through
 import { datadogRum } from '@datadog/browser-rum'
 
 import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'

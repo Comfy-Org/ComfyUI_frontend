@@ -32,7 +32,8 @@ import type { AgentRunMode } from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
-  AuthMethod
+  AuthMethod,
+  WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 
@@ -1307,6 +1308,7 @@ export interface TelemetryProvider {
   trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
+  trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
@@ -1640,6 +1642,7 @@ export type TelemetryEventName =
   | (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
   | BillingTelemetryEventName
   | CheckoutJourneyTelemetryEventName
+  | WebSessionTelemetryEvent['name']
 
 export const OnboardingTourEvents: Record<
   OnboardingTourStage,
@@ -1691,6 +1694,7 @@ export type TelemetryEventProperties =
   | AuthErrorMetadata
   | UnifiedAuthRetryMetadata
   | UnifiedAuthRefreshMetadata
+  | WebSessionTelemetryEvent['properties']
   | ImageLoadFailureMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses
