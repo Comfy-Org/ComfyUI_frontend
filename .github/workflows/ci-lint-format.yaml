@@ -55,6 +55,9 @@ jobs:
       - name: Run oxfmt with auto-format
         run: pnpm -r --include-workspace-root format
 
+      - name: Check source text for raw NUL bytes
+        run: pnpm exec tsx scripts/check-text-encoding.ts --all
+
       - name: Check for changes
         id: verify-changed-files
         run: |
