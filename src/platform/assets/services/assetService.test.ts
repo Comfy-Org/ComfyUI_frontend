@@ -486,6 +486,32 @@ describe(assetService.getAssetModels, () => {
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 
+  it('uses the bucket scheme captured before an in-flight flag change', async () => {
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
+    let resolveWalk!: (response: Response) => void
+    fetchApiMock.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        resolveWalk = resolve
+      })
+    )
+
+    const modelsRead = assetService.getAssetModels('LLM/checkpoints')
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
+    resolveWalk(
+      buildAssetListResponse([
+        validAsset({
+          id: 'legacy',
+          name: 'legacy.safetensors',
+          tags: ['models', 'LLM/checkpoints']
+        })
+      ])
+    )
+
+    expect(await modelsRead).toEqual([
+      { name: 'legacy.safetensors', pathIndex: 0 }
+    ])
+  })
+
   it('drops uncategorized model assets with a warning', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     fetchApiMock.mockResolvedValueOnce(
