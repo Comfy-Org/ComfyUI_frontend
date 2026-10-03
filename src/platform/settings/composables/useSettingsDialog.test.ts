@@ -1,4 +1,6 @@
 import { computed } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { dialogContentVariants } from '@/components/ui/dialog/dialog.variants'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
@@ -46,28 +48,53 @@ describe('useSettingsDialog', () => {
     isCloudRef.value = false
   })
 
+  const maxWidthCapsFromLastShow = (): string[] =>
+    String(showDialog.mock.calls[0][0].dialogComponentProps.contentClass)
+      .split(' ')
+      .filter((utility) => /(^|:)max-w-\[/.test(utility))
+
   it("show() opens the Reka renderer with size 'full' and 1280px content sizing", () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-settings')
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('full')
-    expect(args.dialogComponentProps.contentClass).toContain('1280px')
-    expect(args.dialogComponentProps.contentClass).not.toContain('960px')
     expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')
+
+    const caps = maxWidthCapsFromLastShow()
+    expect(caps).not.toHaveLength(0)
+    expect(caps.filter((cap) => !cap.includes('1280px'))).toEqual([])
+    expect(caps.filter((cap) => cap.includes('960px'))).toEqual([])
   })
 
   it('show() reserves the docked Agent panel width in every max-width cap', () => {
     useSettingsDialog().show()
+
+    const caps = maxWidthCapsFromLastShow()
+    expect(caps).not.toHaveLength(0)
+    expect(
+      caps.filter((cap) => !cap.includes('var(--workspace-inset-right,0px)'))
+    ).toEqual([])
+  })
+
+  it("show() keeps both caps after cn() resolves them against the 'full' variant", () => {
+    useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
-    const maxWidthCaps = String(args.dialogComponentProps.contentClass)
+
+    const resolved = cn(
+      dialogContentVariants({ size: 'full', maximized: false }),
+      args.dialogComponentProps.contentClass
+    )
+    const survivingCaps = resolved
       .split(' ')
       .filter((utility) => /(^|:)max-w-\[/.test(utility))
 
-    expect(maxWidthCaps).not.toHaveLength(0)
+    expect(survivingCaps.some((cap) => cap.startsWith('sm:'))).toBe(true)
     expect(
-      maxWidthCaps.filter(
-        (cap) => !cap.includes('var(--workspace-inset-right,0px)')
+      survivingCaps.filter(
+        (cap) =>
+          !cap.includes('1280px') ||
+          !cap.includes('var(--workspace-inset-right,0px)')
       )
     ).toEqual([])
   })
