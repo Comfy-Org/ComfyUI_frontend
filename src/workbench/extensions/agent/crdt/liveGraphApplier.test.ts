@@ -9,6 +9,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type {
   ISerialisedNode,
   LGraphCanvas
@@ -16,6 +22,7 @@ import type {
 import { reportError } from '@/platform/telemetry/reportError'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
@@ -260,6 +267,203 @@ describe('LiveGraphApplier', () => {
     expect(node.properties.steps).toBe(20)
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
+      expect.objectContaining({ errorType: 'agent_graph_apply_failed' })
+    )
+  })
+
+  it('routes a promoted host widget once and treats deferred callback writes as local', async () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
+    const interior = new LGraphNode('Interior')
+    const interiorInput = interior.addInput('steps', 'number')
+    interiorInput.widget = { name: 'steps' }
+    interior.addWidget('number', 'steps', 20, () => {})
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interiorInput, interior)
+    const host = createTestSubgraphNode(subgraph, { id: 1 })
+    graph.add(host)
+    const hostWidget = host.widgets[0]
+    const originalCallback = hostWidget.callback
+    const callback = vi.fn((value: WidgetValue) => {
+      originalCallback?.(value, undefined, host)
+      hostWidget.value = 30
+      queueMicrotask(() => {
+        // Callback work that outlives the graph call is a separate local edit:
+        // provenance is scoped to the synchronous remote graph operation.
+        hostWidget.value = 36
+      })
+    })
+    const onWidgetChanged = vi.fn()
+    hostWidget.callback = callback
+    host.onWidgetChanged = onWidgetChanged
+    host.properties.steps = 99
+    hostWidget.options.property = 'steps'
+
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: Number(host.id),
+            type: host.type,
+            widgets_values: [20]
+          }
+        ],
+        links: []
+      },
+      CATALOG
+    )
+    collector.take()
+    const docNode = nodesMap(doc).get(String(host.id))
+    if (!docNode) throw new Error('host was not seeded')
+    doc.transact(() => docNode.set('widgets', new Y.Map([['steps', 20]])))
+    collector.take()
+    doc.transact(() => {
+      const widgets = docNode.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('steps', 35)
+    })
+    const intents: Pick<GraphIntentEvent, 'source' | 'type'>[] = []
+    const detach = onGraphIntent(({ source, type }) => {
+      intents.push({ source, type })
+    })
+
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      CONTEXT
+    )
+    await Promise.resolve()
+    detach()
+
+    expect(hostWidget.value).toBe(36)
+    expect(host.properties.steps).toBe(99)
+    expect(callback).toHaveBeenCalledTimes(1)
+    expect(callback).toHaveBeenCalledWith(35, undefined, host)
+    expect(onWidgetChanged).toHaveBeenCalledWith('steps', 35, 20, hostWidget)
+    expect(intents).toContainEqual({
+      source: 'agent-remote',
+      type: 'set_widget'
+    })
+    expect(intents).toContainEqual({ source: 'local', type: 'set_widget' })
+  })
+
+  it('restores a promoted callback when its value setter throws', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
+    const interior = new LGraphNode('Interior')
+    const interiorInput = interior.addInput('steps', 'number')
+    interiorInput.widget = { name: 'steps' }
+    interior.addWidget('number', 'steps', 20, () => {})
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interiorInput, interior)
+    const host = createTestSubgraphNode(subgraph, { id: 101 })
+    graph.add(host)
+    const widget = host.widgets[0]
+    const callback = vi.fn()
+    widget.callback = callback
+    Object.defineProperty(widget, 'value', {
+      configurable: true,
+      get: () => 20,
+      set: () => {
+        throw new Error('extension setter exploded')
+      }
+    })
+
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [{ id: 101, type: host.type, widgets_values: [20] }],
+        links: []
+      },
+      CATALOG
+    )
+    collector.take()
+    const docNode = nodesMap(doc).get('101')
+    if (!docNode) throw new Error('host was not seeded')
+    doc.transact(() => docNode.set('widgets', new Y.Map([['steps', 35]])))
+
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      CONTEXT
+    )
+
+    expect(widget.callback).toBe(callback)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'extension setter exploded' }),
+      expect.objectContaining({
+        errorType: 'agent_graph_apply_failed',
+        tags: expect.objectContaining({ outcome: 'degraded' }),
+        context: { nodeId: '101', widget: 'steps' }
+      })
+    )
+  })
+
+  it('isolates a throwing promoted-widget callback from later widgets in the frame', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [
+        { name: 'first', type: 'number' },
+        { name: 'second', type: 'number' }
+      ]
+    })
+    const interior = new LGraphNode('Interior')
+    for (const name of ['first', 'second']) {
+      const input = interior.addInput(name, 'number')
+      input.widget = { name }
+      interior.addWidget('number', name, 1, () => {})
+    }
+    subgraph.add(interior)
+    for (const input of interior.inputs) {
+      subgraph.inputNode.slots
+        .find((slot) => slot.name === input.name)
+        ?.connect(input, interior)
+    }
+    const host = createTestSubgraphNode(subgraph, { id: 100 })
+    graph.add(host)
+    const first = host.widgets.find(({ name }) => name === 'first')
+    const second = host.widgets.find(({ name }) => name === 'second')
+    if (!first || !second) throw new Error('host widgets were not promoted')
+    first.callback = () => {
+      throw new Error('first callback exploded')
+    }
+
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [{ id: 100, type: host.type, widgets_values: [1, 1] }],
+        links: []
+      },
+      CATALOG
+    )
+    collector.take()
+    const docNode = nodesMap(doc).get('100')
+    if (!docNode) throw new Error('host was not seeded')
+    doc.transact(() =>
+      docNode.set(
+        'widgets',
+        new Y.Map([
+          ['first', 2],
+          ['second', 3]
+        ])
+      )
+    )
+
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      CONTEXT
+    )
+
+    expect(first.value).toBe(1)
+    expect(second.value).toBe(3)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'first callback exploded' }),
       expect.objectContaining({ errorType: 'agent_graph_apply_failed' })
     )
   })

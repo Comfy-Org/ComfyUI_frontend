@@ -26,7 +26,6 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -762,12 +761,11 @@ export class LiveGraphApplier {
       )
       return
     }
-    const store = useWidgetValueStore()
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const widgetId = promoted.find((input) => input.name === name)?.widgetId
-      if (!widgetId) {
+      const input = promoted.find((candidate) => candidate.name === name)
+      if (!input) {
         this.reportOnce(
           `widget:${String(node.id)}:${name}`,
           `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
@@ -776,9 +774,31 @@ export class LiveGraphApplier {
         )
         continue
       }
-      store.setValue(widgetId, value)
+      const widget = node.getWidgetFromSlot(input)
+      if (!widget) {
+        this.reportOnce(
+          `widget:${String(node.id)}:${name}:unresolved`,
+          `Subgraph host ${String(node.id)} (${node.type}) could not resolve promoted widget '${name}'`,
+          'agent_graph_widget_missing',
+          { nodeId: node.id, type: node.type, name }
+        )
+        continue
+      }
+      try {
+        this.setPromotedWidgetValue(node, widget, value)
+      } catch (error) {
+        const options = {
+          surface: 'agent',
+          errorType: 'agent_graph_apply_failed',
+          tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+          context: {
+            nodeId: String(node.id),
+            widget: name
+          }
+        } as const
+        reportError(error, options)
+      }
     }
-    node.graph?.incrementVersion()
   }
 
   private holdsLocalWrite(
@@ -804,6 +824,38 @@ export class LiveGraphApplier {
       node.onWidgetChanged?.(widget.name, value, previous, widget)
     } catch (error) {
       rollback()
+      throw error
+    }
+    node.graph?.incrementVersion()
+  }
+
+  private setPromotedWidgetValue(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ): void {
+    if (widget.type === 'button' || Object.is(widget.value, value)) return
+    const previous = widget.value
+    const callback = widget.callback
+    function writeWithoutCallback<T>(write: () => T): T {
+      widget.callback = undefined
+      try {
+        return write()
+      } finally {
+        widget.callback = callback
+      }
+    }
+    const rollback = writeWithoutCallback(() =>
+      writeWidgetValue(node, widget, value, false)
+    )
+    try {
+      callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
+      node.onWidgetChanged?.(widget.name, value, previous, widget)
+      if (!Object.is(widget.value, value)) {
+        writeWithoutCallback(() => writeWidgetValue(node, widget, value, false))
+      }
+    } catch (error) {
+      writeWithoutCallback(rollback)
       throw error
     }
     node.graph?.incrementVersion()
@@ -927,11 +979,12 @@ function hostWidgetEntries(
 function writeWidgetValue(
   node: LGraphNode,
   widget: IBaseWidget,
-  value: WidgetValue
+  value: WidgetValue,
+  mirrorProperty = true
 ): () => void {
   const previous = widget.value
   const property = widget.options.property
-  if (!property || node.properties[property] === undefined) {
+  if (!mirrorProperty || !property || node.properties[property] === undefined) {
     widget.value = value
     return () => {
       widget.value = previous
