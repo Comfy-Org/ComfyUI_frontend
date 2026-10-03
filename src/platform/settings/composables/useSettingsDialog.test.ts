@@ -1,11 +1,14 @@
 import { computed } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
+import { dialogContentVariants } from '@/components/ui/dialog/dialog.variants'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
- * Settings dialog migration regression net: `useSettingsDialog().show()` must
- * open the Reka-renderer path with sizing that matches the previous
- * `BaseModalLayout size="sm"` (960px × 80vh). Catches accidental reverts of
- * the Phase 3 renderer flip.
+ * Settings dialog regression net: `useSettingsDialog().show()` must open the
+ * Reka-renderer path at the 1280px design width, capped to the workspace a
+ * docked Agent panel leaves. Catches accidental reverts of the Phase 3
+ * renderer flip and of the workspace-inset cap.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -46,17 +49,57 @@ describe('useSettingsDialog', () => {
     isCloudRef.value = false
   })
 
-  it("show() opens the Reka renderer with size 'full' and 1280px content sizing", () => {
+  const RESERVES_INSET = /var\(--workspace-inset-right,_?0px\)/
+
+  const resolveAgainstVariant = (args: {
+    dialogComponentProps: { size: DialogContentSize; contentClass: string }
+  }): string =>
+    cn(
+      dialogContentVariants({
+        size: args.dialogComponentProps.size,
+        maximized: false
+      }),
+      args.dialogComponentProps.contentClass
+    )
+
+  it("show() opens the Reka renderer with size 'full'", () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-settings')
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('full')
-    expect(args.dialogComponentProps.contentClass).toContain('max-w-[1280px]')
-    expect(args.dialogComponentProps.contentClass).not.toContain(
-      'max-w-[960px]'
-    )
     expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')
+  })
+
+  it('show() caps both breakpoints at 1280px within the docked Agent panel inset', () => {
+    useSettingsDialog().show()
+    const [args] = showDialog.mock.calls[0]
+
+    const survivingCaps = resolveAgainstVariant(args)
+      .split(' ')
+      .filter((utility) => /(^|:)max-w-\[/.test(utility))
+
+    expect(survivingCaps.some((cap) => cap.startsWith('sm:'))).toBe(true)
+    expect(survivingCaps.some((cap) => !cap.startsWith('sm:'))).toBe(true)
+    expect(
+      survivingCaps.filter(
+        (cap) => !cap.includes('1280px') || !RESERVES_INSET.test(cap)
+      )
+    ).toEqual([])
+  })
+
+  it('show() keeps the workspace-aware centering that the cap is sized for', () => {
+    useSettingsDialog().show()
+    const [args] = showDialog.mock.calls[0]
+
+    const horizontalPlacement = resolveAgainstVariant(args)
+      .split(' ')
+      .filter((utility) => /(^|:)left-/.test(utility))
+
+    expect(horizontalPlacement).not.toHaveLength(0)
+    expect(
+      horizontalPlacement.filter((utility) => !RESERVES_INSET.test(utility))
+    ).toEqual([])
   })
 
   it('show() uses non-modal Reka so nested PrimeVue dialogs keep focus and pointer events', () => {

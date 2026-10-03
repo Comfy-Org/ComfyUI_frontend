@@ -7,9 +7,11 @@ import type { SettingPanelType } from '@/platform/settings/types'
 
 const DIALOG_KEY = 'global-settings'
 
-// The redesigned Settings dialog is 1280px wide (DES 3253-16079).
+// The redesigned Settings dialog is 1280px wide (DES 3253-16079), capped to the
+// workspace a docked Agent panel leaves. The `sm:` copy is required: without it
+// the `size: 'full'` variant's workspace-only `sm:max-w` drops the 1280px bound.
 const SETTINGS_CONTENT_CLASS =
-  'w-[90vw] max-w-[1280px] sm:max-w-[1280px] h-[80vh] max-h-none rounded-2xl overflow-hidden'
+  'w-[90vw] max-w-[min(1280px,calc(100vw-var(--workspace-inset-right,0px)-1rem))] sm:max-w-[min(1280px,calc(100vw-var(--workspace-inset-right,0px)-1rem))] h-[80vh] max-h-none rounded-2xl overflow-hidden'
 
 export function useSettingsDialog() {
   const dialogService = useDialogService()
