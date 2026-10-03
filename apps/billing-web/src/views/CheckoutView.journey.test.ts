@@ -895,6 +895,44 @@ describe('the embedded checkout exits and endings', () => {
     ])
   })
 
+  it.for<{ name: string; type: string; label: string; exits: number }>([
+    {
+      name: 'a saved Alipay account, which pays on its own site',
+      type: 'alipay',
+      label: 'Alipay',
+      exits: 0
+    },
+    { name: 'a saved card', type: 'card', label: 'visa •••• 4242', exits: 1 }
+  ])(
+    'reports $exits abandon when the page goes away during a Pay with $name',
+    async ({ type, label, exits }) => {
+      const fake = await renderCheckout(CHECKOUT_PATH, {
+        paymentMethods: {
+          status: 'ok',
+          value: [
+            {
+              id: 'pm_saved',
+              type,
+              brand: 'visa',
+              last4: '4242',
+              is_default: true
+            }
+          ]
+        }
+      })
+      await screen.findByText(label)
+      fake.subscribe.mockImplementation(() => new Promise(() => {}))
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      )
+      await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+      leavePage()
+
+      expect(exitsOf()).toHaveLength(exits)
+    }
+  )
+
   it('reports the success its own payment reached, and no abandon after it', async () => {
     await renderCheckout(CHECKOUT_PATH, {
       subscribe: {
