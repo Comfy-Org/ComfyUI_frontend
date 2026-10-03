@@ -11,15 +11,12 @@ import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import userEvent from '@testing-library/user-event'
-
-const { mockCanCreateNodeForAsset } = vi.hoisted(() => ({
-  mockCanCreateNodeForAsset: vi.fn(() => true)
-}))
+import * as resolveModelNodeFromAsset from '@/platform/assets/integration/resolveModelNodeFromAsset'
 
 vi.mock(
   import('@/platform/assets/integration/resolveModelNodeFromAsset'),
   () => ({
-    canCreateNodeForAsset: mockCanCreateNodeForAsset
+    canCreateNodeForAsset: vi.fn(() => true)
   })
 )
 
@@ -74,7 +71,9 @@ function renderCard(
 }
 
 beforeEach(() => {
-  mockCanCreateNodeForAsset.mockReturnValue(true)
+  vi.mocked(resolveModelNodeFromAsset.canCreateNodeForAsset).mockReturnValue(
+    true
+  )
   vi.mocked(useSettingStore().get).mockImplementation(() => 0)
   vi.mocked(useAssetDownloadStore().isDownloadedThisSession).mockImplementation(
     () => false
@@ -110,7 +109,9 @@ describe('AssetCard', () => {
 
   it('allows widget assignment without a node provider', async () => {
     const user = userEvent.setup()
-    mockCanCreateNodeForAsset.mockReturnValue(false)
+    vi.mocked(resolveModelNodeFromAsset.canCreateNodeForAsset).mockReturnValue(
+      false
+    )
 
     const { emitted } = renderCard(createDisplayAsset())
     await user.click(screen.getByRole('button', { name: 'g.use' }))
@@ -120,7 +121,9 @@ describe('AssetCard', () => {
 
   it('exposes and blocks node creation when the asset has no provider', async () => {
     const user = userEvent.setup()
-    mockCanCreateNodeForAsset.mockReturnValue(false)
+    vi.mocked(resolveModelNodeFromAsset.canCreateNodeForAsset).mockReturnValue(
+      false
+    )
 
     const { emitted } = renderCard(createDisplayAsset(), {
       requireNodeProvider: true
