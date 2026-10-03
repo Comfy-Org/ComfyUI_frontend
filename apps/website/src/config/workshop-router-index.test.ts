@@ -40,6 +40,47 @@ describe('Router catalog completeness', () => {
     ).toBe(false)
   })
 
+  it('publishes the alt-provider legs of every model a third party also serves', () => {
+    const index = workshopRouterIndexSchema.parse(packedIndex)
+    const legs = new Map(
+      index.map((record) => [
+        record.id,
+        record.altProviders?.map(({ routerId }) => routerId)
+      ])
+    )
+    expect(legs.get('kling/kling-v3')).toEqual([
+      'higgsfield/higgsfield-kling-3-std'
+    ])
+    expect(legs.get('kling/kling-3.0-turbo')).toEqual([
+      'higgsfield/higgsfield-kling-3-turbo'
+    ])
+    expect(legs.get('wan/wan3.0-video')).toEqual([
+      'higgsfield/higgsfield-wan-3'
+    ])
+    for (const [id, version] of [
+      ['byteplus/dreamina-seedance-2-0-260128', '2.0'],
+      ['byteplus/dreamina-seedance-2-5-260628', '2.5']
+    ])
+      expect(legs.get(id)).toEqual(
+        ['fal', 'higgsfield', 'runware', 'wavespeed'].map(
+          (provider) => `${provider}/${provider}-seedance-${version}`
+        )
+      )
+    for (const [id, model] of [
+      ['openai/gpt-image-2', 'gpt-image-2'],
+      ['vertexai/gemini-3.1-flash-image', 'nano-banana-2'],
+      ['vertexai/gemini-3-pro-image', 'nano-banana-pro']
+    ])
+      expect(legs.get(id)).toEqual(
+        ['fal', 'runware', 'wavespeed'].map(
+          (provider) => `${provider}/${provider}-${model}`
+        )
+      )
+    expect(
+      [...legs.values()].flatMap((routerIds) => routerIds ?? [])
+    ).toHaveLength(26)
+  })
+
   it('requires rechecking an availability override when its Router snapshot changes', () => {
     const updated = rawSnapshots.map((snapshot) =>
       snapshot.id === 'ideogram/p-image-ideogram'
