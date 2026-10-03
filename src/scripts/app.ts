@@ -1025,7 +1025,21 @@ export class ComfyApp {
           throw new Error('workflow is not ready')
         }
         return this.rootGraph.serialize()
-      }
+      },
+      workflowExtra: {
+        read: (key) => structuredClone(this.rootGraph.extra?.[key]),
+        write: (key, value) => {
+          this.rootGraph.extra ??= {}
+          if (value === undefined) delete this.rootGraph.extra[key]
+          else this.rootGraph.extra[key] = structuredClone(value)
+          this.rootGraph.setDirtyCanvas(true, true)
+        }
+      },
+      graphViewport: () => ({
+        element: this.canvas.canvas,
+        scale: this.canvas.ds.scale,
+        offset: [this.canvas.ds.offset[0], this.canvas.ds.offset[1]]
+      })
     })
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
       useExtensionService().loadExtensions()

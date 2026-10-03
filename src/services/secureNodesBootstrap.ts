@@ -71,6 +71,17 @@ function isEnabled(): boolean {
 export interface SecureNodesHostFacilities {
   /** Host-owned, saved-format snapshot of the active workflow. */
   workflowSnapshot?: () => unknown | Promise<unknown>
+  /** Host-owned access to namespaced data in the active workflow's `extra`. */
+  workflowExtra?: {
+    read(key: string): unknown
+    write(key: string, value: unknown): void
+  }
+  /** Current graph canvas and its graph-to-viewport transform. */
+  graphViewport?: () => {
+    element: HTMLCanvasElement
+    scale: number
+    offset: readonly [number, number]
+  }
 }
 
 export async function installSecureNodesHost(
