@@ -449,12 +449,15 @@ function calledMemberName(node: Node | undefined): string | undefined {
   return member && staticMemberName(member)
 }
 
-function isMockConfiguration(statement: Node): boolean {
+function isMockInstanceCleanup(statement: Node): boolean {
   if (statement.type !== 'ExpressionStatement') return false
   const methodName = calledMemberName(
     unwrapChain((statement as ExpressionStatement).expression)
   )
-  return methodName?.startsWith('mock') === true
+  return (
+    methodName !== undefined &&
+    REDUNDANT_MOCK_INSTANCE_CLEANUP_METHODS.has(methodName)
+  )
 }
 
 function precedesBeforeEachSetup(
@@ -463,13 +466,13 @@ function precedesBeforeEachSetup(
 ): boolean {
   const ancestors = context.sourceCode.getAncestors(node)
   const boundaryIndex = enclosingExecutionBoundaryIndex(ancestors)
-  const body = ancestors[boundaryIndex + 1]
-  if (body.type !== 'BlockStatement') return true
+  const body = ancestors.at(boundaryIndex + 1)
+  if (body?.type !== 'BlockStatement') return true
   const statements = (body as BlockStatement).body
   const statementIndex = statements.findIndex(
     (statement) => statement === ancestors[boundaryIndex + 2]
   )
-  return statements.slice(0, statementIndex).every(isMockConfiguration)
+  return statements.slice(0, statementIndex).every(isMockInstanceCleanup)
 }
 
 function isRedundantMockInstanceCleanup(

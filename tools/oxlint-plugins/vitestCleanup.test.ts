@@ -268,13 +268,21 @@ afterAll(() => {
 })
 beforeAll(() => vi.mocked(mock).mockReset())
 beforeEach(() => {
-  other.mockReturnValue(1)
+  other.mockClear()
   mock.mockReset().mockReturnValue(2)
-  mock.mockClear()
   render()
   other.mockClear()
 })
 beforeEach(() => mock?.mockClear())
+beforeEach(() => mock.mockClear())
+beforeEach(() => {
+  mock.mockReturnValue(1)
+  mock.mockReset()
+})
+beforeEach(() => {
+  mock.mockReturnValue(1)
+  mock.mockRestore()
+})
 it('allows per-mock cleanup in tests', () => {
   mock.mockClear()
   mock.mockReset()
@@ -394,8 +402,8 @@ describe('Vitest cleanup rules', () => {
   })
 
   it('reports per-mock cleanup in hooks unless beforeEach setup ran first', () => {
-    expect(output.match(/resets and restores every mock/g)).toHaveLength(6)
-    expectReportsAt(output, [6, 8, 10, 13, 14, 18], 'mock-instance.test.ts')
+    expect(output.match(/resets and restores every mock/g)).toHaveLength(7)
+    expectReportsAt(output, [6, 8, 10, 12, 13, 17, 18], 'mock-instance.test.ts')
   })
 
   it('reports persistent LiteGraph registrations and redundant cleanup', () => {
