@@ -6,7 +6,7 @@ import type { AssetExportWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
-type ExportEventHandler = (e: CustomEvent<AssetExportWsMessage>) => void
+type ExportEventHandler = (e: CustomEvent<unknown>) => void
 
 const eventHandler = vi.hoisted(() => {
   const state: { current: ExportEventHandler | null } = { current: null }
@@ -15,10 +15,8 @@ const eventHandler = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
-    api_base: '',
-    apiURL(this: { api_base: string }, route: string) {
-      return new URL(`${this.api_base}${route}`, location.origin).toString()
-    },
+    api_base: '/comfy',
+    apiURL: vi.fn((route: string) => `/comfy${route}`),
     fetchApi: vi.fn(),
     addEventListener: vi.fn((_event: string, handler: ExportEventHandler) => {
       eventHandler.current = handler
@@ -81,6 +79,10 @@ function createExportMessage(
 }
 
 function dispatch(msg: AssetExportWsMessage) {
+  dispatchUnknown(msg)
+}
+
+function dispatchUnknown(msg: unknown) {
   if (!eventHandler.current) {
     throw new Error('Event handler not registered. Call the store factory.')
   }
@@ -150,10 +152,75 @@ describe('useAssetExportStore polling', () => {
     expect(store.activeExports).toHaveLength(0)
   })
 
+  it('settles an existing export that receives an unknown wire status', () => {
+    const store = useAssetExportStore()
+    dispatch(createExportMessage())
+
+    dispatchUnknown({ ...createExportMessage(), status: 'future-status' })
+
+    expect(store.finishedExports[0]).toMatchObject({
+      status: 'failed',
+      error: 'Unknown task status: future-status'
+    })
+  })
+
+  it.for(['completed', 'cancelled'] as const)(
+    'preserves a terminal %s export after an unknown wire status',
+    (status) => {
+      const store = useAssetExportStore()
+      store.trackExport('task-1')
+      dispatch(
+        createExportMessage({
+          task_id: 'task-1',
+          status,
+          progress: status === 'completed' ? 1 : 0.3
+        })
+      )
+
+      dispatchUnknown({
+        ...createExportMessage({ task_id: 'task-1' }),
+        status: 'future-status'
+      })
+
+      expect(store.exportList[0].status).toBe(status)
+      expect(store.exportList[0].error).toBeUndefined()
+    }
+  )
+
+  it('settles an export when its task row has been purged', async () => {
+    const store = useAssetExportStore()
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(null, { status: 404 })
+    )
+    dispatch(createExportMessage())
+
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(store.finishedExports[0]).toMatchObject({
+      status: 'failed',
+      error: expect.stringContaining('Task not found')
+    })
+  })
+
+  it('keeps completion terminal when fetching the download URL fails', async () => {
+    const store = useAssetExportStore()
+    vi.mocked(assetService.getExportDownloadUrl).mockRejectedValueOnce(
+      new Error('signed URL failed')
+    )
+    dispatch(createExportMessage({ status: 'completed', progress: 1 }))
+    await vi.advanceTimersByTimeAsync(0)
+
+    dispatch(createExportMessage({ status: 'running', progress: 0.5 }))
+
+    expect(store.finishedExports[0]).toMatchObject({
+      status: 'completed',
+      downloadError: 'signed URL failed'
+    })
+    expect(store.activeExports).toHaveLength(0)
+  })
+
   it('does not restore a dismissed export when an in-flight poll finishes', async () => {
     const store = useAssetExportStore()
-    const { assetService } =
-      await import('@/platform/assets/services/assetService')
     let releaseResponse!: () => void
     const responseReady = new Promise<void>((resolve) => {
       releaseResponse = resolve
@@ -182,6 +249,30 @@ describe('useAssetExportStore polling', () => {
     // `downloadTriggered` false and downloads the archive a second time.
     expect(store.hasExports).toBe(false)
     expect(assetService.getExportDownloadUrl).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not overlap slow polling requests for one export', async () => {
+    useAssetExportStore()
+    let releaseResponse!: () => void
+    const responseReady = new Promise<void>((resolve) => {
+      releaseResponse = resolve
+    })
+    vi.mocked(api.fetchApi).mockImplementation(async () => {
+      await responseReady
+      return Response.json(
+        createExportTaskResponse({ status: 'running', result: undefined })
+      )
+    })
+    dispatch(createExportMessage())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
+
+    releaseResponse()
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
   })
 })
 

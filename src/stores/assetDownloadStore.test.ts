@@ -19,7 +19,7 @@ const eventHandler = vi.hoisted(() => {
   return state
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn((_event: string, handler: DownloadEventHandler) => {
       eventHandler.current = handler
@@ -130,6 +130,26 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads).toHaveLength(1)
     })
 
+    it('preserves a completed download when a later event has an unknown status', () => {
+      const store = useAssetDownloadStore()
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+
+      dispatch(
+        createDownloadMessage({
+          status: 'unknown' as AssetDownloadWsMessage['status'],
+          error: 'Unsupported status'
+        })
+      )
+
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'completed',
+        progress: 100,
+        error: undefined
+      })
+      expect(store.sessionDownloadCount).toBe(1)
+      expect(store.isDownloadedThisSession('asset-456')).toBe(true)
+    })
+
     // REGRESSION COVERAGE PM-1302 / PM-1309: cloud's HandleDownloadFile
     // (download_file.go) can broadcast a terminal `failed` WS message for a
     // retryable error before asynq decides whether to retry, then
@@ -151,21 +171,21 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads[0].error).toBeUndefined()
     })
 
-    // OPEN DESIGN QUESTION PM-1302 / PM-1309: `activeDownloads` is also the
-    // UI's `isInProgress` signal (see ModelImportProgressDialog.vue), and an
-    // existing, unmarked test above ("moves download to finished when
-    // failed") requires a `failed` download to leave `activeDownloads` so
-    // the dialog can show its failed state and close button. Reconciliation
-    // of a `failed`-then-actually-`completed` task is now handled
-    // separately (pollStaleDownloads() re-checks `failed` downloads too, and
-    // a later WS message is no longer dropped - see the test above), but
-    // deliberately without pulling `failed` downloads back into
-    // `activeDownloads`, which would make the dialog show them as
+    // OPEN DESIGN QUESTION (PM-1302 / PM-1309 both closed):
+    // `activeDownloads` is also the UI's `isInProgress` signal (see
+    // ModelImportProgressDialog.vue), and an existing, unmarked test above
+    // ("moves download to finished when failed") requires a `failed` download
+    // to leave `activeDownloads` so the dialog can show its failed state and
+    // close button. Reconciliation of a `failed`-then-actually-`completed`
+    // task is now handled separately (pollStaleDownloads() re-checks `failed`
+    // downloads too, and a later WS message is no longer dropped - see the
+    // test above), but deliberately without pulling `failed` downloads back
+    // into `activeDownloads`, which would make the dialog show them as
     // in-progress again. Changing that UI-facing meaning of `activeDownloads`
     // is a product decision, not a mechanical fix, so this assertion is left
     // pinned as a known, deliberate gap for further discussion rather than
     // flipped.
-    it.fails('excludes a failed-then-actually-completed task from activeDownloads so it is never reconciled (PM-1302)', () => {
+    it.fails('excludes a failed-then-actually-completed task from activeDownloads (PM-1302)', () => {
       const store = useAssetDownloadStore()
 
       dispatch(createDownloadMessage({ status: 'running' }))
@@ -174,10 +194,11 @@ describe('useAssetDownloadStore', () => {
       )
 
       // The task never actually stopped on the backend - it retried and
-      // completed - but it was dropped from activeDownloads the moment the
-      // premature `failed` message landed, so pollStaleDownloads()
-      // (which only walks activeDownloads) will never pick it back up to
-      // reconcile with the real, later `completed` message.
+      // completed - but it left activeDownloads the moment the premature
+      // `failed` message landed, so the dialog stops showing it as in
+      // progress. Reconciliation itself still happens: pollStaleDownloads()
+      // walks recheckableDownloads, which includes `failed` (see the
+      // polling test below).
       expect(store.activeDownloads).toHaveLength(1)
     })
   })
@@ -208,6 +229,24 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads).toHaveLength(1)
       expect(store.finishedDownloads[0].status).toBe('completed')
       expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
+    })
+
+    it('ignores late progress while cancellation is pending', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      dispatch(createDownloadMessage({ status: 'running', progress: 25 }))
+
+      await store.cancelDownload('task-123')
+      dispatch(createDownloadMessage({ status: 'running', progress: 50 }))
+
+      expect(store.downloadList[0]).toMatchObject({
+        status: 'cancellation_pending',
+        progress: 25,
+        cancellationReconcileAttempts: 0
+      })
     })
   })
 
@@ -241,6 +280,20 @@ describe('useAssetDownloadStore', () => {
       expect(taskService.cancelTask).toHaveBeenCalledWith('task-123')
       expect(store.downloadList[0].status).toBe('cancellation_pending')
       expect(store.finishedDownloads).toHaveLength(0)
+    })
+
+    it('allows cancelling a failed row while the backend may still retry it', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      dispatch(createDownloadMessage({ status: 'failed' }))
+
+      await store.cancelDownload('task-123')
+
+      expect(taskService.cancelTask).toHaveBeenCalledWith('task-123')
+      expect(store.downloadList[0].status).toBe('cancellation_pending')
     })
 
     it('keeps the download active and allows retry when cancellation fails', async () => {
@@ -303,11 +356,47 @@ describe('useAssetDownloadStore', () => {
       })
     })
 
-    it('settles the cancellation locally when the task row is already gone', async () => {
+    it('rereads after an in-flight poll when cancellation is refused', async () => {
+      const store = useAssetDownloadStore()
+      let resolvePoll!: (value: TaskResult<TaskResponse>) => void
+      vi.mocked(taskService.getTask)
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolvePoll = resolve
+          })
+        )
+        .mockResolvedValueOnce({ ok: true, value: createTaskResponse() })
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'not-cancellable'
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      const cancellation = store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(0)
+      resolvePoll({
+        ok: true,
+        value: createTaskResponse({ status: 'running', result: undefined })
+      })
+      await cancellation
+
+      expect(taskService.getTask).toHaveBeenCalledTimes(2)
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'completed',
+        assetId: 'asset-456'
+      })
+    })
+
+    it('confirms a DELETE 404 with a task lookup before settling', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockResolvedValue({
         ok: true,
         value: 'missing'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: false,
+        error: new TaskNotFoundError('task-123')
       })
       dispatch(
         createDownloadMessage({ status: 'running', error: 'Source timeout' })
@@ -319,7 +408,7 @@ describe('useAssetDownloadStore', () => {
         status: 'cancelled',
         error: undefined
       })
-      expect(taskService.getTask).not.toHaveBeenCalled()
+      expect(taskService.getTask).toHaveBeenCalledWith('task-123')
     })
 
     it('allows an authoritative completion to replace confirmed cancellation', async () => {
@@ -586,9 +675,89 @@ describe('useAssetDownloadStore', () => {
 
       await vi.advanceTimersByTimeAsync(10_000)
 
-      // Bound reached, so the entry becomes finished and the dialog can be
-      // closed again instead of staying pinned until a page reload.
-      expect(store.finishedDownloads[0].status).toBe('cancelled')
+      // Bound reached, so the entry becomes dismissible without falsely
+      // claiming the backend confirmed cancellation.
+      expect(store.finishedDownloads[0].status).toBe('cancellation_unconfirmed')
+      expect(store.hasPendingCancellation).toBe(false)
+
+      // The unconfirmed state remains recheckable because the backend still
+      // reports an active task.
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(7)
+    })
+
+    it('does not consume the cancellation bound on transient lookup failures', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: false,
+        error: new Error('gateway unavailable')
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(120_000)
+
+      expect(store.downloadList[0].status).toBe('cancellation_pending')
+    })
+
+    it('does not overlap slow reconciliation requests for one task', async () => {
+      useAssetDownloadStore()
+      let resolveResponse!: (value: TaskResult<TaskResponse>) => void
+      vi.mocked(taskService.getTask).mockReturnValue(
+        new Promise((resolve) => {
+          resolveResponse = resolve
+        })
+      )
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
+
+      resolveResponse({ ok: true, value: createTaskResponse() })
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    it('keeps polling when a completed task has a malformed result', async () => {
+      const store = useAssetDownloadStore()
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({
+          result: { filename: 'model.safetensors' }
+        })
+      })
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(store.downloadList[0].status).toBe('created')
+      expect(store.finishedDownloads).toHaveLength(0)
+    })
+
+    it('bounds pending cancellation reconciliation for malformed completed results', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({
+          result: { filename: 'model.safetensors' }
+        })
+      })
+      dispatch(
+        createDownloadMessage({ status: 'running', asset_id: undefined })
+      )
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(taskService.getTask).toHaveBeenCalledTimes(6)
+      expect(store.finishedDownloads[0].status).toBe('cancellation_unconfirmed')
       expect(store.hasPendingCancellation).toBe(false)
     })
 
@@ -607,7 +776,7 @@ describe('useAssetDownloadStore', () => {
 
       await store.cancelDownload('task-123')
       await vi.advanceTimersByTimeAsync(60_000)
-      expect(store.finishedDownloads[0].status).toBe('cancelled')
+      expect(store.finishedDownloads[0].status).toBe('cancellation_unconfirmed')
 
       dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
 
@@ -730,20 +899,6 @@ describe('useAssetDownloadStore', () => {
   })
 
   describe('session download tracking', () => {
-    it('counts unacknowledged completed downloads with asset IDs', () => {
-      const store = useAssetDownloadStore()
-
-      dispatch(
-        createDownloadMessage({
-          status: 'completed',
-          progress: 100,
-          asset_id: 'asset-456'
-        })
-      )
-
-      expect(store.sessionDownloadCount).toBe(1)
-    })
-
     it('does not count completed downloads without asset IDs', () => {
       const store = useAssetDownloadStore()
 
