@@ -1008,7 +1008,18 @@ describe('ComfyApp', () => {
       expect(closed).toHaveLength(opened.length)
     })
 
-    it('retracts the binding when a superseded load clears the newer graph', async () => {
+    it.for([
+      {
+        name: 'superseded clean load retracts',
+        clean: true,
+        newerStaysBound: false
+      },
+      {
+        name: 'superseded no-clean load keeps binding',
+        clean: false,
+        newerStaysBound: true
+      }
+    ])('$name', async ({ clean, newerStaysBound }) => {
       await useRealWorkflowService()
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
@@ -1040,7 +1051,7 @@ describe('ComfyApp', () => {
 
       const olderLoad = app.loadGraphData(
         createWorkflowGraphData(),
-        true,
+        clean,
         false,
         olderWorkflow
       )
@@ -1057,59 +1068,7 @@ describe('ComfyApp', () => {
         useDocumentLifecycleStore().isActive(
           toDocumentUid(newerWorkflow.instanceId)
         )
-      ).toBe(false)
-    })
-
-    it('keeps the newer binding when a superseded no-clean load changed nothing', async () => {
-      await useRealWorkflowService()
-      app.canvasElRef.value = document.createElement('canvas')
-      const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      const olderWorkflow = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/older.json',
-          modified: 0,
-          size: 0
-        })
-      )
-      const newerWorkflow = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/newer.json',
-          modified: 0,
-          size: 0
-        })
-      )
-      useWorkflowStore().activeWorkflow = olderWorkflow
-      publishActiveBinding(toRootGraphId('older-root'))
-      let releaseOlderLoad!: () => void
-      const olderLoadBlocked = new Promise<void>((resolve) => {
-        releaseOlderLoad = resolve
-      })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith('beforeLoadGraph')
-        .thenReturnOnce(olderLoadBlocked)
-
-      const olderLoad = app.loadGraphData(
-        createWorkflowGraphData(),
-        false,
-        false,
-        olderWorkflow
-      )
-      await app.loadGraphData(
-        createWorkflowGraphData(),
-        true,
-        false,
-        newerWorkflow
-      )
-      releaseOlderLoad()
-      await expect(olderLoad).resolves.toBeUndefined()
-
-      expect(
-        useDocumentLifecycleStore().activeRootGraphId(
-          toDocumentUid(newerWorkflow.instanceId)
-        )
-      ).toBe(toRootGraphId(graph.id))
+      ).toBe(newerStaysBound)
     })
 
     it('lets an older valid load commit when its newer replacement fails', async () => {
