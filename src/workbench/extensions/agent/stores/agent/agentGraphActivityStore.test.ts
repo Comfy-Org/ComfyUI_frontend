@@ -1,5 +1,9 @@
+import { disposePinia, getActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+// oxlint-disable-next-line comfy/no-restricted-paths -- exercise the production store's graph-removal subscription at its renderer boundary.
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -142,5 +146,37 @@ describe('agentGraphActivityStore', () => {
 
     activity.removeNodes([toNodeId(2)])
     expect(activity.state).toEqual({ phase: 'idle' })
+  })
+
+  it('forgets nodes removed while no panel is mounted', () => {
+    const events = new EventTarget()
+    useCanvasStore().canvas = fromPartial({ graph: { events } })
+    const activity = useAgentGraphActivityStore()
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
+      [toNodeId(1), toNodeId(2)]
+    )
+
+    events.dispatchEvent(
+      new CustomEvent('node:removed', { detail: { node: { id: 1 } } })
+    )
+
+    expect(activity.state).toMatchObject({ nodeIds: ['2'] })
+  })
+
+  it('cancels settlement when its Pinia scope is disposed', () => {
+    const activity = useAgentGraphActivityStore()
+    activity.recordMaterialized(
+      { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
+      [toNodeId(1)]
+    )
+    activity.finishTurn()
+    const stateAtDispose = activity.state
+
+    disposePinia(getActivePinia()!)
+    vi.advanceTimersByTime(1_000)
+
+    expect(activity.state).toEqual(stateAtDispose)
+    expect(activity.state.phase).toBe('settling')
   })
 })

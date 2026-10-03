@@ -58,7 +58,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@/types/nodeId'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
@@ -391,21 +390,6 @@ const agentTabGraph: ComfyWorkflowJSON = {
 
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
-watch(
-  () => canvasStore.canvas?.graph,
-  (graph, _previous, onCleanup) => {
-    if (!graph?.events) return
-    const events = graph.events as EventTarget
-    const onNodeRemoved: EventListener = (event) => {
-      if (!(event instanceof CustomEvent)) return
-      const nodeId = parseNodeId(String(event.detail.node?.id))
-      if (nodeId) graphActivity.removeNodes([nodeId])
-    }
-    events.addEventListener('node:removed', onNodeRemoved)
-    onCleanup(() => events.removeEventListener('node:removed', onNodeRemoved))
-  },
-  { immediate: true }
-)
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
@@ -1200,6 +1184,10 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  // The activity layer outlives the panel. If the panel disappears before its
+  // status watcher observes idle, leave the report dismissible rather than
+  // pinning it in the running phase for the rest of the app session.
+  if (!agentPanelStore.isVisible) graphActivity.finishTurn()
   releaseCoachCompletionWaiters()
   if (
     (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
