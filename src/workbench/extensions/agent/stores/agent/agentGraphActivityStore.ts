@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { onScopeDispose, ref, watch } from 'vue'
 
+import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { RootGraphId } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 
 import type { TurnId } from '../../schemas/agentApiSchema'
@@ -29,6 +32,36 @@ export const useAgentGraphActivityStore = defineStore(
     const turnOpen = ref(false)
     const currentTurnId = ref<TurnId | null>(null)
     let settleTimer: ReturnType<typeof setTimeout> | undefined
+    const settingStore = useSettingStore()
+    const minimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+
+    watch(
+      state,
+      (activity) => {
+        if (activity.phase === 'idle') {
+          minimapLayer.replace([])
+          return
+        }
+        const rootGraphId = toRootGraphId(activity.rootGraphId)
+        minimapLayer.replace(
+          activity.nodeIds.map((nodeId) => ({
+            target: {
+              rootGraphId,
+              owningGraphId: toOwningGraphId(activity.rootGraphId),
+              nodeId
+            },
+            enter: 'pop'
+          }))
+        )
+        if (
+          activity.phase === 'running' &&
+          !settingStore.get('Comfy.Minimap.Visible')
+        )
+          void settingStore.set('Comfy.Minimap.Visible', true)
+      },
+      { immediate: true }
+    )
+    onScopeDispose(() => minimapLayer.dispose())
 
     function startTurn(turnId: TurnId | null = null): void {
       if (turnOpen.value && currentTurnId.value === turnId) return

@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 // Recorded full-stack source: the agent adds three nodes at x=1845, 2165 and
 // 2485, beyond the visible canvas. See the fixture provenance for cloud SHA,
@@ -54,6 +55,22 @@ test.describe(
         await expect(report).toBeVisible()
         await expect(report).toContainText(
           'The agent added 3 nodes to the graph'
+        )
+      })
+
+      await test.step('panel remount keeps the visible minimap activity', async () => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.closeButton.click()
+        await expect(agentPanel.root).toHaveCount(0)
+        await expect(page.getByTestId('minimap-container')).toHaveAttribute(
+          'aria-label',
+          'Minimap. Highlighted nodes: 3'
+        )
+
+        await agentPanel.open()
+        await expect(page.getByTestId('minimap-container')).toHaveAttribute(
+          'aria-label',
+          'Minimap. Highlighted nodes: 3'
         )
       })
 
