@@ -90,7 +90,7 @@ export function createDevAgentConfig(env: NodeJS.ProcessEnv) {
 
   if (dataDir) {
     try {
-      accessSync(dataDir, constants.R_OK)
+      accessSync(dataDir, constants.R_OK | constants.X_OK)
       if (!statSync(dataDir).isDirectory()) throw new Error()
     } catch {
       throw new Error(
