@@ -42,6 +42,7 @@ export enum ServerFeatureFlag {
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
   BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
@@ -297,6 +298,12 @@ export function useFeatureFlags() {
         cachedBillingControlEnabled
       )
     },
+    get memberCreditLimitsEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED,
+        remoteConfig.value.member_credit_limits_enabled
+      )
+    },
     get legacyBillingMigrationEnabled() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
@@ -430,6 +437,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
+      [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
+        flags.memberCreditLimitsEnabled,
       [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
         flags.legacyBillingMigrationEnabled,
       [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:
