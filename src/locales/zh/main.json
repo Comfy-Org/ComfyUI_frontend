@@ -933,6 +933,7 @@
     "Copy Image": "复制图像",
     "Delete": "删除",
     "Distribute Nodes": "分布节点",
+    "Download Images": "下载图像",
     "Duplicate": "复制",
     "Edit Subgraph Widgets": "编辑子工作流组件",
     "Expand": "展开",
@@ -1809,6 +1810,7 @@
     "download": "下载",
     "downloadAudio": "下载音频",
     "downloadImage": "下载图片",
+    "downloadImages": "下载图像",
     "downloadVideo": "下载视频",
     "downloadWithSize": "下载（{size}）",
     "downloading": "正在下载",
@@ -3364,6 +3366,11 @@
     "moreHelp": "如需更多帮助，请访问",
     "outputs": "输出",
     "type": "类型"
+  },
+  "nodeOutputsExport": {
+    "download": "下载 ({count})",
+    "downloadAll": "全部下载",
+    "title": "下载资源"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "兼容替代项",
