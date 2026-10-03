@@ -186,16 +186,28 @@ export class AgentCrdtProjection {
    * Puts the registers a rejected human batch claimed back the way the
    * document has them. Only those registers are touched: the rejection says
    * nothing about the rest of the live graph.
-   * @returns ids of nodes created live on this pass.
+   * @returns the apply result for the rejected operations.
    */
-  revertRejected(workflowId: string, ops: readonly Op[]): NodeId[] {
+  revertRejected(workflowId: string, ops: readonly Op[]): FrameOutcome {
     const target = this.targets.get(workflowId)
-    if (!target || ops.length === 0 || !this.getGraph()) return []
+    if (!target || ops.length === 0 || !this.getGraph())
+      return { applied: false, nodes: EMPTY_DELTA }
     const changes = changesForRejectedOps(target.follower.doc, ops)
-    return this.apply(workflowId, target, changes, {
-      actor: 'agent-revert',
-      opIds: ops.map((op) => op.op_id)
-    }).createdNodeIds
+    const { createdNodeIds, failureCount } = this.apply(
+      workflowId,
+      target,
+      changes,
+      {
+        actor: 'agent:revert',
+        opIds: ops.map((op) => op.op_id)
+      }
+    )
+    return {
+      applied: true,
+      nodes: docNodeDelta(changes),
+      createdNodeIds,
+      failureCount
+    }
   }
 
   /**
