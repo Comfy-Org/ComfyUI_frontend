@@ -180,15 +180,16 @@ test.describe(
         agentPanel.dropFile(comfyPage.dragDrop, CSV)
       )
 
+      // Silence is never one of the acceptable answers, whichever way the
+      // two routes are brought into agreement. Keep this outside the expected
+      // failure so a silently ignored drop remains a hard regression.
+      expect(dropped).not.toBe('ignored')
+
       test.fail()
       expect(
         dropped,
         `the file browser answered "${picked}"; a drop of the same file must answer the same`
       ).toBe(picked)
-
-      // Silence is never one of the acceptable answers, whichever way the
-      // two routes are brought into agreement.
-      expect(dropped).not.toBe('ignored')
     })
   }
 )
