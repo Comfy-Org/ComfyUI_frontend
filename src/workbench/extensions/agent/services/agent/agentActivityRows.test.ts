@@ -79,6 +79,16 @@ describe('foldActivity', () => {
     expect(rows[0]).toMatchObject({ count: 3, ok: false, state: 'streaming' })
   })
 
+  it('retains the settled outcome when the latest retry is still streaming', () => {
+    const rows = foldActivity([
+      tool('add_node', true, 100),
+      tool('add_node', false, 100),
+      { type: 'tool', callId: 'c2', name: 'add_node', state: 'streaming' }
+    ])
+
+    expect(rows[0]).toMatchObject({ count: 3, ok: false, state: 'streaming' })
+  })
+
   it('shows a successful retry as successful', () => {
     const rows = foldActivity([
       { ...tool('load_skill', false), skill: 'comfy-director' },
