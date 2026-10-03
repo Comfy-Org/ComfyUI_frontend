@@ -55,6 +55,7 @@ export type Settings = {
   'Comfy.LinkRelease.ActionShift': LinkReleaseTriggerAction
   'Comfy.ModelLibrary.AutoLoadAll': boolean
   'Comfy.ModelLibrary.NameFormat': 'filename' | 'title'
+  'Comfy.ModelLibrary.HuggingFaceMirror': string
   'Comfy.NodeSearchBoxImpl.NodePreview': boolean
   'Comfy.NodeSearchBoxImpl.FollowCursor': boolean
   'Comfy.NodeSearchBoxImpl': 'default' | 'v1 (legacy)' | 'litegraph (legacy)'
