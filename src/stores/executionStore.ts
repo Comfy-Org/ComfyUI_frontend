@@ -622,6 +622,41 @@ export const useExecutionStore = defineStore('execution', () => {
     progressStateCoalescer.push(e.detail)
   }
 
+  /**
+   * Revoke previews for nodes that just started executing.
+   *
+   * Uses the *actual* node id rather than the display node id intentionally,
+   * so the preview is not cleared every time a new node inside an expanded
+   * graph starts.
+   */
+  function revokeStartedNodePreviews(
+    nodes: Record<string, NodeProgressState>,
+    previousForJob: Record<string, NodeProgressState>
+  ) {
+    const { revokePreviewsByExecutionId } = useNodeOutputStore()
+    for (const nodeId in nodes) {
+      if (nodes[nodeId].state !== 'running') continue
+      if (previousForJob[nodeId]?.state === 'running') continue
+      const executionId = tryNormalizeNodeExecutionId(nodeId)
+      if (executionId) revokePreviewsByExecutionId(executionId)
+    }
+  }
+
+  /** Mirror the executing node's progress for backwards compatibility. */
+  function mirrorExecutingNodeProgress(
+    nodes: Record<string, NodeProgressState>
+  ) {
+    const executingId = executingNodeId.value
+    if (!executingId || !Object.hasOwn(nodes, executingId)) return
+    const nodeState = nodes[executingId]
+    _executingNodeProgress.value = {
+      value: nodeState.value,
+      max: nodeState.max,
+      prompt_id: nodeState.prompt_id,
+      node: nodeState.display_node_id || nodeState.node_id
+    }
+  }
+
   function applyProgressState(detail: ProgressStateWsMessage) {
     const { nodes, prompt_id: jobId, workflow_id: messageWorkflowId } = detail
     const isActiveWorkflowMessage = messageMatchesActiveWorkflow(
@@ -629,27 +664,11 @@ export const useExecutionStore = defineStore('execution', () => {
       messageWorkflowId
     )
 
-    // Revoke previews for nodes that are starting to execute
-    const previousForJob =
-      jobId in nodeProgressStatesByJob.value
-        ? nodeProgressStatesByJob.value[jobId]
-        : {}
     if (isActiveWorkflowMessage) {
-      for (const nodeId in nodes) {
-        const nodeState = nodes[nodeId]
-        if (
-          nodeState.state === 'running' &&
-          previousForJob[nodeId]?.state !== 'running'
-        ) {
-          // This node just started executing, revoke its previews
-          // Note that we're doing the *actual* node id instead of the display node id
-          // here intentionally. That way, we don't clear the preview every time a new node
-          // within an expanded graph starts executing.
-          const { revokePreviewsByExecutionId } = useNodeOutputStore()
-          const executionId = tryNormalizeNodeExecutionId(nodeId)
-          if (executionId) revokePreviewsByExecutionId(executionId)
-        }
-      }
+      revokeStartedNodePreviews(
+        nodes,
+        nodeProgressStatesByJob.value[jobId] ?? {}
+      )
     }
 
     nodeProgressStatesByJob.value = {
@@ -657,23 +676,12 @@ export const useExecutionStore = defineStore('execution', () => {
       [jobId]: nodes
     }
     evictOldProgressJobs()
-    if (isActiveWorkflowMessage) {
-      nodeProgressStates.value = nodes
 
-      // If we have progress for the currently executing node, update it for backwards compatibility
-      if (executingNodeId.value) {
-        const nodeState = Object.hasOwn(nodes, executingNodeId.value)
-          ? nodes[executingNodeId.value]
-          : undefined
-        if (!nodeState) return
-        _executingNodeProgress.value = {
-          value: nodeState.value,
-          max: nodeState.max,
-          prompt_id: nodeState.prompt_id,
-          node: nodeState.display_node_id || nodeState.node_id
-        }
-      }
-    }
+    // Per-job state is recorded for every workflow; only the active workflow
+    // writes the shared mirror the canvas reads.
+    if (!isActiveWorkflowMessage) return
+    nodeProgressStates.value = nodes
+    mirrorExecutingNodeProgress(nodes)
   }
 
   /**
@@ -693,6 +701,13 @@ export const useExecutionStore = defineStore('execution', () => {
    * the active workflow to preserve current behaviour for the existing
    * single-tab common case.
    */
+  /** Graph id of the active workflow, or null when it has none. */
+  function activeWorkflowGraphId(): string | null {
+    const active = workflowStore.activeWorkflow
+    if (!active) return null
+    return active.activeState.id ?? active.initialState.id ?? null
+  }
+
   function messageMatchesActiveWorkflow(
     jobId: JobId,
     messageWorkflowId: string | undefined
@@ -700,15 +715,11 @@ export const useExecutionStore = defineStore('execution', () => {
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return true
 
-    const activeId =
-      activeWorkflow.activeState.id ?? activeWorkflow.initialState.id ?? null
-
-    if (messageWorkflowId && activeId) {
-      return messageWorkflowId === activeId
+    const activeId = activeWorkflowGraphId()
+    if (activeId) {
+      const ownerId = messageWorkflowId || jobIdToWorkflowId.value.get(jobId)
+      if (ownerId) return ownerId === activeId
     }
-
-    const mappedId = jobIdToWorkflowId.value.get(jobId)
-    if (mappedId && activeId) return mappedId === activeId
 
     const mappedPath = jobIdToSessionWorkflowPath.value.get(jobId)
     if (mappedPath && activeWorkflow.path) {
@@ -1127,21 +1138,29 @@ export const useExecutionStore = defineStore('execution', () => {
       : nodeIdStr
   }
 
+  /**
+   * Whether a text preview belongs on the visible canvas.
+   *
+   * Prefers the workflow-ownership gate and falls back to the legacy
+   * active-prompt guard only when ownership is unresolvable: activeJobId can
+   * point at another workflow's job, which would otherwise drop text for the
+   * workflow the user is looking at.
+   */
+  function textPreviewBelongsToVisibleWorkflow(
+    promptId: string | undefined,
+    workflowId: string | undefined
+  ): boolean {
+    if (!promptId) return true
+    if (canResolveWorkflowOwnership(promptId, workflowId)) {
+      return messageMatchesActiveWorkflow(promptId, workflowId)
+    }
+    return !activeJobId.value || promptId === activeJobId.value
+  }
+
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
     const { nodeId, text, prompt_id, workflow_id } = e.detail
     if (!text || !nodeId) return
-
-    // Prefer the workflow-ownership gate when ownership can be resolved.
-    // Only fall back to the legacy active-prompt guard when ownership is
-    // unresolvable; otherwise activeJobId pointing at a different workflow's
-    // job would incorrectly drop messages for the visible workflow.
-    if (prompt_id) {
-      if (canResolveWorkflowOwnership(prompt_id, workflow_id)) {
-        if (!messageMatchesActiveWorkflow(prompt_id, workflow_id)) return
-      } else if (activeJobId.value && prompt_id !== activeJobId.value) {
-        return
-      }
-    }
+    if (!textPreviewBelongsToVisibleWorkflow(prompt_id, workflow_id)) return
 
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
