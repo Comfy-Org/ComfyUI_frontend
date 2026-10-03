@@ -3014,6 +3014,49 @@ describe('ComfyApp', () => {
       expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
     })
 
+    it('does not attach a superseded API JSON import’s missing nodes to the newer workflow', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      vi.spyOn(app, 'clean').mockImplementation(() => {})
+      const nodeReplacementStore = useNodeReplacementStore()
+      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+      vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
+      let releaseImport!: () => void
+      const importBlocked = new Promise<void>((resolve) => {
+        releaseImport = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterLoadGraph')
+        .thenReturnOnce(importBlocked)
+
+      const apiImport = app.loadApiJson(
+        { '1': { class_type: 'UninstalledScratchNode', inputs: {} } },
+        'superseded.json'
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterLoadGraph'
+        )
+      )
+      await app.loadGraphData(createWorkflowGraphData(), true)
+      const newerWorkflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/newer.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      useWorkflowStore().activeWorkflow = newerWorkflow
+      mockWorkflowService.showPendingWarnings.mockClear()
+      releaseImport()
+      await apiImport
+
+      expect(mockWorkflowService.showPendingWarnings).not.toHaveBeenCalled()
+      expect(newerWorkflow.pendingWarnings).toBeNull()
+    })
+
     it('does not let a superseded A1111 import clear the newer load’s missing nodes', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()

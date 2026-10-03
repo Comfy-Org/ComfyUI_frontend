@@ -2725,6 +2725,10 @@ export class ComfyApp {
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+    if (!this.ownsGraphLoad(loadId)) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes, options)
     }
