@@ -538,7 +538,7 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
-  it('disposes both observers without changing active download state', async () => {
+  it('disposes both observers while a detached folder lookup continues', async () => {
     const paths = deferred<FolderPaths>()
     const dispatchDownload = vi
       .fn<DispatchDownload>()

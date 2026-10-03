@@ -51,11 +51,11 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
   const findByUrl = (url: string) =>
     downloads.value.find((download) => url === download.url)
 
-  const notifyProgressListeners = (download: ElectronDownload) => {
+  function notifyProgressListeners(download: ElectronDownload) {
     for (const listener of progressListeners) listener(download)
   }
 
-  const installProgressListener = () => {
+  function installProgressListener() {
     if (!DownloadManager || isProgressListenerInstalled) return
 
     isProgressListenerInstalled = true
@@ -102,9 +102,9 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     }
   }
 
-  const subscribeToDownloadProgress = (
+  function subscribeToDownloadProgress(
     listener: (download: ElectronDownload) => void
-  ) => {
+  ) {
     progressListeners.add(listener)
 
     return () => progressListeners.delete(listener)
