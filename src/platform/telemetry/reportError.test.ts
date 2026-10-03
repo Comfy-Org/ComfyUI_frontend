@@ -86,6 +86,44 @@ describe('reportError', () => {
     )
   })
 
+  it('preserves default grouping for unrelated failure categories', async () => {
+    const { reportError } = await loadReportError()
+    const error = new Error('Workspace initialization failed')
+
+    reportError(error, {
+      surface: 'workspace',
+      errorType: 'workspace_auth_gate_initialization_failure'
+    })
+
+    expect(captureException).toHaveBeenCalledExactlyOnceWith(error, {
+      tags: {
+        error_type: 'workspace_auth_gate_initialization_failure',
+        surface: 'workspace'
+      },
+      extra: {},
+      level: undefined
+    })
+  })
+
+  it('separates auth SDK load failures using their category', async () => {
+    const { reportError } = await loadReportError()
+    const error = new Error(
+      'Resource load failed: https://apis.google.com/js/api.js'
+    )
+
+    reportError(error, {
+      surface: 'auth',
+      errorType: 'error_loading_auth_sdk'
+    })
+
+    expect(captureException).toHaveBeenCalledExactlyOnceWith(
+      error,
+      expect.objectContaining({
+        fingerprint: ['{{ default }}', 'error_loading_auth_sdk']
+      })
+    )
+  })
+
   it('separates failure categories without changing the error or delivery', async () => {
     const { reportError } = await loadReportError()
     const cause = new Error('Connection closed')
