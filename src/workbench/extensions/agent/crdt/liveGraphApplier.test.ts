@@ -206,34 +206,48 @@ describe('LiveGraphApplier', () => {
     expect(node.flags).toEqual({ pinned: true, collapsed: true })
   })
 
-  it('applies the rest of a frame when one operation throws, and reports it once', () => {
-    const { graph, doc, applyCollected, applyEdit } = setup({
-      nodes: [sourceNode(1)],
-      links: []
-    })
-    applyCollected()
-    const doomed = graph.getNodeById(toNodeId(1))
-    if (!doomed) throw new Error('node 1 was not created')
-    doomed.onRemoved = () => {
-      throw new Error('extension hook exploded')
-    }
-
-    const result = applyEdit(() => {
-      nodesMap(doc).delete('1')
-      nodesMap(doc).set('2', new Y.Map<unknown>(Object.entries(sinkNode(2))))
-    })
-
-    expect(result.createdNodeIds).toEqual([toNodeId(2)])
-    expect(graph.getNodeById(toNodeId(2))).toBeTruthy()
-    expect(reportError).toHaveBeenCalledTimes(1)
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'extension hook exploded' }),
-      expect.objectContaining({
-        errorType: 'agent_graph_apply_failed',
-        context: { actor: 'agent:test', opIds: ['op-1'] }
+  it.for([
+    { actor: 'human:user-private:tab-private', actorKind: 'human' },
+    { actor: 'agent:thread-private:turn-private', actorKind: 'agent' },
+    { actor: 'unexpected:identity-private', actorKind: 'unknown' }
+  ])(
+    'continues after a failed operation and reports only the $actorKind actor kind',
+    ({ actor, actorKind }) => {
+      const { graph, doc, applyCollected } = setup({
+        nodes: [sourceNode(1)],
+        links: []
       })
-    )
-  })
+      applyCollected()
+      const doomed = graph.getNodeById(toNodeId(1))
+      if (!doomed) throw new Error('node 1 was not created')
+      doomed.onRemoved = () => {
+        throw new Error('extension hook exploded')
+      }
+
+      doc.transact(() => {
+        nodesMap(doc).delete('1')
+        nodesMap(doc).set('2', new Y.Map<unknown>(Object.entries(sinkNode(2))))
+      })
+      const result = applyCollected({ actor, opIds: ['op-1', 'op-2'] })
+
+      expect(result.createdNodeIds).toEqual([toNodeId(2)])
+      expect(graph.getNodeById(toNodeId(2))).toBeTruthy()
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'extension hook exploded' }),
+        {
+          surface: 'agent',
+          errorType: 'agent_graph_apply_failed',
+          tags: {
+            subsystem: 'agent-crdt',
+            layer: 'graph-api',
+            outcome: 'degraded'
+          },
+          context: { actorKind, opIds: ['op-1', 'op-2'] }
+        }
+      )
+    }
+  )
 
   it('restores a widget and its mirrored property when a widget callback throws', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
