@@ -222,7 +222,6 @@ describe('useTemplateModelRowDownloads', () => {
         reason: 'error'
       })
     )
-    // A refusal reads the same as a rejection: the host did not take it.
     expect(downloads.stateFor(requests.false)).toEqual({
       status: 'failed',
       attempt: 1,
@@ -513,7 +512,6 @@ describe('useTemplateModelRowDownloads', () => {
     emitDesktop(tick(initial, 'job-first'))
 
     // The row is keyed by filename, so the replacement reuses the identity.
-    // Its job must not be shut out by the job the previous URL claimed.
     downloads.request(replacement)
     emitDesktop(tick(replacement, 'job-second'))
 
@@ -552,8 +550,8 @@ describe('useTemplateModelRowDownloads', () => {
     downloads.request(request)
     emitDesktop(tick('job-2', 'downloading'))
 
-    // job-1 is abandoned. Its terminal event is stamped with attempt 2 because
-    // the stamp is read from the row, so only the job id can reject it.
+    // Stamped with attempt 2 because the stamp is read from the row, so only
+    // the job id can reject it.
     emitDesktop(tick('job-1', 'cancelled'))
     expect(downloads.stateFor(request)).toMatchObject({
       status: 'downloading',
@@ -572,8 +570,6 @@ describe('useTemplateModelRowDownloads', () => {
     const { downloads, emitDesktop } = createDownloadHarness()
 
     downloads.request(request)
-    // An abandoned stream's terminal event must not be able to claim the
-    // attempt just by arriving first.
     emitDesktop({
       id: 'job-stale',
       url: request.url,

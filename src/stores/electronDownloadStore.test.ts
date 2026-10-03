@@ -117,8 +117,6 @@ describe('useElectronDownloadStore progress observation', () => {
     downloadManager.getAllDownloads.mockReturnValueOnce(snapshot.promise)
     const store = useElectronDownloadStore()
 
-    // Live first, snapshot second: the snapshot describes an older moment and
-    // must not move the download backwards.
     emitProgress(progressUpdate({ progress: 0.9 }))
     snapshot.resolve([downloadState({ receivedBytes: 1 })])
     await vi.waitFor(() => expect(store.downloads).toHaveLength(1))
@@ -177,7 +175,6 @@ describe('useElectronDownloadStore progress observation', () => {
     const stopThrower = store.subscribeToDownloadProgress(thrower)
     const stopSurvivor = store.subscribeToDownloadProgress(survivor)
 
-    // One bad subscriber must not take the others down with it.
     emitProgress(progressUpdate())
 
     expect(thrower).toHaveBeenCalledOnce()
