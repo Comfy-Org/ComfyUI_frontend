@@ -51,6 +51,19 @@ function applyLogicalCanvasStyle(
   // stylesheet rule owns the box (the app canvas is `absolute inset-0
   // size-full`). Inline pixels would replace a live rule with a snapshot and
   // stop the canvas following its parent.
+  //
+  // Known residual: an *unstyled* canvas whose own backing store is what sizes
+  // its shrink-to-fit parent satisfies this test too, so a parent-sized
+  // `resize()` on one grows it by `dpr` each pass. It is accepted rather than
+  // fixed because every cheap discriminator for "unstyled" misclassifies a
+  // real stylesheet-owned canvas: `rect` against the backing store collides at
+  // DPR 1, `getComputedStyle` resolves to the used value and cannot see that
+  // the specified value is `auto`, and "requested equals the previously
+  // applied physical size" fires on an ordinary 800 -> 1600 CSS px window
+  // resize at DPR 2. The only sound test is a zero-size layout probe, which
+  // costs a forced reflow and a context reset on every resize. The product
+  // path is unaffected: `GraphCanvas.vue` is the only `LGraphCanvas`
+  // construction and its canvas is stylesheet-sized.
   const rect = canvas.getBoundingClientRect()
   if (
     Math.abs(rect.width - width) < 1 &&
