@@ -770,6 +770,22 @@ describe(assetService.getAssetModels, () => {
 
     expect(models).toEqual([{ name: 'base.safetensors', pathIndex: 0 }])
   })
+
+  it('resolves hierarchical bare tags on model-type backends', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'uncovered',
+          name: 'uncovered.safetensors',
+          tags: ['models', 'LLM/checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('LLM/checkpoints')
+
+    expect(models).toEqual([{ name: 'uncovered.safetensors', pathIndex: 0 }])
+  })
 })
 
 describe(assetService.onModelsScanned, () => {
