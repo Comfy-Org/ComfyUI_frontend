@@ -18,6 +18,7 @@ import type {
   BillingResult,
   BillingStatusData,
   BillingStatusSnapshot,
+  CancelOperationResult,
   CapabilitiesSnapshot,
   PaymentMethodsSnapshot,
   PaymentPortalResult,
@@ -65,6 +66,7 @@ export interface FakeBillingClientOptions {
   readonly status?: BillingStatusData
   readonly topupQuote?: TopupQuoteResult
   readonly topup?: TopupResult
+  readonly cancelOperation?: CancelOperationResult
 }
 
 export interface FakeBillingClient {
@@ -88,6 +90,7 @@ export interface FakeBillingClient {
     BillingClient['commands']['cancelSubscription']
   >
   readonly resubscribe: Mock<BillingClient['commands']['resubscribe']>
+  readonly cancelOperation: Mock<BillingClient['commands']['cancelOperation']>
   readonly recover: Mock<BillingClient['lifecycle']['recover']>
   readonly quoteTopup: Mock<BillingClient['topup']['quoteTopup']>
   readonly createTopupCheckout: Mock<
@@ -136,7 +139,8 @@ export function createFakeBillingClient(
       team_credit_stop: null
     },
     topupQuote = { status: 'error', code: 'REQUEST_FAILED' },
-    topup: topupOutcome = { status: 'error', code: 'REQUEST_FAILED' }
+    topup: topupOutcome = { status: 'error', code: 'REQUEST_FAILED' },
+    cancelOperation: cancelOperationOutcome = { status: 'canceled' }
   } = options
 
   const operations = new Map<string, BillingOperationState>()
@@ -202,6 +206,8 @@ export function createFakeBillingClient(
     return topupOutcome
   })
   const cancelSubscription = commandOf(cancelOutcome)
+  const cancelOperation: Mock<BillingClient['commands']['cancelOperation']> =
+    vi.fn(async () => cancelOperationOutcome)
   const resubscribe = commandOf(resubscribeOutcome)
   const capabilitiesSnapshot: CapabilitiesSnapshot = {
     capabilities: {
@@ -210,6 +216,7 @@ export function createFakeBillingClient(
       can_downgrade_to_personal: false,
       can_invite_members: false,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_subscribe_self_serve: false,
       can_top_up: false,
       ...granted
@@ -309,6 +316,7 @@ export function createFakeBillingClient(
       previewSubscribe,
       resubscribe,
       cancelSubscription,
+      cancelOperation,
       openPaymentPortal
     }
   }
@@ -343,6 +351,7 @@ export function createFakeBillingClient(
     subscribe,
     cancelSubscription,
     resubscribe,
+    cancelOperation,
     recover,
     quoteTopup,
     createTopupCheckout,

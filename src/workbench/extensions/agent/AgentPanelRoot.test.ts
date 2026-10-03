@@ -51,7 +51,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@/platform/telemetry/reportError'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
@@ -62,11 +62,14 @@ import {
 } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
-  createMockCanvasRenderingContext2D,
   createMockLoadedWorkflow,
   createMockChangeTracker,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestDragAndScale
+} from '@/utils/__tests__/canvasTestUtils'
 
 const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
@@ -2157,7 +2160,8 @@ function setupNodeSelectionCanvas() {
     deselect,
     deselectAll,
     animateToBounds: vi.fn(),
-    canvas: canvasElement
+    canvas: canvasElement,
+    ds: createTestDragAndScale(900, 700)
   }
   appMock.canvas = canvas
   canvasStore.canvas = fromPartial(canvas)
@@ -4482,16 +4486,16 @@ describe('AgentPanelRoot a11y id guard', () => {
   // class) reached main unnoticed because the fast suite never asserted the id
   // count. Assert the document-level count, not a getBy* query, so a second
   // copy of the id fails loudly here instead of only in the Playwright suite
-  // (agentPanelLifecycle.spec.ts, still test.fixme pending FE #16919).
+  // (agentPanelLifecycle.spec.ts, re-enabled in #17132).
   it('renders exactly one #agent-panel-title on the success path', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByText(i18n.global.t('agent.title'))).toBeVisible()
     // Document-level count is the point: the guard must see any duplicate id
     // anywhere in the document, not just within the panel subtree.
-    /* eslint-disable testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-node-access */
     expect(document.querySelectorAll('#agent-panel-title')).toHaveLength(1)
-    /* eslint-enable testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-node-access */
   })
 })
 

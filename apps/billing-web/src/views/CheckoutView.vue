@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   BillingDeclineReason,
+  SubscriptionCommandResult,
   WebReturnControl
 } from '@comfyorg/account-core/billing'
 import {
@@ -49,6 +50,7 @@ import type { CheckoutToastItem } from '@/components/CheckoutToasts.vue'
 import CheckoutToasts from '@/components/CheckoutToasts.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutCopy } from '@/composables/useCheckoutCopy'
+import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import {
@@ -71,6 +73,8 @@ const { copy, successCopy, inviteCopy, tierName } = useCheckoutCopy()
 const invites = useWorkspaceInvites()
 const { entry } = useBillingEntry()
 const billedWorkspace = useBilledWorkspace()
+const journey = useCheckoutJourney('embedded')
+journey.enter()
 
 const planSlug = computed(() => entry.value?.plan)
 const teamCreditStopId = computed(() => entry.value?.teamCreditStopId)
@@ -109,6 +113,8 @@ const applyingPromotionCode = ref(false)
 const submitFailure = ref<string | undefined>()
 const inviteFailure = ref<string | undefined>()
 
+let latestQuoteCall = 0
+
 async function quotePlan(
   slug: string | undefined,
   stopId: string | undefined,
@@ -117,12 +123,17 @@ async function quotePlan(
   quotedPlan.value = slug
   quotedTeamCreditStopId.value = stopId
   if (slug === undefined) return
+  const call = ++latestQuoteCall
   const result = await quote({
     planSlug: slug,
     ...(stopId === undefined ? {} : { teamCreditStopId: stopId }),
     ...(promotionCode ? { promotionCode } : {})
   })
   if (result.status === 'ok') quoteIsCurrent.value = true
+  if (call === latestQuoteCall) {
+    if (promotionCode === undefined) journey.quoted(result)
+    else journey.promoQuoted(result, promotionCode)
+  }
   return result
 }
 
@@ -344,6 +355,7 @@ watch(
   () => checkout.operation.value,
   (operation) => {
     if (operation === undefined) return
+    journey.operationIssued(operation.id)
     if (operation.phase === 'failed') {
       submitFailure.value = declineDetail(operation.declineReason)
       checkout.reset()
@@ -492,14 +504,28 @@ function resultUrl(): string | undefined {
   return built.status === 'ok' ? built.url.href : undefined
 }
 
+function selectedRailOf(choice: PaymentChoice) {
+  if (choice.confirmationToken !== undefined) return 'new'
+  return choice.savedPaymentMethodId !== undefined ? 'saved' : 'on_file'
+}
+
+function reportMethodSelected(choice: PaymentChoice) {
+  const savedType = methods.value?.find(
+    ({ id }) => id === choice.savedPaymentMethodId
+  )?.type
+  journey.methodSelected(selectedRailOf(choice), choice.methodType ?? savedType)
+}
+
 async function pay(choice: PaymentChoice) {
   const quoted = preview.value
   const slug = planSlug.value
   if (slug === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
-  const result = await attempts.run(
-    checkoutAttemptOf(quoted, entry.value),
-    () =>
+  reportMethodSelected(choice)
+  const press = journey.submitted()
+  let result: SubscriptionCommandResult
+  try {
+    result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
       checkout.subscribe(
         buildSubscribeRequest(
           {
@@ -511,7 +537,10 @@ async function pay(choice: PaymentChoice) {
           choice
         )
       )
-  )
+    )
+  } finally {
+    journey.submitSettled(press)
+  }
   if (result.status === 'ok') return
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') {
     // The quote did not say so, the server did: price it again and ask.
@@ -618,9 +647,13 @@ function leaveForHost(control: WebReturnControl) {
             @update:selected-saved-method-id="selectSavedMethod"
             @change-payment-method="selectSavedMethod(null)"
             @add-credit-card="payWithoutCard"
-            @confirm-payment="pay({ confirmationToken: $event })"
+            @confirm-payment="
+              (token, methodType) =>
+                pay({ confirmationToken: token, methodType })
+            "
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
+            @payment-phase="journey.track"
             @back="leaveForHost('back')"
           />
           <CheckoutTransitionConfirm

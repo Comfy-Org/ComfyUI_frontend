@@ -1,7 +1,7 @@
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
@@ -22,12 +22,14 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { attachDocOpMinter } from './docOpMinter'
+import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { readDocSlotNames } from './liveGraphApplier'
@@ -648,7 +650,6 @@ describe('attachDocOpMinter', () => {
       graph.add(host)
       subgraph.add(interior)
     })
-
     interior.widgets![0].value = 3
     await afterFlush()
 
@@ -665,15 +666,279 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
+    const { source } = seedGraph(graph)
+    // Built the way useNodeProgressText builds it: `serialize: false` and
+    // absent from the pinned catalog.
+    const preview = source.addWidget(
+      'text',
+      '$$node-text-preview',
+      '',
+      () => {}
+    )
+    preview.serialize = false
+    const doc = mintDocFrom(graph)
+
+    // One tick: execution streams progress text into the preview while the
+    // user edits a real widget. The minter enqueues a tick's intents together
+    // and `opSender` sends them as one batch.
+    preview.value = 'streaming…'
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 42,
+        old: 20
+      }
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
+
+  it.for([
+    {
+      name: 'serialize false (live setter)',
+      setup: () => {
+        const { source } = seedGraph(graph)
+        source.widgets![0].serialize = false
+        source.widgets![0].value = 21
+      }
+    },
+    {
+      name: 'button (live setter)',
+      setup: () => {
+        const { source } = seedGraph(graph)
+        source.widgets![1].value = 'clicked'
+      }
+    },
+    {
+      name: 'serialize false (reachable subgraph)',
+      setup: () => {
+        const subgraph = createTestSubgraph({ rootGraph: graph })
+        const host = createTestSubgraphNode(subgraph)
+        const source = new TestSource()
+        withGraphIntentSource('load', () => {
+          graph.add(host)
+          subgraph.add(source)
+        })
+        source.widgets![0].serialize = false
+        emitGraphIntent({
+          type: 'set_widget',
+          graphId: subgraph.id,
+          nodeId: source.id,
+          name: 'steps',
+          value: 21,
+          previous: 20
+        })
+      }
+    },
+    {
+      name: 'button (reachable subgraph)',
+      setup: () => {
+        const subgraph = createTestSubgraph({ rootGraph: graph })
+        const host = createTestSubgraphNode(subgraph)
+        const source = new TestSource()
+        withGraphIntentSource('load', () => {
+          graph.add(host)
+          subgraph.add(source)
+        })
+        emitGraphIntent({
+          type: 'set_widget',
+          graphId: subgraph.id,
+          nodeId: source.id,
+          name: 'upload',
+          value: 'clicked',
+          previous: 'button-slot'
+        })
+      }
+    },
+    {
+      name: 'button on a virtual node',
+      setup: () => {
+        const note = new TestNote()
+        note.addWidget('button', 'action', 'idle', () => {})
+        withGraphIntentSource('load', () => graph.add(note))
+        emitGraphIntent({
+          type: 'set_widget',
+          graphId: graph.id,
+          nodeId: note.id,
+          name: 'action',
+          value: 'clicked',
+          previous: 'idle'
+        })
+      }
+    }
+  ])('does not mint a non-value widget write: $name', async ({ setup }) => {
+    setup()
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('uses the live serialize flag for direct store-path intents', async () => {
+    const { source } = seedGraph(graph)
+    source.widgets![0].serialize = false
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('lets an explicit live serialize flag override stale store metadata', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    widget.serialize = true
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 21,
+        old: 20
+      }
+    ])
+  })
+
+  it('uses the store serialize flag when a projected widget omits it', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    delete widget.serialize
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('uses the same store fallback when filtering an add-node snapshot', () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    delete widget.serialize
+
+    expect(wireNodeSnapshot(source)?.widgets_values).toEqual({})
+  })
+
+  it('does not mint an active-graph widget write without a live widget', async () => {
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: toNodeId(999),
+      name: 'missing',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('mints a value-widget write on a node that omits the node-level serialize flag', async () => {
+    const node = new LGraphNode('No widget serialization')
+    node.addWidget('number', 'steps', 20, () => {})
+    withGraphIntentSource('load', () => graph.add(node))
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: node.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: node.id,
+        widget: 'steps',
+        value: 21,
+        old: 20
+      }
+    ])
+  })
+
+  it('judges a stale bound-graph write on its stored serialize flag', async () => {
+    const previousGraph = new LGraph()
+    const { source } = seedGraph(previousGraph)
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(previousGraph.id, source.id, 'steps')
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    rootGraphId = toRootGraphId(previousGraph.id)
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: previousGraph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)
-    withGraphIntentSource('load', () => graph.add(host))
+    const source = new TestSource()
+    withGraphIntentSource('load', () => {
+      graph.add(host)
+      subgraph.add(source)
+    })
 
     emitGraphIntent({
       type: 'set_widget',
       graphId: subgraph.id,
-      nodeId: toNodeId(2),
+      nodeId: source.id,
       name: 'steps',
       value: 3,
       previous: 20
@@ -683,11 +948,11 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([
       {
         op: 'set_widget',
-        node_id: toNodeId(2),
+        node_id: source.id,
         widget: 'steps',
         value: 3,
         old: 20,
-        path: [String(host.id), '2'],
+        path: [String(host.id), String(source.id)],
         inner_widget: 'steps'
       }
     ])

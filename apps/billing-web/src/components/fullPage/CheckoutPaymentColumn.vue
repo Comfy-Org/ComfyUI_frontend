@@ -34,7 +34,6 @@ const {
   publishableKey,
   canPay,
   reopening,
-  canCancel = false,
   keepSubscription,
   savedMethods = [],
   purchase = 'plan'
@@ -45,7 +44,6 @@ const {
   canPay: boolean
   /** The page is re-opening the challenge on its own, so Complete verification waits. */
   reopening: boolean
-  canCancel?: boolean
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
@@ -162,7 +160,6 @@ const copy = computed<StripePaymentCopy>(() => ({
           :locked
           :reopening
           :phase
-          :can-cancel="canCancel"
           @cancel="emit('cancel')"
           @continue-verification="emit('continueVerification')"
         />
@@ -184,7 +181,6 @@ const copy = computed<StripePaymentCopy>(() => ({
           :locked
           :reopening
           :phase
-          :can-cancel="canCancel"
           @confirm-reactivation="emit('confirmReactivation', $event)"
           @consent-missing="emit('consentMissing')"
           @cancel="emit('cancel')"
@@ -217,7 +213,6 @@ const copy = computed<StripePaymentCopy>(() => ({
               :locked
               :reopening
               :phase
-              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
               @cancel="emit('cancel')"
@@ -252,7 +247,6 @@ const copy = computed<StripePaymentCopy>(() => ({
               :locked
               :reopening
               :phase="formShown ? phase : undefined"
-              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
               @cancel="emit('cancel')"
