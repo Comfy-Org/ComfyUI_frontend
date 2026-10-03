@@ -344,6 +344,35 @@ function documentWidget(
 }
 
 /**
+ * Is `name` an overflow alias for a live widget the same document node also
+ * addresses by its real name? The host mints one key per `widgets_values`
+ * position, so the two only coexist once a later named write lands on a
+ * position an earlier mint had to alias.
+ *
+ * `positionalWidgetValues` already resolves that collision in favour of the
+ * named entry, because `widget.name in widgets` is tried first. A later frame
+ * has to resolve it the same way or the live value depends on entry order —
+ * and a partial frame carrying only the alias would overwrite the named
+ * value, since `syncWidgets` filters the unchanged named entry out. The check
+ * therefore reads the node's WHOLE document map, not the changed subset.
+ */
+function supersededOverflowAlias(
+  node: LGraphNode,
+  name: string,
+  document: DocNode['widgets']
+): boolean {
+  if (document === undefined || Array.isArray(document)) return false
+  const overflowIndex = overflowWidgetIndex(name)
+  if (overflowIndex === null) return false
+  const positional = serializableWidgets(node).at(overflowIndex)
+  return (
+    positional !== undefined &&
+    positional.name !== name &&
+    positional.name in document
+  )
+}
+
+/**
  * The document stores an ordinary node's widget values by name; `configure`
  * restores them positionally over the node's serializable widgets, so project
  * the named map into that order, keeping the constructor default for any
@@ -652,24 +681,30 @@ export class LiveGraphApplier {
       node,
       Object.fromEntries(
         Object.entries(widgets).filter(([name]) => names.has(name))
-      )
+      ),
+      widgets
     )
   }
 
-  private applyWidgets(node: LGraphNode, widgets: DocNode['widgets']): void {
+  /**
+   * `documentWidgets` is the node's whole document map; it differs from
+   * `widgets` only on the partial-frame path, where `widgets` is the changed
+   * subset and overflow-alias precedence still has to be judged against every
+   * key the node carries.
+   */
+  private applyWidgets(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    documentWidgets: DocNode['widgets'] = widgets
+  ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
       this.applyHostWidgets(node, widgets)
       return
     }
-    const entries = Array.isArray(widgets)
-      ? serializableWidgets(node).map((widget, index): [string, unknown] => [
-          widget.name,
-          widgets[index]
-        ])
-      : Object.entries(widgets)
-    for (const [name, value] of entries) {
+    for (const [name, value] of ordinaryWidgetEntries(node, widgets)) {
       if (value === undefined || !isWidgetValue(value)) continue
+      if (supersededOverflowAlias(node, name, documentWidgets)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
       const widget = documentWidget(node, name)
       if (!widget) {
@@ -848,6 +883,18 @@ function isLinkPresent(
     current.origin_id === origin.id &&
     current.origin_slot === originSlot
   )
+}
+
+/** Ordinary node widget values by document name; a positional list is read in serializable-widget order. */
+function ordinaryWidgetEntries(
+  node: LGraphNode,
+  widgets: NonNullable<DocNode['widgets']>
+): [string, unknown][] {
+  if (!Array.isArray(widgets)) return Object.entries(widgets)
+  return serializableWidgets(node).map((widget, index): [string, unknown] => [
+    widget.name,
+    widgets[index]
+  ])
 }
 
 /** Host widget values by promoted-input name; a positional list is read in promoted-input order. */

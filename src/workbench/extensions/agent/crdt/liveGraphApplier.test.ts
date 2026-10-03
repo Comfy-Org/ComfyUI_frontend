@@ -191,6 +191,57 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it('keeps a named entry authoritative over its own overflow alias', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestOverflowWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 42]
+        }
+      ],
+      links: []
+    })
+    /**
+     * Both keys address serializable index 1. Only a named write past the
+     * mint's pinned catalog can produce this, so it is rare — but the two
+     * apply paths have to agree about which one wins, or the live value
+     * depends on which entry a frame happens to carry.
+     */
+    const setDocWidget = (name: string, value: number) => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set(name, value)
+    }
+    doc.transact(() => {
+      setDocWidget('overflow', 7)
+    })
+
+    applyCollected()
+    const overflowWidget = () =>
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.find((widget) => widget.name === 'overflow')?.value
+
+    // Initial configure resolves the collision in favour of the named entry.
+    expect(overflowWidget()).toBe(7)
+
+    // A later frame carrying only the alias must not overturn that.
+    applyEdit(() => {
+      setDocWidget('_extra_1', 99)
+    })
+    expect(overflowWidget()).toBe(7)
+
+    // The named entry still applies normally.
+    applyEdit(() => {
+      setDocWidget('overflow', 8)
+    })
+    expect(overflowWidget()).toBe(8)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('creates document nodes and links with the document ids, without the placement ghost flag', () => {
     const { graph, applyCollected } = setup({
       nodes: [
