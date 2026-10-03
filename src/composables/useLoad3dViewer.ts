@@ -501,8 +501,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       isPreview.value = true
       setupAnimationEvents()
 
-      const accepted = await load3d.loadModel(modelUrl)
-      if (!accepted) return
+      const outcome = await load3d.loadModel(modelUrl)
+      if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
@@ -534,8 +534,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     try {
       saveStandaloneConfig()
-      const accepted = await load3d.loadModel(modelUrl)
-      if (!accepted) return
+      const outcome = await load3d.loadModel(modelUrl)
+      if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
@@ -825,8 +825,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         )
       )
 
-      const accepted = await load3d.loadModel(modelUrl)
-      if (!accepted) return
+      const outcome = await load3d.loadModel(modelUrl)
+      if (outcome !== 'loaded') return
 
       captureAdapterFlags(load3d)
 

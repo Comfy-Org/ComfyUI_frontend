@@ -388,7 +388,7 @@ describe('load3dService', () => {
         originalModel: unknown
         materialMode: string
         currentUpDirection: string
-        appliedTexture: unknown
+        appliedTexture: THREE.Texture | null
         originalMaterials: WeakMap<
           THREE.Mesh,
           THREE.Material | THREE.Material[]
@@ -425,16 +425,33 @@ describe('load3dService', () => {
         sceneAdded.push(o)
         scene.add(o)
       })
-      const modelManager = {
+      const originalMaterials = new WeakMap<
+        THREE.Mesh,
+        THREE.Material | THREE.Material[]
+      >()
+      const modelManager: TargetState['modelManager'] & {
+        setupModelMaterials: ReturnType<typeof vi.fn>
+        borrowAppliedTexture: (
+          texture: THREE.Texture,
+          takeOwnership: boolean
+        ) => void
+      } = {
         currentModel: existingModel,
-        originalModel: null as unknown,
+        originalModel: null,
         materialMode: 'original',
         currentUpDirection: 'original',
-        appliedTexture: null as unknown,
-        originalMaterials: new WeakMap<
-          THREE.Mesh,
-          THREE.Material | THREE.Material[]
-        >(),
+        appliedTexture: null,
+        setupModelMaterials: vi.fn((model: THREE.Object3D) => {
+          model.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              originalMaterials.set(child, child.material)
+            }
+          })
+        }),
+        borrowAppliedTexture(texture: THREE.Texture) {
+          this.appliedTexture = texture
+        },
+        originalMaterials,
         clearQuadWireframe: vi.fn()
       }
       const animationManager = {
@@ -456,8 +473,10 @@ describe('load3dService', () => {
             remove: sceneRemove
           } as unknown as THREE.Scene
         }),
-        loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
-        setMaterialMode: vi.fn(),
+        loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded'),
+        setMaterialMode: vi.fn((mode: string) => {
+          modelManager.materialMode = mode
+        }),
         setUpDirection: vi.fn(),
         applyGizmoTransform: vi.fn(),
         setGizmoEnabled: vi.fn(),
@@ -532,7 +551,7 @@ describe('load3dService', () => {
         originalURL: 'http://example.com/scan.splat'
       })
       const { target } = makeTarget()
-      vi.mocked(target.loadModel).mockResolvedValue(false)
+      vi.mocked(target.loadModel).mockResolvedValue('cancelled')
 
       await useLoad3dService().copyLoad3dState(source, target)
 
@@ -609,10 +628,12 @@ describe('load3dService', () => {
       await useLoad3dService().copyLoad3dState(source, target)
 
       const cloneMesh = firstMesh(clone)
-      expect(cloneMesh.material).toBe(original)
+      expect(cloneMesh.material).not.toBe(original)
       expect(cloneMesh.children).toHaveLength(0)
-      expect(state.modelManager.originalMaterials.get(cloneMesh)).toBe(original)
-      expect(state.modelManager.materialMode).toBe('original')
+      expect(state.modelManager.originalMaterials.get(cloneMesh)).toBe(
+        cloneMesh.material
+      )
+      expect(state.modelManager.materialMode).toBe('wireframe')
       expect(target.setMaterialMode).toHaveBeenCalledWith('wireframe')
     })
 
@@ -655,9 +676,82 @@ describe('load3dService', () => {
       expect(state.modelManager.currentModel).toBe(clone)
     })
 
+    it('gives sibling clones independent geometry, material arrays, and texture slots', async () => {
+      const geometry = new THREE.BoxGeometry()
+      const map = new THREE.Texture()
+      const normalMap = new THREE.Texture()
+      const materials = [
+        new THREE.MeshStandardMaterial({ map }),
+        new THREE.MeshStandardMaterial({ normalMap })
+      ]
+      const sourceModel = new THREE.Group()
+      const firstClone = new THREE.Group()
+      firstClone.add(new THREE.Mesh(geometry, materials))
+      const secondClone = firstClone.clone(true)
+      const source = makeSource({ currentModel: sourceModel })
+      const { target } = makeTarget()
+      skeletonCloneMock
+        .mockReturnValueOnce(firstClone)
+        .mockReturnValueOnce(secondClone)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      const firstMesh = firstClone.children[0]
+      const secondMesh = secondClone.children[0]
+      if (!(firstMesh instanceof THREE.Mesh)) {
+        throw new Error('Expected the first clone child to be a mesh')
+      }
+      if (!(secondMesh instanceof THREE.Mesh)) {
+        throw new Error('Expected the second clone child to be a mesh')
+      }
+      if (!Array.isArray(firstMesh.material)) {
+        throw new Error('Expected the first clone to keep a material array')
+      }
+      if (!Array.isArray(secondMesh.material)) {
+        throw new Error('Expected the second clone to keep a material array')
+      }
+      expect(firstMesh.geometry).not.toBe(geometry)
+      expect(secondMesh.geometry).not.toBe(geometry)
+      expect(secondMesh.geometry).not.toBe(firstMesh.geometry)
+      expect(firstMesh.material[0]).not.toBe(materials[0])
+      expect(secondMesh.material[0]).not.toBe(firstMesh.material[0])
+      expect(firstMesh.material[0].map).not.toBe(map)
+      expect(secondMesh.material[0].map).not.toBe(firstMesh.material[0].map)
+      expect(firstMesh.material[1].normalMap).not.toBe(normalMap)
+      expect(secondMesh.material[1].normalMap).not.toBe(
+        firstMesh.material[1].normalMap
+      )
+
+      firstMesh.geometry.dispose()
+      firstMesh.material.forEach((material) => material.dispose())
+      expect(secondMesh.geometry).not.toBe(firstMesh.geometry)
+      expect(secondMesh.material).not.toContain(firstMesh.material[0])
+    })
+
+    it('gives copied line primitives independent geometry and material ownership', async () => {
+      const geometry = new THREE.BufferGeometry()
+      const material = new THREE.LineBasicMaterial()
+      const sourceModel = new THREE.Group()
+      const clone = new THREE.Group()
+      clone.add(new THREE.LineSegments(geometry, material))
+      const source = makeSource({ currentModel: sourceModel })
+      const { target } = makeTarget()
+      skeletonCloneMock.mockReturnValueOnce(clone)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      const line = clone.children[0]
+      if (!(line instanceof THREE.LineSegments)) {
+        throw new Error('Expected the copied child to be line segments')
+      }
+      expect(line.geometry).not.toBe(geometry)
+      expect(line.material).not.toBe(material)
+    })
+
     it('copies originalModel, material mode, up direction, and applied texture from source to target', async () => {
       const sourceOriginal = { kind: 'gltf' }
-      const texture = { id: 'tex1' }
+      const texture = new THREE.Texture()
       const source = makeSource({
         currentModel: makeModel(),
         originalModel: sourceOriginal,
@@ -672,7 +766,8 @@ describe('load3dService', () => {
 
       expect(state.modelManager.originalModel).toBe(sourceOriginal)
       expect(state.modelManager.currentUpDirection).toBe('+y')
-      expect(state.modelManager.appliedTexture).toBe(texture)
+      expect(state.modelManager.appliedTexture).toBeInstanceOf(THREE.Texture)
+      expect(state.modelManager.appliedTexture).not.toBe(texture)
       expect(target.setMaterialMode).toHaveBeenCalledWith('wireframe')
       expect(target.setUpDirection).toHaveBeenCalledWith('+y')
     })

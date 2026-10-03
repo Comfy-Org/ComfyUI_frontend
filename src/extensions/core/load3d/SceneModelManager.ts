@@ -15,6 +15,77 @@ import type {
 } from './interfaces'
 import { QuadWireframeManager } from './quadWireframe/QuadWireframeManager'
 
+type ResourceRenderable = THREE.Mesh | THREE.Points | THREE.Line
+
+function isResourceRenderable(
+  object: THREE.Object3D
+): object is ResourceRenderable {
+  return (
+    object instanceof THREE.Mesh ||
+    object instanceof THREE.Points ||
+    object instanceof THREE.Line
+  )
+}
+
+export function disposeObject3D(
+  object: THREE.Object3D,
+  preservedMaterials: THREE.Material | ReadonlySet<THREE.Material>,
+  preservedTextures: ReadonlySet<THREE.Texture> = new Set()
+): void {
+  const preserved =
+    preservedMaterials instanceof Set
+      ? preservedMaterials
+      : new Set([preservedMaterials])
+  object.traverse((child) => {
+    if (!isResourceRenderable(child)) return
+    child.geometry.dispose()
+    const materials = Array.isArray(child.material)
+      ? child.material
+      : [child.material]
+    for (const material of materials) {
+      if (preserved.has(material)) continue
+      for (const [, texture] of materialTextures(material)) {
+        if (!preservedTextures.has(texture)) {
+          texture.dispose()
+        }
+      }
+      material.dispose()
+    }
+  })
+}
+
+function materialTextures(
+  material: THREE.Material
+): Array<[property: string, texture: THREE.Texture]> {
+  return Object.entries(material).filter(
+    (entry): entry is [string, THREE.Texture] =>
+      entry[1] instanceof THREE.Texture
+  )
+}
+
+function cloneMaterialResources(material: THREE.Material): THREE.Material {
+  const clone = material.clone()
+  for (const [property, texture] of materialTextures(clone)) {
+    // Material subclasses expose texture slots dynamically; Reflect.set keeps
+    // that boundary runtime-checked without pretending every slot is indexed.
+    if (!Reflect.set(clone, property, texture.clone())) {
+      throw new TypeError(`Unable to clone material resource ${property}`)
+    }
+  }
+  return clone
+}
+
+/** Give a cloned renderable graph independent ownership of GPU resources. */
+export function cloneObject3DResources(object: THREE.Object3D): void {
+  object.traverse((child) => {
+    if (!isResourceRenderable(child)) return
+    child.geometry = child.geometry.clone()
+    child.material = Array.isArray(child.material)
+      ? child.material.map(cloneMaterialResources)
+      : cloneMaterialResources(child.material)
+  })
+}
+
 export class SceneModelManager implements ModelManagerInterface {
   currentModel: THREE.Object3D | null = null
   originalModel:
@@ -37,6 +108,7 @@ export class SceneModelManager implements ModelManagerInterface {
   originalFileName: string | null = null
   originalURL: string | null = null
   appliedTexture: THREE.Texture | null = null
+  private ownsAppliedTexture = true
   textureLoader: THREE.TextureLoader
   skeletonHelper: THREE.SkeletonHelper | null = null
   showSkeleton: boolean = false
@@ -55,6 +127,16 @@ export class SceneModelManager implements ModelManagerInterface {
     center: THREE.Vector3
   } | null
   private readonly quadWireframe = new QuadWireframeManager()
+
+  private get preservedMaterials(): ReadonlySet<THREE.Material> {
+    return new Set([
+      this.normalMaterial,
+      this.standardMaterial,
+      this.wireframeMaterial,
+      this.depthMaterial,
+      this.clayMaterial
+    ])
+  }
 
   constructor(
     scene: THREE.Scene,
@@ -164,10 +246,11 @@ export class SceneModelManager implements ModelManagerInterface {
     this.depthMaterial.dispose()
     this.clayMaterial.dispose()
 
-    if (this.appliedTexture) {
+    if (this.appliedTexture && this.ownsAppliedTexture) {
       this.appliedTexture.dispose()
-      this.appliedTexture = null
     }
+    this.appliedTexture = null
+    this.ownsAppliedTexture = true
   }
 
   createSTLMaterial(): THREE.MeshStandardMaterial {
@@ -180,6 +263,17 @@ export class SceneModelManager implements ModelManagerInterface {
     })
   }
 
+  borrowAppliedTexture(texture: THREE.Texture, takeOwnership = false): void {
+    if (this.ownsAppliedTexture) this.appliedTexture?.dispose()
+    ;[this.appliedTexture, this.ownsAppliedTexture] = [texture, takeOwnership]
+  }
+
+  private appliedTexturesToPreserve(): ReadonlySet<THREE.Texture> {
+    return this.ownsAppliedTexture || !this.appliedTexture
+      ? new Set()
+      : new Set([this.appliedTexture])
+  }
+
   private removeAllMainModelsFromScene(): void {
     this.quadWireframe.clear()
     const oldMainModels: THREE.Object3D[] = []
@@ -187,18 +281,22 @@ export class SceneModelManager implements ModelManagerInterface {
       if (obj.name === 'MainModel') oldMainModels.push(obj)
     })
     oldMainModels.forEach((oldModel) => {
-      oldModel.traverse((child) => {
-        if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
-          child.geometry?.dispose()
-          if (Array.isArray(child.material)) {
-            child.material.forEach((m) => m.dispose())
-          } else {
-            child.material?.dispose()
-          }
-        }
-      })
+      this.restoreOriginalMaterials(oldModel)
+      disposeObject3D(
+        oldModel,
+        this.preservedMaterials,
+        this.appliedTexturesToPreserve()
+      )
       this.disposeModelViaAdapter(oldModel)
       this.scene.remove(oldModel)
+    })
+  }
+
+  private restoreOriginalMaterials(model: THREE.Object3D): void {
+    model.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return
+      const original = this.originalMaterials.get(child)
+      if (original) child.material = original
     })
   }
 
@@ -356,16 +454,12 @@ export class SceneModelManager implements ModelManagerInterface {
     objectsToRemove.forEach((obj) => {
       this.scene.remove(obj)
 
-      obj.traverse((child) => {
-        if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
-          child.geometry?.dispose()
-          if (Array.isArray(child.material)) {
-            child.material.forEach((material) => material.dispose())
-          } else {
-            child.material?.dispose()
-          }
-        }
-      })
+      this.restoreOriginalMaterials(obj)
+      disposeObject3D(
+        obj,
+        this.preservedMaterials,
+        this.appliedTexturesToPreserve()
+      )
       this.disposeModelViaAdapter(obj)
     })
 
@@ -381,10 +475,11 @@ export class SceneModelManager implements ModelManagerInterface {
     this.originalFileName = null
     this.originalURL = null
 
-    if (this.appliedTexture) {
+    if (this.appliedTexture && this.ownsAppliedTexture) {
       this.appliedTexture.dispose()
-      this.appliedTexture = null
     }
+    this.appliedTexture = null
+    this.ownsAppliedTexture = true
 
     if (this.skeletonHelper) {
       this.scene.remove(this.skeletonHelper)
