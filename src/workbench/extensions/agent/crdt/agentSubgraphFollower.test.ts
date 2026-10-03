@@ -349,6 +349,83 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
   })
 
+  it('S1z runs the host widget hooks on an accepted promoted write', () => {
+    // An accepted host write takes the same widget setter a human edit takes,
+    // so the node learns its widget changed. Writing `widgetValueStore`
+    // directly reaches the same store key silently, and was the last direct
+    // store write left in this applier.
+    const state = startFollower()
+    const widget = state.instance.widgets[0]
+    const callback = vi.fn()
+    const changed = vi.fn()
+    widget.callback = callback
+    state.instance.onWidgetChanged = changed
+
+    deliver(
+      state,
+      {
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'value',
+        value: 42,
+        promoted: {
+          instance_path: [1],
+          value_index: 0,
+          host_widgets_values: [HOST_INITIAL_VALUE]
+        }
+      },
+      1
+    )
+
+    expect(widget.value).toBe(42)
+    expect(callback).toHaveBeenCalledWith(42, undefined, state.instance)
+    expect(changed).toHaveBeenCalledWith(
+      'value',
+      42,
+      HOST_INITIAL_VALUE,
+      widget
+    )
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('S1r rolls a host widget back when its change hook throws', () => {
+    // The host shares the plain-node contract already pinned in
+    // `liveGraphApplier.test.ts`: a throwing hook undoes the write and the
+    // frame is reported degraded. The host then disagrees with the document
+    // until a later op touches the widget, and that is the reported outcome,
+    // not a silent one.
+    const state = startFollower()
+    state.instance.onWidgetChanged = () => {
+      throw new Error('extension hook exploded')
+    }
+
+    deliver(
+      state,
+      {
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'value',
+        value: 42,
+        promoted: {
+          instance_path: [1],
+          value_index: 0,
+          host_widgets_values: [HOST_INITIAL_VALUE]
+        }
+      },
+      1
+    )
+
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+    expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'extension hook exploded' }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_apply_failed'
+      })
+    )
+  })
+
   it('S1b keeps the promoted widget when cmp retires the empty named map in the same transaction', () => {
     // cmp `applyPromotedHostWrite` deletes the host's empty `widgets` Y.Map and
     // sets `__widgets_opaque` in ONE transaction. The follower must treat that
