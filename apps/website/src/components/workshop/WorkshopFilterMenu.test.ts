@@ -17,7 +17,7 @@ function mountMenu() {
   render(
     defineComponent({
       setup: () => () =>
-        h(WorkshopFilterMenu, {
+        h(WorkshopFilterMenu<UseCase>, {
           useCaseOptions,
           resultCount: 12,
           useCases: useCases.value,
@@ -34,12 +34,13 @@ describe('WorkshopFilterMenu', () => {
   it('closes on Escape from inside the filter panel and restores trigger focus', async () => {
     const user = userEvent.setup()
     mountMenu()
-    const trigger = screen.getByRole('button', { name: 'Filter' })
+    const trigger = screen.getByRole('button', { name: 'Use cases' })
     await user.click(trigger)
     const dialog = await screen.findByRole('dialog')
-    const useCase = within(dialog).getByRole('button', {
+    const useCase = await within(dialog).findByRole('button', {
       name: 'Generate images 4'
     })
+    expect(within(dialog).getByRole('searchbox')).toBeVisible()
     useCase.focus()
     await user.keyboard(' ')
     expect(useCase.getAttribute('aria-pressed')).toBe('true')
@@ -48,7 +49,7 @@ describe('WorkshopFilterMenu', () => {
     await waitFor(() => expect(trigger.matches(':focus')).toBe(true))
   })
 
-  it('toggles a use case and counts it on the button and tab', async () => {
+  it('toggles a use case and counts it on the button and panel', async () => {
     const user = userEvent.setup()
     const { useCases } = mountMenu()
 
@@ -60,9 +61,9 @@ describe('WorkshopFilterMenu', () => {
     expect(screen.getByTestId('workshop-filter-count').textContent.trim()).toBe(
       '1'
     )
-    expect(
-      screen.getByTestId('workshop-facet-useCase-count').textContent.trim()
-    ).toBe('1')
+    expect(screen.getByTestId('workshop-filter-applied')).toHaveTextContent(
+      '1 selected'
+    )
   })
 
   it('narrows a facet with its search box', async () => {

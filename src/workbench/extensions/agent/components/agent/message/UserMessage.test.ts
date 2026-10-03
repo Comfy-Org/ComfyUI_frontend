@@ -6,6 +6,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 
+import type { AgentMessages } from '../../../schemas/agentApiSchema'
+import { toTurnId } from '../../../schemas/agentApiSchema'
+import { normalizeAgentTranscript } from '../../../services/agent/agentTranscript'
+
 import UserMessage from './UserMessage.vue'
 
 const clipboard = vi.hoisted(() => ({
@@ -55,7 +59,12 @@ function renderMessage(props: ComponentProps<typeof UserMessage>) {
   })
 }
 
-function stubbedAssets(): { url: string; filename: string; kind: string }[] {
+function stubbedAssets(): {
+  url: string
+  filename: string
+  kind: string
+  label?: string
+}[] {
   return JSON.parse(
     screen.getByTestId('reply-asset-group').dataset.assets ?? '[]'
   )
@@ -164,11 +173,95 @@ describe('UserMessage', () => {
         url: expect.stringContaining(
           '/view?filename=upload_clip.mp4&type=input'
         ),
-        filename: 'clip.mp4',
-        kind: 'video'
+        filename: 'upload_clip.mp4',
+        kind: 'video',
+        label: 'clip.mp4'
       }
     ])
     expect(screen.getByText('use these')).toBeInTheDocument()
+  })
+
+  // Dragging a non-first batch output (e.g. "layer 2" of a multi-output job)
+  // into the composer attaches it with `ref` set to the bare output filename
+  // (no content hash — see outputAssetUtil.ts's deliberate omission) and a
+  // correct `previewUrl` captured at drop time. splitAttachments must prefer
+  // that previewUrl over reconstructing `/view?...&type=input`, which does
+  // not resolve to the dragged output.
+  it('shows the dragged batch output, not a type=input lookup, for a non-first output asset', () => {
+    renderMessage({
+      text: 'use this one',
+      attachments: [
+        {
+          name: 'ComfyUI_00002_.png',
+          ref: 'ComfyUI_00002_.png',
+          previewUrl: 'blob:comfy/correct-batch-output-2'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: 'blob:comfy/correct-batch-output-2',
+        filename: 'ComfyUI_00002_.png',
+        kind: 'image'
+      }
+    ])
+  })
+
+  /** PM-1643 / PM-717: persisted kind classifies an extensionless ref. */
+  it.for(['image', 'video', 'audio'])(
+    'previews a rehydrated %s asset whose ref has no extension',
+    (kind) => {
+      const bareDigest = 'a'.repeat(64)
+      const persisted: AgentMessages[number] = {
+        id: 'row-1',
+        thread_id: 'thread-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn-a',
+        content: {
+          text: 'upscale this',
+          attachments: [bareDigest],
+          attachment_refs: [{ name: bareDigest, id: 'asset-9', kind }]
+        }
+      }
+      const { userAttachments } = normalizeAgentTranscript([persisted])
+
+      renderMessage({
+        text: 'upscale this',
+        attachments: userAttachments.get(toTurnId('turn-a'))
+      })
+
+      const grid = screen.queryByTestId('reply-asset-group')
+      expect(JSON.parse(grid?.dataset.assets ?? '[]')).toEqual([
+        expect.objectContaining({ kind })
+      ])
+    }
+  )
+
+  it('uses the resolved kind for both a renamed grid asset and its lightbox identity', () => {
+    renderMessage({
+      text: '',
+      attachments: [
+        {
+          name: 'renamed-video.mp4',
+          ref: 'stored-image.png',
+          kind: 'video'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: expect.stringContaining(
+          '/view?filename=stored-image.png&type=input'
+        ),
+        filename: 'stored-image.png',
+        kind: 'video',
+        label: 'renamed-video.mp4'
+      }
+    ])
   })
 
   it('keeps non-media attachments as compact tiles beside the grid', () => {
@@ -185,8 +278,9 @@ describe('UserMessage', () => {
         url: expect.stringContaining(
           '/view?filename=upload_song.mp3&type=input'
         ),
-        filename: 'song.mp3',
-        kind: 'audio'
+        filename: 'upload_song.mp3',
+        kind: 'audio',
+        label: 'song.mp3'
       }
     ])
     expect(screen.getByText('notes.md')).toBeInTheDocument()

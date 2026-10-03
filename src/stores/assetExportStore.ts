@@ -6,7 +6,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
-import type { AssetExportWsMessage } from '@/schemas/apiSchema'
+import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { t } from '@/i18n'
 
@@ -148,31 +148,32 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     if (staleExports.length === 0) return
 
     async function pollSingleExport(exp: AssetExport) {
-      try {
-        const task = await taskService.getTask(exp.taskId)
+      const result = await taskService.getTask(exp.taskId)
+      if (!result.ok) return
 
-        if (task.status === 'completed' || task.status === 'failed') {
-          const result: Record<string, unknown> = isRecord(task.result)
-            ? task.result
-            : {}
-          handleAssetExport({
-            task_id: exp.taskId,
-            export_name: stringValue(result.export_name, exp.exportName),
-            assets_total: numberValue(result.assets_total, exp.assetsTotal),
-            assets_attempted: numberValue(
-              result.assets_attempted,
-              exp.assetsAttempted
-            ),
-            assets_failed: numberValue(result.assets_failed, exp.assetsFailed),
-            bytes_total: exp.bytesTotal,
-            bytes_processed: exp.bytesTotal,
-            progress: task.status === 'completed' ? 1 : exp.progress,
-            status: task.status,
-            error: task.error_message ?? stringValue(result.error, '')
-          })
-        }
-      } catch {
-        // Task not ready or not found
+      const task = result.value
+      if (task.status === 'completed' || task.status === 'failed') {
+        const taskResult: Record<string, unknown> = isRecord(task.result)
+          ? task.result
+          : {}
+        handleAssetExport({
+          task_id: exp.taskId,
+          export_name: stringValue(taskResult.export_name, exp.exportName),
+          assets_total: numberValue(taskResult.assets_total, exp.assetsTotal),
+          assets_attempted: numberValue(
+            taskResult.assets_attempted,
+            exp.assetsAttempted
+          ),
+          assets_failed: numberValue(
+            taskResult.assets_failed,
+            exp.assetsFailed
+          ),
+          bytes_total: exp.bytesTotal,
+          bytes_processed: exp.bytesTotal,
+          progress: task.status === 'completed' ? 1 : exp.progress,
+          status: task.status,
+          error: task.error_message ?? stringValue(taskResult.error, '')
+        })
       }
     }
 

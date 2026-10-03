@@ -2,13 +2,6 @@
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
 
-/* PP Formula's native vertical metrics place the baseline too high, so caps
-   sit in the upper half of the line box. Overriding ascent/descent re-anchors
-   the baseline so caps render optically centered when line-height is tight. 
-    BUT, IT IS NOT WELL SUPPORTED:
-    ascent-override: 92%;
-    descent-override: 8%;
-    line-gap-override: 0%; */
 @font-face {
   font-family: 'PP Formula';
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
@@ -66,6 +59,7 @@
 }
 
 @custom-variant short (@media (max-height: 1100px));
+@custom-variant can-hover (@media (hover: hover));
 
 @theme {
   --color-site-dropdown: #332b38;
@@ -90,15 +84,19 @@
   --color-secondary-deep-plum: #2b2040;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
+  --color-workflow-foreground: #eee;
+  --color-workflow-selection: #a894ef;
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
   --color-transparency-white-t8: rgb(255 255 255 / 0.08);
   --color-transparency-white-t20: rgb(255 255 255 / 0.2);
   --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
+  --text-3xs: 0.625rem;
   --text-2xs: 0.6875rem;
   --text-3\.5xl: 2rem;
   --text-6\.5xl: 4.125rem;
+  --radius-3\.5xl: 1.75rem;
   --radius-4xl: 2rem;
   --radius-4\.5xl: 2.25rem;
   --radius-5xl: 2.5rem;
@@ -115,11 +113,9 @@
   --color-hub-surface: var(--color-transparency-white-t4);
   --color-hub-surface-hover: var(--color-transparency-white-t8);
   --color-hub-muted: #8a8a8a;
-}
-
-@utility ppformula-text-center-sm {
-  position: relative;
-  top: 0.12em;
+  /* The workspace monogram reads as a lighter step of the panel it sits on
+     rather than a colour of its own, so it tints with whatever is behind it. */
+  --color-workspace-mark: var(--color-transparency-white-t20);
 }
 
 @utility content-auto {
@@ -517,15 +513,6 @@
   mask-size: contain;
   mask-repeat: no-repeat;
   mask-position: center;
-}
-
-/* PP Formula has asymmetric vertical metrics
-   Shifting visually with `top` corrects the appearance without changing the
-   inline-block's bounding box, so button/badge sizes are unaffected. */
-@utility ppformula-text-center {
-  display: inline-block;
-  position: relative;
-  top: 0.1em;
 }
 
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked

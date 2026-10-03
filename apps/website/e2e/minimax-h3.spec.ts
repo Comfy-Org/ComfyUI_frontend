@@ -10,19 +10,20 @@ import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/minimax-h3'
 const HERO_TITLE =
-  t('minimax.hero.titleModel', 'en') + t('minimax.hero.titleRest', 'en')
-const MODELS_HEADING = t('minimax.models.heading', 'en')
+  t('minimax.hero.titleModel', {}, { locale: 'en' }) +
+  t('minimax.hero.titleRest', {}, { locale: 'en' })
+const MODELS_HEADING = t('minimax.models.heading', {}, { locale: 'en' })
 const MODELS_ROUTE = getRoutes('en').models
-const CTA_HEADING = t('minimax.cta.heading', 'en')
-const CTA_PRIMARY = t('minimax.cta.primaryCta', 'en')
+const CTA_HEADING = t('minimax.cta.heading', {}, { locale: 'en' })
+const CTA_PRIMARY = t('minimax.cta.primaryCta', {}, { locale: 'en' })
 const CLOUD_URL = externalLinks.cloud
 const CLOUD_RUN_URL = minimaxLinks.cloudRun
-const FAQS = minimaxPage.faq?.items ?? []
+const FAQS = minimaxPage.faq.items
 const FAQ_COUNT = FAQS.length
 const FIRST_FAQ = FAQS[0]
-const PRICING_HEADING = t('pricing.title', 'en')
-const REVIEWS_HEADING = t('minimax.reviews.heading', 'en')
-const HIGHLIGHT_CTA = t('minimax.reviews.highlightCta', 'en')
+const PRICING_HEADING = t('pricing.title', {}, { locale: 'en' })
+const REVIEWS_HEADING = t('minimax.reviews.heading', {}, { locale: 'en' })
+const HIGHLIGHT_CTA = t('minimax.reviews.highlightCta', {}, { locale: 'en' })
 const LICENSE_ROUTE = getRoutes('en').minimaxLicense
 const FIRST_REVIEW = creatorReviews[0]
 const HERO_VIDEO_PATTERN = /hero-sizzle\.mp4/
@@ -92,7 +93,9 @@ test.describe('MiniMax H3 page — link targets', () => {
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
       .getByRole('navigation', { name: 'Breadcrumb' })
-      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
+      .getByRole('link', {
+        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+      })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
@@ -128,12 +131,14 @@ test.describe('MiniMax H3 page — pricing section', () => {
   })
 
   test('renders the free banner with a cloud signup CTA', async ({ page }) => {
-    const banner = page.getByText(t('minimax.pricing.banner.title', 'en'))
+    const banner = page.getByText(
+      t('minimax.pricing.banner.title', {}, { locale: 'en' })
+    )
     await banner.scrollIntoViewIfNeeded()
     await expect(banner).toBeVisible()
 
     const tryFree = page.getByRole('link', {
-      name: t('minimax.pricing.banner.cta', 'en')
+      name: t('minimax.pricing.banner.cta', {}, { locale: 'en' })
     })
     await expect(tryFree).toHaveAttribute('href', CLOUD_URL)
   })
@@ -149,23 +154,34 @@ test.describe('MiniMax H3 page — pricing section', () => {
     const standardCard = pricingSection
       .locator('[class*="rounded-4.5xl"]')
       .filter({
-        has: page.getByText(t('pricing.plan.standard.label', 'en'), {
-          exact: true
-        })
+        has: page.getByText(
+          t('pricing.plan.standard.label', {}, { locale: 'en' }),
+          {
+            exact: true
+          }
+        )
       })
     await expect(
-      standardCard.getByText(t('pricing.plan.standard.estimate', 'en'))
+      standardCard.getByText(
+        t('pricing.plan.standard.estimate', {}, { locale: 'en' })
+      )
     ).toBeVisible()
 
     await expect(
-      pricingSection.getByText(t('pricing.plan.team.label', 'en'), {
-        exact: true
-      })
+      pricingSection.getByText(
+        t('pricing.plan.team.label', {}, { locale: 'en' }),
+        {
+          exact: true
+        }
+      )
     ).toBeVisible()
     await expect(
-      pricingSection.getByText(t('pricing.enterprise.label', 'en'), {
-        exact: true
-      })
+      pricingSection.getByText(
+        t('pricing.enterprise.label', {}, { locale: 'en' }),
+        {
+          exact: true
+        }
+      )
     ).toBeVisible()
   })
 
@@ -173,7 +189,7 @@ test.describe('MiniMax H3 page — pricing section', () => {
     page
   }) => {
     const subscribe = page.getByRole('link', {
-      name: t('pricing.plan.standard.cta', 'en')
+      name: t('pricing.plan.standard.cta', {}, { locale: 'en' })
     })
     await subscribe.scrollIntoViewIfNeeded()
     await expect(subscribe).toHaveAttribute('href', /cycle=monthly/)
@@ -222,10 +238,8 @@ test.describe('MiniMax H3 page — interactions', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) =>
-        (s.textContent ?? '').includes('FAQPage')
-      )
-      return match?.textContent ?? null
+      const match = scripts.find((s) => s.text.includes('FAQPage'))
+      return match?.text ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {
@@ -248,7 +262,7 @@ test.describe('MiniMax H3 page — interactions', () => {
       )
       return scripts.flatMap((s) => {
         try {
-          const parsed = JSON.parse(s.textContent ?? '{}') as {
+          const parsed = JSON.parse(s.text) as {
             '@graph'?: { '@type': string }[]
           }
           return (parsed['@graph'] ?? []).map((node) => node['@type'])

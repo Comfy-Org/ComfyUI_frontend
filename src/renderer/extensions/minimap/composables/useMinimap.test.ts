@@ -13,9 +13,9 @@ import { toLinkId } from '@/types/linkId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import {
-  createMockCanvas2DContext,
+  createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 import type { UUID } from '@/utils/uuid'
 
 interface MockNode {
@@ -209,13 +209,7 @@ const setupMocks = () => {
 
 setupMocks()
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -252,7 +246,7 @@ describe('useMinimap', () => {
     setupVueUseMocks()
     registerMockLink(1, 'node2')
 
-    mockContext2D = createMockCanvas2DContext()
+    mockContext2D = createMockCanvasRenderingContext2D()
 
     moduleMockCanvasElement = createMockMinimapCanvas({
       getContext: vi
@@ -382,7 +376,7 @@ describe('useMinimap', () => {
       await minimap.init()
 
       expect(minimap.initialized.value).toBe(true)
-      expect(vi.mocked(useSettingStore().get)).toHaveBeenCalledWith(
+      expect(useSettingStore().get).toHaveBeenCalledWith(
         'Comfy.Minimap.Visible'
       )
       expect(api.addEventListener).toHaveBeenCalledWith(

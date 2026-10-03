@@ -1,11 +1,13 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
@@ -19,12 +21,7 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
   openHdrViewer: vi.fn()
 }))
 
-const mockTrackImageLoadFailed = vi.fn()
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackImageLoadFailed: mockTrackImageLoadFailed
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -73,8 +70,7 @@ describe('ImagePreview', () => {
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
           'i-lucide:x': true,
-          'i-lucide:image-off': true,
-          Skeleton: true
+          'i-lucide:image-off': true
         }
       }
     })
@@ -170,9 +166,19 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Download image' })
     ).not.toBeInTheDocument()
-    expect(mockTrackImageLoadFailed).toHaveBeenCalledExactlyOnceWith({
-      source: 'node_image_preview'
-    })
+    // The report is emitted behind a diagnostic probe, so the error UI above
+    // asserts synchronously while the telemetry needs the probe to settle.
+    await vi.waitFor(() =>
+      expect(
+        useTelemetry()?.trackImageLoadFailed
+      ).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          source: 'node_image_preview',
+          probe_outcome: expect.any(String),
+          page_age_ms: expect.any(Number)
+        })
+      )
+    )
   })
 
   it('handles download button click', async () => {

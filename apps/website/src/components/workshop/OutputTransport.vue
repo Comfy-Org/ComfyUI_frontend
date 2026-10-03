@@ -5,9 +5,16 @@ import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { src, locale = 'en' } = defineProps<{ src: string; locale?: Locale }>()
+const { t } = translationsFor(locale)
+const emit = defineEmits<{
+  playbackStarted: [src: string]
+  loaded: [src: string]
+  failed: [src: string]
+  cancelled: [src: string]
+}>()
 const audio = useTemplateRef<HTMLAudioElement>('audio')
 const { playing, currentTime, duration, muted } = useMediaControls(audio)
 const seconds = computed(() =>
@@ -30,13 +37,18 @@ const buttonClass =
       ref="audio"
       :src
       preload="metadata"
-      :aria-label="t('workshop.output.title', locale)"
+      :aria-label="t('workshop.output.title')"
       data-testid="output-audio"
+      @loadeddata="emit('loaded', src)"
+      @play="emit('playbackStarted', src)"
+      @playing="emit('loaded', src)"
+      @pause="emit('cancelled', src)"
+      @error="emit('failed', src)"
     />
     <button
       type="button"
       :aria-label="
-        t(playing ? 'workshop.output.pause' : 'workshop.output.play', locale)
+        t(playing ? 'workshop.output.pause' : 'workshop.output.play')
       "
       :class="buttonClass"
       data-testid="output-play"
@@ -52,7 +64,7 @@ const buttonClass =
       :max="seconds"
       step="0.01"
       :disabled="!seconds"
-      :aria-label="t('player.seek', locale)"
+      :aria-label="t('player.seek')"
       class="min-w-0 flex-1 accent-primary-comfy-yellow"
     />
     <span
@@ -63,10 +75,7 @@ const buttonClass =
     <button
       type="button"
       :aria-label="
-        t(
-          muted ? 'workshop.output.soundOn' : 'workshop.output.soundOff',
-          locale
-        )
+        t(muted ? 'workshop.output.soundOn' : 'workshop.output.soundOff')
       "
       :class="cn(buttonClass, !muted && 'text-primary-warm-white')"
       data-testid="output-sound"

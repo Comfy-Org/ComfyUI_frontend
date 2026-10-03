@@ -5,9 +5,10 @@ import type * as PostHogModule from 'posthog-js'
 import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
-} from '@comfyorg/account/telemetry'
+} from '@comfyorg/account-core/telemetry'
 
 const hoisted = vi.hoisted(() => ({
+  included: true,
   localDev: false,
   deployEnv: '',
   mockInit: vi.fn(),
@@ -18,10 +19,14 @@ const hoisted = vi.hoisted(() => ({
   mockIdentify: vi.fn(),
   mockReset: vi.fn(),
   mockGetProperty: vi.fn(),
-  mockReloadFeatureFlags: vi.fn()
+  mockReloadFeatureFlags: vi.fn(),
+  mockSetPersonPropertiesForFlags: vi.fn()
 }))
 
 vi.mock(import('astro:env/client'), () => ({
+  get WORKSHOP_INCLUDED() {
+    return hoisted.included
+  },
   get WORKSHOP_LOCAL_DEV() {
     return hoisted.localDev
   },
@@ -31,6 +36,7 @@ vi.mock(import('astro:env/client'), () => ({
 }))
 
 beforeEach(() => {
+  hoisted.included = true
   hoisted.localDev = false
   hoisted.deployEnv = ''
 })
@@ -46,6 +52,7 @@ type PostHogMock = Pick<
   | 'reset'
   | 'get_property'
   | 'reloadFeatureFlags'
+  | 'setPersonPropertiesForFlags'
 >
 
 const postHogMock = {
@@ -57,7 +64,8 @@ const postHogMock = {
   identify: hoisted.mockIdentify,
   reset: hoisted.mockReset,
   get_property: hoisted.mockGetProperty,
-  reloadFeatureFlags: hoisted.mockReloadFeatureFlags
+  reloadFeatureFlags: hoisted.mockReloadFeatureFlags,
+  setPersonPropertiesForFlags: hoisted.mockSetPersonPropertiesForFlags
 } satisfies PostHogMock
 
 // The real default export carries 130+ members, so only the boundary handoff
@@ -75,6 +83,131 @@ function emitFeatureFlags(errorsLoading = false) {
 describe('Workshop visibility', () => {
   beforeEach(() => {
     vi.resetModules()
+  })
+
+  it('requires workflow enablement and clears it when the caller changes', async () => {
+    const { initPostHog, identifyWorkshopUser, useWorkshopWorkflowsEnabled } =
+      await import('./posthog')
+    initPostHog()
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockImplementation(
+      (key) => key === 'workshop-enabled'
+    )
+    emitFeatureFlags()
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(useWorkshopWorkflowsEnabled().value).toBe(true)
+    identifyWorkshopUser({ uid: 'another-workflow-caller' })
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+  })
+
+  it.for([
+    { enabledFlags: ['workshop-apps-enabled'], apps: true, workflows: false },
+    {
+      enabledFlags: ['workshop-workflows-enabled'],
+      apps: false,
+      workflows: true
+    }
+  ])(
+    'resolves the apps flag on its own: $enabledFlags',
+    async ({ enabledFlags, apps, workflows }) => {
+      const {
+        initPostHog,
+        identifyWorkshopUser,
+        useWorkshopAppsEnabled,
+        useWorkshopWorkflowsEnabled
+      } = await import('./posthog')
+      initPostHog()
+      hoisted.mockIsFeatureEnabled.mockImplementation((key) =>
+        enabledFlags.includes(key)
+      )
+      emitFeatureFlags()
+      expect(useWorkshopAppsEnabled().value).toBe(apps)
+      expect(useWorkshopWorkflowsEnabled().value).toBe(workflows)
+      identifyWorkshopUser({ uid: 'another-apps-caller' })
+      expect(useWorkshopAppsEnabled().value).toBe(false)
+    }
+  )
+
+  it('reads a content-named flag, off until PostHog answers and reset on a new identity', async () => {
+    const { initPostHog, identifyWorkshopUser, useWorkshopFlag } =
+      await import('./posthog')
+    const flag = useWorkshopFlag('workshop-reshoot-app-enabled')
+    initPostHog()
+    expect(flag.value).toBe(false)
+
+    hoisted.mockIsFeatureEnabled.mockImplementation(
+      (key) => key === 'workshop-reshoot-app-enabled'
+    )
+    emitFeatureFlags()
+    expect(flag.value).toBe(true)
+    expect(useWorkshopFlag('another-flag').value).toBe(false)
+
+    identifyWorkshopUser({ uid: 'another-reshoot-caller' })
+    expect(flag.value).toBe(false)
+  })
+
+  it("does not show a flag first asked for from another visitor's stored answer", async () => {
+    const { initPostHog, identifyWorkshopUser, useWorkshopFlag } =
+      await import('./posthog')
+    hoisted.mockGetProperty.mockReturnValue('visitor-a')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    identifyWorkshopUser({ uid: 'visitor-b' })
+    initPostHog()
+
+    const flag = useWorkshopFlag('workshop-reshoot-app-enabled')
+    expect(flag.value).toBe(false)
+
+    emitFeatureFlags(true)
+    expect(flag.value).toBe(false)
+
+    emitFeatureFlags()
+    expect(flag.value).toBe(true)
+  })
+
+  it.for([
+    { deployEnv: '', on: true },
+    { deployEnv: 'preview', on: true },
+    { deployEnv: 'production', on: false }
+  ])(
+    'forces a content-named flag on from PUBLIC_WORKSHOP_FLAG_OVERRIDES outside production: "$deployEnv"',
+    async ({ deployEnv, on }) => {
+      hoisted.deployEnv = deployEnv
+      vi.stubEnv(
+        'PUBLIC_WORKSHOP_FLAG_OVERRIDES',
+        'other, workshop-reshoot-app-enabled'
+      )
+      const { useWorkshopFlag } = await import('./posthog')
+      expect(useWorkshopFlag('workshop-reshoot-app-enabled').value).toBe(on)
+      vi.unstubAllEnvs()
+    }
+  )
+
+  it('evaluates flags with the Workshop environment, again after a reset', async () => {
+    hoisted.deployEnv = 'preview'
+    const { initPostHog, identifyWorkshopUser } = await import('./posthog')
+    const environment = {
+      workshop_cloud_env: 'staging',
+      workshop_deploy_env: 'preview'
+    }
+    initPostHog()
+    expect(hoisted.mockSetPersonPropertiesForFlags).toHaveBeenLastCalledWith(
+      environment,
+      true
+    )
+
+    hoisted.mockSetPersonPropertiesForFlags.mockClear()
+    hoisted.mockGetProperty.mockReturnValue('signed-in-before')
+    identifyWorkshopUser({ uid: 'someone-else' })
+    expect(hoisted.mockReset).toHaveBeenCalled()
+    expect(hoisted.mockSetPersonPropertiesForFlags).toHaveBeenCalledWith(
+      environment,
+      false
+    )
+    expect(
+      hoisted.mockSetPersonPropertiesForFlags.mock.invocationCallOrder[0]
+    ).toBeGreaterThan(hoisted.mockReset.mock.invocationCallOrder.at(-1) ?? 0)
   })
 
   it('requires an explicit enable and keeps the last answer through load failures', async () => {
@@ -104,6 +237,29 @@ describe('Workshop visibility', () => {
     initPostHog()
     emitFeatureFlags()
     expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('keeps a build without Workshop off and settled whatever PostHog or the local override says', async () => {
+    hoisted.included = false
+    hoisted.localDev = true
+    vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
+    vi.stubEnv('PUBLIC_WORKSHOP_WORKFLOWS_ENABLED', '1')
+    vi.stubEnv('PUBLIC_WORKSHOP_APPS_ENABLED', '1')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const {
+      initPostHog,
+      useWorkshopAppsEnabled,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled,
+      useWorkshopWorkflowsEnabled
+    } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(false)
+    expect(useWorkshopWorkflowsEnabled().value).toBe(false)
+    expect(useWorkshopAppsEnabled().value).toBe(false)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
   })
 
   it('allows local development to preview the feature without PostHog', async () => {
@@ -350,6 +506,127 @@ describe('initPostHog', () => {
   })
 })
 
+describe('workshop-enabled settles only on an observed answer', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    hoisted.mockGetProperty.mockReturnValue(undefined)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
+  })
+
+  it('settles to the public site when PostHog never initializes', async () => {
+    const { useWorkshopEnabledSettled, useWorkshopEnabled } =
+      await import('./posthog')
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('an identity arriving before init does not strand the gate', async () => {
+    const { identifyWorkshopUser, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    identifyWorkshopUser({ uid: 'x' })
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
+  it('is settled at load under the local dev override', async () => {
+    hoisted.localDev = true
+    vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
+    const { useWorkshopEnabledSettled, useWorkshopEnabled } =
+      await import('./posthog')
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(true)
+  })
+
+  it('stays unsettled through init until a flag answer arrives', async () => {
+    const { initPostHog, useWorkshopEnabledSettled } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    emitFeatureFlags()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
+  it('settles to the persisted answer synchronously on a warm load', async () => {
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    const { initPostHog, useWorkshopEnabledSettled, useWorkshopEnabled } =
+      await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('settles after a timeout when PostHog never answers', async () => {
+    vi.useFakeTimers()
+    const { initPostHog, useWorkshopEnabledSettled } = await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('settles when the flag load errors', async () => {
+    const { initPostHog, useWorkshopEnabledSettled } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
+  it('does not churn state when the timeout fires after a real answer', async () => {
+    vi.useFakeTimers()
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog, useWorkshopEnabled, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('re-arms the timeout when an identity reload leaves visibility pending', async () => {
+    vi.useFakeTimers()
+    hoisted.mockGetProperty.mockReturnValue('staff-uid')
+    const { initPostHog, identifyWorkshopUser, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+
+    hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
+    identifyWorkshopUser({ uid: 'staff-uid' })
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('drops a stale grant when a same-identity reload times out', async () => {
+    vi.useFakeTimers()
+    hoisted.mockGetProperty.mockReturnValue('staff-uid')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const {
+      initPostHog,
+      identifyWorkshopUser,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled
+    } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+
+    hoisted.mockIsFeatureEnabled.mockReturnValue(undefined)
+    identifyWorkshopUser({ uid: 'staff-uid' })
+    expect(useWorkshopEnabled().value).toBe(false)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+    vi.useRealTimers()
+  })
+})
+
 describe('capturePageview', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -369,6 +646,58 @@ describe('Workshop analytics transport', () => {
   beforeEach(() => {
     vi.resetModules()
   })
+
+  it.for([
+    { page_type: 'model', render_engine: 'router' },
+    {
+      page_type: 'workflow',
+      render_engine: 'cloud',
+      workflow_id: 'workflows/image-edit'
+    }
+  ] as const)(
+    'sends sanitized $page_type exceptions through the same initialized website stream',
+    async (tags) => {
+      const { initPostHog, captureWorkshopEvent } = await import('./posthog')
+      const { workshopFailureAnalytics } = await import('./workshop-analytics')
+      const { WorkshopRouterError } =
+        await import('../config/workshop-router-errors')
+      const cause = new DOMException('Private filename.png', 'NotReadableError')
+      const properties = {
+        ...tags,
+        model_slug: 'image-edit',
+        attempt_id: 'attempt-1',
+        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        duration_ms: 50,
+        ...workshopFailureAnalytics(
+          new WorkshopRouterError(
+            'client',
+            null,
+            { images: 'fileUnreadable' },
+            undefined,
+            'file_read',
+            { cause }
+          )
+        ),
+        status: 'failed' as const
+      }
+      initPostHog()
+      captureWorkshopEvent({ name: 'run_finished', properties })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        'website:workshop_run_finished',
+        expect.objectContaining({
+          ...tags,
+          attempt_id: 'attempt-1',
+          failure_stage: 'file_read',
+          exception_name: 'NotReadableError'
+        })
+      )
+      expect(JSON.stringify(hoisted.mockCapture.mock.calls)).not.toContain(
+        'filename.png'
+      )
+    }
+  )
 
   it('uses the website PostHog stream and cannot interrupt interaction when capture fails', async () => {
     const { initPostHog, captureWorkshopEvent } = await import('./posthog')
@@ -634,6 +963,27 @@ describe('shared auth telemetry events', () => {
     expect(hoisted.mockCapture).toHaveBeenCalledWith(
       SESSION_TELEMETRY_EVENT.refreshFailed,
       { outcome: 'retry_scheduled' }
+    )
+  })
+
+  it.for([
+    {
+      name: SESSION_TELEMETRY_EVENT.bootstrap,
+      properties: { outcome: 'signed_in', origin: 'https://www.comfy.org' }
+    },
+    {
+      name: SESSION_TELEMETRY_EVENT.signedOutRemotely,
+      properties: { origin: 'https://www.comfy.org' }
+    }
+  ] as const)('reports the web session event $name as is', async (event) => {
+    const { initPostHog, captureWebSessionEvent } = await import('./posthog')
+    initPostHog()
+
+    captureWebSessionEvent(event)
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      event.name,
+      event.properties
     )
   })
 

@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
 import type { MaybeElement } from '@vueuse/core'
 import Splitter from 'primevue/splitter'
+import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
@@ -10,8 +12,6 @@ import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
-import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
-import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
@@ -84,13 +84,18 @@ const splitterKey = computed(() => {
 const leftPanelRef = useTemplateRef<MaybeElement>('leftPanel')
 const rightPanelRef = useTemplateRef<MaybeElement>('rightPanel')
 
-const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+const { onResizeStart, onResizeEnd } = useStablePrimeVueSplitterSizer(
   [
     { ref: leftPanelRef, storageKey: 'Comfy.LinearView.LeftPanelWidth' },
     { ref: rightPanelRef, storageKey: 'Comfy.LinearView.RightPanelWidth' }
   ],
   [activeTab, splitterKey]
 )
+
+function onSplitterResizeStart(event: SplitterResizeStartEvent) {
+  event.originalEvent.preventDefault()
+  onResizeStart(event)
+}
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
@@ -103,23 +108,21 @@ function dragDrop(e: DragEvent) {
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute flex size-full flex-row" @dragover.prevent>
+  <div v-else class="absolute flex size-full flex-col" @dragover.prevent>
     <div
-      data-testid="linear-workspace-column"
-      class="flex min-w-0 flex-1 flex-col overflow-hidden"
+      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke/50 shadow-interface"
     >
+      <WorkflowTabs />
+    </div>
+    <div class="flex min-h-0 flex-1 flex-row bg-secondary-background">
       <div
-        class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
-      >
-        <div class="flex h-full items-center">
-          <WorkflowTabs />
-          <TopbarBadges />
-          <TopbarSubscribeButton />
-        </div>
-      </div>
-      <div
-        class="flex flex-1 overflow-hidden bg-secondary-background"
-        :class="sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'"
+        data-testid="linear-workspace-column"
+        :class="
+          cn(
+            'flex min-w-0 flex-1 overflow-hidden',
+            sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'
+          )
+        "
       >
         <SideToolbar
           v-if="!isBuilderMode"
@@ -130,7 +133,7 @@ function dragDrop(e: DragEvent) {
         <Splitter
           :key="splitterKey"
           class="h-full flex-1 border-none bg-secondary-background"
-          @resizestart="$event.originalEvent.preventDefault()"
+          @resizestart="onSplitterResizeStart"
           @resizeend="onResizeEnd"
         >
           <SplitterPanel
@@ -208,8 +211,13 @@ function dragDrop(e: DragEvent) {
           </SplitterPanel>
         </Splitter>
       </div>
+      <!-- App mode hides the canvas, so the panel never meets bare graph. -->
+      <component
+        :is="DockedAgentPanel"
+        v-if="agentDocked"
+        :has-opaque-neighbor="true"
+      />
     </div>
-    <component :is="DockedAgentPanel" v-if="agentDocked" />
   </div>
 </template>
 

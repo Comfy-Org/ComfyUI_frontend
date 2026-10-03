@@ -1,10 +1,9 @@
-import type { UserCredential } from 'firebase/auth'
 import { ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
-import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
-import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 
 /**
@@ -17,7 +16,6 @@ export function useCloudAuthPage(options: {
   successSummary: string
   defaultRedirect: () => RouteLocationRaw
 }) {
-  const authActions = useAuthActions()
   const authError = ref('')
   const showEmailForm = ref(false)
 
@@ -27,19 +25,10 @@ export function useCloudAuthPage(options: {
     defaultRedirect: options.defaultRedirect
   })
 
-  const providerOptions = options.isNewUser ? { isNewUser: true } : undefined
-
-  /** `undefined` means useAuthActions already toasted the failure. */
-  const signInWith = async (
-    provider: (opts?: {
-      isNewUser?: boolean
-    }) => Promise<UserCredential | undefined>
-  ) => {
-    authError.value = ''
-    if (await provider(providerOptions)) {
-      await onAuthSuccess()
-    }
-  }
+  const social = useSocialSignIn({
+    isNewUser: () => options.isNewUser,
+    onSignedIn: onAuthSuccess
+  })
 
   return {
     authError,
@@ -54,7 +43,13 @@ export function useCloudAuthPage(options: {
     switchToSocialLogin: () => {
       showEmailForm.value = false
     },
-    signInWithGoogle: () => signInWith(authActions.signInWithGoogle),
-    signInWithGithub: () => signInWith(authActions.signInWithGithub)
+    signInWithGoogle: () => {
+      authError.value = ''
+      return social.signInWithGoogle()
+    },
+    signInWithGithub: () => {
+      authError.value = ''
+      return social.signInWithGithub()
+    }
   }
 }

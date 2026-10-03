@@ -1,22 +1,43 @@
 <script setup lang="ts">
 import { useMounted } from '@vueuse/core'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled
 } from '../../scripts/posthog'
 
-const { keepMounted = false } = defineProps<{ keepMounted?: boolean }>()
+const {
+  keepMounted = false,
+  allowed = true,
+  retainGranted = false,
+  allowRecovery = false
+} = defineProps<{
+  keepMounted?: boolean
+  allowed?: boolean
+  retainGranted?: boolean
+  allowRecovery?: boolean
+}>()
 const enabled = useWorkshopEnabled()
 const settled = useWorkshopEnabledSettled()
 const mounted = useMounted()
-const activated = ref(false)
+const granted = ref(false)
+
+type GateView = 'loading' | 'granted' | 'denied'
+const view = computed<GateView>(() =>
+  (mounted.value && allowRecovery) || (granted.value && retainGranted)
+    ? 'granted'
+    : !mounted.value || !settled.value
+      ? 'loading'
+      : enabled.value && allowed
+        ? 'granted'
+        : 'denied'
+)
 
 watch(
-  () => mounted.value && enabled.value,
-  (visible) => {
-    if (visible) activated.value = true
+  () => view.value === 'granted',
+  (isGranted) => {
+    if (isGranted) granted.value = true
   },
   { once: true }
 )
@@ -24,13 +45,16 @@ watch(
 
 <template>
   <div
-    v-if="activated && (enabled || keepMounted)"
-    v-show="enabled"
-    :aria-hidden="!enabled"
+    v-if="granted && (view === 'granted' || keepMounted)"
+    v-show="view === 'granted'"
+    :aria-hidden="view !== 'granted'"
   >
     <slot />
   </div>
-  <div v-if="!mounted || (settled && !enabled)">
+  <div v-if="view === 'loading'">
+    <slot name="loading" />
+  </div>
+  <div v-else-if="view === 'denied'">
     <slot name="fallback" />
   </div>
 </template>

@@ -9,7 +9,7 @@ describe('ServerlessImageHeatmapAnimation', () => {
     render(ServerlessImageHeatmapAnimation, { props: { locale: 'en' } })
 
     const stage = screen.getByRole('img', {
-      name: t('platform.serverlessVisual.ariaLabel', 'en')
+      name: t('platform.serverlessVisual.ariaLabel', {}, { locale: 'en' })
     })
     expect(stage.getAttribute('data-artwork')).toBe('anime')
     expect(stage.getAttribute('data-phase')).toBe('connect')
@@ -27,7 +27,9 @@ describe('ServerlessImageHeatmapAnimation', () => {
     render(ServerlessImageHeatmapAnimation, { props: { locale: 'en' } })
 
     expect(
-      screen.getAllByText(t('platform.serverlessVisual.worker', 'en'))
+      screen.getAllByText(
+        t('platform.serverlessVisual.worker', {}, { locale: 'en' })
+      )
     ).toHaveLength(3)
   })
 })

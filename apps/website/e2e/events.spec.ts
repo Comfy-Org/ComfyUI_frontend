@@ -36,7 +36,7 @@ function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 1,
-      name: t('events.hero.title', locale)
+      name: t('events.hero.title', {}, { locale })
     })
   })
 }
@@ -45,7 +45,7 @@ function heroSection(page: Page, locale: Locale) {
 function countLabel(count: number, locale: Locale) {
   const key =
     count === 1 ? 'events.directory.countOne' : 'events.directory.count'
-  return t(key, locale).replace('{count}', String(count))
+  return t(key, { count }, { locale })
 }
 
 // Expected filter results restated from the raw event data, so the spec never
@@ -109,7 +109,7 @@ function directorySection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 2,
-      name: t('events.directory.title', locale)
+      name: t('events.directory.title', {}, { locale })
     })
   })
 }
@@ -118,7 +118,7 @@ function pastSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 2,
-      name: t('events.past.title', locale)
+      name: t('events.past.title', {}, { locale })
     })
   })
 }
@@ -129,7 +129,7 @@ test.describe('Events page — desktop @smoke', () => {
   }) => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
-      await expect(page).toHaveTitle(t('events.page.title', locale))
+      await expect(page).toHaveTitle(t('events.page.title', {}, { locale }))
       await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
     }
   })
@@ -143,23 +143,27 @@ test.describe('Events page — desktop @smoke', () => {
       await expect(
         hero.getByRole('heading', {
           level: 1,
-          name: t('events.hero.title', locale)
+          name: t('events.hero.title', {}, { locale })
         })
       ).toBeVisible()
       await expect(
-        hero.getByText(t('events.hero.eyebrow', locale), { exact: true })
+        hero.getByText(t('events.hero.eyebrow', {}, { locale }), {
+          exact: true
+        })
       ).toBeVisible()
       await expect(
-        hero.getByText(t('events.hero.subtitle', locale), { exact: true })
+        hero.getByText(t('events.hero.subtitle', {}, { locale }), {
+          exact: true
+        })
       ).toBeVisible()
       await expect(
         hero.getByRole('link', {
-          name: t('events.hero.browseEvents', locale)
+          name: t('events.hero.browseEvents', {}, { locale })
         })
       ).toHaveAttribute('href', '#events-directory')
       await expect(
         hero.getByRole('link', {
-          name: t('events.hero.hostAnEvent', locale)
+          name: t('events.hero.hostAnEvent', {}, { locale })
         })
       ).toHaveAttribute('href', '#host-an-event')
     }
@@ -183,10 +187,10 @@ test.describe('Events page — desktop @smoke', () => {
         .locator('[aria-hidden="false"]')
         .getByRole('link')
       const nextSlide = hero.getByRole('button', {
-        name: t('events.hero.nextSlide', locale)
+        name: t('events.hero.nextSlide', {}, { locale })
       })
       const prevSlide = hero.getByRole('button', {
-        name: t('events.hero.prevSlide', locale)
+        name: t('events.hero.prevSlide', {}, { locale })
       })
       const slideTitle = (index: number) =>
         featuredEvents[index].title[locale] || featuredEvents[index].title.en
@@ -221,7 +225,7 @@ test.describe('Events page — desktop @smoke', () => {
     await page.goto(PATH_EN)
     const hero = heroSection(page, 'en')
     const nextSlide = hero.getByRole('button', {
-      name: t('events.hero.nextSlide', 'en')
+      name: t('events.hero.nextSlide', {}, { locale: 'en' })
     })
     await nextSlide.scrollIntoViewIfNeeded()
     // Hovering pauses auto-advance, so the carousel only moves on our clicks and
@@ -283,13 +287,13 @@ test.describe('Events page — desktop @smoke', () => {
       await expect(
         page.getByRole('heading', {
           level: 2,
-          name: t('events.directory.title', locale)
+          name: t('events.directory.title', {}, { locale })
         })
       ).toBeVisible()
       await expect(
         page.getByRole('heading', {
           level: 2,
-          name: t('events.host.title', locale)
+          name: t('events.host.title', {}, { locale })
         })
       ).toBeVisible()
     }
@@ -307,7 +311,7 @@ test.describe('Events page — desktop @smoke', () => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const cta = page.getByRole('link', {
-        name: t('events.host.applyToHost', locale)
+        name: t('events.host.applyToHost', {}, { locale })
       })
       await expect(cta).toHaveCount(1)
       await expect(cta).toHaveAttribute('href', href)
@@ -357,7 +361,9 @@ test.describe('Events page — desktop @smoke', () => {
     await section.scrollIntoViewIfNeeded()
 
     const rows = section.getByTestId('events-directory-row')
-    const search = section.getByLabel(t('events.directory.searchLabel', 'en'))
+    const search = section.getByLabel(
+      t('events.directory.searchLabel', {}, { locale: 'en' })
+    )
     // Retry until the island hydrates and the typing lands.
     await expect(async () => {
       await search.fill(query)
@@ -374,7 +380,7 @@ test.describe('Events page — desktop @smoke', () => {
     await search.fill('zzzzzzzz')
     await expect(rows).toHaveCount(0)
     await expect(
-      section.getByText(t('events.directory.empty', 'en'))
+      section.getByText(t('events.directory.empty', {}, { locale: 'en' }))
     ).toBeVisible()
   })
 
@@ -409,7 +415,9 @@ test.describe('Events page — desktop @smoke', () => {
     await expect.poll(() => pins.count()).toBeGreaterThan(0)
     await expect.poll(() => pins.count()).toBeLessThanOrEqual(mappable.length)
 
-    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+    const typeFilter = section.getByLabel(
+      t('events.directory.typeLabel', {}, { locale: 'en' })
+    )
 
     if (singlePinCategory) {
       await typeFilter.selectOption(singlePinCategory)
@@ -467,14 +475,18 @@ test.describe('Events page — desktop @smoke', () => {
     await expect(cards).toHaveCount(0)
 
     // Filter first, then switch: the tab must inherit the active filters.
-    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+    const typeFilter = section.getByLabel(
+      t('events.directory.typeLabel', {}, { locale: 'en' })
+    )
     await expect(async () => {
       await typeFilter.selectOption(category)
       await expect(rows).toHaveCount(expected.length, { timeout: 1000 })
     }).toPass()
 
     await section
-      .getByRole('button', { name: t('events.directory.view.cards', 'en') })
+      .getByRole('button', {
+        name: t('events.directory.view.cards', {}, { locale: 'en' })
+      })
       .click()
     await expect(cards).toHaveCount(expected.length)
     // The map view's list and map are gone while cards are showing.
@@ -484,25 +496,27 @@ test.describe('Events page — desktop @smoke', () => {
       await expect(cards.nth(i)).toContainText(event.title.en)
     }
     await expect(
-      section.getByLabel(t('events.directory.typeLabel', 'en'))
+      section.getByLabel(t('events.directory.typeLabel', {}, { locale: 'en' }))
     ).toHaveValue(category)
 
     // Searching while on the cards tab narrows the cards too.
     await section
-      .getByLabel(t('events.directory.searchLabel', 'en'))
+      .getByLabel(t('events.directory.searchLabel', {}, { locale: 'en' }))
       .fill('zzzzzzzz')
     await expect(cards).toHaveCount(0)
     await expect(
-      section.getByText(t('events.directory.empty', 'en'))
+      section.getByText(t('events.directory.empty', {}, { locale: 'en' }))
     ).toBeVisible()
 
     // Switching back restores the map view with the filters still applied.
     await section
-      .getByRole('button', { name: t('events.directory.view.map', 'en') })
+      .getByRole('button', {
+        name: t('events.directory.view.map', {}, { locale: 'en' })
+      })
       .click()
     await expect(section.locator('.leaflet-container')).toBeVisible()
     await expect(
-      section.getByLabel(t('events.directory.typeLabel', 'en'))
+      section.getByLabel(t('events.directory.typeLabel', {}, { locale: 'en' }))
     ).toHaveValue(category)
   })
 
@@ -522,7 +536,7 @@ test.describe('Events page — desktop @smoke', () => {
 
     const cards = section.getByTestId('events-directory-card')
     const cardsTab = section.getByRole('button', {
-      name: t('events.directory.view.cards', 'en')
+      name: t('events.directory.view.cards', {}, { locale: 'en' })
     })
     // Retry only the tab switch, until the island hydrates and the click lands.
     // Once cards are on screen the section is live, so the menu below needs no
@@ -541,13 +555,13 @@ test.describe('Events page — desktop @smoke', () => {
     ).toHaveCount(0)
 
     const saveTheDate = card.getByRole('button', {
-      name: t('events.directory.saveTheDate', 'en')
+      name: t('events.directory.saveTheDate', {}, { locale: 'en' })
     })
     await saveTheDate.scrollIntoViewIfNeeded()
     await saveTheDate.click()
     await expect(
       page.getByRole('menuitem', {
-        name: t('events.calendar.google', 'en')
+        name: t('events.calendar.google', {}, { locale: 'en' })
       })
     ).toBeVisible()
 
@@ -563,7 +577,7 @@ test.describe('Events page — desktop @smoke', () => {
       ).toBeVisible()
       await expect(
         pastCard.getByRole('button', {
-          name: t('events.directory.saveTheDate', 'en')
+          name: t('events.directory.saveTheDate', {}, { locale: 'en' })
         })
       ).toHaveCount(0)
     }
@@ -579,7 +593,7 @@ test.describe('Events page — desktop @smoke', () => {
     const agenda = section.getByTestId('events-directory-agenda')
     const rows = section.getByTestId('events-directory-row')
     const calendarTab = section.getByRole('button', {
-      name: t('events.directory.view.calendar', 'en')
+      name: t('events.directory.view.calendar', {}, { locale: 'en' })
     })
     // Retry only the tab switch, until the island hydrates and the click lands.
     await expect(async () => {
@@ -623,11 +637,11 @@ test.describe('Events page — desktop @smoke', () => {
 
     // Filters reach the agenda like every other view.
     await section
-      .getByLabel(t('events.directory.searchLabel', 'en'))
+      .getByLabel(t('events.directory.searchLabel', {}, { locale: 'en' }))
       .fill('zzzzzzzz')
     await expect(rows).toHaveCount(0)
     await expect(
-      section.getByText(t('events.directory.empty', 'en'))
+      section.getByText(t('events.directory.empty', {}, { locale: 'en' }))
     ).toBeVisible()
   })
 
@@ -640,7 +654,7 @@ test.describe('Events page — desktop @smoke', () => {
 
       const agenda = section.getByTestId('events-directory-agenda')
       const calendarTab = section.getByRole('button', {
-        name: t('events.directory.view.calendar', locale)
+        name: t('events.directory.view.calendar', {}, { locale })
       })
       await expect(async () => {
         await calendarTab.click()
@@ -670,7 +684,9 @@ test.describe('Events page — desktop @smoke', () => {
     await section.scrollIntoViewIfNeeded()
 
     const rows = section.getByTestId('events-directory-row')
-    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+    const typeFilter = section.getByLabel(
+      t('events.directory.typeLabel', {}, { locale: 'en' })
+    )
     // Filter first, then switch: the calendar must inherit the active filter.
     await expect(async () => {
       await typeFilter.selectOption(category)
@@ -679,7 +695,9 @@ test.describe('Events page — desktop @smoke', () => {
 
     const agenda = section.getByTestId('events-directory-agenda')
     await section
-      .getByRole('button', { name: t('events.directory.view.calendar', 'en') })
+      .getByRole('button', {
+        name: t('events.directory.view.calendar', {}, { locale: 'en' })
+      })
       .click()
     await expect(agenda).toBeVisible()
 
@@ -689,14 +707,18 @@ test.describe('Events page — desktop @smoke', () => {
     const agendaIds = await rows.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute('data-event-id'))
     )
-    expect([...agendaIds].sort()).toEqual(
-      expected.map((event) => event.id).sort()
+    expect(
+      [...agendaIds].sort((a, b) => (a ?? '').localeCompare(b ?? ''))
+    ).toEqual(
+      expected.map((event) => event.id).sort((a, b) => a.localeCompare(b))
     )
     await expect(typeFilter).toHaveValue(category)
 
     // Switching back restores the map view with the same filtered set.
     await section
-      .getByRole('button', { name: t('events.directory.view.map', 'en') })
+      .getByRole('button', {
+        name: t('events.directory.view.map', {}, { locale: 'en' })
+      })
       .click()
     await expect(section.locator('.leaflet-container')).toBeVisible()
     await expect(rows).toHaveCount(expected.length)
@@ -719,7 +741,9 @@ test.describe('Events page — desktop @smoke', () => {
     await section.scrollIntoViewIfNeeded()
 
     const rows = section.getByTestId('events-directory-row')
-    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+    const typeFilter = section.getByLabel(
+      t('events.directory.typeLabel', {}, { locale: 'en' })
+    )
     await expect(async () => {
       await typeFilter.selectOption(category)
       await expect(rows).toHaveCount(expected.length, { timeout: 1000 })
@@ -730,12 +754,14 @@ test.describe('Events page — desktop @smoke', () => {
 
     // Composing a non-matching search with the same type empties the list.
     await section
-      .getByLabel(t('events.directory.searchLabel', 'en'))
+      .getByLabel(t('events.directory.searchLabel', {}, { locale: 'en' }))
       .fill('zzzzzzzz')
     await expect(rows).toHaveCount(0)
 
     // Back to All types with the search cleared restores every event.
-    await section.getByLabel(t('events.directory.searchLabel', 'en')).fill('')
+    await section
+      .getByLabel(t('events.directory.searchLabel', {}, { locale: 'en' }))
+      .fill('')
     await typeFilter.selectOption('all')
     await expect(rows).toHaveCount(directoryEvents.length)
   })
@@ -765,7 +791,7 @@ test.describe('Events page — desktop @smoke', () => {
 
     const rows = section.getByTestId('events-directory-row')
     const organizerFilter = section.getByLabel(
-      t('events.directory.organizerLabel', 'en')
+      t('events.directory.organizerLabel', {}, { locale: 'en' })
     )
     await expect(async () => {
       await organizerFilter.selectOption('comfy')
@@ -778,7 +804,9 @@ test.describe('Events page — desktop @smoke', () => {
       section.getByText(countLabel(expectedComfy.length, 'en'))
     ).toBeVisible()
 
-    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+    const typeFilter = section.getByLabel(
+      t('events.directory.typeLabel', {}, { locale: 'en' })
+    )
     if (category) {
       await typeFilter.selectOption(category)
       await expect(rows).toHaveCount(expectedBoth.length)
@@ -806,14 +834,14 @@ test.describe('Events page — desktop @smoke', () => {
       const section = page.locator('section').filter({
         has: page.getByRole('heading', {
           level: 2,
-          name: t('events.host.title', locale)
+          name: t('events.host.title', {}, { locale })
         })
       })
       await section.scrollIntoViewIfNeeded()
 
       const step = (n: 1 | 2 | 3 | 4 | 5) =>
         section.getByRole('button', {
-          name: `${n}. ${t(`events.host.step${n}.title`, locale)}`
+          name: `${n}. ${t(`events.host.step${n}.title`, {}, { locale })}`
         })
 
       // The first step is open on load; the rest are collapsed.
@@ -822,7 +850,7 @@ test.describe('Events page — desktop @smoke', () => {
         await expect(step(n)).toHaveAttribute('aria-expanded', 'false')
       }
       await expect(
-        section.getByText(t('events.host.step1.whoTitle', locale))
+        section.getByText(t('events.host.step1.whoTitle', {}, { locale }))
       ).toBeVisible()
 
       // Opening another step closes the first — single-select.
@@ -834,7 +862,7 @@ test.describe('Events page — desktop @smoke', () => {
       }).toPass()
       await expect(step(1)).toHaveAttribute('aria-expanded', 'false')
       await expect(
-        section.getByText(t('events.host.step2.body', locale))
+        section.getByText(t('events.host.step2.body', {}, { locale }))
       ).toBeVisible()
 
       // The trigger is a real button, so the keyboard reaches it.
@@ -875,10 +903,10 @@ test.describe('Events page — desktop @smoke', () => {
       // menu renders inside the top-layer dialog. Retry until the island
       // hydrates and the click lands.
       const addToCalendar = dialog.getByRole('button', {
-        name: t('events.calendar.addToCalendar', locale)
+        name: t('events.calendar.addToCalendar', {}, { locale })
       })
       const googleItem = dialog.getByRole('menuitem', {
-        name: t('events.calendar.google', locale)
+        name: t('events.calendar.google', {}, { locale })
       })
       await expect(async () => {
         await addToCalendar.click()
@@ -896,7 +924,7 @@ test.describe('Events page — desktop @smoke', () => {
       // island hydrates and the click lands; once the navigation has happened
       // the button is gone, so only click while it is still there.
       const closeButton = dialog.getByRole('button', {
-        name: t('events.videoDialog.close', locale)
+        name: t('events.videoDialog.close', {}, { locale })
       })
       await expect(async () => {
         if (await closeButton.isVisible()) await closeButton.click()
@@ -923,7 +951,7 @@ test.describe('Events page — desktop @smoke', () => {
       // LOAD MORE reveals another page per click and disappears once every
       // card is shown.
       const loadMore = section.getByRole('button', {
-        name: t('events.past.loadMore', locale)
+        name: t('events.past.loadMore', {}, { locale })
       })
       while (pastCardEvents.length > (await cards.count())) {
         const shown = await cards.count()
@@ -971,7 +999,11 @@ test.describe('Events page — desktop @smoke', () => {
     const expected = pastCardEvents.filter(
       (event) => event.category === categoryWithEvents
     )
-    const label = t(`events.category.${categoryWithEvents}`, 'en')
+    const label = t(
+      `events.category.${categoryWithEvents}`,
+      {},
+      { locale: 'en' }
+    )
 
     await page.goto(PATH_EN)
     const section = pastSection(page, 'en')
@@ -1001,7 +1033,9 @@ test.describe('Events page — desktop @smoke', () => {
 
     // ALL restores the unfiltered first page.
     await section
-      .getByRole('button', { name: t('events.past.filterAll', 'en') })
+      .getByRole('button', {
+        name: t('events.past.filterAll', {}, { locale: 'en' })
+      })
       .click()
     await expect(cards).toHaveCount(
       Math.min(PAST_EVENTS_PAGE_SIZE, pastCardEvents.length)
@@ -1025,7 +1059,7 @@ test.describe('Events page — mobile @mobile', () => {
 
     // The map sits above the list rather than beside it.
     const list = section.getByRole('list', {
-      name: t('events.directory.allEvents', 'en')
+      name: t('events.directory.allEvents', {}, { locale: 'en' })
     })
     await expect
       .poll(async () => {
@@ -1057,7 +1091,7 @@ test.describe('Events page — mobile @mobile', () => {
 
     const agenda = section.getByTestId('events-directory-agenda')
     const calendarTab = section.getByRole('button', {
-      name: t('events.directory.view.calendar', 'en')
+      name: t('events.directory.view.calendar', {}, { locale: 'en' })
     })
     await expect(async () => {
       await calendarTab.click()

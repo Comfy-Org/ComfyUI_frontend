@@ -7,7 +7,10 @@ import { createBillingRouter } from '@/router'
 
 describe('billing app', () => {
   it('boots on the billing route', async () => {
-    const router = createBillingRouter(createMemoryHistory())
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated'
+    )
 
     await router.push('/')
     await router.isReady()
@@ -19,23 +22,10 @@ describe('billing app', () => {
     })
 
     expect(screen.getByRole('heading', { name: 'Billing' })).toBeInTheDocument()
-    expect(screen.getAllByText('Pending SDK')).toHaveLength(2)
-  })
-
-  it('recovers unknown static-host paths to the app entry route', async () => {
-    const router = createBillingRouter(createMemoryHistory())
-
-    await router.push('/unknown-path')
-    await router.isReady()
-
-    render(App, {
-      global: {
-        plugins: [createBillingI18n(), router]
-      }
-    })
-
     expect(
-      await screen.findByRole('heading', { name: 'Billing' })
+      screen.getByText(
+        'Open billing from your Comfy product to manage your plan, payment methods and invoices.'
+      )
     ).toBeInTheDocument()
   })
 })

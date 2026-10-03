@@ -7,13 +7,21 @@ export const TestIds = {
   app: {
     loadingOverlay: 'app-loading-overlay'
   },
+  agent: {
+    conversationScroll: 'agent-conversation-scroll',
+    activityTrace: 'agent-activity-trace'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
+    topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
+    nodePreviewInputs: 'node-preview-inputs',
+    nodePreviewBody: 'node-preview-body',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
+    closeButton: 'sidebar-close-button',
     modeToggle: 'mode-toggle',
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
@@ -110,6 +118,8 @@ export const TestIds = {
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
+    workflowTab: 'workflow-tab',
+    closeWorkflowButton: 'close-workflow-button',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
@@ -129,11 +139,16 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors',
-    selectionContextStrip: 'selection-context-strip'
+    tabIcon: 'panel-tab-icon',
+    selectionContextStrip: 'selection-context-strip',
+    errorsSummaryHero: 'errors-summary-hero',
+    errorsSummaryFilters: 'errors-summary-filters',
+    blockedLastRunIndicator: 'blocked-last-run-indicator'
   },
   assets: {
     browserModal: 'asset-browser-modal',
-    card: 'asset-card'
+    card: 'asset-card',
+    videoPreview: 'media-asset-video'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',

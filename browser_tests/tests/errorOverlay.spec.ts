@@ -94,11 +94,6 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
   })
 
   test.describe('View details flow', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-      await comfyPage.setup()
-    })
-
     async function triggerExecutionError(comfyPage: {
       canvasOps: { disconnectEdge: () => Promise<void> }
       page: Page
@@ -192,18 +187,18 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
 
       const overlay = getOverlay(comfyPage.page)
       await expect(overlay).toBeVisible()
-      await expect(overlay).toContainText(/2 errors found/i)
+      await expect(overlay).toContainText(/2 issues found/i)
       await expect(
         overlay.getByTestId(TestIds.dialogs.errorOverlayMessages)
-      ).toHaveText(/Resolve them before running the workflow\./i)
+      ).toHaveText(/Resolve these issues before running the workflow\./i)
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
       await node.click('title')
 
-      await expect(overlay).toContainText(/2 errors found/i)
+      await expect(overlay).toContainText(/2 issues found/i)
       await expect(
         overlay.getByTestId(TestIds.dialogs.errorOverlayMessages)
-      ).toHaveText(/Resolve them before running the workflow\./i)
+      ).toHaveText(/Resolve these issues before running the workflow\./i)
     })
   })
 })

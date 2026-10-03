@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
-  AUTH_TOAST_SUMMARIES,
   classifyAuthError,
   isFirebaseAuthErrorLike,
   severityForAuthError
-} from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
+import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useMounted } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -14,7 +14,7 @@ import { signInErrorMessage } from '../../config/auth-sign-in-state'
 import { addToast } from '../../config/auth-toast-state'
 import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { captureAuthFailed, useWorkshopAuthFlag } from '../../scripts/posthog'
 import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 import {
@@ -27,6 +27,7 @@ import {
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 /** The cloud page returns to login this long after a send. */
 const RETURN_TO_LOGIN_MS = 3000
@@ -50,11 +51,11 @@ let boundTimer: ReturnType<typeof setTimeout> | undefined
 // Any rollout-flag transition, an unmount, or a bounding timeout invalidates the
 // in-flight send, so a late resolve of an abandoned request cannot toast success
 // or redirect. Sync so even a same-tick flicker is counted, not collapsed.
-let resetGeneration = 0
+const operation = useGenerationGuard()
 watch(
   enabled,
   (isEnabled) => {
-    resetGeneration++
+    operation.abandon()
     // Disabling mid-send abandons the request; drop the control back to idle so
     // a flag flicker back on leaves the form immediately retryable, not stuck
     // disabled until the bounding timeout elapses.
@@ -101,12 +102,12 @@ function validEmail(): boolean {
  * timeout firing), so a late resolve falls through instead of settling the UI.
  */
 function beginBoundedSend(): () => boolean {
-  const attempt = resetGeneration
+  const attempt = operation.capture()
   boundTimer = setTimeout(() => {
-    resetGeneration++
+    operation.abandon()
     state.value = 'idle'
   }, RESET_TIMEOUT_MS)
-  return () => attempt === resetGeneration && enabled.value
+  return () => attempt.live() && enabled.value
 }
 
 async function deliverReset(live: () => boolean) {
@@ -143,7 +144,7 @@ async function submit() {
 
 function reportLoadFailure() {
   state.value = 'error'
-  errorMessage.value = t('auth.forgot.error', locale)
+  errorMessage.value = t('auth.forgot.error')
 }
 
 function reportSendFailure(error: unknown) {
@@ -156,7 +157,7 @@ function reportSendFailure(error: unknown) {
   const severity = severityForAuthError(classification)
   addToast({
     severity,
-    summary: AUTH_TOAST_SUMMARIES[locale][severity],
+    summary: t(severity === 'warn' ? 'g.warning' : 'g.error'),
     detail: signInErrorMessage(classification, locale, hostname)
   })
 }
@@ -165,8 +166,8 @@ function reportSent() {
   state.value = 'sent'
   addToast({
     severity: 'success',
-    summary: t('auth.forgot.toastSummary', locale),
-    detail: t('auth.forgot.toastDetail', locale),
+    summary: t('auth.forgot.toastSummary'),
+    detail: t('auth.forgot.toastDetail'),
     life: TOAST_LIFE_MS
   })
   returnTimer = setTimeout(() => {
@@ -179,7 +180,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  resetGeneration++
   clearTimeout(returnTimer)
   clearTimeout(boundTimer)
 })
@@ -194,13 +194,13 @@ onBeforeUnmount(() => {
     <h1
       class="mt-8 mb-0 text-2xl/snug font-light tracking-tighter text-primary-comfy-canvas sm:text-3xl/snug lg:text-4xl/snug xl:text-5xl/snug 2xl:text-6xl/snug"
     >
-      {{ t('auth.forgot.heading', locale) }}
+      {{ t('auth.forgot.heading') }}
     </h1>
 
     <p
       class="mt-12 mb-0 text-base/snug font-medium text-primary-comfy-canvas xl:text-lg/snug"
     >
-      {{ t('auth.forgot.body', locale) }}
+      {{ t('auth.forgot.body') }}
     </p>
 
     <form
@@ -213,7 +213,7 @@ onBeforeUnmount(() => {
           class="mb-1 text-base text-primary-comfy-canvas/70"
           for="reset-email"
         >
-          {{ t('auth.email.label', locale) }}
+          {{ t('auth.email.label') }}
         </label>
         <input
           id="reset-email"
@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
           autocomplete="email"
           required
           :disabled="!mounted"
-          :placeholder="t('auth.email.placeholder', locale)"
+          :placeholder="t('auth.email.placeholder')"
           :class="AUTH_FIELD_CLASS"
           :aria-invalid="Boolean(errorMessage) || undefined"
         />
@@ -237,7 +237,7 @@ onBeforeUnmount(() => {
         role="alert"
         :class="AUTH_MESSAGE_SUCCESS_CLASS"
       >
-        {{ t('auth.forgot.sent', locale) }}
+        {{ t('auth.forgot.sent') }}
       </div>
 
       <button
@@ -248,17 +248,17 @@ onBeforeUnmount(() => {
       >
         <AuthSpinnerIcon v-if="state === 'sending'" />
         <span :class="cn(state === 'sending' && 'sr-only')">
-          {{ t('auth.forgot.submit', locale) }}
+          {{ t('auth.forgot.submit') }}
         </span>
       </button>
 
       <a :href="signInHref" :class="AUTH_LINK_BUTTON_CLASS" @click="goToSignIn">
-        {{ t('auth.forgot.backToSignIn', locale) }}
+        {{ t('auth.forgot.backToSignIn') }}
       </a>
     </form>
 
     <p class="mt-5 mb-8 text-sm text-primary-comfy-canvas/70">
-      {{ t('auth.forgot.didntReceive', locale) }}
+      {{ t('auth.forgot.didntReceive') }}
     </p>
   </section>
 </template>

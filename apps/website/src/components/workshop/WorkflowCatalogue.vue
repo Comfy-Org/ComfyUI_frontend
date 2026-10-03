@@ -1,0 +1,314 @@
+<script setup lang="ts">
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import type { ComponentExposed } from 'vue-component-type-helpers'
+
+import Button from '@/components/ui/button/Button.vue'
+import type {
+  SortOrder,
+  WorkflowWorkshopModel
+} from '../../config/models-catalogue'
+import {
+  filterWorkshopModels,
+  sortWorkshopModels
+} from '../../config/models-catalogue'
+import type { Locale } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
+import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
+import CardRow from './CardRow.vue'
+import FeaturedBanner from './FeaturedBanner.vue'
+import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
+import { modelSlides } from '../../lib/workshop/featured-slides'
+import type { FilterChip } from './WorkshopFilterChips.vue'
+import WorkshopFilterChips from './WorkshopFilterChips.vue'
+import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
+import WorkshopModelCard from './WorkshopModelCard.vue'
+import WorkshopSearchField from './WorkshopSearchField.vue'
+import WorkshopSortMenu from './WorkshopSortMenu.vue'
+
+const {
+  models,
+  initialSearch,
+  locale = 'en'
+} = defineProps<{
+  models: readonly WorkflowWorkshopModel[]
+  initialSearch?: string
+  locale?: Locale
+}>()
+const { t } = translationsFor(locale)
+
+const query = ref('')
+const selected = ref<string[]>([])
+const runsOn = ref<string[]>([])
+const sort = ref<SortOrder>('popular')
+const filterMenu =
+  useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
+const browseAll = defineModel<boolean>('browseAll', { default: false })
+const emit = defineEmits<{ section: [boolean] }>()
+watch(browseAll, (value) => emit('section', value), { immediate: true })
+// Browsing them all, the tabs give up the row and the search takes it.
+const searchClass = computed(() =>
+  cn('min-w-0 flex-1', !browseAll.value && 'sm:max-w-120')
+)
+watch(browseAll, () => {
+  clear()
+  void nextTick(() => window.scrollTo({ top: 0 }))
+})
+onMounted(() => {
+  const params = new URLSearchParams(initialSearch ?? location.search)
+  query.value = params.get('q') ?? ''
+  selected.value = params
+    .getAll('category')
+    .filter((id) => models.some((model) => model.category === id))
+  runsOn.value = params
+    .getAll('model')
+    .filter((name) => models.some((model) => model.models?.includes(name)))
+})
+
+const rows = computed(() =>
+  models
+    .filter(
+      (model, index) =>
+        models.findIndex((other) => other.category === model.category) === index
+    )
+    .map((category) => ({
+      id: category.category ?? '',
+      label:
+        category.categoryLabel?.[locale === 'zh-CN' ? locale : 'en'] ??
+        category.category ??
+        '',
+      order: category.categoryOrder ?? Infinity,
+      models: models
+        .filter((model) => model.category === category.category)
+        .sort((a, b) =>
+          sort.value === 'name'
+            ? a.name.localeCompare(b.name)
+            : (a.recommendedRank ?? Infinity) - (b.recommendedRank ?? Infinity)
+        )
+    }))
+    .sort((a, b) => a.order - b.order)
+)
+const options = computed(() =>
+  rows.value.map((category) => ({
+    value: category.id,
+    label: category.label,
+    count: category.models.length
+  }))
+)
+// An outcome is reached through the model it runs on as often as through the
+// task it performs, and one workflow can stand on several.
+const modelOptions = computed(() => {
+  const counts = new Map<string, number>()
+  for (const model of models)
+    for (const name of model.models ?? [])
+      counts.set(name, (counts.get(name) ?? 0) + 1)
+  return [...counts]
+    .map(([value, count]) => ({ value, label: value, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+})
+const matchingCategories = computed(() =>
+  rows.value.flatMap((category) =>
+    !selected.value.length || selected.value.includes(category.id)
+      ? category.models.filter(
+          (model) =>
+            !runsOn.value.length ||
+            model.models?.some((name) => runsOn.value.includes(name))
+        )
+      : []
+  )
+)
+const visible = computed(() => {
+  const matching = filterWorkshopModels(matchingCategories.value, {
+    query: query.value
+  })
+  return sort.value === 'popular'
+    ? matching
+    : sortWorkshopModels(matching, sort.value)
+})
+const browsing = computed(
+  () =>
+    !query.value.trim() &&
+    !selected.value.length &&
+    !runsOn.value.length &&
+    !browseAll.value
+)
+const featured = computed(() =>
+  rows.value.flatMap((category) =>
+    category.models.filter((model) => model.categoryHighlight)
+  )
+)
+const featuredSlides = computed(() => modelSlides(featured.value, locale))
+
+// What narrowed the list stays legible next to it, so a reader can take one
+// choice off without reopening the menu that made it.
+const chips = computed<FilterChip[]>(() => [
+  ...selected.value.map((id) => ({
+    key: `use:${id}`,
+    label: options.value.find((option) => option.value === id)?.label ?? id
+  })),
+  ...runsOn.value.map((name) => ({
+    key: `model:${name}`,
+    label: t('workshop.filter.runsOn', { model: name })
+  }))
+])
+
+function removeChip(key: string) {
+  const [kind, ...rest] = key.split(':')
+  const value = rest.join(':')
+  if (kind === 'use')
+    selected.value = selected.value.filter((id) => id !== value)
+  else runsOn.value = runsOn.value.filter((name) => name !== value)
+}
+
+function clearFilters() {
+  selected.value = []
+  runsOn.value = []
+}
+
+function clear() {
+  query.value = ''
+  clearFilters()
+}
+function leaveSection() {
+  browseAll.value = false
+  clear()
+}
+</script>
+
+<template>
+  <section data-testid="workflow-catalogue">
+    <template v-if="browseAll">
+      <button
+        type="button"
+        class="-ml-2.5 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:text-primary-comfy-yellow hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        data-testid="section-back"
+        @click="leaveSection"
+      >
+        <ChevronLeft class="size-4" aria-hidden="true" />
+        {{ t('workshop.sections.back') }}
+      </button>
+      <h2
+        class="mt-5 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
+      >
+        {{ t('workshop.catalogue.allWorkflows') }}
+        <span
+          class="text-base font-normal text-primary-warm-gray tabular-nums"
+          >{{ visible.length }}</span
+        >
+      </h2>
+    </template>
+    <div
+      :id="HUB_TOOLBAR_ID"
+      class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+      data-testid="workshop-toolbar"
+    >
+      <slot name="tabs" />
+      <div
+        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
+      >
+        <WorkshopSearchField
+          v-model="query"
+          :models="matchingCategories"
+          :locale
+          kind="workflows"
+          compact
+          :class="searchClass"
+        />
+        <WorkshopFilterMenu
+          ref="filterMenu"
+          v-model:use-cases="selected"
+          v-model:models="runsOn"
+          kind="workflows"
+          :use-case-options="options"
+          :model-options="modelOptions"
+          :result-count="visible.length"
+          :locale
+        />
+        <WorkshopSortMenu
+          v-model="sort"
+          :orders="['popular', 'name']"
+          recommended
+          :locale
+        />
+      </div>
+    </div>
+
+    <FeaturedBanner
+      v-if="browsing && featured.length"
+      :slides="featuredSlides"
+      :locale
+      :autoplay="false"
+      class="mb-10 short:mb-6"
+    />
+
+    <WorkshopFilterChips
+      :chips
+      :locale
+      @remove="removeChip"
+      @clear="clearFilters"
+      @emptied="filterMenu?.focus()"
+    />
+
+    <div v-if="browsing" class="flex flex-col gap-12">
+      <section
+        v-for="category in rows"
+        :key="category.id"
+        :aria-labelledby="`workflow-category-${category.id}`"
+        :data-testid="`workflow-category-${category.id}`"
+      >
+        <CardRow :locale>
+          <template #heading>
+            <h2
+              :id="`workflow-category-${category.id}`"
+              class="text-xl font-medium text-primary-warm-white"
+            >
+              {{ category.label }}
+            </h2>
+          </template>
+          <li
+            v-for="model in category.models"
+            :key="model.slug"
+            :class="SHELF_CARD"
+          >
+            <WorkshopModelCard :model :locale under-heading />
+          </li>
+        </CardRow>
+      </section>
+      <button
+        type="button"
+        class="group mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
+        data-testid="browse-all-end"
+        @click="browseAll = true"
+      >
+        {{ t('workshop.catalogue.browseAllWorkflows') }}
+        <ChevronRight
+          class="size-4 transition-transform group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
+      </button>
+    </div>
+
+    <ul
+      v-else-if="visible.length"
+      :class="CARD_GRID"
+      :aria-label="t('workshop.hub.workflows')"
+      data-testid="workflow-search-results"
+    >
+      <li v-for="model in visible" :key="model.slug">
+        <WorkshopModelCard :model :locale />
+      </li>
+    </ul>
+    <div
+      v-else
+      class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-transparency-white-t8 px-6 py-16 text-center"
+    >
+      <p class="text-lg font-semibold text-primary-comfy-canvas">
+        {{ t('workshop.catalogue.noWorkflows') }}
+      </p>
+      <Button variant="outline" size="sm" @click="clear">
+        {{ t('workshop.empty.clear') }}
+      </Button>
+    </div>
+  </section>
+</template>

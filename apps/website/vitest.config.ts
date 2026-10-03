@@ -41,9 +41,10 @@ export default defineConfig({
         'src/**/*.{test,spec}.ts',
         'src/**/*.stories.ts',
         'src/**/*.d.ts',
+        'src/**/__mocks__/**',
+        'src/**/__fixtures__/**',
         'src/test/**',
         'src/content/**',
-        'src/i18n/**',
         'src/content.config.ts',
         // Thin Firebase SDK boundary: pure provisioning behavior is tested in
         // workshop-firebase.test.ts, while popup/listener wiring is exercised

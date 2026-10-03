@@ -5,6 +5,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 
 import {
   getLoad3dOutputCache,
+  getLoad3dSceneRevision,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
   nodeToLoad3dMap,
@@ -21,10 +22,8 @@ import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import {
-  createMockCanvasPointerEvent,
-  createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
   default: vi.fn()
@@ -52,18 +51,9 @@ vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key) => key)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: vi.fn(() => false),
@@ -81,6 +71,7 @@ describe('useLoad3d', () => {
   let mockToastStore: ReturnType<typeof useToastStore>
 
   beforeEach(() => {
+    vi.mocked(api.getServerFeature).mockReturnValue(false)
     scope = effectScope()
     nodeToLoad3dMap.clear()
     useSettingStore().settingValues['Comfy.Load3D.BackgroundColor'] = '282828'
@@ -142,7 +133,7 @@ describe('useLoad3d', () => {
       setFOV: vi.fn(),
       setLightIntensity: vi.fn(),
       setCameraState: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
       refreshViewport: vi.fn(),
       updateStatusMouseOnNode: vi.fn(),
       updateStatusMouseOnScene: vi.fn(),
@@ -1663,6 +1654,49 @@ describe('useLoad3d', () => {
       )
     })
 
+    it('skips thumbnail persistence for a temp preview', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      mockNode.widgets = [
+        { name: 'model_file', value: 'preview.glb' } as unknown as IWidget
+      ]
+      mockNode.properties['Last Time Model Folder'] = 'temp'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+
+      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
+      await expect
+        .poll(() => vi.mocked(persistThumbnail).mock.calls.length)
+        .toBe(0)
+    })
+
+    it('persists the thumbnail of a model loaded from the output folder', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '3d',
+        'saved.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      mockNode.widgets = [
+        { name: 'model_file', value: '3d/saved.glb' } as unknown as IWidget
+      ]
+      mockNode.properties['Last Time Model Folder'] = 'output'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+
+      expect(mockLoad3d.captureThumbnail).toHaveBeenCalledWith(256, 256)
+      await vi.waitFor(() =>
+        expect(persistThumbnail).toHaveBeenCalledWith(
+          'saved.glb',
+          expect.any(Blob)
+        )
+      )
+    })
+
     it('skips persistence when the model widget has no value', async () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
@@ -1877,6 +1911,26 @@ describe('useLoad3d', () => {
       markLoad3dSceneDirty(a)
       expect(isLoad3dSceneDirty(a)).toBe(true)
       expect(isLoad3dSceneDirty(b)).toBe(true)
+    })
+
+    it('setLoad3dOutputCache rejects a stale scene revision and keeps the node dirty', () => {
+      const fresh = createMockLGraphNode({ properties: {} })
+      const capturedRevision = getLoad3dSceneRevision(fresh)
+
+      markLoad3dSceneDirty(fresh)
+      expect(getLoad3dSceneRevision(fresh)).toBe(capturedRevision + 1)
+
+      expect(setLoad3dOutputCache(fresh, fakeCache, capturedRevision)).toBe(
+        false
+      )
+      expect(getLoad3dOutputCache(fresh)).toBeUndefined()
+      expect(isLoad3dSceneDirty(fresh)).toBe(true)
+
+      expect(
+        setLoad3dOutputCache(fresh, fakeCache, getLoad3dSceneRevision(fresh))
+      ).toBe(true)
+      expect(getLoad3dOutputCache(fresh)).toBe(fakeCache)
+      expect(isLoad3dSceneDirty(fresh)).toBe(false)
     })
 
     it('markLoad3dSceneDirty on null is a no-op', () => {

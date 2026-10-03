@@ -33,7 +33,10 @@ export function useSubscriptionActions() {
   // A user who cannot reach support cannot tell us that they cannot reach
   // support, so this failure has to report itself.
   const reportSupportFailure = (error: unknown) => {
-    reportError(error, { errorType: 'contact_support_failed' })
+    reportError(error, {
+      surface: 'billing',
+      errorType: 'contact_support_failed'
+    })
     toastErrorHandler(error)
   }
 

@@ -2,7 +2,7 @@
 import { Check, X } from '@lucide/vue'
 import { useMediaQuery, useWindowSize } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -28,11 +28,9 @@ interface FacetSheetLabels {
   readonly title: string
   readonly search: string
   readonly noMatches: string
-  /** Carries {n}. */
-  readonly applied: string
+  readonly applied: (count: number) => string
   readonly clearAll: string
-  /** Carries {n}. */
-  readonly show: string
+  readonly show: (count: number) => string
   readonly close: string
   readonly resize: string
 }
@@ -55,6 +53,7 @@ const emit = defineEmits<{
 
 const activeKey = ref(groups[0]?.key ?? '')
 const search = ref<Record<string, string>>({})
+const loneGroupLabelId = `facet-sheet-group-${useId()}`
 
 // A facet that is no longer offered would leave the sheet on an empty tab.
 watch(
@@ -208,7 +207,13 @@ function visibleOptions(group: FacetSheetGroup) {
     </div>
 
     <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col max-sm:flex-1">
+      <!-- One group has nothing to be chosen between. Its name labels the
+        region directly without exposing an inoperable tab widget. -->
+      <h3 v-if="groups.length === 1" :id="loneGroupLabelId" class="sr-only">
+        {{ groups[0]?.label }}
+      </h3>
       <TabsList
+        v-if="groups.length > 1"
         class="scrollbar-hide flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3"
       >
         <TabsTrigger
@@ -233,6 +238,15 @@ function visibleOptions(group: FacetSheetGroup) {
         v-for="group in groups"
         :key="group.key"
         :value="group.key"
+        v-bind="
+          groups.length === 1
+            ? {
+                role: 'region',
+                'aria-labelledby': loneGroupLabelId,
+                tabindex: -1
+              }
+            : {}
+        "
         class="flex min-h-0 flex-col outline-none max-sm:flex-1"
       >
         <div class="border-b border-white/10 p-2 max-sm:px-4 max-sm:py-3">
@@ -302,7 +316,7 @@ function visibleOptions(group: FacetSheetGroup) {
         class="px-1 text-xs text-content-secondary"
         data-testid="workshop-filter-applied"
       >
-        {{ labels.applied.replace('{n}', String(selectedCount)) }}
+        {{ labels.applied(selectedCount) }}
       </span>
       <button
         type="button"
@@ -335,11 +349,7 @@ function visibleOptions(group: FacetSheetGroup) {
         data-testid="workshop-filter-show"
         @click="resultCount > 0 ? emit('close') : emit('clearAll')"
       >
-        {{
-          resultCount > 0
-            ? labels.show.replace('{n}', String(resultCount))
-            : labels.clearAll
-        }}
+        {{ resultCount > 0 ? labels.show(resultCount) : labels.clearAll }}
       </button>
     </div>
   </div>

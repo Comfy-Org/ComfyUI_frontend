@@ -8,7 +8,7 @@ import {
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
 import PlayPauseButton from './PlayPauseButton.vue'
 
@@ -30,6 +30,7 @@ const {
   ariaLabel?: string
   class?: HTMLAttributes['class']
 }>()
+const { t } = translationsFor(locale)
 
 const audioEl = useTemplateRef<HTMLAudioElement>('audioEl')
 const scrubberEl = useTemplateRef<HTMLDivElement>('scrubberEl')
@@ -134,9 +135,7 @@ function handleScrubberKeydown(e: KeyboardEvent) {
       <PlayPauseButton
         :playing
         size="sm"
-        :aria-label="
-          playing ? t('player.pause', locale) : t('player.play', locale)
-        "
+        :aria-label="playing ? t('player.pause') : t('player.play')"
         @click="playing = !playing"
       />
 
@@ -145,7 +144,7 @@ function handleScrubberKeydown(e: KeyboardEvent) {
         class="relative h-1 flex-1 cursor-pointer rounded-full bg-white/20 select-none"
         role="slider"
         tabindex="0"
-        :aria-label="t('player.seek', locale)"
+        :aria-label="t('player.seek')"
         :aria-valuemin="0"
         :aria-valuemax="duration || 0"
         :aria-valuenow="displayTime"

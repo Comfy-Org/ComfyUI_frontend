@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "Seedance 2.5 ドラフトの1080p最終動画をレンダリングします。最終版ではドラフトのシーンと動きを維持し、プロンプト、参照、長さ、アスペクト比、オーディオ設定を再利用します。",
+    "display_name": "ByteDance Seedance 2.5 ドラフトから最終動画",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draftモデルで実行したSeedance 2.5ノードのdraft_task_id出力、または貼り付けたドラフトタスクID。レビューしたドラフトを再利用するには、そのノードのseed制御を固定に設定してください。設定しない場合、次回の実行では新しいドラフトが生成されます。ドラフトは作成後7日間レンダリングできます。"
+      },
+      "watermark": {
+        "name": "透かし",
+        "tooltip": "動画に透かしを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
     "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、mp4/mov出力にはSeedance 2.5を使用します。最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ低コストの生成にはMiniを使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 ドラフトから最終動画ノードに接続して、1080pの最終版をレンダリングします。"
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、mp4/mov出力にはSeedance 2.5を使用します。最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ低コストの生成にはMiniを使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、mp4/mov出力にはSeedance 2.5を使用します。最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ低コストの生成にはMiniを使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 ドラフトから最終動画ノードに接続して、1080pの最終版をレンダリングします。"
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "Seedance 2.5 は最新モデル、最大30秒の動画、mp4/mov出力に対応。Seedance 2.0 は最高品質と4K向け。Fast は速度最適化向け。Mini は最速・最小コストの生成向け。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 ドラフトから最終動画ノードに接続して、1080pの最終版をレンダリングします。"
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "画像を背景プレートと、最大16個までの再配置可能な透明レイヤーに分解します。各レイヤーには積み重ね順、バウンディングボックス、名前、説明が含まれます。",
-    "display_name": "ByteDance Seedream 5.0 Pro レイヤー分離",
+    "display_name": "ByteDance Seedream 5.0 Pro レイヤー分離（レガシー）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Create Layered Image用の編集可能なレイヤードキュメント：ベースプレートと、各要素が本来の位置と積み重ね順で名前付き・タイトに切り抜かれたレイヤーとして含まれます。直接接続するか、Add Layerで拡張可能です。"
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "画像を背景プレートと、位置変更可能な最大16個の透明レイヤーに分解します。各レイヤーには重ね順、バウンディングボックス、名前、説明が含まれます。",
+    "display_name": "ByteDance Seedream 5.0 レイヤー分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_crop_layers": {
+        "name": "レイヤーを切り抜く"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_prompt_optimization": {
+        "name": "プロンプト最適化"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
+      },
+      "model_watermark": {
+        "name": "透かし"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "レイヤーが重ねられるベース画像（背景プレート）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "ベース画像の透明度（1 = 透明、LoadImageの規則）。現在は常に完全不透明です。"
+      },
+      "2": {
+        "name": "レイヤー",
+        "tooltip": "下から上の順に並んだ透明レイヤー。フルキャンバスモード: バウンディングボックスの位置で、ベースと同サイズの黒いキャンバスに配置されます。最小サイズモード: バウンディングボックスに切り抜かれ、左上に固定され、最大のレイヤーに合わせてパディングされます。"
+      },
+      "3": {
+        "name": "マスク",
+        "tooltip": "レイヤーごとの透明度。layersバッチとインデックスが対応します（1 = 透明、LoadImageの規則）。ImageCompositeMasked形式の合成では、先にInvertMaskを追加してください。"
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "レイヤーごとに1つの配置ボックス。layersバッチとインデックスが対応します（レイヤーごとの配置を再構築するには、両方とmasksをLayers From Bounding Boxesに入力します）: {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height]は各フレーム内におけるレイヤーのコンテンツ領域です。ボックス位置にこのオフセットを加えた位置でキャンバスに配置されます。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Create Layered Image用の編集可能なレイヤードキュメント。ベースプレートに加え、各要素が本来の位置と重ね順で、名前付きのタイトに切り抜かれた個別レイヤーとして含まれます。直接接続するか、Add Layerで拡張できます。"
       }
     }
   },
@@ -5002,7 +5089,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "空の Cosmos latent 動画",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -5063,7 +5150,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "空の Hunyuan Image latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -5082,7 +5169,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "空の Hunyuan Video 1.0 latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -5104,7 +5191,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
+    "display_name": "空の Hunyuan Video 1.5 latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -5143,7 +5230,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "空のLTXV潜在ビデオ",
+    "display_name": "空の LTXV latent 動画",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -5182,7 +5269,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "空の Hunyuan 3D v2 latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ",
@@ -5323,7 +5410,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "空の Trellis2 latent 構造",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5349,6 +5436,33 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "ループ終了",
+    "inputs": {
+      "accumulate": {
+        "name": "accumulate",
+        "tooltip": "有効にすると各反復の output_value を返し、無効の場合は最後の反復のみを返します。"
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "次の反復のために End Loop から Start Loop へ送り返される値です。"
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "End Loop が返す値です。accumulate に応じて、最後の反復またはすべての反復を返します。"
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "各反復で実行する必要がある出力を接続します。それらの値は返されません。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "outputs",
+        "tooltip": "最後の反復の output_value、または accumulate が有効な場合は反復全体で蓄積された値です。"
       }
     }
   },
@@ -6825,6 +6939,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Google の Gemini モデルでテキスト応答を生成します。テキストプロンプトと、必要に応じて 1 つ以上の画像、音声クリップ、動画、またはファイルをマルチモーダルコンテキストとして指定します。",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "応答の生成に使用する Gemini モデルです。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "GoogleのGemini Omni Flashモデルを使い、テキストプロンプトから音声付き動画を生成します。参照画像や動画を指定して、結果をガイドまたは編集することも可能です。希望する長さ（3～10秒）やアスペクト比（16:9または9:16）はプロンプト内で直接指定してください。",
     "display_name": "Google Gemini Omni（動画）",
@@ -7012,6 +7162,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "リストから項目を取得",
+    "inputs": {
+      "index": {
+        "name": "index"
+      },
+      "list": {
+        "name": "list"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7597,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "HeyGen Video 1.0 を使用して、画像を同期した会話と音声を含む動画にアニメーション化します。画像は最初のフレームとして使用されます。",
+    "display_name": "HeyGen Video 1.0 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "HeyGen Video 1.0 を使用して、テキストプロンプトから同期した会話と音声を含む動画を生成します。最大12個の参照画像、動画、オーディオクリップを任意で接続し、プロンプト内で {'@'}Image1、{'@'}Video1、{'@'}Audio1 として指定できます。",
+    "display_name": "HeyGen Video 1.0 参照から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "人物の画像をリップシンクされたトーキングビデオ（HeyGen Avatar IV）にアニメーション化します。テキストスクリプトまたは自身の音声で操作できます。",
     "display_name": "HeyGen トーキングフォト",
@@ -7876,6 +8103,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "TencentのHunyuan Imageモデルを使用して、テキストプロンプトに従い、最大5枚の参照画像を編集または組み合わせます。",
+    "display_name": "Tencent HY Image：編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_watermark": {
+        "name": "ウォーターマーク"
+      },
+      "model_width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "TencentのHunyuan Imageモデルを使用して、テキストプロンプトから画像を生成します。",
+    "display_name": "Tencent HY Image：テキストから画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_watermark": {
+        "name": "ウォーターマーク"
+      },
+      "model_width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -7993,7 +8301,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "モデルによる Hunyuan Video 1.5 latent アップスケール",
     "inputs": {
       "crop": {
         "name": "切り抜き"
@@ -8129,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Ideogram 4.5 を使用して、テキストプロンプトに従い最大5枚の画像を編集または結合します。画像全体を再レンダリングするため、サイズやアスペクト比が変わる場合があります。変更していないピクセルをそのまま維持するには、Ideogram 4.5 Precise Edit を使用してください。",
+    "display_name": "Ideogram 4.5 編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
+      },
+      "model_width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "P-Image（Ideogramの高速テキストから画像生成モデル）を使用して画像を生成します。強力なタイポグラフィとフォトリアリズムを実現し、Ideogram 4.0の構造化JSONキャプションによる正確なテキスト、色、レイアウト指定に対応しています。",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8168,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "実際に画像生成に使用されたプロンプト（prompt_upsamplingが有効な場合は書き換え後の構造化キャプション、無効な場合は入力プロンプト）。prompt_upsamplingをOFF、同じシードで再入力すると同じ画像を再現できます。"
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Ideogram 4.5 の精密編集を使用して、テキストプロンプトに従い画像を編集します。プロンプトで指定された部分のみが変更され、変更していないピクセルは同一に保たれ、出力は画像1のサイズを維持します（約4 MPを超える画像は先に縮小されます）。最大4枚の参照画像を受け付けます。",
+    "display_name": "Ideogram 4.5 精密編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Ideogram 4.5 を使用して、テキストプロンプトから画像を生成します。",
+    "display_name": "Ideogram 4.5 テキストから画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "画像生成に使用された構造化キャプションです。magic_prompt を 'off' に設定し、同じシードで再度入力すると、画像を再現できます。"
       }
     }
   },
@@ -8331,12 +8739,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB、線形Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）を変換します。線形1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。線形出力および線形からHDRへの変換では、トーンマッピングを行わずに拡張値を保持します。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
+    "description": "sRGB、リニアRec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、HDR ACEScctを変換します。LogC3はRec.709原色と[0, 1]にクランプされたコード値を使用するEI 800カーブを使用します。ACEScctはAP1原色とD60白色点を使用し、D65へBradford適応を行います。EXR保存用には、LogC3またはACEScctをリニアに変換してください。リニア1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。リニアおよびACEScct出力では拡張値が保持されます。リニアからHDRへの変換ではトーンマッピングなしでハイライトを保持します。HLGおよびPQ出力では負のチャンネルがクリップされます。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマップし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
     "display_name": "画像カラースペースを変換",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "出力ピクセルのカラースペース。保存ノードも同じカラースペースに設定してください。"
+        "tooltip": "出力ピクセルの色空間。この色空間と同じものを保存ノードに設定してください。EXR を保存する前に LogC3 または ACEScct をリニアに変換し、動画を保存する前に sRGB/HDR/HDR PQ に変換してください。"
       },
       "image": {
         "name": "image"
@@ -9058,6 +9466,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Markdownコードブロックを含むテキスト内の最初の有効なJSONオブジェクトから、キーの値を抽出します。",
     "display_name": "JSONから文字列を抽出",
     "inputs": {
       "json_string": {
@@ -10435,7 +10844,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV 空のラテントオーディオ",
+    "display_name": "空の LTXV latent オーディオ",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11623,6 +12032,73 @@
       "1": {
         "name": "テキスト",
         "tooltip": "テキストキャプションのリスト。"
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "position"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
       }
     }
   },
@@ -13088,6 +13564,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "より精細なサーフェスディテールを持つ高忠実度なジオメトリのために、追加のリファインメント処理を実行します。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ウルトラパスの解像度：2kでは2048³、4kでは4096³で実行し、最高水準の表面ディテールを実現します。4kにはmeshy-7.1以降が必要です。ultra_modeが有効な場合にのみ使用されます。"
       }
     },
     "outputs": {
@@ -13154,6 +13634,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "2048³で追加のリファインメントパスを実行し、より細かな表面ディテールを備えた高忠実度のジオメトリを生成します。"
       }
     },
     "outputs": {
@@ -13295,6 +13779,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "より精細なサーフェスディテールを持つ高忠実度なジオメトリのために、追加のリファインメント処理を実行します。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ウルトラパスの解像度：2kでは2048³、4kでは4096³で実行し、最高水準の表面ディテールを実現します。4kにはmeshy-7.1以降が必要です。ultra_modeが有効な場合にのみ使用されます。"
       }
     },
     "outputs": {
@@ -14053,6 +14541,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 専用: 予測深度に対してスパースなボリューム精緻化パスを実行します。パスを増やすと、ほぼ線形のコストで細部とエッジが鮮明になります。0 で精緻化を無効にします。MoGe-1 / MoGe-2 では無視されます。"
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = 最速、9 = 最高詳細。"
@@ -14083,6 +14575,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 専用: 予測深度に対してスパースなボリューム精緻化パスを実行します。パスを増やすと、ほぼ線形のコストで細部とエッジが鮮明になります。0 で精緻化を無効にします。MoGe-1 / MoGe-2 では無視されます。"
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -16645,7 +17141,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "回答前にモデルがどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high。GPT-4.1 には推論機能がありません。未対応のレベルはリクエスト送信前に拒否されます。"
+        "tooltip": "モデルが回答前にどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-6 Sol/Luna および GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high、GPT-4.1 には推論機能がありません。非対応のレベルはリクエスト送信前に拒否されます。"
       },
       "truncation": {
         "name": "切り捨て",
@@ -16805,40 +17301,6 @@
       "file": {
         "name": "ファイル",
         "tooltip": "モデルのコンテキストとして含める入力ファイル。現在はテキスト（.txt）ファイルとPDF（.pdf）ファイルのみを受け付けます。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "OpenAIのビデオおよびオーディオ生成。",
-    "display_name": "OpenAI Sora - ビデオ",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "duration": {
-        "name": "長さ"
-      },
-      "image": {
-        "name": "画像"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "ガイドとなるテキスト。入力画像が存在する場合は空でも可。"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
-      },
-      "size": {
-        "name": "サイズ"
       }
     },
     "outputs": {
@@ -17276,7 +17738,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D コンディショニング",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18058,6 +18520,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "Pruna ビデオモデルを使用して画像を動画にアニメーション化します。任意で最後のフレーム、生成されたサウンド、または音声トラックを指定できます。",
+    "display_name": "Pruna P-Video-2 Image to Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_draft": {
+        "name": "下書き"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_enhance_prompt": {
+        "name": "プロンプトを強化"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "音声を生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Pruna動画モデルを使用してテキストプロンプトから動画を生成します。生成したサウンド、または動画を駆動するオーディオトラックを任意で使用できます。",
+    "display_name": "Pruna P-Video-2 テキストから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_draft": {
+        "name": "下書き"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_enhance_prompt": {
+        "name": "プロンプトを強化"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "音声を生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[レシピ]\n\nhidream: long clip-l、long clip-g、t5xxl、llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -18112,6 +18661,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "描画前にモデルがどの程度推論するかを指定します。レベルを上げるほど細部が向上しますが、より多くのトークンを消費します。Arrow 2モデルでのみ使用されます。"
+      },
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
@@ -18151,6 +18704,10 @@
         "name": "prompt",
         "tooltip": "希望するSVG出力のテキスト説明。"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "描画前にモデルがどの程度推論するかを指定します。レベルを上げるほど細部が向上しますが、より多くのトークンを消費します。Arrow 2モデルでのみ使用されます。"
+      },
       "reference_images": {
         "name": "reference_images",
         "tooltip": "生成をガイドするための最大4枚の参照画像。"
@@ -18166,9 +18723,34 @@
       }
     }
   },
+  "QwenImage21Cache": {
+    "description": "KV キャッシュのデバイスと量子化を設定できます。デフォルトではモデルは auto オプションを使用します。メモリ不足時には、量子化により編集ワークフローが高速化される可能性があります。",
+    "display_name": "Qwen Image 2.1 キャッシュ",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto は空き VRAM を使用し、次に RAM を使用します。cpu (RAM) は計算中にプリフェッチされるため、速度低下はわずかです。off は毎ステップでプレフィックスを再計算します。低速ですが、キャッシュを除外する唯一の方法です。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "保存精度。default は無損失です。int8 は bf16 とほぼ同等の精度でキャッシュを半分にし、int4 は4分の1にしますが、ステップあたりの誤差はおよそ2倍になります。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "画像"
       },
@@ -18180,6 +18762,9 @@
       },
       "model_patch": {
         "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "強度"
@@ -18799,7 +19384,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデル。recraftv4_styles モデルはスタイル一貫性のある生成向けに構築されており、常に style_id または style_references が必要です。"
+        "tooltip": "生成に使用するモデルです。recraftv4_stylesモデルはスタイルの一貫した生成向けに構築されており、常にstyle_idまたはstyle_referencesが必要です。recraftv4_1_flashは最速かつ最も低コストのモデルで、スタイルは一切サポートしません。"
       },
       "model_size": {
         "name": "サイズ"
@@ -22518,7 +23103,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "安定カスケード_空の潜在画像",
+    "display_name": "空の Stable Cascade latent 画像",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -22561,7 +23146,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "安定カスケード_ステージC_VAEエンコード",
+    "display_name": "Stable Cascade ステージ C VAE エンコード",
     "inputs": {
       "compression": {
         "name": "圧縮"
@@ -22698,6 +23283,52 @@
       "2": {
         "name": "潜在",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "ループ開始",
+    "inputs": {
+      "cache_iterations": {
+        "name": "反復結果をキャッシュ",
+        "tooltip": "以前の実行で変更されなかった反復結果を再利用します。無効にすると、すべての反復を再度実行します。"
+      },
+      "initial_iteration_value": {
+        "name": "初期反復値",
+        "tooltip": "最初の反復で現在の反復値として公開される値。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "ループの反復モード。"
+      },
+      "mode_num_iterations": {
+        "name": "反復回数"
+      },
+      "parent_iteration": {
+        "name": "親の反復",
+        "tooltip": "外側の「ループ開始」の反復インデックスを接続して、このループをネストします。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "反復インデックス",
+        "tooltip": "現在のループ反復のインデックス。"
+      },
+      "1": {
+        "name": "最初かどうか",
+        "tooltip": "ループの最初の反復時に真になります。"
+      },
+      "2": {
+        "name": "最後かどうか",
+        "tooltip": "ループの最後の反復中は True です。"
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "List モード使用時のリスト内の現在の項目です。Simple および For モードでは None です。"
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "現在の反復のループ引き継ぎ値です。最初の反復では initial_iteration_value、その後の各反復では End Loop の next_iteration_value になります。"
       }
     }
   },
@@ -23477,8 +24108,71 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Ming Image Edit テキストエンコード",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "任意の参照画像です。テキストエンコーダーによって参照され、クリーンフレームとして潜在シーケンスに追加されます。2 枚目以降の画像は最初の画像に合わせてリサイズされ、サンプリングする潜在空間はそのサイズに一致させる必要があります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE がない場合、画像はビジョンタワーを介してのみテキストエンコーダーを条件付けします。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "テキストエンコード Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "テキストエンコーダーが参照し、VAE latent としてシーケンスに挿入される参照画像。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "参照画像はアスペクト比を維持し、32 の倍数で、およそ resolution x resolution ピクセルにリサイズされます。0 は各参照をそれぞれのサイズのまま、32 の倍数に丸めて保持します。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "最初の参照画像のサイズに合わせた空の latent。ほかのサイズでは編集がずれるため、サンプリングと一致させます。"
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "テキストエンコード Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23500,7 +24194,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "テキストエンコード Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23576,6 +24270,10 @@
       "max_length": {
         "name": "最大長"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "チェックポイントのマルチトークン予測ヘッドを使用した投機的デコーディング。MTP 重みがない場合は効果がありません。auto はドラフト深度を適応的に調整し、2-5 は固定します。サンプリング出力は正しい分布を維持しますが、同じシードでも非 MTP 出力とは異なります。"
+      },
       "prompt": {
         "name": "プロンプト"
       },
@@ -23603,6 +24301,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートが使用されていない場合は無視されます。"
+      },
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
@@ -23619,6 +24321,10 @@
     "outputs": {
       "0": {
         "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -23638,6 +24344,10 @@
       "max_length": {
         "name": "最大長"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "チェックポイントのマルチトークン予測ヘッドによる投機的デコーディング。MTP重みがない場合は効果がありません。autoはドラフト深度を自動調整し、2～5では固定します。サンプリング出力は正しい分布を維持しますが、同じシードでも非MTP出力とは異なります。"
+      },
       "prompt": {
         "name": "プロンプト"
       },
@@ -23665,6 +24375,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートが使用されていない場合は無視されます。"
+      },
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
@@ -23681,6 +24395,10 @@
     "outputs": {
       "0": {
         "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24153,7 +24871,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2 コンディショニング",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24175,7 +24893,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2 形状ステージ",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24203,7 +24921,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2 テクスチャステージ",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24896,6 +25614,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "画像から、クリーンなトポロジーを持つローポリゴン3Dモデルを、三角形メッシュ（GLB）または四角形主体メッシュ（FBX）として生成します。",
+    "display_name": "Tripo P2: 画像からモデル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo Pシリーズモデル。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "texture"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad が有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "quad が有効な場合にのみ設定されます。"
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "正面図に加え、左面図、背面図、右面図のうち1～3枚から、クリーンなトポロジーを持つローポリゴン3Dモデルを、三角形メッシュ（GLB）または四角形主体メッシュ（FBX）として生成します。",
+    "display_name": "Tripo P2: マルチビューからモデル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Tripo Pシリーズモデル。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "orientation"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "テクスチャ"
+      },
+      "model_texture_alignment": {
+        "name": "テクスチャ位置合わせ"
+      },
+      "model_texture_seed": {
+        "name": "テクスチャシード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "クアッドが有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "クアッドが有効な場合にのみ出力されます。"
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "テキストプロンプトから、クリーンなトポロジーを持つ低ポリゴン3Dモデルを、三角形メッシュ（GLB）またはクアッド主体のメッシュ（FBX）として生成します。",
+    "display_name": "Tripo P2：テキストからモデル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "Tripo Pシリーズモデル。"
+      },
+      "model_auto_size": {
+        "name": "自動サイズ"
+      },
+      "model_compress_geometry": {
+        "name": "ジオメトリを圧縮"
+      },
+      "model_export_uv": {
+        "name": "UVをエクスポート"
+      },
+      "model_face_limit": {
+        "name": "面数上限"
+      },
+      "model_image_seed": {
+        "name": "画像シード"
+      },
+      "model_model_seed": {
+        "name": "モデルシード"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_pbr": {
+        "name": "PBR"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quad": {
+        "name": "クアッド"
+      },
+      "model_texture": {
+        "name": "テクスチャ"
+      },
+      "model_texture_seed": {
+        "name": "テクスチャシード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "クアッドが有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "クアッドが有効な場合にのみ出力されます。"
       }
     }
   },
@@ -25697,7 +26601,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Hunyuan 3D VAE デコード",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -26005,7 +26909,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE 形状デコード",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26026,7 +26930,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE 構造デコード",
     "inputs": {
       "resolution": {
         "name": "解像度"
@@ -26046,7 +26950,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE テクスチャデコード",
     "inputs": {
       "samples": {
         "name": "サンプル"
@@ -28073,6 +28977,10 @@
       "positive": {
         "name": "ポジティブ"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "グレーの代わりにこの画像で画像コンディショニングのパディングフレームを埋め、フレームを固定せずにアイデンティティを保持します（ID-V2V などのモデルで使用される、SVI スタイルのドリフト防止パディング）。"
+      },
       "start_image": {
         "name": "開始画像"
       },
@@ -29002,6 +29910,10 @@
         "name": "ABC",
         "tooltip": "ABCジェネレーターを接続するか、編集済みのスコアを指定します。空のままにすると、自動的に off モードが使用されます。"
       },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "スタイルと歌詞の自己回帰ガイダンス。1.0ではCFGが無効になり、ABCワークフローと一致します。元のオフモードのガイダンスに合わせるには1.01を使用します。"
+      },
       "clip": {
         "name": "clip"
       },
@@ -29049,8 +29961,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "Load Model Patch で読み込まれた Z-Image または Qwen Image 2.1 Fun ControlNet を適用します。",
+    "display_name": "Fun ControlNet を適用",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "画像"
       },
@@ -29065,6 +29981,9 @@
       },
       "model_patch": {
         "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "強度"

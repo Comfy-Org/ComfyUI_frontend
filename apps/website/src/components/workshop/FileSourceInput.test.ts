@@ -52,6 +52,33 @@ async function drop(files: File[]) {
 }
 
 describe('file source selection', () => {
+  it('shows and enforces the configured video size instead of the image limit', async () => {
+    const values = mountInput(false, {
+      ...field,
+      accept: ['video/mp4'],
+      maxBytes: 100_000_000
+    })
+    const visitor = userEvent.setup()
+    expect(screen.getByText('MP4 · up to 100 MB')).toBeTruthy()
+    const file = new File([new Uint8Array(40_000_000)], 'clip.mp4', {
+      type: 'video/mp4'
+    })
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      file
+    )
+    expect(values.value).toMatchObject([{ file }])
+    const oversized = new File([new Uint8Array(100_000_001)], 'oversized.mp4', {
+      type: 'video/mp4'
+    })
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      oversized
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent('File is over 100 MB')
+    expect(values.value).toMatchObject([{ file }])
+  })
+
   it.for([
     { name: 'price-$&.fbx', type: 'application/octet-stream', label: 'FBX' },
     { name: 'clip.mp4', type: 'video/mp4', label: 'MP4' },
@@ -74,13 +101,18 @@ describe('file source selection', () => {
         const preview = within(trigger).getByTestId('video-source-thumbnail')
         expect(preview).toBeInstanceOf(HTMLVideoElement)
         expect(preview.getAttribute('src')).toMatch(/^blob:/)
+      } else if (type.startsWith('audio/')) {
+        // A recording is played where another kind of file shows its type.
+        expect(
+          screen.getByRole('button', { name: `Play ${name}` })
+        ).toBeTruthy()
       } else {
         expect(screen.getByText(label)).toBeTruthy()
       }
       expect(screen.getByText('2 KB')).toBeTruthy()
       expect(screen.queryByRole('img')).toBeNull()
       expect(values.value).toMatchObject([{ file }])
-      expect(screen.getByText('Choose files or drop them here')).toBeTruthy()
+      expect(screen.getByText('Select or drop up to 2 files')).toBeTruthy()
       await user.click(screen.getByRole('button', { name: `Replace ${name}` }))
       const replacement = new File(['replacement bytes'], 'replacement.fbx', {
         type: 'application/octet-stream'
@@ -211,7 +243,7 @@ describe('file source selection', () => {
       file: new File([new Uint8Array(MAX_UPLOAD_BYTES + 1)], 'large.png', {
         type: 'image/png'
       }),
-      error: 'File is over 25 MB'
+      error: 'File is over 25 MiB'
     }
   ])(
     'keeps valid images when a drop is rejected: $error',
@@ -244,10 +276,123 @@ describe('file source selection', () => {
     expect(screen.getAllByRole('img')).toHaveLength(1)
   })
 
+  // The drop zone is the whole group, not the prompt, so a field that is full
+  // still takes a replacement by drop even with nothing left inviting one.
+  it('takes the drop zone away once the one image it holds is chosen', async () => {
+    const single = { ...field, multiple: false, maxItems: 1 }
+    const value = mountInput(false, single)
+    expect(screen.getByText('Select or drop an image')).toBeTruthy()
+
+    await drop([new File(['one'], 'one.png', { type: 'image/png' })])
+    expect(screen.queryByText(/select or drop/i)).toBeNull()
+
+    await drop([new File(['two'], 'two.png', { type: 'image/png' })])
+    expect(value.value).toMatchObject({ name: 'two.png' })
+    expect(screen.queryByText(/select or drop/i)).toBeNull()
+  })
+
+  // Room left is what the prompt is for, so it stays until the last slot goes.
+  it('keeps the drop zone while a multi-image field has room', async () => {
+    const two = { ...field, multiple: true, maxItems: 2 }
+    mountInput(false, two)
+
+    await drop([new File(['one'], 'one.png', { type: 'image/png' })])
+    expect(screen.getByText('Select or drop up to 2 images')).toBeTruthy()
+
+    await drop([new File(['two'], 'two.png', { type: 'image/png' })])
+    expect(screen.queryByText(/select or drop/i)).toBeNull()
+  })
+
   it('ignores file drops while disabled', async () => {
     const value = mountInput(true)
     await drop([new File(['one'], 'one.png', { type: 'image/png' })])
     expect(value.value).toBeUndefined()
     expect(screen.queryByRole('img')).toBeNull()
+  })
+})
+
+describe('undoing a removal', () => {
+  const sample: FileValue = {
+    name: 'courtyard.png',
+    size: 2048,
+    type: 'image/png',
+    sourceUrl: 'https://example.test/courtyard.png'
+  }
+
+  it('offers the removed picture back instead of sending the reader to the example', async () => {
+    const values = mountInput(false, { ...field, multiple: false }, sample)
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('button', { name: /Remove/ }))
+    expect(values.value).toBeUndefined()
+
+    const undo = screen.getByTestId('removed-file-undo')
+    expect(undo).toHaveTextContent('courtyard.png removed')
+    await visitor.click(
+      within(undo).getByRole('button', { name: 'Put it back' })
+    )
+
+    expect(values.value).toEqual(sample)
+    expect(screen.queryByTestId('removed-file-undo')).toBeNull()
+  })
+
+  it('puts a picture back where it was, not at the end of the row', async () => {
+    const second: FileValue = {
+      name: 'rooftop.png',
+      size: 4096,
+      type: 'image/png',
+      sourceUrl: 'https://example.test/rooftop.png'
+    }
+    const values = mountInput(false, field, [sample, second])
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getAllByRole('button', { name: /Remove/ })[0])
+    expect(values.value).toEqual([second])
+
+    await visitor.click(
+      within(screen.getByTestId('removed-file-undo')).getByRole('button', {
+        name: 'Put it back'
+      })
+    )
+
+    expect(values.value).toEqual([sample, second])
+  })
+
+  it('drops the offer once the reader has chosen a file themselves', async () => {
+    mountInput(false, { ...field, multiple: false }, sample)
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('button', { name: /Remove/ }))
+    expect(screen.getByTestId('removed-file-undo')).toBeTruthy()
+
+    await visitor.upload(
+      screen.getByLabelText('Images', { selector: 'input' }),
+      new File([new Uint8Array(8)], 'mine.png', { type: 'image/png' })
+    )
+
+    expect(screen.queryByTestId('removed-file-undo')).toBeNull()
+  })
+
+  // Choosing an example rewrites the whole form from outside this field. The
+  // offer is about one removal, so it cannot survive the selection changing
+  // underneath it and put the old file back over the new one.
+  it('drops the offer when the form replaces the selection', async () => {
+    const values = mountInput(false, { ...field, multiple: false }, sample)
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('button', { name: /Remove/ }))
+    expect(screen.getByTestId('removed-file-undo')).toBeTruthy()
+
+    const fromExample: FileValue = {
+      name: 'rooftop.png',
+      size: 4096,
+      type: 'image/png',
+      sourceUrl: 'https://example.test/rooftop.png'
+    }
+    values.value = fromExample
+    await nextTick()
+
+    expect(screen.queryByTestId('removed-file-undo')).toBeNull()
+    expect(values.value).toEqual(fromExample)
   })
 })

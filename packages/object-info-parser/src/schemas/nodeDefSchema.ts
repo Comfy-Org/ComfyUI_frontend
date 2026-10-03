@@ -108,31 +108,36 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   multi_select: zMultiSelectOption.optional()
 })
 
-const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
-const zFloatInputSpec = z.tuple([
-  z.literal('FLOAT'),
-  zFloatInputOptions.optional()
-])
-const zBooleanInputSpec = z.tuple([
+/** The backend serialises `("IMAGE",)` as `["IMAGE"]`, so options may be absent. */
+function zInputSpecTuple<T extends z.ZodTypeAny, O extends z.ZodTypeAny>(
+  type: T,
+  options: O
+) {
+  return z.union([z.tuple([type]), z.tuple([type, options.optional()])])
+}
+
+const zIntInputSpec = zInputSpecTuple(z.literal('INT'), zIntInputOptions)
+const zFloatInputSpec = zInputSpecTuple(z.literal('FLOAT'), zFloatInputOptions)
+const zBooleanInputSpec = zInputSpecTuple(
   z.literal('BOOLEAN'),
-  zBooleanInputOptions.optional()
-])
-const zStringInputSpec = z.tuple([
+  zBooleanInputOptions
+)
+const zStringInputSpec = zInputSpecTuple(
   z.literal('STRING'),
-  zStringInputOptions.optional()
-])
+  zStringInputOptions
+)
 /**
  * Legacy combo syntax.
  * @deprecated Use `zComboInputSpecV2` instead.
  */
-const zComboInputSpec = z.tuple([
+const zComboInputSpec = zInputSpecTuple(
   z.array(zComboOption),
-  zComboInputOptions.optional()
-])
-const zComboInputSpecV2 = z.tuple([
+  zComboInputOptions
+)
+const zComboInputSpecV2 = zInputSpecTuple(
   z.literal('COMBO'),
-  zComboInputOptions.optional()
-])
+  zComboInputOptions
+)
 
 export function isComboInputSpecV1(
   inputSpec: InputSpec
@@ -203,10 +208,10 @@ export function getComboSpecComboOptions(
 }
 
 const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
-const zCustomInputSpec = z.tuple([
+const zCustomInputSpec = zInputSpecTuple(
   z.string().refine((value) => !excludedLiterals.has(value)),
-  zBaseInputOptions.optional()
-])
+  zBaseInputOptions
+)
 
 const zInputSpec = z.union([
   zIntInputSpec,
@@ -341,17 +346,31 @@ export const zAutogrowOptions = z.object({
   })
 })
 
+export const zDynamicComboOption = z.object({
+  inputs: zComfyInputsSpec,
+  key: z.string()
+})
+
+const zDynamicComboBody = zBaseInputOptions.extend({
+  options: z.array(zDynamicComboOption)
+})
+
 export const zDynamicComboInputSpec = z.tuple([
   z.literal('COMFY_DYNAMICCOMBO_V3'),
-  zBaseInputOptions.extend({
-    options: z.array(
-      z.object({
-        inputs: zComfyInputsSpec,
-        key: z.string()
-      })
-    )
-  })
+  zDynamicComboBody
 ])
+
+/**
+ * V2 object form of a DynamicCombo spec.
+ *
+ * `options` is deliberately left unvalidated here so that a single malformed
+ * option does not discard its well-formed siblings. Consumers that need the
+ * option bodies should validate each element with {@link zDynamicComboOption}.
+ */
+export const zDynamicComboSpecV2 = zBaseInputOptions.extend({
+  type: z.literal('COMFY_DYNAMICCOMBO_V3'),
+  options: z.array(z.unknown())
+})
 
 export const zMatchTypeOptions = z.object({
   ...zBaseInputOptions.shape,
@@ -361,6 +380,25 @@ export const zMatchTypeOptions = z.object({
     template_id: z.string()
   })
 })
+
+/**
+ * Input types whose spec is a container or constraint rather than a concrete
+ * slot type. Every surface that resolves, renders or rewrites node inputs has
+ * to special-case these, so they are enumerated once here; keying a registry
+ * on {@link DynamicControlType} makes a missing entry a type error rather than
+ * a silent gap.
+ */
+export const DYNAMIC_CONTROL_TYPES = [
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICCOMBO_V3',
+  'COMFY_MATCHTYPE_V3'
+] as const
+
+export type DynamicControlType = (typeof DYNAMIC_CONTROL_TYPES)[number]
+
+export function isDynamicControlType(type: string): type is DynamicControlType {
+  return (DYNAMIC_CONTROL_TYPES as readonly string[]).includes(type)
+}
 
 // `/object_info`
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>

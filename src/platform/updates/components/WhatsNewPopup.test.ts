@@ -1,4 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useReleaseStore } from '../common/releaseStore'
 beforeEach(() => {
   Object.assign(useReleaseStore(), {
@@ -65,10 +64,7 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
 
 // Mock release store
 
@@ -105,14 +101,14 @@ describe('WhatsNewPopup', () => {
     })
 
     const { container } = renderComponent()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.whats-new-popup')).not.toBeNull()
   })
 
   it('does not render when shouldShow is false', () => {
     Object.assign(useReleaseStore(), { shouldShowPopup: false })
     const { container } = renderComponent()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.whats-new-popup')).toBeNull()
   })
 
@@ -161,7 +157,7 @@ describe('WhatsNewPopup', () => {
 
     const { container } = renderComponent()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.content-text')).not.toBeNull()
   })
 
