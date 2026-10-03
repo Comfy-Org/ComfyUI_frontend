@@ -76,6 +76,15 @@ test.describe(
             }
           }
         })
+
+      await expect
+        .poll(() =>
+          page.evaluate(async () => {
+            const output = (await window.app!.graphToPrompt()).output
+            return Object.hasOwn(output['2'].inputs, 'ref_images.ref_image_2')
+          })
+        )
+        .toBe(false)
     })
   }
 )
