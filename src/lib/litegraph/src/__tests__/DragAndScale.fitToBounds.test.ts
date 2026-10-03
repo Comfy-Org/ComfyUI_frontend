@@ -67,9 +67,44 @@ describe('DragAndScale.fitToBounds', () => {
     expect((250 + dragAndScale.offset[0]) * dragAndScale.scale).toBeCloseTo(500)
     expect((125 + dragAndScale.offset[1]) * dragAndScale.scale).toBeCloseTo(250)
   })
+
+  it('does not fit below the minimum scale in a narrow viewport', () => {
+    const dragAndScale = new DragAndScale(
+      createTestCanvasElement({ width: 1000, height: 500 })
+    )
+
+    dragAndScale.fitToBounds([0, 0, 1000, 500], {
+      viewport: [0, 0, 10, 500]
+    })
+
+    expect(dragAndScale.scale).toBe(dragAndScale.min_scale)
+  })
 })
 
 describe('DragAndScale.computeVisibleArea', () => {
+  it('refreshes a hidden cached viewport from visible layout', () => {
+    const canvas = createTestCanvasElement({
+      width: 1600,
+      height: 1200,
+      cssSize: [800, 600]
+    })
+    const dragAndScale = new DragAndScale(canvas)
+    dragAndScale.setViewportSize(0, 0)
+
+    expect(dragAndScale.getViewportSize()).toEqual([800, 600])
+  })
+
+  it('does not expose its cached viewport tuple by reference', () => {
+    const dragAndScale = new DragAndScale(
+      createTestCanvasElement({ width: 1600, height: 1200 })
+    )
+    dragAndScale.setViewportSize(800, 600)
+
+    dragAndScale.getViewportSize()[0] = 1
+
+    expect(dragAndScale.getViewportSize()).toEqual([800, 600])
+  })
+
   it('uses the applied viewport size without reading layout', () => {
     const canvas = createTestCanvasElement({ width: 1600, height: 1200 })
     const rectSpy = vi.spyOn(canvas, 'getBoundingClientRect')

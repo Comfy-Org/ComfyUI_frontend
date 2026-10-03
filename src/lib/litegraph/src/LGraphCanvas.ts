@@ -1947,6 +1947,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // maybe detach events from old_canvas
     this.canvas = element
     this.ds.element = element
+    this.ds.clearViewportSize()
     this.pointer.element = element
 
     this._setCursor = createCursorCache(element)

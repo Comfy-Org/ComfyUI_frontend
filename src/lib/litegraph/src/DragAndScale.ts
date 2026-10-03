@@ -125,13 +125,22 @@ export class DragAndScale {
     this.viewportSize = [width, height]
   }
 
+  clearViewportSize(): void {
+    this.viewportSize = undefined
+  }
+
   getViewportSize(): [number, number] {
-    if (this.viewportSize) return this.viewportSize
+    const viewportSize = this.viewportSize
+    if (viewportSize && viewportSize[0] > 0 && viewportSize[1] > 0) {
+      return [...viewportSize]
+    }
 
     const rect = this.element.getBoundingClientRect()
     if (rect.width > 0 && rect.height > 0) {
       return [rect.width, rect.height]
     }
+
+    if (viewportSize) return [...viewportSize]
 
     const dpr = readBrowserDpr()
     return [this.element.width / dpr, this.element.height / dpr]
@@ -223,7 +232,10 @@ export class DragAndScale {
 
       // Choose the smaller scale to ensure the node fits into the viewport
       // Ensure we don't go over the max scale
-      targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
+      targetScale = Math.max(
+        Math.min(targetScaleX, targetScaleY, this.max_scale),
+        this.min_scale
+      )
     }
 
     const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
