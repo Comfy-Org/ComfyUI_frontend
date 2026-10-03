@@ -632,7 +632,10 @@ describe('ComfyApp', () => {
         ...createWorkflowGraphData(),
         id: documentId
       }
-      useWorkflowStore().activeWorkflow = workflow
+      const workflowStore = useWorkflowStore()
+      workflowStore.activeWorkflow = workflow
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(workflow)
+      vi.mocked(workflowStore.isActive).mockReturnValue(true)
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
       publishActiveBinding(toRootGraphId('reloaded-root'))
@@ -653,12 +656,9 @@ describe('ComfyApp', () => {
 
       // Retracting here would be a false retract/publish pair for a document
       // that never left the canvas, which stops the agent's follower and
-      // minters mid-reload. Asserted mid-load rather than on the final
-      // binding: resolving a *string* to an already-open tab goes through the
-      // workflow lookup, which this harness does not populate, so the publish
-      // lands on a fresh temporary document and says nothing about the retract
-      // decision this test is about.
+      // minters mid-reload.
       expect(midLoad.value).toBe(true)
+      expect(lifecycle.isActive(uid)).toBe(true)
     })
 
     it('fails closed when a load clears the graph and then fails', async () => {
