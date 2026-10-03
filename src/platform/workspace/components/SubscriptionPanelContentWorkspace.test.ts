@@ -2,6 +2,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getActivePinia } from 'pinia'
 import { computed, nextTick, ref, toRef } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -28,6 +29,8 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/composables/billing/useBillingRouting'))
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -219,6 +222,12 @@ const SubscriptionFooterLinksStub = {
     '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
 }
 
+const AutoReloadSectionStub = {
+  props: ['frozen'],
+  template:
+    '<div data-testid="auto-reload-section" :data-frozen="String(frozen)" />'
+}
+
 const StatusBadgeStub = {
   props: ['label', 'severity'],
   template: '<span :data-severity="severity">{{ label }}</span>'
@@ -237,6 +246,7 @@ function renderComponent({ stubFooter = true } = {}) {
       directives: { tooltip: {} },
       stubs: {
         CreditsTile: CreditsTileStub,
+        AutoReloadSection: AutoReloadSectionStub,
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
@@ -388,6 +398,50 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Complete verification' })
     ).not.toBeInTheDocument()
+  })
+
+  it('gates auto-reload on the reactive billing control flag', async () => {
+    renderComponent()
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    await nextTick()
+    expect(screen.getByTestId('auto-reload-section')).toBeInTheDocument()
+
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+    await nextTick()
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+  })
+
+  it('gates auto-reload on the reactive subscription management permission', async () => {
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    mockCanManageSubscription.value = false
+    renderComponent()
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+
+    mockCanManageSubscription.value = true
+    await nextTick()
+    expect(screen.getByTestId('auto-reload-section')).toBeInTheDocument()
+
+    mockCanManageSubscription.value = false
+    await nextTick()
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+  })
+
+  it('passes the frozen billing state to auto-reload', async () => {
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    renderComponent()
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'false'
+    )
+
+    mockBillingStatus.value = 'paused'
+    await nextTick()
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'true'
+    )
   })
 
   it('renders the subscribed credit stop price and renewal subtitle', () => {

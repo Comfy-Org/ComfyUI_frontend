@@ -399,6 +399,10 @@
         </div>
       </div>
 
+      <div v-if="showAutoReload" class="@container mt-4">
+        <AutoReloadSection :frozen="autoReloadFrozen" />
+      </div>
+
       <SubscriptionFooterLinks
         class="mt-auto pt-6"
         :show-plans-link="canOpenPricingSurface"
@@ -432,6 +436,8 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
+import { useAutoReloadAccess } from '@/platform/workspace/composables/useAutoReloadAccess'
 import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
@@ -483,6 +489,9 @@ const {
   manageSubscription,
   initialize
 } = useBillingContext()
+
+const { canAccess: showAutoReload, isFrozen: autoReloadFrozen } =
+  useAutoReloadAccess()
 
 const { showPricingTable } = useSubscriptionDialog()
 

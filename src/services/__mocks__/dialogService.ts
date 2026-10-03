@@ -40,6 +40,7 @@ const dialogService = vi.mockObject<DialogService>(
     showRevokeInviteDialog: async () => dialog,
     showInviteMemberDialog: async () => dialog,
     showInviteMemberUpsellDialog: async () => dialog,
+    showAutoReloadDialog: async () => dialog,
     showInviteLinkInvalidDialog: async () => dialog,
     showInviteWrongAccountDialog: async () => dialog,
     showBillingComingSoonDialog: () => dialog,
