@@ -8,6 +8,7 @@ import { join } from 'node:path'
  * and a rename.
  */
 export const AGENT_DISCOVERY_FILE = 'agent.json'
+const MAX_AGENT_DISCOVERY_TOKEN_LENGTH = 4096
 
 /**
  * Reads the bearer token the standalone agent is accepting *right now*.
@@ -48,5 +49,10 @@ export function readAgentDiscoveryToken(dataDir: string): string | undefined {
     return undefined
   }
   const token = (parsed as { token?: unknown } | null)?.token
-  return typeof token === 'string' && token.length > 0 ? token : undefined
+  return typeof token === 'string' &&
+    token.length > 0 &&
+    token.length <= MAX_AGENT_DISCOVERY_TOKEN_LENGTH &&
+    /^[\x20-\x7e]+$/.test(token)
+    ? token
+    : undefined
 }
