@@ -116,6 +116,8 @@ VITE_AGENT_STANDALONE=true DEV_AGENT_URL=http://127.0.0.1:6286 \
 Vite reads the token out of that directory's `agent.json` on each agent request, so
 restarting the agent recovers on its own — no Vite restart, no page reload. It is
 mutually exclusive with `DEV_AGENT_SESSION_TOKEN`.
+Only the token is rediscovered. Vite continues forwarding to `DEV_AGENT_URL`, so an
+agent restart on a different port still requires restarting Vite with the new URL.
 
 Prefer it over copying the token by hand, because **the agent mints a new session token
 every time it starts** (unless `AGENT_SESSION_TOKEN` pins one, which is what the launcher
