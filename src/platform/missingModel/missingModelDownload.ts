@@ -211,7 +211,7 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
     const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
     return {
       metadata: { fileSize, gatedRepoUrl: null },
-      cacheable: true
+      cacheable: matchingFile !== undefined
     }
   } catch {
     return {
