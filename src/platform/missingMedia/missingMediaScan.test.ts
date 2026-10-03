@@ -753,6 +753,36 @@ describe('verifyMediaCandidates', () => {
     ])
   })
 
+  it.for([
+    {
+      unavailable: 'input',
+      sources: { inputAssets: null, generatedAssets: [] },
+      expected: { input: undefined, output: true }
+    },
+    {
+      unavailable: 'generated',
+      sources: { inputAssets: [], generatedAssets: null },
+      expected: { input: true, output: undefined }
+    }
+  ] as const)(
+    'leaves candidates unresolved when the $unavailable asset source failed',
+    async ({ sources, expected }) => {
+      const input = makeCandidate('1', 'photo.png', { isMissing: undefined })
+      const output = makeCandidate('2', 'render.png [output]', {
+        isMissing: undefined
+      })
+
+      await verifyMediaCandidates([input, output], {
+        isCloud: true,
+        resolveAssetSources: vi.fn(async () => sources)
+      })
+
+      expect({ input: input.isMissing, output: output.isMissing }).toEqual(
+        expected
+      )
+    }
+  )
+
   it('matches candidates by available input asset name or hash', async () => {
     const candidates = [
       makeCandidate('1', 'photo.png', { isMissing: undefined }),

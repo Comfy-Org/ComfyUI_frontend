@@ -195,14 +195,14 @@ describe('resolveMissingMediaAssetSources', () => {
   it.for([
     {
       failing: 'input',
-      expected: { inputAssets: [], generatedAssets: ['output.png'] }
+      expected: { inputAssets: null, generatedAssets: ['output.png'] }
     },
     {
       failing: 'generated',
-      expected: { inputAssets: ['photo.png'], generatedAssets: [] }
+      expected: { inputAssets: ['photo.png'], generatedAssets: null }
     }
   ] as const)(
-    'keeps the other asset source when the $failing source fails',
+    'marks the $failing source unavailable and keeps the other source',
     async ({ failing, expected }) => {
       vi.spyOn(console, 'warn').mockImplementation(() => {})
       const failure = new Error(`${failing} failed`)
@@ -231,8 +231,9 @@ describe('resolveMissingMediaAssetSources', () => {
       })
 
       expect({
-        inputAssets: result.inputAssets.map((asset) => asset.name),
-        generatedAssets: result.generatedAssets.map((asset) => asset.name)
+        inputAssets: result.inputAssets?.map((asset) => asset.name) ?? null,
+        generatedAssets:
+          result.generatedAssets?.map((asset) => asset.name) ?? null
       }).toEqual(expected)
     }
   )
@@ -276,8 +277,9 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
-    expect(result.generatedAssets).toHaveLength(1)
-    expect(result.generatedAssets[0].name).toBe(target)
+    expect(result.generatedAssets).toEqual([
+      expect.objectContaining({ name: target })
+    ])
     expect(vi.mocked(fetchHistoryPage)).toHaveBeenCalledOnce()
   })
 

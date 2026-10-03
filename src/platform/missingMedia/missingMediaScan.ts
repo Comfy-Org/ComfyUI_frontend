@@ -234,8 +234,8 @@ export async function verifyMediaCandidates(
     pathOptions
   )
 
-  let inputAssets: readonly AssetItem[]
-  let generatedAssets: readonly AssetItem[]
+  let inputAssets: readonly AssetItem[] | null
+  let generatedAssets: readonly AssetItem[] | null
   try {
     const assetSources = await resolveAssetSources({
       signal,
@@ -257,11 +257,15 @@ export async function verifyMediaCandidates(
   const inputAssetIdentifiers = new Set<string>()
   const outputAssetIdentifiers = new Set<string>()
   const outputAssetHashIdentifiers = new Set<string>()
-  addAssetIdentifiers(inputAssetIdentifiers, inputAssets, pathOptions)
-  addAssetIdentifiers(outputAssetIdentifiers, generatedAssets, pathOptions)
+  addAssetIdentifiers(inputAssetIdentifiers, inputAssets ?? [], pathOptions)
+  addAssetIdentifiers(
+    outputAssetIdentifiers,
+    generatedAssets ?? [],
+    pathOptions
+  )
   addAssetHashIdentifiers(
     outputAssetHashIdentifiers,
-    generatedAssets,
+    generatedAssets ?? [],
     pathOptions
   )
 
@@ -271,6 +275,7 @@ export async function verifyMediaCandidates(
       pathOptions
     )
     const isOutputCandidate = type === 'output'
+    if ((isOutputCandidate ? generatedAssets : inputAssets) === null) continue
     const identifiers = isOutputCandidate
       ? outputAssetIdentifiers
       : inputAssetIdentifiers

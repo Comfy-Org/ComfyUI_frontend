@@ -156,16 +156,17 @@ test.describe(
       ).toBeVisible()
     })
 
-    test('marks media missing instead of leaving it pending when the asset listing fails', async ({
+    test('does not report media missing when the asset listing fails', async ({
       comfyPage
     }) => {
       await mockAssetListingFailure(comfyPage.page, 500)
 
-      await comfyPage.workflow.loadWorkflow(WORKFLOW)
+      await loadWorkflowAndWaitForAssetListing(comfyPage)
 
-      await expect
-        .poll(() => getCachedMissingMediaNames(comfyPage))
-        .toContain(WORKFLOW_WIDGET_VALUE)
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+      ).toBeHidden()
+      await expect.poll(() => getCachedMissingMediaNames(comfyPage)).toEqual([])
     })
   }
 )

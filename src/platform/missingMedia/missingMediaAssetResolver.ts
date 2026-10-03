@@ -15,9 +15,10 @@ interface MediaPathDetectionOptions {
   allowCompactSuffix: boolean
 }
 
+/** `null` marks a source whose fetch failed, so its candidates stay unresolved. */
 export interface MissingMediaAssetSources {
-  inputAssets: readonly AssetItem[]
-  generatedAssets: readonly AssetItem[]
+  inputAssets: readonly AssetItem[] | null
+  generatedAssets: readonly AssetItem[] | null
 }
 
 export interface ResolveMissingMediaAssetSourcesOptions {
@@ -79,19 +80,19 @@ export async function resolveMissingMediaAssetSources({
 
 /**
  * Input and generated assets come from independent endpoints, so one failing
- * degrades to an empty list instead of discarding the other.
+ * leaves only its own candidates unresolved instead of discarding the other.
  */
 function unwrapAssetSource(
   result: PromiseSettledResult<AssetItem[]>,
   source: 'input' | 'generated'
-): AssetItem[] {
+): AssetItem[] | null {
   if (result.status === 'fulfilled') return result.value
   if (isAbortError(result.reason)) throw result.reason
   console.warn(
-    `[missingMedia] ${source} asset fetch failed; degrading to empty list.`,
+    `[missingMedia] ${source} asset fetch failed; leaving its candidates unresolved.`,
     result.reason
   )
-  return []
+  return null
 }
 
 interface FetchGeneratedAssetsOptions {
