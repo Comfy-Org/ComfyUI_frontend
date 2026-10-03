@@ -85,6 +85,39 @@ const nextActionCalls = (page: Page): Promise<unknown> =>
 const subscribeRequests = (cloud: MockCloud) =>
   cloud.requests.filter((request) => request.path === '/billing/subscribe')
 
+const CANCEL_PATH = `/billing/ops/${OPERATION}/cancel`
+
+const cancelRequests = (cloud: MockCloud) =>
+  cloud.requests.filter((request) => request.path === CANCEL_PATH)
+
+const elementUnmounts = (page: Page): Promise<unknown> =>
+  page.evaluate('window.__e2eFakeStripe.unmounts')
+
+/** The operation as the server reads it back once a cancel discarded it. */
+const canceledOperation = (): BillingOpStatusResponse => {
+  const now = new Date().toISOString()
+  return {
+    id: OPERATION,
+    status: 'failed',
+    decline_reason: 'authentication_failed',
+    retryable: true,
+    recovery_action: 'retry',
+    started_at: now,
+    completed_at: now
+  }
+}
+
+/** Pay with a new card, held on the bank's challenge in Phase A. */
+async function payIntoChallenge(
+  page: Page,
+  signIn: (path: string) => Promise<void>
+) {
+  await holdChallenge(page)
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(footnote(page)).toHaveText(PHASE_A)
+}
+
 test('145-4584 → 342-4767: Pay walks Phase A, locked with nothing charged, into Phase B once the bank answers, then to success', async ({
   page,
   cloud,
@@ -103,7 +136,7 @@ test('145-4584 → 342-4767: Pay walks Phase A, locked with nothing charged, int
   await expect(footnote(page)).toHaveAttribute('aria-live', 'polite')
   await expect(payButton(page)).toBeDisabled()
   await expect(backArrow(page)).toBeHidden()
-  await expect(cancelPayment(page)).toBeHidden()
+  await expect(cancelPayment(page)).toBeEnabled()
   expect(await nextActionCalls(page)).toEqual([{ clientSecret: CLIENT_SECRET }])
 
   await releaseChallenge(page, 'succeeded')
@@ -449,4 +482,128 @@ test('446-10925: coming back from the provider is a fresh mount on Phase B, then
     page.getByRole('heading', { name: 'Already completed' })
   ).toBeVisible()
   expect(subscribeRequests(cloud)).toHaveLength(0)
+})
+
+test('145-4326: Cancel payment during Phase A goes back to the form as typed, with no card, and Pay live once the challenge closes', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  const moveOperation = scriptOperation(cloud)
+  cloud.reply('POST', CANCEL_PATH, () => {
+    moveOperation(canceledOperation())
+    return { body: { billing_op_id: OPERATION, status: 'canceled' } }
+  })
+  await payIntoChallenge(page, signIn)
+
+  await cancelPayment(page).click()
+
+  await expect(cancelPayment(page)).toBeHidden()
+  await expect(footnote(page)).toHaveText('')
+  await expect(backArrow(page)).toBeVisible()
+  await expect(page.getByRole('alert')).toBeHidden()
+  expect(await elementUnmounts(page)).toBe(0)
+
+  await releaseChallenge(page, 'requires_action')
+
+  await expect(payButton(page)).toBeEnabled()
+  await expect(page.getByRole('alert')).toBeHidden()
+  expect(cancelRequests(cloud)).toHaveLength(1)
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test('342-4767: a cancel the payment won the race against shows Phase B and follows the payment to success', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  const moveOperation = scriptOperation(cloud)
+  cloud.reply('POST', CANCEL_PATH, () => {
+    moveOperation(processing())
+    return {
+      status: 409,
+      body: {
+        code: 'PAYMENT_IN_FLIGHT',
+        message: 'billing operation has applied or its payment is in progress'
+      }
+    }
+  })
+  await payIntoChallenge(page, signIn)
+
+  await cancelPayment(page).click()
+
+  await expect(footnote(page)).toHaveText(PHASE_B)
+  await expect(cancelPayment(page)).toBeHidden()
+  await expect(payButton(page)).toBeDisabled()
+  await expect(backArrow(page)).toBeHidden()
+
+  await releaseChallenge(page, 'succeeded')
+  moveOperation(succeededOperation(OPERATION))
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  expect(cancelRequests(cloud)).toHaveLength(1)
+})
+
+test('786-16245: a second click while the cancel is settling sends nothing more, and the page asks again until it settles', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  const moveOperation = scriptOperation(cloud)
+  const asked = { times: 0 }
+  cloud.reply('POST', CANCEL_PATH, () => {
+    asked.times += 1
+    if (asked.times === 1)
+      return {
+        status: 202,
+        body: { billing_op_id: OPERATION, status: 'cancel_requested' }
+      }
+    moveOperation(canceledOperation())
+    return { body: { billing_op_id: OPERATION, status: 'canceled' } }
+  })
+  await payIntoChallenge(page, signIn)
+
+  await cancelPayment(page).dblclick()
+
+  await expect(page.getByRole('button', { name: 'Canceling…' })).toBeDisabled()
+  await expect(footnote(page)).toHaveText(PHASE_A)
+  await expect(cancelPayment(page)).toBeHidden()
+  await expect(footnote(page)).toHaveText('')
+  await expect(page.getByRole('alert')).toBeHidden()
+  expect(cancelRequests(cloud)).toHaveLength(2)
+})
+
+test('786-16314: a payment the server will not cancel hides Cancel payment and says why', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  scriptOperation(cloud)
+  cloud.reply('POST', CANCEL_PATH, () => ({
+    status: 409,
+    body: {
+      code: 'NOT_CANCELABLE',
+      message: 'billing operation is not waiting on authentication'
+    }
+  }))
+  await payIntoChallenge(page, signIn)
+
+  await cancelPayment(page).click()
+
+  await expect(
+    page.getByText(
+      "This payment can't be canceled right now. Finish verifying, or contact support if it doesn't go through."
+    )
+  ).toBeVisible()
+  await expect(cancelPayment(page)).toBeHidden()
+  await expect(footnote(page)).toHaveText(PHASE_A)
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeHidden()
 })
