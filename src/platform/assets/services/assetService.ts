@@ -492,25 +492,22 @@ function createAssetService() {
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
     const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
     const buckets = await loadModelBuckets()
-    const folderSegments = folder.split('/')
-    const fallbackAssets =
-      folderSegments.length > 1
-        ? buckets
-            .get(folderSegments[0])
-            ?.filter(
-              (asset) =>
-                asset.tags.every(
-                  (tag) =>
-                    !modelTypeMode ||
-                    !tag.startsWith(MODEL_TYPE_TAG_PREFIX) ||
-                    tag === MODEL_TYPE_TAG_PREFIX
-                ) &&
-                asset.tags.some(
-                  (tag) => tag === folder || tag.startsWith(`${folder}/`)
-                )
+    const assets =
+      buckets.get(folder) ??
+      buckets
+        .get(folder.split('/')[0])
+        ?.filter(
+          (asset) =>
+            asset.tags.every(
+              (tag) =>
+                !modelTypeMode ||
+                !tag.startsWith(MODEL_TYPE_TAG_PREFIX) ||
+                tag === MODEL_TYPE_TAG_PREFIX
+            ) &&
+            asset.tags.some(
+              (tag) => tag === folder || tag.startsWith(`${folder}/`)
             )
-        : undefined
-    const assets = buckets.get(folder) ?? fallbackAssets
+        )
 
     return (assets ?? []).map((asset) => ({
       // `loader_path` is the category-relative path the loader widget expects
