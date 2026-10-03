@@ -24,13 +24,20 @@ function applyParentSizedCanvasStyle(
   height: number
 ): void {
   const { style } = canvas
+  const renderedSize = canvas.getBoundingClientRect()
   const previousStyle = autoSizedStyleByCanvas.get(canvas) ?? {}
   const nextStyle: { width?: string; height?: string } = {}
-  if (!style.width || style.width === previousStyle.width) {
+  if (
+    (!style.width && renderedSize.width !== width) ||
+    style.width === previousStyle.width
+  ) {
     style.width = `${width}px`
     nextStyle.width = style.width
   }
-  if (!style.height || style.height === previousStyle.height) {
+  if (
+    (!style.height && renderedSize.height !== height) ||
+    style.height === previousStyle.height
+  ) {
     style.height = `${height}px`
     nextStyle.height = style.height
   }
