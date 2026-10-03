@@ -6,10 +6,28 @@ import { readAgentDiscoveryToken } from './devAgentDiscovery.ts'
 
 // The agent proxy adds the session token, so only the dev server's own pages may use it.
 function isCrossOrigin(req: IncomingMessage): boolean {
-  const origin = req.headers.origin
+  // `Sec-Fetch-Site` sees what `Origin` cannot: Fetch omits `Origin` on a
+  // no-cors GET/HEAD, so a cross-site `<img>`, `<script>` or `<iframe src>`
+  // aimed at an agent route arrives with no `Origin` at all. `none` is a
+  // user-typed navigation or a bookmark, which is the dev's own request.
+  //
+  // An absent `Origin` still cannot be treated as cross-origin, for two
+  // reasons: a *same-origin* GET omits it too — that is what the panel's own
+  // reads are — and a non-browser client sends neither header, so requiring
+  // either one 403s curl, Playwright's `request` fixture, and the black-box
+  // suite below. A browser request that would be cross-origin always announces
+  // itself through one header or the other, so rejecting on what is present
+  // loses nothing.
   const fetchSite = req.headers['sec-fetch-site']
-  if (fetchSite !== undefined && fetchSite !== 'same-origin') return true
-  if (origin === undefined) return fetchSite !== 'same-origin'
+  if (
+    typeof fetchSite === 'string' &&
+    fetchSite !== 'same-origin' &&
+    fetchSite !== 'none'
+  ) {
+    return true
+  }
+  const origin = req.headers.origin
+  if (origin === undefined) return false
   try {
     return new URL(origin).host !== req.headers.host
   } catch {

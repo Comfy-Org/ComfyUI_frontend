@@ -121,11 +121,19 @@ function devServerUrl(server: ViteDevServer): string {
   return `http://127.0.0.1:${address.port}`
 }
 
-/** One same-origin REST call the panel makes, through the dev server. */
+/**
+ * One same-origin REST call the panel makes, through the dev server.
+ *
+ * Deliberately sends neither `Origin` nor `Sec-Fetch-Site` by default. That is
+ * what a non-browser client looks like — curl, Playwright's `request` fixture,
+ * this suite — and also what a browser's same-origin GET looks like as far as
+ * `Origin` goes. Volunteering those headers here would hide a proxy that
+ * rejects every caller which does not send them.
+ */
 async function getThroughProxy(
   server: ViteDevServer,
   path: string,
-  headers: Record<string, string> = { 'Sec-Fetch-Site': 'same-origin' }
+  headers: Record<string, string> = {}
 ): Promise<number> {
   return new Promise((done, fail) => {
     const req = request(
@@ -141,7 +149,10 @@ async function getThroughProxy(
   })
 }
 
-/** The /api/agent/events upgrade the panel's event source opens. */
+/**
+ * The /api/agent/events upgrade the panel's event source opens. A browser
+ * always sends `Origin` on a WebSocket handshake, so this one does too.
+ */
 async function upgradeThroughProxy(server: ViteDevServer): Promise<number> {
   const origin = devServerUrl(server)
   return new Promise((done, fail) => {
@@ -149,7 +160,6 @@ async function upgradeThroughProxy(server: ViteDevServer): Promise<number> {
       headers: {
         Connection: 'Upgrade',
         Origin: origin,
-        'Sec-Fetch-Site': 'same-origin',
         Upgrade: 'websocket',
         'Sec-WebSocket-Key': randomBytes(16).toString('base64'),
         'Sec-WebSocket-Version': '13'
@@ -335,19 +345,59 @@ describe('dev agent proxy across an agent restart', () => {
     }
   )
 
+  // A hostile page's cheapest request carries no `Origin`, because Fetch omits
+  // it on a no-cors GET — a cross-site `<img>` or `<script>` aimed at an agent
+  // route. The attacker cannot read the reply, but the proxy had already
+  // attached the credential and the agent had already acted. `Sec-Fetch-Site`
+  // is what distinguishes that from the two callers that also send no `Origin`.
   it(
-    'rejects requests without same-origin browser metadata',
+    'rejects a request that declares itself cross-site',
     { timeout: 60_000 },
     async () => {
-      const { server } = await bringUpPair('discovery')
+      const { agent, server } = await bringUpPair('discovery')
 
-      expect(await getThroughProxy(server, '/api/agent/threads', {})).toBe(403)
+      expect(
+        await getThroughProxy(server, '/api/agent/threads', {
+          'Sec-Fetch-Site': 'cross-site'
+        })
+      ).toBe(403)
+      expect(
+        await getThroughProxy(server, '/api/agent/threads', {
+          'Sec-Fetch-Site': 'same-site'
+        })
+      ).toBe(403)
       expect(
         await getThroughProxy(server, '/api/agent/threads', {
           origin: devServerUrl(server),
           'Sec-Fetch-Site': 'cross-site'
         })
       ).toBe(403)
+      expect(agent.requestAuthorizations).toEqual([])
+    }
+  )
+
+  // The other side of that rule, and the reason an absent `Origin` cannot
+  // simply be rejected: both of these send no `Origin` at all, and both are
+  // legitimate. Requiring browser metadata 403s curl, Playwright's `request`
+  // fixture, and every call in this suite.
+  it(
+    'serves a caller that sends no browser metadata at all',
+    { timeout: 60_000 },
+    async () => {
+      const { server } = await bringUpPair('discovery')
+
+      expect(await getThroughProxy(server, '/api/agent/threads', {})).toBe(200)
+      expect(
+        await getThroughProxy(server, '/api/agent/threads', {
+          'Sec-Fetch-Site': 'same-origin'
+        })
+      ).toBe(200)
+      // A user-typed navigation or a bookmark.
+      expect(
+        await getThroughProxy(server, '/api/agent/threads', {
+          'Sec-Fetch-Site': 'none'
+        })
+      ).toBe(200)
     }
   )
 })
