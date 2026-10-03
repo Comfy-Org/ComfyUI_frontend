@@ -36,7 +36,7 @@ const FAILURE_REPORT_WINDOW_MS = 60_000
  */
 export type OpsResultView = Pick<
   DocOpsResult,
-  'ok' | 'applied' | 'skipped' | 'code' | 'failed'
+  'ok' | 'seq' | 'applied' | 'skipped' | 'code' | 'failed'
 > &
   Partial<Pick<DocOpsResult, 'workflowId'>>
 

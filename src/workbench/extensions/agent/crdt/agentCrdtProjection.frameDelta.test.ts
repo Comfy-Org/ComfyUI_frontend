@@ -50,7 +50,7 @@ describe('AgentCrdtProjection frame node delta', () => {
 
     expect(projection.applyFrame(second)).toEqual({
       applied: false,
-      nodes: { added: ['4'], removed: ['3'] }
+      nodes: { added: [], removed: ['3'] }
     })
     expect(projection.discardPending(WORKFLOW_ID)).toEqual({
       added: ['4'],

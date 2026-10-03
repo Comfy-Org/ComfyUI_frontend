@@ -12,6 +12,7 @@ import type { Ref } from 'vue'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { parseNodeId } from '@/types/nodeId'
@@ -87,6 +88,25 @@ interface AgentCrdtOutcomeCounters {
   reset: number
   /** A stale/duplicate frame the bridge discarded before it became a `doc_update` event (`doc_stale`). */
   dropped: number
+}
+
+function reportAgentProjection(
+  update: Pick<ClassifiedDocUpdate, 'actor' | 'opIds' | 'seq'>,
+  nodes: DocNodeDelta,
+  failureCount: number,
+  applied: boolean
+): void {
+  if (update.actor !== undefined && !update.actor.startsWith('agent:')) return
+  const opIds = update.opIds?.filter((id) => id.length > 0) ?? []
+  useTelemetry()?.trackAgentGraphProjection({
+    op_id: opIds[0] ?? null,
+    op_count: opIds.length,
+    sequence: update.seq,
+    stage: applied ? 'applied' : 'received_no_graph',
+    added_count: nodes.added.length,
+    removed_count: nodes.removed.length,
+    apply_failure_count: failureCount
+  })
 }
 
 function liveAddedNodeIds(
@@ -398,9 +418,18 @@ function startAgentCrdtFollower(
 
     const applied = new Set(outcome.result.applied)
     const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
-    reportMaterialized(
-      workflowId,
-      projection.revertRejected(workflowId, rejected)
+    const projectionOutcome = projection.revertRejected(workflowId, rejected)
+    if (!projectionOutcome.applied) return
+    reportMaterialized(workflowId, projectionOutcome.createdNodeIds)
+    reportAgentProjection(
+      {
+        actor: 'agent:revert',
+        opIds: rejected.map((op) => op.op_id),
+        seq: outcome.result.seq ?? bridge.lastSequence
+      },
+      projectionOutcome.nodes,
+      projectionOutcome.failureCount,
+      true
     )
   }
 
@@ -435,6 +464,7 @@ function startAgentCrdtFollower(
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
+  const pendingProjectionUpdates = new Map<string, ClassifiedDocUpdate>()
   const reportMaterialized = (
     workflowId: string,
     materialized: readonly NodeId[]
@@ -448,7 +478,14 @@ function startAgentCrdtFollower(
     )
   }
   const applyCollected = (workflowId: string): void => {
-    reportMaterialized(workflowId, projection.applyCollected(workflowId))
+    const outcome = projection.applyCollected(workflowId)
+    if (!outcome.applied) return
+    reportMaterialized(workflowId, outcome.createdNodeIds)
+    const update = pendingProjectionUpdates.get(workflowId)
+    if (update) {
+      reportAgentProjection(update, outcome.nodes, outcome.failureCount, true)
+      pendingProjectionUpdates.delete(workflowId)
+    }
   }
   const incrementOutcome = (
     key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
@@ -468,18 +505,25 @@ function startAgentCrdtFollower(
     !update.catchUp && update.actor === ownActor()
   const applyFrame = (
     update: ClassifiedDocUpdate
-  ): { created: NodeId[]; nodes: DocNodeDelta } => {
+  ): {
+    applied: boolean
+    created: NodeId[]
+    nodes: DocNodeDelta
+    failureCount: number
+  } => {
     if (isOwnEcho(update) && getGraph() !== null) {
       const nodes = projection.discardPending(update.workflowId)
       incrementOutcome('skipped')
-      return { created: [], nodes }
+      return { applied: false, created: [], nodes, failureCount: 0 }
     }
     const outcome = projection.applyFrame(update)
     incrementOutcome(outcome.applied ? 'applied' : 'skipped')
     if (outcome.applied && !update.catchUp) incrementOutcome('appliedLive')
     return {
+      applied: outcome.applied,
       created: outcome.applied ? outcome.createdNodeIds : [],
-      nodes: outcome.nodes
+      nodes: outcome.nodes,
+      failureCount: outcome.applied ? outcome.failureCount : 0
     }
   }
 
@@ -520,7 +564,11 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const { created, nodes } = applyFrame(update)
+    const { applied, created, nodes, failureCount } = applyFrame(update)
+    reportAgentProjection(update, nodes, failureCount, applied)
+    if (!applied && getGraph() === null)
+      pendingProjectionUpdates.set(update.workflowId, update)
+    else pendingProjectionUpdates.delete(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -559,6 +607,7 @@ function startAgentCrdtFollower(
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
     projection.replaceOnNextFrame(detail.workflowId)
+    pendingProjectionUpdates.delete(detail.workflowId)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
@@ -588,6 +637,7 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       projection.discardPending(workflowId)
+      pendingProjectionUpdates.delete(workflowId)
       projection.bind(workflowId, bridge.follower)
     }
   }
@@ -685,7 +735,10 @@ function startAgentCrdtFollower(
   const rebindProjection = (next: string | null): void => {
     const current = subscribedWorkflowId.value
     if (current === next) return
-    if (current !== null) projection.unbind(current)
+    if (current !== null) {
+      projection.unbind(current)
+      pendingProjectionUpdates.delete(current)
+    }
     if (next !== null) projection.bind(next, bridge.follower)
     subscribedWorkflowId.value = next
   }

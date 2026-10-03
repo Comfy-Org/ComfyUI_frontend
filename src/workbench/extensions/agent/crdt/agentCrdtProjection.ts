@@ -13,6 +13,7 @@ import type {
   ApplyMode,
   FrameChanges,
   LiveGraphApplierDeps,
+  NodeChange,
   RemoteApplyContext
 } from './liveGraphApplier'
 import { LocalWidgetWrites } from './localWidgetWrites'
@@ -21,6 +22,7 @@ import { changesForRejectedOps } from './rejectedOpChanges'
 interface BoundTarget {
   follower: FollowerDoc
   collector: DocChangeCollector
+  reportedPendingNodes: Map<string, NodeChange>
 }
 
 /** Document node entries one frame added and removed. */
@@ -31,7 +33,12 @@ export interface DocNodeDelta {
 
 export type FrameOutcome =
   | { applied: false; nodes: DocNodeDelta }
-  | { applied: true; nodes: DocNodeDelta; createdNodeIds: NodeId[] }
+  | {
+      applied: true
+      nodes: DocNodeDelta
+      createdNodeIds: NodeId[]
+      failureCount: number
+    }
 
 const EMPTY_DELTA: DocNodeDelta = { added: [], removed: [] }
 
@@ -43,6 +50,16 @@ function docNodeDelta(changes: FrameChanges): DocNodeDelta {
     else if (change === 'delete') removed.push(id)
   }
   return { added, removed }
+}
+
+function pendingNodeDelta(target: BoundTarget, changes: FrameChanges) {
+  const frameNodes = new Map(
+    [...changes.nodes].filter(
+      ([id, change]) => target.reportedPendingNodes.get(id) !== change
+    )
+  )
+  target.reportedPendingNodes = new Map(changes.nodes)
+  return docNodeDelta({ ...changes, nodes: frameNodes })
 }
 
 /**
@@ -96,7 +113,8 @@ export class AgentCrdtProjection {
     this.unbind(workflowId)
     this.targets.set(workflowId, {
       follower,
-      collector: new DocChangeCollector(follower.doc)
+      collector: new DocChangeCollector(follower.doc),
+      reportedPendingNodes: new Map()
     })
   }
 
@@ -114,10 +132,13 @@ export class AgentCrdtProjection {
   applyFrame(update: DocUpdate): FrameOutcome {
     const target = this.targets.get(update.workflowId)
     if (!target) return { applied: false, nodes: EMPTY_DELTA }
-    if (!this.getGraph())
-      return { applied: false, nodes: docNodeDelta(target.collector.peek()) }
+    if (!this.getGraph()) {
+      const changes = target.collector.peek()
+      return { applied: false, nodes: pendingNodeDelta(target, changes) }
+    }
     const changes = target.collector.take()
-    const createdNodeIds = this.apply(
+    target.reportedPendingNodes.clear()
+    const { createdNodeIds, failureCount } = this.apply(
       update.workflowId,
       target,
       changes,
@@ -127,40 +148,66 @@ export class AgentCrdtProjection {
       },
       this.takeApplyMode(update.workflowId)
     )
-    return { applied: true, nodes: docNodeDelta(changes), createdNodeIds }
+    return {
+      applied: true,
+      nodes: docNodeDelta(changes),
+      createdNodeIds,
+      failureCount
+    }
   }
 
   /**
    * Applies the changes collected while no graph could take them: frames
    * delivered before the graph loaded, or while its tab was inactive.
-   * @returns ids of nodes created live on this pass.
+   * @returns the apply result for the whole collected batch.
    */
-  applyCollected(workflowId: string): NodeId[] {
+  applyCollected(workflowId: string): FrameOutcome {
     const target = this.targets.get(workflowId)
-    if (!target || !this.getGraph()) return []
-    return this.apply(
+    if (!target || !this.getGraph())
+      return { applied: false, nodes: EMPTY_DELTA }
+    target.reportedPendingNodes.clear()
+    const changes = target.collector.take()
+    const { createdNodeIds, failureCount } = this.apply(
       workflowId,
       target,
-      target.collector.take(),
+      changes,
       { actor: 'agent-collected', opIds: [] },
       this.takeApplyMode(workflowId)
     )
+    return {
+      applied: true,
+      nodes: docNodeDelta(changes),
+      createdNodeIds,
+      failureCount
+    }
   }
 
   /**
    * Puts the registers a rejected human batch claimed back the way the
    * document has them. Only those registers are touched: the rejection says
    * nothing about the rest of the live graph.
-   * @returns ids of nodes created live on this pass.
+   * @returns the apply result for the rejected operations.
    */
-  revertRejected(workflowId: string, ops: readonly Op[]): NodeId[] {
+  revertRejected(workflowId: string, ops: readonly Op[]): FrameOutcome {
     const target = this.targets.get(workflowId)
-    if (!target || ops.length === 0 || !this.getGraph()) return []
+    if (!target || ops.length === 0 || !this.getGraph())
+      return { applied: false, nodes: EMPTY_DELTA }
     const changes = changesForRejectedOps(target.follower.doc, ops)
-    return this.apply(workflowId, target, changes, {
-      actor: 'agent-revert',
-      opIds: ops.map((op) => op.op_id)
-    })
+    const { createdNodeIds, failureCount } = this.apply(
+      workflowId,
+      target,
+      changes,
+      {
+        actor: 'agent:revert',
+        opIds: ops.map((op) => op.op_id)
+      }
+    )
+    return {
+      applied: true,
+      nodes: docNodeDelta(changes),
+      createdNodeIds,
+      failureCount
+    }
   }
 
   /**
@@ -172,6 +219,7 @@ export class AgentCrdtProjection {
    */
   replaceOnNextFrame(workflowId: string): void {
     this.targets.get(workflowId)?.collector.discard()
+    this.targets.get(workflowId)?.reportedPendingNodes.clear()
     this.replacedLineages.add(workflowId)
     this.localWrites.clear()
   }
@@ -189,6 +237,7 @@ export class AgentCrdtProjection {
     const target = this.targets.get(workflowId)
     if (!target) return EMPTY_DELTA
     const changes = target.collector.take()
+    target.reportedPendingNodes.clear()
     this.localWrites.settleAgainst((nodeId, widget) =>
       readDocWidgetValue(target.follower.doc, nodeId, widget)
     )
@@ -208,19 +257,19 @@ export class AgentCrdtProjection {
     changes: FrameChanges,
     context: RemoteApplyContext,
     mode: ApplyMode = 'merge'
-  ): NodeId[] {
-    const { createdNodeIds } = this.applier.applyChanges(
+  ): { createdNodeIds: NodeId[]; failureCount: number } {
+    const result = this.applier.applyChanges(
       target.follower.doc,
       changes,
       context,
       mode
     )
-    if (createdNodeIds.length > 0) {
+    if (result.createdNodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
         workflowId,
-        nodeIds: createdNodeIds
+        nodeIds: result.createdNodeIds
       })
     }
-    return createdNodeIds
+    return result
   }
 }
