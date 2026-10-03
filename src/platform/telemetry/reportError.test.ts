@@ -91,54 +91,115 @@ describe('reportError', () => {
     const cause = new Error('Connection closed')
     const error = Object.freeze(new TypeError('Failed to fetch', { cause }))
     const originalStack = error.stack
-    const errorTypes = [
-      'vite_preload_error',
-      'resource_load_error',
-      'vite_preload_error'
-    ]
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'vite_preload_error',
+      tags: { source: 'asset' },
+      context: { url: '/assets/app.js' }
+    })
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'resource_load_error',
+      tags: { source: 'asset' },
+      context: { url: '/assets/app.js' }
+    })
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'vite_preload_error',
+      tags: { source: 'asset' },
+      context: { url: '/assets/app.js' }
+    })
 
-    for (const errorType of errorTypes) {
-      reportError(error, {
-        surface: 'platform',
-        errorType,
-        tags: { source: 'asset' },
-        context: { url: '/assets/app.js' }
-      })
-    }
-
-    expect(captureException).toHaveBeenCalledTimes(3)
-    expect(addError).toHaveBeenCalledTimes(3)
-    const fingerprints = captureException.mock.calls.map(
-      ([, options]) => options.fingerprint
-    )
-    expect(fingerprints[0]).not.toEqual(fingerprints[1])
-    expect(fingerprints[0]).toEqual(fingerprints[2])
-    expect(fingerprints.every((value) => value.includes('{{ default }}'))).toBe(
-      true
-    )
-
-    for (const [index, errorType] of errorTypes.entries()) {
-      const [sentryError, sentryOptions] = captureException.mock.calls[index]
-      expect(sentryError).toBe(error)
-      expect(sentryOptions).toMatchObject({
-        tags: { error_type: errorType, surface: 'platform', source: 'asset' },
+    expect(
+      captureException.mock.calls.map(([sentryError, options]) => ({
+        sameError: sentryError === error,
+        ...options
+      }))
+    ).toEqual([
+      {
+        sameError: true,
+        fingerprint: ['{{ default }}', 'vite_preload_error'],
+        tags: {
+          error_type: 'vite_preload_error',
+          surface: 'platform',
+          source: 'asset'
+        },
         extra: { url: '/assets/app.js' }
-      })
-      const [datadogError, datadogContext] = addError.mock.calls[index]
-      expect(datadogError).not.toBe(error)
-      expect(datadogError).toMatchObject({
-        name: errorType,
-        message: error.message,
-        stack: originalStack,
-        cause
-      })
-      expect(datadogContext).toMatchObject({
-        error_type: errorType,
-        surface: 'platform',
-        source: 'asset',
-        url: '/assets/app.js'
-      })
-    }
+      },
+      {
+        sameError: true,
+        fingerprint: ['{{ default }}', 'resource_load_error'],
+        tags: {
+          error_type: 'resource_load_error',
+          surface: 'platform',
+          source: 'asset'
+        },
+        extra: { url: '/assets/app.js' }
+      },
+      {
+        sameError: true,
+        fingerprint: ['{{ default }}', 'vite_preload_error'],
+        tags: {
+          error_type: 'vite_preload_error',
+          surface: 'platform',
+          source: 'asset'
+        },
+        extra: { url: '/assets/app.js' }
+      }
+    ])
+    expect(
+      addError.mock.calls.map(([datadogError, context]) => ({
+        copied: datadogError !== error,
+        error: datadogError,
+        context
+      }))
+    ).toEqual([
+      {
+        copied: true,
+        error: expect.objectContaining({
+          name: 'vite_preload_error',
+          message: error.message,
+          stack: originalStack,
+          cause
+        }),
+        context: {
+          error_type: 'vite_preload_error',
+          surface: 'platform',
+          source: 'asset',
+          url: '/assets/app.js'
+        }
+      },
+      {
+        copied: true,
+        error: expect.objectContaining({
+          name: 'resource_load_error',
+          message: error.message,
+          stack: originalStack,
+          cause
+        }),
+        context: {
+          error_type: 'resource_load_error',
+          surface: 'platform',
+          source: 'asset',
+          url: '/assets/app.js'
+        }
+      },
+      {
+        copied: true,
+        error: expect.objectContaining({
+          name: 'vite_preload_error',
+          message: error.message,
+          stack: originalStack,
+          cause
+        }),
+        context: {
+          error_type: 'vite_preload_error',
+          surface: 'platform',
+          source: 'asset',
+          url: '/assets/app.js'
+        }
+      }
+    ])
     expect(error.name).toBe('TypeError')
     expect(error.stack).toBe(originalStack)
     expect(error.cause).toBe(cause)

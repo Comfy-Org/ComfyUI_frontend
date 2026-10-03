@@ -76,17 +76,31 @@ describe('asset load error reporting', () => {
       )
 
       expect(mockReportError).toHaveBeenCalledTimes(2)
-      for (const [error, options] of mockReportError.mock.calls) {
-        expect(error.message).toBe(
-          'Resource load failed: https://apis.google.com/js/api.js'
-        )
-        expect(options).toEqual({
-          surface: 'auth',
-          errorType: 'error_loading_auth_sdk',
-          tags: { tag_name: 'script' },
-          context: { url: 'https://apis.google.com/js/api.js' }
-        })
-      }
+      expect(
+        mockReportError.mock.calls.map(([error, options]) => ({
+          message: error.message,
+          options
+        }))
+      ).toEqual([
+        {
+          message: 'Resource load failed: https://apis.google.com/js/api.js',
+          options: {
+            surface: 'auth',
+            errorType: 'error_loading_auth_sdk',
+            tags: { tag_name: 'script' },
+            context: { url: 'https://apis.google.com/js/api.js' }
+          }
+        },
+        {
+          message: 'Resource load failed: https://apis.google.com/js/api.js',
+          options: {
+            surface: 'auth',
+            errorType: 'error_loading_auth_sdk',
+            tags: { tag_name: 'script' },
+            context: { url: 'https://apis.google.com/js/api.js' }
+          }
+        }
+      ])
       expect(consoleError).not.toHaveBeenCalled()
     })
 
