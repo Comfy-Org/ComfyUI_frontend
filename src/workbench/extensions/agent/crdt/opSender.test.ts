@@ -1663,9 +1663,10 @@ describe('createOpSender', () => {
       expect(settled).toHaveLength(0)
     })
 
-    it('pendingOps lists the in-flight and queued batches with their workflow, in order, until they settle', () => {
+    it('pendingOps lists the in-flight, queued, and still-open batches with their workflow, in order, until they settle', () => {
       sender.enqueue([addNode(1)])
       sender.enqueue([addNode(2)])
+      sender.admit([addNode(3)])
 
       expect(sender.pendingOps()).toEqual([
         {
@@ -1675,9 +1676,15 @@ describe('createOpSender', () => {
         {
           workflowId: WORKFLOW,
           ops: [expect.objectContaining({ op: 'add_node', node_id: 2 })]
+        },
+        {
+          workflowId: WORKFLOW,
+          ops: [expect.objectContaining({ op: 'add_node', node_id: 3 })]
         }
       ])
 
+      sender.flush()
+      ackInFlight()
       ackInFlight()
       ackInFlight()
 

@@ -140,12 +140,29 @@ describe('chunkWireOps', () => {
 })
 
 describe('measureWireOp', () => {
-  it('reports the UTF-8 wire size of the serialized op', () => {
-    const [op] = mintWireOps([addNode(1)], MINT)
+  it('reports the UTF-8 wire size, not the UTF-16 length, of the op', () => {
+    const threeByteChars = '日本語'
+    const [op] = mintWireOps(
+      [{ op: 'set_widget', node_id: 1, widget: 'text', value: threeByteChars }],
+      MINT
+    )
+    const json = JSON.stringify(op)
+    const extraBytesPerChar = 2
 
     expect(measureWireOp(op)).toEqual({
       op,
-      bytes: new TextEncoder().encode(JSON.stringify(op)).length
+      bytes: json.length + threeByteChars.length * extraBytesPerChar
+    })
+  })
+
+  it('accepts an op whose toJSON still yields a wire object with its op_id', () => {
+    const [op] = mintWireOps([addNode(1)], MINT)
+    const wire = { ...op }
+    Object.assign(op, { toJSON: () => wire })
+
+    expect(measureWireOp(op)).toEqual({
+      op,
+      bytes: JSON.stringify(wire).length
     })
   })
 
