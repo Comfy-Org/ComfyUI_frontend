@@ -644,6 +644,52 @@ describe('billingOperationStore', () => {
       ])
     })
 
+    it.for([
+      {
+        name: 'a recovered subscription that succeeds',
+        type: 'subscription',
+        entryFlow: 'initial_subscription',
+        status: 'succeeded'
+      },
+      {
+        name: 'a recovered top-up that fails',
+        type: 'topup',
+        entryFlow: 'topup',
+        status: 'failed'
+      }
+    ] as const)(
+      'reports the source of the bound journey on the terminal of $name',
+      async ({ type, entryFlow, status }) => {
+        resolveCheckoutJourney({
+          actorUid: 'user-1',
+          workspaceId: 'workspace-1',
+          entryFlow,
+          entrySource: 'pricing',
+          paymentIntentSource: 'upgrade_to_add_credits',
+          assignment: { status: 'resolved', arm: 'treatment' }
+        })
+        bindOperationToCheckoutJourney('op-recovered')
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-recovered',
+          status,
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-recovered', type)
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            operation: 'operation',
+            stage: status,
+            billing_op_id: 'op-recovered',
+            payment_intent_source: 'upgrade_to_add_credits'
+          })
+        )
+      }
+    )
+
     it('closes both terminal streams for an initiated subscription operation', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-initiated',
