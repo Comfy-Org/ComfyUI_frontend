@@ -10,7 +10,7 @@ import {
   checkRouterProviderDrift,
   fetchText,
   parseCoverageTable
-} from './routerProviderDrift'
+} from './router-provider-drift'
 
 const DOCS_ORIGIN = 'https://docs.comfy.org'
 
