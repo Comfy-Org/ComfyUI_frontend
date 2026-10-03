@@ -820,11 +820,11 @@ describe('useBillingSdkStore subscription commands', () => {
   })
 
   it.for([
-    { page: 'opened', window: {} as Window, reported: [['op-1', 'new_tab']] },
-    { page: 'had blocked', window: null, reported: [] }
+    { page: 'opened', opened: window, reported: [['op-1', 'new_tab']] },
+    { page: 'had blocked', opened: null, reported: [] }
   ])(
     'reports to the lifecycle a hosted page it $page in a new tab',
-    ({ window: opened, reported }) => {
+    ({ opened, reported }) => {
       vi.spyOn(window, 'open').mockReturnValue(opened)
       useBillingSdkStore()
 
