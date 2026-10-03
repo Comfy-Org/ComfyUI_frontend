@@ -93,6 +93,67 @@ describe('LGraphNode configure named values shadow diff', () => {
     ).not.toHaveBeenCalled()
   })
 
+  it('does not treat a name-keyed record without a length as a positional shadow', () => {
+    LiteGraph.namedValuesRestore = true
+    const info = agreeingInfo()
+    Reflect.set(info, 'widgets_values', { steps: 999, seed: 888 })
+    let configuredValues: unknown
+    node.onConfigure = (configured) => {
+      configuredValues = Reflect.get(configured, 'widgets_values')
+    }
+
+    node.configure(info)
+
+    expect(node.widgets!.map((w) => w.value)).toStrictEqual([30, 12345])
+    expect(configuredValues).toEqual({ steps: 999, seed: 888 })
+    expect(
+      useTelemetry()?.trackNamedValuesShadowDiffMismatch
+    ).not.toHaveBeenCalled()
+  })
+
+  it('reports a name-keyed record that declares a length, because configure() reads it positionally', () => {
+    LiteGraph.namedValuesRestore = true
+    const info = agreeingInfo()
+    Reflect.set(info, 'widgets_values', {
+      steps: 30,
+      seed: 12345,
+      length: 2
+    })
+
+    node.configure(info)
+
+    expect(node.widgets!.map((w) => w.value)).toStrictEqual([30, 12345])
+    expect(
+      useTelemetry()?.trackNamedValuesShadowDiffMismatch
+    ).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        mismatch_widget_count: 2,
+        checked_widget_count: 2
+      })
+    )
+  })
+
+  it('still checks a non-iterable array-like positional shadow', () => {
+    LiteGraph.namedValuesRestore = true
+    const info = mismatchInfo()
+    Reflect.set(info, 'widgets_values', {
+      0: 30,
+      1: 12345,
+      length: 2
+    })
+
+    node.configure(info)
+
+    expect(
+      useTelemetry()?.trackNamedValuesShadowDiffMismatch
+    ).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        mismatch_widget_count: 1,
+        checked_widget_count: 2
+      })
+    )
+  })
+
   it('reports has_on_serialize_hook and has_on_configure_hook as false with no hooks set', () => {
     LiteGraph.namedValuesRestore = true
 

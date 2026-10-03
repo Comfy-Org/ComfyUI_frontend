@@ -135,6 +135,23 @@ describe('LiveGraphApplier', () => {
     expect(graph.state.lastLinkId).toBeGreaterThanOrEqual(7)
   })
 
+  it('hands configure both legacy positional and named document widget values', () => {
+    const configure = vi.spyOn(TestSource.prototype, 'configure')
+    const { applyCollected } = setup({
+      nodes: [sourceNode(1, { widgets_values: { steps: 35 } })],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(configure).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        widgets_values: [35],
+        widgets_values_named: { steps: 35 }
+      })
+    )
+  })
+
   it.for([
     { label: 'undersized', size: [10, 10] },
     { label: 'absent', size: undefined }
