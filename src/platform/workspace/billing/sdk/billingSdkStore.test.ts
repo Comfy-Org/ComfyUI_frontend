@@ -1108,6 +1108,34 @@ describe('useBillingSdkStore telemetry ownership', () => {
     }
   )
 
+  it.for(['topup', 'subscription'] as const)(
+    'reports the payment friction of a %s this tab issued, which no dialog reports',
+    (kind) => {
+      useBillingSdkStore()
+
+      options.onTelemetry({
+        name: 'billing.checkout.challenge_failed',
+        billing_op_id: 'op-1',
+        operation_type: kind,
+        presentation: 'embedded',
+        resumed: false,
+        decline_reason: 'authentication_failed'
+      })
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'checkout',
+        billing_client: 'sdk',
+        stage: 'challenge_failed',
+        outcome: 'pending',
+        operation_type: kind,
+        billing_op_id: 'op-1',
+        presentation: 'embedded',
+        resumed: false,
+        decline_reason: 'authentication_failed'
+      })
+    }
+  )
+
   it('reports a started that arrives once the announced command has settled', async () => {
     const store = useBillingSdkStore()
     vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(

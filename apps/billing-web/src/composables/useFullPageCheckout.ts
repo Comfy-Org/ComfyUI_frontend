@@ -11,6 +11,7 @@ import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import type {
   BillingOperationState,
   BillingResult,
+  CancelOperationResult,
   CapabilitiesSnapshot,
   SubscribeInput,
   SubscriptionCommandResult,
@@ -32,7 +33,9 @@ import {
   RESOLVING,
   UNREADABLE_LINK,
   awaitingServer,
+  cancelTarget,
   challengeToReopen,
+  isCanceling,
   isParked,
   needsConsent,
   railAcceptsPay,
@@ -78,6 +81,10 @@ export type PayChoice =
   | undefined
 
 const CARD_METHOD_TYPE = 'card'
+
+/** How often, and how many times, a cancel the server has not settled is asked again. */
+const CANCEL_REASK_MS = OPERATION_POLL_TIMING.initialMs
+const CANCEL_ASKS = 10
 
 function selectedRailOf(choice: PayChoice) {
   if (choice === undefined) return 'on_file'
@@ -176,8 +183,8 @@ export function useFullPageCheckout() {
   const { entry, error: unreadableLink } = useBillingEntry()
   const { session } = useBillingWebSession()
   const billedWorkspace = useBilledWorkspace()
-  const { capabilities, lifecycle, plans, status } = useBillingClient<
-    'capabilities' | 'lifecycle' | 'plans' | 'status'
+  const { capabilities, commands, lifecycle, plans, status } = useBillingClient<
+    'capabilities' | 'commands' | 'lifecycle' | 'plans' | 'status'
   >(undefined)
   const { preview, quote } = usePreviewSubscribe()
   const saved = usePaymentMethods({ immediate: false })
@@ -448,7 +455,9 @@ export function useFullPageCheckout() {
       ? undefined
       : createOperationChannel(scope.uid, scope.workspace.id)
   const unsubscribe = channel?.subscribe(() => void reconcile())
+  let disposed = false
   tryOnScopeDispose(() => {
+    disposed = true
     unsubscribe?.()
     channel?.close()
   })
@@ -681,6 +690,63 @@ export function useFullPageCheckout() {
   }
 
   let payGeneration = 0
+  let canceling: Promise<void> | undefined
+
+  /**
+   * One cancel per challenge: a click while one is unanswered sends nothing.
+   * A cancel the server has not settled yet is asked again, which it answers
+   * the same way until it settles, for as long as the page still waits on
+   * it; one that never settles, like a refusal, re-reads the payment and
+   * follows it from there.
+   */
+  async function cancelPayment() {
+    const operationId = cancelTarget(page.value)
+    if (operationId === undefined) return
+    dispatch({ type: 'cancelRequested' })
+    canceling = askToCancel(operationId)
+    await canceling
+    canceling = undefined
+  }
+
+  const askOnce = (operationId: string) =>
+    commands.cancelOperation(operationId).catch(
+      (): CancelOperationResult => ({
+        status: 'error',
+        code: 'REQUEST_FAILED'
+      })
+    )
+
+  async function askToCancel(operationId: string) {
+    let answer = await askOnce(operationId)
+    for (let asked = 1; asksAgain(answer, asked); asked++) {
+      await new Promise((resolve) => setTimeout(resolve, CANCEL_REASK_MS))
+      if (disposed) return
+      answer = await askOnce(operationId)
+    }
+    if (disposed) return
+    if (answer.status === 'canceled' || isCanceling(page.value))
+      settleCancel(operationId, answer)
+  }
+
+  const asksAgain = (answer: CancelOperationResult, asked: number) =>
+    !disposed &&
+    answer.status === 'cancel_requested' &&
+    isCanceling(page.value) &&
+    asked < CANCEL_ASKS
+
+  function settleCancel(operationId: string, answer: CancelOperationResult) {
+    if (answer.status === 'canceled') {
+      payGeneration++
+      dispatch({ type: 'paymentCanceled', operationId })
+      return
+    }
+    dispatch(
+      answer.status === 'not_canceled'
+        ? { type: 'cancelRefused', code: answer.code }
+        : { type: 'cancelFailed' }
+    )
+    void reconcile()
+  }
 
   /**
    * A code still typed in the field is priced first, and this click ends
@@ -717,6 +783,7 @@ export function useFullPageCheckout() {
     } finally {
       journey.submitSettled(press)
     }
+    await canceling
     if (mine !== payGeneration) return
     await settle(payVerdictOf(result), planned)
   }
@@ -746,6 +813,7 @@ export function useFullPageCheckout() {
     promoLive,
     pay,
     reopening: shallowReadonly(reopening),
-    continueVerification: checkout.continueVerification
+    continueVerification: checkout.continueVerification,
+    cancelPayment: () => void cancelPayment()
   }
 }

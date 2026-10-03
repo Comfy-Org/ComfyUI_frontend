@@ -149,6 +149,7 @@ export function fakeBillingSdk() {
       previewSubscribe: vi.fn(),
       resubscribe: vi.fn(),
       cancelSubscription: vi.fn(),
+      cancelOperation: vi.fn(),
       openPaymentPortal: vi.fn()
     },
     driveChallenge: vi.fn(async () => 'completed' as const),
