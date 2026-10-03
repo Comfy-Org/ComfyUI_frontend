@@ -272,7 +272,6 @@ export const staleCanvasPrompt = expectedPrompt(
   STALE_REF_IMAGE_SIZE
 )
 
-/** What `graphToPrompt()` must emit once the host's catch-up has landed. */
 export const hostPrompt = expectedPrompt(
   HOST_SOURCE_VALUES,
   HOST_ORIGIN_SLOT,
