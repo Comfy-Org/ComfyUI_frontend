@@ -673,6 +673,34 @@ describe('ComfyApp', () => {
         useCanvasScheduler().flush()
       }
 
+      it('restores a valid saved camera after the canvas becomes visible', async () => {
+        const ds = createTestDragAndScale()
+        Reflect.set(mockCanvas, 'ds', ds)
+        Reflect.set(mockCanvas, 'viewport', [0, 0, 800, 600])
+        Reflect.set(mockCanvas, 'visible_area', ds.visible_area)
+        mockSettingStore.get.mockImplementation((key: string) =>
+          key === 'Comfy.EnableWorkflowViewRestore' ? true : undefined
+        )
+        const graphData = createWorkflowGraphData()
+        graphData.extra = { ds: { offset: [-120, 42], scale: 0.5 } }
+
+        await app.loadGraphData(graphData, true, true)
+        app.rootGraph._nodes.push(
+          createMockNode({
+            pos: [0, 0],
+            getBounding: () =>
+              new Float64Array([-1_000_000, -1_000_000, 2_000_000, 2_000_000])
+          })
+        )
+        expect(ds.offset).not.toEqual([-120, 42])
+
+        revealCanvas()
+
+        expect(ds.offset).toEqual([-120, 42])
+        expect(ds.scale).toBe(0.5)
+        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+      })
+
       it('survives a same-workflow undo', async () => {
         const workflow = new ComfyWorkflow({
           path: 'workflows/camera.json',
