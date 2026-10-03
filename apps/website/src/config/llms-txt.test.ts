@@ -9,10 +9,10 @@ import {
   isLlmsTxtLinkLine,
   normalizePath,
   parseLlmsTxtLinks
-} from '../lib/llms-txt'
+} from '@/lib/llms-txt'
 import { isExcludedFromSitemap } from './indexing'
 import { getRoutes } from './routes'
-import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
+import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { appPagePaths } from './workshop-app-content'
 import { workshopPagePaths } from './workshop-page-content'
 

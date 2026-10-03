@@ -2,8 +2,8 @@ import { renameSync, rmSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
-import { fetchFeatureFlagsForBuild } from '../src/utils/featureFlags'
-import { reportFeatureFlagsOutcome } from '../src/utils/featureFlags.ci'
+import { fetchFeatureFlagsForBuild } from '@/utils/featureFlags'
+import { reportFeatureFlagsOutcome } from '@/utils/featureFlags.ci'
 
 const snapshotPath = fileURLToPath(
   new URL('../src/data/feature-flags.snapshot.json', import.meta.url)

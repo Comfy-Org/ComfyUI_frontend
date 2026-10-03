@@ -3,11 +3,11 @@ import { copyFile, mkdir, readFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
-import { modelCases } from '../acceptance/cases'
-import { useAdvancedInputs, useOwnInputs } from '../acceptance/fixtures'
+import { modelCases } from '@website/acceptance/cases'
+import { useAdvancedInputs, useOwnInputs } from '@website/acceptance/fixtures'
 import { signIn } from './fixtures/buyCredits'
 import { test } from './fixtures/modelsAccount'
-import { hubModelHref } from '../src/config/hub-models'
+import { hubModelHref } from '@/config/hub-models'
 
 test.beforeEach(async ({ context, page, modelsAccount }, testInfo) => {
   await context.route(

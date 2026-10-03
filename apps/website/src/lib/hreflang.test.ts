@@ -4,11 +4,11 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { isNoindexPathname } from '../config/indexing'
-import type { Locale } from '../config/locales'
-import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
-import { astroRedirects } from '../config/redirects'
-import { routeOf } from '../utils/hreflangRoutes'
+import { isNoindexPathname } from '@/config/indexing'
+import type { Locale } from '@/config/locales'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '@/config/locales'
+import { astroRedirects } from '@/config/redirects'
+import { routeOf } from '@/utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
   hreflangAlternates,

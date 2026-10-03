@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import { z } from 'zod'
 
-import { siteRedirects, toVercelRedirects } from '../src/config/redirects'
+import { siteRedirects, toVercelRedirects } from '@/config/redirects'
 
 const vercelJsonPath = join(
   dirname(fileURLToPath(import.meta.url)),

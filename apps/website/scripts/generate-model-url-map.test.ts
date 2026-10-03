@@ -10,14 +10,14 @@ import {
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
-import { modelAliasUrls, modelPageUrls } from '../src/config/model-urls'
-import { siteRedirects } from '../src/config/redirects'
+import { modelAliasUrls, modelPageUrls } from '@/config/model-urls'
+import { siteRedirects } from '@/config/redirects'
 import {
   routerModelSlugAliases,
   workshopModels
-} from '../src/config/workshop-browse-content'
-import { modelsBuildRoutes } from '../src/integrations/workshop-release-gate'
-import { PROVIDER_NAMES } from '../src/lib/workshop/provider-name'
+} from '@/config/workshop-browse-content'
+import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
+import { PROVIDER_NAMES } from '@/lib/workshop/provider-name'
 import {
   MODEL_URL_SLUG,
   MODEL_URL_TABLE,

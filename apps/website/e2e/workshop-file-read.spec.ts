@@ -3,9 +3,9 @@ import { appendFile, copyFile, mkdir } from 'node:fs/promises'
 
 import { expect } from '@playwright/test'
 
-import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
+import { workshopModelAvailabilitySchema } from '@/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
-import { hubModelHref } from '../src/config/hub-models'
+import { hubModelHref } from '@/config/hub-models'
 
 const scenarios = [
   {

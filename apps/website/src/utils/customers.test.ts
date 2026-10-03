@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { customerStorySchema } from '../content/customers.schema'
+import { customerStorySchema } from '@/content/customers.schema'
 import { nextStory, sortStories, storySlug, toCardProps } from './customers'
 
 const validFrontmatter = {

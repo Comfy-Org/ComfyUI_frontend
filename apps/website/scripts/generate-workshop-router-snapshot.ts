@@ -5,8 +5,8 @@ import { z } from 'astro/zod'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema
-} from '../src/config/workshop-router-openapi'
-import { validatorFor } from '../src/config/workshop-json-schema'
+} from '@/config/workshop-router-openapi'
+import { validatorFor } from '@/config/workshop-json-schema'
 import { isDirectExecution } from './script-entry-point'
 
 export function packRouterSchemas(

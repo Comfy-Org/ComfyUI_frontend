@@ -5,11 +5,11 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [vue()],
   resolve: {
+    tsconfigPaths: true,
     alias: {
       'astro:env/client': fileURLToPath(
         new URL('./src/test/astroEnv.ts', import.meta.url)
-      ),
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      )
     }
   },
   test: {

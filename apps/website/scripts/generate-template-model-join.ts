@@ -16,10 +16,10 @@ import { join } from 'node:path'
 import {
   authoredRouterModelSlugAliases,
   authoredWorkshopModels
-} from '../src/config/workshop-browse-content'
-import type { WorkshopModel } from '../src/config/models-catalogue'
-import { hubTemplatesSchema } from '../src/lib/hub/types'
-import { modelNamedBy, partnerModelFor } from '../src/lib/hub/template-use-case'
+} from '@/config/workshop-browse-content'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { hubTemplatesSchema } from '@/lib/hub/types'
+import { modelNamedBy, partnerModelFor } from '@/lib/hub/template-use-case'
 import { API_PROVIDER_MAP } from './generate-models'
 import { isDirectExecution } from './script-entry-point'
 

@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
-import { openRouterSvgRasterizer } from '../scripts/router-model-svg'
+import { openRouterSvgRasterizer } from '@website/scripts/router-model-svg'
 import { test } from './fixtures/blockExternalMedia'
 
 const source = readFileSync(

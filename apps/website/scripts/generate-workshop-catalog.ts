@@ -3,8 +3,8 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { workshopModelSchema } from '../src/content/workshop-models.schema'
-import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
 
 /**
  * The whole catalog as one packed file, loaded by Astro's `file()` loader.

@@ -2,26 +2,23 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../config/workshop-router-content'
-import { workshopContract } from '../config/workshop-contract-catalog'
-import { schemaForModel } from '../config/workshop-playground'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { workshopContract } from '@/config/workshop-contract-catalog'
+import { schemaForModel } from '@/config/workshop-playground'
 import {
   authoredWorkshopModels,
   routerAliasById,
   routerContentById
-} from '../config/workshop-browse-content'
-import { fieldsForDefinition } from '../config/workshop-form-definition'
+} from '@/config/workshop-browse-content'
+import { fieldsForDefinition } from '@/config/workshop-form-definition'
 import {
   WORKSHOP_USE_CASES,
   workshopDisplayEntriesSchema,
   workshopDisplaySchema
 } from './workshop-display.schema'
 import { workshopModelSchema } from './workshop-models.schema'
-import {
-  appCatalog,
-  workflowCatalog
-} from '../config/workshop-workflow-catalog'
-import { hubModelSlugs } from '../config/hub-models'
+import { appCatalog, workflowCatalog } from '@/config/workshop-workflow-catalog'
+import { hubModelSlugs } from '@/config/hub-models'
 
 const here = import.meta.dirname
 const display = workshopDisplayEntriesSchema.parse(

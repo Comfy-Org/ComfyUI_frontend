@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { nextTick } from 'vue'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
-import { lastShelf } from '../../lib/workshop/shelf-memory'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { lastShelf } from '@/lib/workshop/shelf-memory'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
 const models: WorkshopModel[] = [

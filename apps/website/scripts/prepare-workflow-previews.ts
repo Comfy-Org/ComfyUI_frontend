@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { parseWorkflowCatalog } from '../src/config/workshop-workflow-catalog-schema'
+import { parseWorkflowCatalog } from '@/config/workshop-workflow-catalog-schema'
 import { isDirectExecution } from './script-entry-point'
 
 const coordinate = z.number().finite().min(-1e6).max(1e6)

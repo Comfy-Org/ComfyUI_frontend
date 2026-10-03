@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-import { workshopModelSchema } from '../content/workshop-models.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
 import type { WorkshopBrowseModel } from './workshop'
 import {
   countWorkshopOutputs,

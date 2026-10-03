@@ -671,6 +671,12 @@
       }
     },
     {
+      "files": ["apps/website/**"],
+      "rules": {
+        "import/no-relative-parent-imports": "error"
+      }
+    },
+    {
       "files": ["apps/website/e2e/**/*.spec.ts"],
       "rules": {
         "no-restricted-imports": [

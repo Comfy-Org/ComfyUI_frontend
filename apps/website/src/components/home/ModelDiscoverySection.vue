@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import WorkshopGate from '../workshop/WorkshopGate.vue'
+import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
 import { computed, ref, watch } from 'vue'
 
-import { catalogSearch } from '../../config/models-catalogue'
-import { getRoutes } from '../../config/routes'
+import { catalogSearch } from '@/config/models-catalogue'
+import { getRoutes } from '@/config/routes'
 import type {
   DiscoveryProvider,
   DiscoveryWorkflow
-} from '../../data/modelDiscovery'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
-import Button from '../ui/button/Button.vue'
-import type { CatalogueTab } from '../workshop/CatalogueTabs.vue'
-import CatalogueTabs from '../workshop/CatalogueTabs.vue'
+} from '@/data/modelDiscovery'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { useWorkshopWorkflowsEnabled } from '@/scripts/posthog'
+import Button from '@/components/ui/button/Button.vue'
+import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
+import CatalogueTabs from '@/components/workshop/CatalogueTabs.vue'
 import DiscoveryProviderCard from './DiscoveryProviderCard.vue'
 import DiscoveryWorkflowCard from './DiscoveryWorkflowCard.vue'
 

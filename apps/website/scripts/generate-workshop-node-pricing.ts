@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import { z } from 'zod'
 
-import { workshopNodePricingSchema } from '../src/config/workshop-node-pricing.schema'
+import { workshopNodePricingSchema } from '@/config/workshop-node-pricing.schema'
 
 const directory = process.argv[2]
 if (!directory)

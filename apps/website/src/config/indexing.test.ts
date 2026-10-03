@@ -3,8 +3,8 @@ import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 
-import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
-import { routeOf } from '../utils/hreflangRoutes'
+import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
+import { routeOf } from '@/utils/hreflangRoutes'
 import {
   NOINDEX_ROUTES,
   headIndexing,

@@ -2,16 +2,13 @@ import { writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import type {
-  RouterWorkshopModel,
-  UseCase
-} from '../src/config/models-catalogue'
-import { USE_CASES } from '../src/config/models-catalogue'
-import { modelPageUrls } from '../src/config/model-urls'
+import type { RouterWorkshopModel, UseCase } from '@/config/models-catalogue'
+import { USE_CASES } from '@/config/models-catalogue'
+import { modelPageUrls } from '@/config/model-urls'
 import {
   routerModelSlugAliases,
   workshopModels
-} from '../src/config/workshop-browse-content'
+} from '@/config/workshop-browse-content'
 import { isDirectExecution } from './script-entry-point'
 
 type MapModel = Pick<

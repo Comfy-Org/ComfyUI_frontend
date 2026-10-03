@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
-import { workshopModelSchema } from '../content/workshop-models.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
 import { deriveWorkshopFields } from './workshop-fields'
 import { parseWorkshopJsonInput } from './workshop-json-schema'
 

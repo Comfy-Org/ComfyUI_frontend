@@ -1,7 +1,7 @@
 import { renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { fetchRolesForBuild } from '../src/utils/ashby'
+import { fetchRolesForBuild } from '@/utils/ashby'
 
 const snapshotPath = fileURLToPath(
   new URL('../src/data/ashby-roles.snapshot.json', import.meta.url)

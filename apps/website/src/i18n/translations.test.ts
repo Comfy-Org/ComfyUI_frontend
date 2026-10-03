@@ -1,13 +1,13 @@
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../config/locales'
-import { LOCALE_CODES } from '../config/locales'
+import type { Locale } from '@/config/locales'
+import { LOCALE_CODES } from '@/config/locales'
 import { translationsFor } from './translations'
 
 type Catalog = { [key: string]: string | Catalog }
 
-const catalogSources = import.meta.glob<string>('../locales/*/*.json', {
+const catalogSources = import.meta.glob<string>('@/locales/*/*.json', {
   eager: true,
   query: '?raw',
   import: 'default'
@@ -55,12 +55,12 @@ const catalogFiles = new Map(
 )
 
 const catalogs = [...catalogFiles]
-  .filter(([path]) => path.startsWith('../locales/en/'))
+  .filter(([path]) => path.startsWith('/src/locales/en/'))
   .map(([path, english]) => {
-    const file = path.slice('../locales/en/'.length)
+    const file = path.slice('/src/locales/en/'.length)
     const messages = Object.fromEntries(
       LOCALE_CODES.flatMap((locale) => {
-        const catalog = catalogFiles.get(`../locales/${locale}/${file}`)
+        const catalog = catalogFiles.get(`/src/locales/${locale}/${file}`)
         return catalog ? [[locale, catalog]] : []
       })
     )

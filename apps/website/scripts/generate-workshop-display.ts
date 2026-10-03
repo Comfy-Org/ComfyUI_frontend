@@ -5,15 +5,15 @@ import { resolve } from 'node:path'
 import {
   workshopDisplayEntriesSchema,
   workshopDisplaySourceSchema
-} from '../src/content/workshop-display.schema'
+} from '@/content/workshop-display.schema'
 import type {
   WorkshopDisplayEntry,
   WorkshopDisplaySource
-} from '../src/content/workshop-display.schema'
-import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
-import { workshopModelSchema } from '../src/content/workshop-models.schema'
-import { deriveWorkshopFields } from '../src/config/workshop-fields'
-import { workshopContract } from '../src/config/workshop-contract-catalog'
+} from '@/content/workshop-display.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
+import { deriveWorkshopFields } from '@/config/workshop-fields'
+import { workshopContract } from '@/config/workshop-contract-catalog'
 import { splitWorkshopDisplay } from './workshop-display-use-cases'
 import { repairWorkshopExamples } from './workshop-example-repairs'
 

@@ -4,7 +4,25 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import type { InlineConfig } from 'vite'
+import type { InlineConfig, Plugin } from 'vite'
+
+function websiteSrcAlias(): Plugin {
+  const appSrc = process.cwd() + '/src/'
+  const websiteRoot = process.cwd() + '/apps/website/'
+  return {
+    name: 'website-src-alias',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (!importer?.startsWith(websiteRoot) || !source.startsWith(appSrc))
+        return
+      return this.resolve(
+        websiteRoot + 'src/' + source.slice(appSrc.length),
+        importer,
+        { skipSelf: true }
+      )
+    }
+  }
+}
 
 const config: StorybookConfig = {
   stories: [
@@ -45,6 +63,7 @@ const config: StorybookConfig = {
 
     return mergeConfig(config, {
       plugins: [
+        websiteSrcAlias(),
         // Keep public asset URLs intact so staticDirs can serve them directly.
         vue({ template: { transformAssetUrls: { includeAbsolute: false } } }),
         tailwindcss(),

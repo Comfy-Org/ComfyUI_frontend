@@ -6,20 +6,20 @@ import {
   workshopBindingSchema,
   workshopContractRecordSchema,
   formForContract
-} from '../src/config/workshop-contract'
-import { fieldsForDefinition } from '../src/config/workshop-form-definition'
+} from '@/config/workshop-contract'
+import { fieldsForDefinition } from '@/config/workshop-form-definition'
 import {
   validateWorkshopInput,
   validatorFor
-} from '../src/config/workshop-json-schema'
+} from '@/config/workshop-json-schema'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema
-} from '../src/config/workshop-router-openapi'
-import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
+} from '@/config/workshop-router-openapi'
+import { workshopRouterIndexSchema } from '@/config/workshop-router-index'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
-import availabilityOverrides from '../src/data/workshop-router-availability.json'
+import availabilityOverrides from '@/data/workshop-router-availability.json'
 import { isDirectExecution } from './script-entry-point'
 import { adaptRouterModel } from './router-model-adapters'
 

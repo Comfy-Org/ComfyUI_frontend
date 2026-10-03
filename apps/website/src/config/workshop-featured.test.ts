@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
-import { workshopModelSchema } from '../content/workshop-models.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
 import type { WorkshopBrowseModel } from './workshop'
 import {
   FEATURED_WORKSHOP_MODEL_IDS,

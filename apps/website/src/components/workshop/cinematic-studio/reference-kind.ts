@@ -1,5 +1,5 @@
-import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+import type { CinematicCopyKey } from '@/lib/workshop/cinematic-studio/copy'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 
 /** A file a shot can take: references for a still, frames or a source clip for a video. */
 export type ReferenceKind = 'cast' | 'firstFrame' | 'lastFrame' | 'video'

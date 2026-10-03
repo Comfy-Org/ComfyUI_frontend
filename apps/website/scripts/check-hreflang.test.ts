@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url'
 import { expect, it, onTestFinished } from 'vitest'
 
 const script = join(import.meta.dirname, 'check-hreflang.ts')
+const tsconfig = join(import.meta.dirname, '..', 'tsconfig.json')
 const loader = pathToFileURL(createRequire(import.meta.url).resolve('tsx')).href
 
 it.for([
@@ -79,6 +80,7 @@ it.for([
 
     const result = spawnSync(process.execPath, ['--import', loader, script], {
       cwd: directory,
+      env: { ...process.env, TSX_TSCONFIG_PATH: tsconfig },
       encoding: 'utf8'
     })
 

@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
 
-import { workshopModels } from '../config/workshop-browse-content'
+import { workshopModels } from '@/config/workshop-browse-content'
 
 const [{ slug: modelSlug }] = workshopModels
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchFaqSection } from './types'
 
-import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
-import { translationsFor } from '../../i18n/translations'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', faq } = defineProps<{
   faq: ModelLaunchFaqSection
