@@ -324,6 +324,25 @@ function serializableWidgets(node: LGraphNode): IBaseWidget[] {
   return (node.widgets ?? []).filter((widget) => widget.serialize !== false)
 }
 
+const OVERFLOW_WIDGET_NAME_RE = /^_extra_(0|[1-9]\d*)$/
+
+function overflowWidgetIndex(name: string): number | null {
+  const match = OVERFLOW_WIDGET_NAME_RE.exec(name)
+  return match ? Number(match[1]) : null
+}
+
+function documentWidget(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  const named = node.widgets?.find((widget) => widget.name === name)
+  if (named) return named
+  const overflowIndex = overflowWidgetIndex(name)
+  return overflowIndex === null
+    ? undefined
+    : serializableWidgets(node)[overflowIndex]
+}
+
 /**
  * The document stores an ordinary node's widget values by name; `configure`
  * restores them positionally over the node's serializable widgets, so project
@@ -340,9 +359,11 @@ function positionalWidgetValues(
       (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
     )
   }
-  return serializableWidgets(node).map((widget): WidgetValue => {
-    const value = widgets[widget.name]
-    return widget.name in widgets && isWidgetValue(value) ? value : widget.value
+  return serializableWidgets(node).map((widget, index): WidgetValue => {
+    const name =
+      widget.name in widgets ? widget.name : `_extra_${String(index)}`
+    const value = widgets[name]
+    return name in widgets && isWidgetValue(value) ? value : widget.value
   })
 }
 
@@ -650,7 +671,7 @@ export class LiveGraphApplier {
     for (const [name, value] of entries) {
       if (value === undefined || !isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const widget = node.widgets?.find((candidate) => candidate.name === name)
+      const widget = documentWidget(node, name)
       if (!widget) {
         this.reportOnce(
           `widget:${String(node.id)}:${name}`,

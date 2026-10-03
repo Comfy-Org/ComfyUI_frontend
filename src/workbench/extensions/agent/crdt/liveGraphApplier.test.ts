@@ -39,6 +39,17 @@ class TestSink extends LGraphNode {
   }
 }
 
+class TestOverflowWidgets extends LGraphNode {
+  constructor() {
+    super('Test Overflow Widgets')
+    this.addWidget('number', 'known', 10, () => {})
+    const transient = this.addWidget('number', 'transient', 20, () => {})
+    transient.serialize = false
+    this.addWidget('number', 'overflow', 30, () => {})
+    this.serialize_widgets = true
+  }
+}
+
 /** Keeps the definition's output names through `configure`, as `ComfyNode` does. */
 class TestDefinedSource extends LGraphNode {
   constructor() {
@@ -61,6 +72,7 @@ const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
     TestDefinedSource: { widget_order: [] },
+    TestOverflowWidgets: { widget_order: ['known'] },
     TestSink: { widget_order: [] }
   }
 }
@@ -108,10 +120,77 @@ function setup(
 beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
+  LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
   LiteGraph.registerNodeType('TestSink', TestSink)
 })
 
 describe('LiveGraphApplier', () => {
+  it('restores an overflow entry to its serializable widget position', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestOverflowWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 42]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'known', value: 11 },
+      { name: 'transient', value: 20 },
+      { name: 'overflow', value: 42 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: '_extra_2', label: 'out-of-range' },
+    { name: '_extra_01', label: 'malformed' }
+  ])('reports a $label overflow key instead of applying it', ({ name }) => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestOverflowWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 42]
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+    const before = graph
+      .getNodeById(toNodeId(1))
+      ?.widgets?.map((widget) => widget.value)
+
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set(name, 99)
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual(before)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: `Node 1 (TestOverflowWidgets) has no widget '${name}'`
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it('creates document nodes and links with the document ids, without the placement ghost flag', () => {
     const { graph, applyCollected } = setup({
       nodes: [
