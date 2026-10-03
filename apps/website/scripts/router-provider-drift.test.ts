@@ -156,7 +156,7 @@ ${coverageRows}
         fetchImpl: createFetch({ coverageMarkdown }),
         sleep: async () => {}
       })
-    ).rejects.toThrow(new RegExp(`${driftedProvider.name}-drift`, 'i'))
+    ).rejects.toThrow(`${driftedProvider.name}-drift`)
   })
 
   it('detects alternate-provider drift', async () => {
@@ -205,7 +205,7 @@ ${coverageRows}
         fetchImpl: createFetch({ catalogMarkdown }),
         sleep: async () => {}
       })
-    ).rejects.toThrow(new RegExp(previewRow.name))
+    ).rejects.toThrow(previewRow.name)
   })
 
   it('detects a preview path in provider coverage', async () => {
@@ -217,6 +217,6 @@ ${coverageRows}
         }),
         sleep: async () => {}
       })
-    ).rejects.toThrow(new RegExp(previewPath.replaceAll('/', '\\/')))
+    ).rejects.toThrow(previewPath)
   })
 })
