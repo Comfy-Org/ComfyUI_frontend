@@ -216,7 +216,7 @@ function beginPendingCancellation(download: AssetDownload) {
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
   const cancellingTaskIds = ref(new Set<TaskId>())
-  const reconcilingTaskIds = new Set<TaskId>()
+  const reconcilingTasks = new Map<TaskId, Promise<void>>()
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
@@ -313,48 +313,66 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
-  async function reconcileDownload(download: AssetDownload) {
-    if (reconcilingTaskIds.has(download.taskId)) return
-    reconcilingTaskIds.add(download.taskId)
-    try {
-      const result = await taskService.getTask(download.taskId)
-      if (downloads.value.get(download.taskId) !== download) return
+  async function runReconciliation(download: AssetDownload) {
+    const result = await taskService.getTask(download.taskId)
+    if (downloads.value.get(download.taskId) !== download) return
 
-      if (!result.ok) {
-        // A 404 is authoritative: the task row is gone, so a pending
-        // cancellation has nothing left to wait for. Other lookup failures are
-        // transient and must not consume the authoritative reconciliation bound.
-        if (result.error instanceof TaskNotFoundError) {
-          if (download.status === 'cancellation_pending') {
-            finalizeCancellation(download)
-          }
-          return
+    if (!result.ok) {
+      // A 404 is authoritative: the task row is gone, so a pending
+      // cancellation has nothing left to wait for. Other lookup failures are
+      // transient and must not consume the authoritative reconciliation bound.
+      if (result.error instanceof TaskNotFoundError) {
+        if (download.status === 'cancellation_pending') {
+          finalizeCancellation(download)
         }
         return
       }
+      return
+    }
 
-      const task = result.value
-      if (
-        download.status === 'cancellation_pending' &&
-        activeStatuses.has(task.status)
-      ) {
-        noteAuthoritativePendingCancellation(download)
-        return
-      }
+    const task = result.value
+    if (
+      download.status === 'cancellation_pending' &&
+      activeStatuses.has(task.status)
+    ) {
+      noteAuthoritativePendingCancellation(download)
+      return
+    }
 
-      const message = createReconciledDownloadMessage(download, task)
-      if (!message) {
-        download.lastUpdate = Date.now()
-        noteAuthoritativePendingCancellation(download)
-        return
-      }
-      handleAssetDownload(
-        new CustomEvent('asset_download', {
-          detail: message
-        })
-      )
+    const message = createReconciledDownloadMessage(download, task)
+    if (!message) {
+      download.lastUpdate = Date.now()
+      noteAuthoritativePendingCancellation(download)
+      return
+    }
+    handleAssetDownload(
+      new CustomEvent('asset_download', {
+        detail: message
+      })
+    )
+  }
+
+  async function reconcileDownload(
+    download: AssetDownload,
+    rereadAfterInFlight = false
+  ) {
+    const inFlight = reconcilingTasks.get(download.taskId)
+    if (inFlight) {
+      if (!rereadAfterInFlight) return
+      await inFlight
+      const latest = downloads.value.get(download.taskId)
+      if (!latest || isSettledDownload(latest)) return
+      download = latest
+    }
+
+    const reconciliation = runReconciliation(download)
+    reconcilingTasks.set(download.taskId, reconciliation)
+    try {
+      await reconciliation
     } finally {
-      reconcilingTaskIds.delete(download.taskId)
+      if (reconcilingTasks.get(download.taskId) === reconciliation) {
+        reconcilingTasks.delete(download.taskId)
+      }
     }
   }
 
@@ -366,7 +384,9 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     if (staleDownloads.length === 0) return
 
-    await Promise.all(staleDownloads.map(reconcileDownload))
+    await Promise.all(
+      staleDownloads.map((download) => reconcileDownload(download))
+    )
   }
 
   const { pause, resume } = useIntervalFn(
@@ -423,14 +443,14 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       // the task is gone. Re-read the task before deciding how to settle it.
       if (result.value === 'missing') {
         beginPendingCancellation(current)
-        await reconcileDownload(current)
+        await reconcileDownload(current, true)
         return { ok: true, value: false }
       }
 
       // The backend refused. Re-read the task so the row moves to whatever
       // status it is really in, instead of silently re-enabling Cancel.
       if (result.value === 'not-cancellable') {
-        await reconcileDownload(current)
+        await reconcileDownload(current, true)
         return { ok: true, value: false }
       }
 

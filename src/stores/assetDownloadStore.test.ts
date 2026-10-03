@@ -356,6 +356,38 @@ describe('useAssetDownloadStore', () => {
       })
     })
 
+    it('rereads after an in-flight poll when cancellation is refused', async () => {
+      const store = useAssetDownloadStore()
+      let resolvePoll!: (value: TaskResult<TaskResponse>) => void
+      vi.mocked(taskService.getTask)
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolvePoll = resolve
+          })
+        )
+        .mockResolvedValueOnce({ ok: true, value: createTaskResponse() })
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'not-cancellable'
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      const cancellation = store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(0)
+      resolvePoll({
+        ok: true,
+        value: createTaskResponse({ status: 'running', result: undefined })
+      })
+      await cancellation
+
+      expect(taskService.getTask).toHaveBeenCalledTimes(2)
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'completed',
+        assetId: 'asset-456'
+      })
+    })
+
     it('confirms a DELETE 404 with a task lookup before settling', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockResolvedValue({
