@@ -261,6 +261,23 @@ export const zUsageSummary = z.object({
   spend_micros: z.number()
 })
 
+/**
+ * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ */
+export const zUsageNotAvailable = z.object({
+  reason: z.enum(['no_attribution_source'])
+})
+
+export const zUsageGroupLabel = z.object({
+  display_name: z.string().optional(),
+  key: z.string(),
+  key_name: z.string().optional(),
+  key_prefix: z.string().optional(),
+  kind: z.enum(['api_key', 'session', 'deployment']).optional(),
+  owner_display_name: z.string().optional(),
+  owner_user_id: z.string().optional()
+})
+
 export const zUsageBucket = z.object({
   cost_micros: z.number(),
   group_key: z.string(),
@@ -279,8 +296,17 @@ export const zUsageTimeSeries = z.object({
   buckets: z.array(zUsageBucket),
   ending_before: z.string().datetime(),
   granularity: z.enum(['hour', 'day', 'month']),
-  group_by: z.enum(['model', 'endpoint', 'product']),
+  group_by: z.enum([
+    'model',
+    'endpoint',
+    'product',
+    'product_line',
+    'person',
+    'source'
+  ]),
+  group_labels: z.array(zUsageGroupLabel).optional(),
   groups: z.array(z.string()),
+  not_available: zUsageNotAvailable.optional(),
   starting_on: z.string().datetime(),
   summary: zUsageSummary
 })
@@ -561,7 +587,10 @@ export const zSubscriptionDiscount = z.object({
     })
     .optional(),
   kind: z.enum(['plan', 'promotion']),
-  name: z.string().optional()
+  name: z.string().optional(),
+  term: z
+    .enum(['this_payment', 'first_month', 'first_year', 'months', 'ongoing'])
+    .optional()
 })
 
 /**
@@ -1467,7 +1496,7 @@ export const zModelFile = z.object({
  * Workspace member with profile and role information.
  */
 export const zMember = z.object({
-  email: z.string().email(),
+  email: z.string(),
   id: z.string(),
   is_original_owner: z.boolean(),
   joined_at: z.string().datetime(),
@@ -2096,7 +2125,7 @@ export const zHistoryManageRequest = z.object({
 })
 
 /**
- * History entry with full prompt data
+ * History entry with full prompt data. The workflow graph (extra_data.extra_pnginfo) is omitted from records persisted after it stopped being stored; older records may still contain it.
  */
 export const zHistoryDetailEntry = z.object({
   meta: z.record(z.unknown()).optional(),
@@ -2799,6 +2828,42 @@ export const zBillingCapabilityRolloutDefaults = z.object({
 })
 
 /**
+ * Why a capability resolved false, keyed by the capability. The value
+ * names the policy branch that decided, not customer-facing wording: the
+ * client owns the message.
+ *
+ * The invariant runs one way only. **Presence implies refusal**: a key is
+ * present only alongside `capabilities.<key> == false`, reconciled before
+ * the response is built, so a reason never accompanies a granted
+ * capability. **Absence implies nothing** -- it means no recognised
+ * explanation, not that the capability was granted. Consult
+ * `capabilities`, which stays authoritative for what the client may offer.
+ *
+ * A key is absent for a refused capability whenever this service is
+ * talking to a billing-api that predates the field, and whenever it drops
+ * a reason it does not recognise rather than forwarding a value outside
+ * the enum below. Both are supported states, so a client must never infer
+ * a capability's value from a missing reason -- only from `capabilities`.
+ *
+ * This endpoint omits the entire `denied_reasons` object when no recognised
+ * reason survives. The billing-api endpoint may emit `{}` for the same
+ * logical state, so object presence must not be used to detect support.
+ *
+ */
+export const zBillingCapabilityDenials = z.object({
+  can_subscribe_self_serve: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'tier_not_self_serve',
+      'subscription_not_started',
+      'subscription_change_in_progress',
+      'subscription_status_unrecognized'
+    ])
+    .optional()
+})
+
+/**
  * Conservative UI guidance. These values do not authorize billing writes;
  * each write endpoint independently enforces its permission policy.
  *
@@ -2819,6 +2884,7 @@ export const zBillingCapabilities = z.object({
  */
 export const zBillingCapabilitiesResponse = z.object({
   capabilities: zBillingCapabilities,
+  denied_reasons: zBillingCapabilityDenials.optional(),
   expires_at: z.string().datetime(),
   resolved_for: zBillingCapabilityScope,
   revision: z.coerce
@@ -2827,7 +2893,8 @@ export const zBillingCapabilitiesResponse = z.object({
       message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
     })
     .lte(BigInt(9007199254740991)),
-  rollout_defaults_applied: zBillingCapabilityRolloutDefaults
+  rollout_defaults_applied: zBillingCapabilityRolloutDefaults,
+  subscription_state_authoritative: z.boolean().optional()
 })
 
 /**
@@ -3081,6 +3148,15 @@ export const zAgentError = z.object({
 export const zAgentDraftSnapshot = z.object({
   content: z.record(z.unknown()),
   version: z.number().int()
+})
+
+/**
+ * A stop whose cancellation request did not land, or could not be confirmed as landed, on the durable engine. The turn is unaffected and still streaming, so the same request may be retried; cancellation is idempotent per turn. Distinct from the 500, which means the failure was one the service could not classify and a retry may never work.
+ */
+export const zAgentCancelUnconfirmed = z.object({
+  code: z.enum(['cancel_not_requested', 'cancel_outcome_unknown']),
+  error: z.string(),
+  retryable: z.boolean()
 })
 
 /**
@@ -3802,7 +3878,7 @@ export const zCreateTopupQuoteResponse = zTopupQuoteResponse
 
 export const zGetBillingUsageTimeSeriesQuery = z.object({
   group_by: z
-    .enum(['model', 'endpoint', 'product'])
+    .enum(['model', 'endpoint', 'product', 'product_line', 'person', 'source'])
     .optional()
     .default('model'),
   granularity: z.enum(['hour', 'day', 'month']).optional().default('month'),
@@ -3878,6 +3954,7 @@ export const zGetFeaturesResponse = z.object({
     })
     .optional(),
   max_upload_size: z.number().int().optional(),
+  new_free_tier_subscriptions: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
   supports_preview_metadata: z.boolean().optional(),
   web_session_probe: z.boolean().optional()
