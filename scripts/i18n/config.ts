@@ -43,6 +43,12 @@ Keep widely-recognized technical terms in English rather than inventing German e
 German compounds are written closed, not spaced: "Bildgenerierung", not "Bild Generierung". Where a compound joins an English technical term to a German noun, hyphenate: "Node-Editor", "Workflow-Vorlage".
 Prefer the imperative for button labels ("Speichern", "Abbrechen") and avoid the infinitive-with-zu form, which reads like documentation rather than an interface.`
 
+const japaneseGuidance = `Use natural Japanese UI copy. Buttons and short labels are noun phrases or the plain imperative. Full sentences use です/ます.
+Preferred glossary: node = ノード, workflow = ワークフロー, queue = キュー, canvas = キャンバス, widget = ウィジェット, subgraph = サブグラフ, prompt = プロンプト, bypass = バイパス, mute = ミュート, reroute = リルート, keybinding = キーバインド, folder = フォルダー, mask editor = マスクエディタ.
+App Mode = アプリモード (never リニアモード). Nodes 2.0 stays "Nodes 2.0" (never Vueノード). Essentials = エッセンシャル (必須 means "required").
+GitHub Issue stays "Issue". "Enter" a subgraph is 入る, not 入力. A hidden state is 非表示; 隠す is only the verb "hide". Production workflows are 本番, not 生産.
+Translate the English label, not an outdated feature name: Partner Models is パートナーモデル. Node-replacement suggestions are reviewed and applied by the user; do not describe them as automatic replacement.`
+
 export const translationPipelineConfig: TranslationPipelineConfig = {
   entry: 'src/locales/en',
   output: 'src/locales',
@@ -67,7 +73,7 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
       guidance: chineseTraditionalGuidance
     },
     { code: 'ru', name: 'Russian' },
-    { code: 'ja', name: 'Japanese' },
+    { code: 'ja', name: 'Japanese', guidance: japaneseGuidance },
     { code: 'ko', name: 'Korean' },
     { code: 'fr', name: 'French' },
     { code: 'es', name: 'Spanish' },
