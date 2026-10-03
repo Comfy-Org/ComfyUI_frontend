@@ -12,7 +12,7 @@
       size="unset"
       :class="
         cn(
-          'h-full gap-1.5 rounded-lg px-4',
+          'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
           paymentRecoveryLock ? 'font-medium' : 'font-light'
         )
       "
@@ -27,12 +27,18 @@
     <DropdownMenuRoot>
       <DropdownMenuTrigger as-child>
         <Button
-          variant="secondary"
+          :variant="queueMenuTriggerVariant"
           size="unset"
           :disabled="Boolean(paymentRecoveryLock)"
-          :class="queueMenuTriggerClass"
+          :class="
+            cn(
+              queueMenuTriggerClass,
+              queueMenuTriggerVariantClass[queueMenuTriggerVariant]
+            )
+          "
           :aria-label="t('menu.runOptions')"
           data-testid="queue-mode-menu-trigger"
+          :data-variant="queueMenuTriggerVariant"
         >
           <TinyChevronIcon />
         </Button>
@@ -199,7 +205,7 @@ const queueButtonLabel = computed(() =>
 )
 
 const queueButtonVariant = computed<
-  'destructive' | 'primary' | 'secondary' | 'subscribe'
+  'destructive' | 'inverted' | 'secondary' | 'subscribe'
 >(() =>
   paymentRecoveryLock === 'owner'
     ? 'subscribe'
@@ -207,10 +213,24 @@ const queueButtonVariant = computed<
       ? 'secondary'
       : isStopInstantAction.value
         ? 'destructive'
-        : 'primary'
+        : 'inverted'
 )
+const queueMenuTriggerVariant = computed<
+  'destructive' | 'inverted' | 'secondary'
+>(() =>
+  paymentRecoveryLock
+    ? 'secondary'
+    : isStopInstantAction.value
+      ? 'destructive'
+      : 'inverted'
+)
+const queueMenuTriggerVariantClass = {
+  destructive: 'data-[state=open]:bg-destructive-background-hover',
+  inverted: 'data-[state=open]:bg-base-foreground/80',
+  secondary: 'text-muted-foreground'
+}
 const queueMenuTriggerClass =
-  'h-full w-6 rounded-l-none rounded-r-lg border-l border-border-subtle p-0 text-muted-foreground data-[state=open]:bg-secondary-background-hover'
+  'h-full w-6 rounded-l-none rounded-r-lg border-y-0 border-r-0 border-l border-solid border-base-background/25 p-0'
 const queueMenuItemButtonClass = 'w-full justify-start font-normal'
 
 const iconClass = computed(() => {

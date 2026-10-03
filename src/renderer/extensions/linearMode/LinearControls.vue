@@ -212,7 +212,7 @@ function replayAppModeTour() {
               />
             </Popover>
             <Button
-              variant="primary"
+              variant="inverted"
               class="grow"
               size="lg"
               :aria-describedby="
@@ -256,7 +256,7 @@ function replayAppModeTour() {
           />
           <Button
             v-else
-            variant="primary"
+            variant="inverted"
             class="mt-4 w-full text-sm"
             size="lg"
             :aria-describedby="

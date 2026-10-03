@@ -186,7 +186,9 @@ describe('ComfyQueueButton', () => {
       const commandStore = useCommandStore()
 
       expect(screen.getByTestId('batch-count-edit')).toBeInTheDocument()
-      expect(screen.getByTestId('queue-mode-menu-trigger')).toBeDisabled()
+      const trigger = screen.getByTestId('queue-mode-menu-trigger')
+      expect(trigger).toBeDisabled()
+      expect(trigger).toHaveAttribute('data-variant', 'secondary')
       expect(useQueueSettingsStore().mode).toBe('disabled')
       const button = screen.getByTestId('queue-button')
       expect(button).toHaveTextContent(label)
@@ -255,7 +257,7 @@ describe('ComfyQueueButton', () => {
     const queueButton = screen.getByTestId('queue-button')
 
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
   })
 
   it('switches to stop presentation when instant mode is armed', async () => {
@@ -269,6 +271,10 @@ describe('ComfyQueueButton', () => {
 
     expect(queueButton).toHaveTextContent('Stop Run (Instant)')
     expect(queueButton).toHaveAttribute('data-variant', 'destructive')
+    expect(screen.getByTestId('queue-mode-menu-trigger')).toHaveAttribute(
+      'data-variant',
+      'destructive'
+    )
   })
 
   it('disarms instant mode without interrupting even when jobs are active', async () => {
@@ -287,7 +293,7 @@ describe('ComfyQueueButton', () => {
     expect(queueSettingsStore.mode).toBe('instant-idle')
     const queueButton = screen.getByTestId('queue-button')
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
 
     expect(commandStore.execute).not.toHaveBeenCalled()
   })

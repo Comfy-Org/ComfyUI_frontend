@@ -199,7 +199,9 @@ describe('LinearControls', () => {
 
       renderControls({ showsSubscribeToRunPrompt: true, mobile })
 
-      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Run' })).toHaveClass(
+        'bg-base-foreground'
+      )
       expect(
         screen.queryByTestId('subscribe-to-run-button')
       ).not.toBeInTheDocument()
