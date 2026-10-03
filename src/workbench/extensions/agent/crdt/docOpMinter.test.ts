@@ -979,6 +979,54 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  // One of the actions the root-scope gate refuses: a rename or mode change on
+  // an interior node. Production has confirmed that this refusal is reported.
+  // `set_node_field` has no `path` in the frozen vocabulary, so there is no op
+  // to mint — but the refusal must stay observable, like the three above.
+  it('surfaces a subgraph-interior node field write instead of minting it', async () => {
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const interior = new TestSource()
+    withGraphIntentSource('load', () => subgraph.add(interior))
+    await afterFlush()
+    minted.length = 0
+    vi.mocked(reportError).mockClear()
+
+    interior.title = 'renamed inside the subgraph'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_unrepresentable_subgraph_set_node_field'])
+  })
+
+  // The one interior divergence that is INVISIBLE. `LGraph.clear` emits its
+  // intent only `if (this.isRootGraph)` (`LGraph.ts:839`), so an interior clear
+  // never reaches the minter at all: no wire op AND no `reportError`. The other
+  // five interior actions at least surface a refusal, which is how they were
+  // measured on production; this one would diverge the bound document with
+  // nothing in Sentry to count. Pinned so that stays a deliberate state.
+  it('drops a subgraph-interior clear with neither a wire op nor telemetry', async () => {
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const interior = new TestSource()
+    withGraphIntentSource('load', () => subgraph.add(interior))
+    await afterFlush()
+    minted.length = 0
+    vi.mocked(reportError).mockClear()
+    expect(subgraph.nodes).toContain(interior)
+
+    subgraph.clear()
+    await afterFlush()
+
+    // The divergence this pins has two halves and both are asserted: the local
+    // graph really did change, and nothing observable left the minter. Without
+    // the first assertion the other two would hold just as well for a clear
+    // that did nothing at all, which is not what is being pinned.
+    expect(subgraph.nodes).toEqual([])
+    expect(minted).toEqual([])
+    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
+  })
+
   it('refuses to mint a command on a graph other than the bound root, reporting once per tick', async () => {
     const foreign = new LGraph()
 
