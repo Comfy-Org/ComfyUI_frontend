@@ -2875,7 +2875,8 @@
       "accountCreated": "Account Created",
       "apiUsage": "API Usage",
       "gpuUsage": "GPU Usage",
-      "apiNodeUsage": "Partner Node Usage"
+      "apiNodeUsage": "Partner Node Usage",
+      "routerUsage": "Router Usage"
     },
     "unified": {
       "message": "Credits have been unified",
