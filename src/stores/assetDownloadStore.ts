@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import type {
+  DownloadFileResult,
   TaskId,
   TaskResponse,
   TaskResult,
@@ -167,6 +168,10 @@ function resultValue<T>(value: T | undefined, fallback: T | undefined) {
   return value === undefined ? fallback : value
 }
 
+function requiredResultValue<T>(value: T | undefined, fallback: T): T {
+  return value === undefined ? fallback : value
+}
+
 function createReconciledDownloadMessage(
   download: AssetDownload,
   task: TaskResponse
@@ -175,10 +180,17 @@ function createReconciledDownloadMessage(
   // A completed download needs a valid result (or an asset id already learned
   // from the socket) before it can be recorded as a completed asset.
   if (task.status === 'completed' && !result && !download.assetId) return
-  const assetId = resultValue(result?.asset_id, download.assetId)
-  const assetName = result?.filename ?? download.assetName
-  const bytesDownloaded = result?.bytes_downloaded ?? download.bytesDownloaded
-  const error = resultValue(task.error_message, result?.error)
+  const reconciledResult: Partial<DownloadFileResult> = result ?? {}
+  const assetId = resultValue(reconciledResult.asset_id, download.assetId)
+  const assetName = requiredResultValue(
+    reconciledResult.filename,
+    download.assetName
+  )
+  const bytesDownloaded = requiredResultValue(
+    reconciledResult.bytes_downloaded,
+    download.bytesDownloaded
+  )
+  const error = resultValue(task.error_message, reconciledResult.error)
   return {
     task_id: download.taskId,
     asset_id: assetId,
@@ -211,6 +223,16 @@ function beginPendingCancellation(download: AssetDownload) {
   download.status = 'cancellation_pending'
   download.cancellationReconcileAttempts = 0
   download.lastUpdate = Date.now()
+}
+
+function settleUnknownDownloadStatus(
+  existing: AssetDownload | undefined,
+  data: AssetDownloadWsMessage
+) {
+  if (!existing || isSettledDownload(existing)) return
+  existing.status = 'failed'
+  existing.error = data.error || `Unknown task status: ${data.status}`
+  existing.lastUpdate = Date.now()
 }
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
@@ -278,12 +300,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     // WebSocket payloads are not runtime-validated at the event boundary.
     // Unknown statuses must not create immortal, non-dismissible rows.
     if (!wireTaskStatuses.has(data.status)) {
-      if (existing) {
-        if (isSettledDownload(existing)) return
-        existing.status = 'failed'
-        existing.error = data.error || `Unknown task status: ${data.status}`
-        existing.lastUpdate = Date.now()
-      }
+      settleUnknownDownloadStatus(existing, data)
       return
     }
 
