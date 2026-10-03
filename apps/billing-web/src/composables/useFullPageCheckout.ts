@@ -709,14 +709,12 @@ export function useFullPageCheckout() {
   }
 
   const askOnce = (operationId: string) =>
-    commands
-      .cancelOperation(operationId)
-      .catch(
-        (): CancelOperationResult => ({
-          status: 'error',
-          code: 'REQUEST_FAILED'
-        })
-      )
+    commands.cancelOperation(operationId).catch(
+      (): CancelOperationResult => ({
+        status: 'error',
+        code: 'REQUEST_FAILED'
+      })
+    )
 
   async function askToCancel(operationId: string) {
     let answer = await askOnce(operationId)
