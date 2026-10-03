@@ -214,6 +214,8 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { syncLegacyPreviewWidgets } from '@/core/graph/subgraph/preview/legacyCanvasPreviews'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
@@ -316,6 +318,25 @@ watch(
     }
   },
   { immediate: true }
+)
+
+const previewExposureStore = usePreviewExposureStore()
+
+function syncLegacyPreviewWidgetsForGraph(graph: LGraph | null): void {
+  if (!graph) return
+  forEachNode(graph.rootGraph, (node) => {
+    if (node.isSubgraphNode()) syncLegacyPreviewWidgets(node)
+  })
+}
+
+watch(
+  [
+    shouldRenderVueNodes,
+    () => canvasStore.currentGraph,
+    () => previewExposureStore.exposures
+  ],
+  ([, graph]) => syncLegacyPreviewWidgetsForGraph(graph),
+  { immediate: true, deep: true }
 )
 
 watchEffect((onCleanup) => {
