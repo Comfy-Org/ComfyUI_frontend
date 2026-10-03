@@ -456,6 +456,25 @@ describe('error mapping', () => {
       await expect(makeClient().listThreads()).rejects.toBe(cause)
     }
   )
+
+  it.for([
+    new TypeError('Failed to read response body'),
+    new DOMException('The operation was aborted', 'AbortError')
+  ])(
+    'classifies a POST body transport failure as an unreadable accepted response',
+    async (cause) => {
+      const response = jsonResponse(202, { message_id: 'm1' })
+      vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+      respond(response)
+
+      const error = await makeClient()
+        .postMessage('t1', { content: 'hi' })
+        .catch((e: unknown) => e)
+
+      expect(error).toBeInstanceOf(AgentResponseUnreadableError)
+      expect((error as Error).cause).toBe(cause)
+    }
+  )
 })
 
 describe('Retry-After contract', () => {

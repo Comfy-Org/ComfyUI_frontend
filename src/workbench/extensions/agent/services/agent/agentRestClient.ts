@@ -378,7 +378,12 @@ export function createAgentRestClient() {
     try {
       payload = await response.json()
     } catch (error) {
-      if (!(error instanceof SyntaxError)) throw error
+      // Once a non-idempotent request has received successful response
+      // headers, any body-read failure is an unreadable acknowledgement. The
+      // server may already have accepted and billed the turn, so exposing the
+      // raw transport error would incorrectly make it eligible for retry.
+      if (init?.method !== 'POST' && !(error instanceof SyntaxError))
+        throw error
       throw new AgentResponseUnreadableError(error)
     }
     return schema.parse(payload)
