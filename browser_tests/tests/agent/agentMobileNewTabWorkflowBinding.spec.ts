@@ -52,11 +52,13 @@ const THREAD_ID = '59dbdbf7-ec7f-4a51-93b2-602668f3f1b4'
 
 const FIRST_MESSAGE_ID = '5c7e1a2b-8d4f-4e93-a016-3b8c5d9e0f12'
 const SECOND_MESSAGE_ID = '7a1c3e5d-2b4f-4068-9c13-5e7a9b0d1f24'
+const THIRD_MESSAGE_ID = '8b2d4f6e-3c5a-4179-ad24-6f8b0c1e2a35'
 
 const SAVED_TAB = 'Unsaved Workflow'
 const NEW_TAB = 'Unsaved Workflow (2)'
 const FIRST_PROMPT = 'Optimise my workflow for speed'
 const SECOND_PROMPT = 'Now reduce the step count'
+const THIRD_PROMPT = 'Finally simplify the labels'
 
 // Android Chrome as reported: Pixel 5 is 393x851 CSS px against the reporter's
 // 394x853, and the panel's layout breakpoints are the point. Top-level because
@@ -143,6 +145,8 @@ test.describe(
           box!.width,
           'the panel floor is wider than the reported viewport, so it fills it'
         ).toBe(viewport!.width)
+        expect(box!.height).toBe(viewport!.height)
+        expect(box!.y).toBe(0)
         await expect(
           picker,
           'the chip is the only affordance naming the bound workflow at this width'
@@ -181,6 +185,7 @@ test.describe(
           posted[0].current_tab_unbound,
           'the turn must say a tab IS selected but unbound, not that none is'
         ).toBe(true)
+        expect(posted[0].current_tab).toBeUndefined()
         expect(
           posted[0].workflow_id ?? null,
           'the agent must not silently retarget the account-saved workflow'
@@ -190,6 +195,18 @@ test.describe(
       await test.step('the minted workflow the server returns stays named in the chip', async () => {
         await finishTurn(FIRST_MESSAGE_ID)
         await expect(picker).toHaveText(NEW_TAB)
+
+        nextAck = {
+          ...nextAck,
+          message_id: SECOND_MESSAGE_ID
+        }
+        await agentPanel.sendMessage(SECOND_PROMPT)
+        await expect.poll(() => posted.length).toBe(2)
+        expect(
+          posted[1].workflow_id,
+          'the turn after minting must carry the minted workflow id'
+        ).toBe(MINTED_WORKFLOW_ID)
+        await finishTurn(SECOND_MESSAGE_ID)
       })
 
       // PM-1933 acceptance scenario 2: "a hand-picked binding holds".
@@ -202,19 +219,20 @@ test.describe(
       await test.step('the next turn is still bound to that pick, with no re-selection', async () => {
         nextAck = {
           ...nextAck,
-          message_id: SECOND_MESSAGE_ID,
+          message_id: THIRD_MESSAGE_ID,
           workflow_id: SAVED_WORKFLOW_ID
         }
-        await agentPanel.sendMessage(SECOND_PROMPT)
-        await expect.poll(() => posted.length).toBe(2)
+        await agentPanel.sendMessage(THIRD_PROMPT)
+        await expect.poll(() => posted.length).toBe(3)
         expect(
-          posted[1].workflow_id,
+          posted[2].workflow_id,
           'the turn after a hand-pick must carry the workflow the user picked'
         ).toBe(SAVED_WORKFLOW_ID)
         expect(
-          posted[1].current_tab_unbound,
+          posted[2].current_tab_unbound,
           'a bound pick is not an unbound tab'
         ).toBeUndefined()
+        await finishTurn(THIRD_MESSAGE_ID)
         await expect(
           picker,
           'the binding must survive the turn without a second hand-pick'
