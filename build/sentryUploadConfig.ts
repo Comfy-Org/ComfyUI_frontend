@@ -1,42 +1,23 @@
-export interface SentryUploadConfig {
-  authToken: string
-  org: string
-  projects: [string, string]
-}
-
 const REQUIRED_KEYS = [
   'SENTRY_AUTH_TOKEN',
   'SENTRY_ORG',
   'SENTRY_PROJECT',
   'SENTRY_PROJECT_PROD'
-] as const
+]
 
-export function resolveSentryUploadConfig({
-  distribution,
-  isDev,
-  env
-}: {
-  distribution: string
-  isDev: boolean
-  env: NodeJS.ProcessEnv
-}): SentryUploadConfig | undefined {
-  if (distribution !== 'cloud' || isDev) return
+export function hasCompleteSentryUploadConfig(env: NodeJS.ProcessEnv) {
+  return REQUIRED_KEYS.every((key) => Boolean(env[key]))
+}
 
-  const configuredKeys = REQUIRED_KEYS.filter((key) => Boolean(env[key]))
-  if (configuredKeys.length === 0) return
-
+export function resolveSentryUploadConfig(env: NodeJS.ProcessEnv) {
   const missingKeys = REQUIRED_KEYS.filter((key) => !env[key])
+  if (missingKeys.length === REQUIRED_KEYS.length) return
+
   const authToken = env.SENTRY_AUTH_TOKEN
   const org = env.SENTRY_ORG
   const stagingProject = env.SENTRY_PROJECT
   const productionProject = env.SENTRY_PROJECT_PROD
-  if (
-    missingKeys.length > 0 ||
-    !authToken ||
-    !org ||
-    !stagingProject ||
-    !productionProject
-  ) {
+  if (!authToken || !org || !stagingProject || !productionProject) {
     throw new Error(
       `Incomplete Sentry source-map upload configuration: missing ${missingKeys.join(', ')}`
     )
@@ -51,6 +32,6 @@ export function resolveSentryUploadConfig({
   return {
     authToken,
     org,
-    projects: [stagingProject, productionProject]
+    project: [stagingProject, productionProject]
   }
 }

@@ -1,19 +1,20 @@
 import type { ErrorEvent } from '@sentry/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { prepareSentryEvent } from './vueDirectiveErrorDiagnostics'
+import { addVueDirectiveDiagnostics } from './vueDirectiveErrorDiagnostics'
 
-afterEach(() => {
-  document.head.querySelectorAll('script').forEach((script) => script.remove())
-})
+function resource(name: string): PerformanceResourceTiming {
+  return { name } as PerformanceResourceTiming
+}
 
-describe('prepareSentryEvent', () => {
-  it('adds runtime and asset evidence to a Vue directive failure', () => {
-    const script = document.createElement('script')
-    Object.defineProperty(script, 'src', {
-      value: 'http://localhost:3000/assets/vendor-vue-core.abc123.js'
-    })
-    document.head.append(script)
+describe('addVueDirectiveDiagnostics', () => {
+  it('adds the fetched module graph to a Vue directive failure', () => {
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+      resource('http://localhost:3000/assets/vendor-vue-core.abc123.js'),
+      resource('http://localhost:3000/assets/WorkflowTabs.def456.js'),
+      resource('http://localhost:3000/api/user'),
+      resource('https://example.com/assets/external.js')
+    ])
     const event = {
       type: undefined,
       exception: {
@@ -33,30 +34,79 @@ describe('prepareSentryEvent', () => {
       }
     } satisfies ErrorEvent
 
-    const prepared = prepareSentryEvent(event, {})
-
-    expect(prepared).toMatchObject({
-      tags: {
-        diagnostic: 'vue_directive_runtime',
-        array_iterator_callable: true,
-        array_iterator_unchanged: true
-      },
+    expect(addVueDirectiveDiagnostics(event, {})).toMatchObject({
+      tags: { diagnostic: 'vue_directive_runtime' },
       contexts: {
         vue_directive_runtime: {
-          array_iterator_native: true,
-          loaded_script_count: 1,
-          first_party_script_paths: ['/assets/vendor-vue-core.abc123.js']
+          loaded_script_count: 2,
+          first_party_script_paths: [
+            '/assets/vendor-vue-core.abc123.js',
+            '/assets/WorkflowTabs.def456.js'
+          ]
         }
       }
     })
   })
 
-  it('leaves unrelated errors unchanged', () => {
+  it.for([
+    {
+      name: 'matches a Vue-core frame with the directive failure message',
+      filename: '/assets/vendor-vue-core.abc123.js',
+      value: 'undefined is not a function',
+      expected: 'vue_directive_runtime'
+    },
+    {
+      name: 'ignores a Vue-core frame without the message',
+      filename: '/assets/vendor-vue-core.abc123.js',
+      value: 'Application failed',
+      expected: undefined
+    },
+    {
+      name: 'ignores the message outside Vue core',
+      filename: '/assets/app.abc123.js',
+      value: 'undefined is not a function',
+      expected: undefined
+    }
+  ])('$name', ({ filename, value, expected }) => {
     const event = {
       type: undefined,
-      exception: { values: [{ value: 'Application failed' }] }
+      exception: {
+        values: [{ value, stacktrace: { frames: [{ filename }] } }]
+      }
     } satisfies ErrorEvent
 
-    expect(prepareSentryEvent(event, {})).toBe(event)
+    expect(addVueDirectiveDiagnostics(event, {}).tags?.diagnostic).toBe(
+      expected
+    )
+  })
+
+  it('collects messages without relying on the array iterator', () => {
+    const iterator = Array.prototype[Symbol.iterator]
+    Object.defineProperty(Array.prototype, Symbol.iterator, {
+      value: undefined
+    })
+    try {
+      const event = {
+        type: undefined,
+        exception: {
+          values: [
+            {
+              value: 'undefined is not a function',
+              stacktrace: {
+                frames: [{ filename: '/assets/vendor-vue-core.abc123.js' }]
+              }
+            }
+          ]
+        }
+      } satisfies ErrorEvent
+
+      expect(addVueDirectiveDiagnostics(event, {}).tags?.diagnostic).toBe(
+        'vue_directive_runtime'
+      )
+    } finally {
+      Object.defineProperty(Array.prototype, Symbol.iterator, {
+        value: iterator
+      })
+    }
   })
 })

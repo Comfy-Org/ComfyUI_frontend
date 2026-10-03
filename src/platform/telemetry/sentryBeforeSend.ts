@@ -2,7 +2,8 @@ import type { ErrorEvent, EventHint } from '@sentry/vue'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 
-import { prepareSentryEvent } from './vueDirectiveErrorDiagnostics'
+import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
+import { addVueDirectiveDiagnostics } from './vueDirectiveErrorDiagnostics'
 
 /**
  * Groups a `WorkspaceApiError` by what failed rather than where it was
@@ -37,6 +38,6 @@ export function sentryBeforeSend(
   event: ErrorEvent,
   hint: EventHint
 ): ErrorEvent | null {
-  const kept = prepareSentryEvent(event, hint)
-  return kept && groupWorkspaceApiError(kept, hint)
+  const kept = sentryThirdPartyErrorFilter(event, hint)
+  return kept && groupWorkspaceApiError(addVueDirectiveDiagnostics(kept, hint), hint)
 }
