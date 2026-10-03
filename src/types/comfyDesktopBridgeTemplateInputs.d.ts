@@ -30,7 +30,15 @@ declare module '@comfyorg/comfyui-desktop-bridge-types' {
   }
 
   export type ComfyTemplateInputAssetDownloadResult =
-    | { status: 'already-present' }
+    | {
+        status: 'already-present'
+        /**
+         * No job exists for a file that is already on disk, so nothing would
+         * report it. Naming it lets the host emit one terminal progress event,
+         * which is the only channel a renderer watches.
+         */
+        filename: string
+      }
     | {
         status: 'accepted' | 'joined'
         download: ComfyTemplateInputAssetDownload
