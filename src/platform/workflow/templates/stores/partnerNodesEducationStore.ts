@@ -36,7 +36,6 @@ export const usePartnerNodesEducationStore = defineStore(
       settingStore.set(DISMISSED_SETTING, true).catch((error: unknown) =>
         reportError(error, {
           errorType: 'partner_nodes_education_dismiss_save_failed',
-          surface: 'platform',
           level: 'warning'
         })
       )
