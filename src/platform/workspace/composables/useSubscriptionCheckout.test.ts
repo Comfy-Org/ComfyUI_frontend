@@ -1900,31 +1900,32 @@ describe('useSubscriptionCheckout', () => {
 
       it.for<{
         name: string
-        railOutcome: SubscriptionRailOutcome<string> | null
+        arrange: () => void
         billingClient: 'sdk' | 'legacy'
       }>([
         {
           name: 'the legacy client',
-          railOutcome: null,
+          arrange: () => {},
           billingClient: 'legacy'
         },
         {
           name: 'the SDK rail',
-          railOutcome: {
-            status: 'ok',
-            value: 'https://billing.stripe.com/rail-portal'
-          },
+          arrange: () =>
+            useRailPortal({
+              status: 'ok',
+              value: 'https://billing.stripe.com/rail-portal'
+            }),
           billingClient: 'sdk'
         },
         {
           name: 'the legacy client when the rail route is not deployed',
-          railOutcome: { status: 'unavailable' },
+          arrange: () => useRailPortal({ status: 'unavailable' }),
           billingClient: 'legacy'
         }
       ])(
         'reports the recovery portal opening from $name and one return',
-        async ({ railOutcome, billingClient }) => {
-          if (railOutcome) useRailPortal(railOutcome)
+        async ({ arrange, billingClient }) => {
+          arrange()
 
           await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
           leaveAndReturn()
@@ -1986,6 +1987,27 @@ describe('useSubscriptionCheckout', () => {
             billing_client: 'legacy'
           }
         ])
+      })
+
+      it('reports a retry that is blocked again as a second failed open', async () => {
+        mockOpen.mockReturnValueOnce(null)
+        await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+        const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+        mockOpen.mockReturnValueOnce(null)
+        detail.onAction()
+        leaveAndReturn()
+
+        const blocked = {
+          operation: 'portal',
+          stage: 'failed',
+          outcome: 'failure',
+          target: 'payment_recovery',
+          billing_client: 'legacy',
+          failure_category: 'redirect',
+          error_code: 'payment_popup_blocked'
+        }
+        expect(portalEvents()).toEqual([blocked, blocked])
       })
 
       it.for<{
