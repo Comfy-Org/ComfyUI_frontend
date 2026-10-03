@@ -1,4 +1,11 @@
 {
+  "ComfyUI-Prompt-Combinator": {
+    "class": "unfetchable-ref",
+    "evidence": "GitHub's repository API returns HTTP 404 for lquesada/ComfyUI-Prompt-Combinator, and clean CI runners cannot fetch its pinned 3576ace3f2776918c1046b6674fbe345a46dba2f source.",
+    "reason": "the repository pinned by the live Cloud supported_nodes.yaml is no longer publicly available",
+    "since": "2026-09-09",
+    "upstreamFix": "restore the public repository at the pinned commit or remove or replace the entry in Cloud supported_nodes.yaml"
+  },
   "ComfyUI-LivePortraitKJ": {
     "class": "unfetchable-ref",
     "evidence": "deployRef @4d9dc6205b79e50f81c0e6d245a2e0e5e53d5ecd returns HTTP 422 'No commit found'; a full clone across all 6 branches and 134 commits does not contain it. The first 12 characters match the repository's real HEAD (4d9dc6205b793ffd0fb319816136d9b8c0dbfdff) and then diverge, which is a short sha expanded wrongly rather than a force-push.",

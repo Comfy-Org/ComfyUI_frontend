@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 
 import {
   provesRefIsMissing,
+  provesRepositoryIsUnavailable,
   provesRequirementIsUnsatisfiable
 } from './customNodeQuarantineProbe'
 
@@ -15,6 +16,12 @@ describe('custom-node quarantine probes', () => {
     expect(
       provesRefIsMissing({ stderr: 'Could not resolve host: github.com' })
     ).toBe(false)
+  })
+
+  test('accepts a missing repository but not transient API failures', () => {
+    expect(provesRepositoryIsUnavailable('404')).toBe(true)
+    expect(provesRepositoryIsUnavailable('200')).toBe(false)
+    expect(provesRepositoryIsUnavailable('403')).toBe(false)
   })
 
   test('requires both the declared requirement and a resolver verdict', () => {
