@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AsyncUploadResponse } from '@/platform/assets/schemas/assetSchema'
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { taskService } from '@/platform/tasks/services/taskService'
 import { api } from '@/scripts/api'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
