@@ -52,11 +52,24 @@ describe('useSettingsDialog', () => {
     expect(args.key).toBe('global-settings')
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('full')
-    expect(args.dialogComponentProps.contentClass).toContain('max-w-[1280px]')
-    expect(args.dialogComponentProps.contentClass).not.toContain(
-      'max-w-[960px]'
-    )
+    expect(args.dialogComponentProps.contentClass).toContain('1280px')
+    expect(args.dialogComponentProps.contentClass).not.toContain('960px')
     expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')
+  })
+
+  it('show() reserves the docked Agent panel width in every max-width cap', () => {
+    useSettingsDialog().show()
+    const [args] = showDialog.mock.calls[0]
+    const maxWidthCaps = String(args.dialogComponentProps.contentClass)
+      .split(' ')
+      .filter((utility) => /(^|:)max-w-\[/.test(utility))
+
+    expect(maxWidthCaps).not.toHaveLength(0)
+    expect(
+      maxWidthCaps.filter(
+        (cap) => !cap.includes('var(--workspace-inset-right,0px)')
+      )
+    ).toEqual([])
   })
 
   it('show() uses non-modal Reka so nested PrimeVue dialogs keep focus and pointer events', () => {
