@@ -1703,7 +1703,8 @@ export class ComfyApp {
       await useWorkflowService().afterLoadNewGraph(
         workflow,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-        effectiveShareId
+        effectiveShareId,
+        { isCurrent: () => this.ownsGraphLoad(loadId) }
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
 
@@ -2361,7 +2362,9 @@ export class ComfyApp {
       }
       await useWorkflowService().afterLoadNewGraph(
         fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        undefined,
+        { isCurrent: () => this.ownsGraphLoad(loadId) }
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
@@ -2722,7 +2725,9 @@ export class ComfyApp {
     }
     await useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+      undefined,
+      { isCurrent: () => this.ownsGraphLoad(loadId) }
     )
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (!this.ownsGraphLoad(loadId)) {

@@ -703,23 +703,37 @@ export const useWorkflowService = () => {
    *
    * @param value The value to set as the active workflow.
    * @param workflowData The initial workflow data loaded to the graph editor.
+   * @param options.isCurrent Tells this activation whether the graph load it
+   * belongs to still owns the graph. Activation suspends on `openWorkflow`,
+   * which can await a network fetch, so a newer load can commit meanwhile; the
+   * caller's own ownership checks all sit outside this call and cannot reach
+   * the resume points inside it. Same idiom as `openWorkflow` below and
+   * `useCanvasScheduler`.
    */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string
+    shareId?: string,
+    options: { isCurrent?: () => boolean } = {}
   ) => {
-    await activateLoadedWorkflow(value, workflowData, shareId)
+    if (!(await activateLoadedWorkflow(value, workflowData, shareId, options)))
+      return
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
   }
 
+  /**
+   * @returns Whether the workflow was activated. `false` means a newer graph
+   * load superseded this one while this call was suspended, so it stopped
+   * without writing any further global state.
+   */
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string
-  ) => {
+    shareId?: string,
+    options: { isCurrent?: () => boolean } = {}
+  ): Promise<boolean> => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
@@ -770,6 +784,7 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          if (options.isCurrent?.() === false) return false
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -791,7 +806,7 @@ export const useWorkflowService = () => {
             )
           )
           loadedWorkflow.changeTracker.restore()
-          return
+          return true
         }
       }
 
@@ -805,11 +820,13 @@ export const useWorkflowService = () => {
       }
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      if (options.isCurrent?.() === false) return false
       activateRunErrors(loadedWorkflow)
-      return
+      return true
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (options.isCurrent?.() === false) return false
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
@@ -823,6 +840,7 @@ export const useWorkflowService = () => {
       ensureWorkflowId(workflowData, activeStateFallbackId(loadedWorkflow))
     )
     loadedWorkflow.changeTracker.restore()
+    return true
   }
 
   /**
