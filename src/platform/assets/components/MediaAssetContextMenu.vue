@@ -12,12 +12,8 @@
     "
     @hide="onMenuHide"
   >
-    <template #item="{ item, props }">
-      <Button
-        variant="secondary"
-        class="w-full justify-start"
-        v-bind="props.action"
-      >
+    <template #item="{ item }">
+      <Button variant="secondary" class="w-full justify-start">
         <i v-if="item.icon" :class="item.icon" class="size-4" />
         <span>{{
           typeof item.label === 'function' ? item.label() : (item.label ?? '')

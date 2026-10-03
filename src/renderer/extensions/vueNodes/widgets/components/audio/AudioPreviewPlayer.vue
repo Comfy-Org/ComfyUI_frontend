@@ -92,52 +92,50 @@
         </Button>
 
         <!-- Options Button -->
-        <Button
+        <Menu
           v-if="showOptionsButton"
-          variant="textonly"
-          size="unset"
-          :aria-label="$t('g.moreOptions')"
-          class="size-6 rounded-sm"
-          @click="toggleOptionsMenu"
+          :items="menuItems"
+          class="border-component-node-border bg-component-node-widget-background"
         >
-          <i
-            class="icon-[lucide--more-vertical] size-4 text-muted-foreground"
-          />
-        </Button>
+          <template #trigger>
+            <Button
+              variant="textonly"
+              size="unset"
+              :aria-label="$t('g.moreOptions')"
+              class="size-6 rounded-sm"
+            >
+              <i
+                class="icon-[lucide--more-vertical] size-4 text-muted-foreground"
+              />
+            </Button>
+          </template>
+          <template #item="{ item }">
+            <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
+              <label class="mb-2 block text-xs text-base-foreground">{{
+                item.label
+              }}</label>
+              <Slider
+                :model-value="[volume * 10]"
+                :min="0"
+                :max="10"
+                :step="1"
+                class="w-full"
+                @update:model-value="handleVolumeChange"
+              />
+            </div>
+            <div
+              v-else
+              class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
+            >
+              <span class="text-base-foreground">{{ item.label }}</span>
+              <i
+                v-if="item.checked"
+                class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
+              />
+            </div>
+          </template>
+        </Menu>
       </div>
-
-      <!-- Options Menu -->
-      <Menu
-        ref="optionsMenu"
-        :model="menuItems"
-        class="border-component-node-border bg-component-node-widget-background"
-      >
-        <template #item="{ item }">
-          <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
-            <label class="mb-2 block text-xs text-base-foreground">{{
-              item.label
-            }}</label>
-            <Slider
-              :model-value="[volume * 10]"
-              :min="0"
-              :max="10"
-              :step="1"
-              class="w-full"
-              @update:model-value="handleVolumeChange"
-            />
-          </div>
-          <div
-            v-else
-            class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
-          >
-            <span class="text-base-foreground">{{ item.label }}</span>
-            <i
-              v-if="item.checked"
-              class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
-            />
-          </div>
-        </template>
-      </Menu>
     </div>
   </div>
 </template>
@@ -166,7 +164,6 @@ const { hideWhenEmpty = true, showOptionsButton } = defineProps<{
 
 // Refs
 const audioRef = useTemplateRef('audioRef')
-const optionsMenu = ref<InstanceType<typeof Menu>>()
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const volume = ref(1)
@@ -244,11 +241,6 @@ const handleTimeUpdate = () => {
 const handleEnded = () => {
   isPlaying.value = false
   currentTime.value = 0
-}
-
-// Options menu
-const toggleOptionsMenu = (event: Event) => {
-  optionsMenu.value?.toggle(event)
 }
 
 const setPlaybackSpeed = (speed: number) => {

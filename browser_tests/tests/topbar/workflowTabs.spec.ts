@@ -310,6 +310,11 @@ test.describe('Workflow tabs', () => {
           expect(gap).toBeLessThan(10)
         }).toPass({ timeout: 5000 })
       })
+
+      await test.step('Escape returns focus to the overflow trigger', async () => {
+        await topbar.closeWorkflowOverflowMenu()
+        await expect(topbar.workflowOverflowButton).toBeFocused()
+      })
     }
   )
 

@@ -1,46 +1,49 @@
 <template>
-  <div
-    ref="wrapperRef"
-    v-tooltip.bottom="{
-      value: tooltipText,
-      showDelay: 512
-    }"
-    :data-testid="`subgraph-breadcrumb-item-${item.key}`"
-    :data-active="isActive ? '' : undefined"
-    draggable="false"
-    :class="
-      cn(
-        'p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none',
-        isActive &&
-          'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
-        menu?.visible && 'p-breadcrumb-item-link-menu-visible'
-      )
-    "
-    @click="handleClick"
-  >
-    <i
-      v-if="hasMissingNodes && isRoot"
-      data-testid="subgraph-breadcrumb-missing-nodes-icon"
-      class="icon-[lucide--triangle-alert] text-warning-background"
-    />
-    <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
-      {{ item.label }}
-    </span>
-    <Badge
-      v-if="item.isBlueprint"
-      data-testid="subgraph-breadcrumb-blueprint-tag"
-      severity="primary"
-    >
-      {{ t('breadcrumbsMenu.blueprint') }}
-    </Badge>
-    <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
-  </div>
   <Menu
-    v-if="isActive || isRoot"
-    ref="menu"
-    :model="menuItems"
+    :open="menuOpen"
+    :items="menuItems"
     :data-testid="`subgraph-breadcrumb-menu-${item.key}`"
-  />
+    @update:open="menuOpen = Boolean($event && isActive && !isEditing)"
+  >
+    <template #trigger>
+      <div
+        ref="wrapperRef"
+        v-tooltip.bottom="{
+          value: tooltipText,
+          showDelay: 512
+        }"
+        :data-testid="`subgraph-breadcrumb-item-${item.key}`"
+        :data-active="isActive ? '' : undefined"
+        draggable="false"
+        :class="
+          cn(
+            'p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none',
+            isActive &&
+              'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
+            menuOpen && 'p-breadcrumb-item-link-menu-visible'
+          )
+        "
+        @click="handleClick"
+      >
+        <i
+          v-if="hasMissingNodes && isRoot"
+          data-testid="subgraph-breadcrumb-missing-nodes-icon"
+          class="icon-[lucide--triangle-alert] text-warning-background"
+        />
+        <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
+          {{ item.label }}
+        </span>
+        <Badge
+          v-if="item.isBlueprint"
+          data-testid="subgraph-breadcrumb-blueprint-tag"
+          severity="primary"
+        >
+          {{ t('breadcrumbsMenu.blueprint') }}
+        </Badge>
+        <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
+      </div>
+    </template>
+  </Menu>
   <Input
     v-if="isEditing"
     ref="itemInputRef"
@@ -98,7 +101,7 @@ const hasMissingNodes = computed(
 )
 
 const { t } = useI18n()
-const menu = ref<InstanceType<typeof Menu>>()
+const menuOpen = ref(false)
 const dialogService = useDialogService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -171,13 +174,11 @@ const handleClick = (event: MouseEvent) => {
   }
 
   if (event.detail === 1) {
-    if (isActive) {
-      menu.value?.toggle(event)
-    } else {
+    if (!isActive) {
       item.command?.({ item: item, originalEvent: event })
     }
   } else if (isActive && event.detail === 2) {
-    menu.value?.hide()
+    menuOpen.value = false
     event.stopPropagation()
     event.preventDefault()
     void nextTick(startRename)

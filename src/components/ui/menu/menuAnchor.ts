@@ -1,5 +1,5 @@
-export function getMenuAnchor(event: Event, kind: 'dropdown' | 'context') {
-  if (kind === 'context' && event instanceof MouseEvent) {
+export function getMenuAnchor(event: Event) {
+  if (event instanceof MouseEvent) {
     return { x: event.clientX, y: event.clientY }
   }
   const target = event.currentTarget ?? event.target
@@ -7,6 +7,6 @@ export function getMenuAnchor(event: Event, kind: 'dropdown' | 'context') {
 
   return {
     x: rect?.left ?? 0,
-    y: (kind === 'dropdown' ? rect?.bottom : rect?.top) ?? 0
+    y: rect?.top ?? 0
   }
 }

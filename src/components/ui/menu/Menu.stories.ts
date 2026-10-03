@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 
@@ -10,7 +9,7 @@ const meta: Meta<typeof Menu> = {
   component: Menu,
   tags: ['autodocs'],
   args: {
-    model: [
+    items: [
       { label: 'Open', icon: 'icon-[lucide--folder-open]' },
       { label: 'Disabled', disabled: true },
       { separator: true },
@@ -19,12 +18,9 @@ const meta: Meta<typeof Menu> = {
   },
   render: (args) => ({
     components: { Button, Menu },
-    setup() {
-      const menu = ref<InstanceType<typeof Menu>>()
-      return { args, menu }
-    },
+    setup: () => ({ args }),
     template:
-      '<Button @click="menu?.toggle($event)">Open menu</Button><Menu ref="menu" v-bind="args" />'
+      '<Menu v-bind="args"><template #trigger><Button>Open menu</Button></template></Menu>'
   })
 }
 
@@ -33,8 +29,8 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 export const Disabled: Story = {
-  args: { model: [{ label: 'Disabled item', disabled: true }] }
+  args: { items: [{ label: 'Disabled item', disabled: true }] }
 }
 export const Nested: Story = {
-  args: { model: [{ label: 'Parent', items: [{ label: 'Child' }] }] }
+  args: { items: [{ label: 'Parent', items: [{ label: 'Child' }] }] }
 }
