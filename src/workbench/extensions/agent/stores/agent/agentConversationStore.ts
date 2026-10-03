@@ -985,6 +985,41 @@ export const useAgentConversationStore = defineStore(
       rememberDepartedTurn(slot.threadId, slot.turnId, reason)
     }
 
+    /**
+     * The mutable message a live turn is written into, not the snapshot copy
+     * in `messages`: transports emit snapshots, so only this object carries
+     * parts applied since the last emit.
+     */
+    function liveTurnMessage(turn: LiveTurn): AssistantMessage | null {
+      const slot = activeSlot.value
+      if (
+        slot !== null &&
+        turn.threadId === slot.threadId &&
+        turn.messageId === slot.turnId
+      )
+        return slot.message
+      const entry = backgroundTurns.get(turn.messageId)
+      if (!entry || entry.messageId !== turn.messageId || entry.settled)
+        return null
+      return entry.message
+    }
+
+    /**
+     * Whether this turn is already showing `askId`. Turn recovery asks before
+     * re-delivering an ask off a persisted row: the card a hydrate drew is on
+     * screen without the session's ask ledger ever having seen a frame for
+     * it, and only this catches that one. Reads the mutable message, so it
+     * answers for the current moment and takes no reactive dependency.
+     */
+    function isApprovalShown(turn: LiveTurn, askId: string): boolean {
+      const message = liveTurnMessage(turn)
+      return (
+        message?.parts.some(
+          (part) => part.type === 'runApproval' && part.askId === askId
+        ) ?? false
+      )
+    }
+
     function clearActive(): void {
       activeSlot.value = null
     }
@@ -1248,6 +1283,7 @@ export const useAgentConversationStore = defineStore(
       dropBackgroundTurns,
       liveTurns,
       settleTurn,
+      isApprovalShown,
       reset,
       hydrate
     }

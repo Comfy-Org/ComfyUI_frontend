@@ -174,11 +174,22 @@ const MAX_HYDRATION_MAILBOXES = 32
 const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
+/** How long a restored ask waits for its own broadcast before it counts as lost. */
+const LATE_ASK_FRAME_GRACE_MS = 2000
+
+/**
+ * Why a recovery job is running, which is what separates an ask the socket
+ * genuinely dropped from one that merely had not been published when a
+ * hydrate's history fetch went out. Only the former is a defect.
+ */
+type RecoveryCause = 'reconnect' | 'hydrate'
+
+type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
 type TurnOutcome =
   | { kind: 'terminal'; parts: AssistantMessage['parts'] | undefined }
   | { kind: 'thread-missing' }
-  | { kind: 'streaming' }
+  | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
   | { kind: 'error'; message: string }
 
 function isTerminalTurnStatus(
@@ -443,7 +454,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let unsubscribeStatus: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
-  const recoveringTurns = new Map<string, AbortController>()
+  interface RunningRecovery {
+    controller: AbortController
+    cause: RecoveryCause
+  }
+  const recoveringTurns = new Map<string, RunningRecovery>()
+  /**
+   * Asks recovery must not re-deliver: one it already restored, one a frame
+   * has delivered, and any the user has answered or the server has resolved.
+   * Without the latter, a poll whose snapshot predates the answer would
+   * resurrect a card the user is done with, splitting the reply that has
+   * since resumed streaming. Deliberately outlives `newChat`/`loadThread`:
+   * an `ask_id` carries its `message_id`, so it is never reused.
+   */
+  const deliveredAsks = new Set<string>()
+  const lateAskReports = new Map<string, ReturnType<typeof setTimeout>>()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -737,7 +762,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
       rememberSnapshotTurn(conversationStore.activeTurnId)
-      reconcileLiveTurns()
+      reconcileLiveTurns('hydrate')
       readyThreadId.value = threadId
       drainHydration(buffer)
       const workflowReady = await workflow?.restored?.(
@@ -787,8 +812,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    for (const recovery of recoveringTurns.values()) recovery.abort()
+    for (const running of recoveringTurns.values()) running.controller.abort()
     recoveringTurns.clear()
+    for (const scheduled of lateAskReports.values()) clearTimeout(scheduled)
+    lateAskReports.clear()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -1334,6 +1361,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setAskAnswering(askId, true)
     try {
       await sendAnswer(currentThreadId, askId, selection)
+      deliveredAsks.add(askId)
       conversationStore.commitAsk(askId, currentThreadId)
       return true
     } catch (error) {
@@ -1364,6 +1392,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
           )
           pushError(i18n.global.t('agent.runApproval.answerFailed'))
         }
+        // The card is retired for good here, by resolution (409) or because
+        // this client could never answer it. Either way a later recovery poll
+        // must not draw it again.
+        deliveredAsks.add(askId)
         conversationStore.retireAsk(askId, currentThreadId)
         return false
       }
@@ -1622,7 +1654,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // owning turn's transport, and the turn is gone in exactly the case that
       // matters, so on its own it would re-enable a card it cannot remove.
       conversationStore.retireAsk(event.data.ask_id, event.data.thread_id)
+      deliveredAsks.add(event.data.ask_id)
       onAskResolved?.(event.data.ask_id)
+    }
+    if (event.type === 'agent_ask') {
+      deliverAsk(event)
+      return
     }
     conversationStore.ingest(event)
     if (event.type === 'agent_active_tab') handleActiveTab(event)
@@ -1649,26 +1686,35 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     connection = 'live'
     if (!reconnected) return
-    reconcileLiveTurns()
+    reconcileLiveTurns('reconnect')
   }
 
-  function reconcileLiveTurns(): void {
-    const turns = conversationStore
-      .liveTurns()
-      .filter((turn) => !recoveringTurns.has(recoveryKey(turn)))
-    for (const turn of turns) void reconcileTurn(turn)
+  function reconcileLiveTurns(cause: RecoveryCause): void {
+    for (const turn of conversationStore.liveTurns())
+      void reconcileTurn(turn, cause)
   }
 
-  async function reconcileTurn(turn: LiveTurn): Promise<void> {
+  async function reconcileTurn(
+    turn: LiveTurn,
+    cause: RecoveryCause
+  ): Promise<void> {
     const key = recoveryKey(turn)
+    const running = recoveringTurns.get(key)
+    // A hydrate job files its ask reports as the benign publish race. Once the
+    // socket has actually dropped that reading is wrong, so a reconnect takes
+    // the job over; anything else defers to the job already running.
+    if (running) {
+      if (cause !== 'reconnect' || running.cause === 'reconnect') return
+      running.controller.abort()
+    }
     const recovery = new AbortController()
-    recoveringTurns.set(key, recovery)
+    recoveringTurns.set(key, { controller: recovery, cause })
     const deadline = setTimeout(
       () => recovery.abort(),
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
-      await recoverTurn(turn, ownedGeneration, recovery.signal)
+      await recoverTurn(turn, cause, ownedGeneration, recovery.signal)
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
@@ -1681,12 +1727,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
     } finally {
       clearTimeout(deadline)
-      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
+      if (recoveringTurns.get(key)?.controller === recovery)
+        recoveringTurns.delete(key)
     }
   }
 
   async function recoverTurn(
     turn: LiveTurn,
+    cause: RecoveryCause,
     generation: number,
     signal: AbortSignal
   ): Promise<void> {
@@ -1701,7 +1749,127 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
         continue
       if (settleFinishedTurn(turn, outcome)) return
+      if (outcome.kind === 'streaming')
+        restoreMissingApproval(turn, outcome.pendingAsk, cause)
     }
+  }
+
+  /**
+   * PM-1738: a turn parked on a tool-call approval stays `streaming` until the
+   * user answers, so a socket drop that swallowed the `agent_ask` frame leaves
+   * the server waiting on a card the panel never drew -- the turn reads as
+   * hung and every follow-up post comes back 409. The polled row still carries
+   * the unanswered ask, so re-deliver it through the store, which routes it to
+   * the same transport the lost frame would have reached, and mirror the one
+   * other thing the socket branch does with an ask.
+   *
+   * Reported at `error` only after a reconnect, where the frame really is
+   * gone. A hydrate's poll can instead be racing a broadcast the server had
+   * not published when its history fetch went out, so that reads as a warning.
+   */
+  function restoreMissingApproval(
+    turn: LiveTurn,
+    pendingAsk: PendingAsk | undefined,
+    cause: RecoveryCause
+  ): void {
+    if (pendingAsk?.kind !== 'run_approval') return
+    if (deliveredAsks.has(pendingAsk.ask_id)) return
+    if (conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
+    deliveredAsks.add(pendingAsk.ask_id)
+    conversationStore.ingest({
+      type: 'agent_ask',
+      data: {
+        ...pendingAsk,
+        thread_id: turn.threadId,
+        message_id: turn.messageId
+      }
+    })
+    markStoppedTurnReady(turn)
+    reportRestoredApproval(turn, pendingAsk.ask_id, cause)
+  }
+
+  /**
+   * The server writes the ask row before it publishes the frame, so a poll
+   * can restore an ask whose broadcast is merely in flight. Only a reconnect
+   * claims a frame was lost, and only once its own broadcast has had a grace
+   * window to turn up -- `withdrawLateAskReport` cancels this when it does.
+   * A hydrate races the same way but never had a dropped socket to blame, so
+   * it files as a warning immediately.
+   */
+  function reportRestoredApproval(
+    turn: LiveTurn,
+    askId: string,
+    cause: RecoveryCause
+  ): void {
+    if (cause !== 'reconnect') {
+      sendRestoredApprovalReport(turn, askId, cause, 'warning')
+      return
+    }
+    lateAskReports.set(
+      askId,
+      setTimeout(() => {
+        lateAskReports.delete(askId)
+        sendRestoredApprovalReport(turn, askId, cause, 'error')
+      }, LATE_ASK_FRAME_GRACE_MS)
+    )
+  }
+
+  /**
+   * Routes an inbound `agent_ask`. One already in the ledger is an ask
+   * recovery has supplied, or one the user has finished with; dropping it on
+   * the id rather than on the rendered parts is what stops a frame delayed
+   * past its own resolution from drawing a card over a resumed reply.
+   *
+   * A frame is only ledgered once its card is actually on screen. `ingest`
+   * has nowhere to route one that arrives before its turn is in memory -- the
+   * window between subscribing and the first history fetch landing -- and
+   * ledgering a frame the store dropped would convince recovery the ask had
+   * been delivered, leaving the panel with no card at all.
+   */
+  function deliverAsk(
+    event: Extract<AgentWsEvent, { type: 'agent_ask' }>
+  ): void {
+    const askId = event.data.ask_id
+    if (deliveredAsks.has(askId)) {
+      withdrawLateAskReport(askId)
+      return
+    }
+    const turn = {
+      threadId: event.data.thread_id,
+      messageId: toTurnId(event.data.message_id)
+    }
+    conversationStore.ingest(event)
+    if (conversationStore.isApprovalShown(turn, askId)) deliveredAsks.add(askId)
+    markStoppedTurnReady(turn)
+  }
+
+  function withdrawLateAskReport(askId: string): void {
+    const scheduled = lateAskReports.get(askId)
+    if (scheduled === undefined) return
+    clearTimeout(scheduled)
+    lateAskReports.delete(askId)
+  }
+
+  function sendRestoredApprovalReport(
+    turn: LiveTurn,
+    askId: string,
+    cause: RecoveryCause,
+    level: 'error' | 'warning'
+  ): void {
+    reportError(
+      new Error('Agent approval ask was missing from the panel when polled'),
+      {
+        surface: 'agent',
+        errorType: 'failure_delivering_agent_approval_ask',
+        level,
+        tags: {
+          feature_area: 'agent',
+          operation: 'recovery',
+          recovery_cause: cause
+        },
+        context: { threadId: turn.threadId, messageId: turn.messageId, askId }
+      }
+    )
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {
@@ -1757,7 +1925,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const anchor = history.find(
         (entry) => entry.role === 'assistant' && entry.id === turn.messageId
       )
-      if (!anchor) return { kind: 'streaming' }
+      if (!anchor) return { kind: 'streaming', pendingAsk: undefined }
       const rows = history
         .filter(
           (entry) =>
@@ -1765,7 +1933,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
         )
         .sort((a, b) => a.seq - b.seq)
       if (rows.some((row) => !isTerminalTurnStatus(row.status)))
-        return { kind: 'streaming' }
+        // PM-1738: a turn parked on an approval persists the unanswered ask on
+        // whichever of its rows is still open, which is the last one to carry
+        // one -- not necessarily the anchor the turn is keyed by.
+        //
+        // Only an open row is read. The server clears `pending_ask` behind the
+        // answer rather than with it (see `(g33)`), so a row it has already
+        // closed can still be carrying one that is spent, and restoring that
+        // would draw a card over a resolved ask. `applyAssistantRow` gates the
+        // hydrate path on the same `row.status` authority.
+        return {
+          kind: 'streaming',
+          pendingAsk: rows.reduce<PendingAsk | undefined>(
+            (found, row) =>
+              isTerminalTurnStatus(row.status)
+                ? found
+                : (row.pending_ask ?? found),
+            undefined
+          )
+        }
       return {
         kind: 'terminal',
         parts: terminalRecoveryParts(rows)

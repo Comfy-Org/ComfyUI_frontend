@@ -83,11 +83,22 @@ export const TURN_DONE_EVENT: AgentWsEvent = {
 const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
 
 /**
+ * The workflow this ask names. Not exported: it is the same workflow the
+ * panel's picker and tab already name, so a spec that matched it as text
+ * would resolve to three elements. `approvalWorkflowLink` below is the
+ * locator a spec should assert on instead.
+ */
+const APPROVAL_WORKFLOW_NAME = 'Unsaved Workflow'
+
+/**
  * The option ids this ask offers. Declared separately because `AgentWsEvent`
  * types `data` loosely, so reading them back off the event would be an
  * `unknown` the route would have to cast.
  */
 const RUN_APPROVAL_OPTION_IDS = ['run', 'cancel'] as const
+
+/** The option id the panel's Run button answers with. */
+export const APPROVAL_RUN_OPTION_ID = RUN_APPROVAL_OPTION_IDS[0]
 
 /**
  * The frame the server sends when a turn parks waiting for the user to approve
@@ -102,8 +113,11 @@ export const RUN_APPROVAL_EVENT: AgentWsEvent = {
     thread_id: THREAD_ID,
     ask_id: RUN_APPROVAL_ASK_ID,
     kind: 'run_approval',
-    prompt: 'Run workflow “Unsaved Workflow”?',
-    context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
+    prompt: `Run workflow “${APPROVAL_WORKFLOW_NAME}”?`,
+    context: {
+      workflow_id: WORKFLOW_ID,
+      workflow_name: APPROVAL_WORKFLOW_NAME
+    },
     options: [
       {
         id: RUN_APPROVAL_OPTION_IDS[0],
@@ -165,6 +179,7 @@ class TurnLockServer {
   private prompt = ''
   private rejected = 0
   private posts = 0
+  private transcripts = 0
   private readonly answered: string[][] = []
   private pendingAsk: AgentPendingAsk | undefined
   private heldTranscript:
@@ -188,6 +203,11 @@ class TurnLockServer {
   /** Every post the server answered, accepted or rejected. */
   get postAttempts(): number {
     return this.posts
+  }
+
+  /** Every transcript GET served, so a spec can wait out a recovery poll. */
+  get transcriptFetches(): number {
+    return this.transcripts
   }
 
   countPost(): void {
@@ -247,6 +267,7 @@ class TurnLockServer {
   }
 
   transcript(threadId = THREAD_ID): AgentMessage[] {
+    this.transcripts++
     if (threadId === OTHER_THREAD_ID)
       return [
         {
@@ -460,6 +481,8 @@ export class AgentTurnLockHarness {
   public readonly sendButton: Locator
   public readonly stopButton: Locator
   public readonly runApprovalButton: Locator
+  public readonly approvalCard: Locator
+  public readonly approvalWorkflowLink: Locator
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
@@ -489,6 +512,21 @@ export class AgentTurnLockHarness {
     })
     this.runApprovalButton = this.panel.getByRole('button', {
       name: enMessages.agent.runApproval.run,
+      exact: true
+    })
+    // RunApprovalCard.vue has no landmark of its own, and its lead line varies
+    // with whether the workflow name is shown. The question line is the one
+    // element every variant renders exactly once per card, so counting it
+    // counts cards -- which is what the no-duplicate-card assertion needs.
+    this.approvalCard = this.panel.getByText(
+      enMessages.agent.runApproval.question,
+      { exact: true }
+    )
+    // The workflow the ask names, as the card offers it: a link the user can
+    // open. Anchored on role + accessible name rather than on the text, which
+    // also appears on the panel's workflow picker and inside this link.
+    this.approvalWorkflowLink = this.panel.getByRole('button', {
+      name: APPROVAL_WORKFLOW_NAME,
       exact: true
     })
     // WorkSummary.vue renders three labels off the elapsed total: `worked`
@@ -526,6 +564,11 @@ export class AgentTurnLockHarness {
 
   postAttempts(): number {
     return this.server.postAttempts
+  }
+
+  /** Every transcript GET served, so a spec can wait out a recovery poll. */
+  transcriptFetches(): number {
+    return this.server.transcriptFetches
   }
 
   /** Opens the panel on a blank workflow and points the composer at that tab. */
@@ -587,6 +630,21 @@ export class AgentTurnLockHarness {
   /** Makes an ask available through transcript hydration, independently of WS delivery. */
   primePendingAsk(event: AgentWsEvent): void {
     this.server.recordAsk(event)
+  }
+
+  /**
+   * Parks the live turn on a run-approval ask the way the service does while
+   * it waits for the user: the assistant row stays `streaming` (so posts keep
+   * returning 409) and starts carrying `pending_ask`. No frame is pushed --
+   * that models the `agent_ask` a dropped socket never delivered.
+   */
+  parkOnApproval(): void {
+    this.primePendingAsk(RUN_APPROVAL_EVENT)
+  }
+
+  /** The frame the server pushes once it accepts an answer to the approval. */
+  resolveApproval(ws: WebSocketRoute): void {
+    this.push(ws, RUN_APPROVAL_RESOLVED_EVENT)
   }
 
   /** True only when a test explicitly primed transcript-based recovery. */

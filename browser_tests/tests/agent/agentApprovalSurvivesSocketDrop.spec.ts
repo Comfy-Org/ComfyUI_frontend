@@ -1,0 +1,122 @@
+import { expect } from '@playwright/test'
+
+import {
+  APPROVAL_RUN_OPTION_ID,
+  RUN_APPROVAL_EVENT,
+  TURN_IN_PROGRESS_MESSAGE,
+  agentTurnLockTest as test
+} from '@e2e/fixtures/agentTurnLockFixture'
+
+// PM-1738, filed under PM-1199. Reported from the agent panel while building an
+// img2img and then img2video workflow: "after generate workflow, agent stopped,
+// I couldn't run but need to restart agent tab. Session was remained so that I
+// could run again with existing session."
+//
+// The service side was never hung. Its logs show the turn accepted, then
+// twenty-three minutes of silence, then two posts answered 409, then a GET of
+// the transcript (the tab restart) and an `asks/.../answer` four seconds later
+// — the user approving a tool call the moment a reload finally drew it. A turn
+// parked on a run approval stays `streaming` for as long as the user takes to
+// answer, so the socket drop that swallowed the `agent_ask` frame left the
+// server waiting on a card the panel never drew: no way forward, and every
+// follow-up message rejected by the single-active-turn guard.
+//
+// Distinct from agentTurnSurvivesSocketDrop.spec.ts, which drops the socket
+// around a turn the server finishes on its own. Here the server cannot finish
+// without an answer, so keeping the turn live is not enough — the ask itself
+// has to come back.
+test.describe.configure({ timeout: 120_000 })
+test.use({ connectWebSocketToServer: false })
+
+test.describe(
+  'Agent approval ask across a transient websocket reconnect',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    const PROMPT = 'build an img2img workflow and then turn it into img2video'
+
+    test.beforeEach(async ({ turnLock }) => {
+      await turnLock.openOnBlankWorkflow()
+      await turnLock.startTurn(PROMPT)
+    })
+
+    test('surfaces an approval whose frame the drop swallowed, and resumes on it', async ({
+      turnLock
+    }) => {
+      const nextPrompt = 'now raise the video length to 48 frames'
+
+      const reconnected =
+        await test.step('the turn parks on an approval whose frame never arrives', async () => {
+          turnLock.parkOnApproval()
+          await expect(turnLock.approvalCard).toHaveCount(0)
+          return turnLock.dropSocket()
+        })
+
+      await test.step('the approval surfaces without a reload', async () => {
+        await expect(turnLock.approvalCard).toBeVisible({ timeout: 30_000 })
+        await expect(turnLock.approvalWorkflowLink).toBeVisible()
+        await expect(turnLock.stopButton).toBeVisible()
+      })
+
+      await test.step('answering it reaches the server', async () => {
+        await turnLock.runApprovalButton.click()
+
+        // The fake's answer route 404s any ask id but the parked one, so a
+        // recorded answer proves the panel answered the ask it restored --
+        // and this reads the server, not the DOM, so it proves the answer
+        // actually left the client.
+        await expect
+          .poll(() => turnLock.answeredAsks())
+          .toEqual([APPROVAL_RUN_OPTION_ID])
+
+        turnLock.resolveApproval(reconnected)
+        await expect(turnLock.approvalCard).toHaveCount(0)
+      })
+
+      await test.step('the thread is usable again', async () => {
+        turnLock.finishTurn(reconnected)
+        await expect(turnLock.sendButton).toBeVisible()
+
+        await turnLock.composer.fill(nextPrompt)
+        await turnLock.sendButton.click()
+
+        // The post has to have actually reached the server before the absence
+        // of a turn-in-progress notice means anything.
+        await expect
+          .poll(() => turnLock.postAttempts())
+          .toBeGreaterThanOrEqual(2)
+        await expect(turnLock.userBubbles).toHaveCount(2)
+        await expect(turnLock.userBubbles.last()).toHaveText(nextPrompt)
+        await expect(
+          turnLock.panel
+            .getByRole('alert')
+            .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
+        ).toHaveCount(0)
+        expect(turnLock.rejectedPosts()).toBe(0)
+      })
+    })
+
+    // Recovery re-reads the persisted row on every poll, so an ask the socket
+    // did deliver has to be recognised as already on screen rather than
+    // restored again.
+    test('does not redraw an approval the socket already delivered', async ({
+      turnLock,
+      getWebSocket
+    }) => {
+      turnLock.parkOnApproval()
+      turnLock.push(await getWebSocket(), RUN_APPROVAL_EVENT)
+      await expect(turnLock.approvalCard).toBeVisible()
+      const pollsBefore = turnLock.transcriptFetches()
+
+      await turnLock.dropSocket()
+
+      // toHaveCount returns as soon as it passes, so the count alone would
+      // assert nothing before recovery has even polled. Wait for two polls to
+      // have actually served the parked row, then hold the panel to one card.
+      await expect
+        .poll(() => turnLock.transcriptFetches(), { timeout: 30_000 })
+        .toBeGreaterThanOrEqual(pollsBefore + 2)
+      await expect(turnLock.approvalCard).toHaveCount(1)
+      await expect(turnLock.runApprovalButton).toHaveCount(1)
+    })
+  }
+)
