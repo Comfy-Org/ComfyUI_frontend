@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
+import {
+  isHostWhitelisted,
+  isLoopbackHost,
+  normalizeHost
+} from '@/utils/hostWhitelist'
 
 describe('hostWhitelist utils', () => {
   describe('normalizeHost', () => {
@@ -140,6 +144,48 @@ describe('hostWhitelist utils', () => {
       ])('should NOT allow %o', (input) => {
         expect(isHostWhitelisted(input)).toBe(false)
       })
+    })
+  })
+  describe('isLoopbackHost', () => {
+    it.for([
+      'localhost',
+      'LOCALHOST',
+      'localhost.',
+      'app.localhost',
+      'localhost:5173',
+      '127.0.0.1',
+      '127.1.2.3',
+      '127.000.000.001',
+      '[::1]',
+      '::1',
+      '0:0:0:0:0:0:0:1',
+      '[0:0:0:0:0:0:0:1]',
+      // Bound to every interface, so a URL naming it was written here.
+      '0.0.0.0',
+      '::',
+      '[::]',
+      // IPv4-mapped IPv6, in both the dotted form and the hex form `URL`
+      // serializes it to.
+      '::ffff:127.0.0.1',
+      '[::ffff:7f00:1]'
+    ])('treats %o as this machine', (input) => {
+      expect(isLoopbackHost(input)).toBe(true)
+    })
+
+    it.for([
+      'gpu-box.lan',
+      '10.0.0.5',
+      '100.74.161.87',
+      '128.0.0.1',
+      '227.0.0.1',
+      'notlocalhost',
+      'localhost.evil.com',
+      '2001:db8::1',
+      '::ffff:10.0.0.1',
+      // Allowed for SSO by isHostWhitelisted, but it is not this machine.
+      'cloud.comfy.org'
+    ])('does NOT treat %o as this machine', (input) => {
+      expect(isLoopbackHost(input)).toBe(false)
     })
   })
 })

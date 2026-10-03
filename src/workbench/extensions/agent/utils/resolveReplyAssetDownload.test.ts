@@ -38,4 +38,23 @@ describe('resolveReplyAssetDownload', () => {
       expect(download.filename).toBe('Generated asset.png')
     }
   )
+
+  // A loopback reply asset reaches ReplyAsset.url already re-homed onto the
+  // page's own API — absolute, and under the install's subpath. The download
+  // action has to strip that back to a route, or `api.fetchApi` prefixes the
+  // base a second time and the download 404s for exactly the local-agent
+  // assets the re-homing exists for.
+  it('strips a re-homed absolute url back to an api route', async () => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (route) => `/ComfyBackendDirect/api${route}`
+    )
+    vi.mocked(isAssetPreviewSupported).mockReturnValue(false)
+
+    const download = await resolveReplyAssetDownload({
+      ...asset,
+      url: 'http://100.74.161.87:8190/ComfyBackendDirect/api/view?filename=ComfyUI_00001_.png&type=output'
+    })
+
+    expect(download.url).toBe('/view?filename=ComfyUI_00001_.png&type=output')
+  })
 })
