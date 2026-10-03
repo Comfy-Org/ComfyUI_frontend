@@ -1,3 +1,4 @@
+import { accessSync, constants, statSync } from 'node:fs'
 import type { ClientRequest, IncomingMessage } from 'node:http'
 import type { ProxyOptions } from 'vite'
 
@@ -65,6 +66,17 @@ export function createDevAgentConfig(env: NodeJS.ProcessEnv) {
     if (protocol !== 'https:' && !(protocol === 'http:' && loopback)) {
       throw new Error(
         `DEV_AGENT_URL must use https unless it targets loopback; got ${url}`
+      )
+    }
+  }
+
+  if (dataDir) {
+    try {
+      accessSync(dataDir, constants.R_OK)
+      if (!statSync(dataDir).isDirectory()) throw new Error()
+    } catch {
+      throw new Error(
+        `DEV_AGENT_DATA_DIR must be an existing readable directory; got ${dataDir}`
       )
     }
   }

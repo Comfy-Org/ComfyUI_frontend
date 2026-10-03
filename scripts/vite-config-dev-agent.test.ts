@@ -1,12 +1,17 @@
 // @vitest-environment node
 import { execFile } from 'node:child_process'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
 import { createDevAgentConfig } from '../build/devAgentConfig'
 
 const execFileAsync = promisify(execFile)
+const agentDataDir = mkdtempSync(join(tmpdir(), 'vite-agent-config-'))
+afterAll(() => rmSync(agentDataDir, { force: true, recursive: true }))
 const printAgentConfig =
   "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, host: config.server?.host })))"
 
@@ -58,7 +63,7 @@ describe('dev agent proxy transport', () => {
   it('reads the live token from the data directory instead of a fixed one', () => {
     const { proxy } = createDevAgentConfig({
       DEV_AGENT_URL: 'http://127.0.0.1:6286',
-      DEV_AGENT_DATA_DIR: '/tmp/comfy-agent'
+      DEV_AGENT_DATA_DIR: agentDataDir
     })
     expect(proxy).toMatchObject({ target: 'http://127.0.0.1:6286', ws: true })
     expect(proxy?.headers).not.toHaveProperty('Authorization')
@@ -72,6 +77,15 @@ describe('dev agent proxy transport', () => {
         DEV_AGENT_DATA_DIR: '/tmp/comfy-agent'
       })
     ).toThrow('two sources for the same credential')
+  })
+
+  it('rejects an unavailable discovery directory at configuration time', () => {
+    expect(() =>
+      createDevAgentConfig({
+        DEV_AGENT_URL: 'http://127.0.0.1:6286',
+        DEV_AGENT_DATA_DIR: join(agentDataDir, 'missing')
+      })
+    ).toThrow('DEV_AGENT_DATA_DIR must be an existing readable directory')
   })
 
   it.for(['http://agent.example.com', 'http://localhost.example.com'])(
