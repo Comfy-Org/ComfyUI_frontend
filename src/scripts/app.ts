@@ -1324,6 +1324,14 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean !== false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
+    if (loadId < this.committedGraphLoadSequence) {
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Graph load superseded by a newer load', 'AbortError')
+      )
+      return undefined
+    }
+
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
@@ -1509,17 +1517,6 @@ export class ComfyApp {
     let activatedWorkflow: LoadedComfyWorkflow | undefined
     try {
       try {
-        if (loadId < this.committedGraphLoadSequence) {
-          await useExtensionService().invokeExtensionsAsync(
-            'onGraphLoadError',
-            new DOMException(
-              'Graph load superseded by a newer load',
-              'AbortError'
-            )
-          )
-          return undefined
-        }
-
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
