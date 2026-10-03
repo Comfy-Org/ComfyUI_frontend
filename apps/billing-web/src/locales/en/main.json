@@ -262,7 +262,9 @@
           "alipay": "Alipay"
         },
         "completeVerification": "Complete verification",
-        "cancel": "Cancel payment"
+        "cancel": "Cancel payment",
+        "canceling": "Canceling…",
+        "notCancelable": "This payment can't be canceled right now. Finish verifying, or contact support if it doesn't go through."
       },
       "ending": {
         "thisWorkspace": "this workspace",
