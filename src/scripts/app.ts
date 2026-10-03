@@ -101,6 +101,7 @@ import { useExtensionStore } from '@/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
@@ -2041,6 +2042,13 @@ export class ComfyApp {
             // Account preconditions (sign-in, subscription, credits) open their
             // own modal and must stay out of the error panel and error count.
             if (promptPrecondition) {
+              // A precondition rejection (e.g. FREE_TIER_EXHAUSTED) never
+              // becomes a job, so it never sets app.lastExecutionError -
+              // the signal auto-queue checks before re-submitting. Without
+              // this, auto-queue would immediately resubmit the same
+              // request it just saw rejected, hammering the endpoint until
+              // the user notices and turns it off.
+              useQueueSettingsStore().mode = 'disabled'
               useAccountPreconditionDialog().open(promptPrecondition)
               console.error(error)
               break
