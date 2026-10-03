@@ -11,22 +11,26 @@ describe('DeveloperPlatformSection', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.hero.badge', 'en')
+        name: t('platform.hero.badge', {}, { locale: 'en' })
       })
     ).toBeTruthy()
-    expect(screen.getByText(t('home.platform.body', 'en'))).toBeTruthy()
-    expect(screen.getByText(t('platform.hero.badge', 'en'))).toBeTruthy()
+    expect(
+      screen.getByText(t('home.platform.body', {}, { locale: 'en' }))
+    ).toBeTruthy()
+    expect(
+      screen.getByText(t('platform.hero.badge', {}, { locale: 'en' }))
+    ).toBeTruthy()
 
     const hrefOf = (name: string) =>
       screen.getByRole('link', { name }).getAttribute('href')
-    expect(hrefOf(t('platform.hero.getStarted', 'en'))).toBe(
+    expect(hrefOf(t('platform.hero.getStarted', {}, { locale: 'en' }))).toBe(
       getRoutes('en').platform
     )
     const getStartedLink = screen.getByRole('link', {
-      name: t('platform.hero.getStarted', 'en')
+      name: t('platform.hero.getStarted', {}, { locale: 'en' })
     })
     expect(getStartedLink.getAttribute('target')).toBeNull()
-    expect(hrefOf(t('platform.hero.readDocs', 'en'))).toBe(
+    expect(hrefOf(t('platform.hero.readDocs', {}, { locale: 'en' }))).toBe(
       externalLinks.docsPlatform
     )
   })
@@ -36,13 +40,13 @@ describe('DeveloperPlatformSection', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.hero.badge', 'zh-CN')
+        name: t('platform.hero.badge', {}, { locale: 'zh-CN' })
       })
     ).toBeTruthy()
     expect(
       screen
         .getByRole('link', {
-          name: t('platform.hero.getStarted', 'zh-CN')
+          name: t('platform.hero.getStarted', {}, { locale: 'zh-CN' })
         })
         .getAttribute('href')
     ).toBe(getRoutes('zh-CN').platform)

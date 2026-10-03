@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { KeyRound, Pause, Play } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -12,7 +13,6 @@ import {
   RESHOOT_MOTIONS,
   frameTime
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import CinematicMenu from '../CinematicMenu.vue'
 
@@ -33,6 +33,7 @@ const {
   keyed: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ key: []; clear: [] }>()
 const frame = defineModel<number>('frame', { required: true })
@@ -41,7 +42,7 @@ const motion = defineModel<ReshootMotion>('motion', { required: true })
 const motionOptions = computed(() =>
   RESHOOT_MOTIONS.map((id) => ({
     id,
-    label: rc(`reshoot.motion.${id}`, locale)
+    label: t(`reshoot.motion.${id}`)
   }))
 )
 const motionValue = computed({
@@ -71,8 +72,8 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
     <div class="flex items-center gap-3">
       <button
         type="button"
-        :aria-label="rc(playing ? 'reshoot.pause' : 'reshoot.play', locale)"
-        :title="rc(playing ? 'reshoot.pause' : 'reshoot.play', locale)"
+        :aria-label="t(playing ? 'reshoot.pause' : 'reshoot.play')"
+        :title="t(playing ? 'reshoot.pause' : 'reshoot.play')"
         class="grid size-9 shrink-0 place-items-center rounded-full text-primary-warm-white ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
         @click="playing = !playing"
       >
@@ -86,7 +87,7 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
           :min="0"
           :max="frames - 1"
           :step="1"
-          :aria-label="rc('reshoot.move.frame', locale)"
+          :aria-label="t('reshoot.move.frame')"
           :aria-valuetext="frameTime(frame)"
           class="w-full accent-primary-comfy-yellow"
         />
@@ -94,9 +95,7 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
           v-for="key in keys"
           :key="key.frame"
           type="button"
-          :aria-label="
-            rc('reshoot.move.goTo', locale, { time: frameTime(key.frame) })
-          "
+          :aria-label="t('reshoot.move.goTo', { time: frameTime(key.frame) })"
           :class="
             cn(
               'absolute bottom-0 size-2.5 -translate-x-1/2 rotate-45 rounded-[2px]',
@@ -130,7 +129,7 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
         @click="emit('key')"
       >
         <KeyRound class="size-3.5" aria-hidden="true" />
-        {{ rc(keyed ? 'reshoot.move.unkey' : 'reshoot.move.key', locale) }}
+        {{ t(keyed ? 'reshoot.move.unkey' : 'reshoot.move.key') }}
       </button>
     </div>
     <div class="flex min-h-9 items-center gap-2 pl-12">
@@ -138,29 +137,24 @@ const left = (at: number) => `${(at / Math.max(1, frames - 1)) * 100}%`
         <CinematicMenu
           v-model="motionValue"
           :options="motionOptions"
-          :heading="rc('reshoot.move.motion', locale)"
+          :heading="t('reshoot.move.motion')"
           trigger-class="h-9 gap-2 border border-transparency-white-t8 px-3 text-sm text-primary-warm-white hover:border-transparency-white-t20"
         >
           <span class="text-primary-warm-gray">
-            {{ rc('reshoot.move.motion', locale) }}
+            {{ t('reshoot.move.motion') }}
           </span>
-          {{ rc(`reshoot.motion.${motion}`, locale) }}
+          {{ t(`reshoot.motion.${motion}`) }}
         </CinematicMenu>
         <button
           type="button"
           class="h-9 rounded-xl px-3 text-xs text-primary-warm-gray hover:text-primary-warm-white"
           @click="emit('clear')"
         >
-          {{ rc('reshoot.move.clear', locale) }}
+          {{ t('reshoot.move.clear') }}
         </button>
       </template>
       <p v-else class="text-xs text-primary-warm-gray">
-        {{
-          rc(
-            keys.length ? 'reshoot.move.oneKey' : 'reshoot.move.noKeys',
-            locale
-          )
-        }}
+        {{ t(keys.length ? 'reshoot.move.oneKey' : 'reshoot.move.noKeys') }}
       </p>
     </div>
   </div>

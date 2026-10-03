@@ -59,7 +59,8 @@ export {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   CHECKOUT_JOURNEY_SCHEMA_VERSION,
   getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload
+  getCheckoutJourneyTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
 } from './checkoutJourney.js'
 export type {
   BillingCycle,

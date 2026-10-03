@@ -139,17 +139,19 @@ test.describe('Agent navigation @smoke', () => {
       const nav = page.getByRole('navigation', { name: 'Main navigation' })
       await nav
         .getByTestId('desktop-nav-links')
-        .getByRole('button', { name: t('nav.products', locale) })
+        .getByRole('button', {
+          name: t('nav.products', {}, { locale })
+        })
         .hover()
-      const headerLink = nav
-        .getByTestId('nav-dropdown')
-        .getByRole('link', { name: t('nav.comfyAgent', locale) })
+      const headerLink = nav.getByTestId('nav-dropdown').getByRole('link', {
+        name: t('nav.comfyAgent', {}, { locale })
+      })
       await expect(headerLink).toBeVisible()
       await expect(headerLink).toHaveAttribute('href', expectedHref)
 
-      const footerLink = page
-        .getByRole('contentinfo')
-        .getByRole('link', { name: t('nav.comfyAgent', locale) })
+      const footerLink = page.getByRole('contentinfo').getByRole('link', {
+        name: t('nav.comfyAgent', {}, { locale })
+      })
       await expect(footerLink).toHaveAttribute('href', expectedHref)
     })
   }

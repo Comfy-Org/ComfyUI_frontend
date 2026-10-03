@@ -1,4 +1,4 @@
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
 import { subscribeUrl } from '../data/pricingPlans'
 import type { BillingCycle } from '../data/pricingPlans'
 import type { Locale, TranslationKey } from '../i18n/translations'
@@ -38,9 +38,10 @@ function offersFrom(
   locale: Locale,
   priceKeysOf: (tier: PricingTier) => Record<BillingCycle, TranslationKey>
 ): PricingOffer[] {
+  const { t } = translationsFor(locale)
   return tiers.flatMap((tier) =>
     cycles.flatMap((cycle) => {
-      const display = t(priceKeysOf(tier)[cycle], locale).trim()
+      const display = t(priceKeysOf(tier)[cycle]).trim()
       const match = /^\$(\d+(?:\.\d+)?)$/.exec(display)
       if (!match) {
         console.warn(
@@ -50,7 +51,7 @@ function offersFrom(
       }
       return [
         {
-          name: `${t(tier.labelKey, locale)} (${t(`pricing.cycle.${cycle}`, locale)})`,
+          name: `${t(tier.labelKey)} (${t(`pricing.cycle.${cycle}`)})`,
           price: match[1],
           cycle,
           url: subscribeUrl(tier.slug, cycle)

@@ -1,7 +1,7 @@
 import { externalLinks, getRoutes, localizeHref } from '../config/routes'
 import { categoryPath } from './learningPaths'
 import type { Locale } from '../i18n/translations'
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
 
 export type NavColumnItem = {
   label: string
@@ -47,11 +47,12 @@ export function getMainNavigation(
   locale: Locale,
   workshopInBuild = false
 ): NavItem[] {
+  const { t } = translationsFor(locale)
   const routes = getRoutes(locale)
   const modelsEntry: NavItem[] = workshopInBuild
     ? [
         {
-          label: t('nav.workshop', locale),
+          label: t('nav.workshop'),
           href: routes.workshop,
           badge: 'new'
         }
@@ -60,7 +61,7 @@ export function getMainNavigation(
   const productEntry: NavColumnItem[] = workshopInBuild
     ? [
         {
-          label: t('nav.comfyWorkshop', locale),
+          label: t('nav.comfyWorkshop'),
           href: routes.workshop,
           badge: 'new'
         }
@@ -69,66 +70,81 @@ export function getMainNavigation(
   return [
     ...modelsEntry,
     {
-      label: t('nav.products', locale),
+      label: t('nav.products'),
       badge: 'new',
       featured: {
         imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
         videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
-        imageAlt: t('nav.featuredProductsAlt', locale),
-        title: t('nav.featuredProductsTitle', locale),
+        imageAlt: t('nav.featuredProductsAlt'),
+        title: t('nav.featuredProductsTitle'),
         cta: {
-          label: t('nav.featuredProductsCta', locale),
-          ariaLabel: t('nav.featuredProductsCtaAria', locale),
+          label: t('nav.featuredProductsCta'),
+          ariaLabel: t('nav.featuredProductsCtaAria'),
           href: routes.geminiOmni
         }
       },
       columns: [
         {
-          header: t('nav.products', locale),
+          header: t('nav.products'),
           items: [
             ...productEntry,
-            { label: t('nav.comfyLocal', locale), href: routes.download },
-            { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
-              label: t('nav.developerPlatform', locale),
+              label: t('nav.comfyLocal'),
+              href: routes.download
+            },
+            {
+              label: t('nav.comfyCloud'),
+              href: routes.cloud
+            },
+            {
+              label: t('nav.developerPlatform'),
               href: routes.platform,
               badge: 'new'
             },
             {
-              label: t('nav.comfyRouter', locale),
+              label: t('nav.comfyRouter'),
               href: routes.platformRouter,
               badge: 'new'
             },
             {
-              label: t('nav.comfyEnterprise', locale),
+              label: t('nav.comfyEnterprise'),
               href: routes.enterprise
             },
             {
-              label: t('nav.managedBuilds', locale),
+              label: t('nav.managedBuilds'),
               href: routes.managedBuilds
             }
           ]
         },
         {
-          header: t('nav.colFeatures', locale),
+          header: t('nav.colFeatures'),
           items: [
-            { label: t('nav.mcpServer', locale), href: routes.mcp },
             {
-              label: t('nav.comfyAgent', locale),
+              label: t('nav.mcpServer'),
+              href: routes.mcp
+            },
+            {
+              label: t('nav.comfyAgent'),
               href: routes.agent,
               badge: 'new'
             },
             {
-              label: t('nav.comfyCli', locale),
+              label: t('nav.comfyCli'),
               href: routes.cli
             },
             // TODO: no page yet — re-enable when landing pages ship
-            // { label: t('nav.appMode', locale), href: '#' },
-            // { label: t('nav.agentSkills', locale), href: '#' },
-            { label: t('nav.launches', locale), href: routes.launches },
-            { label: t('nav.supportedModels', locale), href: routes.models },
+            // { label: t('nav.appMode'), href: '#' },
+            // { label: t('nav.agentSkills'), href: '#' },
             {
-              label: t('nav.docs', locale),
+              label: t('nav.launches'),
+              href: routes.launches
+            },
+            {
+              label: t('nav.supportedModels'),
+              href: routes.models
+            },
+            {
+              label: t('nav.docs'),
               href: externalLinks.docs,
               external: true
             }
@@ -136,18 +152,18 @@ export function getMainNavigation(
         }
       ]
     },
-    { label: t('nav.pricing', locale), href: routes.pricing },
+    { label: t('nav.pricing'), href: routes.pricing },
     {
-      label: t('nav.community', locale),
+      label: t('nav.community'),
       badge: 'new',
       featured: {
         imageSrc:
           'https://media.comfy.org/website/learning/advertising3-thumb.png',
-        imageAlt: t('nav.featuredCommunityAlt', locale),
-        title: t('nav.featuredCommunityTitle', locale),
+        imageAlt: t('nav.featuredCommunityAlt'),
+        title: t('nav.featuredCommunityTitle'),
         cta: {
-          label: t('cta.watchDemo', locale),
-          ariaLabel: t('nav.featuredCommunityCtaAria', locale),
+          label: t('cta.watchDemo'),
+          ariaLabel: t('nav.featuredCommunityCtaAria'),
           href: localizeHref(
             `${categoryPath('ads')}product-photography/`,
             locale
@@ -156,63 +172,66 @@ export function getMainNavigation(
       },
       columns: [
         {
-          header: t('nav.colPrograms', locale),
+          header: t('nav.colPrograms'),
           items: [
-            { label: t('nav.comfyHub', locale), href: externalLinks.workflows },
             {
-              label: t('nav.fdct', locale),
+              label: t('nav.comfyHub'),
+              href: externalLinks.workflows
+            },
+            {
+              label: t('nav.fdct'),
               href: routes.fdct,
               badge: 'new'
             },
             {
-              label: t('nav.customerStories', locale),
+              label: t('nav.customerStories'),
               href: routes.customers
             },
             {
-              label: t('nav.events', locale),
+              label: t('nav.events'),
               href: routes.events,
               badge: 'new'
             },
             {
-              label: t('nav.affiliates', locale),
+              label: t('nav.affiliates'),
               href: routes.affiliates
             },
             {
-              label: t('nav.learning', locale),
+              label: t('nav.learning'),
               href: routes.learning
             }
           ]
         },
         {
-          header: t('nav.colConnect', locale),
+          header: t('nav.colConnect'),
           items: [
             {
-              label: t('nav.discord', locale),
+              label: t('nav.discord'),
               href: externalLinks.discord,
               external: true
             },
             {
-              label: t('nav.github', locale),
+              label: t('nav.github'),
               href: externalLinks.github,
               external: true
             },
             {
-              label: t('nav.youtube', locale),
+              label: t('nav.youtube'),
               href: externalLinks.youtube,
               external: true
             },
             {
-              label: t('nav.reddit', locale),
+              label: t('nav.reddit'),
               href: externalLinks.reddit,
               external: true
             },
             {
-              label: t('nav.x', locale),
+              label: t('nav.x'),
               href: externalLinks.x,
               external: true
             },
             {
-              label: t('nav.instagram', locale),
+              label: t('nav.instagram'),
               href: externalLinks.instagram,
               external: true
             }
@@ -221,37 +240,46 @@ export function getMainNavigation(
       ]
     },
     {
-      label: t('nav.company', locale),
+      label: t('nav.company'),
       featured: {
         imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
-        imageAlt: t('nav.featuredCompanyAlt', locale),
-        title: t('nav.featuredCompanyTitle', locale),
+        imageAlt: t('nav.featuredCompanyAlt'),
+        title: t('nav.featuredCompanyTitle'),
         cta: {
-          label: t('cta.watchNow', locale),
-          ariaLabel: t('nav.featuredCompanyCtaAria', locale),
+          label: t('cta.watchNow'),
+          ariaLabel: t('nav.featuredCompanyCtaAria'),
           href: routes.customerVideoBlackMath
         }
       },
       columns: [
         {
-          header: t('nav.company', locale),
+          header: t('nav.company'),
           items: [
-            { label: t('nav.aboutUs', locale), href: routes.about },
-            { label: t('nav.careers', locale), href: routes.careers },
-            { label: t('nav.contact', locale), href: routes.contact }
+            {
+              label: t('nav.aboutUs'),
+              href: routes.about
+            },
+            {
+              label: t('nav.careers'),
+              href: routes.careers
+            },
+            {
+              label: t('nav.contact'),
+              href: routes.contact
+            }
           ]
         },
         {
-          header: t('nav.colMore', locale),
+          header: t('nav.colMore'),
           items: [
             {
-              label: t('nav.customerStories', locale),
+              label: t('nav.customerStories'),
               href: routes.customers
             },
             // TODO: no /brand page yet
-            // { label: t('nav.brand', locale), href: '#' },
+            // { label: t('nav.brand'), href: '#' },
             {
-              label: t('nav.blogs', locale),
+              label: t('nav.blogs'),
               href: externalLinks.blog,
               external: true
             }
