@@ -933,6 +933,7 @@
     "Copy Image": "Görüntüyü Kopyala",
     "Delete": "Sil",
     "Distribute Nodes": "Düğümleri Dağıt",
+    "Download Images": "Görüntüleri İndir",
     "Duplicate": "Çoğalt",
     "Edit Subgraph Widgets": "Alt Grafik Widget'larını Düzenle",
     "Expand": "Genişlet",
@@ -1809,6 +1810,7 @@
     "download": "İndir",
     "downloadAudio": "Sesi indir",
     "downloadImage": "Görüntüyü indir",
+    "downloadImages": "Görüntüleri indir",
     "downloadVideo": "Videoyu indir",
     "downloadWithSize": "İndir ({size})",
     "downloading": "İndiriliyor",
@@ -3364,6 +3366,11 @@
     "moreHelp": "Daha fazla yardım için ziyaret edin",
     "outputs": "Çıktılar",
     "type": "Tür"
+  },
+  "nodeOutputsExport": {
+    "download": "İndir ({count})",
+    "downloadAll": "Tümünü indir",
+    "title": "Varlıkları İndir"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Uyumlu Alternatifler",

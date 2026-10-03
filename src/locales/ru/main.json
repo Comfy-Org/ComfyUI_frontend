@@ -933,6 +933,7 @@
     "Copy Image": "Копировать изображение",
     "Delete": "Удалить",
     "Distribute Nodes": "Распределить ноды",
+    "Download Images": "Скачать изображения",
     "Duplicate": "Дублировать",
     "Edit Subgraph Widgets": "Редактировать виджеты подграфа",
     "Expand": "Развернуть",
@@ -1809,6 +1810,7 @@
     "download": "Скачать",
     "downloadAudio": "Скачать аудио",
     "downloadImage": "Скачать изображение",
+    "downloadImages": "Скачать изображения",
     "downloadVideo": "Скачать видео",
     "downloadWithSize": "Скачать ({size})",
     "downloading": "Загрузка",
@@ -3364,6 +3366,11 @@
     "moreHelp": "Для получения дополнительной помощи посетите",
     "outputs": "Выходы",
     "type": "Тип"
+  },
+  "nodeOutputsExport": {
+    "download": "Скачать ({count})",
+    "downloadAll": "Скачать все",
+    "title": "Скачать ресурсы"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Совместимые альтернативы",

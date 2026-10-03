@@ -933,6 +933,7 @@
     "Copy Image": "複製圖片",
     "Delete": "刪除",
     "Distribute Nodes": "分佈節點",
+    "Download Images": "下載圖片",
     "Duplicate": "複製",
     "Edit Subgraph Widgets": "編輯子圖小工具",
     "Expand": "展開",
@@ -1809,6 +1810,7 @@
     "download": "下載",
     "downloadAudio": "下載音訊",
     "downloadImage": "下載圖片",
+    "downloadImages": "下載圖片",
     "downloadVideo": "下載影片",
     "downloadWithSize": "下載（{size}）",
     "downloading": "下載中",
@@ -3364,6 +3366,11 @@
     "moreHelp": "如需更多協助，請造訪",
     "outputs": "輸出",
     "type": "類型"
+  },
+  "nodeOutputsExport": {
+    "download": "下載（{count}）",
+    "downloadAll": "全部下載",
+    "title": "下載資產"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "相容替代方案",

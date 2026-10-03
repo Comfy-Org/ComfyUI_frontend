@@ -4862,7 +4862,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 or ISO-639-3 language code (e.g., 'en', 'es', 'fra'). Leave empty for automatic detection."
+        "tooltip": "ISO 639-1 language code (e.g., 'en', 'es', 'ja'). Leave empty for automatic detection."
       },
       "seed": {
         "name": "seed",
@@ -4943,7 +4943,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 or ISO-639-3 language code (e.g., 'en', 'es', 'fra'). Leave empty for automatic detection."
+        "tooltip": "ISO 639-1 language code (e.g., 'en', 'es', 'ja'). Leave empty for automatic detection."
       },
       "seed": {
         "name": "seed",
@@ -4958,15 +4958,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       }
     },
     "outputs": {

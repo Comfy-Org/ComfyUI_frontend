@@ -933,6 +933,7 @@
     "Copy Image": "Bild kopieren",
     "Delete": "Löschen",
     "Distribute Nodes": "Nodes verteilen",
+    "Download Images": "Bilder herunterladen",
     "Duplicate": "Duplizieren",
     "Edit Subgraph Widgets": "Subgraph-Widgets bearbeiten",
     "Expand": "Ausklappen",
@@ -1809,6 +1810,7 @@
     "download": "Herunterladen",
     "downloadAudio": "Audio herunterladen",
     "downloadImage": "Bild herunterladen",
+    "downloadImages": "Bilder herunterladen",
     "downloadVideo": "Video herunterladen",
     "downloadWithSize": "Herunterladen ({size})",
     "downloading": "Wird heruntergeladen",
@@ -3364,6 +3366,11 @@
     "moreHelp": "Weitere Hilfe finden Sie auf der",
     "outputs": "Ausgaben",
     "type": "Typ"
+  },
+  "nodeOutputsExport": {
+    "download": "Herunterladen ({count})",
+    "downloadAll": "Alle herunterladen",
+    "title": "Assets herunterladen"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Kompatible Alternativen",
