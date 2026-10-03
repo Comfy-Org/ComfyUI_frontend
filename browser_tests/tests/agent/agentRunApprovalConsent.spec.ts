@@ -106,6 +106,29 @@ interface Turn {
 }
 
 const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${ASK_ID}/answer`
+const QUESTION_ASK_ID = `${MESSAGE_ID}:call-ask`
+const QUESTION_PATH = `/api/agent/threads/${THREAD_ID}/asks/${QUESTION_ASK_ID}/answer`
+const QUESTION = 'Which styles should I try?'
+
+function askUserQuestion(): AgentWsEvent {
+  return {
+    type: 'agent_ask',
+    data: {
+      ...ids,
+      ask_id: QUESTION_ASK_ID,
+      kind: 'ask_user',
+      prompt: QUESTION,
+      options: [
+        { id: 'oil', label: 'Oil painting', description: 'Thick strokes' },
+        { id: 'ink', label: 'Ink sketch' },
+        { id: 'pixel', label: 'Pixel art' }
+      ],
+      min_selections: 1,
+      max_selections: 2,
+      allow_other: true
+    }
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -324,3 +347,63 @@ test.describe(
     })
   }
 )
+
+test.describe('Agent ask_user question', { tag: ['@cloud', '@agent'] }, () => {
+  test('the card offers every option and answers only the ask it shows', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send, answers } = await startTurn(page, 'Paint it.', 'auto')
+
+    send(askUserQuestion())
+    // A replayed frame (a resubscribe) must not stack a second card.
+    send(askUserQuestion())
+    await expect(panel.getByText(QUESTION, { exact: true })).toHaveCount(1)
+    const choices = panel.getByRole('group', { name: QUESTION })
+    for (const label of ['Oil painting', 'Ink sketch', 'Pixel art'])
+      await expect(choices.getByRole('checkbox', { name: label })).toBeVisible()
+    await expect(
+      panel.getByText(enMessages.agent.askUser.chooseUpTo.replace('{max}', '2'))
+    ).toBeVisible()
+
+    const submit = panel.getByRole('button', {
+      name: enMessages.agent.askUser.submit
+    })
+    await expect(submit).toBeDisabled()
+    await choices.getByRole('checkbox', { name: 'Oil painting' }).click()
+    await panel
+      .getByRole('textbox', { name: enMessages.agent.askUser.other })
+      .fill('  watercolor  ')
+    // Free text counts as a selection, so the cap is reached.
+    await expect(
+      choices.getByRole('checkbox', { name: 'Pixel art' })
+    ).toBeDisabled()
+    expect(answers()).toHaveLength(0)
+
+    await submit.click()
+    await expect.poll(() => answers().length).toBe(1)
+    expect(answers()[0]).toEqual({
+      path: QUESTION_PATH,
+      body: { selected: ['oil'], other_text: 'watercolor' }
+    })
+    await expect(submit).toBeDisabled()
+
+    send({
+      type: 'agent_ask_resolved',
+      data: {
+        ...ids,
+        ask_id: QUESTION_ASK_ID,
+        status: 'answered',
+        selected: ['oil']
+      }
+    })
+    const record = panel.getByRole('status').filter({
+      hasText: enMessages.agent.askUser.answered
+    })
+    await expect(record).toContainText('Oil painting')
+    await expect(record).toContainText('Other: watercolor')
+    await expect(submit).toHaveCount(0)
+    await expect(panel.getByText(QUESTION, { exact: true })).toBeVisible()
+    expect(answers()).toHaveLength(1)
+  })
+})

@@ -77,6 +77,7 @@ import {
 } from './composables/agent/useOnboarding'
 
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
+import type { AgentAskAnswer } from './services/agent/agentMessageParts'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -1220,12 +1221,22 @@ function forgetApproval(askId: string): void {
 
 async function onAnswerAsk(
   askId: string,
-  selection: 'run' | 'cancel'
+  answer: AgentAskAnswer
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
   const decidedAt = Date.now()
-  if (await answerAsk(askId, selection))
-    trackApprovalResolved(askId, selection, decidedAt, shownAt)
+  const decision = runApprovalDecision(answer)
+  if ((await answerAsk(askId, answer)) && decision)
+    trackApprovalResolved(askId, decision, decidedAt, shownAt)
+}
+
+/** The run-approval decision an answer carries; none for an `ask_user` answer. */
+function runApprovalDecision(
+  answer: AgentAskAnswer
+): 'run' | 'cancel' | undefined {
+  if (answer.selected.length !== 1 || answer.otherText) return undefined
+  const [choice] = answer.selected
+  return choice === 'run' || choice === 'cancel' ? choice : undefined
 }
 
 void refreshCloudWorkflowIds()
