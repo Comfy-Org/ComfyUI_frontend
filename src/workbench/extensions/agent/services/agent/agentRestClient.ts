@@ -89,6 +89,30 @@ export interface PostMessageInput {
    * presenting the turn to the model as having no workflow selected.
    */
   currentTabUnbound?: boolean
+  /**
+   * The uuid this send already reports on its own `app:agent_message_sent`
+   * event. Sent so the server can echo it onto `agent_turn_started`, which is
+   * the only way to tell which message started which turn - `turn_id` is minted
+   * server-side after the request arrives, so it cannot be on the client event.
+   * Optional: when absent the correlation is unknown for that turn, which is a
+   * gap in the funnel read, never a failed send.
+   */
+  clientMessageId?: string
+}
+
+/**
+ * The turn POST body, plus `client_message_id`.
+ *
+ * Widened here rather than in `agentApiSchema.ts` because the generated types are
+ * published from the cloud repo's `openapi.yaml`, so the field is only typed
+ * locally until the next package release carries it. One line to delete then.
+ */
+type TurnPostBody = AgentPostMessageRequest & { client_message_id?: string }
+
+function withoutUndefined<T extends object>(fields: T): T {
+  return Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined)
+  ) as T
 }
 
 interface IngestErrorBody {
@@ -329,22 +353,19 @@ function asDelaySeconds(seconds: number): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
-function buildPostMessageBody(req: PostMessageInput): AgentPostMessageRequest {
-  const body: AgentPostMessageRequest = { content: req.content }
-  if (req.workflowId !== undefined) body.workflow_id = req.workflowId
-  if (req.tabs !== undefined) {
-    body.open_tabs = req.tabs.open_tabs
-    if (req.tabs.current_tab !== undefined)
-      body.current_tab = req.tabs.current_tab
-  }
-  if (req.workflowReferences !== undefined)
-    body.workflow_references = req.workflowReferences
-  if (req.selection !== undefined) body.selection = req.selection
-  if (req.attachments !== undefined) body.attachments = req.attachments
-  if (req.draft !== undefined) body.draft = { content: req.draft.content }
-  if (req.currentTabUnbound !== undefined)
-    body.current_tab_unbound = req.currentTabUnbound
-  return body
+function buildPostMessageBody(req: PostMessageInput): TurnPostBody {
+  return withoutUndefined<TurnPostBody>({
+    content: req.content,
+    workflow_id: req.workflowId,
+    open_tabs: req.tabs?.open_tabs,
+    current_tab: req.tabs?.current_tab,
+    workflow_references: req.workflowReferences,
+    selection: req.selection,
+    attachments: req.attachments,
+    draft: req.draft && { content: req.draft.content },
+    current_tab_unbound: req.currentTabUnbound,
+    client_message_id: req.clientMessageId
+  })
 }
 
 export function createAgentRestClient() {
