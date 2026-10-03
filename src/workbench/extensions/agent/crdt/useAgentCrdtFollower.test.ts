@@ -16,6 +16,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
+import type { useTelemetry as useTelemetryFn } from '@/platform/telemetry'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
@@ -154,10 +155,11 @@ vi.mock(import('./devPanelLog'), () => ({
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackAgentGraphProjection: telemetryState.trackAgentGraphProjection
-  })
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () =>
+    fromPartial<NonNullable<ReturnType<typeof useTelemetryFn>>>({
+      trackAgentGraphProjection: telemetryState.trackAgentGraphProjection
+    })
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
