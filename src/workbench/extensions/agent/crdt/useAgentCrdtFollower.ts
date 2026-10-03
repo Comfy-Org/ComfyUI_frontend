@@ -14,6 +14,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import type { SocketClosedEventPayload } from '@/scripts/api'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
@@ -25,7 +26,7 @@ import {
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import type { DocNodeDelta } from './agentCrdtProjection'
+import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
@@ -40,6 +41,11 @@ import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createRejectedOpNotifier } from './rejectedOpNotice'
+import {
+  initialReconnectTelemetryState,
+  RECONNECT_TELEMETRY_WINDOW_MS,
+  transitionReconnectTelemetry
+} from './reconnectTelemetryPolicy'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -117,6 +123,93 @@ interface SubscribeRefusalOutcome {
   shouldNotify: boolean
   message?: string
   code?: string
+}
+
+const REFUSAL_CODE_VALUES = [
+  'auth_reject',
+  'not_found',
+  'schema_mismatch',
+  'catalog_mismatch',
+  'rate_limited'
+] as const
+type KnownRefusalCode = (typeof REFUSAL_CODE_VALUES)[number]
+type RefusalCode = KnownRefusalCode | 'unknown'
+
+const REFUSAL_CODES: ReadonlySet<string> = new Set(REFUSAL_CODE_VALUES)
+const AUTH_REFUSAL_TOKENS = new Set([
+  'forbidden',
+  'unauthorized',
+  'unauthenticated',
+  'permission'
+])
+
+function isKnownRefusalCode(code: string): code is KnownRefusalCode {
+  return REFUSAL_CODES.has(code)
+}
+
+function refusalCode(code: string | undefined): RefusalCode {
+  if (code === undefined) return 'unknown'
+  if (isKnownRefusalCode(code)) return code
+  return code
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .some((token) => AUTH_REFUSAL_TOKENS.has(token))
+    ? 'auth_reject'
+    : 'unknown'
+}
+
+const DOC_DIVERGENCE_REPORTS = {
+  schema_mismatch: {
+    errorType: 'error_reading_crdt_document',
+    message: 'CRDT document schema is unreadable'
+  },
+  missing_projection_target: {
+    errorType: 'missing_crdt_projection_target',
+    message: 'CRDT update has no bound projection target'
+  }
+} as const
+type DocDivergenceReason = keyof typeof DOC_DIVERGENCE_REPORTS
+type DivergenceIncident = 'apply_error' | DocDivergenceReason
+
+function reportDocDivergence(
+  reported: Set<DivergenceIncident>,
+  reason: DocDivergenceReason,
+  context: { workflow_id: string | undefined; seq?: number }
+): void {
+  if (reported.has(reason)) return
+  reported.add(reason)
+  const report = DOC_DIVERGENCE_REPORTS[reason]
+  reportError(new Error(report.message), {
+    errorType: report.errorType,
+    tags: { reason },
+    context
+  })
+}
+
+function applyProjectionFrame(
+  update: ClassifiedDocUpdate,
+  apply: () => FrameOutcome,
+  reported: Set<DivergenceIncident>
+): FrameOutcome {
+  try {
+    const outcome = apply()
+    if (outcome.applied) reported.clear()
+    else
+      reportDocDivergence(reported, 'missing_projection_target', {
+        workflow_id: update.workflowId,
+        seq: update.seq
+      })
+    return outcome
+  } catch (error) {
+    if (!reported.has('apply_error')) {
+      reported.add('apply_error')
+      reportError(new Error('CRDT update could not be applied'), {
+        errorType: 'error_applying_crdt_update',
+        context: { workflow_id: update.workflowId, seq: update.seq }
+      })
+    }
+    throw error
+  }
 }
 
 // PM-1604 / BE-11437: a subscribe refusal carries a `code` that is either
@@ -366,6 +459,17 @@ function startAgentCrdtFollower(
     () => bridge.resubscribe(),
     () => {
       connected.value = false
+    },
+    (refusal, attempts) => {
+      const code = refusalCode(refusal)
+      reportError(new Error('CRDT document subscription was refused'), {
+        errorType:
+          code === 'auth_reject'
+            ? 'failure_authenticating_crdt_subscription'
+            : 'failure_subscribing_crdt_document',
+        tags: { code, attempts },
+        context: { workflow_id: subscribedWorkflowId.value }
+      })
     }
   )
   const tabId = createUuidv4()
@@ -435,6 +539,7 @@ function startAgentCrdtFollower(
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
+  const divergenceReported = new Set<DivergenceIncident>()
   const reportMaterialized = (
     workflowId: string,
     materialized: readonly NodeId[]
@@ -474,7 +579,11 @@ function startAgentCrdtFollower(
       incrementOutcome('skipped')
       return { created: [], nodes }
     }
-    const outcome = projection.applyFrame(update)
+    const outcome = applyProjectionFrame(
+      update,
+      () => projection.applyFrame(update),
+      divergenceReported
+    )
     incrementOutcome(outcome.applied ? 'applied' : 'skipped')
     if (outcome.applied && !update.catchUp) incrementOutcome('appliedLive')
     return {
@@ -496,6 +605,7 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      divergenceReported.clear()
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
@@ -605,6 +715,9 @@ function startAgentCrdtFollower(
     if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
+    reportDocDivergence(divergenceReported, 'schema_mismatch', {
+      workflow_id: detail?.workflowId
+    })
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -636,6 +749,40 @@ function startAgentCrdtFollower(
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
+  let reconnectTelemetryState = initialReconnectTelemetryState()
+  const onSocketClosed = (
+    event: CustomEvent<SocketClosedEventPayload>
+  ): void => {
+    if (!isTargetActive.value || subscribedWorkflowId.value === null) return
+    const transition = transitionReconnectTelemetry(reconnectTelemetryState, {
+      type: 'closed',
+      code: event.detail.code,
+      now: Date.now()
+    })
+    reconnectTelemetryState = transition.state
+    if (transition.report !== 'abnormal_close') return
+    reportError(new Error('CRDT WebSocket closed abnormally'), {
+      errorType: 'failure_closing_crdt_websocket_abnormal',
+      context: { workflow_id: subscribedWorkflowId.value }
+    })
+  }
+  const onReconnecting: EventListener = () => {
+    if (!isTargetActive.value || subscribedWorkflowId.value === null) return
+    const transition = transitionReconnectTelemetry(reconnectTelemetryState, {
+      type: 'reconnecting',
+      now: Date.now()
+    })
+    reconnectTelemetryState = transition.state
+    if (transition.report !== 'reconnect_storm') return
+    reportError(new Error('CRDT WebSocket is reconnecting repeatedly'), {
+      errorType: 'failure_reconnecting_crdt_websocket_repeatedly',
+      tags: {
+        reconnect_count: reconnectTelemetryState.reconnects.length,
+        window_ms: RECONNECT_TELEMETRY_WINDOW_MS
+      },
+      context: { workflow_id: subscribedWorkflowId.value }
+    })
+  }
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
    *
@@ -665,6 +812,8 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
+  api.addEventListener('socketClosed', onSocketClosed)
+  api.addEventListener('reconnecting', onReconnecting)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -781,6 +930,8 @@ function startAgentCrdtFollower(
       // collected changes to apply, the graph watcher covers readiness.
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
+      divergenceReported.clear()
+      reconnectTelemetryState = initialReconnectTelemetryState()
       connected.value = false
       pendingLiveNodeIds.clear()
       if (!active) {
@@ -801,6 +952,8 @@ function startAgentCrdtFollower(
     // update twice after a remount.
     runFollowerTeardown([
       () => lifecycle.destroy(),
+      () => api.removeEventListener('socketClosed', onSocketClosed),
+      () => api.removeEventListener('reconnecting', onReconnecting),
       () => api.removeEventListener('reconnected', onReconnected),
       () => api.removeEventListener('status', onSocketActivity),
       () => bridge.removeEventListener('doc_subscribed', onSubscribed),

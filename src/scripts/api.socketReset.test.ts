@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -111,6 +119,42 @@ describe('ComfyApi realtime socket reset', () => {
 
     expect(FakeWebSocket.instances).toHaveLength(2)
   })
+
+  it('emits bounded close details when the initial handshake fails', async () => {
+    const onClosed = vi.fn()
+    api.addEventListener('socketClosed', onClosed)
+    onTestFinished(() => api.removeEventListener('socketClosed', onClosed))
+    await api.resetSocket()
+
+    FakeWebSocket.instances[0].handlers['close']?.({
+      code: 1006,
+      reason: 'handshake failed',
+      wasClean: false
+    })
+
+    expect(onClosed).toHaveBeenCalledOnce()
+    expect(onClosed.mock.calls[0][0].detail).toEqual({
+      code: 1006,
+      reason: 'handshake failed',
+      wasClean: false
+    })
+  })
+
+  it.for(['socketClosed', 'reconnecting', 'reconnected'] as const)(
+    'does not accept %s lifecycle events from the server',
+    async (eventType) => {
+      const listener = vi.fn()
+      api.addEventListener(eventType, listener)
+      onTestFinished(() => api.removeEventListener(eventType, listener))
+      await api.resetSocket()
+
+      FakeWebSocket.instances[0].handlers['message']?.({
+        data: JSON.stringify({ type: eventType, data: null })
+      })
+
+      expect(listener).not.toHaveBeenCalled()
+    }
+  )
 
   it('supersedes an in-flight reset so the socket cannot settle on a stale identity', async () => {
     await api.resetSocket()

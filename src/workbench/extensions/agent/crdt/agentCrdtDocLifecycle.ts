@@ -168,6 +168,7 @@ function clearPersistedDocId(): void {
 export class AgentCrdtDocLifecycle {
   private subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   private subscribeRetryAttempt = 0
+  private subscribeFailureReported = false
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
   // by the same lifecycle exits as the subscribe retry. The probe is
@@ -217,7 +218,11 @@ export class AgentCrdtDocLifecycle {
   constructor(
     private readonly workflowId: () => string | null,
     private readonly resubscribe: () => void,
-    private readonly onGaveUp: () => void
+    private readonly onGaveUp: () => void,
+    private readonly onSubscribeExhausted: (
+      code: string | undefined,
+      attempts: number
+    ) => void = () => {}
   ) {}
 
   readPersistedDocId(): string | null {
@@ -260,7 +265,7 @@ export class AgentCrdtDocLifecycle {
     }
     this.clearAckTimer()
     this.clearStaleProbe()
-    this.scheduleSubscribeRetry()
+    this.scheduleSubscribeRetry(code)
     return false
   }
 
@@ -447,11 +452,18 @@ export class AgentCrdtDocLifecycle {
     }
     this.subscribeRetryAttempt = 0
     this.ackTimeouts = 0
+    this.subscribeFailureReported = false
   }
 
-  private scheduleSubscribeRetry(): void {
+  private scheduleSubscribeRetry(code: string | undefined): void {
     if (this.shouldDeferSubscribe()) return
-    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      if (!this.subscribeFailureReported) {
+        this.subscribeFailureReported = true
+        this.onSubscribeExhausted(code, this.subscribeRetryAttempt)
+      }
+      return
+    }
     const target = this.workflowId()
     if (target === null) return
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** this.subscribeRetryAttempt
