@@ -18,6 +18,7 @@ export {
 } from './payload.js'
 export { BILLING_TELEMETRY_EVENTS } from './eventNames.js'
 export { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
+export type { BillingPortalTarget } from './portalEvent.js'
 export type { SubscriptionCheckoutUi } from './subscriptionCheckoutEvent.js'
 export type {
   WebEntryBillingEvent,
