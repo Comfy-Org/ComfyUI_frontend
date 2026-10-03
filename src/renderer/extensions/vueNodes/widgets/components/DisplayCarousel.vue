@@ -165,6 +165,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
@@ -183,14 +184,14 @@ export type GalleryValue = string[] | GalleryImage[]
 
 type DisplayMode = 'single' | 'grid'
 
-interface GalleryOptions {
+interface GalleryOptions extends IWidgetOptions {
   showItemNavigators?: boolean
 }
 
 const value = defineModel<GalleryValue>({ required: true })
 
 const { widget, nodeId } = defineProps<{
-  widget: SimplifiedWidget<GalleryValue>
+  widget: SimplifiedWidget<GalleryValue, GalleryOptions>
   nodeId?: NodeId
 }>()
 

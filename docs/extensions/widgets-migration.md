@@ -6,17 +6,17 @@ and renaming a widget after it's added leaves its stored value behind.
 `node.widgets` can also be `undefined` until it's first assigned, and only
 registered widgets participate in the store.
 
-## Gallery options after the PrimeVue replacement
+## Gallery values after the PrimeVue replacement
 
-The Vue `galleria` widget supports `showThumbnails`, `showItemNavigators`,
-`circular`, `autoPlay`, and `transitionInterval` through `widget.options`.
-`GalleriaWidgetOptions` in `src/lib/litegraph/src/types/widgets.ts` owns this
-contract. Thumbnails and navigation default to visible for multiple images.
-Autoplay defaults to off, and manual navigation pauses it.
+The Vue `galleria` widget accepts an array of image URL strings, matching the
+`GALLERIA` input schema. Multiple images show thumbnails and previous/next
+buttons. Navigation stops at the first and last image.
 
-The replacement no longer forwards arbitrary PrimeVue Galleria props.
-`showIndicators`, `numVisible`, and `responsiveOptions` have no effect.
-Extensions that require those controls must supply their own gallery widget.
+PrimeVue image objects with `itemImageSrc` or `thumbnailImageSrc` are no longer
+supported. Convert them to URL strings. The widget no longer reads PrimeVue
+options such as `showThumbnails`, `showItemNavigators`, `circular`, `autoPlay`,
+`transitionInterval`, `showIndicators`, `numVisible`, or `responsiveOptions`.
+Extensions that need these controls must supply their own gallery widget.
 
 ## Widget names must be unique and stable
 
