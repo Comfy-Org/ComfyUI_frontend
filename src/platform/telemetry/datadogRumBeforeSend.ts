@@ -84,6 +84,7 @@ export const rumBeforeSend: RumBeforeSend = (event) => {
   if (!shouldKeepRumEvent(event)) return false
   if (event.type === 'resource') {
     event.resource.url = redactTelemetryUrls(event.resource.url)
+    event.context = redactTelemetryValues(event.context) ?? {}
   }
   if (event.type === 'error') {
     fingerprintFirebasePendingPromise(event)
