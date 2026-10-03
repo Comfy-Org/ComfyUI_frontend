@@ -26,15 +26,10 @@ test.describe('Blueprint dynamic combo preview', { tag: '@ui' }, () => {
       tab.nodePreview.getByText('COMFY_DYNAMICCOMBO_V3', { exact: true })
     ).toBeVisible()
     await expect(tab.nodePreviewBody).toBeVisible()
-    await expect(
-      tab.nodePreviewBody.getByText('boundary_model', { exact: true })
-    ).toBeVisible()
-    await expect(
-      tab.nodePreviewBody.getByRole('combobox', {
-        name: 'boundary_model',
-        exact: true
-      })
-    ).toBeVisible()
+    // The preview body renders a COMBO widget for a COMFY_DYNAMICCOMBO_V3
+    // input only where `dynamicComboOptionKeys` exists, which arrived on main
+    // after this release line branched and is not part of #11420. Asserting
+    // that widget here would pin a capability 1.54 does not ship.
     expect(await comfyPage.page.pageErrors()).toEqual([])
   })
 })
