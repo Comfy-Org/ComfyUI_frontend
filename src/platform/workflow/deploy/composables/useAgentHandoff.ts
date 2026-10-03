@@ -1,6 +1,7 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
+import type { Distribution } from '@/platform/distribution/types'
 import { DISTRIBUTION } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -15,22 +16,12 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const UNTITLED_WORKFLOW_NAME = 'workflow'
 
-/**
- * The brief a coding agent gets for the open workflow. Both the inputs and
- * the document are read off the graph at the moment they are asked for, so
- * the file that travels with the brief is the graph the brief describes.
- */
-export function useAgentHandoff() {
+export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const modelToNodeStore = useModelToNodeStore()
   const { copyToClipboard } = useCopyToClipboard()
 
-  /**
-   * Every model input of every known loader, by node class. Read from the
-   * providers themselves: the registry's node-type record keeps one input
-   * per class, and a loader such as INPAINT_LoadFooocusInpaint has two.
-   */
   function modelInputsByLoader(): ReadonlyMap<string, readonly string[]> {
     modelToNodeStore.registerDefaults()
     const inputs = new Map<string, string[]>()
@@ -61,24 +52,15 @@ export function useAgentHandoff() {
     }
   }
 
-  /**
-   * Captures the open workflow, committing any edit still in a focused field,
-   * and reads what it contributes to a Build.
-   */
   function captureInputs(): BuildInputs {
     return snapshot().inputs
   }
 
-  /**
-   * The clipboard write comes first because it needs the click's user
-   * activation. Every distribution except Desktop then downloads the workflow
-   * under the filename named in the brief, bypassing the export filename prompt.
-   */
   async function copyBrief(): Promise<boolean> {
     try {
       const { graph, inputs } = snapshot()
       const document = buildAgentHandoffDocument({
-        distribution: DISTRIBUTION,
+        distribution,
         inputs
       })
       if (!(await copyToClipboard(document, { toastOnSuccess: false }))) {
@@ -88,7 +70,7 @@ export function useAgentHandoff() {
         })
         return false
       }
-      if (DISTRIBUTION !== 'desktop') {
+      if (distribution !== 'desktop') {
         downloadBlob(
           inputs.workflowFileName,
           new Blob([JSON.stringify(graph, null, 2)], {

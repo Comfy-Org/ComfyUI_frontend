@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
-import type { Distribution } from '@/platform/distribution/types'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
@@ -10,22 +10,14 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
-const distribution = vi.hoisted(
-  (): { DISTRIBUTION: Distribution; isCloud: boolean } => ({
-    DISTRIBUTION: 'cloud',
-    isCloud: true
-  })
-)
-vi.mock(import('@/platform/distribution/types'), () => distribution)
-
-const copyToClipboard = vi.hoisted(() =>
-  vi.fn((_text: string, _options?: { toastOnSuccess?: boolean }) =>
-    Promise.resolve(true)
+vi.mock(import('@/composables/useCopyToClipboard'), () => {
+  const copyToClipboard = vi.fn(
+    (_text: string, _options?: { toastOnSuccess?: boolean }) =>
+      Promise.resolve(true)
   )
-)
-vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard })
-}))
+  return { useCopyToClipboard: () => ({ copyToClipboard }) }
+})
+const copyToClipboard = vi.mocked(useCopyToClipboard().copyToClipboard)
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: vi.fn()
@@ -49,10 +41,6 @@ function setActiveWorkflow(
 }
 
 describe('useAgentHandoff', () => {
-  beforeEach(() => {
-    distribution.DISTRIBUTION = 'cloud'
-  })
-
   it('copies the brief for the workflow open at the click, then downloads that same graph under the name the brief gives', async () => {
     setActiveWorkflow('draft.json', { nodes: [] })
     const handoff = useAgentHandoff()
@@ -100,22 +88,23 @@ describe('useAgentHandoff', () => {
 
   it.for([
     {
-      distribution: 'localhost' as const,
+      distribution: 'localhost',
       path: '## Your path: create from the install, or from the workflow file',
       downloads: 1
     },
     {
-      distribution: 'desktop' as const,
+      distribution: 'desktop',
       path: '## Your path: create from the Desktop snapshot',
       downloads: 0
     }
-  ])(
+  ] as const)(
     'sends $distribution its own path, downloading the workflow $downloads times',
-    async ({ distribution: target, path, downloads }) => {
-      distribution.DISTRIBUTION = target
+    async ({ distribution, path, downloads }) => {
       setActiveWorkflow()
 
-      await expect(useAgentHandoff().copyBrief()).resolves.toBe(true)
+      await expect(useAgentHandoff(distribution).copyBrief()).resolves.toBe(
+        true
+      )
 
       expect(String(copyToClipboard.mock.lastCall?.[0])).toContain(path)
       expect(downloadBlob).toHaveBeenCalledTimes(downloads)

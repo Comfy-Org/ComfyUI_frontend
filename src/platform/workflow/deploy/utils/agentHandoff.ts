@@ -4,19 +4,11 @@ import type {
   NodePack
 } from '@/platform/workflow/deploy/utils/buildInputs'
 
-// The handoff is a technical brief for a coding agent driving `comfy-cli`, so
-// it stays in English alongside the commands it explains and is not localized.
-
 function isControlCharacter(character: string): boolean {
   const code = character.charCodeAt(0)
   return code < 0x20 || code === 0x7f
 }
 
-/**
- * Everything interpolated into the brief comes off a workflow file, which is
- * routinely shared, so a value must not be able to add a line to the document:
- * a newline in a node type would otherwise read as a new heading or command.
- */
 function singleLine(value: string): string {
   return Array.from(value, (character) =>
     isControlCharacter(character) ? ' ' : character
@@ -26,11 +18,6 @@ function singleLine(value: string): string {
     .trim()
 }
 
-/**
- * An inline code span that keeps every character of the value literal,
- * backticks included: the fence is one backtick longer than the longest run
- * inside the value, so no Markdown in a workflow name renders as Markdown.
- */
 function codeSpan(value: string): string {
   const text = singleLine(value)
   const longestRun = Math.max(
@@ -42,12 +29,16 @@ function codeSpan(value: string): string {
   return `${fence}${padding}${text}${padding}${fence}`
 }
 
-/**
- * The name the brief gives the downloaded workflow file, and the name
- * the file is written under: one value, so the agent looks for the file the
- * browser actually wrote. Backticks and path separators are dropped because
- * they cannot survive both a download name and a code span unchanged.
- */
+function workflowText(
+  strings: TemplateStringsArray,
+  ...values: readonly string[]
+): string {
+  return values.reduce(
+    (text, value, index) => `${text}${codeSpan(value)}${strings[index + 1]}`,
+    strings[0]
+  )
+}
+
 export function handoffFileName(workflowName: string): string {
   const base = singleLine(workflowName)
     .replace(/[`/\\]/g, '')
@@ -60,7 +51,7 @@ function bulletList(items: readonly string[]): string {
 }
 
 function intro(inputs: BuildInputs): string {
-  return `# Turn ${codeSpan(inputs.workflowName)} into a Comfy API Build
+  return workflowText`# Turn ${inputs.workflowName} into a Comfy API Build
 
 Create a **Build** on the Comfy developer platform from this ComfyUI workflow. A
 Build is a definition of everything needed to run the workflow on a serverless
@@ -71,8 +62,7 @@ deployment: stop at the green release and report back. Deploying it is a
 separate decision.`
 }
 
-function prerequisites(): string {
-  return `## Before you start
+const BEFORE_YOU_START = `## Before you start
 
 Read the build recipe, and follow it:
 
@@ -85,37 +75,32 @@ If \`comfy\` or that skill is missing, install the current CLI first with
 models, the targets, the cut, watching the release and reading a failure. This
 brief adds only what the editor knows about this workflow, and the points where
 the user decides.`
-}
-
-function buildName(inputs: BuildInputs): string {
-  return `Name the Build ${codeSpan(inputs.workflowName)}.`
-}
-
-function downloadedFile(inputs: BuildInputs): string {
-  return `The browser downloaded the workflow as ${codeSpan(inputs.workflowFileName)}, most likely to the download directory.`
-}
 
 const UPLOAD_YES = `Tell the user that, and wait for a yes before you run it.`
 
 function cloudPath(inputs: BuildInputs): string {
+  const buildName = workflowText`Name the Build ${inputs.workflowName}.`
+  const downloadedFile = workflowText`The browser downloaded the workflow as ${inputs.workflowFileName}, most likely to the download directory.`
   return `## Your path: create from the workflow file
 
 This workflow lives in Comfy Cloud, so there is no install to scan.
-${downloadedFile(inputs)} ${buildName(inputs)}
+${downloadedFile} ${buildName}
 
 The recipe's import sends the whole workflow JSON to the Comfy builder.
 ${UPLOAD_YES}`
 }
 
 function localhostPath(inputs: BuildInputs): string {
+  const buildName = workflowText`Name the Build ${inputs.workflowName}.`
+  const downloadedFile = workflowText`The browser downloaded the workflow as ${inputs.workflowFileName}, most likely to the download directory.`
   return `## Your path: create from the install, or from the workflow file
 
 This ComfyUI may run on the machine you are on, or on another one, such as a
-rented GPU server. ${buildName(inputs)}
+rented GPU server. ${buildName}
 
 - When ComfyUI is installed on the machine you are running on, build from that
   install; nothing is uploaded to start.
-- Otherwise, build from the workflow file. ${downloadedFile(inputs)} The
+- Otherwise, build from the workflow file. ${downloadedFile} The
   recipe's import sends the whole workflow JSON to the Comfy builder.
   ${UPLOAD_YES}
 
@@ -123,12 +108,13 @@ When you cannot tell which, ask the user.`
 }
 
 function desktopPath(inputs: BuildInputs): string {
+  const buildName = workflowText`Name the Build ${inputs.workflowName}.`
   return `## Your path: create from the Desktop snapshot
 
 This is Comfy Desktop. Its install is the ComfyUI base path Desktop was set up
 with, \`~/Documents/ComfyUI\` unless the user chose another directory; ask when
 it is not there. Use the newest snapshot in its \`.launcher/snapshots\`
-directory. ${buildName(inputs)}
+directory. ${buildName}
 
 The recipe's import sends the whole snapshot JSON to the Comfy builder.
 ${UPLOAD_YES}`
@@ -186,8 +172,7 @@ Before you cut, check the definition accounts for every class, pack and model
 listed here, and tell the user about any it does not.`
 }
 
-function consent(): string {
-  return `## Where the user decides
+const CONSENT = `## Where the user decides
 
 Before the first cut, go through the recipe's "Before you cut" with the user,
 and wait for a yes. After that, fix and re-cut on your own within the recipe's
@@ -195,21 +180,13 @@ limits, and tell the user what each retry changed.
 
 The user means to deploy this Build later, so cut the target the recipe says a
 deployment needs.`
-}
 
-function closing(): string {
-  return `## When you are done
+const CLOSING = `## When you are done
 
 Report the Build name, its id and the release id, and whether the release is
 deployable. Deploying it is a separate decision — do not deploy without being
 asked.`
-}
 
-/**
- * The whole handoff, as one markdown document the user copies to a coding
- * agent. Pure: the distribution is an argument, not a compile-time import, so
- * every branch is reachable from a test.
- */
 export function buildAgentHandoffDocument({
   distribution,
   inputs
@@ -219,10 +196,10 @@ export function buildAgentHandoffDocument({
 }): string {
   return [
     intro(inputs),
-    prerequisites(),
+    BEFORE_YOU_START,
     PATH_BY_DISTRIBUTION[distribution](inputs),
     contents(inputs),
-    consent(),
-    closing()
+    CONSENT,
+    CLOSING
   ].join('\n\n')
 }

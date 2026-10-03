@@ -6,21 +6,11 @@ import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { collectReachableSubgraphDefinitions } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 
-/**
- * `versions` holds every distinct version the workflow's nodes record for the
- * pack, sorted. More than one means the nodes disagree, and nothing here picks
- * between them.
- */
 export interface NodePack {
   readonly id: string
   readonly versions: readonly string[]
 }
 
-/**
- * What the open workflow contributes to a Build, as far as the frontend can
- * see it. `nodePacks` holds only the ids the workflow itself records; a class
- * with none is core ComfyUI or is left for the platform to resolve.
- */
 export interface BuildInputs {
   readonly workflowName: string
   readonly workflowFileName: string
@@ -63,11 +53,6 @@ function recordedPack(
   return typeof version === 'string' && version ? { id, version } : { id }
 }
 
-/**
- * A node as a workflow file carries it. `id` and `type` are required; an
- * optional field of the wrong shape is dropped rather than trusted, so a
- * node with `properties: 'bad'` still counts as a node with no properties.
- */
 const zNode = z.object({
   id: z.union([z.string(), z.number()]),
   type: z.string(),
@@ -85,15 +70,6 @@ function parseNodes(nodes: readonly unknown[]): FlattenableWorkflowNode[] {
   })
 }
 
-/**
- * The subgraph definitions with each one's malformed nodes dropped, nested
- * definitions included, so one bad node does not discard its valid siblings:
- * the shared flattening guard rejects a definition whole when any node is
- * malformed. A definition whose `nodes` is not a list stays as it is, for
- * that guard to reject. Iterative and keyed by object, so a cyclic or deeply
- * nested file cannot overflow the stack; cycles are left for the shared
- * collector, which handles them.
- */
 function withWellFormedNodes(subgraphs: readonly unknown[]): unknown[] {
   const copies = new Map<object, Record<PropertyKey, unknown>>()
   const pending: Record<PropertyKey, unknown>[] = []
@@ -125,11 +101,6 @@ const zWorkflowShape = z.object({
     .catch({ subgraphs: [] })
 })
 
-/**
- * The root nodes and subgraph definitions of a workflow read off a file, which
- * may be malformed or from an older format: anything that is not a list is
- * empty, and only well-formed nodes are kept.
- */
 function workflowParts(graph: unknown): {
   roots: FlattenableWorkflowNode[]
   subgraphs: unknown[]
@@ -142,10 +113,6 @@ function workflowParts(graph: unknown): {
   }
 }
 
-/**
- * The model inputs of a known loader, by node class, as the model-folder
- * registry records them. Empty means the class is not a known loader.
- */
 export type ModelInputLookup = (nodeType: string) => readonly string[]
 
 function loaderModelValues(
@@ -160,15 +127,6 @@ function loaderModelValues(
   )
 }
 
-/**
- * The models a node names: those it records in `properties.models`, plus, for
- * a known loader, the value of each of its model inputs. A serialized array
- * carries no input names, so there the legacy suffix heuristic applies: every
- * string on the loader that ends in a model extension counts, which can also
- * catch a preset or prompt on that loader. Any other node contributes only
- * what it records, so prompt text ending in `.pt` and a dropdown on an
- * unrelated node are not models.
- */
 function modelNames(
   node: FlattenableWorkflowNode,
   modelInputsFor: ModelInputLookup
@@ -179,13 +137,6 @@ function modelNames(
   return [...embedded, ...loaderModelValues(node.widgets_values, inputs)]
 }
 
-/**
- * What the frontend can see of a Build's contents, read straight off the
- * serialized workflow, which may be malformed or from an older format: only
- * well-formed nodes and subgraph definitions are read. Node packs come from
- * the `cnr_id`/`aux_id` each node carries. Only subgraph definitions the graph
- * actually instantiates count, each read once however often it is used.
- */
 export function deriveBuildInputs(
   graph: unknown,
   workflow: { name: string; fileName: string },
@@ -203,7 +154,6 @@ export function deriveBuildInputs(
   const models = new Set<string>()
 
   for (const node of nodes) {
-    // A subgraph container node's `type` is the definition's id, not a class.
     if (!subgraphIds.has(node.type)) nodeClasses.add(node.type)
 
     const pack = recordedPack(node.properties)

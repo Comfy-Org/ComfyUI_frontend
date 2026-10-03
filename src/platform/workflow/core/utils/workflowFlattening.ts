@@ -113,7 +113,7 @@ export function collectSubgraphDefinitions(
 ): FlattenableSubgraphDefinition[] {
   const result: FlattenableSubgraphDefinition[] = []
   const seen = new Set<string>()
-  const levels: Iterator<unknown>[] = [rootDefs[Symbol.iterator]()]
+  const levels = [rootDefs[Symbol.iterator]()]
 
   while (levels.length) {
     const next = levels[levels.length - 1].next()
@@ -134,12 +134,6 @@ export function collectSubgraphDefinitions(
   return result
 }
 
-/**
- * The subgraph definitions the root nodes instantiate, directly or through
- * nested subgraphs, each returned once. It visits each definition once, where
- * `buildSubgraphExecutionPaths` visits every instantiation path, which grows
- * exponentially when a definition is reused at each nesting level.
- */
 export function collectReachableSubgraphDefinitions(
   rootNodes: readonly FlattenableWorkflowNode[],
   allSubgraphDefs: readonly unknown[]

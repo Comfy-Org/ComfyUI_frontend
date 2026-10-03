@@ -7,40 +7,43 @@ import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
+import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
 
-const inputs: BuildInputs = {
-  workflowName: 'portrait-upscale',
-  workflowFileName: 'portrait-upscale.json',
-  nodeClasses: ['CheckpointLoaderSimple', 'KSampler'],
-  nodePacks: [{ id: 'comfy-core', versions: [] }],
-  models: ['sd_xl_base_1.0.safetensors']
-}
-
-const copyBrief = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
 vi.mock(
   import('@/platform/workflow/deploy/composables/useAgentHandoff'),
-  () => ({
-    useAgentHandoff: () => ({ captureInputs: () => inputs, copyBrief })
-  })
+  () => {
+    const copyBrief = vi.fn(() => Promise.resolve(true))
+    const inputs = {
+      models: ['sd_xl_base_1.0.safetensors'],
+      nodeClasses: ['CheckpointLoaderSimple', 'KSampler'],
+      nodePacks: [{ id: 'comfy-core', versions: [] }],
+      workflowFileName: 'portrait-upscale.json',
+      workflowName: 'portrait-upscale'
+    } satisfies BuildInputs
+    return {
+      useAgentHandoff: () => ({ captureInputs: () => inputs, copyBrief })
+    }
+  }
 )
+const copyBrief = vi.mocked(useAgentHandoff().copyBrief)
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-const buildDocsUrl = vi.hoisted(() =>
-  vi.fn(
+vi.mock(import('@/composables/useExternalLink'), () => {
+  const buildDocsUrl = vi.fn(
     (path: string, _options?: { includeLocale?: boolean }) =>
       `https://docs.comfy.org${path}`
   )
-)
-vi.mock(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () =>
-    fromPartial<ReturnType<typeof useExternalLink>>({ buildDocsUrl })
-}))
+  return {
+    useExternalLink: () =>
+      fromPartial<ReturnType<typeof useExternalLink>>({ buildDocsUrl })
+  }
+})
 
 const i18n = createI18n({
   legacy: false,
