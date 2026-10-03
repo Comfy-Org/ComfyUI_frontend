@@ -53,27 +53,29 @@ test.describe(
 
       await expect
         .poll(() =>
-          page.evaluate(async () => (await window.app!.graphToPrompt()).output)
+          page.evaluate(async () =>
+            Object.fromEntries(
+              Object.entries((await window.app!.graphToPrompt()).output).map(
+                ([id, node]) => [id, node.inputs]
+              )
+            )
+          )
         )
-        .toMatchObject({
+        .toEqual({
           '1': {
-            inputs: {
-              width: 832,
-              height: 448,
-              length: 37,
-              prompt: 'Keep the reference framing'
-            }
+            width: 832,
+            height: 448,
+            length: 37,
+            prompt: 'Keep the reference framing'
           },
           '2': {
-            inputs: {
-              width: ['1', 0],
-              height: ['1', 1],
-              length: ['1', 2],
-              prompt: ['1', 3],
-              'ref_images.ref_image_0': ['1', 4],
-              'ref_images.ref_image_1': ['1', 5],
-              ref_image_size: 'max'
-            }
+            width: ['1', 0],
+            height: ['1', 1],
+            length: ['1', 2],
+            prompt: ['1', 3],
+            'ref_images.ref_image_0': ['1', 4],
+            'ref_images.ref_image_1': ['1', 5],
+            ref_image_size: 'max'
           }
         })
 

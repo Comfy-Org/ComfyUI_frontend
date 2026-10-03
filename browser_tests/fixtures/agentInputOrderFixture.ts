@@ -14,6 +14,7 @@ import {
   threadId,
   workflowId
 } from '@e2e/fixtures/data/agent/inputOrder'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 
 export const test = agentTest.extend<{
   inputOrderHost: AgentFollowerHostSocket
@@ -43,6 +44,7 @@ export const test = agentTest.extend<{
     })
 
     await mockWorkflowPersistence(page, workflowId)
+    await loadSeedIntoActiveTab(page, seed)
 
     await use(socket)
   }
