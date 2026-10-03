@@ -50,23 +50,12 @@
           :class="{ invisible: !toValue(item.checked) }"
         />
         <span
-          v-else-if="
-            item.icon &&
-            (!isCommandMenuItem(item) ||
-              item.commandId !== 'Comfy.NewBlankWorkflow')
-          "
+          v-else-if="item.icon && !isNewBlankWorkflow(item)"
           class="size-4"
           :class="item.icon"
         />
         <span class="text-nowrap">{{ item.label }}</span>
-        <i
-          v-if="
-            isCommandMenuItem(item) &&
-            item.commandId === 'Comfy.NewBlankWorkflow'
-          "
-          class="ml-auto"
-          :class="item.icon"
-        />
+        <i v-if="isNewBlankWorkflow(item)" class="ml-auto" :class="item.icon" />
         <span
           v-if="toValue(item.shortcut)"
           class="ml-auto rounded-sm border border-border-default bg-interface-menu-component-surface-hovered p-1 text-xs text-nowrap text-muted"
@@ -256,6 +245,9 @@ const translatedItems = computed<AppMenuItem[]>(() => {
 
 const isCommandMenuItem = (item: MenuItem): item is CommandMenuItem =>
   'commandId' in item
+
+const isNewBlankWorkflow = (item: MenuItem) =>
+  isCommandMenuItem(item) && item.commandId === 'Comfy.NewBlankWorkflow'
 
 const isZoomCommand = (item: MenuItem) => {
   return (
