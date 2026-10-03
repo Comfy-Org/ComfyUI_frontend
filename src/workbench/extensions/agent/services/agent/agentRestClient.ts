@@ -26,6 +26,7 @@ import type {
   AgentTurnAccepted,
   CloudWorkflowEntry
 } from '../../schemas/agentApiSchema'
+import type { AgentAskAnswer } from './agentMessageParts'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
@@ -507,11 +508,14 @@ export function createAgentRestClient() {
   async function answerAsk(
     threadId: string,
     askId: string,
-    selected: string[]
+    { selected, otherText }: AgentAskAnswer
   ): Promise<AgentAnswerAccepted> {
+    // The ask id in the path is what binds this answer: free text only ever
+    // travels with the ask whose card collected it.
+    const body = otherText ? { selected, other_text: otherText } : { selected }
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
+      { ...jsonInit('POST', body), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
       zAgentAnswerAccepted
     )
   }

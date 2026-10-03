@@ -35,6 +35,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type { AgentAskAnswer } from '../../services/agent/agentMessageParts'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
@@ -152,7 +153,7 @@ const emit = defineEmits<{
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAskAnswer]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]

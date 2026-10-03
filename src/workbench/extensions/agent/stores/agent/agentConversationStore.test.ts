@@ -855,6 +855,105 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  describe('ask_user', () => {
+    const pendingAskUser = {
+      message_id: 'assistant-message-1',
+      ask_id: 'turn-1:call-1',
+      kind: 'ask_user',
+      prompt: 'Which style?',
+      options: [
+        { id: 'oil', label: 'Oil' },
+        { id: 'ink', label: 'Ink' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: true
+    }
+    const askUserTranscript = (): AgentMessages => [
+      historyRow(1, 'user', 'turn-1', 'Paint it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: pendingAskUser
+        }
+      ])[0]
+    ]
+    const askUserCards = (
+      store: ReturnType<typeof useAgentConversationStore>
+    ) =>
+      store.messages.flatMap((message) =>
+        message.parts.filter((part) => part.type === 'askUser')
+      )
+
+    it('restores a pending question as the live turn and ignores its redelivery', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+
+      expect(store.activeTurnId).toBe('assistant-message-1')
+      expect(store.isStreaming).toBe(true)
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({ askId: 'turn-1:call-1', allowOther: true })
+      ])
+
+      // A resubscribe replays the live ask frame for the restored card.
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...pendingAskUser, thread_id: 'th' }
+        })
+      )
+      expect(askUserCards(store)).toHaveLength(1)
+
+      store.ingest(
+        chat({
+          type: 'agent_ask_resolved',
+          data: {
+            message_id: 'assistant-message-1',
+            thread_id: 'th',
+            ask_id: 'turn-1:call-1',
+            status: 'answered',
+            selected: ['ink']
+          }
+        })
+      )
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          resolution: { answered: true, selected: ['ink'] }
+        })
+      ])
+      expect(store.isStreaming).toBe(true)
+    })
+
+    // The read-only card is the record of the user's answer; a refetch that
+    // still lists the ask as pending must neither re-arm it nor erase it.
+    it('rebuilds a retired question read-only from a transcript that still lists it', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.retireAsk('turn-1:call-1', undefined, {
+        answered: true,
+        selected: [],
+        otherText: 'watercolor'
+      })
+
+      store.hydrate(askUserTranscript())
+
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          askId: 'turn-1:call-1',
+          resolution: { answered: true, selected: [], otherText: 'watercolor' }
+        })
+      ])
+      expect(store.activeTurnId).toBe('assistant-message-1')
+    })
+  })
+
   // PM-1658. The server reports an ask as pending until its answer is
   // committed AND broadcast, so a transcript fetched around an answer -- which
   // every panel mount does -- still names it. Rebuilding that card would put it

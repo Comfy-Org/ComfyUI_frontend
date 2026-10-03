@@ -5,8 +5,17 @@ import {
 } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
-import type { AssistantMessage, ToolPart } from './agentMessageParts'
-import { createAssistantMessage } from './agentMessageParts'
+import type {
+  AskPart,
+  AssistantMessage,
+  NoticePart,
+  ToolPart
+} from './agentMessageParts'
+import {
+  createAssistantMessage,
+  isPendingAskPart,
+  toAskOrNoticePart
+} from './agentMessageParts'
 
 type AttachmentKind = 'image' | 'video' | 'audio'
 
@@ -299,27 +308,27 @@ function appendAssistantContent(
 }
 
 /**
- * A row's `pending_ask` carries a `run_approval` context only while that row
- * is still mid-ask; this reads it into the flat shape the `runApproval` part
- * renders, or `undefined` once the ask is resolved or absent.
+ * A row's `pending_ask` is present only while that row is still mid-ask; this
+ * reads it into the card it renders (`runApproval` or `askUser`), a notice
+ * when the panel cannot render it, or `undefined` once it is resolved.
+ *
+ * The server persists no record of a resolved ask on the row, so the
+ * read-only answered `ask_user` card is session-only: after a reload the
+ * transcript's own text (the agent's reply to the answer) carries it. Within
+ * a session the conversation store keeps each retired resolution, so a
+ * refetch that still lists the ask rebuilds the card read-only, not armed.
  */
-function pendingRunApproval(
+function pendingAskPart(
   row: AgentMessages[number]
-): { askId: string; workflowId?: string; workflowName?: string } | undefined {
-  const ask = row.pending_ask
-  if (ask?.kind !== 'run_approval') return undefined
-  return {
-    askId: ask.ask_id,
-    workflowId: ask.context?.workflow_id || undefined,
-    workflowName: ask.context?.workflow_name || undefined
-  }
+): AskPart | NoticePart | undefined {
+  return row.pending_ask ? toAskOrNoticePart(row.pending_ask) : undefined
 }
 
 /**
  * Applies one persisted assistant row onto its running message: appends any
  * parsed tool-call parts and text part, then, for a row the server still
- * reports as `streaming`, attaches a `runApproval` part when that row is also
- * mid-ask. Returns the `pending` entry for a live row, or `undefined` for a
+ * reports as `streaming`, attaches its ask card (or the notice standing in for
+ * one) when that row is also mid-ask. Returns the `pending` entry for a live row, or `undefined` for a
  * terminal one; `normalizeAgentTranscript` owns `message.streaming` itself.
  *
  * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
@@ -339,8 +348,8 @@ function applyAssistantRow(
 
   if (!isLive) return undefined
 
-  const runApproval = pendingRunApproval(row)
-  if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
+  const ask = pendingAskPart(row)
+  if (ask) message.parts.push(ask)
   return { messageId: toTurnId(row.id), message }
 }
 
@@ -418,13 +427,17 @@ function recordAssistantRow(
  * out not to be getting a transport. The parts matter as much as the flag,
  * and both kinds this row could have been granted are settled here because a
  * transport is the only thing that could have settled either: a still-running
- * tool call is clamped, and a `runApproval` ask is dropped the way
- * `agent_ask_resolved` drops it -- left in place it renders an enabled card
- * whose answer would be posted against a turn that is no longer active.
+ * tool call is clamped, and a pending ask card (or the notice standing in for
+ * one) is dropped -- left in place it renders an enabled card whose answer
+ * would be posted against a turn that is no longer active.
  */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
-  message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+  message.parts = message.parts.filter(
+    (part) =>
+      !isPendingAskPart(part) &&
+      (part.type !== 'notice' || part.askId === undefined)
+  )
   for (const part of message.parts) {
     if (part.type !== 'tool' || part.state !== 'streaming') continue
     part.state = 'done'
