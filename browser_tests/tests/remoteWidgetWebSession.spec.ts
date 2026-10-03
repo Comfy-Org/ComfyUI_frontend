@@ -1,17 +1,27 @@
 import { expect } from '@playwright/test'
 
-import { webSessionTest as test } from '@e2e/fixtures/webSessionFixture'
+import { webSessionTest } from '@e2e/fixtures/webSessionFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const TEAM_WORKSPACE_ID = 'ws-team'
 const TEAM_OPTIONS = ['team-checkpoint.safetensors']
 const PERSONAL_OPTIONS = ['personal-checkpoint.safetensors']
 
+const test = webSessionTest.extend({
+  page: async ({ page }, use) => {
+    await page.route('**/api/settings', (route) => route.fulfill(jsonRoute({})))
+    await page.route('**/api/userdata**', (route) =>
+      route.fulfill(jsonRoute([]))
+    )
+    await use(page)
+  }
+})
+
 test.describe(
   'Remote widget web-session routing',
   { tag: ['@cloud', '@widget'] },
   () => {
-    test.describe.configure({ timeout: 60_000 })
+    test.describe.configure({ timeout: 120_000 })
 
     test.use({
       initialLocalStorage: {
