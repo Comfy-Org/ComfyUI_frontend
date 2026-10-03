@@ -13,6 +13,7 @@ import type {
 } from '@/platform/missingModel/types'
 import { downloadModel } from '@/platform/missingModel/missingModelDownload'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { usePortableModelDownloadStore } from '@/platform/missingModel/portableModelDownloadStore'
 
 const mockDownloadModel = vi.mocked(downloadModel)
 
@@ -446,7 +447,64 @@ describe('MissingModelCard (OSS)', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('routes Download all through the shared missing-model download handler', async () => {
+  it('starts one portable batch containing every downloadable model', async () => {
+    const start = vi
+      .spyOn(usePortableModelDownloadStore(), 'start')
+      .mockResolvedValue(undefined)
+    mountCard({
+      missingModelGroups: [
+        makeGroup({
+          withDownloadUrls: true,
+          directory: 'diffusion_models',
+          modelNames: ['diffusion.safetensors']
+        }),
+        makeGroup({
+          withDownloadUrls: true,
+          directory: 'vae',
+          modelNames: ['vae.safetensors']
+        })
+      ]
+    })
+
+    await userEvent.click(screen.getByTestId('missing-model-download-all'))
+
+    expect(start).toHaveBeenCalledWith([
+      {
+        name: 'vae.safetensors',
+        url: 'https://huggingface.co/comfy/test/resolve/main/vae.safetensors',
+        directory: 'vae'
+      },
+      {
+        name: 'diffusion.safetensors',
+        url: 'https://huggingface.co/comfy/test/resolve/main/diffusion.safetensors',
+        directory: 'diffusion_models'
+      }
+    ])
+    expect(mockDownloadModel).not.toHaveBeenCalled()
+  })
+
+  it('names failed models after a partial portable download', () => {
+    usePortableModelDownloadStore().state = {
+      phase: 'finished',
+      models: [
+        {
+          name: 'first.safetensors',
+          directory: 'checkpoints',
+          status: 'completed',
+          bytes_downloaded: 12,
+          bytes_total: 12,
+          error: null
+        },
+        {
+          name: 'second.safetensors',
+          directory: 'checkpoints',
+          status: 'failed',
+          bytes_downloaded: 0,
+          bytes_total: null,
+          error: 'HTTP 403'
+        }
+      ]
+    }
     mountCard({
       missingModelGroups: [
         makeGroup({
@@ -456,25 +514,10 @@ describe('MissingModelCard (OSS)', () => {
       ]
     })
 
-    await userEvent.click(screen.getByTestId('missing-model-download-all'))
-
-    expect(mockDownloadModel).toHaveBeenCalledTimes(2)
-    expect(mockDownloadModel).toHaveBeenCalledWith(
-      {
-        name: 'first.safetensors',
-        url: 'https://huggingface.co/comfy/test/resolve/main/first.safetensors',
-        directory: 'checkpoints'
-      },
-      {}
-    )
-    expect(mockDownloadModel).toHaveBeenCalledWith(
-      {
-        name: 'second.safetensors',
-        url: 'https://huggingface.co/comfy/test/resolve/main/second.safetensors',
-        directory: 'checkpoints'
-      },
-      {}
-    )
+    expect(
+      screen.getByText('Downloads complete: 1/2. Failed: second.safetensors.')
+    ).toHaveAttribute('role', 'status')
+    expect(screen.getByTestId('missing-model-download-all')).toBeEnabled()
   })
 
   it('hides Download all when no model is downloadable', () => {
