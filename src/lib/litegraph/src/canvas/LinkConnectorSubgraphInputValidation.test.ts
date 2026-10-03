@@ -20,10 +20,8 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
-import {
-  createMockCanvasPointerEvent,
-  createMockNodeInputSlot
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockNodeInputSlot } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 
 type MockPointerEvent = CanvasPointerEvent
 type MockRenderLink = ToOutputRenderLink

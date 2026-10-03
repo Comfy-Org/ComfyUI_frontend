@@ -9,6 +9,7 @@ import type { NodeId } from '@/types/nodeId'
  */
 export interface MinimapCanvas {
   canvas: HTMLCanvasElement
+  dpr: number
   ds: {
     scale: number
     offset: [number, number]

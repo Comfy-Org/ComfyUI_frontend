@@ -269,11 +269,10 @@ onMounted(() => {
           await nextTick()
           const sidebarRight =
             sideToolbarRef.value?.getBoundingClientRect()?.right
-          // The release line's renderInfo keeps a 5px text inset that main removed; drop the - 5 when that litegraph change lands here.
           canvasStore.canvas.fpsInfoLocation = [
             sidebarRight === undefined
               ? undefined
-              : sidebarRight + canvasGutter() - 5,
+              : sidebarRight + canvasGutter(),
             null
           ]
         } else {

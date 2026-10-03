@@ -57,6 +57,7 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -1192,7 +1193,10 @@ function setupNodeSelectionCanvas() {
     multi_select: false,
     allow_dragnodes: true,
     selectOnly: false,
-    canvas: canvasElement
+    canvas: canvasElement,
+    // Entering node-selection mode frames the graph, and framing reads the
+    // applied CSS viewport off `ds` rather than the canvas backing store.
+    ds: createTestDragAndScale(900, 700)
   }
   appMock.canvas = canvas
   canvasStore.canvas = fromPartial(canvas)

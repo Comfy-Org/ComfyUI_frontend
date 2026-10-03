@@ -19,6 +19,11 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createTestCanvasElement,
+  createTestDragAndScale,
+  setCanvasVisible
+} from '@/utils/__tests__/canvasTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
@@ -60,6 +65,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
 
@@ -350,6 +356,35 @@ describe('ComfyApp', () => {
     )
   })
 
+  it('resizes both canvas layers in device pixels and redraws immediately', () => {
+    vi.stubGlobal('devicePixelRatio', 2)
+    // Both layers start off the expected result. The fixture's default backing
+    // store is 800x600, which is exactly 400x300 CSS at DPR 2, so leaving it
+    // would satisfy the dimension assertions even if a layer were never sized.
+    const foreground = createTestCanvasElement({
+      width: 1,
+      height: 1,
+      cssSize: [400, 300]
+    })
+    const background = createTestCanvasElement({
+      width: 1,
+      height: 1,
+      cssSize: [400, 300]
+    })
+    const ds = createTestDragAndScale()
+    const setViewportSize = vi.spyOn(ds, 'setViewportSize')
+    Reflect.set(mockCanvas, 'bgcanvas', background)
+    Reflect.set(mockCanvas, 'ds', ds)
+
+    Reflect.apply(Reflect.get(app, 'resizeCanvas'), app, [foreground])
+
+    expect([foreground.width, foreground.height]).toEqual([800, 600])
+    expect([background.width, background.height]).toEqual([800, 600])
+    expect(mockCanvas.dpr).toBe(2)
+    expect(setViewportSize).toHaveBeenCalledWith(400, 300)
+    expect(mockCanvas.draw).toHaveBeenCalledExactlyOnceWith(true, true)
+  })
+
   describe('loadGraphData', () => {
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
@@ -507,6 +542,221 @@ describe('ComfyApp', () => {
         'afterConfigureGraph',
         'afterLoadGraph'
       ])
+    })
+
+    it('closes every beforeLoadGraph when a newer load overtakes an older one', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseFirstLoad!: () => void
+      const firstLoadBlocked = new Promise<void>((resolve) => {
+        releaseFirstLoad = resolve
+      })
+      let firstBeforeLoad = true
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeLoadGraph' && firstBeforeLoad) {
+            firstBeforeLoad = false
+            await firstLoadBlocked
+          }
+        }
+      )
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await app.loadGraphData(createWorkflowGraphData(), false)
+      releaseFirstLoad()
+      await expect(olderLoad).resolves.toBeUndefined()
+
+      const hooks = mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+        ([hook]) => hook
+      )
+      const opened = hooks.filter((hook) => hook === 'beforeLoadGraph')
+      const closed = hooks.filter(
+        (hook) => hook === 'afterConfigureGraph' || hook === 'onGraphLoadError'
+      )
+      expect(closed).toHaveLength(opened.length)
+    })
+
+    it('does not clean the committed graph when an older load resumes', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const clear = vi.spyOn(graph, 'clear')
+      let releaseFirstLoad!: () => void
+      const firstLoadBlocked = new Promise<void>((resolve) => {
+        releaseFirstLoad = resolve
+      })
+      let firstBeforeLoad = true
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeLoadGraph' && firstBeforeLoad) {
+            firstBeforeLoad = false
+            await firstLoadBlocked
+          }
+        }
+      )
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData())
+      await app.loadGraphData(createWorkflowGraphData())
+      clear.mockClear()
+      releaseFirstLoad()
+      await olderLoad
+
+      expect(clear).not.toHaveBeenCalled()
+    })
+
+    it('lets an older valid load commit when its newer replacement fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      let firstBeforeLoad = true
+      let rejectNextConfigure = true
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeLoadGraph' && firstBeforeLoad) {
+            firstBeforeLoad = false
+            await olderLoadBlocked
+          }
+          if (hook === 'beforeConfigureGraph' && rejectNextConfigure) {
+            rejectNextConfigure = false
+            throw new Error('newer load failed')
+          }
+        }
+      )
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false)
+      ).resolves.toBe(false)
+      releaseOlderLoad()
+
+      await expect(olderLoad).resolves.toBe(true)
+    })
+
+    it('stops post-configure work when a newer graph commits', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseOlderLoad!: () => void
+      let olderLoadReachedHook!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      const hookReached = new Promise<void>((resolve) => {
+        olderLoadReachedHook = resolve
+      })
+      let firstAfterConfigure = true
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'afterConfigureGraph' && firstAfterConfigure) {
+            firstAfterConfigure = false
+            olderLoadReachedHook()
+            await olderLoadBlocked
+          }
+        }
+      )
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await hookReached
+      await app.loadGraphData(createWorkflowGraphData(), false)
+      releaseOlderLoad()
+
+      await expect(olderLoad).resolves.toBeUndefined()
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+    })
+
+    describe('pending camera restore while the canvas is hidden', () => {
+      let canvasElement: HTMLCanvasElement
+
+      beforeEach(() => {
+        canvasElement = createTestCanvasElement({ visible: false })
+        document.body.append(canvasElement)
+        app.canvasElRef.value = canvasElement
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+        Reflect.set(mockCanvas, 'bgcanvas', createTestCanvasElement())
+        useCanvasScheduler().cancel('graph-load-camera')
+      })
+
+      function revealCanvas() {
+        setCanvasVisible(canvasElement, true)
+        useCanvasScheduler().flush()
+      }
+
+      it('restores a valid saved camera after the canvas becomes visible', async () => {
+        const ds = createTestDragAndScale()
+        Reflect.set(mockCanvas, 'ds', ds)
+        Reflect.set(mockCanvas, 'viewport', [0, 0, 800, 600])
+        Reflect.set(mockCanvas, 'visible_area', ds.visible_area)
+        mockSettingStore.get.mockImplementation((key: string) =>
+          key === 'Comfy.EnableWorkflowViewRestore' ? true : undefined
+        )
+        const graphData = createWorkflowGraphData()
+        graphData.extra = { ds: { offset: [-120, 42], scale: 0.5 } }
+
+        await app.loadGraphData(graphData, true, true)
+        app.rootGraph._nodes.push(
+          createMockNode({
+            pos: [0, 0],
+            getBounding: () =>
+              new Float64Array([-1_000_000, -1_000_000, 2_000_000, 2_000_000])
+          })
+        )
+        expect(ds.offset).not.toEqual([-120, 42])
+
+        revealCanvas()
+
+        expect(ds.offset).toEqual([-120, 42])
+        expect(ds.scale).toBe(0.5)
+        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+      })
+
+      it('survives a same-workflow undo', async () => {
+        const workflow = new ComfyWorkflow({
+          path: 'workflows/camera.json',
+          modified: 0,
+          size: 0
+        })
+
+        await app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          false,
+          workflow
+        )
+        revealCanvas()
+
+        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+      })
+
+      it('matches the workflow name to its workflow object on undo', async () => {
+        const workflow = new ComfyWorkflow({
+          path: 'workflows/camera.json',
+          modified: 0,
+          size: 0
+        })
+
+        await app.loadGraphData(createWorkflowGraphData(), true, true, 'camera')
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          false,
+          workflow
+        )
+        revealCanvas()
+
+        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+      })
+
+      it('is dropped when a different anonymous graph loads', async () => {
+        await app.loadGraphData(createWorkflowGraphData(), true, true)
+        await app.loadGraphData(createWorkflowGraphData(), true, false)
+        revealCanvas()
+
+        expect(mockCanvas.draw).not.toHaveBeenCalled()
+      })
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {

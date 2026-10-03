@@ -12,6 +12,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -156,6 +157,10 @@ function createCanvasFixture(pinia: Pinia, graph = ROOT_GRAPH) {
     read_only: false,
     subgraph: undefined,
     canvas: canvasElement,
+    // Focus framing reads the applied CSS viewport off `ds`, so the fixture
+    // needs a `DragAndScale` matching the element's 900x700 viewport.
+    dpr: 1,
+    ds: createTestDragAndScale(900, 700),
     animateToBounds: vi.fn()
   })
   canvas.setGraph = vi.fn((nextGraph) => {

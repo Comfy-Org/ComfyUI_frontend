@@ -8,6 +8,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
@@ -131,6 +132,25 @@ describe('LGraphCanvas selectOnly', () => {
 
     expect(canvas.pointer.onClick).toBeUndefined()
     expect(firstNode.selected).toBeFalsy()
+  })
+
+  it('uses the applied canvas DPR for link hit testing', () => {
+    const { canvas } = createHarness()
+    canvas.dpr = 1.5
+    const event = new MouseEvent('pointerdown', {
+      button: 0,
+      clientX: 700,
+      clientY: 500
+    })
+    Object.defineProperty(event, 'isPrimary', { value: true })
+
+    canvas.processMouseDown(event)
+
+    expect(layoutStore.queryLinkSegmentAtPoint).toHaveBeenCalledWith(
+      { x: 700, y: 500 },
+      canvas.ctx,
+      1.5
+    )
   })
 
   it('does not open a context menu on double click', () => {
