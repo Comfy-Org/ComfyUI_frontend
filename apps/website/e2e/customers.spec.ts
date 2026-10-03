@@ -146,7 +146,7 @@ test.describe('Customers @smoke', () => {
   })
 })
 
-for (const width of [390, 1440]) {
+for (const width of [320, 390, 1440]) {
   for (const locale of ['en', 'zh-CN'] as const) {
     test(`customer directory search, tabs, and sort work in ${locale} at ${width}px`, async ({
       page
@@ -158,6 +158,19 @@ for (const width of [390, 1440]) {
         name: t('customers.directory.searchLabel')
       })
       await waitForIsland(page, search)
+      const controls = [
+        search,
+        page.getByRole('group', { name: t('customers.directory.formatLabel') }),
+        page.getByRole('combobox', { name: t('customers.directory.sortLabel') })
+      ]
+      for (const control of controls) {
+        const bounds = await control.evaluate((element) => {
+          const { left, right } = element.getBoundingClientRect()
+          return { left, right }
+        })
+        expect(bounds.left).toBeGreaterThanOrEqual(0)
+        expect(bounds.right).toBeLessThanOrEqual(width)
+      }
 
       await page
         .getByRole('button', {

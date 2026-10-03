@@ -88,7 +88,7 @@ const controlClass =
         />
       </div>
 
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center justify-between gap-2 min-[375px]:gap-3">
         <div
           role="group"
           :aria-label="t('customers.directory.formatLabel')"
@@ -101,7 +101,7 @@ const controlClass =
             :aria-pressed="tab === entry"
             :class="
               cn(
-                'flex h-8 cursor-pointer items-center rounded-xl px-4 text-xs font-semibold whitespace-nowrap transition-colors',
+                'flex h-8 cursor-pointer items-center rounded-xl px-2 text-xs font-semibold whitespace-nowrap transition-colors min-[375px]:px-4',
                 tab === entry
                   ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
                   : 'text-primary-comfy-canvas hover:bg-white/10'
@@ -121,7 +121,10 @@ const controlClass =
             id="customers-sort"
             v-model="sort"
             :class="
-              cn(controlClass, 'cursor-pointer appearance-none pr-10 pl-4')
+              cn(
+                controlClass,
+                'cursor-pointer appearance-none pr-10 pl-3 min-[375px]:pl-4'
+              )
             "
           >
             <option value="latest">
