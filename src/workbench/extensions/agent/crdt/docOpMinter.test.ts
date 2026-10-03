@@ -850,6 +850,57 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('uses the store serialize flag when a projected widget leaves it undefined', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    widget.serialize = undefined
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('uses the store type when the live widget leaves it undefined', async () => {
+    const { source } = seedGraph(graph)
+    const button = source.widgets![1]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, button.name)
+    )
+    assert.exists(stored)
+    expect(stored.type).toBe('button')
+    // `type` is required on `IBaseWidget`, so only a non-conforming runtime
+    // object reaches this state — which is the point: the guard has to answer
+    // for one anyway. Assigned through `Object.assign` rather than a
+    // suppression, since the subject here is runtime fallback and not a
+    // compiler diagnostic.
+    Object.assign(button, { type: undefined })
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'upload',
+      value: 'clicked',
+      previous: 'button-slot'
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
   it('uses the same store fallback when filtering an add-node snapshot', () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
