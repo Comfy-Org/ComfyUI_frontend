@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe(
@@ -12,22 +14,28 @@ test.describe(
       agentPanel,
       comfyPage
     }) => {
-      await comfyPage.nodeOps.clearGraph()
       await agentPanel.open()
       await agentPanel.selectWorkflow()
+      await comfyPage.page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      const topbar = new Topbar(comfyPage.page)
+      await topbar.getTab(0).click()
+      await topbar.getTab(1).click()
+      await agentPanel.selectWorkflow('Unsaved Workflow (2)')
 
       await expect(agentPanel.composer).toBeEmpty()
       await expect(
         agentPanel.root.getByTestId('composer-node-section')
       ).toHaveCount(0)
 
-      await comfyPage.nodeOps.addNode('KSampler', undefined, {
-        x: 400,
-        y: 300
+      await comfyPage.searchBoxV2.addNodeAndGetId('KSampler', {
+        position: { x: 400, y: 300 }
       })
-      await comfyPage.nextFrame()
 
-      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
       await expect(agentPanel.composer).toBeEmpty()
       await expect(
         agentPanel.root.getByTestId('composer-node-section')
