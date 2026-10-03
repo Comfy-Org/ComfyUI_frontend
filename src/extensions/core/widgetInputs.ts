@@ -286,7 +286,7 @@ export class PrimitiveNode extends LGraphNode {
           this.graph.rootGraph.id,
           this.id,
           'value',
-          0
+          { positionalIndex: 0, occurrence: 0, occurrenceCount: 1 }
         )
       : undefined
 

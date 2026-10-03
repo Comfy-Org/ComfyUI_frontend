@@ -112,7 +112,52 @@ export interface ISerialisedNode {
    */
   widgets_values?: TWidgetValue[]
   widgets_values_named?: Record<string, TWidgetValue>
+  /**
+   * Duplicate-only lossless companion to {@link widgets_values_named}: present
+   * only when the node carries two or more serializable widgets with the same
+   * name, and then it lists every serializable widget in serialization order.
+   * Absent on every other node, so ordinary workflow JSON is unchanged.
+   *
+   * `widgets_values_named` cannot represent a repeated name — the later widget
+   * overwrites the earlier one — and `widgets_values` can only be read back by
+   * position, which no name-addressed consumer has.
+   *
+   * Mirrors `@comfyorg/comfy-multi-player` schema v5 (Amendment A22), whose
+   * `set_widget` carries `widget_occurrence` and updates the matching entry's
+   * `value` while preserving every other entry key.
+   */
+  widgets_values_ordered?: ISerialisedWidgetValueEntry[]
   extensions?: ExtensionPayload
+}
+
+/**
+ * One serializable widget's value, addressed losslessly by `(name, occurrence)`.
+ *
+ * Producers may add their own keys to an entry; a consumer that rewrites a
+ * `value` must leave the keys it does not understand alone. This app re-emits
+ * the field from live widget state on every save rather than rewriting entries
+ * in place, so it carries those keys forward itself, matched by
+ * `(name, occurrence)` — an identity the live node no longer has drops out.
+ *
+ * Each `value` is this entry's own copy: the three serialized registers never
+ * share an object, so rewriting one entry's `value` in place cannot reach
+ * `widgets_values`, `widgets_values_named`, or a different widget's entry.
+ *
+ * The field is passed through the workflow schema unvalidated, so this type
+ * describes what this app writes, not what a loaded document holds.
+ * `readOrderedWidgetValues` is the validation boundary on the read side.
+ */
+export interface ISerialisedWidgetValueEntry {
+  name: string
+  /** Zero-based index among the serializable widgets sharing {@link name}. */
+  occurrence: number
+  value: TWidgetValue
+  /**
+   * A producer-specific key this app does not interpret. Part of the type so
+   * an entry carrying one is ordinary data rather than something a consumer
+   * has to assert into shape.
+   */
+  [key: string]: unknown
 }
 
 /** Properties of nodes that are used by subgraph instances. */

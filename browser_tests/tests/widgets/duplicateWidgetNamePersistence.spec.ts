@@ -15,7 +15,7 @@ test.describe(
       await comfyPage.workflow.deleteWorkflow(workflowName)
     })
 
-    test('keeps both object values after closing, reopening, and re-saving the workflow', async ({
+    test('renames the duplicate and keeps both object values across a save, reopen, and re-save, with no occurrence-addressed field', async ({
       comfyPage
     }) => {
       const defaults = [
@@ -93,6 +93,7 @@ test.describe(
         )
 
         expect(duplicateNode?.widgets_values).toEqual(savedValues)
+        expect(duplicateNode).not.toHaveProperty('widgets_values_ordered')
       })
     })
   }

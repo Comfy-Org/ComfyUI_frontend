@@ -151,6 +151,11 @@ not preserve state across definition renames. This ADR accepts those limits
 from ADR-ECS-0008 rather than changing widget identity as part of the behavior
 migration.
 
+The `WidgetId` format is unchanged by the serialized `(name, occurrence)`
+identity recorded in the 2026-10-01 amendment to
+[ADR-ECS-0008](ECS-0008-entity-component-system.md): that identity is read only
+by `widgets_values_ordered`, and `WidgetId` still collides on a repeated name.
+
 ## Notes
 
 This ADR narrows the widget portion of

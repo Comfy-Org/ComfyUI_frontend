@@ -155,6 +155,14 @@ import {
 } from './utils/namedValuesShadowDiff'
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
 import { distributeSpace } from './utils/spaceDistribution'
+import {
+  buildOrderedWidgetValues,
+  cloneWidgetValue,
+  getUnknownOrderedWidgetKeys,
+  readOrderedWidgetValues,
+  serializableWidgetIdentities,
+  setUnknownOrderedWidgetKeys
+} from './utils/widgetIdentity'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -191,20 +199,35 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
-function serialiseWidgetValues(widgets: IBaseWidget[]) {
+function serialiseWidgetValues(node: LGraphNode, widgets: IBaseWidget[]) {
+  const identities = [...serializableWidgetIdentities(widgets)]
   const positional: TWidgetValue[] = []
-  const named: Record<string, TWidgetValue> = {}
-  for (const widget of widgets) {
-    if (widget.serialize === false) continue
-    const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
-    positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
+  // Null-prototype so a widget legitimately named `__proto__` becomes an own
+  // key instead of hitting the inherited prototype setter, which would drop
+  // the value from the JSON entirely and reset the widget on restore. Spread
+  // back into an ordinary object below, which copies `__proto__` as a data
+  // property rather than invoking that setter.
+  const named: Record<string, TWidgetValue> = Object.create(null)
+
+  for (const { widget } of identities) {
+    positional.push(cloneWidgetValue(widget.value))
+    // Only the LAST widget of a repeated name survives here; the ordered form
+    // below is what keeps the earlier ones addressable. Each register gets its
+    // own clone — see `cloneWidgetValue`.
+    named[widget.name] = cloneWidgetValue(widget.value)
   }
-  return { widgets_values: positional, widgets_values_named: named }
+
+  const ordered = buildOrderedWidgetValues(
+    identities,
+    getUnknownOrderedWidgetKeys(node)
+  )
+  return ordered
+    ? {
+        widgets_values: positional,
+        widgets_values_named: { ...named },
+        widgets_values_ordered: ordered
+      }
+    : { widgets_values: positional, widgets_values_named: { ...named } }
 }
 
 function configureCanonicalField(
@@ -234,7 +257,10 @@ function configureCanonicalField(
 }
 
 export function createWidgetRestorationState(
-  info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
+  info: Pick<
+    ISerialisedNode,
+    'widgets_values' | 'widgets_values_named' | 'widgets_values_ordered'
+  >,
   fallbackNames?: readonly string[]
 ) {
   const positional = Array.from(info.widgets_values ?? [])
@@ -248,11 +274,19 @@ export function createWidgetRestorationState(
         )
       : undefined)
 
+  const ordered = readOrderedWidgetValues(info.widgets_values_ordered)
+
   return {
     positional,
     named: named ? { ...named } : undefined,
+    ordered,
+    // The ordered form alone is enough to drive name-addressed restore: it
+    // carries every serializable widget of the node that wrote it, keyed by an
+    // identity `named` cannot express. A document that has it and no
+    // `widgets_values_named` — a newer or third-party producer — would
+    // otherwise fall back to positional restore and never be consulted.
     restoreNamed: Boolean(
-      named && (LiteGraph.namedValuesRestore || fallbackNames)
+      (named || ordered) && (LiteGraph.namedValuesRestore || fallbackNames)
     )
   }
 }
@@ -1219,6 +1253,10 @@ export class LGraphNode
       this.constructor.nodeData?.fallbackWidgetsValuesNames
     )
     const namedValues = restoration.named
+    // Carried to the next `serialize()` so a producer-specific entry key is
+    // not deleted by a load/save cycle here. Set unconditionally, so
+    // reconfiguring from a document without the field clears the old keys.
+    setUnknownOrderedWidgetKeys(this, restoration.ordered?.unknownKeys)
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
@@ -1244,14 +1282,18 @@ export class LGraphNode
             )
         }
 
-        let positionalIndex = 0
-        for (const widget of this.widgets) {
-          if (widget.serialize === false) continue
+        // `occurrenceCount` is the live total, not the running index:
+        // resolving the final occurrence needs it, so a node definition that
+        // dropped one of two same-named widgets does not hand the survivor an
+        // earlier document entry.
+        for (const { widget, ...identity } of serializableWidgetIdentities(
+          this.widgets
+        )) {
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,
             widget.name,
-            positionalIndex++
+            identity
           )
           if (restored) widget.value = restored.value
         }
@@ -1326,7 +1368,7 @@ export class LGraphNode
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
-      Object.assign(o, serialiseWidgetValues(widgets))
+      Object.assign(o, serialiseWidgetValues(this, widgets))
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
 
@@ -2318,14 +2360,24 @@ export class LGraphNode
 
     if (widget.serialize === false) return widget
 
-    const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
+    const serializableWidgets = this.widgets.filter(
+      (candidate) => candidate.serialize !== false
+    )
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,
       widget.name,
-      positionalIndex
+      {
+        positionalIndex: serializableWidgets.length - 1,
+        occurrence:
+          serializableWidgets.filter(
+            (candidate) => candidate.name === widget.name
+          ).length - 1,
+        // Widgets arrive one at a time here — typically from an extension's
+        // `onConfigure` — so "last so far" is not "last", and claiming a live
+        // total would make the first of a repeated pair read `named`.
+        occurrenceCount: undefined
+      }
     )
     if (restored) widget.value = restored.value
 

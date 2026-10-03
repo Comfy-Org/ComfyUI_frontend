@@ -21,6 +21,8 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import { widgetIdentityKey } from '@/lib/litegraph/src/utils/widgetIdentity'
+import type { OrderedWidgetValues } from '@/lib/litegraph/src/utils/widgetIdentity'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 export interface WidgetRenderState {
@@ -32,7 +34,30 @@ export interface WidgetRenderState {
 interface WidgetRestorationState {
   positional: readonly WidgetValue[]
   named?: Readonly<Record<string, WidgetValue>>
+  /** Indexed `widgets_values_ordered`; absent unless a name repeats. */
+  ordered?: OrderedWidgetValues
   restoreNamed: boolean
+}
+
+/** Which live widget a restored value is being resolved for. */
+interface RestoredWidgetIdentity {
+  /** Index among the node's live serializable widgets. */
+  positionalIndex: number
+  /**
+   * Zero-based index among the live serializable widgets sharing the name.
+   * Only the name-restore path reads it; positional restore already
+   * distinguishes repeated names by index.
+   */
+  occurrence: number
+  /**
+   * How many live serializable widgets share the name, or `undefined` while
+   * the node's widget list is still being built — `addCustomWidget` fires per
+   * widget during `onConfigure`, so the total is not yet knowable there and a
+   * just-appended widget must not be read as the final occurrence on the
+   * strength of being the last one so far. Required key, so a call site cannot
+   * omit it by accident; pass `undefined` deliberately.
+   */
+  occurrenceCount: number | undefined
 }
 
 interface WidgetEntity {
@@ -137,22 +162,94 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
   }
 
+  /**
+   * Whether this identity is the last occurrence of `name`, which is the only
+   * one a name-only write could have been aimed at.
+   *
+   * "Last" has to hold on both sides of the load. An identity at or past the
+   * *document's* highest occurrence has no later entry for such a write to
+   * have displaced. An identity at or past the live node's last occurrence is
+   * what such a write would reach now — a node definition that dropped one of
+   * two same-named widgets must not hand the survivor the stale first entry.
+   * The live side is only consulted when the caller knows the live total; see
+   * {@link RestoredWidgetIdentity.occurrenceCount}.
+   */
+  function isLastOccurrence(
+    ordered: OrderedWidgetValues,
+    name: string,
+    { occurrence, occurrenceCount }: RestoredWidgetIdentity
+  ): boolean {
+    const documentLast = ordered.lastOccurrence.get(name)
+    if (documentLast === undefined || occurrence >= documentLast) return true
+    return occurrenceCount !== undefined && occurrence >= occurrenceCount - 1
+  }
+
+  /**
+   * Resolves a name-addressed restore against the ordered form and `named`.
+   *
+   * `named[name]` can only ever address the LAST widget of a repeated name,
+   * both in this app's serializer and in the comfy-multi-player projection, so
+   * a name-only write — from a producer that predates occurrence addressing —
+   * belongs to the last occurrence and wins there. Every earlier occurrence
+   * exists nowhere but the ordered form, and collapsing those onto
+   * `named[name]` is the loss that form exists to stop.
+   *
+   * Either register may be missing: a document carrying only the ordered form
+   * resolves entirely from it, and the last occurrence falls back to its own
+   * ordered entry when `named` has no own key for the name. Without that
+   * fallback the last entry would be write-only data.
+   *
+   * A document carrying only the ordered form may also be partial — nothing
+   * obliges a third-party producer to list every live widget — so a widget it
+   * does not name keeps its positional value rather than its construction
+   * default. Where a `named` register exists, a missing name already means "no
+   * value", and that reading predates this field.
+   */
+  function getNameAddressedValue(
+    restoration: WidgetRestorationState,
+    name: string,
+    identity: RestoredWidgetIdentity
+  ): { value: WidgetValue } | undefined {
+    const { named, ordered } = restoration
+    const namedValue =
+      named && Object.hasOwn(named, name) ? { value: named[name] } : undefined
+    if (!ordered) return namedValue
+    if (namedValue && isLastOccurrence(ordered, name, identity)) {
+      return namedValue
+    }
+
+    const key = widgetIdentityKey(name, identity.occurrence)
+    if (ordered.byIdentity.has(key)) {
+      return { value: ordered.byIdentity.get(key) }
+    }
+    if (namedValue) return namedValue
+    return named ? undefined : getPositionalValue(restoration, identity)
+  }
+
+  function getPositionalValue(
+    restoration: WidgetRestorationState,
+    { positionalIndex }: RestoredWidgetIdentity
+  ): { value: WidgetValue } | undefined {
+    return positionalIndex < restoration.positional.length
+      ? { value: restoration.positional[positionalIndex] }
+      : undefined
+  }
+
   function getRestoredWidgetValue(
     graphId: UUID,
     nodeId: NodeId,
     name: string,
-    positionalIndex: number
+    identity: RestoredWidgetIdentity
   ): { value: WidgetValue } | undefined {
     const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
     if (!restoration) return
-    if (restoration.restoreNamed && restoration.named) {
-      return Object.hasOwn(restoration.named, name)
-        ? { value: restoration.named[name] }
-        : undefined
+    if (
+      restoration.restoreNamed &&
+      (restoration.named || restoration.ordered)
+    ) {
+      return getNameAddressedValue(restoration, name, identity)
     }
-    return positionalIndex < restoration.positional.length
-      ? { value: restoration.positional[positionalIndex] }
-      : undefined
+    return getPositionalValue(restoration, identity)
   }
 
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
