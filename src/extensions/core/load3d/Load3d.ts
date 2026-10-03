@@ -12,6 +12,7 @@ import type { RecordingManager } from './RecordingManager'
 import type { SceneModelManager } from './SceneModelManager'
 import { Viewport3d } from './Viewport3d'
 import type { Viewport3dDeps } from './Viewport3d'
+import { adoptClonedModel } from './quadWireframe/adoptClonedModel'
 import { computeCameraFromMatrices } from './cameraFromMatrices'
 import { DIRECT_EXPORT_FORMATS } from './constants'
 import type {
@@ -190,6 +191,7 @@ class Load3d extends Viewport3d {
         format === 'fbx'
           ? Object.assign(cloneSkinned(source), { animations: clips })
           : source.clone()
+      adoptClonedModel(model, source, this.modelManager.originalMaterials)
 
       await new Promise((resolve) => setTimeout(resolve, 10))
 

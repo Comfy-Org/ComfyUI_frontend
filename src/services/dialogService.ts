@@ -522,7 +522,8 @@ export const useDialogService = () => {
     // takes `isInsufficientCredits` alone, so forwarding the whole options
     // object there lands `source` in attrs as a stray DOM attribute on its
     // root rather than as attribution.
-    const isWorkspaceRail = type.value === 'workspace'
+    // Unknown never selects the legacy content, which buys credits directly.
+    const isWorkspaceRail = type.value !== 'legacy'
 
     return dialogStore.showDialog({
       key: 'top-up-credits',

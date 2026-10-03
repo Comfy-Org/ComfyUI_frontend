@@ -10,10 +10,11 @@ import {
 
 import type { Locale } from '../../../i18n/translations'
 import { installers, platformIcons } from '../../../composables/useDownloadUrl'
-import { t } from '../../../i18n/translations'
+import { translationsFor } from '../../../i18n/translations'
 import { captureDownloadClick } from '../../../scripts/posthog'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const itemClass =
   'flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-comfy-canvas outline-none transition-colors select-none hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus:bg-primary-comfy-yellow focus:text-primary-comfy-ink'
@@ -22,7 +23,7 @@ const itemClass =
 <template>
   <DropdownMenuRoot>
     <DropdownMenuTrigger
-      :aria-label="t('download.hero.installers.label', locale)"
+      :aria-label="t('download.hero.installers.label')"
       class="inline-flex min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-r-2xl border-l border-primary-comfy-ink/20 bg-primary-comfy-yellow px-3 text-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow data-[state=open]:bg-primary-comfy-yellow/90"
     >
       <ChevronDown class="size-5" aria-hidden="true" />
@@ -53,7 +54,7 @@ const itemClass =
               }"
               aria-hidden="true"
             />
-            {{ t(installer.label, locale) }}
+            {{ t(installer.label) }}
           </a>
         </DropdownMenuItem>
       </DropdownMenuContent>

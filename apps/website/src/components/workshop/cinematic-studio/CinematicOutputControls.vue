@@ -7,7 +7,7 @@ import type {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { translationsFor } from '../../../i18n/translations'
 import { framedStyle } from './aspect-style'
 import { FORMAT_TRIGGER_CLASS } from './cinematic-menu-trigger'
 import CinematicMenu from './CinematicMenu.vue'
@@ -18,6 +18,7 @@ const { locale = 'en', aspects } = defineProps<{
   /** The frames the chosen model can make; every frame when absent. */
   aspects?: readonly AspectRatio[]
 }>()
+const { t: tc } = translationsFor(locale)
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
@@ -36,13 +37,13 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.section.output', locale)"
+    :aria-label="tc('cinematic.section.output')"
     class="grid grid-cols-3 gap-2"
   >
     <CinematicMenu
       v-model="aspectValue"
       :options="aspectOptions"
-      :heading="tc('cinematic.output.aspect', locale)"
+      :heading="tc('cinematic.output.aspect')"
       side="top"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
@@ -59,7 +60,7 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
     <CinematicMenu
       v-model="resolutionValue"
       :options="resolutionOptions"
-      :heading="tc('cinematic.output.resolution', locale)"
+      :heading="tc('cinematic.output.resolution')"
       side="top"
       tooltip
       :trigger-class="FORMAT_TRIGGER_CLASS"
@@ -70,15 +71,15 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
     </CinematicMenu>
     <div
       role="group"
-      :aria-label="tc('cinematic.output.takes', locale)"
-      :title="tc('cinematic.output.takes', locale)"
+      :aria-label="tc('cinematic.output.takes')"
+      :title="tc('cinematic.output.takes')"
       class="flex h-10 items-center justify-between rounded-xl border border-transparency-white-t8 px-1"
     >
       <button
         type="button"
         class="grid size-8 place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-40"
         :disabled="takes <= 1"
-        :aria-label="tc('cinematic.output.fewerTakes', locale)"
+        :aria-label="tc('cinematic.output.fewerTakes')"
         @click="takes = Math.max(1, takes - 1)"
       >
         <Minus class="size-3.5" aria-hidden="true" />
@@ -94,7 +95,7 @@ const { aspectOptions, resolutionOptions, aspectValue, resolutionValue } =
         type="button"
         class="grid size-8 place-items-center rounded-lg text-primary-warm-gray outline-none hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-40"
         :disabled="takes >= MAX_TAKES"
-        :aria-label="tc('cinematic.output.moreTakes', locale)"
+        :aria-label="tc('cinematic.output.moreTakes')"
         @click="takes = Math.min(MAX_TAKES, takes + 1)"
       >
         <Plus class="size-3.5" aria-hidden="true" />

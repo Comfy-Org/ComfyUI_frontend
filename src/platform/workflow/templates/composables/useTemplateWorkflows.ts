@@ -7,6 +7,7 @@ import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTra
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { TemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
@@ -189,16 +190,9 @@ export function useTemplateWorkflows() {
     showTemplateError(t('templateWorkflows.error.loading'))
   }
 
-  /** Downloads the template's sample inputs and rebinds the graph to them. */
   async function withPreparedSampleInputs(
-    json: ComfyWorkflowJSON | LegacyLoadableWorkflow,
-    inputs: NonNullable<
-      NonNullable<
-        ReturnType<
-          typeof useWorkflowTemplatesStore
-        >['enhancedTemplates'][number]['io']
-      >['inputs']
-    >,
+    workflow: ComfyWorkflowJSON,
+    inputs: TemplateInput[],
     signal: AbortSignal
   ) {
     const toast = useToastStore()
@@ -206,17 +200,9 @@ export function useTemplateWorkflows() {
       severity: 'info' as const,
       summary: t('templateWorkflows.preparingMedia')
     }
-    let preparedJson = json
+    let preparedJson: ComfyWorkflowJSON | LegacyLoadableWorkflow = workflow
     const errors: unknown[] = []
     try {
-      const workflow = await validateComfyWorkflow(json, (detail) => {
-        reportError(new Error(detail), {
-          surface: 'graph',
-          errorType: 'workflow_template_schema_mismatch',
-          level: 'warning'
-        })
-      })
-      if (!workflow) return json
       const result = await prepareTemplateInputs(
         workflow,
         inputs,
@@ -262,9 +248,10 @@ export function useTemplateWorkflows() {
     sourceModule: string,
     signal: AbortSignal
   ) {
-    const json = await fetchTemplateJson(id, sourceModule, signal)
+    const fetched = await fetchTemplateJson(id, sourceModule, signal)
     signal.throwIfAborted()
-    if (!json) return null
+    if (!fetched) return null
+    const { json } = fetched
 
     const template = workflowTemplatesStore.enhancedTemplates.find(
       (template) =>
@@ -275,7 +262,9 @@ export function useTemplateWorkflows() {
       return { json, template }
 
     return {
-      json: await withPreparedSampleInputs(json, inputs, signal),
+      json: fetched.strict
+        ? await withPreparedSampleInputs(fetched.json, inputs, signal)
+        : json,
       template
     }
   }
@@ -308,7 +297,6 @@ export function useTemplateWorkflows() {
     }
   }
 
-  /** Resolves the source and payload for a template, reporting why it cannot. */
   async function resolveTemplatePayload(
     id: string,
     sourceModule: string,
@@ -412,11 +400,21 @@ export function useTemplateWorkflows() {
   /**
    * Fetches template JSON from the appropriate endpoint
    */
+  /**
+   * The payload plus whether strict validation accepted it. Sample-input
+   * preparation needs a strictly valid workflow, and carrying the answer out
+   * of here keeps it from parsing the same payload a second time - which also
+   * reported the schema warning twice for a legacy template.
+   */
+  type FetchedTemplate =
+    | { strict: true; json: ComfyWorkflowJSON }
+    | { strict: false; json: LegacyLoadableWorkflow }
+
   async function fetchTemplateJson(
     id: string,
     sourceModule: string,
     signal: AbortSignal
-  ): Promise<ComfyWorkflowJSON | LegacyLoadableWorkflow | null> {
+  ): Promise<FetchedTemplate | null> {
     // Default templates provided by frontend are served on this separate endpoint
     const url =
       sourceModule === 'default'
@@ -427,7 +425,7 @@ export function useTemplateWorkflows() {
     if (!response.ok) {
       reportError(`Failed to fetch workflow template ${id}`, {
         surface: 'graph',
-        errorType: 'workflow_template_fetch_failed'
+        errorType: 'error_fetching_workflow_template'
       })
       return null
     }
@@ -437,24 +435,24 @@ export function useTemplateWorkflows() {
     const validated = await validateComfyWorkflow(json, (detail) => {
       schemaMismatch = detail
     })
-    if (validated) return validated
+    if (validated) return { strict: true, json: validated }
 
     const legacy = zLegacyLoadableWorkflow.safeParse(json)
     if (!legacy.success) {
       reportError(`Workflow template ${id} is not a loadable workflow`, {
         surface: 'graph',
-        errorType: 'workflow_template_invalid'
+        errorType: 'error_validating_workflow_template'
       })
       return null
     }
     if (schemaMismatch) {
       reportError(new Error(schemaMismatch), {
         surface: 'graph',
-        errorType: 'workflow_template_schema_mismatch',
+        errorType: 'error_validating_workflow_template_schema',
         level: 'warning'
       })
     }
-    return legacy.data
+    return { strict: false, json: legacy.data }
   }
 
   return {
