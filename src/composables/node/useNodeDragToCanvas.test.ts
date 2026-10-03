@@ -9,6 +9,8 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useLitegraphService } from '@/services/litegraphService'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+
 const { mockConvertEventToCanvasOffset, mockSelectItems, mockCanvas } =
   vi.hoisted(() => {
     const mockConvertEventToCanvasOffset = vi.fn()
@@ -29,6 +31,10 @@ const { mockConvertEventToCanvasOffset, mockSelectItems, mockCanvas } =
   })
 
 vi.mock(import('@/services/litegraphService'))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
 
 vi.mock(import('@/i18n'))
 
@@ -155,6 +161,9 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        new LGraphNode('Placed node')
+      )
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
@@ -172,6 +181,7 @@ describe('useNodeDragToCanvas', () => {
           pos: [150, 150]
         }
       )
+      expect(mockReportError).not.toHaveBeenCalled()
     })
 
     it('should not add node when pointer is outside canvas', () => {
@@ -283,13 +293,10 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      const placedNode = new LGraphNode('Placed node')
+      const placedNode = new LGraphNode('Placed node', 'CheckpointLoaderSimple')
       vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
         placedNode
       )
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
@@ -311,12 +318,64 @@ describe('useNodeDragToCanvas', () => {
           detail: 'assetBrowser.failedToSetModelValue'
         })
       )
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('ckpt_name')
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message:
+            'Widget "ckpt_name" is missing from added node CheckpointLoaderSimple'
+        }),
+        {
+          errorType: 'failure_setting_dragged_node_widget',
+          tags: {
+            failure_kind: 'bad_state',
+            feature_area: 'nodes',
+            operation: 'configure',
+            outcome: 'failed'
+          },
+          context: {
+            drag_mode: 'click',
+            node_type: 'CheckpointLoaderSimple',
+            widget_name: 'ckpt_name'
+          },
+          level: 'error'
+        }
       )
     })
 
-    it('should show an error toast when the graph fails to add the node', () => {
+    it('bounds node and widget identifiers independently', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      const nodeType = 'n'.repeat(200)
+      const widgetName = 'w'.repeat(220)
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        new LGraphNode('Placed node', nodeType)
+      )
+
+      useNodeDragToCanvas().startDrag(mockNodeDef, {
+        widgetValues: { [widgetName]: 'value' }
+      })
+      document.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 250, clientY: 250 })
+      )
+
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `Widget "${'w'.repeat(128)}" is missing from added node ${'n'.repeat(128)}`
+        }),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            node_type: 'n'.repeat(128),
+            widget_name: 'w'.repeat(128)
+          })
+        })
+      )
+      expect(mockReportError).toHaveBeenCalledTimes(1)
+    })
+
+    it('should report and show an error when the graph fails to add the node', () => {
       mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
         left: 0,
         right: 500,
@@ -324,10 +383,14 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
-      startDrag(mockNodeDef)
+      const longNodeName = 'n'.repeat(200)
+      const longNodeDef = fromPartial<ComfyNodeDefImpl>({
+        name: longNodeName,
+        display_name: 'Long node'
+      })
+      startDrag(longNodeDef)
 
       document.dispatchEvent(
         new PointerEvent('pointerup', {
@@ -343,6 +406,39 @@ describe('useNodeDragToCanvas', () => {
           detail: 'assetBrowser.failedToCreateNode'
         })
       )
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `Failed to add dragged node ${'n'.repeat(128)} to the graph`
+        }),
+        {
+          errorType: 'failure_adding_dragged_node',
+          tags: {
+            failure_kind: 'bad_state',
+            feature_area: 'nodes',
+            operation: 'add',
+            outcome: 'failed'
+          },
+          context: {
+            drag_mode: 'click',
+            node_type: 'n'.repeat(128),
+            has_widget_values: false
+          },
+          level: 'error'
+        }
+      )
+      expect(mockReportError).toHaveBeenCalledTimes(1)
+
+      mockReportError.mockClear()
+      startDrag(mockNodeDef, { widgetValues: { ckpt_name: 'model' } })
+      document.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 250, clientY: 250 })
+      )
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({ has_widget_values: true })
+        })
+      )
     })
 
     it('should not call selectItems when graph returns no node', () => {
@@ -353,7 +449,6 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
