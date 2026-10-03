@@ -4,6 +4,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
+import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   OpenTabsSnapshot
@@ -24,15 +25,26 @@ type WorkflowResolverDeps = {
     'workflowIdFor' | 'tabPathFor' | 'matchesWorkflow' | 'unbind'
   >
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
+  getCloudWorkflow: AgentRestClient['getCloudWorkflow']
 }
+
+/**
+ * What the server says about one workflow id. `unknown` is not a synonym for
+ * `gone`: a refused or unreachable read tells us nothing, and callers that
+ * would otherwise declare a workflow deleted must keep treating it as
+ * retryable.
+ */
+type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
-  listCloudWorkflows
+  listCloudWorkflows,
+  getCloudWorkflow
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
+  const listingComplete = ref(false)
   let refreshGeneration = 0
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
@@ -48,9 +60,10 @@ export function useAgentWorkflowResolver({
   async function refreshCloudWorkflowIds(): Promise<boolean> {
     const generation = ++refreshGeneration
     try {
-      const entries = await listCloudWorkflows()
+      const { entries, complete } = await listCloudWorkflows()
       if (generation !== refreshGeneration) return false
       listedCloudIds.value = new Set(entries.map(({ id }) => id))
+      listingComplete.value = complete
       cloudIndex.value = entries.flatMap(({ id, name }) =>
         name === undefined ? [] : [{ id, name }]
       )
@@ -159,6 +172,45 @@ export function useAgentWorkflowResolver({
     return listedCloudIds.value.has(workflowId)
   }
 
+  /**
+   * Whether the last successful listing walked every page. False before the
+   * first one, and false again whenever pagination gave up early, so an id
+   * absent from a partial index is unexplained rather than missing.
+   */
+  function isCloudListingComplete(): boolean {
+    return listingComplete.value
+  }
+
+  /**
+   * Asks the server about one id directly, for the cases the user's listing
+   * structurally cannot answer: it hides version-less drafts, and it is a
+   * snapshot that a save can outrun.
+   *
+   * Only a 404 is read as deletion. A 403 stays `unknown` even though the
+   * route's own refusal is an ownership check, because the auth middleware
+   * answers 403 for things that say nothing about the workflow — a
+   * soft-deleted account, an auth method the route does not take, an API-key
+   * policy failure — and only the body distinguishes them. Reading those as
+   * deletion would retire a live workflow on an auth hiccup; reading them as
+   * inconclusive only leaves the local tab focused, which is already what a
+   * failed listing does.
+   */
+  async function cloudWorkflowLifecycle(
+    workflowId: string
+  ): Promise<CloudWorkflowLifecycle> {
+    try {
+      await getCloudWorkflow(workflowId)
+      return 'live'
+    } catch (error) {
+      if (error instanceof AgentApiError && error.status === 404) return 'gone'
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_cloud_workflow_lifecycle_failed'
+      })
+      return 'unknown'
+    }
+  }
+
   function storedWorkflowFor(workflowId: string): ComfyWorkflow | null {
     return resolveWorkflow(workflowId, workflows.workflows)
   }
@@ -233,6 +285,8 @@ export function useAgentWorkflowResolver({
     cachedOpenWorkflowFor,
     storedWorkflowFor,
     isCloudWorkflowListed,
+    isCloudListingComplete,
+    cloudWorkflowLifecycle,
     openWorkflowFor,
     availableWorkflowReferences,
     openTabsSnapshot,

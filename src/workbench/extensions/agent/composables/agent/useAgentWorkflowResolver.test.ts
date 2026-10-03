@@ -6,6 +6,11 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import { AgentApiError } from '../../services/agent/agentRestClient'
+import type {
+  CloudWorkflowListing,
+  CloudWorkflowRow
+} from '../../services/agent/agentRestClient'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
@@ -40,14 +45,42 @@ function setup(
   })
   const bindings = useAgentWorkflowTabBindingStore()
   const listCloudWorkflows = vi.fn(
-    async (): Promise<CloudWorkflowEntry[]> => cloud
+    async (): Promise<CloudWorkflowListing> => listing(cloud)
+  )
+  const getCloudWorkflow = vi.fn(
+    async (workflowId: string): Promise<CloudWorkflowRow> =>
+      cloudRow(workflowId)
   )
   const resolver = useAgentWorkflowResolver({
     workflows,
     bindings,
-    listCloudWorkflows
+    listCloudWorkflows,
+    getCloudWorkflow
   })
-  return { workflows, bindings, listCloudWorkflows, resolver }
+  return {
+    workflows,
+    bindings,
+    listCloudWorkflows,
+    getCloudWorkflow,
+    resolver
+  }
+}
+
+function listing(
+  entries: CloudWorkflowEntry[],
+  complete = true
+): CloudWorkflowListing {
+  return { entries, complete }
+}
+
+function cloudRow(id: string): CloudWorkflowRow {
+  return {
+    id,
+    latest_version: 0,
+    created_by: 'user-1',
+    created_at: '2026-09-11T10:00:00Z',
+    updated_at: '2026-09-11T10:00:00Z'
+  }
 }
 
 describe('Agent workflow resolution', () => {
@@ -267,7 +300,7 @@ describe('Agent workflow resolution', () => {
       const { resolver, listCloudWorkflows } = setup([
         workflow('workflows/current.json', 'Current')
       ])
-      let resolveFirst: (entries: CloudWorkflowEntry[]) => void = () => {}
+      let resolveFirst: (listed: CloudWorkflowListing) => void = () => {}
       let rejectFirst: (error: Error) => void = () => {}
       listCloudWorkflows.mockReturnValueOnce(
         new Promise((resolve, reject) => {
@@ -275,13 +308,13 @@ describe('Agent workflow resolution', () => {
           rejectFirst = reject
         })
       )
-      listCloudWorkflows.mockResolvedValueOnce([
-        { id: 'latest', name: 'Current' }
-      ])
+      listCloudWorkflows.mockResolvedValueOnce(
+        listing([{ id: 'latest', name: 'Current' }])
+      )
       const first = resolver.refreshCloudWorkflowIds()
       expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
       if (outcome === 'success')
-        resolveFirst([{ id: 'stale', name: 'Current' }])
+        resolveFirst(listing([{ id: 'stale', name: 'Current' }]))
       else rejectFirst(new Error('Stale failure'))
       expect(await first).toBe(false)
       expect(resolver.availableWorkflowReferences.value).toEqual([
@@ -307,9 +340,9 @@ describe('Agent workflow resolution', () => {
       surface: 'agent',
       errorType: 'agent_cloud_workflow_ids_refresh_failed'
     })
-    listCloudWorkflows.mockResolvedValueOnce([
-      { id: 'updated', name: 'Current' }
-    ])
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'updated', name: 'Current' }])
+    )
     expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
     expect(resolver.availableWorkflowReferences.value).toEqual([
       { id: 'updated', name: 'Current' }
@@ -418,4 +451,116 @@ describe('Agent workflow resolution', () => {
       expect(bindings.tabPathFor('cloud-zimage')).toBeUndefined()
     }
   )
+})
+
+// Truncation is a fact about the walk, not about the workflows in it, and the
+// only consumer of an absent id is a caller deciding whether the workflow was
+// deleted. Losing it there is how a saved workflow past the cut gets declared
+// gone.
+describe('Cloud listing completeness', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('reports nothing complete before the first listing', () => {
+    const { resolver } = setup([])
+    expect(resolver.isCloudListingComplete()).toBe(false)
+  })
+
+  it.for([
+    { walk: 'reached the last page', complete: true },
+    { walk: 'gave up early', complete: false }
+  ])('carries that the listing $walk', async ({ complete }) => {
+    const { resolver, listCloudWorkflows } = setup([])
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'cloud-a', name: 'A' }], complete)
+    )
+
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+
+    expect(resolver.isCloudListingComplete()).toBe(complete)
+    expect(resolver.isCloudWorkflowListed('cloud-a')).toBe(true)
+  })
+
+  it('does not leave a truncated verdict standing after a complete refresh', async () => {
+    const { resolver, listCloudWorkflows } = setup([])
+    listCloudWorkflows.mockResolvedValueOnce(listing([], false))
+    await resolver.refreshCloudWorkflowIds()
+    expect(resolver.isCloudListingComplete()).toBe(false)
+
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'cloud-a', name: 'A' }])
+    )
+    await resolver.refreshCloudWorkflowIds()
+
+    expect(resolver.isCloudListingComplete()).toBe(true)
+  })
+
+  it('keeps the last completeness verdict when a refresh fails', async () => {
+    const { resolver, listCloudWorkflows } = setup([])
+    await resolver.refreshCloudWorkflowIds()
+    expect(resolver.isCloudListingComplete()).toBe(true)
+
+    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(false)
+
+    expect(resolver.isCloudListingComplete()).toBe(true)
+  })
+})
+
+// `GET /api/workflows/{id}` is the only read that distinguishes a live
+// version-less draft from a deleted workflow. Everything that is not a 404 has
+// to stay inconclusive: a caller uses `gone` to retire a chat's target.
+describe('Cloud workflow lifecycle', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('reads a served row as live whatever its version', async () => {
+    const { resolver, getCloudWorkflow } = setup([])
+    getCloudWorkflow.mockResolvedValueOnce({
+      ...cloudRow('cloud-a'),
+      latest_version: 3
+    })
+
+    expect(await resolver.cloudWorkflowLifecycle('cloud-a')).toBe('live')
+
+    expect(getCloudWorkflow).toHaveBeenCalledWith('cloud-a')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reads a live unpromoted draft as live, not as absent from the list', async () => {
+    const { resolver } = setup([])
+    expect(await resolver.cloudWorkflowLifecycle('cloud-draft')).toBe('live')
+  })
+
+  it('reads a 404 as gone without reporting it as an error', async () => {
+    const { resolver, getCloudWorkflow } = setup([])
+    getCloudWorkflow.mockRejectedValueOnce(
+      new AgentApiError('workflow not found', 404, undefined)
+    )
+
+    expect(await resolver.cloudWorkflowLifecycle('cloud-gone')).toBe('gone')
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it.for([403, 500])(
+    'leaves a %s inconclusive rather than calling the workflow gone',
+    async (status) => {
+      const { resolver, getCloudWorkflow } = setup([])
+      const error = new AgentApiError('refused', status, undefined)
+      getCloudWorkflow.mockRejectedValueOnce(error)
+
+      expect(await resolver.cloudWorkflowLifecycle('cloud-a')).toBe('unknown')
+
+      expect(reportError).toHaveBeenCalledWith(error, {
+        surface: 'agent',
+        errorType: 'agent_cloud_workflow_lifecycle_failed'
+      })
+    }
+  )
+
+  it('leaves an unreachable server inconclusive', async () => {
+    const { resolver, getCloudWorkflow } = setup([])
+    getCloudWorkflow.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+    expect(await resolver.cloudWorkflowLifecycle('cloud-a')).toBe('unknown')
+  })
 })
