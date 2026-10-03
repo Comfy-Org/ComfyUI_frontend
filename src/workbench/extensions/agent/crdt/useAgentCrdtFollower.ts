@@ -98,8 +98,7 @@ function reportAgentProjection(
   failureCount: number,
   applied: boolean
 ): void {
-  const actor = update.actor ?? 'agent-remote'
-  if (!actor.startsWith('agent:')) return
+  if (update.actor !== undefined && !update.actor.startsWith('agent:')) return
   const opIds = update.opIds?.filter((id) => id.length > 0) ?? []
   useTelemetry()?.trackAgentGraphProjection({
     op_id: opIds[0] ?? null,
@@ -691,6 +690,7 @@ function startAgentCrdtFollower(
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
     projection.replaceOnNextFrame(detail.workflowId)
+    pendingProjectionUpdates.delete(detail.workflowId)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
@@ -720,6 +720,7 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       projection.discardPending(workflowId)
+      pendingProjectionUpdates.delete(workflowId)
       projection.bind(workflowId, bridge.follower)
     }
   }
