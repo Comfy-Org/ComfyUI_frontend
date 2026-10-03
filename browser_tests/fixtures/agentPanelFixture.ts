@@ -13,6 +13,7 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -228,7 +229,9 @@ export const agentComposerPerformanceTest =
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
         {
-          key: StorageKeys.agentThread('personal'),
+          key: StorageKeys.agentThread(
+            unsafeStorageScope('test-user-e2e:ws-personal')
+          ),
           threadId: AGENT_COMPOSER_THREAD_ID
         }
       )

@@ -8,6 +8,7 @@ import { MAX_DRAFTS } from '../base/draftTypes'
 import { hashPath } from '../base/hashUtil'
 import { readIndex, resetStorageAvailable } from '../base/storageIO'
 import { StorageKeys } from '../base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -24,7 +25,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-const WORKSPACE = 'personal'
+const WORKSPACE = unsafeStorageScope('personal')
 const INDEX_KEY = StorageKeys.draftIndex(WORKSPACE)
 const PAYLOAD_PREFIX = `${StorageKeys.prefixes.draftPayload}${WORKSPACE}:`
 
@@ -177,7 +178,7 @@ describe('workflowDraftStoreV2', () => {
 
       const newDraftPayloadKey = StorageKeys.draftPayload(
         'workflows/new.json',
-        'personal'
+        WORKSPACE
       )
       let quotaFailureInjected = false
       withQuotaMock((key) => {
@@ -453,6 +454,52 @@ describe('workflowDraftStoreV2', () => {
       expect(store.getDraft('workflows/new.json')!.updatedAt).toBe(
         originalUpdatedAt
       )
+    })
+
+    it('keeps the payload when moving a draft onto the same key', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/same.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+
+      store.moveDraft('workflows/same.json', 'workflows/same.json', 'new')
+
+      expect(store.getDraft('workflows/same.json')).toMatchObject({
+        name: 'new',
+        data: '{"data":"test"}'
+      })
+    })
+
+    it('keeps the original payload when a same-key move cannot persist its index', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/same.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+      withQuotaMock((key) => key === INDEX_KEY)
+
+      store.moveDraft('workflows/same.json', 'workflows/same.json', 'new')
+
+      expect(store.getDraft('workflows/same.json')).toMatchObject({
+        name: 'old',
+        data: '{"data":"test"}'
+      })
+    })
+
+    it('removes the copied payload when the moved index cannot be persisted', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/old.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+      withQuotaMock((key) => key === INDEX_KEY)
+
+      store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
+
+      expect(store.getDraft('workflows/old.json')?.data).toBe('{"data":"test"}')
+      expect(store.getDraft('workflows/new.json')).toBeNull()
+      expect(localStorage.getItem(payloadKey('workflows/new.json'))).toBeNull()
     })
   })
 

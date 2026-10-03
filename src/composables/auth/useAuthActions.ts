@@ -21,7 +21,8 @@ import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
-  clearAllWorkspaceStorage,
+  clearWorkflowStorageForScope,
+  getStorageScope,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -106,46 +107,64 @@ export const useAuthActions = () => {
     }
   }
 
+  const settleModifiedWorkflows = async () => {
+    const workflowStore = useWorkflowStore()
+    const modifiedWorkflows = workflowStore.modifiedWorkflows
+    if (modifiedWorkflows.length === 0) return true
+
+    const dialogService = useDialogService()
+    const confirmed = await dialogService.confirm({
+      title: t('auth.signOut.unsavedChangesTitle'),
+      message: t('auth.signOut.unsavedChangesMessage'),
+      type: 'dirtyClose',
+      denyLabel: t('auth.signOut.signOutAnyway')
+    })
+    if (confirmed === null) return false
+    if (!confirmed) return true
+
+    const workflowService = useWorkflowService()
+    for (const workflow of modifiedWorkflows) {
+      try {
+        const saved = await workflowService.saveWorkflow(workflow)
+        if (!saved) return false
+      } catch {
+        throw new Error(
+          t('auth.signOut.saveFailed', { workflow: workflow.path })
+        )
+      }
+    }
+    return true
+  }
+
   /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. */
   const logout = wrapWithErrorHandlingAsync(
     async ({
       beforeSignOut
     }: { beforeSignOut?: () => Promise<boolean> } = {}) => {
-      if (isCloud) {
-        const workflowStore = useWorkflowStore()
-        const modifiedWorkflows = workflowStore.modifiedWorkflows
-        if (modifiedWorkflows.length > 0) {
-          const dialogService = useDialogService()
-          const confirmed = await dialogService.confirm({
-            title: t('auth.signOut.unsavedChangesTitle'),
-            message: t('auth.signOut.unsavedChangesMessage'),
-            type: 'dirtyClose',
-            denyLabel: t('auth.signOut.signOutAnyway')
-          })
-          if (confirmed === null) return
+      const departingIdentity = isCloud ? authStore.currentUserIdentity() : null
+      const departingScope = isCloud ? getStorageScope() : null
 
-          if (confirmed) {
-            const workflowService = useWorkflowService()
-            for (const workflow of modifiedWorkflows) {
-              try {
-                const saved = await workflowService.saveWorkflow(workflow)
-                if (!saved) return
-              } catch {
-                throw new Error(
-                  t('auth.signOut.saveFailed', { workflow: workflow.path })
-                )
-              }
-            }
-          }
-        }
+      if (isCloud && !(await settleModifiedWorkflows())) return
+
+      if (isCloud && authStore.currentUserIdentity() !== departingIdentity)
+        return
+      if (beforeSignOut) {
+        if (!(await beforeSignOut())) return
+        if (isCloud && authStore.currentUserIdentity() !== departingIdentity)
+          return
       }
 
-      if (beforeSignOut && !(await beforeSignOut())) return
-
-      await authStore.logout()
+      await authStore.logout(isCloud ? departingIdentity : undefined)
       if (isCloud) {
+        const identityAfterLogout = authStore.currentUserIdentity()
+        if (
+          identityAfterLogout !== null &&
+          identityAfterLogout !== departingIdentity
+        )
+          return
         prepareWorkflowLogoutTransition()
-        clearAllWorkspaceStorage()
+        if (departingScope !== null)
+          clearWorkflowStorageForScope(departingScope)
       }
 
       toastStore.add({

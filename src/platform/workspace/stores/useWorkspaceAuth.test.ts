@@ -20,10 +20,8 @@ import {
   WorkspaceAuthError
 } from '@/platform/workspace/stores/workspaceAuthStore'
 
-import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
@@ -2368,21 +2366,25 @@ describe('useWorkspaceAuthStore', () => {
       await store.switchWorkspace('workspace-123')
 
       expect(store.currentWorkspace).toEqual(mockWorkspaceWithRole)
-      expect(getWorkspaceId()).toBe('workspace-123')
-      expect(StorageKeys.draftIndex(getWorkspaceId())).toBe(
-        'Comfy.Workflow.DraftIndex.v2:workspace-123'
+      const firstWorkspace: unknown = JSON.parse(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE) ??
+          'null'
       )
+      expect(firstWorkspace).toEqual(mockWorkspaceWithRole)
+      expect(
+        StorageKeys.draftIndex(unsafeStorageScope(mockWorkspaceWithRole.id))
+      ).toBe('Comfy.Workflow.DraftIndex.v2:workspace-123')
 
       await store.switchWorkspace('workspace-456')
 
       expect(store.currentWorkspace).toEqual(secondWorkspace)
-      expect(getWorkspaceId()).toBe('workspace-456')
-      expect(StorageKeys.draftIndex(getWorkspaceId())).toBe(
-        'Comfy.Workflow.DraftIndex.v2:workspace-456'
+      const secondWorkspaceRecord = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
       )
+      expect(secondWorkspaceRecord).toBe(JSON.stringify(secondWorkspace))
       expect(
-        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
-      ).toBe(JSON.stringify(secondWorkspace))
+        StorageKeys.draftIndex(unsafeStorageScope(secondWorkspace.id))
+      ).toBe('Comfy.Workflow.DraftIndex.v2:workspace-456')
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
     })
 

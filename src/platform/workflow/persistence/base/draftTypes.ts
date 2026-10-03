@@ -1,9 +1,11 @@
+import type { StorageScope } from './storageKeys'
+
 /**
  * V2 Workflow Persistence Type Definitions
  *
  * Two-layer state system:
  * - sessionStorage: Per-tab pointers (tiny, scoped by clientId)
- * - localStorage: Persistent drafts (per-workspace, per-draft keys)
+ * - localStorage: Persistent drafts (per-scope, per-draft keys)
  */
 
 /**
@@ -26,9 +28,9 @@ export interface DraftEntryMeta {
 
 /**
  * Draft index stored in localStorage.
- * Contains LRU order and metadata for all drafts in a workspace.
+ * Contains LRU order and metadata for all drafts in a storage scope.
  *
- * Key: `Comfy.Workflow.DraftIndex.v2:${workspaceId}`
+ * Key: `Comfy.Workflow.DraftIndex.v2:${scope}`
  */
 export interface DraftIndexV2 {
   /** Schema version */
@@ -44,7 +46,7 @@ export interface DraftIndexV2 {
 /**
  * Individual draft payload stored in localStorage.
  *
- * Key: `Comfy.Workflow.Draft.v2:${workspaceId}:${draftKey}`
+ * Key: `Comfy.Workflow.Draft.v2:${scope}:${draftKey}`
  */
 export interface DraftPayloadV2 {
   /** Serialized workflow JSON */
@@ -60,8 +62,14 @@ export interface DraftPayloadV2 {
  * Key: `Comfy.Workflow.ActivePath:${clientId}`
  */
 export interface ActivePathPointer {
-  /** Workspace ID for validation */
-  workspaceId: string
+  /**
+   * Storage scope this pointer belongs to, for validation on read.
+   *
+   * Named `workspaceId` for history: it used to hold a bare workspace id and
+   * the persisted JSON keeps that field name so pointers written by older
+   * builds still validate. It holds a {@link StorageScope} now.
+   */
+  workspaceId: StorageScope
   /** Path to the active workflow */
   path: string
 }
@@ -73,15 +81,15 @@ export interface ActivePathPointer {
  * Key: `Comfy.Workflow.OpenPaths:${clientId}`
  */
 export interface OpenPathsPointer {
-  /** Workspace ID for validation */
-  workspaceId: string
+  /** Storage scope this pointer belongs to. See {@link ActivePathPointer}. */
+  workspaceId: StorageScope
   /** Ordered list of open workflow paths */
   paths: string[]
   /** Index of the active workflow in paths array */
   activeIndex: number
 }
 
-/** Maximum number of drafts to keep per workspace */
+/** Maximum number of drafts to keep per storage scope */
 export const MAX_DRAFTS = 32
 
 export const PERSIST_DEBOUNCE_MS = 512

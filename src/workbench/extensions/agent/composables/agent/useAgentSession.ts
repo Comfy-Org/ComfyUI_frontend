@@ -1,5 +1,5 @@
 import { delay } from 'es-toolkit'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
@@ -13,11 +13,12 @@ import type {
   AgentThreadStartSource,
   AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+  clearLegacyAgentStorage,
+  getStorageIdentity,
+  getStorageScope
+} from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
@@ -334,8 +335,16 @@ const turnStartedAt = new Map<TurnId, number>()
  * reach the continuation that acks. One owner: armed while a send is in
  * flight, consumed exactly once at ack.
  */
-let sendInFlight = false
+interface SendInFlight {
+  owner: string | null
+}
+
+let sendInFlight: SendInFlight | null = null
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+
+function hasCurrentOwnerSend(): boolean {
+  return sendInFlight?.owner === getStorageIdentity()
+}
 
 function consumeStopPendingAck() {
   const pending = stopPendingAck
@@ -361,6 +370,14 @@ function disownsWorkflow(error: unknown): boolean {
   )
 }
 
+function isCurrentStorageContinuation(
+  generation: number,
+  currentGeneration: number,
+  owner: string | null
+): boolean {
+  return generation === currentGeneration && owner === getStorageIdentity()
+}
+
 export function useAgentSession(deps: AgentSessionDeps) {
   const {
     rest,
@@ -370,8 +387,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAskResolved,
     workflow
   } = deps
-  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
   clearLegacyAgentStorage()
+
+  function readStoredThread(): string | null {
+    const scope = getStorageScope()
+    return scope ? localStorage.getItem(StorageKeys.agentThread(scope)) : null
+  }
+
+  function writeStoredThread(threadId: string): void {
+    const scope = getStorageScope()
+    if (scope) localStorage.setItem(StorageKeys.agentThread(scope), threadId)
+  }
+
+  function removeStoredThread(): void {
+    const scope = getStorageScope()
+    if (scope) localStorage.removeItem(StorageKeys.agentThread(scope))
+  }
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -443,13 +474,52 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let unsubscribeStatus: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
-  const recoveringTurns = new Map<string, AbortController>()
+  interface TurnRecovery {
+    controller: AbortController
+    ownerGeneration: number
+  }
+
+  interface TurnRecoveryContext {
+    sessionGeneration: number
+    ownerGeneration: number
+  }
+
+  const recoveringTurns = new Map<string, TurnRecovery>()
+  let storageOwnerGeneration = 0
+  let observedStorageOwner = getStorageIdentity()
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
   }
 
   const malformedStreamReports = new Map<TurnId | null, boolean>()
+
+  function transitionStorageOwner(currentOwner = getStorageIdentity()): void {
+    if (currentOwner === observedStorageOwner) return
+    observedStorageOwner = currentOwner
+    storageOwnerGeneration++
+    for (const recovery of recoveringTurns.values()) recovery.controller.abort()
+    recoveringTurns.clear()
+    loadGeneration++
+    readyThreadId.value = null
+    promptEditState.value = { phase: 'idle' }
+    conversationStore.resetForStorageOwnerTransition()
+    boundWorkflowId.value = null
+    rememberedWorkflowId = null
+    notices.value = []
+    pendingThreadSource.value = 'first_open'
+    reportedWorkflowBind = null
+    pendingWorkflowBind = null
+    turnStartedAt.clear()
+    sendInFlight = null
+    stopPendingAck = null
+    sending.value = false
+    connection = 'initial'
+    malformedStreamReports.clear()
+    snapshotTurns.clear()
+  }
+
+  let stopStorageOwnerWatcher: (() => void) | null = null
 
   function trackMalformedStreamEvent(
     cause: ZodError,
@@ -479,10 +549,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflow?.initialize?.(hasThread)
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
-    ) {
+    if (conversationStore.threadId === null && readStoredThread() === null) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
@@ -490,14 +557,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function start({ restore = true }: { restore?: boolean } = {}): void {
     stopped = false
+    transitionStorageOwner()
+    stopStorageOwnerWatcher ??= watch(
+      getStorageIdentity,
+      transitionStorageOwner,
+      { flush: 'sync' }
+    )
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
     const surviving = conversationStore.threadId
     const stored =
-      conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
-        : null
+      conversationStore.messages.length === 0 ? readStoredThread() : null
     const initialThreadId = surviving ?? stored
     initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
@@ -764,8 +835,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (error instanceof AgentApiError && error.status === 404) {
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      if (localStorage.getItem(threadStorageKey) === threadId)
-        localStorage.removeItem(threadStorageKey)
+      if (readStoredThread() === threadId) removeStoredThread()
       return false
     }
     reportError(error, {
@@ -787,8 +857,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    for (const recovery of recoveringTurns.values()) recovery.abort()
+    for (const recovery of recoveringTurns.values()) recovery.controller.abort()
     recoveringTurns.clear()
+    stopStorageOwnerWatcher?.()
+    stopStorageOwnerWatcher = null
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -976,7 +1048,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
     onThreadActivated?.(ack.thread_id)
-    localStorage.setItem(threadStorageKey, ack.thread_id)
+    writeStoredThread(ack.thread_id)
     if (ack.workflow_id !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(ack.workflow_id)
@@ -1067,9 +1139,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   function releaseDisownedWorkflow(
     sent: WorkflowTurnContext | undefined,
-    error: unknown
+    error: unknown,
+    storageOwnerAtSend: string | null
   ): void {
-    if (sent?.id === undefined || !disownsWorkflow(error)) return
+    if (
+      sent?.id === undefined ||
+      !disownsWorkflow(error) ||
+      storageOwnerAtSend !== getStorageIdentity()
+    )
+      return
     bindingStore.unbindWorkflow(sent.id)
     workflow?.disowned?.(sent.id)
     if (boundWorkflowId.value === sent.id) boundWorkflowId.value = null
@@ -1085,6 +1163,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string
   ): Promise<boolean> {
     const generation = loadGeneration
+    const storageOwnerAtSend = getStorageIdentity()
+    const isCurrentSend = () =>
+      isCurrentStorageContinuation(
+        generation,
+        loadGeneration,
+        storageOwnerAtSend
+      )
     const threadAtSend = conversationStore.threadId ?? 'new'
     const originContext = workflow?.current()
     const origin: TurnOrigin =
@@ -1093,7 +1178,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     let accepted = false
     try {
       await prepareWorkflow()
-      if (generation !== loadGeneration) return false
+      if (!isCurrentSend()) return false
       const wfContext = workflow?.current(origin)
       if (workflowTargetChanged(originContext, wfContext)) {
         recordUnavailableTarget(text)
@@ -1112,15 +1197,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
       accepted = true
-      if (generation !== loadGeneration) return false
+      if (!isCurrentSend()) return false
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
     } catch (error) {
-      // Before the generation guard: the binding store is page-global and
-      // persisted, so a refusal that lands after newChat()/loadThread() has
-      // moved on still has to release, or the dead id survives the reload.
-      releaseDisownedWorkflow(sentContext, error)
-      if (generation !== loadGeneration) return false
+      // Before the generation guard: same-owner newChat()/loadThread() must
+      // still release a refused persisted id. The captured-owner guard inside
+      // release prevents that cleanup from crossing an identity transition.
+      releaseDisownedWorkflow(sentContext, error, storageOwnerAtSend)
+      if (!isCurrentSend()) return false
       recordSendError(error, text, accepted)
       return false
     }
@@ -1142,6 +1227,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string
   ): Promise<boolean> {
+    transitionStorageOwner()
     if (sending.value) {
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
@@ -1151,8 +1237,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     promptEditState.value = { phase: 'idle' }
+    const sendSlot = {
+      owner: getStorageIdentity()
+    }
     sending.value = true
-    sendInFlight = true
+    sendInFlight = sendSlot
     stopPendingAck = null
     try {
       return await performSend(
@@ -1164,8 +1253,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
     } finally {
-      sending.value = false
-      sendInFlight = false
+      if (sendInFlight === sendSlot) {
+        sending.value = false
+        sendInFlight = null
+      }
     }
   }
 
@@ -1219,13 +1310,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * arrives after the turn settled and a newer send took the active slot is
    * discarded instead of overwriting the newer transport.
    */
-  async function reconcileSnapshotTurn(turnId: TurnId): Promise<void> {
+  async function reconcileSnapshotTurn(
+    turnId: TurnId,
+    isCurrentStop: () => boolean
+  ): Promise<void> {
     const threadId = conversationStore.threadId
     if (threadId !== null)
       await Promise.race([
         hydrateFromServer(
           threadId,
           () =>
+            isCurrentStop() &&
             conversationStore.threadId === threadId &&
             conversationStore.activeTurnId === turnId
         ),
@@ -1233,6 +1328,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           setTimeout(resolve, RECONCILE_TIMEOUT_MS)
         )
       ])
+    if (!isCurrentStop()) return
     if (conversationStore.activeTurnId === turnId)
       conversationStore.abortActiveTurn()
     snapshotTurns.delete(turnId)
@@ -1251,7 +1347,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function handleStopFailure(
     error: unknown,
-    turnId: TurnId
+    turnId: TurnId,
+    isCurrentStop: () => boolean
   ): Promise<void> {
     if (abandonedStop(turnId)) {
       releaseStoppingPhase(turnId)
@@ -1267,9 +1364,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // -- the state this whole change exists to remove.
     if ((status === 404 || status === 409) && snapshotTurns.has(turnId)) {
       try {
-        await reconcileSnapshotTurn(turnId)
+        await reconcileSnapshotTurn(turnId, isCurrentStop)
       } finally {
-        releaseStoppingPhase(turnId)
+        if (isCurrentStop()) releaseStoppingPhase(turnId)
       }
       return
     }
@@ -1285,13 +1382,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
+    const generation = loadGeneration
+    const storageOwnerAtStop = getStorageIdentity()
+    const isCurrentStop = () =>
+      isCurrentStorageContinuation(
+        generation,
+        loadGeneration,
+        storageOwnerAtStop
+      )
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
       // sendInFlight, not this instance's sending: the panel that posted may
       // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
+      if (hasCurrentOwnerSend()) stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return
@@ -1302,16 +1407,83 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     try {
       await rest.cancelMessage(threadId, turnId)
+      if (!isCurrentStop()) return
       trackCommittedStop(stopMetadata)
     } catch (error) {
-      await handleStopFailure(error, turnId)
+      if (!isCurrentStop()) return
+      await handleStopFailure(error, turnId, isCurrentStop)
     }
+  }
+
+  function handleAskFailure(
+    error: unknown,
+    askId: string,
+    currentThreadId: string
+  ): false {
+    // A resolution frame can land while this request is still out, and it
+    // retires the card on the way through. The ask is settled and gone, so
+    // whatever this rejection says about delivery is no longer news the user
+    // can act on — any mismatch worth telling them about has already been
+    // raised by reportSupersededAnswer.
+    if (!answeringAskIds.value.has(askId)) return false
+    if (
+      error instanceof AgentApiError &&
+      TERMINAL_ANSWER_STATUSES.has(error.status)
+    ) {
+      // A 409 is the ordinary double-click, and the ask really is resolved,
+      // so it needs neither telemetry nor a notice. The rest mean this
+      // client could never have answered, which the user has to be told
+      // about or the card simply vanishes as though it had worked.
+      if (error.status !== 409) {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_ask_answer_refused'
+        })
+        trackAgentError(
+          'ask_answer_failed',
+          'post_acceptance',
+          'error_overlay',
+          {
+            retryable: isRetryableRequestFailure(error, false)
+          }
+        )
+        pushError(i18n.global.t('agent.runApproval.answerFailed'))
+      }
+      conversationStore.retireAsk(askId, currentThreadId)
+      return false
+    }
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_failed'
+    })
+    trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
+      retryable: isRetryableRequestFailure(error, false)
+    })
+    // Every re-drive above has been spent. The card cannot simply go back
+    // into service: the server CASes an answer onto the row BEFORE it wakes
+    // the turn and reports 500 for the wake alone, so this may already have
+    // authorized the run, and it answers any later click by replaying THIS
+    // selection while the card disappears as though the new one had taken
+    // effect. On a spend authorization that is the wrong way to be wrong, so
+    // retire the card and say the outcome is unknown rather than show a raw
+    // transport string next to a card that is about to vanish.
+    conversationStore.retireAsk(askId, currentThreadId)
+    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    return false
   }
 
   async function answerAsk(
     askId: string,
     selection: 'run' | 'cancel'
   ): Promise<boolean> {
+    const generation = loadGeneration
+    const storageOwnerAtAnswer = getStorageIdentity()
+    const isCurrentAnswer = () =>
+      isCurrentStorageContinuation(
+        generation,
+        loadGeneration,
+        storageOwnerAtAnswer
+      )
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
       // PM-1658: the card is on screen, so a click on it is never a no-op.
@@ -1333,58 +1505,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordAskSelection(askId, selection)
     conversationStore.setAskAnswering(askId, true)
     try {
-      await sendAnswer(currentThreadId, askId, selection)
+      const sent = await sendAnswer(
+        currentThreadId,
+        askId,
+        selection,
+        isCurrentAnswer
+      )
+      if (!sent) return false
+      if (!isCurrentAnswer()) return false
       conversationStore.commitAsk(askId, currentThreadId)
       return true
     } catch (error) {
-      // A resolution frame can land while this request is still out, and it
-      // retires the card on the way through. The ask is settled and gone, so
-      // whatever this rejection says about delivery is no longer news the user
-      // can act on — any mismatch worth telling them about has already been
-      // raised by reportSupersededAnswer.
-      if (!answeringAskIds.value.has(askId)) return false
-      if (
-        error instanceof AgentApiError &&
-        TERMINAL_ANSWER_STATUSES.has(error.status)
-      ) {
-        // A 409 is the ordinary double-click, and the ask really is resolved,
-        // so it needs neither telemetry nor a notice. The rest mean this
-        // client could never have answered, which the user has to be told
-        // about or the card simply vanishes as though it had worked.
-        if (error.status !== 409) {
-          reportError(error, {
-            surface: 'agent',
-            errorType: 'agent_ask_answer_refused'
-          })
-          trackAgentError(
-            'ask_answer_failed',
-            'post_acceptance',
-            'error_overlay',
-            { retryable: isRetryableRequestFailure(error, false) }
-          )
-          pushError(i18n.global.t('agent.runApproval.answerFailed'))
-        }
-        conversationStore.retireAsk(askId, currentThreadId)
-        return false
-      }
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_failed'
-      })
-      trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
-        retryable: isRetryableRequestFailure(error, false)
-      })
-      // Every re-drive above has been spent. The card cannot simply go back
-      // into service: the server CASes an answer onto the row BEFORE it wakes
-      // the turn and reports 500 for the wake alone, so this may already have
-      // authorized the run, and it answers any later click by replaying THIS
-      // selection while the card disappears as though the new one had taken
-      // effect. On a spend authorization that is the wrong way to be wrong, so
-      // retire the card and say the outcome is unknown rather than show a raw
-      // transport string next to a card that is about to vanish.
-      conversationStore.retireAsk(askId, currentThreadId)
-      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
-      return false
+      if (!isCurrentAnswer()) return false
+      return handleAskFailure(error, askId, currentThreadId)
     }
   }
 
@@ -1421,12 +1554,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function sendAnswer(
     threadId: string,
     askId: string,
-    selection: 'run' | 'cancel'
-  ): Promise<void> {
+    selection: 'run' | 'cancel',
+    isCurrentAnswer: () => boolean
+  ): Promise<boolean> {
     for (let attempt = 0; ; attempt++) {
+      if (!isCurrentAnswer()) return false
       try {
         await rest.answerAsk(threadId, askId, [selection])
-        return
+        return true
       } catch (error) {
         if (
           attempt >= ANSWER_RETRY_BACKOFF_MS.length ||
@@ -1455,7 +1590,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = null
     pendingWorkflowBind = null
     malformedStreamReports.clear()
-    localStorage.removeItem(threadStorageKey)
+    removeStoredThread()
     pendingThreadSource.value = source ?? null
   }
 
@@ -1483,7 +1618,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setThreadId(threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
     if (hydrated && isCurrent()) {
-      localStorage.setItem(threadStorageKey, threadId)
+      writeStoredThread(threadId)
       onThreadActivated?.(threadId)
       conversationStore.resumeBackgroundTurn()
     }
@@ -1661,20 +1796,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function reconcileTurn(turn: LiveTurn): Promise<void> {
     const key = recoveryKey(turn)
-    const recovery = new AbortController()
+    const recovery: TurnRecovery = {
+      controller: new AbortController(),
+      ownerGeneration: storageOwnerGeneration
+    }
     recoveringTurns.set(key, recovery)
     const deadline = setTimeout(
-      () => recovery.abort(),
+      () => recovery.controller.abort(),
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
-      await recoverTurn(turn, ownedGeneration, recovery.signal)
+      await recoverTurn(
+        turn,
+        {
+          sessionGeneration: ownedGeneration,
+          ownerGeneration: recovery.ownerGeneration
+        },
+        recovery.controller.signal
+      )
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
       // the expected end of a cancelled job; anything else is an unexpected
       // settlement or storage failure and goes through the module's reporter.
-      if (!recovery.signal.aborted)
+      if (!recovery.controller.signal.aborted)
         reportError(error, {
           surface: 'agent',
           errorType: 'failure_recovering_agent_turn'
@@ -1687,15 +1832,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function recoverTurn(
     turn: LiveTurn,
-    generation: number,
+    context: TurnRecoveryContext,
     signal: AbortSignal
   ): Promise<void> {
     let consecutiveThreadMissing = 0
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, context)) return
       const outcome = await fetchTurnOutcome(turn, signal)
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, context)) return
       consecutiveThreadMissing =
         outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
       if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
@@ -1704,9 +1849,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function isTurnLive(turn: LiveTurn, generation: number): boolean {
+  function isTurnLive(turn: LiveTurn, context: TurnRecoveryContext): boolean {
     return (
-      generation === sessionGeneration &&
+      context.sessionGeneration === sessionGeneration &&
+      context.ownerGeneration === storageOwnerGeneration &&
       conversationStore
         .liveTurns()
         .some(
@@ -1785,7 +1931,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(threadStorageKey)
+    if (readStoredThread() === turn.threadId) removeStoredThread()
   }
 
   const isSending = computed(() => sending.value)

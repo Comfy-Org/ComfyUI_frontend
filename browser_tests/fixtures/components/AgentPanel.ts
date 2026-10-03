@@ -30,6 +30,7 @@ export class AgentPanel {
   public readonly workSummary: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly activityRows: Locator
+  public readonly userMessages: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -84,6 +85,7 @@ export class AgentPanel {
     this.activityRows = this.root
       .getByTestId(TestIds.agent.activityTrace)
       .getByRole('listitem')
+    this.userMessages = this.root.getByTestId('user-message-bubble')
   }
 
   activityRow(label: string): Locator {

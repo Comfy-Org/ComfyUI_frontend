@@ -153,6 +153,14 @@ export const useAuthStore = defineStore('auth', () => {
   )
   const userId = computed(() => sessionUser.value?.id ?? currentUser.value?.uid)
 
+  function currentUserIdentity(): string | null {
+    return (
+      sessionUser.value?.id ??
+      currentUser.value?.uid ??
+      useApiKeyAuthStore().getApiKey()
+    )
+  }
+
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
       PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
@@ -163,17 +171,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   firebaseIdentity.onUserChanged((user) => {
-    const previousUserId = currentUser.value?.uid ?? null
+    const previousUserId = currentUserIdentity()
+    const nextUserId = user?.uid ?? useApiKeyAuthStore().getApiKey()
     const identityChanged =
-      previousUserId !== null && previousUserId !== (user?.uid ?? null)
+      previousUserId !== null && previousUserId !== nextUserId
 
-    if (user === null || identityChanged) {
+    if (nextUserId === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
       mintUnifiedToken.clear()
     }
     if (identityChanged) {
       clearOnboardingReplay(previousUserId)
-      useTeamWorkspaceStore().resetForIdentityChange()
       invalidateRemoteConfig()
     }
 
@@ -349,14 +357,8 @@ export const useAuthStore = defineStore('auth', () => {
     Record<string, string>
   > | null> => (await webSessionResourceHeader()) ?? (await getUserAuthHeader())
 
-  const currentUserIdentity = (): string | null =>
-    sessionUser.value?.id ??
-    currentUser.value?.uid ??
-    useApiKeyAuthStore().getApiKey()
-
   const currentUserCredentialIdentity = (): string | null =>
     currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
-
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
    * asked for it. A 200 bypasses the recovery guards in
@@ -797,9 +799,14 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const logout = async (): Promise<void> =>
+  const logout = async (expectedIdentity?: string | null): Promise<void> =>
     executeAuthAction(async () => {
       await useCloudWebSessionStore().signOut()
+      if (
+        expectedIdentity !== undefined &&
+        currentUserIdentity() !== expectedIdentity
+      )
+        return
       if (currentUser.value) await firebaseIdentity.signOut()
     })
 

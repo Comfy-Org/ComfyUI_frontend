@@ -3,7 +3,12 @@ import { nextTick } from 'vue'
 
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  setStorageIdentity,
+  setStorageWorkspaceId
+} from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import { blankGraph } from '@/scripts/defaultGraph'
 
 import { useAgentWorkflowTabBindingStore } from './agentWorkflowTabBindingStore'
@@ -12,7 +17,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const LEGACY_KEY = 'Comfy.Agent.WorkflowTabBindings'
 const UNSCOPED_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
-const STORAGE_KEY = StorageKeys.agentWorkflowTabBindings('personal')
+const scope = unsafeStorageScope
+const STORAGE_KEY = StorageKeys.agentWorkflowTabBindings(
+  scope('user-test:personal')
+)
 const DEFAULT_PATH = 'workflows/Unsaved Workflow.json'
 const SUFFIXED_PATH = 'workflows/Unsaved Workflow (2).json'
 const DRAFT_GRAPH_ID = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
@@ -37,6 +45,12 @@ describe('agentWorkflowTabBindingStore', () => {
   beforeEach(() => {
     localStorage.clear()
     sessionStorage.clear()
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'personal', id: null })
+    )
+    setStorageIdentity('user-test')
+    setStorageWorkspaceId('personal')
   })
 
   it.for(['before', 'after'])(
@@ -105,6 +119,45 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.tabPathFor('wf-abandoned')).toBe(DEFAULT_PATH)
     expect(bindings.workflowIdFor(DEFAULT_PATH)).toBe('wf-abandoned')
     expect(bindings.matchesWorkflow('wf-abandoned', restored)).toBe(true)
+  })
+
+  it('does not carry same-id tab ownership from user A to user B', async () => {
+    const workflows = useWorkflowStore()
+    const userATab = workflows.createTemporary('Shared.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [userATab.path] })
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-shared', userATab.path)
+    expect(bindings.matchesWorkflow('wf-shared', userATab)).toBe(true)
+
+    localStorage.setItem(
+      StorageKeys.agentWorkflowTabBindings(scope('user-b:personal')),
+      JSON.stringify({
+        'wf-shared': {
+          tabPath: userATab.path,
+          graphId: DRAFT_GRAPH_ID,
+          confirmedAt: Date.now()
+        }
+      })
+    )
+    setStorageIdentity('user-b')
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-shared', userATab)).toBe(false)
+
+    await workflows.closeWorkflow(userATab)
+    const userBTab = workflows.createTemporary('Shared.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [userBTab.path] })
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-shared')).toBe(userBTab.path)
+    expect(bindings.matchesWorkflow('wf-shared', userBTab)).toBe(true)
+    setStorageIdentity('user-test')
   })
 
   it('adopts two restored drafts that share a base name independently', async () => {
@@ -403,8 +456,9 @@ describe('agentWorkflowTabBindingStore', () => {
       'Comfy.Workspace.Current',
       JSON.stringify({ type: 'team', id: 'workspace-b' })
     )
+    setStorageWorkspaceId('workspace-b')
     localStorage.setItem(
-      StorageKeys.agentWorkflowTabBindings('workspace-a'),
+      StorageKeys.agentWorkflowTabBindings(scope('user-test:workspace-a')),
       JSON.stringify({
         'wf-a': {
           tabPath: 'workflows/a.json',
@@ -414,7 +468,7 @@ describe('agentWorkflowTabBindingStore', () => {
       })
     )
     localStorage.setItem(
-      StorageKeys.agentWorkflowTabBindings('workspace-b'),
+      StorageKeys.agentWorkflowTabBindings(scope('user-test:workspace-b')),
       JSON.stringify({
         'wf-b': {
           tabPath: 'workflows/b.json',
@@ -429,7 +483,9 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(store.tabPathFor('wf-a')).toBeUndefined()
     expect(store.tabPathFor('wf-b')).toBe('workflows/b.json')
     expect(
-      localStorage.getItem(StorageKeys.agentWorkflowTabBindings('workspace-a'))
+      localStorage.getItem(
+        StorageKeys.agentWorkflowTabBindings(scope('user-test:workspace-a'))
+      )
     ).not.toBeNull()
   })
 
