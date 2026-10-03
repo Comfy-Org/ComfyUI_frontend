@@ -82,7 +82,7 @@ export function reportExtensionLoadFailures(
       { cause: failures[0].error }
     ),
     {
-      errorType: 'extension_load_failed',
+      errorType: 'error_loading_extension',
       surface: 'platform',
       level: 'warning',
       tags: { failed_extension_count: failures.length },
