@@ -269,7 +269,12 @@ describe('generateModelThumbnail', () => {
   })
 
   it('keeps a cancelled underlying load charged against queue capacity', async () => {
-    const controllers = Array.from({ length: 32 }, () => new AbortController())
+    const firstController = new AbortController()
+    const queuedController = new AbortController()
+    const controllers = [
+      firstController,
+      ...Array.from({ length: 31 }, () => queuedController)
+    ]
     let settleLoad!: (outcome: 'cancelled') => void
     const stalled = mockInstance({
       loadModel: vi.fn<Load3d['loadModel']>(
@@ -300,7 +305,7 @@ describe('generateModelThumbnail', () => {
     await expect(
       generateModelThumbnail('/still-busy.glb', 'still-busy.glb')
     ).resolves.toEqual({ status: 'busy' })
-    controllers.slice(1).forEach((controller) => controller.abort())
+    queuedController.abort()
 
     await expect(Promise.all(accepted.slice(1))).resolves.toEqual(
       Array.from({ length: 31 }, () => ({ status: 'cancelled' }))
