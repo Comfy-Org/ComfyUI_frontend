@@ -1,4 +1,7 @@
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -64,6 +67,23 @@ describe('canCreateNodeForAsset', () => {
   it('fails open while node definitions are unavailable', () => {
     expect(canCreateNodeForAsset(createMockAsset())).toBe(true)
   })
+
+  it.for([
+    { hasProvider: true, expected: true },
+    { hasProvider: false, expected: false }
+  ])(
+    'returns $expected when registry provider availability is $hasProvider',
+    ({ hasProvider, expected }) => {
+      useNodeDefStore().nodeDefsByName = {
+        TestNode: fromPartial<ComfyNodeDefImpl>({ name: 'TestNode' })
+      }
+      vi.spyOn(useModelToNodeStore(), 'hasNodeProvider').mockReturnValue(
+        hasProvider
+      )
+
+      expect(canCreateNodeForAsset(createMockAsset())).toBe(expected)
+    }
+  )
 })
 
 describe('resolveModelNodeFromAsset', () => {
