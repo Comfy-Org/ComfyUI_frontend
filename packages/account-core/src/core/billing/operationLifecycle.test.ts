@@ -1675,6 +1675,44 @@ describe('payment friction telemetry', () => {
     ])
   })
 
+  it('reports a later, different decline after the failed challenge was echoed', async () => {
+    const declined = (reason: BillingOpStatus['decline_reason']) =>
+      httpOk(
+        opStatus({
+          authentication_state: 'failed_retryable',
+          decline_reason: reason,
+          payment_intent_client_secret: 'pi_secret'
+        })
+      )
+    const { lifecycle, telemetry } = harness({
+      embedded: true,
+      answers: [
+        challengeRequired('pi_secret'),
+        declined('authentication_failed'),
+        declined('card_declined')
+      ]
+    })
+    await lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+
+    lifecycle.reportChallengeStarted('op-1')
+    lifecycle.reportChallengeSettled('op-1', 'failed')
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs * 3)
+
+    expect(frictionOf(telemetry)).toEqual([
+      { name: 'billing.checkout.challenge_required', presentation: 'embedded' },
+      { name: 'billing.checkout.challenge_failed', presentation: 'embedded' },
+      {
+        name: 'billing.checkout.challenge_failed',
+        presentation: 'embedded',
+        decline_reason: 'card_declined'
+      }
+    ])
+  })
+
   it('reports each retryable decline inside one hosted operation with its reason, once per decline', async () => {
     const declined = (reason: BillingOpStatus['decline_reason']) =>
       httpOk(
