@@ -17,17 +17,15 @@ describe('dev agent proxy transport', () => {
     'http://127.0.0.1:8095',
     'http://[::1]:8095'
   ])('accepts a protected target at %s', (url) => {
-    expect(
-      createDevAgentConfig({
-        DEV_AGENT_URL: url,
-        DEV_AGENT_SESSION_TOKEN: 'test-session-token'
-      })
-    ).toEqual({
-      host: undefined,
-      proxy: {
-        target: url,
-        headers: { Authorization: 'Bearer test-session-token' }
-      }
+    const { host, proxy } = createDevAgentConfig({
+      DEV_AGENT_URL: url,
+      DEV_AGENT_SESSION_TOKEN: 'test-session-token'
+    })
+    expect(host).toBeUndefined()
+    expect(proxy).toMatchObject({
+      target: url,
+      ws: true,
+      headers: { Authorization: 'Bearer test-session-token' }
     })
   })
 
@@ -46,12 +44,47 @@ describe('dev agent proxy transport', () => {
 
   it.for([
     { DEV_AGENT_URL: 'https://agent.example.com' },
-    { DEV_AGENT_SESSION_TOKEN: 'test-session-token' }
-  ])('requires both target and session token: %j', (env) => {
+    { DEV_AGENT_SESSION_TOKEN: 'test-session-token' },
+    { DEV_AGENT_DATA_DIR: '/tmp/comfy-agent' }
+  ])('requires both target and a token source: %j', (env) => {
     expect(() => createDevAgentConfig(env)).toThrow(
       'DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN must be configured together'
     )
   })
+
+  // The agent rotates its session token on every start, so a value captured
+  // once goes stale (PM-1927). Pointing at the data directory instead lets the
+  // proxy read agent.json per request and follow the rotation.
+  it('reads the live token from the data directory instead of a fixed one', () => {
+    const { proxy } = createDevAgentConfig({
+      DEV_AGENT_URL: 'http://127.0.0.1:6286',
+      DEV_AGENT_DATA_DIR: '/tmp/comfy-agent'
+    })
+    expect(proxy).toMatchObject({ target: 'http://127.0.0.1:6286', ws: true })
+    expect(proxy?.headers).not.toHaveProperty('Authorization')
+  })
+
+  it('refuses two sources for the same credential', () => {
+    expect(() =>
+      createDevAgentConfig({
+        DEV_AGENT_URL: 'http://127.0.0.1:6286',
+        DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+        DEV_AGENT_DATA_DIR: '/tmp/comfy-agent'
+      })
+    ).toThrow('two sources for the same credential')
+  })
+
+  it.for(['http://agent.example.com', 'http://localhost.example.com'])(
+    'rejects forwarding a discovery credential to %s',
+    (url) => {
+      expect(() =>
+        createDevAgentConfig({
+          DEV_AGENT_URL: url,
+          DEV_AGENT_DATA_DIR: '/tmp/comfy-agent'
+        })
+      ).toThrow('DEV_AGENT_URL must use https unless it targets loopback')
+    }
+  )
 
   it('requires an agent proxy in standalone mode', () => {
     expect(() =>
@@ -69,21 +102,18 @@ describe('dev agent proxy transport', () => {
 
 describe('dev agent comfy credential', () => {
   it('forwards the token while keeping the dev server local', () => {
-    expect(
-      createDevAgentConfig({
-        DEV_AGENT_URL: 'http://127.0.0.1:8095',
-        DEV_AGENT_SESSION_TOKEN: 'test-session-token',
-        DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
-        VITE_REMOTE_DEV: 'true'
-      })
-    ).toEqual({
-      host: undefined,
-      proxy: {
-        target: 'http://127.0.0.1:8095',
-        headers: {
-          Authorization: 'Bearer test-session-token',
-          'X-Comfy-Token': 'comfyui-test-key'
-        }
+    const { host, proxy } = createDevAgentConfig({
+      DEV_AGENT_URL: 'http://127.0.0.1:8095',
+      DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+      DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
+      VITE_REMOTE_DEV: 'true'
+    })
+    expect(host).toBeUndefined()
+    expect(proxy).toMatchObject({
+      target: 'http://127.0.0.1:8095',
+      headers: {
+        Authorization: 'Bearer test-session-token',
+        'X-Comfy-Token': 'comfyui-test-key'
       }
     })
   })
