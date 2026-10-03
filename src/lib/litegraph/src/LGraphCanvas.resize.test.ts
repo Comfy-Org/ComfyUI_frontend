@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import {
+  createTestCanvasElement,
+  setIntrinsicCanvasLayout
+} from '@/utils/__tests__/canvasTestUtils'
 
 describe('LGraphCanvas.resize', () => {
   beforeEach(() => {
@@ -41,6 +44,23 @@ describe('LGraphCanvas.resize', () => {
     ])
   })
 
+  it('keeps an unstyled canvas whose intrinsic size already matches its parent at its logical size', () => {
+    const { canvas } = createParentSizedCanvas()
+    setIntrinsicCanvasLayout(canvas.canvas)
+    canvas.canvas.width = 800
+    canvas.canvas.height = 600
+
+    canvas.resize()
+
+    const rect = canvas.canvas.getBoundingClientRect()
+    expect([
+      rect.width,
+      rect.height,
+      canvas.canvas.width,
+      canvas.canvas.height
+    ]).toEqual([800, 600, 1600, 1200])
+  })
+
   it('sizes the backing store without overriding caller CSS dimensions', () => {
     const { canvas } = createParentSizedCanvas()
     canvas.canvas.style.width = '75%'
@@ -55,5 +75,56 @@ describe('LGraphCanvas.resize', () => {
       1600,
       1200
     ])
+  })
+
+  it('keeps explicit dimensions in CSS pixels rather than letting the backing store size the layout', () => {
+    const { canvas } = createParentSizedCanvas()
+
+    canvas.resize(800, 600)
+
+    const { style, width, height } = canvas.canvas
+    expect([style.width, style.height, width, height]).toEqual([
+      '800px',
+      '600px',
+      1600,
+      1200
+    ])
+  })
+
+  it('repaints when the sizing probe discarded the bitmap but nothing resized', () => {
+    vi.stubGlobal('devicePixelRatio', 1)
+    const { canvas } = createParentSizedCanvas()
+    // A stylesheet-sized canvas at DPR 1, so its backing store already matches
+    // its layout box: the ambiguous case that has to be probed, with no size
+    // change afterwards to force a redraw on its own.
+    vi.spyOn(canvas.canvas, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 800, 600)
+    )
+    canvas.canvas.width = 800
+    canvas.canvas.height = 600
+    canvas.dirty_canvas = false
+    canvas.dirty_bgcanvas = false
+
+    canvas.resize()
+
+    expect([canvas.dirty_canvas, canvas.dirty_bgcanvas]).toEqual([true, true])
+    expect([canvas.canvas.style.width, canvas.canvas.style.height]).toEqual([
+      '',
+      ''
+    ])
+  })
+
+  it('recomputes the LOD threshold when a resize changes DPR', () => {
+    const { canvas } = createParentSizedCanvas()
+    vi.stubGlobal('devicePixelRatio', 1)
+    canvas.resize(800, 600)
+    canvas.ds.scale = 0.4
+    canvas.ds.computeVisibleArea(undefined)
+    expect(canvas.low_quality).toBe(true)
+
+    vi.stubGlobal('devicePixelRatio', 4)
+    canvas.resize(800, 600)
+
+    expect(canvas.low_quality).toBe(false)
   })
 })

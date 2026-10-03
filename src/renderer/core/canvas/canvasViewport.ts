@@ -11,17 +11,126 @@ interface CanvasViewportConsumer {
   ds: { setViewportSize(width: number, height: number): void }
 }
 
+interface Size {
+  readonly width: number
+  readonly height: number
+}
+
 const appliedViewportByCanvas = new WeakMap<HTMLCanvasElement, CanvasViewport>()
 const autoSizedStyleByCanvas = new WeakMap<
   HTMLCanvasElement,
   { width?: string; height?: string }
 >()
 
-function applyParentSizedCanvasStyle(
+/**
+ * Sets the context transform to the applied DPR outright, so it neither
+ * compounds across applications nor depends on what last reset the context.
+ */
+function applyContextTransform(canvas: HTMLCanvasElement, dpr: number): void {
+  canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0)
+}
+
+/**
+ * Measures the layout box a canvas has without its backing store's intrinsic
+ * contribution: zeroing the attributes collapses an `auto`-sized canvas and
+ * leaves one whose dimensions come from CSS untouched.
+ *
+ * Reassigning the attributes resets the 2D context, so the transform of the
+ * last applied viewport is restored before returning. A probe must not be
+ * observable in what gets drawn next.
+ */
+function probeCssSize(canvas: HTMLCanvasElement): Size {
+  const savedWidth = canvas.width
+  const savedHeight = canvas.height
+  try {
+    canvas.width = 0
+    canvas.height = 0
+    const { width, height } = canvas.getBoundingClientRect()
+    return { width, height }
+  } finally {
+    canvas.width = savedWidth
+    canvas.height = savedHeight
+    applyContextTransform(canvas, appliedViewportByCanvas.get(canvas)?.dpr ?? 1)
+  }
+}
+
+function matchesRequestedSize(
+  rect: Size,
+  width: number,
+  height: number
+): boolean {
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    Math.abs(rect.width - width) < 1 &&
+    Math.abs(rect.height - height) < 1
+  )
+}
+
+interface SizeOwnership {
+  /** Whether something other than the backing-store attributes owns the size. */
+  readonly independent: boolean
+  /** Whether answering the question discarded the canvas bitmap. */
+  readonly probed: boolean
+}
+
+/**
+ * Whether the canvas already lays out at `width` x `height` for a reason other
+ * than its own backing-store attributes, and so must keep its current sizing.
+ *
+ * A layout box that merely matches the request is not enough to tell: a
+ * stylesheet-sized canvas and an `auto`-sized one whose attributes happen to
+ * agree look identical until {@link applyViewport} writes DPR-scaled
+ * attributes, at which point only the latter's layout box grows with them.
+ */
+function readSizeOwnership(
+  canvas: HTMLCanvasElement,
+  rect: Size,
+  width: number,
+  height: number
+): SizeOwnership {
+  if (!matchesRequestedSize(rect, width, height))
+    return { independent: false, probed: false }
+
+  // Inline dimensions already decouple the layout box from the backing store,
+  // whether this module pinned them or the caller did.
+  const { style } = canvas
+  if (style.width && style.height) return { independent: true, probed: false }
+
+  // A layout box that differs from the backing-store attributes cannot be
+  // coming from them, so something else already owns the size. This is the
+  // steady state of a stylesheet-sized canvas at a DPR above one, and settling
+  // it here is what keeps the destructive probe below rare.
+  if (canvas.width !== rect.width || canvas.height !== rect.height)
+    return { independent: true, probed: false }
+
+  // Equal is the ambiguous case. Only an `auto`-sized box collapses when the
+  // attributes go away, and finding that out costs the bitmap.
+  const probed = probeCssSize(canvas)
+  return { independent: probed.width > 0 && probed.height > 0, probed: true }
+}
+
+/**
+ * Pins the canvas's logical CSS size, unless something else already owns it.
+ *
+ * @returns whether deciding that discarded the canvas bitmap. A caller that
+ * skips work when nothing resized must still repaint when this is true.
+ */
+function applyLogicalCanvasStyle(
   canvas: HTMLCanvasElement,
   width: number,
   height: number
-): void {
+): boolean {
+  if (!(width > 0) || !(height > 0)) return false
+
+  const { independent, probed } = readSizeOwnership(
+    canvas,
+    canvas.getBoundingClientRect(),
+    width,
+    height
+  )
+  if (independent) return probed
+
   const { style } = canvas
   const previousStyle = autoSizedStyleByCanvas.get(canvas) ?? {}
   const nextStyle: { width?: string; height?: string } = {}
@@ -34,6 +143,7 @@ function applyParentSizedCanvasStyle(
     nextStyle.height = style.height
   }
   autoSizedStyleByCanvas.set(canvas, nextStyle)
+  return probed
 }
 
 function normalizeDpr(rawDpr: number): number {
@@ -85,21 +195,21 @@ function measureViewportFromElement(
     )
   }
 
-  const savedWidth = element.width
-  const savedHeight = element.height
-  let cssRect: DOMRect
-  try {
-    element.width = 0
-    element.height = 0
-    cssRect = element.getBoundingClientRect()
-  } finally {
-    element.width = savedWidth
-    element.height = savedHeight
-  }
-  const width = cssRect.width || previousViewport?.cssWidth || initialRect.width
+  const cssSize = probeCssSize(element)
+  const width = cssSize.width || previousViewport?.cssWidth || initialRect.width
   const height =
-    cssRect.height || previousViewport?.cssHeight || initialRect.height
+    cssSize.height || previousViewport?.cssHeight || initialRect.height
   return measureViewport(width, height, rawDpr)
+}
+
+function applySurfaceViewport(
+  canvas: HTMLCanvasElement,
+  viewport: CanvasViewport
+): void {
+  const { physicalWidth, physicalHeight, dpr } = viewport
+  if (canvas.width !== physicalWidth) canvas.width = physicalWidth
+  if (canvas.height !== physicalHeight) canvas.height = physicalHeight
+  applyContextTransform(canvas, dpr)
 }
 
 function applyViewport(
@@ -108,34 +218,8 @@ function applyViewport(
   bg: HTMLCanvasElement,
   consumer?: CanvasViewportConsumer
 ): CanvasViewport {
-  const previousForegroundViewport = appliedViewportByCanvas.get(fg)
-  const foregroundChanged =
-    fg.width !== viewport.physicalWidth ||
-    fg.height !== viewport.physicalHeight ||
-    previousForegroundViewport?.dpr !== viewport.dpr
-  if (
-    fg.width !== viewport.physicalWidth ||
-    previousForegroundViewport?.dpr !== viewport.dpr
-  )
-    fg.width = viewport.physicalWidth
-  if (fg.height !== viewport.physicalHeight) fg.height = viewport.physicalHeight
-  if (foregroundChanged) fg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
-  if (bg !== fg) {
-    const previousBackgroundViewport = appliedViewportByCanvas.get(bg)
-    const backgroundChanged =
-      bg.width !== viewport.physicalWidth ||
-      bg.height !== viewport.physicalHeight ||
-      previousBackgroundViewport?.dpr !== viewport.dpr
-    if (
-      bg.width !== viewport.physicalWidth ||
-      previousBackgroundViewport?.dpr !== viewport.dpr
-    )
-      bg.width = viewport.physicalWidth
-    if (bg.height !== viewport.physicalHeight)
-      bg.height = viewport.physicalHeight
-    if (backgroundChanged)
-      bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
-  }
+  applySurfaceViewport(fg, viewport)
+  if (bg !== fg) applySurfaceViewport(bg, viewport)
 
   appliedViewportByCanvas.set(fg, viewport)
   appliedViewportByCanvas.set(bg, viewport)
@@ -150,6 +234,6 @@ export {
   readBrowserDpr,
   measureViewport,
   measureViewportFromElement,
-  applyParentSizedCanvasStyle,
+  applyLogicalCanvasStyle,
   applyViewport
 }

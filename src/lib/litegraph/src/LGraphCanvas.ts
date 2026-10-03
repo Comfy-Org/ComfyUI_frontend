@@ -32,7 +32,7 @@ import {
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import {
-  applyParentSizedCanvasStyle,
+  applyLogicalCanvasStyle,
   applyViewport,
   measureViewport,
   readBrowserDpr
@@ -1040,8 +1040,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** Link rendering adapter for litegraph-to-canvas integration */
   linkRenderer: LitegraphLinkAdapter | null = null
 
-  /** Device pixel ratio applied with the current viewport dimensions. */
-  dpr: number = 1
+  private _dpr: number = 1
+
+  /**
+   * Device pixel ratio of the canvas contexts. Assigning a new value
+   * recomputes the low-quality zoom threshold.
+   */
+  get dpr(): number {
+    return this._dpr
+  }
+
+  set dpr(value: number) {
+    if (this._dpr === value) return
+    this._dpr = value
+    this.updateLowQualityThreshold()
+  }
 
   /** If true, enable drag zoom. Ctrl+Shift+Drag Up/Down: zoom canvas. */
   dragZoomEnabled: boolean = false
@@ -2196,6 +2209,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // maybe detach events from old_canvas
     this.canvas = element
     this.ds.element = element
+    this.ds.invalidateViewportSize()
     this.pointer.element = element
 
     this._setCursor = createCursorCache(element)
@@ -6672,10 +6686,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /**
    * @deprecated Use {@link measureViewport} + {@link applyViewport} from `canvasViewport.ts` instead.
+   * Call {@link applyLogicalCanvasStyle} first so the DPR-scaled backing store
+   * cannot size the layout box of a canvas that has no CSS dimensions.
    * This method remains for legacy callers that rely on parent-element fallback sizing.
    */
   resize(width?: number, height?: number): void {
-    const usesParentSize = !width && !height
     if (!width && !height) {
       const parent = this.canvas.parentElement
       if (!parent)
@@ -6686,9 +6701,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       height = parent.offsetHeight
     }
 
-    if (usesParentSize) {
-      applyParentSizedCanvasStyle(this.canvas, width ?? 0, height ?? 0)
-    }
+    const bitmapDiscarded = applyLogicalCanvasStyle(
+      this.canvas,
+      width ?? 0,
+      height ?? 0
+    )
 
     const viewport = measureViewport(
       width ?? 0,
@@ -6696,7 +6713,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       window.devicePixelRatio
     )
 
+    // A discarded bitmap has to be repainted even when nothing resized, or the
+    // canvas stays blank until something else happens to mark it dirty.
     if (
+      !bitmapDiscarded &&
       this.canvas.width === viewport.physicalWidth &&
       this.canvas.height === viewport.physicalHeight &&
       this.bgcanvas.width === viewport.physicalWidth &&
