@@ -201,6 +201,17 @@ function isSequence(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 }
 
+function parseSequence(value: unknown): number | null {
+  if (isSequence(value)) return value
+  if (
+    typeof value === 'bigint' &&
+    value >= 0n &&
+    value <= BigInt(Number.MAX_SAFE_INTEGER)
+  )
+    return Number(value)
+  return null
+}
+
 function isValidOpId(value: unknown): value is string {
   return (
     typeof value === 'string' &&
@@ -283,11 +294,9 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   )
     return null
 
-  if (
-    frame.type === 'doc_update' &&
-    isSequence(data.seq) &&
-    typeof data.update_b64 === 'string'
-  ) {
+  if (frame.type === 'doc_update' && typeof data.update_b64 === 'string') {
+    const seq = parseSequence(data.seq)
+    if (seq === null) return null
     const update = decodeBase64(data.update_b64)
     if (update === null) return null
     if (!isAbsent(data.op_ids) && !isStringArray(data.op_ids)) return null
@@ -296,7 +305,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
-        seq: data.seq,
+        seq,
         update,
         ...(actor !== undefined && { actor }),
         ...(isStringArray(data.op_ids) && {
@@ -327,6 +336,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     if (applied === null || skipped === null) return null
     const code = parseBoundedString(data.code, MAX_ERROR_CODE_LENGTH)
     const message = parseBoundedString(data.message, MAX_ERROR_MESSAGE_LENGTH)
+    const seq = isAbsent(data.seq) ? undefined : parseSequence(data.seq)
     let failed: DocOpFailure | undefined
     if (!isAbsent(data.failed)) {
       const parsedFailure = parseDocOpFailure(data.failed)
@@ -339,7 +349,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         ok: data.ok,
         applied,
         skipped,
-        ...(isSequence(data.seq) && { seq: data.seq }),
+        ...(seq !== undefined && seq !== null && { seq }),
         ...(code !== undefined && { code }),
         ...(message !== undefined && { message }),
         ...(failed !== undefined && { failed })
@@ -349,14 +359,16 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
 
   if (frame.type === 'doc_reset') {
     const reset: Partial<Record<keyof DocResetData, unknown>> = data
-    if (!isSequence(reset.seq) || !isSequence(reset.lineage_seq)) return null
+    const seq = parseSequence(reset.seq)
+    const lineageSeq = parseSequence(reset.lineage_seq)
+    if (seq === null || lineageSeq === null) return null
     const actor = parseAdvisoryActor(reset.actor)
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
-        seq: reset.seq,
-        lineageSeq: reset.lineage_seq,
+        seq,
+        lineageSeq,
         ...(actor !== undefined && { actor })
       }
     }
