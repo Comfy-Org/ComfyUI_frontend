@@ -178,6 +178,27 @@ export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 export const zDisownedWorkflowError = z.object({
   error: z.literal('workflow not found or access denied')
 })
+
+/**
+ * The 409 body the agent service returns when the thread already has a turn in
+ * progress (`rejectTurnInProgress` in `services/agent/server/agent_handler.go`).
+ * `type` is the discriminator — a 409 from the cancel or answer endpoints
+ * carries no `type` at all — and the two ids name the turn that holds the
+ * thread, so the client can re-attach to it instead of reporting a dead end.
+ *
+ * Both ids are optional on the wire: the server resolves them best-effort and
+ * documents that a lookup failure "still yields the 409, just without the id".
+ * A conflict with no ids is still a conflict, so the discriminator alone has to
+ * be enough to recognise one.
+ */
+export const zTurnInProgressError = z
+  .object({
+    type: z.literal('TURN_IN_PROGRESS'),
+    active_message_id: z.string().optional(),
+    turn_id: z.string().optional()
+  })
+  .passthrough()
+
 const zAgentThinkingData = z
   .object({
     delta: z.string(),
