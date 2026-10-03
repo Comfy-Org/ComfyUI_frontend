@@ -34,6 +34,7 @@ class FakeStandaloneAgent {
   private token = randomBytes(32).toString('hex')
   private readonly server: Server
   readonly requestAuthorizations: Array<string | undefined> = []
+  readonly upgradeAuthorizations: Array<string | undefined> = []
   private constructor() {
     this.server = createServer((req, res) => {
       this.requestAuthorizations.push(req.headers.authorization)
@@ -46,6 +47,7 @@ class FakeStandaloneAgent {
       res.end(JSON.stringify({ path: req.url }))
     })
     this.server.on('upgrade', (req, socket) => {
+      this.upgradeAuthorizations.push(req.headers.authorization)
       socket.end(
         this.authorized(req.headers.authorization)
           ? 'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n'
@@ -164,6 +166,32 @@ async function upgradeThroughProxy(server: ViteDevServer): Promise<number> {
     req.on('error', fail)
     req.end()
   })
+}
+
+async function rejectCrossOriginUpgrade(server: ViteDevServer): Promise<void> {
+  await new Promise<void>((done, fail) => {
+    const req = request(`${devServerUrl(server)}/api/agent/events`, {
+      headers: {
+        Connection: 'Upgrade',
+        Origin: 'http://evil.example.com',
+        'Sec-Fetch-Site': 'cross-site',
+        Upgrade: 'websocket',
+        'Sec-WebSocket-Key': randomBytes(16).toString('base64'),
+        'Sec-WebSocket-Version': '13'
+      }
+    })
+    req.on('upgrade', (_res, socket) => {
+      socket.destroy()
+      fail(new Error('cross-origin upgrade was accepted'))
+    })
+    req.on('response', (res) => {
+      res.resume()
+      res.on('end', done)
+    })
+    req.on('error', done)
+    req.end()
+  })
+  await new Promise<void>((done) => setImmediate(done))
 }
 
 describe('dev agent proxy across an agent restart', () => {
@@ -301,6 +329,9 @@ describe('dev agent proxy across an agent restart', () => {
         req.end()
       })
       expect(status).toBe(403)
+
+      await rejectCrossOriginUpgrade(server)
+      expect(agent.upgradeAuthorizations).toEqual([])
     }
   )
 
