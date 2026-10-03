@@ -1,10 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
+import { PANEL_MIN_WIDTH } from '@/workbench/extensions/agent/stores/agent/agentPanelConstants'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
-
-/** `PANEL_MIN_WIDTH` in `agentPanelStore` — the narrowest docked Agent panel. */
-const DOCKED_AGENT_PANEL_WIDTH = 420
 
 /** Half of the `1rem` gutter `dialogContentVariants` reserves around a dialog. */
 async function dialogViewportGutter(page: Page): Promise<number> {
@@ -48,14 +46,14 @@ export async function expectDialogHoldsSizeWhenPanelDocks(
   const withoutPanel = await dialog.boundingBox()
   if (!withoutPanel) throw new Error('Dialog is not laid out')
 
-  await publishWorkspaceInsetRight(page, DOCKED_AGENT_PANEL_WIDTH)
+  await publishWorkspaceInsetRight(page, PANEL_MIN_WIDTH)
 
   await comfyExpect(dialog).toHaveBounds(
     {
       ...withoutPanel,
       x: Math.max(
         await dialogViewportGutter(page),
-        (viewportWidth - DOCKED_AGENT_PANEL_WIDTH - withoutPanel.width) / 2
+        (viewportWidth - PANEL_MIN_WIDTH - withoutPanel.width) / 2
       )
     },
     { numDigits: 1 }
