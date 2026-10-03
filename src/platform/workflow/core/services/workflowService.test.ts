@@ -2455,6 +2455,122 @@ describe('useWorkflowService', () => {
         )
       })
     })
+
+    // A graph load can be superseded while it is suspended *inside* this
+    // service: activation awaits workflowStore.openWorkflow, which awaits a
+    // network fetch on the persisted-but-unloaded path, and every
+    // ownsGraphLoad() check in app.ts sits outside this call. Without the
+    // isCurrent predicate the superseded load's resume restored the older
+    // workflow's frozen camera onto the graph the newer load had already
+    // committed - #19971's own bug class, through a seam the per-call-site
+    // checks cannot reach.
+    describe('when a newer load supersedes this one mid-flight', () => {
+      const newerCamera = { scale: 1.75, offset: [10, 20] as [number, number] }
+      const rootGraphId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+      let releaseOpen: () => void
+      let setGraph: ReturnType<typeof vi.fn>
+
+      beforeEach(() => {
+        // Pin the run-error graph scope so setActiveGraph's first argument is
+        // deterministic regardless of which sibling describe ran before this
+        // one; adoptRootGraphId returns null when isGraphReady is unset.
+        Reflect.set(app, 'isGraphReady', true)
+        app.rootGraph.id = rootGraphId
+
+        setGraph = vi.fn()
+        Reflect.set(app, 'canvas', {
+          ds: { scale: newerCamera.scale, offset: newerCamera.offset },
+          setGraph,
+          bg_tint: undefined
+        })
+
+        // The older workflow's camera, frozen by deactivate() at 0.3 zoom.
+        // A real ChangeTracker so restore() is the production write, not a
+        // stand-in: it is what moves app.canvas.ds and calls setGraph.
+        const tracker = new ChangeTracker(existingWorkflow, makeWorkflowData())
+        Reflect.set(tracker, 'ds', { scale: 0.3, offset: [-999, -999] })
+        Reflect.set(tracker, 'subgraphState', { navigation: [] })
+        existingWorkflow.changeTracker = tracker
+
+        const blocked = new Promise<void>((resolve) => {
+          releaseOpen = resolve
+        })
+        vi.mocked(workflowStore.openWorkflow).mockImplementation(async () => {
+          await blocked
+          return existingWorkflow
+        })
+      })
+
+      afterEach(() => {
+        Reflect.deleteProperty(app, 'isGraphReady')
+        Reflect.deleteProperty(app.rootGraph, 'id')
+      })
+
+      it('does not write the newer graph camera when the predicate says it is stale', async () => {
+        let isCurrent = true
+
+        const supersededLoad = useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData(),
+          undefined,
+          { isCurrent: () => isCurrent }
+        )
+        await Promise.resolve()
+
+        // Non-vacuity: the newer load's camera is live at the moment of
+        // supersession, so the writes below are observed on resume rather
+        // than having never been reachable.
+        expect(app.canvas.ds.scale).toBe(newerCamera.scale)
+
+        // The newer load commits and finishes while this one is suspended.
+        isCurrent = false
+        releaseOpen()
+        await supersededLoad
+
+        expect(app.canvas.ds.scale).toBe(newerCamera.scale)
+        expect(app.canvas.ds.offset).toEqual(newerCamera.offset)
+        expect(setGraph).not.toHaveBeenCalled()
+        expect(useExecutionErrorStore().setActiveGraph).not.toHaveBeenCalled()
+        expect(
+          useNodeOutputStore().restorePreviewsForWorkflow
+        ).not.toHaveBeenCalled()
+      })
+
+      it('still activates normally when the load is not superseded', async () => {
+        const liveLoad = useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData(),
+          undefined,
+          { isCurrent: () => true }
+        )
+        await Promise.resolve()
+        releaseOpen()
+        await liveLoad
+
+        expect(app.canvas.ds.scale).toBe(0.3)
+        expect(setGraph).toHaveBeenCalled()
+        expect(useExecutionErrorStore().setActiveGraph).toHaveBeenCalledWith(
+          rootGraphId,
+          existingWorkflow.path
+        )
+        expect(
+          useNodeOutputStore().restorePreviewsForWorkflow
+        ).toHaveBeenCalled()
+      })
+
+      it('activates normally when no predicate is supplied', async () => {
+        const liveLoad = useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData()
+        )
+        await Promise.resolve()
+        releaseOpen()
+        await liveLoad
+
+        expect(app.canvas.ds.scale).toBe(0.3)
+        expect(setGraph).toHaveBeenCalled()
+      })
+    })
   })
 
   describe('per-workflow mode switching', () => {
