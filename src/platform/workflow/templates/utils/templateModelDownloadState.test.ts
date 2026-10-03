@@ -94,6 +94,29 @@ describe('template model download state', () => {
     }
   })
 
+  it('ignores same-attempt progress and completion while still queued', () => {
+    const queued = reduceTemplateModelDownloadState(
+      createTemplateModelDownloadState(),
+      { type: 'request' }
+    )
+
+    // A queued row has not been handed to a host yet, so neither of these can
+    // describe it - only `started` may move it on.
+    for (const event of [
+      { type: 'completed', attempt: 1 } as const,
+      {
+        type: 'progress',
+        attempt: 1,
+        activity: 'active',
+        receivedBytes: 1,
+        totalBytes: 2,
+        fraction: 0.5
+      } as const
+    ]) {
+      expect(reduceTemplateModelDownloadState(queued, event)).toBe(queued)
+    }
+  })
+
   it('treats a finished download as absorbing', () => {
     const queued = reduceTemplateModelDownloadState(
       createTemplateModelDownloadState(),
