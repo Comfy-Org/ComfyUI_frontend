@@ -1,6 +1,7 @@
 import type { CollectionEntry } from 'astro:content'
 
 import type { CustomerStoryFrontmatter } from '../content/customers.schema'
+import type { CustomerVideoStory } from '../data/customerVideos'
 
 export type CustomerStoryEntry = CollectionEntry<'customers'>
 
@@ -34,6 +35,7 @@ export interface StoryCard {
   category: string
   cover: string
   description: string
+  dateAdded: string
 }
 
 export function toCardProps(entry: {
@@ -45,6 +47,51 @@ export function toCardProps(entry: {
     title: entry.data.title,
     category: entry.data.category,
     cover: entry.data.cover,
-    description: entry.data.description
+    description: entry.data.description,
+    dateAdded: entry.data.dateAdded
   }
+}
+
+export type WatchStoryCard = Pick<
+  CustomerVideoStory,
+  | 'slug'
+  | 'company'
+  | 'category'
+  | 'title'
+  | 'description'
+  | 'poster'
+  | 'posterWidth'
+  | 'posterHeight'
+  | 'uploadDate'
+> & { duration?: string }
+
+export type CustomerSort = 'latest' | 'oldest'
+
+interface SearchableCard {
+  title: string
+  category: string
+  description: string
+  company?: string
+}
+
+export function filterAndSortCustomerCards<T extends SearchableCard>(
+  cards: readonly T[],
+  query: string,
+  sort: CustomerSort,
+  dateOf: (card: T) => string
+): T[] {
+  const needle = query.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+  const matches = needle
+    ? cards.filter((card) =>
+        [card.title, card.category, card.description, card.company ?? '']
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .toLocaleLowerCase()
+          .includes(needle)
+      )
+    : [...cards]
+  const direction = sort === 'latest' ? -1 : 1
+  return matches.sort(
+    (a, b) => direction * (Date.parse(dateOf(a)) - Date.parse(dateOf(b)))
+  )
 }

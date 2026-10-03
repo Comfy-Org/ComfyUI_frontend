@@ -1,20 +1,9 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 import { translationsFor } from '../../i18n/translations'
+import type { WatchStoryCard } from '../../utils/customers'
 import SectionLabel from '../common/SectionLabel.vue'
 import VideoStoryCard from './VideoStoryCard.vue'
-
-interface WatchStoryCard {
-  slug: string
-  company: string
-  category: string
-  title: string
-  description: string
-  poster: string
-  posterWidth: number
-  posterHeight: number
-  duration?: string
-}
 
 const { stories, locale = 'en' } = defineProps<{
   stories: WatchStoryCard[]
