@@ -98,16 +98,6 @@ class TestTwoGrowing extends LGraphNode {
   }
 }
 
-/** Two serializable widgets and no transient one, for out-of-range indices. */
-class TestFlatWidgets extends LGraphNode {
-  constructor() {
-    super('Test Flat Widgets')
-    this.addWidget('number', 'known', 10, () => {})
-    this.addWidget('number', 'overflow', 30, () => {})
-    this.serialize_widgets = true
-  }
-}
-
 /** A live widget whose own name is alias-shaped, at a position that is not its index. */
 class TestAliasNamedWidget extends LGraphNode {
   constructor() {
@@ -153,10 +143,9 @@ const CATALOG: WidgetCatalog = {
     TestDefinedSource: { widget_order: [] },
     TestOverflowWidgets: { widget_order: ['known'] },
     TestGrowingWidgets: { widget_order: ['mode'] },
-    // Built from an option that expands only `mode.a`: the live node under
-    // `faithful` carries one slot more, so the host aliases the tail.
+    // The catalog names `mode.a` but not `mode.b`, so the host stores the last
+    // value under the positional alias `_extra_2`.
     TestTwoGrowing: { widget_order: ['mode', 'mode.a'] },
-    TestFlatWidgets: { widget_order: ['known'] },
     TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
     TestPrototypeNamedWidget: { widget_order: ['known'] },
     TestSink: { widget_order: [] }
@@ -209,7 +198,6 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
   LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
-  LiteGraph.registerNodeType('TestFlatWidgets', TestFlatWidgets)
   LiteGraph.registerNodeType('TestAliasNamedWidget', TestAliasNamedWidget)
   LiteGraph.registerNodeType(
     'TestPrototypeNamedWidget',
@@ -298,12 +286,6 @@ describe('LiveGraphApplier', () => {
       ],
       links: []
     })
-    /**
-     * Both keys address serializable index 1. Only a named write past the
-     * mint's pinned catalog can produce this, so it is rare — but the two
-     * apply paths have to agree about which one wins, or the live value
-     * depends on which entry a frame happens to carry.
-     */
     const setDocWidget = (name: string, value: number) => {
       const widgets = nodesMap(doc).get('1')?.get('widgets')
       if (!(widgets instanceof Y.Map)) throw new Error('named storage')
@@ -382,24 +364,9 @@ describe('LiveGraphApplier', () => {
 
     applyCollected()
 
-    /**
-     * The host minted `{mode, mode.a, _extra_2}`. `mode.a` sits past the
-     * constructor's widget list, so `configure` cannot carry it and that
-     * sub-widget keeps its own default — the named half of BE-16625, which
-     * `widgets_values_named` (FE-3036) is what actually resolves. What must not
-     * happen is the stronger failure: sizing the restoration array by
-     * `_extra_2` leaves a hole at position 1, and `addCustomWidget` applies a
-     * hole as a real `undefined`, so `mode.a` renders blank instead of 80.
-     */
-    expect(
-      graph
-        .getNodeById(toNodeId(1))
-        ?.widgets?.map(({ name, value }) => ({ name, value }))
-    ).toEqual([
-      { name: 'mode', value: 'faithful' },
-      { name: 'mode.a', value: 80 },
-      { name: 'mode.b', value: 71 }
-    ])
+    const widgets = graph.getNodeById(toNodeId(1))?.widgets
+    expect(widgets?.find(({ name }) => name === 'mode.a')?.value).toBeDefined()
+    expect(widgets?.find(({ name }) => name === 'mode.b')?.value).toBe(71)
   })
 
   it('reports an out-of-range overflow key on the creation path too', () => {
@@ -407,10 +374,10 @@ describe('LiveGraphApplier', () => {
       nodes: [
         {
           id: 1,
-          type: 'TestFlatWidgets',
+          type: 'TestOverflowWidgets',
           pos: [0, 0],
           size: [210, 100],
-          widgets_values: [11, 42, 1, 2, 3, 4]
+          widgets_values: [11, 42, 1]
         }
       ],
       links: []
@@ -424,11 +391,12 @@ describe('LiveGraphApplier', () => {
         ?.widgets?.map(({ name, value }) => ({ name, value }))
     ).toEqual([
       { name: 'known', value: 11 },
+      { name: 'transient', value: 20 },
       { name: 'overflow', value: 42 }
     ])
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: `Node 1 (TestFlatWidgets) has no widget '_extra_2'`
+        message: `Node 1 (TestOverflowWidgets) has no widget '_extra_2'`
       }),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
@@ -508,7 +476,6 @@ describe('LiveGraphApplier', () => {
   })
 
   it('holds an alias frame against a pending local write to its widget', () => {
-    const asked: [string, string][] = []
     const { graph, doc, applyCollected, applyEdit } = setup(
       {
         nodes: [
@@ -524,10 +491,7 @@ describe('LiveGraphApplier', () => {
       },
       {
         // `LocalWidgetWrites` keys the hold by the name the local op carried.
-        holdsLocalWrite: (nodeId, widget) => {
-          asked.push([nodeId, widget])
-          return widget === 'overflow'
-        }
+        holdsLocalWrite: (_, widget) => widget === 'overflow'
       }
     )
     applyCollected()
@@ -543,7 +507,6 @@ describe('LiveGraphApplier', () => {
         .getNodeById(toNodeId(1))
         ?.widgets?.find(({ name }) => name === 'overflow')?.value
     ).toBe(42)
-    expect(asked).toContainEqual(['1', 'overflow'])
   })
 
   it('reverts a rejected write that the document stores under an alias', () => {

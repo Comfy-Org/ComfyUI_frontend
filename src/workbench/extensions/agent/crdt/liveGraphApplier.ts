@@ -353,20 +353,10 @@ function overflowWidget(
 }
 
 /**
- * Is `name` an overflow alias for a live widget the same document node also
- * addresses by its real name? The host mints one key per `widgets_values`
- * position, so the two only coexist once a later named write lands on a
- * position an earlier mint had to alias.
- *
- * `positionalWidgetValues` already resolves that collision in favour of the
- * named entry, because the widget's own name is tried first. A later frame has
- * to resolve it the same way or the live value depends on entry order — and a
- * partial frame carrying only the alias would overwrite the named value, since
- * `syncWidgets` filters the unchanged named entry out. The check therefore
- * reads the node's WHOLE document map, not the changed subset.
- *
- * A live widget whose own name is alias-shaped owns its entry outright; the
- * alias namespace is the host's, but nothing reserves it on the live node.
+ * Whether `name` is an overflow alias for a position the document also
+ * addresses by the live widget's real name; the named entry wins. Judged
+ * against the node's whole document map so an alias-only partial frame cannot
+ * overwrite the named value.
  */
 function supersededOverflowAlias(
   node: LGraphNode,
@@ -380,17 +370,9 @@ function supersededOverflowAlias(
 }
 
 /**
- * The overflow aliases that address a position past the node's constructed
- * widget list, so `configure` cannot carry them: the restoration array is read
- * positionally over the widgets the constructor left, and a dynamic combo
- * mounts its sub-widgets from its own setter, after that array is built.
- *
- * These are applied after `configure` instead of by extending the array.
- * Extending it leaves a hole at every position the document names rather than
- * aliases — a freshly constructed node has only its selector, so an index past
- * it can only be looked up as `_extra_N` — and `getRestoredWidgetValue` hands a
- * hole to `addCustomWidget` as a real `undefined` restoration, which blanks the
- * widget that mounts there instead of leaving its own value alone.
+ * Overflow aliases for positions past the constructed widget list. A dynamic
+ * combo's setter mounts those widgets during `configure`, so `createNode`
+ * applies these values afterward.
  */
 function mountedOverflowValues(
   widgets: DocNode['widgets'],
@@ -423,10 +405,10 @@ function positionalWidgetValues(
       (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
     )
   }
-  return serializableWidgets(node).map((widget, index): WidgetValue => {
+  return serializableWidgets(node).map((widget, index) => {
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
-      : `_extra_${String(index)}`
+      : `_extra_${index}`
     const value = widgets[name]
     return Object.hasOwn(widgets, name) && isWidgetValue(value)
       ? value
@@ -663,11 +645,6 @@ export class LiveGraphApplier {
         ...info,
         widgets_values: positionalWidgetValues(node, docNode.widgets)
       })
-      // The node's own setters have now mounted whatever the restored values
-      // asked for, so a position past the constructor's widget list finally
-      // resolves. `applyWidgets` is the same path a later frame takes, which
-      // keeps named-entry precedence and the fail-closed report for an index
-      // that still addresses no widget.
       if (mounted && !node.isSubgraphNode())
         this.applyWidgets(node, mounted, docNode.widgets)
     }
@@ -758,11 +735,6 @@ export class LiveGraphApplier {
     }
   }
 
-  /**
-   * The live widget a document entry writes, or nothing when the entry is
-   * superseded by its named sibling, held behind a pending local write, or
-   * addresses no widget at all — which is reported once.
-   */
   private targetWidget(
     node: LGraphNode,
     name: string,
@@ -977,12 +949,9 @@ function ordinaryWidgetEntries(
 }
 
 /**
- * Does the frame's changed-name set cover this document key? The set is keyed
- * by document name on an ordinary frame, but `changesForRejectedOps` builds it
- * from the rejected op's widget name — the widget's real name, never the
- * `_extra_N` key that register is actually stored under. Without the mapping,
- * reverting a rejected write to an overflow-positioned widget restores
- * nothing and the live graph keeps the value the host refused.
+ * Whether the changed-name set covers this document key, either directly or
+ * through the live widget an overflow alias resolves to (rejected-op name sets
+ * carry the widget's real name).
  */
 function changed(
   node: LGraphNode,

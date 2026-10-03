@@ -204,7 +204,7 @@ export class HostDoc {
     return link instanceof Y.Array ? link.toJSON() : link
   }
 
-  /** Test-only frame for a document register shape no public op can address. */
+  /** Test-only frame for widget keys `set_widget` rejects, such as `_extra_N`. */
   setDocumentWidget(nodeId: number, name: string, value: unknown): HostFrame {
     const before = Y.encodeStateVector(this.doc)
     const widgets = nodesMap(this.doc).get(String(nodeId))?.get('widgets')

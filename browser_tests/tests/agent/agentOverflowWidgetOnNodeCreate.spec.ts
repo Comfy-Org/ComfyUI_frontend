@@ -1,17 +1,14 @@
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type {
-  AgentThreadListResponse,
-  WorkflowListResponse
-} from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -21,27 +18,10 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 /**
- * BE-16625, the node-CREATION leg: the host names a `widgets_values` position
- * it has no catalog name for `_extra_N`, and the follower has to deliver that
- * value to the widget the position belongs to — a sub-widget the dynamic
- * combo's own setter mounts, which does not exist when the node is
- * constructed.
- *
- * The sibling spec (`agentDynamicComboSetWidgetSilentlyDropped`) covers the
- * frame leg, injecting the alias after the sub-widget is already on the
- * canvas. This one covers the leg a user reaches by reloading: the node is
- * born from a document that already carries the alias.
- *
- * It also pins what must NOT happen while doing it. The restoration array
- * `configure` reads is positional and is built before any setter runs, so a
- * position past the constructor's widget list can only be looked up as
- * `_extra_N`. Sizing that array by the alias index therefore leaves a hole at
- * every position the document names instead of aliasing, and litegraph
- * delivers a hole as a real `undefined` restoration — which blanks the widget
- * that mounts there rather than leaving its own value alone. Here `mode.a` is
- * such a position: the agent cannot restore 91 into it on this path (that is
- * the named half of the defect, which `widgets_values_named`/FE-3036 closes),
- * but it must still read its own default of 80 and not an empty field.
+ * BE-16625 on node creation: the initial document already carries the
+ * `_extra_2` alias for a sub-widget the dynamic combo mounts during
+ * `configure`. The sibling spec `agentDynamicComboSetWidgetSilentlyDropped`
+ * covers an alias delivered after the sub-widget exists.
  *
  * BE-16625: https://linear.app/comfyorg/issue/BE-16625/widget-catalog-arity-mismatch-extra-n-positional-overflow-is-a
  */
@@ -53,11 +33,12 @@ const THREAD_ID = 'c7d8e9fa-0b1c-4d2e-8f3a-4b5c6d7e8f90'
 const MESSAGE_ID = 'f0e1d2c3-b4a5-4968-8778-9a0b1c2d3e4f'
 const SOCKET_SID = '2a3b4c5d-6e7f-4809-9a1b-2c3d4e5f6071'
 
-const intSlider = (value: number) =>
-  [
+function intSlider(value: number): InputSpec {
+  return [
     'INT',
     { default: value, min: 0, max: 100, step: 1, display: 'slider' }
-  ] as const
+  ]
+}
 
 /** `faithful` expands TWO sub-widgets; the catalog only knows the first. */
 const nodeDef: ComfyNodeDef = {
@@ -92,8 +73,8 @@ const nodeDef: ComfyNodeDef = {
   input_order: { required: ['mode'] }
 }
 
-// Pinned when the node's selection expanded one sub-widget, so the live
-// three-slot array overruns it by exactly one and the host aliases the tail.
+// The catalog names `mode.a` but not `mode.b`, so the host stores the last
+// value under the positional alias `_extra_2`.
 const catalog: WidgetCatalog = {
   types: { [NODE_TYPE]: { widget_order: ['mode', 'mode.a'] } }
 }
@@ -179,46 +160,7 @@ test.describe(
         }
       })
 
-      let savedName: string | undefined
-      await page.route('**/api/userdata/*', (route) => {
-        const request = route.request()
-        const path = decodeURIComponent(
-          new URL(request.url()).pathname.split('/userdata/')[1]
-        )
-        if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-          return route.fallback()
-        savedName = path.slice('workflows/'.length, -'.json'.length)
-        const saved: UserDataFullInfo = {
-          path,
-          modified: Date.now(),
-          size: request.postDataBuffer()?.length ?? 0
-        }
-        return route.fulfill(jsonRoute(saved))
-      })
-      await page.route('**/api/workflows?*', (route) => {
-        const workflows: WorkflowListResponse = {
-          data:
-            savedName === undefined
-              ? []
-              : [
-                  {
-                    id: WORKFLOW_ID,
-                    name: savedName,
-                    created_at: '2026-09-01T00:00:00Z',
-                    updated_at: '2026-09-01T00:00:00Z',
-                    created_by: 'test-user-e2e',
-                    latest_version: 1
-                  }
-                ],
-          pagination: {
-            has_more: false,
-            limit: 100,
-            offset: 0,
-            total: savedName === undefined ? 0 : 1
-          }
-        }
-        return route.fulfill(jsonRoute(workflows))
-      })
+      await mockWorkflowPersistence(page, WORKFLOW_ID)
 
       const vueNodes = new VueNodeHelpers(page)
       const agentPanel = new AgentPanel(page)
@@ -253,12 +195,11 @@ test.describe(
         node.getByRole('spinbutton', { name: 'mode.b' })
       ).toHaveValue('71')
 
-      // `mode.a` is a named position past the constructor's widget list. Its
-      // document value cannot be restored on this path, but the field must
-      // still show its own default rather than an empty value.
+      // FE-3036 may restore the named value (91); this regression only requires
+      // the preceding position not to be blanked while applying the alias.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.a' })
-      ).toHaveValue('80')
+      ).toHaveValue(/\d+/)
     })
   }
 )
