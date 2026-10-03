@@ -20,7 +20,25 @@ on:
 jobs:
   update-locales:
     runs-on: ubuntu-latest
+    env:
+      INPUT_OWNER: ${{ inputs.owner }}
+      INPUT_REPOSITORY: ${{ inputs.repository }}
+      INPUT_FORK_OWNER: ${{ inputs.fork_owner }}
     steps:
+      - name: Validate repository inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for OWNER in "$INPUT_OWNER" "$INPUT_FORK_OWNER"; do
+            if [[ ! "$OWNER" =~ ^[A-Za-z0-9][A-Za-z0-9-]{0,38}$ ]]; then
+              echo "::error title=Invalid owner::Repository owners must be GitHub login names" >&2
+              exit 1
+            fi
+          done
+          if [[ ! "$INPUT_REPOSITORY" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}$ ]]; then
+            echo "::error title=Invalid repository::Repository names must be GitHub repository names" >&2
+            exit 1
+          fi
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
@@ -57,7 +75,7 @@ jobs:
         shell: bash
         working-directory: ComfyUI
         run: |
-          python main.py --cpu --multi-user --front-end-root ../dist --custom-node-path ../ComfyUI/custom_nodes/${{ inputs.repository }} &
+          python main.py --cpu --multi-user --front-end-root ../dist --custom-node-path "../ComfyUI/custom_nodes/${INPUT_REPOSITORY}" &
           wait-for-it --service
 
       - name: Start dev server
@@ -79,7 +97,7 @@ jobs:
         run: pnpm exec tsx scripts/diff-i18n diff
       - name: Update i18n in custom node repository
         run: |
-          LOCALE_DIR=ComfyUI/custom_nodes/${{ inputs.repository }}/locales/
+          LOCALE_DIR="ComfyUI/custom_nodes/${INPUT_REPOSITORY}/locales/"
           install -d "$LOCALE_DIR"
           cp -rf temp/diff/* "$LOCALE_DIR"
 
@@ -87,7 +105,7 @@ jobs:
       - name: Check and create fork of custom node repository
         run: |
           # Try to fork the repository
-          gh repo fork ${{ inputs.owner }}/${{ inputs.repository }} --clone=false || {
+          gh repo fork "${INPUT_OWNER}/${INPUT_REPOSITORY}" --clone=false || {
             echo "Fork failed - repository might already be forked"
             # Exit 0 to prevent the workflow from failing
             exit 0
@@ -97,7 +115,7 @@ jobs:
           gh api \
             --method PUT \
             -H "Accept: application/vnd.github+json" \
-            "/repos/${{ inputs.fork_owner }}/${{ inputs.repository }}/actions/permissions/workflow" \
+            "/repos/${INPUT_FORK_OWNER}/${INPUT_REPOSITORY}/actions/permissions/workflow" \
             -F can_approve_pull_request_reviews=true \
             -F default_workflow_permissions="write" \
             -F enabled=true
@@ -129,13 +147,13 @@ jobs:
         working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
         run: |
           # Force push to create the branch
-          echo "Pushing changes to ${{ inputs.fork_owner }}/${{ inputs.repository }}"
-          git push -f git@github.com:${{ inputs.fork_owner }}/${{ inputs.repository }}.git update-locales
+          echo "Pushing changes to ${INPUT_FORK_OWNER}/${INPUT_REPOSITORY}"
+          git push -f "git@github.com:${INPUT_FORK_OWNER}/${INPUT_REPOSITORY}.git" update-locales
 
       - name: Create PR
         working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
         run: |
           # Create PR using gh cli
-          gh pr create --title "Update locales for ${{ inputs.repository }}" --repo ${{ inputs.owner }}/${{ inputs.repository }} --head ${{ inputs.fork_owner }}:update-locales --body "Update locales for ${{ inputs.repository }}"
+          gh pr create --title "Update locales for ${INPUT_REPOSITORY}" --repo "${INPUT_OWNER}/${INPUT_REPOSITORY}" --head "${INPUT_FORK_OWNER}:update-locales" --body "Update locales for ${INPUT_REPOSITORY}"
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
