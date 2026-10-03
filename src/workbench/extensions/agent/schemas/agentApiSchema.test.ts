@@ -8,6 +8,7 @@ import {
   zAgentError,
   zAgentMessage,
   zAgentMessages,
+  zPersistedToolCallSummary,
   zAgentTurnAccepted,
   zAgentWsEvent
 } from './agentApiSchema'
@@ -172,7 +173,10 @@ describe('agentApiSchema contract subtleties', () => {
       }
     ])
 
-    expect(parsed[0].content?.tool_calls?.[0].skill).toBe('a'.repeat(256))
+    const toolCall = zPersistedToolCallSummary.parse(
+      parsed[0].content?.tool_calls?.[0]
+    )
+    expect(toolCall.skill).toBe('a'.repeat(256))
   })
 
   it('accepts agent_message_done with usage null (cancelled turn)', () => {
