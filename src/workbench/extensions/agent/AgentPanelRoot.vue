@@ -1394,8 +1394,13 @@ const { submit: onSend } = useAgentDraftSubmission({
       starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
     })
     const selectionWorkflow = selectedTarget.value
-    return sendMessage(text, attachments, nodes, references, () =>
-      selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+    return sendMessage(
+      text,
+      attachments,
+      nodes,
+      references,
+      () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+      meta.clientMessageId
     )
   }
 })
