@@ -1211,6 +1211,7 @@ describe('LiveGraphApplier', () => {
     })
 
     expect(result.createdNodeIds).toEqual([toNodeId(2)])
+    expect(result.failureCount).toBe(1)
     expect(graph.getNodeById(toNodeId(2))).toBeTruthy()
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(

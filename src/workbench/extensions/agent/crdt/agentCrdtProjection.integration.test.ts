@@ -299,7 +299,8 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     ).toEqual({
       applied: true,
       nodes: { added: ['1'], removed: [] },
-      createdNodeIds: []
+      createdNodeIds: [],
+      failureCount: 0
     })
     expect(graph._nodes).toEqual([source])
     expect(source.title).toBe('Reminted')

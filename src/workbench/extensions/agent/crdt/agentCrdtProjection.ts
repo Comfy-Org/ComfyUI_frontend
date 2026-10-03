@@ -31,7 +31,12 @@ export interface DocNodeDelta {
 
 export type FrameOutcome =
   | { applied: false; nodes: DocNodeDelta }
-  | { applied: true; nodes: DocNodeDelta; createdNodeIds: NodeId[] }
+  | {
+      applied: true
+      nodes: DocNodeDelta
+      createdNodeIds: NodeId[]
+      failureCount: number
+    }
 
 const EMPTY_DELTA: DocNodeDelta = { added: [], removed: [] }
 
@@ -117,7 +122,7 @@ export class AgentCrdtProjection {
     if (!this.getGraph())
       return { applied: false, nodes: docNodeDelta(target.collector.peek()) }
     const changes = target.collector.take()
-    const createdNodeIds = this.apply(
+    const { createdNodeIds, failureCount } = this.apply(
       update.workflowId,
       target,
       changes,
@@ -127,7 +132,12 @@ export class AgentCrdtProjection {
       },
       this.takeApplyMode(update.workflowId)
     )
-    return { applied: true, nodes: docNodeDelta(changes), createdNodeIds }
+    return {
+      applied: true,
+      nodes: docNodeDelta(changes),
+      createdNodeIds,
+      failureCount
+    }
   }
 
   /**
@@ -144,7 +154,7 @@ export class AgentCrdtProjection {
       target.collector.take(),
       { actor: 'agent-collected', opIds: [] },
       this.takeApplyMode(workflowId)
-    )
+    ).createdNodeIds
   }
 
   /**
@@ -160,7 +170,7 @@ export class AgentCrdtProjection {
     return this.apply(workflowId, target, changes, {
       actor: 'agent-revert',
       opIds: ops.map((op) => op.op_id)
-    })
+    }).createdNodeIds
   }
 
   /**
@@ -208,19 +218,19 @@ export class AgentCrdtProjection {
     changes: FrameChanges,
     context: RemoteApplyContext,
     mode: ApplyMode = 'merge'
-  ): NodeId[] {
-    const { createdNodeIds } = this.applier.applyChanges(
+  ): { createdNodeIds: NodeId[]; failureCount: number } {
+    const result = this.applier.applyChanges(
       target.follower.doc,
       changes,
       context,
       mode
     )
-    if (createdNodeIds.length > 0) {
+    if (result.createdNodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
         workflowId,
-        nodeIds: createdNodeIds
+        nodeIds: result.createdNodeIds
       })
     }
-    return createdNodeIds
+    return result
   }
 }

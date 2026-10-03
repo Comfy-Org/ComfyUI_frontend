@@ -78,6 +78,7 @@ export interface LiveGraphApplierDeps {
 
 export interface ApplyResult {
   createdNodeIds: NodeId[]
+  failureCount: number
 }
 
 /**
@@ -546,6 +547,7 @@ function floorSizeToContent(node: LGraphNode): void {
 export class LiveGraphApplier {
   private readonly deps: LiveGraphApplierDeps
   private readonly reported = new Set<string>()
+  private failureCount = 0
 
   constructor(deps: LiveGraphApplierDeps) {
     this.deps = deps
@@ -559,7 +561,8 @@ export class LiveGraphApplier {
     mode: ApplyMode = 'merge'
   ): ApplyResult {
     const graph = this.deps.getGraph()
-    if (!graph) return { createdNodeIds: [] }
+    if (!graph) return { createdNodeIds: [], failureCount: 0 }
+    this.failureCount = 0
     return this.write(graph, context, () => {
       if (mode === 'replace') this.removeAbsent(graph, doc, context)
       const created: NodeId[] = []
@@ -595,7 +598,7 @@ export class LiveGraphApplier {
 
       this.applyLinks(graph, doc, [...changes.links], context)
       if (mode === 'merge') this.placeBatch(graph, created)
-      return { createdNodeIds: created }
+      return { createdNodeIds: created, failureCount: this.failureCount }
     })
   }
 
@@ -640,6 +643,7 @@ export class LiveGraphApplier {
     try {
       fn()
     } catch (error) {
+      this.failureCount += 1
       reportError(error, {
         surface: 'agent',
         errorType: 'agent_graph_apply_failed',

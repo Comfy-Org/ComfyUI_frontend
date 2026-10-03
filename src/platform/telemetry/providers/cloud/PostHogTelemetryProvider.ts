@@ -40,6 +40,7 @@ import type {
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
+  AgentGraphProjectionMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentMessageSentMetadata,
@@ -869,6 +870,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_GRAPH_PROJECTION, metadata)
   }
 
   // fallow-ignore-next-line unused-class-member
