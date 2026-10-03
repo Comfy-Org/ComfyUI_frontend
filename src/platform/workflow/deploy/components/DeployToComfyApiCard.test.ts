@@ -28,7 +28,6 @@ vi.mock(
     }
   }
 )
-const copyBrief = vi.mocked(useAgentHandoff().copyBrief)
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -97,7 +96,7 @@ describe('DeployToComfyApiCard', () => {
 
     await user.click(screen.getByTestId('deploy-to-comfy-api-agent'))
 
-    expect(copyBrief).toHaveBeenCalledOnce()
+    expect(useAgentHandoff().copyBrief).toHaveBeenCalledOnce()
     expect(screen.getByTestId('deploy-to-comfy-api-agent')).toHaveTextContent(
       /^Copied/
     )
@@ -105,7 +104,7 @@ describe('DeployToComfyApiCard', () => {
   })
 
   it('keeps the original label when the brief did not reach the clipboard', async () => {
-    copyBrief.mockResolvedValueOnce(false)
+    vi.mocked(useAgentHandoff().copyBrief).mockResolvedValueOnce(false)
     const { user } = renderCard()
 
     await user.click(screen.getByTestId('deploy-to-comfy-api-agent'))
@@ -119,7 +118,7 @@ describe('DeployToComfyApiCard', () => {
     const { user } = renderCard()
     const button = screen.getByTestId('deploy-to-comfy-api-agent')
     await user.click(button)
-    copyBrief.mockResolvedValueOnce(false)
+    vi.mocked(useAgentHandoff().copyBrief).mockResolvedValueOnce(false)
 
     await user.click(button)
 

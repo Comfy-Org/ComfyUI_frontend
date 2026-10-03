@@ -70,8 +70,9 @@ import { toNodeId } from '@/types/nodeId'
 import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
+  buildSubgraphExecutionPaths,
   collectSubgraphDefinitions,
-  buildSubgraphExecutionPaths
+  parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
@@ -1454,7 +1455,9 @@ export class ComfyApp {
 
       collectMissingNodes(graphData.nodes)
       const subgraphDefs = collectSubgraphDefinitions(
-        graphData.definitions?.subgraphs ?? []
+        parseFlattenableSubgraphDefinitions(
+          graphData.definitions?.subgraphs ?? []
+        )
       )
       const subgraphContainerIdMap = buildSubgraphExecutionPaths(
         graphData.nodes,

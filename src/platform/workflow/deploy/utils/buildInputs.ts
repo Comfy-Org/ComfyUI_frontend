@@ -1,10 +1,15 @@
-import { isPlainObject } from 'es-toolkit'
 import { z } from 'zod'
 
 import { isModelFileName } from '@/platform/missingModel/missingModelScan'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
-import { collectReachableSubgraphDefinitions } from '@/platform/workflow/core/utils/workflowFlattening'
-import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
+import {
+  collectReachableSubgraphDefinitions,
+  parseFlattenableSubgraphDefinitions
+} from '@/platform/workflow/core/utils/workflowFlattening'
+import type {
+  FlattenableSubgraphDefinition,
+  FlattenableWorkflowNode
+} from '@/platform/workflow/core/utils/workflowFlattening'
 
 export interface NodePack {
   readonly id: string
@@ -70,30 +75,6 @@ function parseNodes(nodes: readonly unknown[]): FlattenableWorkflowNode[] {
   })
 }
 
-function withWellFormedNodes(subgraphs: readonly unknown[]): unknown[] {
-  const copies = new Map<object, Record<PropertyKey, unknown>>()
-  const pending: Record<PropertyKey, unknown>[] = []
-
-  function copy(definition: unknown): unknown {
-    if (!isPlainObject(definition) || !Array.isArray(definition.nodes))
-      return definition
-    const existing = copies.get(definition)
-    if (existing) return existing
-    const clone = { ...definition, nodes: parseNodes(definition.nodes) }
-    copies.set(definition, clone)
-    pending.push(clone)
-    return clone
-  }
-
-  const result = subgraphs.map(copy)
-  for (let clone = pending.pop(); clone; clone = pending.pop()) {
-    const nested = clone.definitions
-    if (isPlainObject(nested) && Array.isArray(nested.subgraphs))
-      clone.definitions = { ...nested, subgraphs: nested.subgraphs.map(copy) }
-  }
-  return result
-}
-
 const zWorkflowShape = z.object({
   nodes: z.array(z.unknown()).catch([]),
   definitions: z
@@ -103,13 +84,16 @@ const zWorkflowShape = z.object({
 
 function workflowParts(graph: unknown): {
   roots: FlattenableWorkflowNode[]
-  subgraphs: unknown[]
+  subgraphs: FlattenableSubgraphDefinition[]
 } {
   const parsed = zWorkflowShape.safeParse(graph)
   if (!parsed.success) return { roots: [], subgraphs: [] }
   return {
     roots: parseNodes(parsed.data.nodes),
-    subgraphs: withWellFormedNodes(parsed.data.definitions.subgraphs)
+    subgraphs: parseFlattenableSubgraphDefinitions(
+      parsed.data.definitions.subgraphs,
+      parseNodes
+    )
   }
 }
 

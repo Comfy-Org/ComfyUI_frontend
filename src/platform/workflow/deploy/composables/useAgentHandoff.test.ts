@@ -17,7 +17,6 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => {
   )
   return { useCopyToClipboard: () => ({ copyToClipboard }) }
 })
-const copyToClipboard = vi.mocked(useCopyToClipboard().copyToClipboard)
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: vi.fn()
@@ -48,19 +47,19 @@ describe('useAgentHandoff', () => {
 
     await expect(handoff.copyBrief()).resolves.toBe(true)
 
-    expect(copyToClipboard).toHaveBeenCalledWith(
+    expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledWith(
       expect.stringContaining(
         '# Turn `portrait-upscale` into a Comfy API Build'
       ),
       { toastOnSuccess: false }
     )
-    expect(copyToClipboard).toHaveBeenCalledWith(
+    expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledWith(
       expect.stringContaining(
         'downloaded the workflow as `portrait-upscale.json`'
       ),
       expect.anything()
     )
-    expect(copyToClipboard).toHaveBeenCalledWith(
+    expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledWith(
       expect.stringContaining('- `KSampler`'),
       expect.anything()
     )
@@ -73,10 +72,12 @@ describe('useAgentHandoff', () => {
   it('copies before it downloads, so the click still counts for the clipboard', async () => {
     setActiveWorkflow()
     const order: string[] = []
-    copyToClipboard.mockImplementationOnce(async () => {
-      order.push('copy')
-      return true
-    })
+    vi.mocked(useCopyToClipboard().copyToClipboard).mockImplementationOnce(
+      async () => {
+        order.push('copy')
+        return true
+      }
+    )
     vi.mocked(downloadBlob).mockImplementationOnce(() => {
       order.push('download')
     })
@@ -106,7 +107,11 @@ describe('useAgentHandoff', () => {
         true
       )
 
-      expect(String(copyToClipboard.mock.lastCall?.[0])).toContain(path)
+      expect(
+        String(
+          vi.mocked(useCopyToClipboard().copyToClipboard).mock.lastCall?.[0]
+        )
+      ).toContain(path)
       expect(downloadBlob).toHaveBeenCalledTimes(downloads)
     }
   )
@@ -135,7 +140,9 @@ describe('useAgentHandoff', () => {
 
     await useAgentHandoff().copyBrief()
 
-    const brief = String(copyToClipboard.mock.lastCall?.[0])
+    const brief = String(
+      vi.mocked(useCopyToClipboard().copyToClipboard).mock.lastCall?.[0]
+    )
     expect(brief).toContain('- `sd_xl.safetensors`')
     expect(brief).not.toContain('cat.pt')
   })
@@ -161,14 +168,16 @@ describe('useAgentHandoff', () => {
 
     await useAgentHandoff().copyBrief()
 
-    const brief = String(copyToClipboard.mock.lastCall?.[0])
+    const brief = String(
+      vi.mocked(useCopyToClipboard().copyToClipboard).mock.lastCall?.[0]
+    )
     expect(brief).toContain('- `fooocus_inpaint_head.pth`')
     expect(brief).toContain('- `inpaint_v26.fooocus.patch`')
   })
 
   it('keeps the file when the brief did not reach the clipboard', async () => {
     setActiveWorkflow()
-    copyToClipboard.mockResolvedValueOnce(false)
+    vi.mocked(useCopyToClipboard().copyToClipboard).mockResolvedValueOnce(false)
 
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
 
@@ -184,7 +193,7 @@ describe('useAgentHandoff', () => {
 
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(true)
 
-    expect(copyToClipboard).toHaveBeenCalledWith(
+    expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledWith(
       expect.stringContaining('No node classes were read from the graph.'),
       expect.anything()
     )
@@ -204,7 +213,7 @@ describe('useAgentHandoff', () => {
 
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
 
-    expect(copyToClipboard).not.toHaveBeenCalled()
+    expect(useCopyToClipboard().copyToClipboard).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
       errorType: 'error_copying_deploy_agent_brief',
       surface: 'platform'
@@ -227,7 +236,7 @@ describe('useAgentHandoff', () => {
 
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
 
-    expect(copyToClipboard).toHaveBeenCalledOnce()
+    expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'error_copying_deploy_agent_brief',
       surface: 'platform'
@@ -254,7 +263,9 @@ describe('useAgentHandoff', () => {
 
     await useAgentHandoff().copyBrief()
 
-    const brief = String(copyToClipboard.mock.lastCall?.[0])
+    const brief = String(
+      vi.mocked(useCopyToClipboard().copyToClipboard).mock.lastCall?.[0]
+    )
     expect(brief).toContain('- `FreshClass`')
     expect(brief).not.toContain('StaleClass')
     const [, blob] = vi.mocked(downloadBlob).mock.calls[0]
@@ -266,7 +277,7 @@ describe('useAgentHandoff', () => {
 
     await useAgentHandoff().copyBrief()
 
-    expect(copyToClipboard).toHaveBeenCalledWith(
+    expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledWith(
       expect.stringContaining('downloaded the workflow as `releasev2.json`'),
       expect.anything()
     )

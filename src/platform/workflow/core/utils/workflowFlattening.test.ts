@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
+import type {
+  FlattenableSubgraphDefinition,
+  FlattenableWorkflowNode
+} from '@/platform/workflow/core/utils/workflowFlattening'
 import {
   buildSubgraphExecutionPaths,
   collectReachableSubgraphDefinitions,
   collectSubgraphDefinitions,
-  flattenWorkflowNodes
+  flattenWorkflowNodes,
+  parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
 
 function node(id: number, type: string): FlattenableWorkflowNode {
@@ -15,8 +19,8 @@ function node(id: number, type: string): FlattenableWorkflowNode {
 function subgraphDef(
   id: string,
   nodes: FlattenableWorkflowNode[],
-  nestedDefs: unknown[] = []
-) {
+  nestedDefs: FlattenableSubgraphDefinition[] = []
+): FlattenableSubgraphDefinition & { inputNode: object; outputNode: object } {
   return {
     id,
     name: id,
@@ -31,8 +35,8 @@ describe('collectSubgraphDefinitions', () => {
   it('collects mutually cyclic definitions once', () => {
     const defA = subgraphDef('def-A', [])
     const defB = subgraphDef('def-B', [])
-    defA.definitions.subgraphs = [defB]
-    defB.definitions.subgraphs = [defA]
+    defA.definitions = { subgraphs: [defB] }
+    defB.definitions = { subgraphs: [defA] }
 
     const ids = collectSubgraphDefinitions([defA]).map(({ id }) => id)
     expect(ids).toHaveLength(2)
@@ -112,7 +116,10 @@ describe('buildSubgraphExecutionPaths', () => {
     }
 
     expect(
-      buildSubgraphExecutionPaths([node(5, 'def-A')], [malformedDef])
+      buildSubgraphExecutionPaths(
+        [node(5, 'def-A')],
+        parseFlattenableSubgraphDefinitions([malformedDef])
+      )
     ).toEqual(new Map())
   })
 
