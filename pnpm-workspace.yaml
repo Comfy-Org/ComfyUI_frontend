@@ -211,6 +211,7 @@ overrides:
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
   - '@comfyorg/comfy-multi-player@0.3.6'
+  - '@comfyorg/fbx-exporter-three@1.0.2'
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch
