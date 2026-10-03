@@ -28,7 +28,6 @@ interface ResolvedModelNode {
 
 type Result<T, E> = { success: true; value: T } | { success: false; error: E }
 
-/** Whether the loaded node registry can create a loader for this asset. */
 export function canCreateNodeForAsset(asset: AssetItem): boolean {
   const { flags } = useFeatureFlags()
   const candidates = getAssetNodeCategoryCandidates(
