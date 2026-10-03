@@ -110,7 +110,7 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
-  it('subscribes to both hosts before dispatching', async () => {
+  it('subscribes only to Desktop2 before direct host dispatch', async () => {
     const order: string[] = []
     const request = model('desktop2.safetensors')
     const dispatchDownload = vi.fn((): ModelDownloadDispatchOutcome => {
@@ -136,7 +136,7 @@ describe('useTemplateModelRowDownloads', () => {
     })
     downloads.request(request)
 
-    expect(order).toEqual(['desktop-subscribe', 'legacy-subscribe', 'dispatch'])
+    expect(order).toEqual(['desktop-subscribe', 'dispatch'])
     expect(dispatchDownload).toHaveBeenCalledWith(
       request,
       {},
@@ -175,7 +175,7 @@ describe('useTemplateModelRowDownloads', () => {
       attempt: 1
     })
 
-    hostResult.resolve(false)
+    hostResult.resolve(true)
     await hostResult.promise
     expect(downloads.stateFor(request)).toEqual({
       status: 'starting',
@@ -183,7 +183,7 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
-  it('keeps resolved host booleans uninterpreted and makes rejection retryable', async () => {
+  it('fails a refused host request and keeps an accepted one starting', async () => {
     const falseResult = deferred<boolean>()
     const trueResult = deferred<boolean>()
     const rejectedResult = deferred<boolean>()
@@ -204,7 +204,9 @@ describe('useTemplateModelRowDownloads', () => {
               : rejectedResult.promise
       })
     )
-    const { downloads } = createDownloadHarness({ dispatchDownload })
+    const { downloads } = createDownloadHarness({
+      dispatchDownload
+    })
 
     downloads.request(requests.false)
     downloads.request(requests.true)
@@ -220,9 +222,11 @@ describe('useTemplateModelRowDownloads', () => {
         reason: 'error'
       })
     )
+    // A refusal reads the same as a rejection: the host did not take it.
     expect(downloads.stateFor(requests.false)).toEqual({
-      status: 'starting',
-      attempt: 1
+      status: 'failed',
+      attempt: 1,
+      reason: 'error'
     })
     expect(downloads.stateFor(requests.true)).toEqual({
       status: 'starting',
@@ -435,7 +439,7 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
-  it('fails a row the host cannot place instead of deferring it', async () => {
+  it('fails a row the host cannot place instead of deferring it', () => {
     const dispatchDownload = vi.fn<DispatchDownload>().mockReturnValue({
       status: 'not-dispatched',
       reason: 'missing-directory-path'
@@ -449,6 +453,101 @@ describe('useTemplateModelRowDownloads', () => {
     expect(downloads.stateFor(request)).toEqual({
       status: 'failed',
       reason: 'error',
+      attempt: 1
+    })
+  })
+
+  it('lets a replacement URL report through its own job', () => {
+    const initial = model('swapped.safetensors', 'https://example.com/first')
+    const replacement = { ...initial, url: 'https://example.com/second' }
+    const { downloads, emitDesktop } = createDownloadHarness()
+    const tick = (m: typeof initial, id: string) => ({
+      id,
+      url: m.url,
+      filename: m.name,
+      directory: m.directory,
+      progress: 0.5,
+      receivedBytes: 1,
+      totalBytes: 2,
+      status: 'downloading' as const
+    })
+
+    downloads.request(initial)
+    emitDesktop(tick(initial, 'job-first'))
+
+    // The row is keyed by filename, so the replacement reuses the identity.
+    // Its job must not be shut out by the job the previous URL claimed.
+    downloads.request(replacement)
+    emitDesktop(tick(replacement, 'job-second'))
+
+    expect(downloads.stateFor(replacement)).toMatchObject({
+      status: 'downloading',
+      attempt: 1
+    })
+  })
+
+  it('ignores an abandoned job stream after a retry', async () => {
+    const request = model('retried.safetensors')
+    const { downloads, emitDesktop } = createDownloadHarness()
+    const tick = (
+      id: string,
+      status: 'downloading' | 'cancelled' | 'completed'
+    ) => ({
+      id,
+      url: request.url,
+      filename: request.name,
+      directory: request.directory,
+      progress: 0.5,
+      receivedBytes: 1,
+      totalBytes: 2,
+      status
+    })
+
+    downloads.request(request)
+    emitDesktop(tick('job-1', 'downloading'))
+    emitDesktop(tick('job-1', 'cancelled'))
+    expect(downloads.stateFor(request)).toEqual({
+      status: 'failed',
+      attempt: 1,
+      reason: 'cancelled'
+    })
+
+    downloads.request(request)
+    emitDesktop(tick('job-2', 'downloading'))
+
+    // job-1 is abandoned. Its terminal event is stamped with attempt 2 because
+    // the stamp is read from the row, so only the job id can reject it.
+    emitDesktop(tick('job-1', 'cancelled'))
+    expect(downloads.stateFor(request)).toMatchObject({
+      status: 'downloading',
+      attempt: 2
+    })
+
+    emitDesktop(tick('job-2', 'completed'))
+    expect(downloads.stateFor(request)).toEqual({
+      status: 'done',
+      attempt: 2
+    })
+  })
+
+  it('refuses a terminal event from a job that never reported activity', () => {
+    const request = model('unannounced.safetensors')
+    const { downloads, emitDesktop } = createDownloadHarness()
+
+    downloads.request(request)
+    // An abandoned stream's terminal event must not be able to claim the
+    // attempt just by arriving first.
+    emitDesktop({
+      id: 'job-stale',
+      url: request.url,
+      filename: request.name,
+      directory: request.directory,
+      progress: 0,
+      status: 'cancelled'
+    })
+
+    expect(downloads.stateFor(request)).toEqual({
+      status: 'starting',
       attempt: 1
     })
   })
@@ -500,7 +599,11 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('unsubscribes both observers once however often it is disposed', () => {
-    const { downloads, stopDesktop, stopLegacy } = createDownloadHarness()
+    const { downloads, stopDesktop, stopLegacy } = createDownloadHarness({
+      dispatchDownload: () => pendingHostRequest('electron')
+    })
+    // The legacy observer only exists once a legacy dispatch subscribes it.
+    downloads.request(model('dispose.safetensors'))
 
     // A successful open runs both onClose() and onBeforeUnmount().
     downloads.dispose()
