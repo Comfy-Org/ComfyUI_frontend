@@ -1501,6 +1501,86 @@ function widgetsOf(node: Y.Map<unknown>): Y.Map<unknown> {
   return widgets as Y.Map<unknown>;
 }
 
+/**
+ * Is `(name, occurrence)` the FINAL occurrence of `name` in the node's current
+ * widget layout? Amendment A23's whole condition, because
+ * `widgets_values_named` is keyed by name alone and a serializer writing it in
+ * widget order therefore leaves the LAST same-named widget's value in it.
+ *
+ * The layout is read AFTER the write, exactly as projection will read it, so a
+ * dynamic-combo selector that changed the order cannot make the two disagree.
+ *
+ * Answers `false` whenever the layout cannot be resolved — no catalog, an
+ * uncatalogued class, or a legal write to an unselected option's sub-widget
+ * (`validateWidgetName`'s carve-out), none of which have a projected position
+ * to be the final occurrence of. Conservative on purpose: a node whose layout
+ * this package cannot resolve is one `project()` cannot turn back into
+ * positional values either, so there is no coherent read to break, and a guess
+ * here would overwrite the final occurrence's value with an earlier one's.
+ */
+function isFinalWidgetOccurrence(
+  node: Y.Map<unknown>,
+  catalog: WidgetCatalog | undefined,
+  name: string,
+  occurrence: number,
+): boolean {
+  if (!catalog) return false;
+  const entry = catalogEntry(catalog, String(node.get("type") ?? ""));
+  if (!entry) return false;
+  const widgets = node.get("widgets");
+  const order = widgetOrderForWidgets(entry, widgets instanceof Y.Map ? widgets : undefined);
+  return widgetIndexOf(order, name, occurrence) >= 0 && widgetIndexOf(order, name, occurrence + 1) < 0;
+}
+
+/**
+ * Keep the frontend's name-keyed `widgets_values_named` passthrough register
+ * coherent with the write (Amendment A23).
+ *
+ * A22 maintained `widgets_values_ordered` and left this sibling register
+ * holding the PRE-OP value, so a consumer reading values back by name restored
+ * what the write replaced and reverted it. Both registers are ordinary
+ * passthrough node fields — `project()` emits them verbatim — so the applier
+ * has to maintain them or they go stale.
+ *
+ * Three gates. The first two mirror `updateOrderedWidgetValue`'s "update, never
+ * invent": the register must already be stored as a name-keyed object, and it
+ * must already carry this name. A register that does not hold the name is not
+ * stale for it, and inventing an entry would publish a value the producer
+ * deliberately omitted — including reshaping a foreign producer's array into an
+ * object, which `Object.hasOwn(["x"], "0")` would otherwise allow.
+ *
+ * The third gate is {@link isFinalWidgetOccurrence}: one name-keyed slot cannot
+ * hold two values, and the slot belongs to the FINAL occurrence, so an earlier
+ * occurrence's write must leave it alone. Writing it there would replace the
+ * final occurrence's value with an earlier one's — turning a stale read into a
+ * corrupt one.
+ *
+ * The replacement is built by spread with a COMPUTED key rather than by
+ * assignment, which DEFINES an own data property instead of going through a
+ * setter. Measured and stated precisely, because it is easy to overclaim: with
+ * the name gate above in place the two forms are equivalent today — a register
+ * that owns `__proto__` as a data property shadows
+ * `Object.prototype`'s accessor, so `next["__proto__"] = v` would hit the own
+ * property and not the setter (a hand mutation swapping the forms kills no
+ * test, by design rather than for want of coverage). The computed key is here
+ * so that the prototype-pollution hazard does not reappear if the name gate is
+ * ever relaxed to invent entries.
+ */
+function updateNamedWidgetValue(
+  node: Y.Map<unknown>,
+  catalog: WidgetCatalog | undefined,
+  name: string,
+  occurrence: number,
+  value: unknown,
+): void {
+  const stored = node.get("widgets_values_named");
+  if (typeof stored !== "object" || stored === null || Array.isArray(stored)) return;
+  if (!Object.hasOwn(stored, name)) return;
+  if (!isFinalWidgetOccurrence(node, catalog, name, occurrence)) return;
+  const next = { ...(structuredClone(stored) as Record<string, unknown>), [name]: structuredClone(value) };
+  mset(node, "widgets_values_named", next);
+}
+
 /** Keep the frontend's duplicate-only lossless serialization field coherent. */
 function updateOrderedWidgetValue(
   node: Y.Map<unknown>,
@@ -1717,6 +1797,7 @@ function applyPromotedHostWrite(
         validateWidgetName(catalog, String(target.get("type") ?? ""), op.widget, target, occurrence);
         mset(widgetsOf(target), widgetStorageKey(op.widget, occurrence), structuredClone(op.value));
         updateOrderedWidgetValue(target, op.widget, occurrence, op.value);
+        updateNamedWidgetValue(target, catalog, op.widget, occurrence, op.value);
       }
       mset(stamps, targetKey, key);
       return "applied";
@@ -1841,6 +1922,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
     }
     mset(widgetsOf(target), widgetStorageKey(widget, occurrence), structuredClone(op.value));
     updateOrderedWidgetValue(target, widget, occurrence, op.value);
+    updateNamedWidgetValue(target, catalog, widget, occurrence, op.value);
     mset(stamps, targetKey, key);
     return "applied";
   }
@@ -1856,6 +1938,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
   // pads with None; here the name-keyed map makes padding a projection concern.
   mset(widgetsOf(node), widgetStorageKey(op.widget, occurrence), structuredClone(op.value));
   updateOrderedWidgetValue(node, op.widget, occurrence, op.value);
+  updateNamedWidgetValue(node, catalog, op.widget, occurrence, op.value);
   mset(stamps, targetKey, key);
   return "applied";
 }

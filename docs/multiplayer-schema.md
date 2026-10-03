@@ -2239,3 +2239,49 @@ so this is a layout break: v1–v4 documents are refused and must be re-minted
 from source by the host. `migrate()` remains validation-only; followers never
 rewrite a shared document. Coordinated consumer adoption and frontend sign-off
 are required before release.
+
+## Amendment A23 — 2026-10-02 — `widgets_values_named` coherence (no schema change)
+
+A22 taught `set_widget` to keep the duplicate-only `widgets_values_ordered`
+passthrough field in step with the identity-keyed `widgets` map. The frontend
+serializes a **second** passthrough field beside it, name-keyed
+`widgets_values_named`, which this package emitted verbatim and never
+maintained. A `set_widget` therefore published the new value in
+`widgets_values` and `widgets_values_ordered` while leaving the **pre-op**
+value in `widgets_values_named`, and a consumer that restores values by name
+reverted the write on reload. Measured end to end — cmp projection fed back
+through the frontend's `LGraphNode.configure` — in the in-app-agent workspace
+at `reports/jobs/op343-fe19717-currentrepair.md`.
+
+Apply now updates `widgets_values_named` on the same three `set_widget` paths
+that maintain the ordered field: top-level, interior (subgraph-scoped), and the
+promoted host write. The name register is keyed by name alone and a serializer
+writing it in widget order leaves the **final** same-named widget's value in
+it, so the update is gated on the addressed pair being that final occurrence,
+evaluated against the layout **after** the write so a dynamic-combo selector
+cannot make the two disagree. Earlier occurrences deliberately leave the
+register untouched: one slot cannot hold two values, and writing it there
+replaces the final occurrence's value with an earlier one's — a corrupt read
+rather than a stale one.
+
+Three gates, the first two matching the ordered field's "update, never invent":
+the register must already be stored as a name-keyed object (a foreign
+producer's array is left alone rather than reshaped), it must already carry
+this name, and the pair must be the final occurrence. Finality answers `false`
+whenever the layout cannot be resolved — no catalog, an uncatalogued class, or
+a legal write to an unselected option's sub-widget — because a node whose
+layout this package cannot resolve has no projected position to be final at,
+and `project()` cannot turn it back into positional values either.
+
+Unique widget names are the larger half of what this fixes and have nothing to
+do with duplicates: every `set_widget` against an ordinary single-name widget
+was reverted the same way.
+
+No wire change, no new field, no reserved key, and `SCHEMA_VERSION` is
+unchanged at v5 — a v5 document written before this amendment is still a legal
+v5 document, merely one carrying a stale register. Determinism and idempotency
+are unaffected: the write is a whole-value `mset` of a cloned object, so
+duplicate `op_id` replay stays byte-identical and both arrival orders converge.
+Known remaining gap, pre-existing and **not** addressed here: the §8.3 autogrow
+`inputcount` bump writes the `widgets` map directly and maintains **neither**
+passthrough field, so both go stale on a `grow` connect.
