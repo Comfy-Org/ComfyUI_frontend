@@ -6,8 +6,8 @@
  * model's `x-comfy-router-alt-providers`, published per model under
  * `router-schemas/` in the public Comfy-Org/docs repository. The rows are
  * copied by hand; the scheduled Router Provider Drift workflow compares them
- * with the published spec. Update `ROUTER_PROVIDER_COVERAGE_VERIFIED_AT` with
- * them.
+ * with the published spec and opens an `area:testing` issue when they drift.
+ * Update `ROUTER_PROVIDER_COVERAGE_VERIFIED_AT` with them.
  */
 
 export const ROUTER_SERVING_PROVIDERS = [
