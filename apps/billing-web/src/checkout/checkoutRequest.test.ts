@@ -1,7 +1,9 @@
 import { previewOf } from '@/test/fakeBillingClient'
 
+import type { PaymentChoice } from './checkoutRequest'
 import {
   buildSubscribeRequest,
+  paysOnOwnSite,
   teamCheckoutPlan,
   tierCheckoutPlan
 } from './checkoutRequest'
@@ -121,5 +123,38 @@ describe('buildSubscribeRequest', () => {
         { confirmationToken: 'ctok' }
       )
     ).toEqual({ plan_slug: 'pro_monthly', confirmation_token: 'ctok' })
+  })
+})
+
+describe('paysOnOwnSite', () => {
+  it.for<{ name: string; choice: PaymentChoice; away: boolean }>([
+    {
+      name: 'a new Alipay account',
+      choice: { confirmationToken: 'ctoken_1', methodType: 'alipay' },
+      away: true
+    },
+    {
+      name: 'a new method of any other non-card type',
+      choice: { confirmationToken: 'ctoken_1', methodType: 'sepa_debit' },
+      away: true
+    },
+    {
+      name: 'a new card',
+      choice: { confirmationToken: 'ctoken_1', methodType: 'card' },
+      away: false
+    },
+    {
+      name: 'a method the form could not name',
+      choice: { confirmationToken: 'ctoken_1' },
+      away: false
+    },
+    {
+      name: 'a saved method',
+      choice: { savedPaymentMethodId: 'pm_visa' },
+      away: false
+    },
+    { name: 'the method on file', choice: {}, away: false }
+  ])('says $name pays on its own site: $away', ({ choice, away }) => {
+    expect(paysOnOwnSite(choice)).toBe(away)
   })
 })

@@ -43,6 +43,7 @@ import { quoteFailureEndingOf } from '@/checkout/checkoutJourney'
 import type { PaymentChoice } from '@/checkout/checkoutRequest'
 import {
   buildSubscribeRequest,
+  paysOnOwnSite,
   teamCheckoutPlan,
   tierCheckoutPlan
 } from '@/checkout/checkoutRequest'
@@ -534,8 +535,7 @@ async function pay(choice: PaymentChoice) {
   submitFailure.value = undefined
   reportMethodSelected(choice)
   const press = journey.submitted()
-  payingOnOwnSite =
-    choice.methodType !== undefined && choice.methodType !== 'card'
+  payingOnOwnSite = paysOnOwnSite(choice)
   let result: SubscriptionCommandResult
   try {
     result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
