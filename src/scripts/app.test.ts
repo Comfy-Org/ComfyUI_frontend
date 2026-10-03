@@ -356,6 +356,24 @@ describe('ComfyApp', () => {
     )
   })
 
+  it('resizes both canvas layers in device pixels and redraws immediately', () => {
+    vi.stubGlobal('devicePixelRatio', 2)
+    const foreground = createTestCanvasElement({ cssSize: [400, 300] })
+    const background = createTestCanvasElement({ cssSize: [400, 300] })
+    const ds = createTestDragAndScale()
+    const setViewportSize = vi.spyOn(ds, 'setViewportSize')
+    Reflect.set(mockCanvas, 'bgcanvas', background)
+    Reflect.set(mockCanvas, 'ds', ds)
+
+    Reflect.apply(Reflect.get(app, 'resizeCanvas'), app, [foreground])
+
+    expect([foreground.width, foreground.height]).toEqual([800, 600])
+    expect([background.width, background.height]).toEqual([800, 600])
+    expect(mockCanvas.dpr).toBe(2)
+    expect(setViewportSize).toHaveBeenCalledWith(400, 300)
+    expect(mockCanvas.draw).toHaveBeenCalledExactlyOnceWith(true, true)
+  })
+
   describe('loadGraphData', () => {
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')

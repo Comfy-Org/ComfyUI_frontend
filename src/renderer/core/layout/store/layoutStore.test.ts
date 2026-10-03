@@ -969,6 +969,16 @@ describe('layoutStore queryLinkSegmentAtPoint DPR threading', () => {
     ).toEqual({ linkId: toLinkId(1), rerouteId: null })
   })
 
+  it('forwards the caller-supplied dpr through the link-only query', () => {
+    expect(
+      layoutStore.queryLinkAtPoint(
+        { x: 50, y: 50 },
+        strokeHitOnlyAt(25, 25),
+        0.5
+      )
+    ).toBe(toLinkId(1))
+  })
+
   it.for([
     {
       name: 'the browser DPR',

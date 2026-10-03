@@ -81,6 +81,25 @@ describe('measureViewportFromElement', () => {
     })
   })
 
+  it('reuses the applied CSS size without resetting a stable backing store', () => {
+    const canvas = createTestCanvasElement({ cssSize: [800, 600] })
+    applyViewport(measureViewport(800, 600, 2), canvas, canvas)
+    const widthWrite = vi.spyOn(canvas, 'width', 'set')
+    const heightWrite = vi.spyOn(canvas, 'height', 'set')
+
+    const viewport = measureViewportFromElement(canvas, 1.5)
+
+    expect(viewport).toEqual({
+      cssWidth: 800,
+      cssHeight: 600,
+      dpr: 1.5,
+      physicalWidth: 1200,
+      physicalHeight: 900
+    })
+    expect(widthWrite).not.toHaveBeenCalled()
+    expect(heightWrite).not.toHaveBeenCalled()
+  })
+
   it('restores DPR scaling after measuring resets the backing store', () => {
     const ctx = createMockCanvasRenderingContext2D()
     const canvas = createTestCanvasElement({ ctx })
