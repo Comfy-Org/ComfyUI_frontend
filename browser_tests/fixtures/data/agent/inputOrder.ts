@@ -278,7 +278,6 @@ export const hostPrompt = expectedPrompt(
   HOST_REF_IMAGE_SIZE
 )
 
-/** The host values the spec reads off the rendered Vue nodes. */
 export const hostVisibleValues = {
   width: String(HOST_SOURCE_VALUES.width),
   height: String(HOST_SOURCE_VALUES.height),
