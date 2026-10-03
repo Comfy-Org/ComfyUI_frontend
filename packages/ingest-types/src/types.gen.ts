@@ -8528,7 +8528,7 @@ export type GetFeaturesResponses = {
        */
       job_allowance: number
       /**
-       * Whether the offer is available only when the user signs in with Google
+       * True when only Google-authenticated sessions receive the allowance; email/password signups get none.
        */
       requires_google_sign_in: boolean
     }
