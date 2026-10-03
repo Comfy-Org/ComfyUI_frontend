@@ -59,6 +59,7 @@ function numberValue(value: unknown, fallback: number): number {
 
 export const useAssetExportStore = defineStore('assetExport', () => {
   const exports = ref<Map<TaskId, AssetExport>>(new Map())
+  const pollingTaskIds = new Set<TaskId>()
 
   const exportList = computed(() => Array.from(exports.value.values()))
   const activeExports = computed(() =>
@@ -174,50 +175,56 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     if (staleExports.length === 0) return
 
     async function pollSingleExport(exp: AssetExport) {
-      const result = await taskService.getTask(exp.taskId)
-      // Without this identity guard, a poll that resolves after the user
-      // dismissed the toast re-inserts the export with `downloadTriggered`
-      // false, which resurrects it and downloads the archive a second time.
-      if (exports.value.get(exp.taskId) !== exp) return
-      if (!result.ok) {
-        if (result.error instanceof TaskNotFoundError) {
+      if (pollingTaskIds.has(exp.taskId)) return
+      pollingTaskIds.add(exp.taskId)
+      try {
+        const result = await taskService.getTask(exp.taskId)
+        // Without this identity guard, a poll that resolves after the user
+        // dismissed the toast re-inserts the export with `downloadTriggered`
+        // false, which resurrects it and downloads the archive a second time.
+        if (exports.value.get(exp.taskId) !== exp) return
+        if (!result.ok) {
+          if (result.error instanceof TaskNotFoundError) {
+            handleAssetExport({
+              task_id: exp.taskId,
+              export_name: exp.exportName,
+              assets_total: exp.assetsTotal,
+              assets_attempted: exp.assetsAttempted,
+              assets_failed: exp.assetsFailed,
+              bytes_total: exp.bytesTotal,
+              bytes_processed: exp.bytesProcessed,
+              progress: exp.progress,
+              status: 'failed',
+              error: result.error.message
+            })
+          }
+          return
+        }
+
+        const task = result.value
+        if (finishedExportStatuses.has(task.status)) {
+          const taskResult = task.result ?? {}
           handleAssetExport({
             task_id: exp.taskId,
-            export_name: exp.exportName,
-            assets_total: exp.assetsTotal,
-            assets_attempted: exp.assetsAttempted,
-            assets_failed: exp.assetsFailed,
+            export_name: stringValue(taskResult.export_name, exp.exportName),
+            assets_total: numberValue(taskResult.assets_total, exp.assetsTotal),
+            assets_attempted: numberValue(
+              taskResult.assets_attempted,
+              exp.assetsAttempted
+            ),
+            assets_failed: numberValue(
+              taskResult.assets_failed,
+              exp.assetsFailed
+            ),
             bytes_total: exp.bytesTotal,
-            bytes_processed: exp.bytesProcessed,
-            progress: exp.progress,
-            status: 'failed',
-            error: result.error.message
+            bytes_processed: exp.bytesTotal,
+            progress: task.status === 'completed' ? 1 : exp.progress,
+            status: task.status,
+            error: task.error_message ?? stringValue(taskResult.error, '')
           })
         }
-        return
-      }
-
-      const task = result.value
-      if (finishedExportStatuses.has(task.status)) {
-        const taskResult = task.result ?? {}
-        handleAssetExport({
-          task_id: exp.taskId,
-          export_name: stringValue(taskResult.export_name, exp.exportName),
-          assets_total: numberValue(taskResult.assets_total, exp.assetsTotal),
-          assets_attempted: numberValue(
-            taskResult.assets_attempted,
-            exp.assetsAttempted
-          ),
-          assets_failed: numberValue(
-            taskResult.assets_failed,
-            exp.assetsFailed
-          ),
-          bytes_total: exp.bytesTotal,
-          bytes_processed: exp.bytesTotal,
-          progress: task.status === 'completed' ? 1 : exp.progress,
-          status: task.status,
-          error: task.error_message ?? stringValue(taskResult.error, '')
-        })
+      } finally {
+        pollingTaskIds.delete(exp.taskId)
       }
     }
 

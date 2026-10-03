@@ -250,6 +250,30 @@ describe('useAssetExportStore polling', () => {
     expect(store.hasExports).toBe(false)
     expect(assetService.getExportDownloadUrl).toHaveBeenCalledTimes(1)
   })
+
+  it('does not overlap slow polling requests for one export', async () => {
+    useAssetExportStore()
+    let releaseResponse!: () => void
+    const responseReady = new Promise<void>((resolve) => {
+      releaseResponse = resolve
+    })
+    vi.mocked(api.fetchApi).mockImplementation(async () => {
+      await responseReady
+      return Response.json(
+        createExportTaskResponse({ status: 'running', result: undefined })
+      )
+    })
+    dispatch(createExportMessage())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
+
+    releaseResponse()
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('assetExportStore triggerDownload', () => {
