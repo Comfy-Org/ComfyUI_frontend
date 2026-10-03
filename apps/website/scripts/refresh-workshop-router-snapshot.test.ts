@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   collectRouterSchemaDocuments,
+  describeChange,
   idsOf,
   resolveSourceCommit
 } from './refresh-workshop-router-snapshot'
@@ -94,6 +95,27 @@ describe('idsOf', () => {
     )
     expect(() => idsOf('{"id":"a"}', 'The committed snapshot')).toThrow()
     expect(idsOf('[{"id":"a/b"}]', 'x')).toEqual(new Set(['a/b']))
+  })
+})
+
+describe('describeChange', () => {
+  it('lists the ids added and removed since the committed snapshot', () => {
+    expect(
+      describeChange(
+        '[{"id":"a/old"},{"id":"a/kept"}]',
+        '[{"id":"a/kept"},{"id":"a/new"}]',
+        'c'.repeat(40)
+      )
+    ).toBe(
+      [
+        `Packed 2 Router documents from ${'c'.repeat(40)}`,
+        'Added since HEAD (1): a/new',
+        'Removed since HEAD (1): a/old'
+      ].join('\n')
+    )
+    expect(describeChange('[]', '[]', 'x')).toContain(
+      'Added since HEAD (0): none'
+    )
   })
 })
 

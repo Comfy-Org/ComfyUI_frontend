@@ -13,35 +13,52 @@ const snapshotPath = join(websiteRoot, snapshotFile)
 
 const packedRecords = z.array(z.object({ id: z.string() }))
 
+type RouterSchemaDocument = { id: string; document: unknown }
+
+function parseDocument(id: string, text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch (error) {
+    throw new Error(`Router schema ${id} is not valid JSON`, { cause: error })
+  }
+}
+
+async function readProviderDocuments(
+  root: string,
+  provider: string
+): Promise<RouterSchemaDocument[]> {
+  const providerPath = join(root, provider)
+  const documents: RouterSchemaDocument[] = []
+  for (const model of await readdir(providerPath, { withFileTypes: true })) {
+    if (model.name.startsWith('.')) continue
+    if (!model.isFile() || !model.name.endsWith('.json'))
+      throw new Error(
+        `Unexpected Router schema entry: ${provider}/${model.name}`
+      )
+    const id = `${provider}/${model.name.slice(0, -'.json'.length)}`
+    const text = await readFile(join(providerPath, model.name), 'utf8')
+    documents.push({ id, document: parseDocument(id, text) })
+  }
+  return documents
+}
+
+async function providerDirectories(root: string): Promise<string[]> {
+  const providers: string[] = []
+  for (const entry of await readdir(root, { withFileTypes: true })) {
+    if (entry.name.startsWith('.') || entry.name === 'README.md') continue
+    if (!entry.isDirectory())
+      throw new Error(`Unexpected Router schema entry: ${entry.name}`)
+    providers.push(entry.name)
+  }
+  return providers
+}
+
 export async function collectRouterSchemaDocuments(
   root: string
-): Promise<{ id: string; document: unknown }[]> {
-  const documents: { id: string; document: unknown }[] = []
-  for (const provider of await readdir(root, { withFileTypes: true })) {
-    if (provider.name.startsWith('.')) continue
-    if (provider.isFile() && provider.name === 'README.md') continue
-    if (!provider.isDirectory())
-      throw new Error(`Unexpected Router schema entry: ${provider.name}`)
-    const providerPath = join(root, provider.name)
-    for (const model of await readdir(providerPath, { withFileTypes: true })) {
-      if (model.name.startsWith('.')) continue
-      if (!model.isFile() || !model.name.endsWith('.json'))
-        throw new Error(
-          `Unexpected Router schema entry: ${provider.name}/${model.name}`
-        )
-      const id = `${provider.name}/${model.name.slice(0, -'.json'.length)}`
-      const text = await readFile(join(providerPath, model.name), 'utf8')
-      let document: unknown
-      try {
-        document = JSON.parse(text)
-      } catch (error) {
-        throw new Error(`Router schema ${id} is not valid JSON`, {
-          cause: error
-        })
-      }
-      documents.push({ id, document })
-    }
-  }
+): Promise<RouterSchemaDocument[]> {
+  const documents: RouterSchemaDocument[] = []
+  for (const provider of await providerDirectories(root))
+    documents.push(...(await readProviderDocuments(root, provider)))
   if (!documents.length)
     throw new Error(`No Router schema documents under ${root}`)
   return documents.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -114,39 +131,35 @@ function committedSnapshot(): string | undefined {
   }
 }
 
-async function main() {
-  const [cloudCheckout, commitArgument] = process.argv.slice(2)
-  if (!cloudCheckout)
-    throw new Error(
-      'Usage: refresh-workshop-router-snapshot <cloud-checkout> [<cloud-sha>]'
-    )
-  const sourceCommit = resolveSourceCommit(cloudCheckout, commitArgument)
-  const packed = packRouterSchemas(
-    await collectRouterSchemaDocuments(join(cloudCheckout, routerSchemasPath)),
-    sourceCommit
-  )
-  const onDisk = await readIfPresent(snapshotPath)
-  const baseline = committedSnapshot() ?? onDisk ?? '[]'
+function listOrNone(ids: string[]): string {
+  return ids.join(', ') || 'none'
+}
 
-  // Validate both sides and report the change before anything is written.
+/** Validates both snapshots and describes the change between them. */
+export function describeChange(
+  baseline: string,
+  packed: string,
+  sourceCommit: string
+): string {
   const before = idsOf(baseline, 'The committed snapshot')
   const after = idsOf(packed, 'The packed snapshot')
   const added = [...after].filter((id) => !before.has(id))
   const removed = [...before].filter((id) => !after.has(id))
-  process.stdout.write(
-    [
-      `Packed ${after.size} Router documents from ${sourceCommit}`,
-      `Added since HEAD (${added.length}): ${added.join(', ') || 'none'}`,
-      `Removed since HEAD (${removed.length}): ${removed.join(', ') || 'none'}`
-    ].join('\n') + '\n'
-  )
+  return [
+    `Packed ${after.size} Router documents from ${sourceCommit}`,
+    `Added since HEAD (${added.length}): ${listOrNone(added)}`,
+    `Removed since HEAD (${removed.length}): ${listOrNone(removed)}`
+  ].join('\n')
+}
 
-  if (onDisk !== packed) {
-    const staged = `${snapshotPath}.tmp`
-    await writeFile(staged, packed)
-    await rename(staged, snapshotPath)
-  }
+async function writeSnapshot(onDisk: string | undefined, packed: string) {
+  if (onDisk === packed) return
+  const staged = `${snapshotPath}.tmp`
+  await writeFile(staged, packed)
+  await rename(staged, snapshotPath)
+}
 
+function runGenerators() {
   const failed: string[] = []
   for (const script of [
     'generate-workshop-router-contracts.ts',
@@ -166,6 +179,26 @@ async function main() {
     throw new Error(
       `${failed.join(' and ')} stopped; recheck the availability and identity-audit files, then re-run`
     )
+}
+
+async function main() {
+  const [cloudCheckout, commitArgument] = process.argv.slice(2)
+  if (!cloudCheckout)
+    throw new Error(
+      'Usage: refresh-workshop-router-snapshot <cloud-checkout> [<cloud-sha>]'
+    )
+  const sourceCommit = resolveSourceCommit(cloudCheckout, commitArgument)
+  const packed = packRouterSchemas(
+    await collectRouterSchemaDocuments(join(cloudCheckout, routerSchemasPath)),
+    sourceCommit
+  )
+  const onDisk = await readIfPresent(snapshotPath)
+  // Report the change before anything is written.
+  process.stdout.write(
+    `${describeChange(committedSnapshot() ?? onDisk ?? '[]', packed, sourceCommit)}\n`
+  )
+  await writeSnapshot(onDisk, packed)
+  runGenerators()
 }
 
 if (isDirectExecution(process.argv[1], import.meta.filename)) await main()
