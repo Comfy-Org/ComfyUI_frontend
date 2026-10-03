@@ -7,6 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
@@ -67,7 +68,9 @@ export class ReactivationAmountChangedError extends Error {
  * The removal-email and an atomic downgrade endpoint are backend-owned future
  * work; until then the frontend orchestrates the two steps non-atomically.
  */
-export function useDowngradeToPersonal() {
+export function useDowngradeToPersonal({
+  paymentIntentSource
+}: { paymentIntentSource?: PaymentIntentSource } = {}) {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
   const { subscribe, previewSubscribe, subscription, fetchStatus } =
@@ -175,7 +178,8 @@ export function useDowngradeToPersonal() {
         stage: 'started',
         outcome: 'pending',
         member_removal_count: telemetryAttempt.memberRemovalCount,
-        member_removal_failures: 0
+        member_removal_failures: 0,
+        payment_intent_source: paymentIntentSource
       })
     }
 
@@ -188,6 +192,7 @@ export function useDowngradeToPersonal() {
         member_removal_count: telemetryAttempt.memberRemovalCount,
         member_removal_failures: telemetryAttempt.memberRemovalFailures,
         target_tier: telemetryAttempt.targetTier,
+        payment_intent_source: paymentIntentSource,
         duration_ms: now - telemetryAttempt.startedAt
       })
       if (telemetryAttempt.checkoutStartedAt === undefined) return
@@ -198,6 +203,7 @@ export function useDowngradeToPersonal() {
         tier: telemetryAttempt.targetTier,
         cycle: telemetryAttempt.targetCycle,
         checkout_type: 'change',
+        payment_intent_source: paymentIntentSource,
         duration_ms: now - telemetryAttempt.checkoutStartedAt
       })
       if (operationObserved) return
@@ -209,6 +215,7 @@ export function useDowngradeToPersonal() {
         tier: telemetryAttempt.targetTier,
         cycle: telemetryAttempt.targetCycle,
         checkout_type: 'change',
+        payment_intent_source: paymentIntentSource,
         duration_ms: now - telemetryAttempt.checkoutStartedAt
       })
     }
@@ -280,7 +287,8 @@ export function useDowngradeToPersonal() {
           outcome: 'pending',
           tier: telemetryAttempt.targetTier,
           cycle: telemetryAttempt.targetCycle,
-          checkout_type: 'change'
+          checkout_type: 'change',
+          payment_intent_source: paymentIntentSource
         })
         telemetry?.trackBillingEvent({
           operation: 'operation',
@@ -289,7 +297,8 @@ export function useDowngradeToPersonal() {
           operation_type: 'subscription',
           tier: telemetryAttempt.targetTier,
           cycle: telemetryAttempt.targetCycle,
-          checkout_type: 'change'
+          checkout_type: 'change',
+          payment_intent_source: paymentIntentSource
         })
       }
       let response: SettledSubscribeResponse | void
@@ -345,6 +354,7 @@ export function useDowngradeToPersonal() {
             tier: telemetryAttempt.targetTier,
             cycle: telemetryAttempt.targetCycle,
             checkoutType: 'change',
+            paymentIntentSource,
             downgradeToPersonal: {
               memberRemovalCount: telemetryAttempt.memberRemovalCount,
               memberRemovalFailures: telemetryAttempt.memberRemovalFailures,
@@ -366,6 +376,7 @@ export function useDowngradeToPersonal() {
             tier: telemetryAttempt.targetTier,
             cycle: telemetryAttempt.targetCycle,
             checkoutType: 'change',
+            paymentIntentSource,
             downgradeToPersonal: {
               memberRemovalCount: telemetryAttempt.memberRemovalCount,
               memberRemovalFailures: telemetryAttempt.memberRemovalFailures,
@@ -400,6 +411,7 @@ export function useDowngradeToPersonal() {
         member_removal_count: telemetryAttempt.memberRemovalCount,
         member_removal_failures: telemetryAttempt.memberRemovalFailures,
         target_tier: telemetryAttempt.targetTier,
+        payment_intent_source: paymentIntentSource,
         ...failure,
         duration_ms: now - telemetryAttempt.startedAt
       })
@@ -411,6 +423,7 @@ export function useDowngradeToPersonal() {
           tier: telemetryAttempt.targetTier,
           cycle: telemetryAttempt.targetCycle,
           checkout_type: 'change',
+          payment_intent_source: paymentIntentSource,
           ...failure,
           duration_ms: now - telemetryAttempt.checkoutStartedAt
         })
@@ -423,6 +436,7 @@ export function useDowngradeToPersonal() {
             tier: telemetryAttempt.targetTier,
             cycle: telemetryAttempt.targetCycle,
             checkout_type: 'change',
+            payment_intent_source: paymentIntentSource,
             ...failure,
             duration_ms: now - telemetryAttempt.checkoutStartedAt
           })

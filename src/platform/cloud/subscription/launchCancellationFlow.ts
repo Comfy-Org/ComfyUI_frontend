@@ -2,7 +2,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import type { ChurnkeySession } from '@/platform/cloud/churnkey/churnkeyClient'
-import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
+import {
+  createCancelFlowReporter,
+  getSubscriptionCancellationMetadata
+} from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -13,6 +16,7 @@ import { getErrorMessage, toError } from '@/utils/errorUtil'
 
 interface CancellationFallbackOptions {
   flowAlreadyOpened?: boolean
+  flowAlreadyConfirmed?: boolean
   isScopeCurrent?: () => boolean
 }
 
@@ -145,6 +149,25 @@ async function prepareCancellationSession(
   return null
 }
 
+async function fallBackAfterSessionFailure(
+  error: unknown,
+  showFallback: LaunchCancellationFlowOptions['showFallback'],
+  isScopeCurrent: () => boolean,
+  cancelReport: ReturnType<typeof createCancelFlowReporter>
+): Promise<void> {
+  cancelReport.sessionFailed()
+  const fallback = await showCancellationFallback(
+    showFallback,
+    isScopeCurrent,
+    {
+      flowAlreadyOpened: true,
+      flowAlreadyConfirmed: cancelReport.hasConfirmed()
+    },
+    { stage: 'session', error }
+  )
+  if (fallback === 'failed') cancelReport.failed('rendering')
+}
+
 export async function launchCancellationFlow({
   cancelAt,
   launchWorkspaceId: capturedWorkspaceId,
@@ -185,7 +208,14 @@ export async function launchCancellationFlow({
     tier: billing.tier.value
   })
 
+  const plan = {
+    duration: billing.subscription.value?.duration,
+    tier: billing.tier.value
+  }
+  const cancelReport = createCancelFlowReporter(telemetry, () => plan)
+
   telemetry?.trackSubscriptionCancellation('flow_opened', metadata)
+  cancelReport.intent()
 
   try {
     const results = await session.show({
@@ -196,6 +226,7 @@ export async function launchCancellationFlow({
           )
         }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
+        cancelReport.confirmed({ operationFollows: true })
         try {
           await billing.cancelSubscription(isLaunchWorkspaceCurrent)
           return { message: t('subscription.cancelSuccess') }
@@ -225,6 +256,7 @@ export async function launchCancellationFlow({
         return
       case 'abandoned':
         telemetry?.trackSubscriptionCancellation('abandoned', metadata)
+        cancelReport.abandoned()
         return
       case 'closed':
         return
@@ -239,11 +271,11 @@ export async function launchCancellationFlow({
       ...metadata,
       error_message: getErrorMessage(error) ?? t('g.unknownError')
     })
-    await showCancellationFallback(
+    await fallBackAfterSessionFailure(
+      error,
       showFallback,
       isLaunchWorkspaceCurrent,
-      { flowAlreadyOpened: true },
-      { stage: 'session', error }
+      cancelReport
     )
   }
 }

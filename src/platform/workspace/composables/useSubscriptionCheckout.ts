@@ -793,7 +793,8 @@ export function useSubscriptionCheckout(
     const { useDialogService } = await import('@/services/dialogService')
     const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
-      planSlug
+      planSlug,
+      paymentIntentSource
     })
     if (!result) return
 
@@ -1405,6 +1406,7 @@ export function useSubscriptionCheckout(
       workspaceId,
       entryFlow: currentSubscriptionEntryFlow(),
       entrySource,
+      paymentIntentSource,
       // Keyed by source as well as tier/cycle, the way the top-up rail keys by
       // source alone. Resume matches on actor, workspace, flow and intent but
       // not source, so without this an abandoned `pricing` preview for a plan
