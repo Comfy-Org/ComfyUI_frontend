@@ -19,7 +19,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { DocOpsResult } from './docFrameClient'
+import type { DocOp, DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import {
   chunkWireOps,
@@ -70,8 +70,11 @@ export type OpsResultView = Pick<
   Partial<Pick<DocOpsResult, 'workflowId'>>
 
 export interface OpSenderDeps {
-  /** `DocFrameClient.sendOps` shape: false = the transport cannot carry it now. */
-  sendOps(workflowId: string, tab: string, ops: Op[]): boolean
+  /**
+   * `DocFrameClient.sendOps` shape: false = the transport cannot carry it
+   * now. Receives the wire objects measured at admission, never the ops.
+   */
+  sendOps(workflowId: string, tab: string, ops: readonly DocOp[]): boolean
   /** Subscribe to `doc_ops_result` frames; returns unsubscribe. */
   onOpsResult(listener: (result: OpsResultView) => void): () => void
   /**
@@ -161,9 +164,21 @@ export interface OpSender {
   detach(): void
 }
 
-interface InFlight {
+interface WireBatch {
   workflowId: string
   ops: Op[]
+  wire: DocOp[]
+}
+
+function toWireBatch(workflowId: string, chunk: readonly SizedOp[]): WireBatch {
+  return {
+    workflowId,
+    ops: chunk.map((sized) => sized.op),
+    wire: chunk.map((sized) => sized.wire)
+  }
+}
+
+interface InFlight extends WireBatch {
   opIds: Set<string>
   sends: number
   reportedThrow: boolean
@@ -173,7 +188,7 @@ interface InFlight {
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
-  const queue: Array<{ workflowId: string; ops: Op[] }> = []
+  const queue: WireBatch[] = []
   let queueHead = 0
   let open: { workflowId: string; ops: SizedOp[] } | null = null
   let inFlight: InFlight | null = null
@@ -276,7 +291,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function trySend(batch: InFlight): boolean {
     try {
-      return deps.sendOps(batch.workflowId, deps.tab, batch.ops)
+      return deps.sendOps(batch.workflowId, deps.tab, batch.wire)
     } catch (error) {
       if (!batch.reportedThrow) {
         batch.reportedThrow = true
@@ -343,13 +358,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       notify({ state: 'undeliverable', ops: batch.ops })
     }
     if (unsealed) {
-      for (const ops of chunkWireOps(unsealed.ops)) {
-        notify({ state: 'undeliverable', ops })
+      for (const chunk of chunkWireOps(unsealed.ops)) {
+        notify({ state: 'undeliverable', ops: chunk.map((sized) => sized.op) })
       }
     }
   }
 
-  function dequeue(): { workflowId: string; ops: Op[] } | undefined {
+  function dequeue(): WireBatch | undefined {
     if (queueHead >= queue.length) return
     const queued = queue[queueHead]
     queueHead++
@@ -368,8 +383,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         const queued = dequeue()
         if (!queued) return
         inFlight = {
-          workflowId: queued.workflowId,
-          ops: queued.ops,
+          ...queued,
           opIds: new Set(queued.ops.map((op) => op.op_id)),
           sends: 0,
           reportedThrow: false,
@@ -470,7 +484,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const { workflowId, ops } = open
     open = null
     for (const chunk of chunkWireOps(ops)) {
-      queue.push({ workflowId, ops: chunk })
+      queue.push(toWireBatch(workflowId, chunk))
     }
   }
 
@@ -534,7 +548,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       const unsealed = open
         ? [{ workflowId: open.workflowId, ops: open.ops.map((s) => s.op) }]
         : []
-      return [...batches, ...queue.slice(queueHead), ...unsealed]
+      const queued = queue
+        .slice(queueHead)
+        .map(({ workflowId, ops }) => ({ workflowId, ops }))
+      return [...batches, ...queued, ...unsealed]
     },
     suspend() {
       suspended = true

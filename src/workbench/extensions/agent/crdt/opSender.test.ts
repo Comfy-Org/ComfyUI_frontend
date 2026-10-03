@@ -4,6 +4,7 @@ import type { Mock } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
@@ -18,7 +19,7 @@ type SettlementListener = (outcome: BatchOutcome) => void
 type SettlementSummary = { state: BatchOutcome['state']; nodeIds: unknown[] }
 type AddNodeOperation = Extract<GraphOperation, { op: 'add_node' }>
 
-function nodeIdsOf(ops: readonly Op[]): unknown[] {
+function nodeIdsOf(ops: ReadonlyArray<Op | DocOp>): unknown[] {
   return ops.map((op) => ('node_id' in op ? op.node_id : undefined))
 }
 
@@ -126,7 +127,7 @@ function connect(linkId: number): GraphOperation {
 }
 
 describe('createOpSender', () => {
-  let sent: Array<{ workflowId: string; tab: string; ops: Op[] }>
+  let sent: Array<{ workflowId: string; tab: string; ops: readonly DocOp[] }>
   let settled: BatchOutcome[]
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
@@ -976,6 +977,37 @@ describe('createOpSender', () => {
     ackInFlight()
     expect(sent).toHaveLength(1)
   })
+
+  it.for([
+    { label: 'returns a different value', secondCall: (): unknown => 'second' },
+    {
+      label: 'throws',
+      secondCall: (): unknown => {
+        throw new Error('stateful toJSON')
+      }
+    }
+  ])(
+    'hands the transport the admission payload when a nested toJSON $label on its second call',
+    ({ secondCall }) => {
+      const operation = addNode(1)
+      const node: AddNodeOperation['node'] & Record<string, unknown> = {
+        ...operation.node
+      }
+      let serializations = 0
+      node.toJSON = () =>
+        ++serializations === 1 ? { id: 1, type: 'TestNode' } : secondCall()
+      operation.node = node
+
+      sender.enqueue([operation])
+      const frame: unknown = JSON.parse(JSON.stringify(sent[0].ops))
+
+      expect(frame).toEqual([
+        expect.objectContaining({ node: { id: 1, type: 'TestNode' } })
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+      expect(settled).toHaveLength(0)
+    }
+  )
 
   it('bounds repeated serialization failure telemetry for one sender', () => {
     const enqueueCircular = (id: number) =>

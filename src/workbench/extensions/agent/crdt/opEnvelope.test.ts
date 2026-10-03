@@ -1,5 +1,4 @@
 import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import type { Op } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
@@ -93,7 +92,7 @@ describe('chunkWireOps', () => {
     const batches = chunkWireOps(ops.map(measureWireOp))
 
     expect(batches.map((b) => b.length)).toEqual([256, 256, 88])
-    expect(batches.flat()).toEqual(ops)
+    expect(batches.flat().map((sized) => sized.op)).toEqual(ops)
     expect(WIRE_MAX_OPS_PER_BATCH).toBe(256)
   })
 
@@ -103,7 +102,7 @@ describe('chunkWireOps', () => {
 
     const batches = chunkWireOps(ops.map(measureWireOp))
 
-    expect(batches.map((b) => b.map((op) => op.op))).toEqual([
+    expect(batches.map((b) => b.map((sized) => sized.op.op))).toEqual([
       ['add_node'],
       ['clear'],
       ['add_node']
@@ -133,9 +132,9 @@ describe('chunkWireOps', () => {
       widget: 'text',
       value: 'x'.repeat(WIRE_MAX_BATCH_BYTES + 16)
     }
-    const ops: Op[] = mintWireOps([huge], MINT)
+    const sized = mintWireOps([huge], MINT).map(measureWireOp)
 
-    expect(chunkWireOps(ops.map(measureWireOp))).toEqual([ops])
+    expect(chunkWireOps(sized)).toEqual([sized])
   })
 })
 
@@ -151,6 +150,7 @@ describe('measureWireOp', () => {
 
     expect(measureWireOp(op)).toEqual({
       op,
+      wire: JSON.parse(json),
       bytes: json.length + threeByteChars.length * extraBytesPerChar
     })
   })
@@ -162,6 +162,7 @@ describe('measureWireOp', () => {
 
     expect(measureWireOp(op)).toEqual({
       op,
+      wire,
       bytes: JSON.stringify(wire).length
     })
   })

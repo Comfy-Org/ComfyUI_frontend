@@ -11,6 +11,7 @@ import type { Actor, Op, Stamp } from '@comfyorg/comfy-multi-player'
 
 import { createUuidv4 } from '@/utils/uuid'
 
+import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256
@@ -56,38 +57,46 @@ function isBatchable(op: Op): boolean {
   return (BATCHABLE_OPS as readonly string[]).includes(op.op)
 }
 
-/** A minted op with its wire size, measured exactly once at admission. */
+/**
+ * A minted op as admitted: the semantic `op` callers get back at settlement,
+ * the `wire` object the transport sends, and its UTF-8 size. `wire` is the
+ * parsed result of the one serialization performed at admission: plain JSON
+ * data with no `toJSON` and no cycles, so encoding the frame later yields
+ * exactly the measured bytes however the original op's values behave.
+ */
 export interface SizedOp {
   readonly op: Op
+  readonly wire: DocOp
   readonly bytes: number
+}
+
+function isDocOp(value: unknown): value is DocOp {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    'op_id' in value &&
+    typeof value.op_id === 'string' &&
+    'actor' in value &&
+    typeof value.actor === 'string'
+  )
 }
 
 /**
  * Serialize an op once to prove it can ride a `doc_ops` frame and learn its
- * wire size. Throws `TypeError` for anything `JSON.stringify` cannot turn
- * into a wire object (a cycle in a custom-node value, a `toJSON` that yields
- * a non-object). Callers reject such an op at admission; nothing downstream
- * serializes again until the frame itself is encoded.
+ * wire form and size. Throws `TypeError` for anything `JSON.stringify` cannot
+ * turn into a wire object (a cycle in a custom-node value, a `toJSON` that
+ * yields a non-object). Callers reject such an op at admission; the original
+ * op is never serialized again.
  */
 export function measureWireOp(op: Op): SizedOp {
   const json = JSON.stringify(op)
   if (typeof json !== 'string')
     throw new TypeError('Operation did not serialize to JSON')
-  if (json.charCodeAt(0) !== 123)
+  const wire: unknown = JSON.parse(json)
+  if (!isDocOp(wire))
     throw new TypeError('Operation did not serialize to a wire object')
-  const bytes = new TextEncoder().encode(json).length
-  if (typeof (op as Op & { toJSON?: unknown }).toJSON !== 'function')
-    return { op, bytes }
-  const serialized: unknown = JSON.parse(json)
-  if (
-    typeof serialized !== 'object' ||
-    serialized === null ||
-    Array.isArray(serialized) ||
-    !('op_id' in serialized) ||
-    typeof serialized.op_id !== 'string'
-  )
-    throw new TypeError('Operation did not serialize to a wire object')
-  return { op, bytes }
+  return { op, wire, bytes: new TextEncoder().encode(json).length }
 }
 
 /**
@@ -98,9 +107,9 @@ export function measureWireOp(op: Op): SizedOp {
  * owns rejecting it. Pure arithmetic over sizes measured at admission: it
  * cannot throw.
  */
-export function chunkWireOps(ops: readonly SizedOp[]): Op[][] {
-  const batches: Op[][] = []
-  let current: Op[] = []
+export function chunkWireOps(ops: readonly SizedOp[]): SizedOp[][] {
+  const batches: SizedOp[][] = []
+  let current: SizedOp[] = []
   let currentBytes = 0
 
   const flush = (): void => {
@@ -109,18 +118,18 @@ export function chunkWireOps(ops: readonly SizedOp[]): Op[][] {
     currentBytes = 0
   }
 
-  for (const { op, bytes } of ops) {
-    if (!isBatchable(op)) {
+  for (const sized of ops) {
+    if (!isBatchable(sized.op)) {
       flush()
-      batches.push([op])
+      batches.push([sized])
       continue
     }
     const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
     const overBytes =
-      current.length > 0 && currentBytes + bytes > WIRE_MAX_BATCH_BYTES
+      current.length > 0 && currentBytes + sized.bytes > WIRE_MAX_BATCH_BYTES
     if (overOps || overBytes) flush()
-    current.push(op)
-    currentBytes += bytes
+    current.push(sized)
+    currentBytes += sized.bytes
   }
   flush()
   return batches
