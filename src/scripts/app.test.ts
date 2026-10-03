@@ -606,6 +606,37 @@ describe('ComfyApp', () => {
       await expect(olderLoad).resolves.toBe(true)
     })
 
+    it('stops post-configure work when a newer graph commits', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseOlderLoad!: () => void
+      let olderLoadReachedHook!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      const hookReached = new Promise<void>((resolve) => {
+        olderLoadReachedHook = resolve
+      })
+      let firstAfterConfigure = true
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'afterConfigureGraph' && firstAfterConfigure) {
+            firstAfterConfigure = false
+            olderLoadReachedHook()
+            await olderLoadBlocked
+          }
+        }
+      )
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await hookReached
+      await app.loadGraphData(createWorkflowGraphData(), false)
+      releaseOlderLoad()
+
+      await expect(olderLoad).resolves.toBeUndefined()
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+    })
+
     describe('pending camera restore while the canvas is hidden', () => {
       let canvasElement: HTMLCanvasElement
 
