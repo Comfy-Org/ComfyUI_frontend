@@ -5,7 +5,10 @@ import { computed, ref, watch } from 'vue'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { TaskId, TaskStatus } from '@/platform/tasks/services/taskService'
-import { taskService } from '@/platform/tasks/services/taskService'
+import {
+  TaskNotFoundError,
+  taskService
+} from '@/platform/tasks/services/taskService'
 import type { AssetExportWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { t } from '@/i18n'
@@ -40,6 +43,11 @@ const finishedExportStatuses = new Set<TaskStatus>([
   'failed',
   'cancelled'
 ])
+const wireExportStatuses = new Set<string>([
+  'created',
+  'running',
+  ...finishedExportStatuses
+])
 
 function stringValue(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback
@@ -51,6 +59,7 @@ function numberValue(value: unknown, fallback: number): number {
 
 export const useAssetExportStore = defineStore('assetExport', () => {
   const exports = ref<Map<TaskId, AssetExport>>(new Map())
+  const pollingTaskIds = new Set<TaskId>()
 
   const exportList = computed(() => Array.from(exports.value.values()))
   const activeExports = computed(() =>
@@ -116,16 +125,24 @@ export const useAssetExportStore = defineStore('assetExport', () => {
   function handleAssetExport(data: AssetExportWsMessage) {
     const existing = exports.value.get(data.task_id)
 
-    if (
-      (existing?.status === 'completed' || existing?.status === 'failed') &&
-      existing.downloadTriggered
-    ) {
-      return
-    }
+    // Completion is authoritative even when fetching the signed URL failed;
+    // late progress/cancellation frames must not revive polling or erase the
+    // retryable download error.
+    if (existing?.status === 'completed') return
+    if (existing?.status === 'failed' && existing.downloadTriggered) return
 
     // A cancelled export is only superseded by an authoritative completion;
     // a stale progress message must not revive it and resume polling.
     if (existing?.status === 'cancelled' && data.status !== 'completed') return
+
+    if (!wireExportStatuses.has(data.status)) {
+      if (existing) {
+        existing.status = 'failed'
+        existing.error = data.error || `Unknown task status: ${data.status}`
+        existing.lastUpdate = Date.now()
+      }
+      return
+    }
 
     const exp: AssetExport = {
       taskId: data.task_id,
@@ -158,34 +175,56 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     if (staleExports.length === 0) return
 
     async function pollSingleExport(exp: AssetExport) {
-      const result = await taskService.getTask(exp.taskId)
-      // Without this identity guard, a poll that resolves after the user
-      // dismissed the toast re-inserts the export with `downloadTriggered`
-      // false, which resurrects it and downloads the archive a second time.
-      if (exports.value.get(exp.taskId) !== exp) return
-      if (!result.ok) return
+      if (pollingTaskIds.has(exp.taskId)) return
+      pollingTaskIds.add(exp.taskId)
+      try {
+        const result = await taskService.getTask(exp.taskId)
+        // Without this identity guard, a poll that resolves after the user
+        // dismissed the toast re-inserts the export with `downloadTriggered`
+        // false, which resurrects it and downloads the archive a second time.
+        if (exports.value.get(exp.taskId) !== exp) return
+        if (!result.ok) {
+          if (result.error instanceof TaskNotFoundError) {
+            handleAssetExport({
+              task_id: exp.taskId,
+              export_name: exp.exportName,
+              assets_total: exp.assetsTotal,
+              assets_attempted: exp.assetsAttempted,
+              assets_failed: exp.assetsFailed,
+              bytes_total: exp.bytesTotal,
+              bytes_processed: exp.bytesProcessed,
+              progress: exp.progress,
+              status: 'failed',
+              error: result.error.message
+            })
+          }
+          return
+        }
 
-      const task = result.value
-      if (finishedExportStatuses.has(task.status)) {
-        const taskResult = task.result ?? {}
-        handleAssetExport({
-          task_id: exp.taskId,
-          export_name: stringValue(taskResult.export_name, exp.exportName),
-          assets_total: numberValue(taskResult.assets_total, exp.assetsTotal),
-          assets_attempted: numberValue(
-            taskResult.assets_attempted,
-            exp.assetsAttempted
-          ),
-          assets_failed: numberValue(
-            taskResult.assets_failed,
-            exp.assetsFailed
-          ),
-          bytes_total: exp.bytesTotal,
-          bytes_processed: exp.bytesTotal,
-          progress: task.status === 'completed' ? 1 : exp.progress,
-          status: task.status,
-          error: task.error_message ?? stringValue(taskResult.error, '')
-        })
+        const task = result.value
+        if (finishedExportStatuses.has(task.status)) {
+          const taskResult = task.result ?? {}
+          handleAssetExport({
+            task_id: exp.taskId,
+            export_name: stringValue(taskResult.export_name, exp.exportName),
+            assets_total: numberValue(taskResult.assets_total, exp.assetsTotal),
+            assets_attempted: numberValue(
+              taskResult.assets_attempted,
+              exp.assetsAttempted
+            ),
+            assets_failed: numberValue(
+              taskResult.assets_failed,
+              exp.assetsFailed
+            ),
+            bytes_total: exp.bytesTotal,
+            bytes_processed: exp.bytesTotal,
+            progress: task.status === 'completed' ? 1 : exp.progress,
+            status: task.status,
+            error: task.error_message ?? stringValue(taskResult.error, '')
+          })
+        }
+      } finally {
+        pollingTaskIds.delete(exp.taskId)
       }
     }
 

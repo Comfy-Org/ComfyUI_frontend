@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AsyncUploadResponse } from '@/platform/assets/schemas/assetSchema'
-import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
+import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { taskService } from '@/platform/tasks/services/taskService'
 import { api } from '@/scripts/api'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -15,7 +15,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 import { useUploadModelWizard } from './useUploadModelWizard'
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetMetadata: vi.fn(),
     uploadAssetAsync: vi.fn(),
@@ -23,34 +23,31 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/importSources/civitaiImportSource', () => ({
-  civitaiImportSource: {
-    name: 'Civitai',
-    hostnames: ['civitai.com', 'civitai.red'],
-    fetchMetadata: vi.fn()
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/importSources/civitaiImportSource'),
+  () => ({
+    civitaiImportSource: {
+      name: 'Civitai',
+      hostnames: ['civitai.com', 'civitai.red'],
+      fetchMetadata: vi.fn()
+    }
+  })
+)
 
-vi.mock('@/platform/assets/importSources/huggingfaceImportSource', () => ({
-  huggingfaceImportSource: {
-    name: 'HuggingFace',
-    hostnames: ['huggingface.co'],
-    fetchMetadata: vi.fn()
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/importSources/huggingfaceImportSource'),
+  () => ({
+    huggingfaceImportSource: {
+      name: 'HuggingFace',
+      hostnames: ['huggingface.co'],
+      fetchMetadata: vi.fn()
+    }
+  })
+)
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: vi.fn(),
-    addEventListener: vi.fn(),
-    apiURL: vi.fn((path: string) => path),
-    getServerFeature: vi.fn(
-      (_name: string, defaultValue?: unknown) => defaultValue
-    )
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   st: (_key: string, fallback: string) => fallback,
   t: (key: string) => key,
   te: () => false,
@@ -60,6 +57,12 @@ vi.mock('@/i18n', () => ({
 describe('useUploadModelWizard', () => {
   const modelTypes = ref([{ name: 'Checkpoint', value: 'checkpoints' }])
   const mountedApps: App<Element>[] = []
+
+  beforeEach(() => {
+    vi.mocked(api.getServerFeature).mockImplementation(
+      (_name, defaultValue) => defaultValue
+    )
+  })
 
   function setupWithI18n<T>(factory: () => T): T {
     let result: T | undefined
@@ -196,6 +199,91 @@ describe('useUploadModelWizard', () => {
 
     expect(wizard.uploadStatus.value).toBe('error')
     expect(wizard.uploadError.value).toBe('Network error')
+  })
+
+  it('keeps watching a new upload while the previous completion refreshes', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    vi.mocked(assetService.uploadAssetAsync)
+      .mockResolvedValueOnce({
+        type: 'async',
+        task: {
+          task_id: 'task-first',
+          status: 'created',
+          message: 'Download queued'
+        }
+      })
+      .mockResolvedValueOnce({
+        type: 'async',
+        task: {
+          task_id: 'task-second',
+          status: 'created',
+          message: 'Download queued'
+        }
+      })
+
+    let finishRefresh: (() => void) | undefined
+    const refreshPending = new Promise<void>((resolve) => {
+      finishRefresh = resolve
+    })
+    const assetsStore = useAssetsStore()
+    const modelToNodeStore = useModelToNodeStore()
+    vi.spyOn(modelToNodeStore, 'getAllNodeProviders').mockReturnValue([
+      fromPartial({ nodeDef: { name: 'CheckpointLoaderSimple' } })
+    ])
+    vi.spyOn(assetsStore, 'updateModelsForNodeType').mockReturnValueOnce(
+      refreshPending
+    )
+
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/first'
+    wizard.selectedModelType.value = 'checkpoints'
+    await wizard.uploadModel()
+
+    const handler = vi
+      .mocked(api.addEventListener)
+      .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
+    assert.exists(handler)
+    handler(
+      new CustomEvent('asset_download', {
+        detail: {
+          task_id: 'task-first',
+          asset_id: 'asset-first',
+          asset_name: 'first.safetensors',
+          bytes_total: 1000,
+          bytes_downloaded: 1000,
+          progress: 100,
+          status: 'completed'
+        }
+      })
+    )
+    await nextTick()
+
+    wizard.wizardData.value.url = 'https://civitai.com/models/second'
+    await wizard.uploadModel()
+    expect(wizard.uploadStatus.value).toBe('processing')
+
+    finishRefresh?.()
+    await refreshPending
+    await nextTick()
+
+    handler(
+      new CustomEvent('asset_download', {
+        detail: {
+          task_id: 'task-second',
+          asset_id: 'asset-second',
+          asset_name: 'second.safetensors',
+          bytes_total: 1000,
+          bytes_downloaded: 1000,
+          progress: 100,
+          status: 'completed'
+        }
+      })
+    )
+
+    await vi.waitFor(() => {
+      expect(wizard.uploadStatus.value).toBe('success')
+    })
   })
 
   it('recovers a provisionally cancelled upload when it completes authoritatively', async () => {

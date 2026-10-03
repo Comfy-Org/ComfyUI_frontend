@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
@@ -85,11 +85,10 @@ describe('taskService.getTask', () => {
     )
     const transient = await taskService.getTask('task-123')
 
-    expect(missing.ok).toBe(false)
-    expect(transient.ok).toBe(false)
-    if (!missing.ok) expect(missing.error).toBeInstanceOf(TaskNotFoundError)
-    if (!transient.ok)
-      expect(transient.error).not.toBeInstanceOf(TaskNotFoundError)
+    assert(!missing.ok)
+    assert(!transient.ok)
+    expect(missing.error).toBeInstanceOf(TaskNotFoundError)
+    expect(transient.error).not.toBeInstanceOf(TaskNotFoundError)
   })
 
   it('returns network failures as data', async () => {
