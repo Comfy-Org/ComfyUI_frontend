@@ -230,6 +230,7 @@
     "uploadFileTooLarge": "File is too large to upload.",
     "uploadFileTooLargeWithLimit": "File is too large to upload (limit: {limit} MB).",
     "uploadFailed": "Upload failed: {reason}",
+    "videoFilenameExtensionRequired": "The video filename must end with an extension such as .mp4. Rename the file and try again.",
     "capture": "capture",
     "nodes": "Nodes",
     "jobs": "Jobs",
