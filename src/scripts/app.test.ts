@@ -1060,6 +1060,58 @@ describe('ComfyApp', () => {
       ).toBe(false)
     })
 
+    it('keeps the newer binding when a superseded no-clean load changed nothing', async () => {
+      await useRealWorkflowService()
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const olderWorkflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/older.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const newerWorkflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/newer.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      useWorkflowStore().activeWorkflow = olderWorkflow
+      publishActiveBinding(toRootGraphId('older-root'))
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(olderLoadBlocked)
+
+      const olderLoad = app.loadGraphData(
+        createWorkflowGraphData(),
+        false,
+        false,
+        olderWorkflow
+      )
+      await app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        false,
+        newerWorkflow
+      )
+      releaseOlderLoad()
+      await expect(olderLoad).resolves.toBeUndefined()
+
+      expect(
+        useDocumentLifecycleStore().activeRootGraphId(
+          toDocumentUid(newerWorkflow.instanceId)
+        )
+      ).toBe(toRootGraphId(graph.id))
+    })
+
     it('lets an older valid load commit when its newer replacement fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
