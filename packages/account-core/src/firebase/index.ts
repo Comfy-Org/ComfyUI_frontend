@@ -267,7 +267,6 @@ export function createFirebaseIdentity(
     createProvider: () => GoogleAuthProvider | GithubAuthProvider,
     options: PopupSignInOptions | undefined
   ): Promise<UserCredential> {
-    const started = ++signInsStarted
     if (pendingPopup) {
       return Promise.reject(
         new FirebaseError(
@@ -276,6 +275,7 @@ export function createFirebaseIdentity(
         )
       )
     }
+    const started = ++signInsStarted
     const provider = createProvider()
     const signIn = () => {
       pendingPopup = signInWithPopup(auth(), provider)

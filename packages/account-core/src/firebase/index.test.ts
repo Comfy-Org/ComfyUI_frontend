@@ -539,6 +539,31 @@ describe('popup sign-in with the popup watched', () => {
     await expect(onResumed.mock.calls[0][0]).resolves.toBe(testCredential)
   })
 
+  it.for(['signInWithGoogle', 'signInWithGitHub'] as const)(
+    'keeps an abandoned popup’s late result when a retry with %s was blocked',
+    async (method) => {
+      const popup = pendingPopup()
+      const onResumed = vi.fn()
+      const identity = await watchedIdentity()
+      const outcome = identity
+        .signInWithGoogle({ onResumed })
+        .catch((error: unknown) => error)
+      await vi.advanceTimersByTimeAsync(0)
+      watch.abandon()
+      await expect(outcome).resolves.toMatchObject({
+        code: 'auth/popup-closed-by-user'
+      })
+
+      await expect(identity[method]()).rejects.toMatchObject({
+        code: 'auth/cancelled-popup-request'
+      })
+
+      expect(watch.lateResult()).toBe('kept')
+      popup.resolve(testCredential)
+      await expect(onResumed.mock.calls[0][0]).resolves.toBe(testCredential)
+    }
+  )
+
   it('discards a late result no host asked to finish', async () => {
     pendingPopup()
     const identity = await watchedIdentity()
@@ -553,22 +578,28 @@ describe('popup sign-in with the popup watched', () => {
     [
       'an email sign-in',
       (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
-        identity.signInWithEmail('a@b.co', 'pw')
+        void identity.signInWithEmail('a@b.co', 'pw').catch(() => {})
     ],
     [
       'an account creation',
       (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
-        identity.createUserWithEmail('a@b.co', 'pw')
+        void identity.createUserWithEmail('a@b.co', 'pw').catch(() => {})
     ],
     [
       'another popup',
-      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
-        identity.signInWithGitHub()
+      async (
+        identity: Awaited<ReturnType<typeof watchedIdentity>>,
+        previous: Deferred<UserCredential>
+      ) => {
+        previous.resolve(testCredential)
+        await vi.advanceTimersByTimeAsync(0)
+        void identity.signInWithGitHub().catch(() => {})
+      }
     ]
   ] as const)(
     'discards a late result once %s has started since',
     async ([, startAnother]) => {
-      pendingPopup()
+      const popup = pendingPopup()
       const onResumed = vi.fn()
       const identity = await watchedIdentity()
       void identity.signInWithGoogle({ onResumed }).catch(() => {})
@@ -576,7 +607,7 @@ describe('popup sign-in with the popup watched', () => {
       watch.abandon()
       const lateResultRules = watch.state.options
 
-      void startAnother(identity).catch(() => {})
+      await startAnother(identity, popup)
       watch.state.options = lateResultRules
 
       expect(watch.lateResult()).toBe('discarded')
