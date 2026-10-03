@@ -12,7 +12,7 @@ import {
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 const PROGRESS_EVENTS = 100
 
@@ -28,7 +28,7 @@ async function drawUntilNoLongerDirty(canvas: LGraphCanvas, maxFrames = 5) {
 }
 
 function createMockCtx(owner: HTMLCanvasElement): CanvasRenderingContext2D {
-  return createMockCanvas2DContext({
+  return createMockCanvasRenderingContext2D({
     canvas: owner,
     translate: vi.fn(),
     scale: vi.fn(),

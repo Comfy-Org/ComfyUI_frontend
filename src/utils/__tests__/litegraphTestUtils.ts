@@ -7,7 +7,6 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
-  CanvasPointerEvent,
   ISerialisedGraph,
   LGraph,
   LGraphCanvas,
@@ -144,21 +143,6 @@ export function createMockLGraph(overrides: Partial<LGraph> = {}): LGraph {
     ...overrides
   })
   return Object.assign(graph, { rootGraph: overrides.rootGraph ?? graph })
-}
-
-/**
- * Creates a mock CanvasPointerEvent
- */
-export function createMockCanvasPointerEvent(
-  canvasX: number,
-  canvasY: number,
-  overrides: Partial<CanvasPointerEvent> = {}
-): CanvasPointerEvent {
-  return {
-    canvasX,
-    canvasY,
-    ...overrides
-  } as CanvasPointerEvent
 }
 
 /**
@@ -338,28 +322,6 @@ export function createMockLoadedWorkflow(
     changeTracker: createMockChangeTracker(),
     ...overrides
   })
-}
-
-/**
- * Creates a mock MinimapCanvas for minimap testing
- */
-export function createMockMinimapCanvas(
-  overrides: Partial<HTMLCanvasElement> = {}
-): HTMLCanvasElement {
-  const mockGetContext = vi.fn()
-  mockGetContext.mockImplementation((contextId: string) =>
-    contextId === '2d' ? createMockCanvas2DContext() : null
-  )
-
-  const partial: Partial<HTMLCanvasElement> = {
-    width: 200,
-    height: 200,
-    clientWidth: 200,
-    clientHeight: 200,
-    getContext: mockGetContext as HTMLCanvasElement['getContext'],
-    ...overrides
-  }
-  return partial as HTMLCanvasElement
 }
 
 /**

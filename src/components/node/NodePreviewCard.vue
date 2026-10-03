@@ -53,6 +53,7 @@
       <div
         v-if="inputs.length > 0 && showInputsAndOutputs"
         class="flex flex-col gap-1"
+        data-testid="node-preview-inputs"
       >
         <h4
           class="m-0 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"

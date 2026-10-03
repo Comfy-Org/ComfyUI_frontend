@@ -440,7 +440,8 @@ export class TaskItemImpl {
       return
     }
 
-    await app.loadGraphData(toRaw(workflowData))
+    const loadResult = await app.loadGraphData(toRaw(workflowData))
+    if (loadResult === undefined) return
 
     // Use full outputs from job detail, or fall back to existing outputs
     const outputsToLoad = jobDetail?.outputs ?? this.outputs

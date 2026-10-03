@@ -5,8 +5,8 @@ import { ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
+import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 
 import { useAgentPanelStore } from './agentPanelStore'
 
@@ -73,7 +73,10 @@ describe('the agentPanel store id', () => {
     store.isOpen = true
     expect(docked.value).toBe(true)
 
-    const canvas = { canvas: { width: 1600, height: 900 } } as LGraphCanvas
+    // `visibleCanvasViewport` reads the applied CSS viewport off `ds`, not the
+    // backing store off `canvas.canvas`, so the stub supplies a `DragAndScale`
+    // whose viewport has been applied at 1600x900.
+    const canvas = { ds: createTestDragAndScale(1600, 900) }
     const viewport = visibleCanvasViewport(canvas)
 
     expect(viewport.every((value) => Number.isFinite(value))).toBe(true)
