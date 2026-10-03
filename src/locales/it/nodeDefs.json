@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "codice lingua",
-        "tooltip": "Codice lingua ISO-639-1 o ISO-639-3 (es. 'en', 'es', 'fra'). Lascia vuoto per il rilevamento automatico."
+        "tooltip": "Codice lingua ISO 639-1 (ad es., 'en', 'es', 'ja'). Lascia vuoto per il rilevamento automatico."
       },
       "model": {
         "name": "modello",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "codice lingua",
-        "tooltip": "Codice lingua ISO-639-1 o ISO-639-3 (es. 'en', 'es', 'fra'). Lascia vuoto per il rilevamento automatico."
+        "tooltip": "Codice lingua ISO 639-1 (ad es., 'en', 'es', 'ja'). Lascia vuoto per il rilevamento automatico."
       },
       "model": {
         "name": "modello",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "velocità"
-      },
-      "model_style": {
-        "name": "stile"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "formato output",
@@ -18527,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "Intero",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "controllo dopo la generazione"
       },
       "value": {
@@ -22418,8 +22409,8 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
-        "name": "controlla dopo la generazione"
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
       },
       "seed": {
         "name": "seed"

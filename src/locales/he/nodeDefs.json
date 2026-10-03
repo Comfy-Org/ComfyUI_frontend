@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "קוד שפה",
-        "tooltip": "קוד שפה לפי ISO-639-1 או ISO-639-3 (למשל, 'en', 'es', 'fra'). השאר ריק לזיהוי אוטומטי."
+        "tooltip": "קוד שפה ISO 639-1 (לדוגמה, 'en', 'es', 'ja'). השאירו ריק לזיהוי אוטומטי."
       },
       "model": {
         "name": "מודל",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "קוד שפה לפי ISO-639-1 או ISO-639-3 (למשל, 'en', 'es', 'fra'). השאר ריק לזיהוי אוטומטי."
+        "tooltip": "קוד שפה ISO 639-1 (לדוגמה, 'en', 'es', 'ja'). השאירו ריק לזיהוי אוטומטי."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -18527,8 +18518,8 @@
   "PrimitiveInt": {
     "display_name": "מספר שלם",
     "inputs": {
-      "fixed": {
-        "name": "שליטה לאחר יצירה"
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
       },
       "value": {
         "name": "value"
@@ -22418,8 +22409,8 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
-        "name": "שליטה לאחר יצירה"
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
       },
       "seed": {
         "name": "seed"

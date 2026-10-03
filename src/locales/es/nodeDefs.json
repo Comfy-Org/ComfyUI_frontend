@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "código_de_idioma",
-        "tooltip": "Código de idioma ISO-639-1 o ISO-639-3 (ej., 'en', 'es', 'fra'). Déjelo vacío para detección automática."
+        "tooltip": "Código de idioma ISO 639-1 (p. ej., 'en', 'es', 'ja'). Déjelo vacío para la detección automática."
       },
       "model": {
         "name": "modelo",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "código_de_idioma",
-        "tooltip": "Código de idioma ISO-639-1 o ISO-639-3 (por ejemplo, 'en', 'es', 'fra'). Dejar vacío para detección automática."
+        "tooltip": "Código de idioma ISO 639-1 (p. ej., 'en', 'es', 'ja'). Déjelo vacío para la detección automática."
       },
       "model": {
         "name": "modelo",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "impulso_de_similitud"
-      },
-      "model_speed": {
-        "name": "velocidad"
-      },
-      "model_style": {
-        "name": "estilo"
-      },
-      "model_use_speaker_boost": {
-        "name": "usar_impulso_de_altavoz"
       },
       "output_format": {
         "name": "formato_de_salida",
@@ -18527,8 +18518,8 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "fixed": {
-        "name": "control after generate"
+      "control_after_generate": {
+        "name": "control después de generar"
       },
       "value": {
         "name": "valor"
@@ -22418,8 +22409,8 @@
   "SeedNode": {
     "display_name": "Semilla",
     "inputs": {
-      "fixed": {
-        "name": "controlar después de generar"
+      "control_after_generate": {
+        "name": "control después de generar"
       },
       "seed": {
         "name": "semilla"

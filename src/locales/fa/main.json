@@ -486,6 +486,7 @@
       "forgotPassword": "رمز عبور را فراموش کرده‌اید؟",
       "forgotPasswordError": "ارسال ایمیل بازیابی رمز عبور ناموفق بود",
       "freeRunsSuffix": "برای دریافت {count} اجرای رایگان. | برای دریافت {count} اجرای رایگان.",
+      "freeRunsSuffixGoogle": "با Google وارد شوید تا {count} اجرای رایگان دریافت کنید. | با Google وارد شوید تا {count} اجرای رایگان دریافت کنید.",
       "freeTierBadge": "واجد شرایط طرح رایگان",
       "freeTierDescription": "با ثبت‌نام از طریق Google هر ماه {credits} اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",
       "freeTierDescriptionGeneric": "با ثبت‌نام از طریق Google هر ماه اعتبار رایگان دریافت کنید. نیاز به کارت نیست.",

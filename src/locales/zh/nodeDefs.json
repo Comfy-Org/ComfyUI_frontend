@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "语言代码",
-        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空以自动检测。"
+        "tooltip": "ISO 639-1 语言代码（例如：“en”、“es”、“ja”）。留空以自动检测。"
       },
       "model": {
         "name": "模型",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 或 ISO-639-3 语言代码（如 'en'、'es'、'fra'）。留空则自动检测。"
+        "tooltip": "ISO 639-1 语言代码（例如：“en”、“es”、“ja”）。留空以自动检测。"
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -18527,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "整数",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "生成后控制"
       },
       "value": {
@@ -22418,7 +22409,7 @@
   "SeedNode": {
     "display_name": "种子",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "生成后控制"
       },
       "seed": {
