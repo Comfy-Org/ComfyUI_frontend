@@ -56,6 +56,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { DocumentTransition } from '@/platform/workflow/core/stores/documentLifecycleStore'
+import { useDocumentLifecycleStore } from '@/platform/workflow/core/stores/documentLifecycleStore'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -67,6 +69,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
@@ -1326,7 +1329,11 @@ export class ComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph(clean)
+    const transition = useWorkflowService().beforeLoadNewGraph(
+      clean,
+      workflow,
+      graphData?.id
+    )
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     let reset_invalid_values = false
@@ -1482,6 +1489,10 @@ export class ComfyApp {
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
       await this.reportGraphLoadFailure(error)
+      // Only if the graph actually went away: without `clean` the previous
+      // workflow is still on screen and still the bound document, and
+      // retracting would silence the agent for a workflow the user can see.
+      if (clean) useDocumentLifecycleStore().invalidate()
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
         workflowNavigationId
@@ -1537,6 +1548,7 @@ export class ComfyApp {
               'AbortError'
             )
           )
+          if (clean) useDocumentLifecycleStore().invalidate()
           return undefined
         }
 
@@ -1595,6 +1607,7 @@ export class ComfyApp {
         }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
+        useDocumentLifecycleStore().invalidate()
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
@@ -1680,7 +1693,8 @@ export class ComfyApp {
       await useWorkflowService().afterLoadNewGraph(
         workflow,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-        effectiveShareId
+        effectiveShareId,
+        transition
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       // Capture the workflow this load activated before the asset-scan awaits
@@ -2270,13 +2284,14 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
+      let transition: DocumentTransition | undefined
       const outcome = await importA1111(
         this.rootGraph,
         parameters,
         async () => {
           try {
             // false: final destination; no later load republishes the hash.
-            useWorkflowService().beforeLoadNewGraph(false)
+            transition = useWorkflowService().beforeLoadNewGraph(false)
             await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
           } finally {
             useMissingNodesErrorStore().setMissingNodeTypes([])
@@ -2315,7 +2330,9 @@ export class ComfyApp {
       )
       await useWorkflowService().afterLoadNewGraph(
         fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        undefined,
+        transition
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
@@ -2452,7 +2469,7 @@ export class ComfyApp {
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
-    useWorkflowService().beforeLoadNewGraph(false)
+    const transition = useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)
     withGraphIntentSource('load', () => this.clean())
@@ -2658,7 +2675,9 @@ export class ComfyApp {
     )
     await useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+      undefined,
+      transition
     )
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
@@ -2816,6 +2835,10 @@ export class ComfyApp {
     if (!this.canvas.subgraph) {
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
+      // Clear Workflow rotates the active document's root graph id in place.
+      useDocumentLifecycleStore().rebindActiveRootGraph(
+        toRootGraphId(this.rootGraph.id)
+      )
     }
 
     executionErrorStore.setActiveGraph(this.rootGraph.id)

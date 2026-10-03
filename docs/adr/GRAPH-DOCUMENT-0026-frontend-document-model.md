@@ -555,6 +555,79 @@ rewrite; multi-view (split editors) and non-workflow document types — the
 model permits both later (the manager, uid, and lifecycle are
 type-agnostic) but nothing here builds them.
 
+## Amendment (2026-10-02): the active-document binding precursor
+
+`useDocumentLifecycleStore`
+(`src/platform/workflow/core/stores/documentLifecycleStore.ts`) is a **precursor
+to Phase 1, not Phase 1**. It exists because the in-app Agent had no owner for
+one fact — which workflow document the shared root graph currently represents —
+and was inferring it from tab paths and serialized workflow state. It owns
+exactly that binding, and the reasons it deviates from Phase 1 are recorded here
+so a later consumer does not assume guarantees it does not give.
+
+What it provides:
+
+- The root graph id the presented document is on, retracted when a graph load
+  changes document and published when the load has selected a workflow. Retract
+  and publish live in the existing `workflowService.beforeLoadNewGraph` and
+  `afterLoadNewGraph` hooks, which cover all three graph-load entrypoints:
+  `loadGraphData`, `loadApiJson`, and `importA1111`. These are still the mixed
+  hooks — this is not yet the Phase 1 split of graph-load work from
+  document-transition work.
+- It does **not** own which document is presented, and deliberately so.
+  `workflowStore.activeWorkflow` already owns that, and a uid captured at load
+  completion is a second copy that can disagree with it. It did: after a
+  close/reopen through the e2e helper `openPersistedWorkflow`, which moves the
+  pointer with no graph load, the captured uid no longer matched the pointer and
+  the agent's CRDT follower never resubscribed
+  (`browser_tests/tests/agent/agentCloseReopenRemoteDelete.spec.ts`). So the
+  binding's identity half is read live from the active pointer, and only the root
+  graph id is stored. That id is the part the canvas genuinely cannot answer:
+  mid-load `app.rootGraph.id` is already the incoming graph's while the pointer
+  still names the outgoing document, and after a failed load it is neither
+  document's. In the app the pointer moves only inside
+  `activateLoadedWorkflow`, during a load; a pointer-only activation would bind
+  the newly presented document to the graph still on the canvas.
+- D3's "graph (re)loads are not document transitions": the retract is gated on
+  document identity change, so undo, redo, and same-document reloads keep their
+  binding. An in-place root-graph id rotation — `LGraph.clear()` from
+  `app.clean()`, which Clear Workflow reaches with no graph load — updates the
+  binding's `rootGraphId` without being a transition.
+- A per-load token (`DocumentTransition`) preventing an older load's `activate`
+  from publishing after a newer load started. `ChangeTracker.undo` and paste call
+  `loadGraphData` outside the workflow-load queue, so loads can still interleave
+  and mutate the shared graph; the token neither serializes nor cancels those
+  mutations, so it is not D3's serialized-transition guarantee. Because a
+  superseded load has by then rewritten the canvas, a stale token retracts the
+  binding rather than leaving the newer load's published id in place: once two
+  loads have interleaved, no stored id is known to name what is on screen, and
+  fail-closed costs the agent a silent window while fail-open would apply one
+  document's remote frames to another's graph.
+
+Deviations and deferred requirements:
+
+- **The uid is `ComfyWorkflow.instanceId`, not a session uid minted in `load()`
+  and nulled in `unload()`.** `instanceId` is assigned in a field initializer
+  and survives `unload()`, and `workflowStore.test.ts` pins that stability, so
+  **close/reopen does not mint a new uid** as D1 requires. The agent consumer is
+  unaffected (it resolves through the open tab), but a uid-keyed sidecar built on
+  this store would see a reopened session as the closed one. Mint the real uid
+  before adding one.
+- **No `Activate` phase, so nothing observes a pointer-only activation.** The
+  store reads the pointer instead of being told it moved, which is correct for a
+  query and wrong as a general answer: a sidecar that must _act_ when the
+  presented document changes still has no event to subscribe to. That is D3's
+  `Activate`/`Deactivate`, and it stays deferred.
+- No lifecycle bus: no `Open`/`PostOpen`/`PreClose`/`Close`/`PostClose`, no
+  forced close from the death paths, no event payload carrying the document type,
+  no synthetic catch-up for late registration, no `registerDocumentSidecar`.
+  An earlier draft of this store shipped a bare subscribe/emit pair with no
+  production subscriber; it was removed rather than landed, because D3 wants
+  typed events, catch-up, and serialized transitions, and a bus shaped before its
+  first consumer would have had to change anyway.
+- No ingress stamping (D2), no key helper, and no `widgetValueStore` /
+  `previewExposureStore` migration.
+
 ## Consequences
 
 ### Positive

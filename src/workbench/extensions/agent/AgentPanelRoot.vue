@@ -30,6 +30,10 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  toDocumentUid,
+  useDocumentLifecycleStore
+} from '@/platform/workflow/core/stores/documentLifecycleStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -155,6 +159,7 @@ const {
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
+const documentLifecycle = useDocumentLifecycleStore()
 watch(
   subscription,
   (currentSubscription) => {
@@ -801,15 +806,7 @@ const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
 )
 
-const isBoundWorkflowActive = computed(() => {
-  const bound = boundWorkflowId.value
-  const active = workflowStore.activeWorkflow
-  return (
-    bound !== null &&
-    active !== null &&
-    boundOrOpenWorkflowFor(bound)?.path === active.path
-  )
-})
+const isBoundWorkflowActive = computed(() => boundRootGraphId() !== null)
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
@@ -859,16 +856,16 @@ const {
     }
   }
 )
-// The bound document's serialized root graph id, independent of what is
-// currently on the canvas: `beforeLoadNewGraph` persists the outgoing
-// workflow's `activeState` before the shared renderer graph is rewritten, so
-// this stays the bound workflow's own root id through a tab switch instead of
-// tracking whichever graph the switch is loading.
+// The root graph id the store holds for the bound document, or null when the
+// binding names another document. `useDocumentLifecycleStore` resolves that
+// against the active pointer, so a tab activated without a graph load moves it.
 function boundRootGraphId(): RootGraphId | null {
   const bound = boundWorkflowId.value
   if (bound === null) return null
-  const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
-  return id === undefined ? null : toRootGraphId(id)
+  const workflow = boundOrOpenWorkflowFor(bound)
+  return workflow === null
+    ? null
+    : documentLifecycle.activeRootGraphId(toDocumentUid(workflow.instanceId))
 }
 const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
