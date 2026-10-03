@@ -33,6 +33,13 @@ export function useAgentWorkflowResolver({
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
+  /**
+   * Whether a cloud listing has ever succeeded. Until it has, an empty
+   * `cloudIndex` means "not asked yet", not "this account has no workflows",
+   * and the two must not be confused when deciding what a turn may claim about
+   * its target tab (see `cloudIdUnidentified`).
+   */
+  const cloudIndexListed = ref(false)
   let refreshGeneration = 0
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
@@ -54,6 +61,7 @@ export function useAgentWorkflowResolver({
       cloudIndex.value = entries.flatMap(({ id, name }) =>
         name === undefined ? [] : [{ id, name }]
       )
+      cloudIndexListed.value = true
       return true
     } catch (error) {
       if (generation !== refreshGeneration) return false
@@ -103,6 +111,30 @@ export function useAgentWorkflowResolver({
     return bound !== undefined && bindings.matchesWorkflow(bound, workflow)
       ? bound
       : undefined
+  }
+
+  /**
+   * Whether `cloudIdFor` returning nothing for this workflow means "it has no
+   * cloud workflow" or only "this client could not tell which one it is". Both
+   * look identical at the call site, and only the second must never reach the
+   * server as "no tab is selected" (PM-1847).
+   *
+   * It is the second when the cloud index has never been listed - nothing is
+   * known yet - or when the name the workflow would resolve by is claimed more
+   * than once, by several cloud records or by several open saved tabs. Both of
+   * those are ambiguity, not absence: the workflow is there and unnameable.
+   *
+   * A temporary tab is never unidentified: having no cloud workflow is its
+   * normal state, and `current_tab_unbound` is how the turn says so.
+   */
+  function cloudIdUnidentified(workflow: ComfyWorkflow): boolean {
+    if (workflow.isTemporary || cloudIdFor(workflow) !== undefined) return false
+    if (!cloudIndexListed.value) return true
+    const name = cloudWorkflowName(workflow)
+    return (
+      cloudIndex.value.filter((entry) => entry.name === name).length > 1 ||
+      savedMatches(name, workflows.openWorkflows).length > 1
+    )
   }
 
   function indexedNameFor(workflowId: string): string | undefined {
@@ -228,6 +260,7 @@ export function useAgentWorkflowResolver({
     refreshCloudWorkflowIds,
     forgetCloudWorkflowId,
     cloudIdFor,
+    cloudIdUnidentified,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,

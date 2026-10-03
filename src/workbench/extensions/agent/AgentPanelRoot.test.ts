@@ -489,6 +489,20 @@ function agentThreadList(
   }
 }
 
+/**
+ * A successful, empty cloud workflow listing. Needed by any test that sends
+ * from a saved tab without caring about target resolution: a listing that never
+ * succeeds leaves the client unable to say whether the tab has a cloud workflow,
+ * and the send is refused rather than described to the server as having no tab
+ * selected (`targetCannotBeNamed`, PM-1847).
+ */
+function emptyWorkflowList() {
+  return {
+    data: [],
+    pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+  }
+}
+
 function stubHistoryWithWorkflowListing(
   listingStatus: number | Promise<number>
 ): void {
@@ -553,6 +567,20 @@ async function sendFromComposer(text: string): Promise<void> {
 async function renderAndSend(text: string): Promise<void> {
   renderWithSelectedTarget()
   await sendFromComposer(text)
+}
+
+/**
+ * Sends, then waits for the refusal notice instead of for a turn to start -
+ * `sendFromComposer` waits for Stop, which a refused send never renders.
+ */
+async function renderAndSendRefusedTarget(text: string): Promise<void> {
+  renderWithSelectedTarget()
+  const textbox = screen.getByRole('textbox')
+  await userEvent.click(textbox)
+  await userEvent.keyboard('{ArrowRight}')
+  await userEvent.paste(text)
+  await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+  await screen.findByText(i18n.global.t('agent.targetNavigationUnavailable'))
 }
 
 function addTab(
@@ -1641,6 +1669,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.endsWith('/api/agent/threads'))
           return json(200, agentThreadList())
+        // A successful listing, so the saved target tab's missing cloud id reads
+        // as absence rather than ignorance; this test is about the paywall.
+        if (url.includes('/workflows')) return json(200, emptyWorkflowList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       })
@@ -3691,6 +3722,9 @@ describe('AgentPanelRoot canvas draft on send', () => {
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.endsWith('/api/agent/threads'))
           return json(200, agentThreadList())
+        // A successful listing, so the saved target tab's missing cloud id reads
+        // as absence rather than ignorance; this test is about the draft.
+        if (url.includes('/workflows')) return json(200, emptyWorkflowList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       })
@@ -8294,17 +8328,21 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('does not resolve two same-named open saved tabs to one cloud id', async () => {
+  // PM-1847: two open saved tabs claim the one cloud record named `current`, so
+  // the target cannot be resolved - but it is ambiguity, not absence. Posting
+  // the turn anyway would carry neither workflow_id nor current_tab_unbound,
+  // which the server reads as "no tab is selected" while the composer still
+  // names the tab, so the turn is refused instead and the user is told.
+  it('refuses a send it cannot resolve between two same-named open saved tabs', async () => {
     const current = makeTab()
     const archived = addTab('workflows/archive/current.json')
     const bodies = mockMessagesEndpoint('wf-fresh', [
       { id: 'wf-cloud-current', name: 'current' }
     ])
 
-    await renderAndSend('first message')
+    await renderAndSendRefusedTarget('first message')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('open_tabs')
+    expect(bodies).toEqual([])
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(current.path)
     ).toBeUndefined()
@@ -8313,18 +8351,20 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
-  it('excludes ambiguous and nameless cloud records from resolution', async () => {
-    makeTab()
+  it('refuses a send whose target name is duplicated in the cloud index', async () => {
+    const tab = makeTab()
     const bodies = mockMessagesEndpoint('wf-fresh', [
       { id: 'wf-a', name: 'current' },
       { id: 'wf-b', name: 'current' },
       { id: 'wf-nameless' } as { id: string; name: string }
     ])
 
-    await renderAndSend('first message')
+    await renderAndSendRefusedTarget('first message')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('open_tabs')
+    expect(bodies).toEqual([])
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
+    ).toBeUndefined()
   })
 
   it('falls back to bindings when the cloud index request fails', async () => {
@@ -8355,7 +8395,11 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('does not adopt a minted workflow when a saved tab cloud lookup fails', async () => {
+  // PM-1847, the other half: with no successful listing the client cannot say
+  // whether this saved tab has a cloud workflow. It must not mint one for it -
+  // that would bind the user's saved tab to an unrelated cloud workflow - and it
+  // must not claim no tab is selected either, so the send is refused.
+  it('refuses a send from a saved tab whose cloud lookup never succeeded, without minting', async () => {
     const tab = makeTab()
     const bodies: unknown[] = []
     vi.stubGlobal(
@@ -8371,9 +8415,9 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
-    await renderAndSend('first message')
+    await renderAndSendRefusedTarget('first message')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies).toEqual([])
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
     ).toBeUndefined()
@@ -9562,6 +9606,10 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
+        // A successful listing, so the saved tab's missing cloud id reads as
+        // absence rather than ignorance; the latter refuses the send instead
+        // (`targetCannotBeNamed`, PM-1847) and this test is about posting once.
+        if (url.includes('/workflows')) return json(200, emptyWorkflowList())
         if (!url.includes('/messages'))
           return new Response('{}', { status: 200 })
         const body = JSON.parse(String(init?.body)) as Record<string, unknown>

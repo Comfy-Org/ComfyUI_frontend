@@ -359,6 +359,7 @@ const {
   refreshCloudWorkflowIds,
   forgetCloudWorkflowId,
   cloudIdFor,
+  cloudIdUnidentified,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
   openWorkflowFor,
@@ -610,6 +611,13 @@ function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   )
 }
 
+// `undefined` collapses three different answers: no tab is selected, the
+// selected tab has no cloud workflow, and the selected tab has one this client
+// could not identify. The last is deliberate for a saved tab - naming it as
+// unbound would mint a workflow and bind the user's saved tab to it - but it
+// must not reach the server, which reads a turn carrying neither `workflow_id`
+// nor `current_tab_unbound` as "no tab is selected" (PM-1847).
+// `targetWorkflowUnidentified` below is how the send tells the three apart.
 function targetWorkflowTurnContext(
   origin?: TurnOrigin
 ): WorkflowTurnContext | undefined {
@@ -622,6 +630,18 @@ function targetWorkflowTurnContext(
   return id === undefined
     ? { tabPath: target.path }
     : { id, tabPath: target.path }
+}
+
+/**
+ * Which kind of `undefined` the call above returned: a target tab the client
+ * failed to identify, rather than no target or a target with no cloud workflow.
+ * The send refuses on this instead of describing the tab as unselected
+ * (`targetCannotBeNamed`, PM-1847).
+ */
+function targetWorkflowUnidentified(origin?: TurnOrigin): boolean {
+  if (workflowDetached.value) return false
+  const target = originWorkflow(origin)
+  return target !== undefined && cloudIdUnidentified(target)
 }
 
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
@@ -774,6 +794,7 @@ const {
   workflow: {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
+    unidentifiedTarget: targetWorkflowUnidentified,
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
     prepare: async () => {
