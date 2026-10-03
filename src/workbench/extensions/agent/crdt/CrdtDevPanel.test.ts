@@ -50,9 +50,9 @@ const STATUS: AgentCrdtStatus = {
   }
 }
 
-function renderPanel() {
+function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
   return render(CrdtDevPanel, {
-    props: { status: STATUS },
+    props: { status: { ...STATUS, ...overrides } },
     global: { plugins: [i18n] }
   })
 }
@@ -109,18 +109,13 @@ describe('CrdtDevPanel', () => {
 
   it('renders disconnected status fallbacks', async () => {
     const user = userEvent.setup()
-    render(CrdtDevPanel, {
-      props: {
-        status: {
-          ...STATUS,
-          connected: false,
-          workflowId: null,
-          lastFrameType: null
-        }
-      }
+    renderPanel({
+      connected: false,
+      workflowId: null,
+      lastFrameType: null
     })
 
-    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-chip'))
 
     expect(screen.getByRole('row', { name: 'doc id —' })).toBeVisible()
     expect(screen.getByRole('row', { name: 'connected no' })).toBeVisible()
