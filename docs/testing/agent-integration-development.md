@@ -119,6 +119,13 @@ mutually exclusive with `DEV_AGENT_SESSION_TOKEN`.
 Only the token is rediscovered. Vite continues forwarding to `DEV_AGENT_URL`, so an
 agent restart on a different port still requires restarting Vite with the new URL.
 
+Give it a path that already exists and that exists _as written_: Vite refuses to start
+on a `DEV_AGENT_DATA_DIR` that is not a readable directory, so start the agent once
+before using it. The shell expands `~` in the command above, but `.env` is read by
+`dotenv`, which does not — a `DEV_AGENT_DATA_DIR=~/.comfy-agent` line in `.env` points
+at a literal `./~/.comfy-agent` and the dev server will say so rather than answering 401
+forever.
+
 Prefer it over copying the token by hand, because **the agent mints a new session token
 every time it starts** (unless `AGENT_SESSION_TOKEN` pins one, which is what the launcher
 does) and atomically replaces `agent.json` with it. A token read out of that file once
