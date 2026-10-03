@@ -8,11 +8,14 @@ import { createI18n } from 'vue-i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
@@ -35,6 +38,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 /**
  * GraphCanvas is the only place the first-run tour is wired into startup: it
@@ -164,7 +168,7 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
   useSettingStore().isReady = true
   useBootstrapStore().isI18nReady = true
 
-  render(GraphCanvas, {
+  const view = render(GraphCanvas, {
     // Child components are stubbed: this covers the startup sequence, not the
     // canvas chrome. `shallow` is forwarded verbatim to Vue Test Utils' mount,
     // which honours it — @testing-library/vue just omits it from its own type.
@@ -183,6 +187,7 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
     await nextTick()
     await Promise.resolve()
   }
+  return view
 }
 
 describe('GraphCanvas first-run tour wiring', () => {
@@ -190,6 +195,31 @@ describe('GraphCanvas first-run tour wiring', () => {
     mocks.initializeWorkflow.mockResolvedValue('url-intent')
     mocks.loadTemplateFromUrlIfPresent.mockResolvedValue('image_to_image')
     mocks.loadSharedWorkflowFromUrlIfPresent.mockResolvedValue(undefined)
+  })
+
+  it('offers reload guidance and stops startup when required core loading fails', async () => {
+    const error = new SyntaxError("Unexpected token '}'")
+    vi.mocked(app.setup).mockRejectedValueOnce(error)
+
+    const { emitted } = await mountGraphCanvas()
+
+    expect(useToastStore().add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'g.preloadErrorTitle',
+        detail: 'g.preloadError'
+      })
+    )
+    expect(useWorkspaceStore().spinner).toBe(false)
+    expect(useCanvasStore().canvas).toBeNull()
+    expect(emitted('ready')).toBeUndefined()
+    expect(mocks.initializeWorkflow).not.toHaveBeenCalled()
+    expect(mocks.handleStartupOutcome).not.toHaveBeenCalled()
+    expect(mocks.runUrlActionLoaders).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(error, {
+      errorType: 'failure_initializing_graph_canvas',
+      surface: 'graph'
+    })
   })
 
   it('hands the startup outcome to the first-run entry point', async () => {

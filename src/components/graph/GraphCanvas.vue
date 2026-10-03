@@ -176,6 +176,7 @@ import { useLitegraphSettings } from '@/platform/settings/composables/useLitegra
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -589,6 +590,17 @@ onMounted(async () => {
     urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
     await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     bootstrapOutcome = 'completed'
+  } catch (error) {
+    reportError(error, {
+      errorType: 'failure_initializing_graph_canvas',
+      surface: 'graph'
+    })
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.preloadErrorTitle'),
+      detail: t('g.preloadError')
+    })
+    return
   } finally {
     workspaceStore.spinner = false
     bootstrapTracer.complete(bootstrapOutcome)
