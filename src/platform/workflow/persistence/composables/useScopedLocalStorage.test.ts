@@ -100,6 +100,29 @@ describe('useScopedLocalStorage', () => {
     scope.stop()
   })
 
+  it('removes a resolved scoped value through the storage adapter', async () => {
+    const resolvedScope = unsafeStorageScope('user-a:workspace-1')
+    const key = StorageKeys.agentChatTitles(resolvedScope)
+    localStorage.setItem(key, JSON.stringify({ thread: 'Persisted title' }))
+    setStorageIdentity('user-a')
+    const scope = effectScope()
+    const value = requireDefined(
+      scope.run(() =>
+        useScopedLocalStorage<Record<string, string> | null>(
+          StorageKeys.agentChatTitles,
+          {}
+        )
+      )
+    )
+
+    expect(value.value).toEqual({ thread: 'Persisted title' })
+    value.value = null
+    await nextTick()
+
+    expect(localStorage.getItem(key)).toBeNull()
+    scope.stop()
+  })
+
   it('detaches during a workspace transition and binds the destination scope', async () => {
     const firstScope = unsafeStorageScope('user-a:workspace-1')
     const secondScope = unsafeStorageScope('user-a:workspace-2')

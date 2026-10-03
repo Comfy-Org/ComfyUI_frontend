@@ -455,6 +455,21 @@ describe('workflowDraftStoreV2', () => {
         originalUpdatedAt
       )
     })
+
+    it('removes the copied payload when the moved index cannot be persisted', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/old.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+      withQuotaMock((key) => key === INDEX_KEY)
+
+      store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
+
+      expect(store.getDraft('workflows/old.json')?.data).toBe('{"data":"test"}')
+      expect(store.getDraft('workflows/new.json')).toBeNull()
+      expect(localStorage.getItem(payloadKey('workflows/new.json'))).toBeNull()
+    })
   })
 
   describe('getMostRecentPath', () => {

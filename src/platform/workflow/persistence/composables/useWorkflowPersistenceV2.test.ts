@@ -792,6 +792,82 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
+  it('does not revive a pending edit after persistence was disabled', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = { marker: 'disabled-edit' }
+    mocks.state.graphChangedHandler?.()
+    useSettingStore().settingValues['Comfy.Workflow.Persist'] = false
+    await nextTick()
+    await vi.runAllTimersAsync()
+
+    useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
+    await nextTick()
+    const reopenGate = storageIO.prepareWorkflowWorkspaceTransition()
+    reopenGate()
+    await nextTick()
+
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(workflow.path, scope('personal'))
+      )
+    ).toBeNull()
+  })
+
+  it('does not revive a pending edit after its active workflow disappeared', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = { marker: 'orphaned-edit' }
+    mocks.state.graphChangedHandler?.()
+    workflowStore.activeWorkflow = null
+    await vi.runAllTimersAsync()
+
+    workflowStore.activeWorkflow = workflow
+    const reopenGate = storageIO.prepareWorkflowWorkspaceTransition()
+    reopenGate()
+
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(workflow.path, scope('personal'))
+      )
+    ).toBeNull()
+    await nextTick()
+  })
+
+  it('does not revive an unchanged edit when the write gate reopens', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = { marker: 'saved' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+    mocks.state.currentGraph = { marker: 'must-not-revive' }
+    const reopenGate = storageIO.prepareWorkflowWorkspaceTransition()
+    reopenGate()
+    await nextTick()
+
+    const payload = JSON.parse(
+      localStorage.getItem(
+        StorageKeys.draftPayload(workflow.path, scope('personal'))
+      )!
+    )
+    expect(JSON.parse(payload.data)).toEqual({ marker: 'saved' })
+  })
+
   it('does not flush a pending workflow edit after disposal', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()

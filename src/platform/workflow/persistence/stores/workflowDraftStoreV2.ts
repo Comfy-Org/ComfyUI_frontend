@@ -284,6 +284,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         if (!written) return
 
         if (!persistIndex(result.index)) {
+          indexCacheByScope.value[scope] = index
           deletePayload(scope, result.newKey)
           return
         }
