@@ -166,8 +166,8 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { PromptExecutionError, api } from './api'
 import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
-import { importA1111 } from './pnginfo';
-import type { A1111ImportOutcome } from './pnginfo';
+import { importA1111 } from './pnginfo'
+import type { A1111ImportOutcome } from './pnginfo'
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
