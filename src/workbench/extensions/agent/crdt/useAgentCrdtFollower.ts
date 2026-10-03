@@ -31,6 +31,12 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
+import {
+  RESEED_CONFLICT,
+  SCHEMA_VERSION_MISMATCH,
+  STALE_SCHEMA_RESEED_REQUIRED,
+  isRetryableReseedCode
+} from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -143,6 +149,58 @@ function handleSubscribeRefusal(
   }
 }
 
+/**
+ * Report an exhausted `stale_schema_reseed_required` as the permanent refusal
+ * it has become.
+ *
+ * Every subscribe now advertises `supports_reseed`, so a host that used to
+ * refuse an unreadable stored document with the permanent
+ * `schema_version_mismatch` sends the retryable-looking stale-schema code
+ * instead. The reseed this tab answers it with can fail to go out — no bound
+ * canvas, a payload over the frame bound, a send that did not leave the
+ * transport — and most of those causes are transient, so the bounded retry
+ * ladder is the right first response and the early refusals stay retryable.
+ *
+ * What is not right is where the ladder ENDS: `scheduleSubscribeRetry` stops
+ * scheduling at the budget without latching `gaveUp`, so the binding settles
+ * into re-driving a subscribe on every `status` frame forever, and the person
+ * never gets the `onSyncError` they used to get for an unreadable document.
+ * `stillRecoverable` is false exactly there, which is where this re-maps.
+ *
+ * A refusal that merely arrived while this tab's own reseed is still
+ * outstanding is never unanswerable: its answer is owed and on its way.
+ */
+function unanswerableRefusal(
+  detail: { code?: unknown; message?: unknown } | null,
+  stillRecoverable: boolean
+): { code?: unknown; message?: unknown } | null {
+  if (detail?.code !== STALE_SCHEMA_RESEED_REQUIRED || stillRecoverable)
+    return detail
+  return { ...detail, code: SCHEMA_VERSION_MISMATCH }
+}
+
+/**
+ * What a `doc_reseed_result` means for the retry ladder.
+ *
+ * `settled` — the bridge resets and resubscribes after the listener returns.
+ * `retry` — a transient failure, including one that arrives with NO usable
+ * code: `code` is absent, or `parseDocReseedResult` dropped it for exceeding
+ * `MAX_ERROR_CODE_LENGTH`. Treating that as a verdict latched `stopProbing()`
+ * and disabled the ack timer, the retry ladder, the stale probe and every
+ * deferred reconcile — killing doc sync for the rest of the tab's life on a
+ * server hiccup.
+ * `permanent` — a code the host meant, and the only one of the three the
+ * person needs to hear about.
+ */
+function reseedResultVerdict(
+  ok: boolean,
+  code: string | undefined
+): 'settled' | 'retry' | 'permanent' {
+  if (ok || code === RESEED_CONFLICT) return 'settled'
+  if (code === undefined || isRetryableReseedCode(code)) return 'retry'
+  return 'permanent'
+}
+
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
   nodes: DocNodeDelta,
@@ -175,6 +233,12 @@ function notifyAgentMaterialization(
     pendingLiveNodeIds,
     events
   )
+}
+
+function hasNodes(
+  canvas: Record<string, unknown> | null
+): canvas is Record<string, unknown> {
+  return Array.isArray(canvas?.nodes) && canvas.nodes.length > 0
 }
 
 export interface AgentCrdtStatus {
@@ -273,7 +337,13 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => LGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
-  applierDeps: AgentCrdtApplierDeps = {}
+  applierDeps: AgentCrdtApplierDeps = {},
+  /**
+   * The serialized graph the tab bound to `workflowId` currently shows. The
+   * canvas is authoritative here because the server projection can lag human
+   * edits.
+   */
+  canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -312,7 +382,8 @@ export function useAgentCrdtFollower(
           isTargetActive,
           getGraph,
           events,
-          applierDeps
+          applierDeps,
+          canvasFor
         )
       )
     },
@@ -342,7 +413,8 @@ function startAgentCrdtFollower(
   isTargetActive: Ref<boolean>,
   getGraph: () => LGraph | null,
   events: AgentCrdtFollowerEvents,
-  applierDeps: AgentCrdtApplierDeps
+  applierDeps: AgentCrdtApplierDeps,
+  canvasFor: (workflowId: string) => Record<string, unknown> | null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -483,6 +555,77 @@ function startAgentCrdtFollower(
     }
   }
 
+  function tryReseed(detail: {
+    workflowId?: unknown
+    code?: unknown
+  }): boolean {
+    const target = subscribedWorkflowId.value
+    if (detail.code !== STALE_SCHEMA_RESEED_REQUIRED || target === null)
+      return false
+    if (detail.workflowId !== undefined && detail.workflowId !== target)
+      return false
+    if (!bridge.canReseed(target)) return false
+    const canvas = canvasFor(target)
+    if (!hasNodes(canvas) || !bridge.reseed(target, canvas)) return false
+    recordDevEvent('doc_reseed_sent', { workflowId: target })
+    lifecycle.onReseedSent(target)
+    return true
+  }
+  const onReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+    } | null
+    if (!isCurrentWorkflow(detail?.workflowId)) return
+    lastFrameType.value = event.type
+    recordDevEvent('doc_reseed_result', detail)
+    const code = typeof detail.code === 'string' ? detail.code : undefined
+    const verdict = reseedResultVerdict(detail.ok === true, code)
+    if (verdict === 'settled') return
+    if (verdict === 'retry') {
+      lifecycle.onSubscribeRefused(code)
+      return
+    }
+    // Final for this document — and final-and-silent is the shape that leaves
+    // the panel accepting prompts whose edits never reach the canvas, so it is
+    // reported like any other permanent refusal.
+    lifecycle.stopProbing()
+    events.onSyncError?.(
+      typeof detail.message === 'string' ? detail.message : undefined,
+      code
+    )
+  }
+
+  function handleRejectedSubscription(
+    detail: {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+      expectedSeq?: unknown
+    } | null
+  ) {
+    const refusal = tryReseed(detail ?? {})
+      ? { shouldNotify: false }
+      : handleSubscribeRefusal(
+          unanswerableRefusal(
+            detail,
+            bridge.reseedInFlight || lifecycle.hasSubscribeRetriesLeft()
+          ),
+          lifecycle
+        )
+    // FE #16637 residual: a refusal is the earliest signal the sender can
+    // get that its in-flight batch's doc is gone — don't make it wait out
+    // the 10 s result-silence window to notice on its own.
+    releaseHeldOps()
+    sender.abortIfUnbound()
+    if (refusal.shouldNotify)
+      events.onSyncError?.(refusal.message, refusal.code)
+  }
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -490,6 +633,7 @@ function startAgentCrdtFollower(
       ok?: unknown
       code?: unknown
       message?: unknown
+      expectedSeq?: unknown
     } | null
     const ok = detail?.ok === true
     connected.value = ok
@@ -499,14 +643,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      const refusal = handleSubscribeRefusal(detail, lifecycle)
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      releaseHeldOps()
-      sender.abortIfUnbound()
-      if (refusal.shouldNotify)
-        events.onSyncError?.(refusal.message, refusal.code)
+      handleRejectedSubscription(detail)
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -634,7 +771,7 @@ function startAgentCrdtFollower(
     connected.value = false
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
-    bridge.resubscribe()
+    bridge.reconnect()
   }
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
@@ -665,6 +802,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
+  bridge.addEventListener('doc_reseed_result', onReseedResult)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -812,6 +950,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
+      () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
       () => rejectedOpNotifier.cancel(),
       () => coalescer.detach(),

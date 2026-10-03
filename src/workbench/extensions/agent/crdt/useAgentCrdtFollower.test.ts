@@ -31,9 +31,13 @@ const bridgeState = vi.hoisted(() => {
     subscribe = vi.fn()
     unsubscribe = vi.fn()
     resubscribe = vi.fn()
+    reconnect = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
+    reseed = vi.fn(() => true)
+    canReseed = vi.fn(() => true)
+    reseedInFlight = false
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     follower = {
@@ -194,7 +198,9 @@ function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
   getGraph: () => LGraph | null = () => null,
-  events: Parameters<typeof useAgentCrdtFollower>[4] = {}
+  events: Parameters<typeof useAgentCrdtFollower>[4] = {},
+  applierDeps: Parameters<typeof useAgentCrdtFollower>[5] = {},
+  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => null
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -213,7 +219,9 @@ function mountFollower(
         () => null,
         isTargetActive,
         getGraph,
-        events
+        events,
+        applierDeps,
+        canvasFor
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
@@ -330,7 +338,7 @@ describe('useAgentCrdtFollower', () => {
     workflowId.value = 'wf-2'
     await nextTick()
     expect(first.subscribe).toHaveBeenCalledTimes(1)
-    expect(first.resubscribe).not.toHaveBeenCalled()
+    expect(first.reconnect).not.toHaveBeenCalled()
     expect(projectionState.applyFrame).toHaveBeenCalledTimes(applies)
 
     store.enabled = true
@@ -666,7 +674,7 @@ describe('useAgentCrdtFollower', () => {
     apiState.target.dispatchEvent(new Event('reconnected'))
 
     expect(status().connected).toBe(false)
-    expect(bridge().resubscribe).toHaveBeenCalled()
+    expect(bridge().reconnect).toHaveBeenCalled()
     expect(projectionState.replaceOnNextFrame).not.toHaveBeenCalled()
     unmount()
   })
@@ -2089,11 +2097,11 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
 
     apiState.target.dispatchEvent(new Event('reconnected'))
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    expect(bridge().reconnect).toHaveBeenCalledTimes(1)
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
 
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(4)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
     unmount()
   })
 
@@ -2130,10 +2138,10 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().reconcile).not.toHaveBeenCalled()
 
     apiState.target.dispatchEvent(new Event('reconnected'))
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
+    expect(bridge().reconnect).toHaveBeenCalledTimes(1)
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(4)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
     unmount()
   })
 
@@ -2193,5 +2201,257 @@ describe('useAgentCrdtFollower', () => {
 
     expect(reportedTeardownErrors()).toStrictEqual([null, undefined])
     expect(clientState.destroy).toHaveBeenCalled()
+  })
+
+  describe('stale-schema reseed on subscribe', () => {
+    const canvas = {
+      last_node_id: 1,
+      nodes: [{ id: 1, type: 'CheckpointLoaderSimple' }],
+      links: []
+    }
+    const staleRefusal = {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    }
+
+    function mountWithCanvas(
+      canvasFor: (workflowId: string) => Record<string, unknown> | null = () =>
+        canvas,
+      events: Parameters<typeof useAgentCrdtFollower>[4] = {}
+    ) {
+      return mountFollower('wf-1', true, () => null, events, {}, canvasFor)
+    }
+
+    function exhaustSubscribeRetryBudget() {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        dispatchFrame('doc_subscribed', staleRefusal)
+        vi.advanceTimersByTime(120_000)
+      }
+    }
+
+    it('answers the refusal once with the canvas the tab shows, instead of the retry', () => {
+      vi.useFakeTimers()
+      const canvasFor = vi.fn(() => canvas)
+      const { unmount, status } = mountWithCanvas(canvasFor)
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+
+      expect(canvasFor).toHaveBeenCalledWith('wf-1')
+      expect(bridge().reseed).toHaveBeenCalledExactlyOnceWith('wf-1', canvas)
+      expect(status().connected).toBe(false)
+      // The bridge resubscribes on the answer; the refused-subscribe backoff
+      // must not race it.
+      vi.advanceTimersByTime(5_000)
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('falls back to bounded retry when the refusal repeats before subscribe confirmation', () => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      dispatchFrame('doc_reseed_result', {
+        workflowId: 'wf-1',
+        ok: true,
+        seq: 8,
+        outcome: 'reseeded'
+      })
+      bridge().canReseed.mockReturnValue(false)
+      dispatchFrame('doc_subscribed', staleRefusal)
+
+      expect(bridge().reseed).toHaveBeenCalledOnce()
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledOnce()
+      unmount()
+    })
+
+    it('can answer a fresh refusal after reconnecting', () => {
+      const { unmount } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      apiState.target.dispatchEvent(new Event('reconnected'))
+      dispatchFrame('doc_subscribed', { ...staleRefusal, expectedSeq: 8 })
+
+      expect(bridge().reseed).toHaveBeenCalledTimes(2)
+      unmount()
+    })
+
+    it('does not retry a permanent non-reseed refusal', () => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', {
+        workflowId: 'wf-1',
+        ok: false,
+        code: 'schema_version_mismatch'
+      })
+
+      expect(bridge().reseed).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it.for<[string, () => Record<string, unknown> | null]>([
+      ['no canvas', () => null],
+      ['an empty canvas', () => ({ nodes: [], links: [] })]
+    ])('does not reseed from %s', ([, canvasFor]) => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas(canvasFor)
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+
+      expect(bridge().reseed).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+      unmount()
+    })
+
+    it('can reseed after a canvas becomes available on a later refusal', () => {
+      vi.useFakeTimers()
+      let available = false
+      const { unmount } = mountWithCanvas(() => (available ? canvas : null))
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      expect(bridge().reseed).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(500)
+
+      available = true
+      dispatchFrame('doc_subscribed', { ...staleRefusal, expectedSeq: 8 })
+      expect(bridge().reseed).toHaveBeenCalledExactlyOnceWith('wf-1', canvas)
+      unmount()
+    })
+
+    it('falls back to the ordinary retry when the reseed cannot leave the socket', () => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas()
+      bridge().reseed.mockReturnValue(false)
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+      unmount()
+    })
+
+    // Stops probing, but not silently: a tab whose doc sync is permanently
+    // off keeps accepting prompts whose edits never reach the canvas, so the
+    // person has to be told the same way every other permanent refusal tells
+    // them. (`reportError` stays out of it — this is a server verdict, not a
+    // client fault.)
+    it('stops probing a document whose reseed was refused, and says so', () => {
+      vi.useFakeTimers()
+      telemetryState.reportError.mockClear()
+      const onSyncError = vi.fn()
+      const { unmount } = mountWithCanvas(() => canvas, { onSyncError })
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      dispatchFrame('doc_reseed_result', {
+        workflowId: 'wf-1',
+        ok: false,
+        code: 'stale_schema_reseed_refused',
+        message: 'this document cannot be re-minted'
+      })
+      apiState.target.dispatchEvent(new Event('status'))
+      vi.advanceTimersByTime(10 * 60_000)
+
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      expect(bridge().reconcile).not.toHaveBeenCalled()
+      expect(telemetryState.reportError).not.toHaveBeenCalled()
+      expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+        'this document cannot be re-minted',
+        'stale_schema_reseed_refused'
+      )
+      unmount()
+    })
+
+    // A result whose `code` is absent — or that `parseDocReseedResult` dropped
+    // for exceeding MAX_ERROR_CODE_LENGTH — is a transient server failure
+    // wearing no label, not a verdict. Latching `stopProbing()` on it killed
+    // doc sync for the rest of the tab's life, silently.
+    it.for<[string, Record<string, unknown>]>([
+      ['no code at all', {}],
+      ['a code the parser dropped', { code: undefined }]
+    ])('keeps retrying a failed reseed carrying %s', ([, codeless]) => {
+      vi.useFakeTimers()
+      const onSyncError = vi.fn()
+      const { unmount } = mountWithCanvas(() => canvas, { onSyncError })
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      dispatchFrame('doc_reseed_result', {
+        workflowId: 'wf-1',
+        ok: false,
+        ...codeless
+      })
+      vi.advanceTimersByTime(500)
+
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+      expect(onSyncError).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    // `scheduleSubscribeRetry` stops scheduling at the budget without latching
+    // `gaveUp`, so a refusal this tab can never answer used to settle into
+    // re-driving a subscribe on every `status` frame for the life of the
+    // binding — and the person never heard about it, because the stale-schema
+    // code reads retryable where `schema_version_mismatch` used to read
+    // permanent.
+    it('tells the person once the unanswerable refusal has spent its budget', () => {
+      vi.useFakeTimers()
+      const onSyncError = vi.fn()
+      const { unmount } = mountWithCanvas(() => null, { onSyncError })
+
+      exhaustSubscribeRetryBudget()
+      expect(onSyncError).not.toHaveBeenCalled()
+      dispatchFrame('doc_subscribed', {
+        ...staleRefusal,
+        message: 'this document was written by a newer build'
+      })
+
+      expect(bridge().reseed).not.toHaveBeenCalled()
+      expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+        'this document was written by a newer build',
+        'schema_version_mismatch'
+      )
+      unmount()
+    })
+
+    it('retries after a transient reseed failure and accepts a fresh refusal token', () => {
+      vi.useFakeTimers()
+      const { unmount } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      dispatchFrame('doc_reseed_result', {
+        workflowId: 'wf-1',
+        ok: false,
+        code: 'unavailable'
+      })
+      vi.advanceTimersByTime(500)
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+
+      dispatchFrame('doc_subscribed', { ...staleRefusal, expectedSeq: 8 })
+      expect(bridge().reseed).toHaveBeenCalledTimes(2)
+      unmount()
+    })
+
+    it('a retarget allows one reseed for the new binding', () => {
+      vi.useFakeTimers()
+      const { unmount, workflowId } = mountWithCanvas()
+
+      dispatchFrame('doc_subscribed', staleRefusal)
+      workflowId.value = 'wf-2'
+      return nextTick().then(() => {
+        dispatchFrame('doc_subscribed', {
+          ...staleRefusal,
+          workflowId: 'wf-2'
+        })
+        expect(bridge().reseed).toHaveBeenCalledTimes(2)
+        expect(bridge().reseed).toHaveBeenLastCalledWith('wf-2', canvas)
+        unmount()
+      })
+    })
   })
 })

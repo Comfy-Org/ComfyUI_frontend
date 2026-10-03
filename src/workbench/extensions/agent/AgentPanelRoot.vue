@@ -624,15 +624,41 @@ function targetWorkflowTurnContext(
     : { id, tabPath: target.path }
 }
 
+function serializedCanvas(
+  target: ComfyWorkflow
+): DraftSnapshot['content'] | undefined {
+  if (target.path === workflowStore.activeWorkflow?.path)
+    target.changeTracker?.prepareForSave()
+  return target.activeState ?? undefined
+}
+
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (target.path === workflowStore.activeWorkflow?.path)
-    target.changeTracker?.prepareForSave()
-  const content = target.activeState
+  const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+/**
+ * The canvas a `doc_reseed` may re-mint the stored document from.
+ *
+ * Stricter than {@link targetWorkflowDraft} on purpose. A draft is advisory
+ * prompt content, but this payload REPLACES the authoritative document, so
+ * every way of being approximately right here is silent data loss:
+ * `boundOrOpenWorkflowFor` falls back to matching an open tab by cloud name
+ * rather than by binding, and `serializedCanvas` only runs `prepareForSave()`
+ * for the active workflow — so a non-active target yields a stale
+ * `activeState`. Requiring the resolved target to BE the active workflow
+ * makes both failure modes unreachable, and the detached gate applies for the
+ * same reason it applies to the draft.
+ */
+function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
+  if (workflowDetached.value) return null
+  const target = boundOrOpenWorkflowFor(workflowId)
+  if (!target || target.path !== workflowStore.activeWorkflow?.path) return null
+  return serializedCanvas(target) ?? null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {
@@ -857,7 +883,8 @@ const {
       const [x, y, width, height] = canvas.ds.visible_area
       return { x, y, width, height }
     }
-  }
+  },
+  canvasForWorkflow
 )
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing

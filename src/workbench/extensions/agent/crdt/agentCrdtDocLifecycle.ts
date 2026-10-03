@@ -264,6 +264,43 @@ export class AgentCrdtDocLifecycle {
     return false
   }
 
+  /**
+   * A `stale_schema_reseed_required` refusal was answered with a
+   * `doc_reseed`. The answer is owed, so it gets the same silent-ack budget a
+   * subscribe does. An ok/conflict result resubscribes through the bridge; a
+   * retryable result uses the bounded refused-subscribe backoff.
+   */
+  onReseedSent(workflowId: string): void {
+    this.clearStaleProbe()
+    this.onSubscribeSent(workflowId)
+  }
+
+  /**
+   * Whether the bounded subscribe-retry ladder still has an attempt left.
+   *
+   * {@link scheduleSubscribeRetry} stops scheduling once the budget is spent
+   * but does NOT latch `gaveUp`, so nothing gates `shouldDeferSubscribe` and a
+   * refusal the client can never answer keeps re-driving a subscribe on every
+   * `status` frame — silently, for the life of the binding. A caller that
+   * knows its refusal is unanswerable reads this to convert the spent ladder
+   * into the permanent refusal it has become.
+   */
+  hasSubscribeRetriesLeft(): boolean {
+    return this.subscribeRetryAttempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS
+  }
+
+  /**
+   * The server returned a final, non-retryable refusal to re-mint the document
+   * this tab cannot read. Stop probing without reporting. Released by the same
+   * lifecycle edges as a give-up (confirm, reconnect, retarget).
+   */
+  stopProbing(): void {
+    this.clearAckTimer()
+    this.clearSubscribeRetry()
+    this.clearStaleProbe()
+    this.gaveUp = true
+  }
+
   onSubscribeSent(workflowId: string): void {
     this.clearAckTimer()
     this.confirmedSinceLastSend = false
