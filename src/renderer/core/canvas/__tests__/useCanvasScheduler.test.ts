@@ -88,6 +88,36 @@ describe('createCanvasScheduler', () => {
     })
   })
 
+  it('replaces pending keyed work when an operation schedules during flush', () => {
+    const scheduler = createCanvasScheduler()
+    const calls: string[] = []
+    const second = createTestCanvasElement({ visible: false })
+    document.body.append(second)
+    setCanvasVisible(storeCanvas, false)
+
+    scheduler.schedule({
+      run: () => {
+        calls.push('first')
+        scheduler.schedule({
+          key: 'camera',
+          isCurrent: () => true,
+          run: () => calls.push('replacement')
+        })
+      }
+    })
+    scheduler.schedule({
+      key: 'camera',
+      element: second,
+      isCurrent: () => true,
+      run: () => calls.push('original')
+    })
+
+    setCanvasVisible(storeCanvas, true)
+    scheduler.flush()
+
+    expect(calls).toEqual(['first', 'replacement'])
+  })
+
   it('discards queued work whose canvas was detached', () => {
     const scheduler = createCanvasScheduler()
     const run = vi.fn()
