@@ -286,7 +286,6 @@ export const hostVisibleValues = {
   refImageSize: HOST_REF_IMAGE_SIZE
 }
 
-/** The stale values those same rows show before catch-up. */
 export const staleVisibleValues = {
   width: String(STALE_SOURCE_VALUES.width),
   height: String(STALE_SOURCE_VALUES.height),
