@@ -1133,10 +1133,6 @@
       "youGet": "获得积分",
       "youPay": "支付金额（美元）"
     },
-    "unified": {
-      "message": "积分已合并",
-      "tooltip": "我们统一了 Comfy 的支付方式。现在全部使用 Comfy 积分 :\n- 合作节点（API节点）\n- Cloud 工作流\n\n您现有的合作伙伴节点积分将自动转换为 Comfy 积分。"
-    },
     "workspaceCredits": "工作区积分",
     "yourCreditBalance": "您的积分余额"
   },

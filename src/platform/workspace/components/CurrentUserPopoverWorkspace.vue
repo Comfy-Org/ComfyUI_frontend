@@ -82,27 +82,23 @@
 
     <!-- Credits Section -->
 
-    <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
+    <div
+      v-if="!accountActionsOnly"
+      class="flex items-center gap-2 px-4 py-2"
+      data-testid="credits-section"
+    >
       <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton
         v-if="isLoadingBalance"
         width="4rem"
         height="1.25rem"
-        class="w-full"
-      />
-      <span v-else class="text-base font-semibold text-base-foreground">{{
-        displayedCredits
-      }}</span>
-      <Button
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-sm"
         class="mr-auto"
-        :aria-label="$t('credits.unified.tooltip')"
-        data-testid="credits-info-button"
+      />
+      <span
+        v-else
+        class="mr-auto text-base font-semibold text-base-foreground"
+        >{{ displayedCredits }}</span
       >
-        <i class="icon-[lucide--circle-help]" />
-      </Button>
       <Button
         v-if="canTopUp"
         variant="secondary"

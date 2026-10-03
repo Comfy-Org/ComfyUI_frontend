@@ -1133,10 +1133,6 @@
       "youGet": "Crédits",
       "youPay": "Montant (USD)"
     },
-    "unified": {
-      "message": "Les crédits ont été unifiés",
-      "tooltip": "Nous avons unifié les paiements sur Comfy. Tout fonctionne désormais avec les Comfy Credits :\n- Nœuds partenaires (anciennement nœuds API)\n- Workflows cloud\n\nVotre solde de nœuds partenaires a été converti en crédits."
-    },
     "workspaceCredits": "Crédits de l’espace de travail",
     "yourCreditBalance": "Votre solde de crédits"
   },

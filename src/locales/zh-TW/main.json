@@ -1133,10 +1133,6 @@
       "youGet": "點數",
       "youPay": "金額（美元）"
     },
-    "unified": {
-      "message": "點數已統一",
-      "tooltip": "我們已統一 Comfy 的付款系統。現在一切都以 Comfy 點數運作：\n- 合作夥伴節點（原 API 節點）\n- 雲端工作流程\n\n您原有的合作夥伴節點餘額已轉換為點數。"
-    },
     "workspaceCredits": "工作區點數",
     "yourCreditBalance": "您的點數餘額"
   },

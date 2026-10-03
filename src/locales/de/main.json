@@ -1133,10 +1133,6 @@
       "youGet": "Credits",
       "youPay": "Betrag (USD)"
     },
-    "unified": {
-      "message": "Credits wurden vereinheitlicht",
-      "tooltip": "Wir haben Zahlungen in Comfy vereinheitlicht. Alles läuft jetzt über Comfy Credits:\n- Partner-Nodes (ehemals API-Nodes)\n- Cloud-Workflows\n\nIhr vorhandenes Guthaben für Partner-Nodes wurde in Credits umgewandelt."
-    },
     "workspaceCredits": "Workspace-Credits",
     "yourCreditBalance": "Ihr Credit-Guthaben"
   },
