@@ -49,7 +49,7 @@ vi.mock('@/scripts/app', () => ({
         last_link_id: 0
       }))
     },
-    loadGraphData: vi.fn(() => Promise.resolve()),
+    loadGraphData: vi.fn(() => Promise.resolve(true)),
     canvas: {
       ds: { scale: 1, offset: [0, 0] }
     },
@@ -1205,6 +1205,20 @@ describe('ChangeTracker', () => {
   })
 
   describe('undo and redo', () => {
+    it('preserves history when an undo load is superseded', async () => {
+      const initial = createState(1)
+      const changed = createState(2)
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(undefined)
+
+      await tracker.undo()
+
+      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.undoQueue).toEqual([initial])
+      expect(tracker.redoQueue).toEqual([])
+    })
+
     it('dispatches autoQueueGraphChanged for a data change in both directions', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)
