@@ -42,10 +42,7 @@ import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
-import {
-  isWorkspaceBillingRequiredError,
-  parseErrorResponse
-} from '@/platform/remote/comfyui/errors'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -603,19 +600,9 @@ function useSubscriptionInternal() {
   }
 
   const manageSubscription = async () => {
-    let didOpenPortal: boolean | undefined
-    try {
-      didOpenPortal = await openBillingPortal('manage_subscription')
-    } catch (err) {
-      // The legacy billing adapter recovers from a rail-mismatch refusal.
-      if (isWorkspaceBillingRequiredError(err)) throw err
-      reportError(err)
+    if (await openBillingPortal('manage_subscription')) {
+      startCancellationWatcher()
     }
-    if (!didOpenPortal) {
-      return
-    }
-
-    startCancellationWatcher()
   }
 
   const requireActiveSubscription = async (): Promise<void> => {
