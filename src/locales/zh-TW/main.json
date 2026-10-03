@@ -5185,6 +5185,13 @@
     },
     "invite": "邀請",
     "inviteLimitReached": "您已達到 {count} 位成員的上限",
+    "inviteLinks": {
+      "copied": "已複製！",
+      "copyAll": "複製邀請連結 | 複製全部連結（{count}）",
+      "copyLink": "複製邀請連結",
+      "sentLead": "每封邀請都有專屬連結，您可以直接分享：",
+      "sentTitle": "已送出 {count} 封邀請 | 已送出 {count} 封邀請"
+    },
     "inviteMember": "邀請成員",
     "inviteMemberDialog": {
       "failedCount": "無法發送 {count} 封邀請，請再試一次。",
@@ -5212,6 +5219,7 @@
       "actions": {
         "cancelInvite": "取消邀請",
         "changeRole": "變更角色",
+        "copyInviteLink": "複製邀請連結",
         "removeMember": "移除成員",
         "resendInvite": "重新發送邀請",
         "setCreditLimit": "設定點數上限"

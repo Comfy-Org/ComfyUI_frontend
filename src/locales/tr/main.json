@@ -5185,6 +5185,13 @@
     },
     "invite": "Davet Et",
     "inviteLimitReached": "En fazla {count} üyeye ulaştınız",
+    "inviteLinks": {
+      "copied": "Kopyalandı!",
+      "copyAll": "Davet bağlantısını kopyala | Tüm bağlantıları kopyala ({count})",
+      "copyLink": "Davet bağlantısını kopyala",
+      "sentLead": "Her davetin doğrudan paylaşabileceğiniz kişisel bir bağlantısı vardır:",
+      "sentTitle": "{count} davet gönderildi | {count} davet gönderildi"
+    },
     "inviteMember": "Üye Davet Et",
     "inviteMemberDialog": {
       "failedCount": "{count} davet gönderilemedi. Tekrar deneyin. | {count} davet gönderilemedi. Tekrar deneyin.",
@@ -5212,6 +5219,7 @@
       "actions": {
         "cancelInvite": "Daveti iptal et",
         "changeRole": "Rolü değiştir",
+        "copyInviteLink": "Davet bağlantısını kopyala",
         "removeMember": "Üyeyi kaldır",
         "resendInvite": "Daveti yeniden gönder",
         "setCreditLimit": "Kredi limiti belirle"
