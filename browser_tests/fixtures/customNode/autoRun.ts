@@ -2,6 +2,7 @@
 // rest are recorded with the reason, never silently dropped.
 import { chunk } from 'es-toolkit'
 
+import { packLedgerFor } from '@e2e/fixtures/customNode/packLedger'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 
 type AutoRunClass =
@@ -187,6 +188,13 @@ export const AUTO_RUN_WIDGET_INPUTS: Record<
     VHS_LoadVideoFFmpegPath: { video: 'input/plain_video.mp4' },
     VHS_LoadVideoPath: { video: 'input/plain_video.mp4' }
   }
+}
+
+export function evaluateWidgetInputs(
+  pack: string,
+  nodeKey: string
+): Record<string, string> {
+  return packLedgerFor(AUTO_RUN_WIDGET_INPUTS, pack)[nodeKey] ?? {}
 }
 
 export const CLOUD_RUN_EXCLUSIONS: Record<

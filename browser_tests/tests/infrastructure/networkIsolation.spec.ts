@@ -105,6 +105,45 @@ test.describe('Network isolation', { tag: '@smoke' }, () => {
     )
   })
 
+  test('mocks registry release popups on context', async ({
+    page,
+    context
+  }) => {
+    for (const host of ['api.comfy.org', 'stagingapi.comfy.org']) {
+      for (const path of ['/releases', '/releases?channel=test']) {
+        const url = `https://${host}${path}`
+        const popupPromise = context.waitForEvent('page')
+        await page.evaluate((target) => window.open(target), url)
+        const popup = await popupPromise
+        await expect(popup.locator('body')).toHaveText('[]')
+        await expect(popup).toHaveURL(url)
+        await popup.close()
+      }
+    }
+  })
+
+  for (const [name, url, method] of [
+    ['release subpath', 'https://api.comfy.org/releases/anything', 'GET'],
+    ['release prefix', 'https://api.comfy.org/releases-notes', 'GET'],
+    ['non-GET release', 'https://api.comfy.org/releases', 'POST'],
+    ['plaintext release', 'http://api.comfy.org/releases', 'GET'],
+    ['off-port release', 'https://api.comfy.org:444/releases', 'GET']
+  ] as const) {
+    test(`blocks ${name}`, async ({ page }) => {
+      expect(
+        await page.evaluate(
+          ({ url, method }) =>
+            fetch(url, { method }).then(
+              () => 'loaded',
+              () => 'blocked'
+            ),
+          { url, method }
+        )
+      ).toBe('blocked')
+      test.fail(true, 'The network fixture must report the blocked request')
+    })
+  }
+
   test('fails the owning test for an unmocked popup', async ({
     page,
     context
