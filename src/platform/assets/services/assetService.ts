@@ -23,6 +23,7 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
+  MODEL_TYPE_TAG_PREFIX,
   getAssetCategories,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -489,16 +490,24 @@ function createAssetService() {
    * @returns The list of model filenames within the specified folder
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
     const buckets = await loadModelBuckets()
     const folderSegments = folder.split('/')
     const fallbackAssets =
       folderSegments.length > 1
         ? buckets
             .get(folderSegments[0])
-            ?.filter((asset) =>
-              asset.tags.some(
-                (tag) => tag === folder || tag.startsWith(`${folder}/`)
-              )
+            ?.filter(
+              (asset) =>
+                asset.tags.every(
+                  (tag) =>
+                    !modelTypeMode ||
+                    !tag.startsWith(MODEL_TYPE_TAG_PREFIX) ||
+                    tag === MODEL_TYPE_TAG_PREFIX
+                ) &&
+                asset.tags.some(
+                  (tag) => tag === folder || tag.startsWith(`${folder}/`)
+                )
             )
         : undefined
     const assets = buckets.get(folder) ?? fallbackAssets
