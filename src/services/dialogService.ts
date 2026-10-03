@@ -619,8 +619,7 @@ export const useDialogService = () => {
         closable: true,
         // Contents bring their own width and separators — shrink-wrap the
         // chrome and zero the section padding.
-        contentClass:
-          'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] border-border-default',
+        contentClass: `${HUG_CONTENT_CLASS} border-border-default`,
         headerClass: 'p-0',
         bodyClass: 'p-0 overflow-y-hidden',
         footerClass: 'p-0',
@@ -1044,7 +1043,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           closable: false,
           contentClass:
-            'w-170 max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(42.5rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden',
+            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[min(42.5rem,calc(100vw-1rem))] rounded-2xl overflow-hidden',
           onRemoved: () => resolve()
         }
       })
