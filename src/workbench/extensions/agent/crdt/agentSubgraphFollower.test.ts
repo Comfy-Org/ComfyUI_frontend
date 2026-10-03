@@ -944,11 +944,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expectNode3RebuiltAsHost(state)
   })
 
-  it('S1u reports drift on load when the definition promotes nothing', () => {
+  it('S1u reports drift on a catch-up frame when the definition promotes nothing', () => {
     // PM-1902: the definition in the document carries no interior, so nothing
     // on the host is promoted while its opaque array still carries a value.
-    // The load path configured that array positionally over a host with no
-    // widgets, dropping the value with no telemetry at all.
+    // Before this guard the create path configured that array positionally over
+    // a host with no widgets, dropping the value with no telemetry at all.
+    // The frame is a catch-up rather than a lineage replace, so the drift is
+    // tagged `incremental`; S1w and S1y cover the `load` tag.
     const state = startFollower({ unpromotedDefinition: true })
 
     expect(state.instance.inputs.map((i) => i.widgetId)).toEqual([undefined])
@@ -970,11 +972,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     )
   })
 
-  it('S1v keeps host defaults on load when the opaque array is longer', () => {
-    // The load path handed the array straight to `configure`, which binds
+  it('S1v keeps host defaults on a catch-up frame when the opaque array is longer', () => {
+    // The create path handed the array straight to `configure`, which binds
     // positionally over the host's widgets, so a two-value array landed its
     // first value on the single promoted widget. `applyHostWidgets` refuses
     // that same mapping on the incremental path (S1c); both paths must.
+    // Same catch-up framing as S1u: the assertion below is the `incremental`
+    // tag, not the `load` one.
     const state = startFollower({ hostWidgetValues: [99, 77] })
 
     expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
@@ -1019,6 +1023,58 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
           expected: 2,
           actual: 2,
           phase: 'incremental'
+        })
+      })
+    )
+  })
+
+  it('S1y keeps host defaults on load when the opaque array is shorter', () => {
+    // The production shape: a host carrying fewer opaque values than its
+    // definition promotes, arriving through a document-lineage replace. Index 0
+    // is only "obviously" the first promoted input while writer and reader
+    // agree on the promoted surface; a reorder or removal makes the prefix land
+    // on the wrong widget, so the load path refuses the whole array rather than
+    // applying part of it.
+    const state = startFollower({
+      extraInput: true,
+      promoteExtra: true,
+      hostWidgetValues: [99],
+      replaceOnFirstFrame: true
+    })
+
+    expect(state.instance.widgets.map((widget) => widget.name)).toEqual([
+      'extra',
+      'value'
+    ])
+    expect(state.instance.widgets.map((widget) => widget.value)).toEqual([
+      INTERIOR_DEFAULT_VALUE,
+      INTERIOR_DEFAULT_VALUE
+    ])
+    expect(storedHostWidgets(state)).toEqual([
+      ['extra', INTERIOR_DEFAULT_VALUE],
+      ['value', INTERIOR_DEFAULT_VALUE]
+    ])
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining(
+          'carries 1 opaque widget values for 2 promoted widgets'
+        )
+      }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 2,
+          actual: 1,
+          phase: 'load',
+          // The load/create guard is the site that must adjudicate, and it
+          // reports the two promoted surfaces it compared. Without these the
+          // refusal came from the incremental guard downstream, which sees only
+          // the post-configure surface and cannot name what the array was
+          // validated against.
+          expectedPromotedIds: ['1:extra', '1:value'],
+          actualPromotedIds: ['1:extra', '1:value']
         })
       })
     )
