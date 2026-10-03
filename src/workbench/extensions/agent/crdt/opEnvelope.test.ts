@@ -1,5 +1,4 @@
 import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import type { Op } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
@@ -7,6 +6,7 @@ import {
   WIRE_MAX_BATCH_BYTES,
   WIRE_MAX_OPS_PER_BATCH,
   chunkWireOps,
+  measureWireOp,
   mintOpId,
   mintWireOps
 } from './opEnvelope'
@@ -89,10 +89,10 @@ describe('chunkWireOps', () => {
       Array.from({ length: 600 }, (_, i) => addNode(i)),
       MINT
     )
-    const batches = chunkWireOps(ops)
+    const batches = chunkWireOps(ops.map(measureWireOp))
 
     expect(batches.map((b) => b.length)).toEqual([256, 256, 88])
-    expect(batches.flat()).toEqual(ops)
+    expect(batches.flat().map((sized) => sized.op)).toEqual(ops)
     expect(WIRE_MAX_OPS_PER_BATCH).toBe(256)
   })
 
@@ -100,9 +100,9 @@ describe('chunkWireOps', () => {
     const clear: GraphOperation = { op: 'clear', removed_nodes: [1, 2] }
     const ops = mintWireOps([addNode(1), clear, addNode(2)], MINT)
 
-    const batches = chunkWireOps(ops)
+    const batches = chunkWireOps(ops.map(measureWireOp))
 
-    expect(batches.map((b) => b.map((op) => op.op))).toEqual([
+    expect(batches.map((b) => b.map((sized) => sized.op.op))).toEqual([
       ['add_node'],
       ['clear'],
       ['add_node']
@@ -119,7 +119,7 @@ describe('chunkWireOps', () => {
     })
     const ops = mintWireOps([setWidget(1), setWidget(2), setWidget(3)], MINT)
 
-    const batches = chunkWireOps(ops)
+    const batches = chunkWireOps(ops.map(measureWireOp))
 
     expect(batches.length).toBe(3)
     expect(batches.every((b) => b.length === 1)).toBe(true)
@@ -132,16 +132,46 @@ describe('chunkWireOps', () => {
       widget: 'text',
       value: 'x'.repeat(WIRE_MAX_BATCH_BYTES + 16)
     }
-    const ops: Op[] = mintWireOps([huge], MINT)
+    const sized = mintWireOps([huge], MINT).map(measureWireOp)
 
-    expect(chunkWireOps(ops)).toEqual([ops])
+    expect(chunkWireOps(sized)).toEqual([sized])
+  })
+})
+
+describe('measureWireOp', () => {
+  it('reports the UTF-8 wire size, not the UTF-16 length, of the op', () => {
+    const threeByteChars = '日本語'
+    const [op] = mintWireOps(
+      [{ op: 'set_widget', node_id: 1, widget: 'text', value: threeByteChars }],
+      MINT
+    )
+    const json = JSON.stringify(op)
+    const extraBytesPerChar = 2
+
+    expect(measureWireOp(op)).toEqual({
+      op,
+      wire: JSON.parse(json),
+      bytes: json.length + threeByteChars.length * extraBytesPerChar
+    })
+  })
+
+  it('accepts an op whose toJSON still yields a wire object with its op_id', () => {
+    const [op] = mintWireOps([addNode(1)], MINT)
+    const wire = { ...op }
+    Object.assign(op, { toJSON: () => wire })
+
+    expect(measureWireOp(op)).toEqual({
+      op,
+      wire,
+      bytes: JSON.stringify(wire).length
+    })
   })
 
   it('rejects an op whose toJSON returns undefined', () => {
     const [op] = mintWireOps([addNode(1)], MINT)
     Object.assign(op, { toJSON: () => undefined })
 
-    expect(() => chunkWireOps([op])).toThrow(
+    expect(() => measureWireOp(op)).toThrow(
       'Operation did not serialize to JSON'
     )
   })
@@ -156,7 +186,7 @@ describe('chunkWireOps', () => {
     const [op] = mintWireOps([addNode(1)], MINT)
     Object.assign(op, { toJSON: () => serialized })
 
-    expect(() => chunkWireOps([op])).toThrow(
+    expect(() => measureWireOp(op)).toThrow(
       'Operation did not serialize to a wire object'
     )
   })
