@@ -93,7 +93,7 @@ interface AgentCrdtOutcomeCounters {
 }
 
 function reportAgentProjection(
-  update: ClassifiedDocUpdate,
+  update: Pick<ClassifiedDocUpdate, 'actor' | 'opIds' | 'seq'>,
   nodes: DocNodeDelta,
   failureCount: number,
   applied: boolean
@@ -414,12 +414,22 @@ function startAgentCrdtFollower(
 
   const applyRejectedOps = (
     workflowId: string,
-    rejected: readonly Op[]
+    rejected: readonly Op[],
+    seq: number = bridge.lastSequence
   ): boolean => {
     if (getGraph() === null) return false
-    reportMaterialized(
-      workflowId,
-      projection.revertRejected(workflowId, rejected)
+    const projectionOutcome = projection.revertRejected(workflowId, rejected)
+    if (!projectionOutcome.applied) return false
+    reportMaterialized(workflowId, projectionOutcome.createdNodeIds)
+    reportAgentProjection(
+      {
+        actor: 'agent:revert',
+        opIds: rejected.map((op) => op.op_id),
+        seq
+      },
+      projectionOutcome.nodes,
+      projectionOutcome.failureCount,
+      true
     )
     return true
   }
@@ -459,7 +469,13 @@ function startAgentCrdtFollower(
       ])
       return
     }
-    if (!applyRejectedOps(workflowId, rejected))
+    if (
+      !applyRejectedOps(
+        workflowId,
+        rejected,
+        outcome.result.seq ?? bridge.lastSequence
+      )
+    )
       pendingRejected.set(workflowId, [
         ...(pendingRejected.get(workflowId) ?? []),
         ...rejected
