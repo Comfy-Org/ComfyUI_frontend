@@ -2,6 +2,11 @@ import { getActivePinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
@@ -548,13 +553,20 @@ describe('LLink ↔ linkStore integration', () => {
     const first = firstSource.connect(0, target, 0)!
     secondSource.connect(0, target, 1)
 
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockReportError.mockClear()
     expect(() => {
       first.target_slot = 1
     }).not.toThrow()
-    expect(error).toHaveBeenCalledWith(
-      'Failed to update link endpoints',
-      expect.objectContaining({ code: 'occupied-target' })
+    expect(mockReportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'link_endpoint_update_rejected',
+        context: expect.objectContaining({
+          code: 'occupied-target',
+          linkId: first.id,
+          patch: { targetSlot: 1 }
+        })
+      })
     )
     expect(first.target_slot).toBe(0)
   })
