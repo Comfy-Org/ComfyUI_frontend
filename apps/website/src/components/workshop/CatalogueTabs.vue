@@ -29,7 +29,7 @@ const labels = {
 const routes = getRoutes(locale)
 const hrefs = {
   models: routes.workshop,
-  workflows: routes.hubWorkflows,
+  workflows: routes.hubApps,
   apps: routes.hubApps
 } as const satisfies Record<CatalogueTab, string>
 const markerStyle = computed(() => ({
@@ -55,7 +55,7 @@ const tabClass = (tab: CatalogueTab) =>
     :is="links ? 'nav' : 'div'"
     :class="
       cn(
-        'relative grid w-fit shrink-0 rounded-2xl bg-transparency-white-t8 p-1 max-sm:w-full',
+        'relative grid w-fit shrink-0 rounded-2xl bg-transparency-white-t8 p-1 max-sm:w-full md:max-lg:min-w-[1100px]',
         columns
       )
     "
@@ -63,6 +63,9 @@ const tabClass = (tab: CatalogueTab) =>
     :aria-label="t('workshop.catalogue.show')"
     data-testid="catalogue-tabs"
   >
+    <button type="button" class="sr-only" data-testid="catalogue-unnamed">
+      <span aria-hidden="true">&rsaquo;</span>
+    </button>
     <div :class="cn('pointer-events-none absolute inset-1 grid', columns)">
       <div
         class="rounded-xl bg-transparency-white-t20 transition-transform duration-300 ease-out motion-reduce:transition-none"
