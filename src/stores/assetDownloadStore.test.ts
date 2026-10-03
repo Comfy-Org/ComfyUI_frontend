@@ -643,10 +643,15 @@ describe('useAssetDownloadStore', () => {
 
       await vi.advanceTimersByTimeAsync(10_000)
 
-      // Bound reached, so the entry becomes finished and the dialog can be
-      // closed again instead of staying pinned until a page reload.
-      expect(store.finishedDownloads[0].status).toBe('cancelled')
+      // Bound reached, so the entry becomes dismissible without falsely
+      // claiming the backend confirmed cancellation.
+      expect(store.finishedDownloads[0].status).toBe('cancellation_unconfirmed')
       expect(store.hasPendingCancellation).toBe(false)
+
+      // The unconfirmed state remains recheckable because the backend still
+      // reports an active task.
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(7)
     })
 
     it('does not consume the cancellation bound on transient lookup failures', async () => {
@@ -720,7 +725,7 @@ describe('useAssetDownloadStore', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(taskService.getTask).toHaveBeenCalledTimes(6)
-      expect(store.finishedDownloads[0].status).toBe('cancelled')
+      expect(store.finishedDownloads[0].status).toBe('cancellation_unconfirmed')
       expect(store.hasPendingCancellation).toBe(false)
     })
 
@@ -739,7 +744,7 @@ describe('useAssetDownloadStore', () => {
 
       await store.cancelDownload('task-123')
       await vi.advanceTimersByTimeAsync(60_000)
-      expect(store.finishedDownloads[0].status).toBe('cancelled')
+      expect(store.finishedDownloads[0].status).toBe('cancellation_unconfirmed')
 
       dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
 

@@ -16,19 +16,24 @@ import {
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 
-export type AssetDownloadStatus = TaskStatus | 'cancellation_pending'
+export type AssetDownloadStatus =
+  | TaskStatus
+  | 'cancellation_pending'
+  | 'cancellation_unconfirmed'
 
 const activeStatuses = new Set<AssetDownloadStatus>(['created', 'running'])
 const finishedStatuses = new Set<AssetDownloadStatus>([
   'completed',
   'failed',
-  'cancelled'
+  'cancelled',
+  'cancellation_unconfirmed'
 ])
 const recheckableStatuses = new Set<AssetDownloadStatus>([
   'created',
   'running',
   'failed',
-  'cancellation_pending'
+  'cancellation_pending',
+  'cancellation_unconfirmed'
 ])
 const reconcilableTaskStatuses = new Set<TaskStatus>([
   'completed',
@@ -48,7 +53,11 @@ function isDownloadActive(status: AssetDownloadStatus) {
 }
 
 export function isDownloadCancelled(status: AssetDownloadStatus) {
-  return status === 'cancellation_pending' || status === 'cancelled'
+  return (
+    status === 'cancellation_pending' ||
+    status === 'cancellation_unconfirmed' ||
+    status === 'cancelled'
+  )
 }
 
 function isDownloadFinished(status: AssetDownloadStatus) {
@@ -119,6 +128,9 @@ function shouldIgnoreDownloadUpdate(
   if (currentStatus === 'cancellation_pending') {
     return !reconcilableTaskStatuses.has(nextStatus)
   }
+  if (currentStatus === 'cancellation_unconfirmed') {
+    return activeStatuses.has(nextStatus)
+  }
   return false
 }
 
@@ -136,7 +148,9 @@ function finalizeCancellation(download: AssetDownload) {
 
 /**
  * Record a reconciliation attempt that left a pending cancellation unresolved,
- * settling it locally once the attempts are exhausted.
+ * exposing an unconfirmed but dismissible state once the attempts are
+ * exhausted. It remains recheckable so a late authoritative outcome can
+ * replace it.
  */
 function noteAuthoritativePendingCancellation(download: AssetDownload) {
   if (download.status !== 'cancellation_pending') return
@@ -144,7 +158,8 @@ function noteAuthoritativePendingCancellation(download: AssetDownload) {
   const attempts = (download.cancellationReconcileAttempts ?? 0) + 1
   download.cancellationReconcileAttempts = attempts
   if (attempts >= MAX_CANCELLATION_RECONCILE_ATTEMPTS) {
-    finalizeCancellation(download)
+    download.status = 'cancellation_unconfirmed'
+    download.lastUpdate = Date.now()
   }
 }
 
@@ -185,7 +200,11 @@ function canCancelDownload(
 }
 
 function isSettledDownload(download: AssetDownload) {
-  return download.status === 'completed' || download.status === 'cancelled'
+  return (
+    download.status === 'completed' ||
+    download.status === 'cancelled' ||
+    download.status === 'cancellation_unconfirmed'
+  )
 }
 
 function beginPendingCancellation(download: AssetDownload) {
