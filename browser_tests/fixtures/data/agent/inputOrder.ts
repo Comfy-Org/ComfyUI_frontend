@@ -93,11 +93,20 @@ const HOST_SOURCE_VALUES: SourceValues = {
 
 const HOST_REF_IMAGE_SIZE = 'max'
 
+const DIMENSION_LINK_IDS = [276, 277, 275] as const
+type DimensionLinkId = (typeof DIMENSION_LINK_IDS)[number]
+
 /**
  * Origin slot each dimension link carries in the host document: `width`
- * reads node 1's `width` output, and so on down the three.
+ * reads node 1's `width` output, and so on down the three. `satisfies` so
+ * that an id dropped from `DIMENSION_LINK_IDS` cannot leave a stale entry
+ * here, or a link out of node 1's outputs while it stays in the tuples.
  */
-const HOST_ORIGIN_SLOT = { 276: 0, 277: 1, 275: 2 } as const
+const HOST_ORIGIN_SLOT = {
+  276: 0,
+  277: 1,
+  275: 2
+} satisfies Record<DimensionLinkId, number>
 
 const STALE_SOURCE_VALUES: SourceValues = {
   width: 512,
@@ -115,20 +124,15 @@ const STALE_REF_IMAGE_SIZE = 'match'
  * untouched, so the only thing wrong is which named output feeds which named
  * input — the binding this fixture exists to pin.
  */
-const STALE_ORIGIN_SLOT = { 276: 1, 277: 2, 275: 0 } as const
+const STALE_ORIGIN_SLOT = {
+  276: 1,
+  277: 2,
+  275: 0
+} satisfies Record<DimensionLinkId, number>
 
-type DimensionLinkId = keyof typeof HOST_ORIGIN_SLOT
-
-const DIMENSION_LINK_IDS = [276, 277, 275] as const
-
-/**
- * One revision of the saved workflow, built from the three things the two
- * revisions disagree about. Both are built this way so neither can drift
- * structurally against the other: only `values`, `originSlot` and
- * `refImageSize` differ.
- *
- * Reduced saved-workflow topology from PR #17221, not a recorded Agent turn.
- */
+// Reduced saved-workflow topology from PR #17221, not a recorded Agent turn.
+// Both revisions go through here so neither can drift structurally against
+// the other.
 function buildSeed(
   values: SourceValues,
   originSlot: Record<DimensionLinkId, number>,
@@ -222,24 +226,20 @@ function buildSeed(
 }
 
 /** The revision the host document is minted from. */
-export const seed: WorkflowJSON = buildSeed(
+export const seed = buildSeed(
   HOST_SOURCE_VALUES,
   HOST_ORIGIN_SLOT,
   HOST_REF_IMAGE_SIZE
 )
 
 /**
- * The revision the tab already holds when the host's catch-up arrives.
- *
- * Without this divergence the fixture would load the host's own seed onto the
- * canvas, the spec's visible-value and binding assertions would already be
- * true before `doc_subscribe` was answered, and a follower that started
- * skipping catch-up over nodes the graph already holds would leave the spec
- * green. Node 2's `prompt` and `ref_images` bindings are deliberately the
- * same in both revisions: the divergence is node 1's widget values, node 2's
- * `ref_image_size`, and the three rotated dimension origins.
+ * The revision the tab already holds when the host's catch-up arrives. It
+ * has to differ from `seed`: loading the host's own seed onto the canvas
+ * would make the spec's visible-value and binding assertions true before
+ * `doc_subscribe` was answered, so a follower that skipped catch-up over
+ * nodes the graph already holds would leave the spec green.
  */
-export const staleCanvasSeed: WorkflowJSON = buildSeed(
+export const staleCanvasSeed = buildSeed(
   STALE_SOURCE_VALUES,
   STALE_ORIGIN_SLOT,
   STALE_REF_IMAGE_SIZE

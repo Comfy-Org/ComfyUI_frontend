@@ -49,8 +49,15 @@ test.describe(
       expect(staleLength).not.toEqual(hostLength)
       expect(staleRefImageSize).not.toEqual(hostRefImageSize)
 
-      // Node id → serialized execution inputs, as `/api/prompt` would
-      // receive them.
+      // The host's three named bindings, pinned as literals rather than read
+      // off the fixture: `seed` and `hostPrompt` are both generated from one
+      // origin map, so a wrong permutation in it would move the fixture and
+      // the expectation together and the comparison below would still pass.
+      // Node 1 names output slots 0/1/2 `width`/`height`/`length`.
+      expect(hostWidth).toEqual(['1', 0])
+      expect(hostHeight).toEqual(['1', 1])
+      expect(hostLength).toEqual(['1', 2])
+
       const executionInputs = () =>
         page.evaluate(async () =>
           Object.fromEntries(
