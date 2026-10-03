@@ -44,8 +44,8 @@ export interface ExtensionLoadFailure {
  * throwing, so one broken pack cannot abort the rest of the parallel load.
  *
  * Reporting deliberately does not happen here. A systemic failure — a backend
- * restart, or a proxy serving HTML for every `.js` — rejects the whole list at
- * once, and one report per extension is then unbounded. Off cloud that is
+ * restart, or a proxy serving HTML for every `.js` — fails every import in the
+ * list, and one report per extension is then unbounded. Off cloud that is
  * actively harmful: with no sink live, each report is held in `reportError`'s
  * 25-entry pending buffer, so a handful of broken packs during bootstrap would
  * silently crowd out every later error in the session. The batch is reported
@@ -62,12 +62,9 @@ async function importCustomExtension(
 }
 
 /**
- * Report one load's worth of extension import failures as a single typed error.
- *
- * Only the count is tagged. The paths are backend-controlled and unbounded,
- * which is not something to index as a Sentry/RUM facet, so they ride in
- * context instead.
- *
+ * The paths go in the message because `reportError` writes its console line
+ * from the error, not from `options.tags`. The count is tagged; backend paths
+ * are unbounded and belong in context instead of an indexed facet.
  */
 export function reportExtensionLoadFailures(
   failures: ExtensionLoadFailure[]

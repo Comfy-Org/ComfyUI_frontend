@@ -41,7 +41,6 @@ describe('bootstrapTracer', () => {
 
   it('records extension loading subphases inside the aggregate load phase', async () => {
     const tracer = new BootstrapTracer()
-    // Containment has to be read off the mark stream, because nothing on
     // happy-dom reports a constant performance.measure() duration, so
     // containment is read from mark order rather than from durations.
     const mark = vi.spyOn(performance, 'mark')

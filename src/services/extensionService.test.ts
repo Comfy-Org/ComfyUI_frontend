@@ -128,6 +128,7 @@ describe('extension loading', () => {
         'Error loading 2 extensions: /extensions/pack-a/main.js, /extensions/pack-b/main.js'
       )
       expect(options.tags).toEqual({ failed_extension_count: 2 })
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('stays silent when no custom extensions are listed', async () => {
