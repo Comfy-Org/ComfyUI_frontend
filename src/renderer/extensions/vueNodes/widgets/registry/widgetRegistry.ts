@@ -61,6 +61,9 @@ const CameraInfo = defineAsyncComponent(
 const CameraAngle = defineAsyncComponent(
   () => import('@/components/cameraAngle/CameraAngle.vue')
 )
+const LightInfo = defineAsyncComponent(
+  () => import('@/components/lightInfo/LightInfo.vue')
+)
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
 )
@@ -228,6 +231,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'lightinfo',
+    {
+      component: LightInfo,
+      aliases: ['LIGHT_INFO_PREVIEW', 'lightInfo'],
+      essential: false
+    }
+  ],
+  [
     'imagecrop',
     {
       component: WidgetImageCrop,
@@ -341,6 +352,7 @@ const EXPANDING_TYPES = [
   'load3DAdvanced',
   'cameraInfo',
   'cameraAngle',
+  'lightinfo',
   'curve',
   'painter',
   'compositor',
