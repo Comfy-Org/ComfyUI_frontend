@@ -12,7 +12,6 @@ import {
   parseCoverageTable
 } from './router-provider-drift'
 
-const DOCS_ORIGIN = 'https://docs.comfy.org'
 
 describe('fetchText', () => {
   it('recovers when a source fails once and then responds', async () => {
