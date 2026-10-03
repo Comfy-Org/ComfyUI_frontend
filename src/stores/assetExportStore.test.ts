@@ -282,7 +282,7 @@ describe('assetExportStore triggerDownload', () => {
       name: 'a server-relative URL under the API base',
       url: '/api/view?filename=e.zip&type=temp&subfolder=exports',
       expected:
-        'http://localhost:3000/comfy/api/view?filename=e.zip&type=temp&subfolder=exports'
+        'http://localhost:3000/api/view?filename=e.zip&type=temp&subfolder=exports'
     },
     {
       name: 'an absolute signed URL unchanged',
