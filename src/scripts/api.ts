@@ -145,9 +145,14 @@ interface QueuePromptRequestBody {
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
+/** Which cloud auth path a request actually took, for error diagnostics (PM-1802). */
+export type AuthScheme = 'web-session' | 'cloud-auth-header' | 'none'
+
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
   onAuthHeader?: (attached: boolean) => void
+  /** Reports which auth path was taken, independent of onAuthHeader's attached/not boolean. */
+  onAuthScheme?: (scheme: AuthScheme) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -635,6 +640,7 @@ export class ComfyApi extends EventTarget {
     const {
       timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
       onAuthHeader,
+      onAuthScheme,
       ...requestOptions
     } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
@@ -646,11 +652,14 @@ export class ComfyApi extends EventTarget {
       sendOnWebSession = await this.getWebSessionSend()
       if (sendOnWebSession) {
         onAuthHeader?.(true)
+        onAuthScheme?.('web-session')
       } else {
         unifiedRetryOn401 = await this.addCloudAuthHeader(headers, onAuthHeader)
+        onAuthScheme?.('cloud-auth-header')
       }
     } else {
       onAuthHeader?.(false)
+      onAuthScheme?.('none')
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)

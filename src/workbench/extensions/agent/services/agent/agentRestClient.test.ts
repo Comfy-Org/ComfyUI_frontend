@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 import {
   AgentApiError,
@@ -26,6 +29,13 @@ function jsonResponse(
 
 function respond(response: Response) {
   vi.mocked(api.fetchApi).mockResolvedValueOnce(response)
+}
+
+function respondWithAuthScheme(response: Response, scheme: AuthScheme) {
+  vi.mocked(api.fetchApi).mockImplementationOnce(async (_route, init) => {
+    init?.onAuthScheme?.(scheme)
+    return response
+  })
 }
 
 function lastCall(): { route: string; init: RequestInit } {
@@ -67,6 +77,7 @@ const turnAccepted = {
 
 beforeEach(() => {
   vi.mocked(api.fetchApi).mockReset()
+  vi.mocked(reportError).mockReset()
 })
 
 describe('agentRestClient route + method', () => {
@@ -506,6 +517,60 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error).not.toBeInstanceOf(AgentApiError)
+  })
+
+  it('reports the failing route, status and auth scheme on a 401 (PM-1802)', async () => {
+    respondWithAuthScheme(
+      jsonResponse(401, {
+        error: 'Authentication method not allowed for this endpoint'
+      }),
+      'web-session'
+    )
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_api_auth_rejected',
+        tags: expect.objectContaining({
+          route: expect.stringContaining('/agent/threads/t-1/messages'),
+          status: 401,
+          authScheme: 'web-session'
+        })
+      })
+    )
+  })
+
+  it('reports cloud-auth-header as the scheme when that path was taken (PM-1802)', async () => {
+    respondWithAuthScheme(
+      jsonResponse(403, { error: 'access denied' }),
+      'cloud-auth-header'
+    )
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ authScheme: 'cloud-auth-header' })
+      })
+    )
+  })
+
+  it('does not report auth telemetry for a non-auth error status', async () => {
+    respond(jsonResponse(503, { error: 'unavailable' }))
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('keeps a genuinely unreadable POST response distinct without exposing its route', async () => {

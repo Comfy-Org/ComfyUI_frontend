@@ -5,6 +5,8 @@ import type {
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
+import { reportError } from '@/platform/telemetry/reportError'
+import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
 import {
@@ -374,12 +376,28 @@ function asDelaySeconds(seconds: number): number | undefined {
 }
 
 export function createAgentRestClient() {
-  async function toApiError(response: Response): Promise<AgentApiError> {
+  async function toApiError(
+    response: Response,
+    route: string,
+    authScheme: AuthScheme
+  ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
     const message = getErrorMessage(body, response.statusText)
     const retryAfterSeconds = parseRetryAfter(
       response.headers.get('Retry-After')
     )
+    // PM-1802: a prior auth-rejection alert (AgentApiError: authentication
+    // method not allowed) arrived with no failing route and no record of
+    // which auth path was taken, so it couldn't be diagnosed. Reporting both
+    // here, on every non-ok response, means the next occurrence can be.
+    if (response.status === 401 || response.status === 403) {
+      reportError(new Error(message), {
+        surface: 'agent',
+        errorType: 'agent_api_auth_rejected',
+        tags: { route, status: response.status, authScheme },
+        level: 'warning'
+      })
+    }
     return new AgentApiError(message, response.status, body, retryAfterSeconds)
   }
 
@@ -388,8 +406,14 @@ export function createAgentRestClient() {
     init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
   ): Promise<T> {
-    const response = await api.fetchApi(route, init)
-    if (!response.ok) throw await toApiError(response)
+    let authScheme: AuthScheme = 'none'
+    const response = await api.fetchApi(route, {
+      ...init,
+      onAuthScheme: (scheme) => {
+        authScheme = scheme
+      }
+    })
+    if (!response.ok) throw await toApiError(response, route, authScheme)
     let payload: unknown
     try {
       payload = await response.json()
