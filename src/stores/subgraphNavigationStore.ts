@@ -162,13 +162,19 @@ export const useSubgraphNavigationStore = defineStore(
         return
       }
 
-      // First visit — fit to content so subgraph nodes are visible
+      // First visit — fit to content so subgraph nodes are visible.
+      // The scheduler guarantees the canvas is laid out before `run` fires;
+      // the frame hop then lets this release's node layout settle before the
+      // fit measures it, which a synchronous fit would read too early.
       canvasScheduler.schedule({
         key: 'subgraph-navigation-fit',
         isCurrent: () => getActiveGraphId() === graphId,
         run: () => {
-          if (!canvas.graph?.nodes.length) return
-          useLitegraphService().fitView()
+          requestAnimationFrame(() => {
+            if (getActiveGraphId() !== graphId) return
+            if (!canvas.graph?.nodes.length) return
+            useLitegraphService().fitView()
+          })
         }
       })
     }

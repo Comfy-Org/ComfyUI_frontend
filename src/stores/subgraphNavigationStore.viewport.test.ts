@@ -69,8 +69,26 @@ vi.mock('@/services/litegraphService', () => ({
 
 const mockCanvas = app.canvas
 
+/**
+ * The scheduled first-visit fit hops one frame before it measures, so this
+ * release's node layout has settled by the time `fitView` reads it. Capturing
+ * the callbacks rather than running them inline keeps that hop visible to the
+ * tests instead of hiding it behind a synchronous stub.
+ */
+let rafCallbacks: FrameRequestCallback[] = []
+function flushAnimationFrames(): void {
+  const pending = rafCallbacks
+  rafCallbacks = []
+  for (const callback of pending) callback(0)
+}
+
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
+    rafCallbacks = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb)
+      return rafCallbacks.length
+    })
     useCanvasStore().canvas = app.canvas
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     mockCanvas.canvas = createTestCanvasElement({ visible: true })
@@ -179,6 +197,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockGraph._nodes = mockGraph.nodes
 
       store.restoreViewport('root')
+      flushAnimationFrames()
 
       expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
 
@@ -199,7 +218,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
 
-    it('fits the first visit synchronously when the canvas is ready', () => {
+    it('fits the first visit on the next frame when the canvas is ready', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
 
@@ -208,6 +227,10 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockGraph._nodes = mockGraph.nodes
 
       store.restoreViewport('root')
+
+      // The scheduler accepted the op immediately — no second visibility wait.
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
+      flushAnimationFrames()
 
       expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
 
