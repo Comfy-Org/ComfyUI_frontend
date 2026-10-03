@@ -42,7 +42,7 @@
     "build": "pnpm run clean && tsc -p tsconfig.build.json",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "prepack": "pnpm run build",
-    "generate": "openapi-ts && node -e \"const fs=require('fs'); ['src/zod.gen.ts'].forEach(f => fs.writeFileSync(f, fs.readFileSync(f,'utf8').replaceAll(\\\"from 'zod/v3'\\\", \\\"from 'zod'\\\")));\"",
+    "generate": "openapi-ts && node -e \"const fs=require('fs'); ['src/zod.gen.ts'].forEach(f => fs.writeFileSync(f, fs.readFileSync(f,'utf8').replaceAll(\\\"from 'zod/v3'\\\", \\\"from 'zod'\\\"))); const index='src/index.ts'; const before=fs.readFileSync(index,'utf8'); const after=before.replaceAll('  BillingCapabilityDenials,\\n', ''); if(after===before) throw new Error('Generated index did not export BillingCapabilityDenials'); fs.writeFileSync(index, after);\"",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
