@@ -22,6 +22,7 @@ import type {
 } from '@/test/fakeBillingClient'
 import {
   createFakeBillingClient,
+  hostedPendingOperation,
   pendingOperation,
   previewOf,
   succeededOperation
@@ -908,6 +909,35 @@ describe('the full-page checkout exits and endings', () => {
     leavePage()
 
     expect(exitsOf()).toEqual([])
+  })
+
+  it('reports an abandon for a page the customer came Back to from a hosted step, then closed', async () => {
+    const fake = await renderCheckout()
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    form.emit('confirm', 'ctoken_1', 'card')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    const hosted = hostedPendingOperation('https://pay.test/3ds', 'op_hosted')
+    fake.publishOperation(hosted)
+    await waitFor(() =>
+      expect(window.location.assign).toHaveBeenCalledWith(
+        'https://pay.test/3ds'
+      )
+    )
+    leavePage()
+    expect(exitsOf()).toEqual([])
+
+    fake.recover.mockResolvedValue({ status: 'ok', value: hosted })
+    const restored = new Event('pageshow')
+    Object.defineProperty(restored, 'persisted', { value: true })
+    window.dispatchEvent(restored)
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+    leavePage()
+
+    expect(exitsOf()).toEqual([
+      expect.objectContaining({ phase: 'abandoned', exit: 'page_exit' })
+    ])
   })
 
   it('reports an abandon after an ending the customer retried past', async () => {

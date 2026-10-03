@@ -619,11 +619,10 @@ export function useFullPageCheckout() {
   )
 
   /**
-   * A page handed to a hosted step, or to a method's own site by the
-   * challenge of the operation its Pay issued, has not been abandoned.
+   * A page handed to a method's own site by the challenge of the operation
+   * its Pay issued has not been abandoned.
    */
   function leftForPayment() {
-    if (handedToHostedStep) return true
     const current = page.value
     if (current.kind !== 'capture' || current.attempt.kind !== 'sent')
       return false
@@ -636,8 +635,11 @@ export function useFullPageCheckout() {
     )
   }
 
+  /** A hosted handoff covers only the page exit it caused, not one after coming Back. */
   useEventListener(window, 'pagehide', () => {
-    if (!leftForPayment()) journey.abandoned('page_exit')
+    const handedOff = handedToHostedStep
+    handedToHostedStep = false
+    if (!handedOff && !leftForPayment()) journey.abandoned('page_exit')
   })
 
   /**
