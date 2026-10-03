@@ -116,7 +116,10 @@ export async function checkRouterProviderDrift(
     docs.providers,
     ROUTER_SERVING_PROVIDERS.map((provider) => provider.name)
   )
-  assert.ok(docs.rows.every((row) => row.comfy === '✓'))
+  assert.ok(
+    docs.rows.every((row) => row.comfy === '✓'),
+    'every provider coverage row must be served by Comfy'
+  )
   const byDocsUrl = (a: { docsUrl: string }, b: { docsUrl: string }) =>
     a.docsUrl.localeCompare(b.docsUrl)
   assert.deepEqual(

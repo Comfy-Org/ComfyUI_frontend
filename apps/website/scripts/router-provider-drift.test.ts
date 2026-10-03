@@ -197,7 +197,7 @@ ${coverageRows}
       fetchImpl: driftedComfyFetch,
       sleep: async () => {}
     })
-  ).rejects.toThrow()
+  ).rejects.toThrow('every provider coverage row must be served by Comfy')
 
   const [previewRow] = ROUTER_COMFY_ONLY_PREVIEW
   const driftedCatalogFetch = vi.fn<typeof fetch>(async (input) => {
