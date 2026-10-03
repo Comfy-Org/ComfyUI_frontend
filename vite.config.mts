@@ -20,6 +20,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { createDevAgentConfig } from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
+import { resolveSentryUploadConfig } from './build/sentryUploadConfig.ts'
 
 dotenvConfig()
 
@@ -144,6 +145,11 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
     : IS_CLOUD_URL
       ? 'cloud'
       : 'localhost'
+const SENTRY_UPLOAD = resolveSentryUploadConfig({
+  distribution: DISTRIBUTION,
+  isDev: IS_DEV,
+  env: process.env
+})
 
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing
@@ -603,26 +609,13 @@ export default defineConfig({
     // Sentry sourcemap upload plugin
     // Uploads sourcemaps to both staging and prod Sentry projects so that
     // error stack traces are readable in both environments.
-    ...(DISTRIBUTION === 'cloud' &&
-    process.env.SENTRY_AUTH_TOKEN &&
-    process.env.SENTRY_ORG &&
-    process.env.SENTRY_PROJECT &&
-    !IS_DEV
+    ...(SENTRY_UPLOAD
       ? [
           sentryVitePlugin({
-            org: process.env.SENTRY_ORG,
-            project: process.env.SENTRY_PROJECT,
-            authToken: process.env.SENTRY_AUTH_TOKEN
-          }),
-          ...(process.env.SENTRY_PROJECT_PROD
-            ? [
-                sentryVitePlugin({
-                  org: process.env.SENTRY_ORG,
-                  project: process.env.SENTRY_PROJECT_PROD,
-                  authToken: process.env.SENTRY_AUTH_TOKEN
-                })
-              ]
-            : [])
+            org: SENTRY_UPLOAD.org,
+            project: SENTRY_UPLOAD.projects,
+            authToken: SENTRY_UPLOAD.authToken
+          })
         ]
       : [])
   ],
