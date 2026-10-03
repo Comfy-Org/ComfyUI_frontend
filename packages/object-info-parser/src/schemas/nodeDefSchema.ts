@@ -237,10 +237,16 @@ const zDynamicGroupFields = z.record(
       (name) => !name.includes('.'),
       'DynamicGroup field names must not contain dots'
     ),
-  zWidgetInputSpec.refine(
-    (spec) => !spec[1]?.forceInput,
-    'DynamicGroup fields must not force input sockets'
-  )
+  z
+    .union([zWidgetInputSpec, zCustomInputSpec])
+    .refine(
+      (spec) => typeof spec[0] !== 'string' || !isDynamicControlType(spec[0]),
+      'DynamicGroup fields must not contain dynamic inputs'
+    )
+    .refine(
+      (spec) => !spec[1]?.forceInput,
+      'DynamicGroup fields must not force input sockets'
+    )
 )
 
 export const zDynamicGroupInputSpec = z.tuple([
@@ -266,7 +272,7 @@ export const zDynamicGroupInputSpec = z.tuple([
           'DynamicGroup field names must be unique'
         ),
       min: z.number().int().nonnegative().default(0),
-      max: z.number().int().positive().max(100).default(50),
+      max: z.number().int().positive().max(20).default(20),
       group_name: z.string().optional()
     })
     .refine(({ min, max }) => min <= max, {

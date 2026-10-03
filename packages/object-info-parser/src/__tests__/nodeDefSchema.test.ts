@@ -25,7 +25,7 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
 describe('validateNodeDef', () => {
   it.for([
     { min: 2, max: 1 },
-    { max: 101 },
+    { max: 21 },
     { max: -1 },
     { min: 0.5 },
     { template: 'invalid' },
@@ -40,7 +40,8 @@ describe('validateNodeDef', () => {
         }
       }
     },
-    { template: { required: { image: ['IMAGE', {}] } } },
+    { template: { required: { nested: ['COMFY_AUTOGROW_V3', {}] } } },
+    { template: { required: { nested: ['COMFY_DYNAMICCOMBO_V3', {}] } } },
     { template: { required: { value: ['FLOAT', { forceInput: true }] } } },
     { template: { required: { 'bad.name': ['STRING', {}] } } },
     {
@@ -87,7 +88,7 @@ describe('validateNodeDef', () => {
     })
     expect(parsed?.input?.required?.rows).toEqual([
       'COMFY_DYNAMICGROUP_V3',
-      { template, min: 0, max: 50 }
+      { template, min: 0, max: 20 }
     ])
   })
 

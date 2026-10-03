@@ -8,6 +8,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { graphToPrompt } from '@/utils/executionUtil'
@@ -61,10 +68,181 @@ afterEach(() => {
 })
 
 describe('DynamicGroup widgets', () => {
+  it('restores a registered node whose only input is a one-row group', async () => {
+    LiteGraph.namedValuesRestore = false
+    const name = 'RegisteredDynamicGroupRestore'
+    await useLitegraphService().registerNodeDef(name, {
+      name,
+      display_name: name,
+      category: 'testing',
+      python_module: 'nodes',
+      description: '',
+      output_node: false,
+      output: [],
+      input: {
+        required: {
+          rows: [
+            'COMFY_DYNAMICGROUP_V3',
+            {
+              template: {
+                required: {
+                  weight: ['FLOAT', { default: 0.9 }],
+                  strength: ['FLOAT', { default: 1 }]
+                }
+              }
+            }
+          ]
+        }
+      }
+    })
+    try {
+      const graph = new LGraph()
+      const source = LiteGraph.createNode(name)
+      const restored = LiteGraph.createNode(name)
+      if (!source || !restored) throw new Error('Node construction failed')
+      graph.add(source)
+      graph.add(restored)
+      const controller = source.widgets?.find((w) => w.name === 'rows')
+      if (!controller) throw new Error('Missing controller')
+      controller.value = 1
+      const saved = source.serialize()
+      expect(saved.widgets_values).toEqual([1, 0.9, 1])
+
+      restored.configure(saved)
+
+      expect(restored.serialize().widgets_values).toEqual([1, 0.9, 1])
+      expect(saved.widgets_values).toEqual([1, 0.9, 1])
+    } finally {
+      LiteGraph.unregisterNodeType(name)
+    }
+  })
+
+  it.for([
+    { name: 'truncated field', values: ['first', 1, 'A', 0.1, 'tail'] },
+    { name: 'inflated row count', values: ['first', 3, 'A', 0.1, true, 'tail'] }
+  ])(
+    'rejects $name before consuming the following static widget',
+    ({ values }) => {
+      LiteGraph.namedValuesRestore = false
+      const { node, widget } = setup()
+      const saved = node.serialize()
+      saved.widgets_values = values
+
+      expect(() => node.configure(saved)).toThrow('Invalid saved row count')
+      expect(widget('loras').value).toBe(0)
+      expect(widget('after').value).toBe('last')
+    }
+  )
+
+  it('includes auxiliary controls when checking saved row data', () => {
+    LiteGraph.namedValuesRestore = false
+    const { node, widget } = setup()
+    useLitegraphService().addNodeInput(node, {
+      name: 'seeds',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      template: {
+        required: { seed: ['INT', { control_after_generate: true }] }
+      }
+    })
+    useLitegraphService().addNodeInput(node, {
+      name: 'tail',
+      type: 'STRING',
+      isOptional: false,
+      default: 'untouched'
+    })
+    const saved = node.serialize()
+    saved.widgets_values = ['first', 0, 'last', 2, 12, 'fixed', 'tail']
+
+    expect(() => node.configure(saved)).toThrow('Invalid saved row count')
+    expect(widget('seeds').value).toBe(0)
+    expect(widget('tail').value).toBe('untouched')
+  })
+
+  it('creates and serializes registered rich and custom template widgets', async () => {
+    const { node, graph, widget } = setup()
+    useWidgetStore().registerCustomWidgets({
+      TEST_DYNAMIC_FIELD: (node, name) => ({
+        widget: node.addWidget('text', name, 'custom', () => {})
+      })
+    })
+    useLitegraphService().addNodeInput(node, {
+      name: 'rich',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      template: {
+        required: {
+          color: ['COLOR', { default: '#ffffff' }],
+          custom: ['TEST_DYNAMIC_FIELD', {}],
+          override: [
+            'CUSTOM_DATA',
+            { widgetType: 'STRING', default: 'overridden' }
+          ]
+        }
+      }
+    })
+    widget('rich').value = 1
+    widget('rich.0.color').value = '#123456'
+    expect((await graphToPrompt(graph)).output[node.id].inputs).toMatchObject({
+      'rich.0.color': '#123456',
+      'rich.0.custom': 'custom',
+      'rich.0.override': 'overridden'
+    })
+    const saved = node.serialize()
+    widget('rich').value = 0
+    node.configure(saved)
+    expect(widget('rich.0.color').value).toBe('#123456')
+  })
+
+  it('rejects socket-only templates before creating group widgets', () => {
+    const { node } = setup()
+    const before = node.serialize()
+    expect(() =>
+      useLitegraphService().addNodeInput(node, {
+        name: 'images',
+        type: 'COMFY_DYNAMICGROUP_V3',
+        isOptional: false,
+        template: { required: { image: ['IMAGE', {}] } }
+      })
+    ).toThrow('requires a registered widget')
+    expect(node.serialize()).toEqual(before)
+  })
+
+  it.for([
+    { label: 'LoRA #2 strength', expected: 'LoRA #1 strength' },
+    { label: 'My strength', expected: 'My strength' }
+  ])(
+    'shows $expected after removing a row before the promoted field $label',
+    ({ label, expected }) => {
+      const { node, graph, widget } = setup()
+      graph.remove(node)
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      const host = createTestSubgraphNode(subgraph)
+      subgraph.add(node)
+      widget('loras').value = 2
+      const strength = widget('loras.1.strength')
+      expect(strength.label).toBe('LoRA #2 strength')
+      expect(promoteValueWidgetViaSubgraphInput(host, node, strength).ok).toBe(
+        true
+      )
+      const input = host.inputs[0]
+      expect(promotedInputWidget(input)?.label).toBe('LoRA #2 strength')
+      subgraph.renameInput(subgraph.inputs[0], label)
+
+      widget('loras.0').callback?.(undefined)
+
+      expect(strength.name).toBe('loras.0.strength')
+      expect(strength.label).toBe('LoRA #1 strength')
+      expect(promotedInputWidget(input)?.label).toBe(expected)
+    }
+  )
+
   it('keeps group controls off the canvas while preserving Vue editing and saved values', () => {
     const { node, widget } = setup(1)
     widget('loras.$add').callback?.(undefined)
     widget('loras.1.lora_name').value = 'C'
+    widget('loras.1.strength').label = 'My strength'
+    node.inputs[node.findInputSlot('loras.1.strength')].label = 'My strength'
     const restored = setup(1)
     restored.node.configure(node.serialize())
 
@@ -86,8 +264,10 @@ describe('DynamicGroup widgets', () => {
       ).toBe(true)
     }
     expect(restored.widget('loras.1.lora_name').value).toBe('C')
+    expect(restored.widget('loras.1.strength').label).toBe('My strength')
     restored.widget('loras.0').callback?.(undefined)
     expect(restored.widget('loras.0.lora_name').value).toBe('C')
+    expect(restored.widget('loras.0.strength').label).toBe('My strength')
     expect(restored.widget('loras').value).toBe(1)
   })
 
