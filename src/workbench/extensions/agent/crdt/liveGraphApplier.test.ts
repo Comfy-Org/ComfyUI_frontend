@@ -74,6 +74,40 @@ class TestGrowingWidgets extends LGraphNode {
   }
 }
 
+/** Mounts TWO sub-widgets from its own setter, as an option group expands. */
+class TestTwoGrowing extends LGraphNode {
+  constructor() {
+    super('Test Two Growing')
+    const mode = this.addWidget('combo', 'mode', 'creative', () => {}, {
+      values: ['creative', 'faithful']
+    })
+    let selected: unknown = 'creative'
+    Object.defineProperty(mode, 'value', {
+      configurable: true,
+      get: () => selected,
+      set: (next: unknown) => {
+        selected = next
+        const mounted = this.widgets?.some(({ name }) => name === 'mode.a')
+        if (next === 'faithful' && mounted !== true) {
+          this.addWidget('number', 'mode.a', 80, () => {})
+          this.addWidget('number', 'mode.b', 70, () => {})
+        }
+      }
+    })
+    this.serialize_widgets = true
+  }
+}
+
+/** Two serializable widgets and no transient one, for out-of-range indices. */
+class TestFlatWidgets extends LGraphNode {
+  constructor() {
+    super('Test Flat Widgets')
+    this.addWidget('number', 'known', 10, () => {})
+    this.addWidget('number', 'overflow', 30, () => {})
+    this.serialize_widgets = true
+  }
+}
+
 /** A live widget whose own name is alias-shaped, at a position that is not its index. */
 class TestAliasNamedWidget extends LGraphNode {
   constructor() {
@@ -119,6 +153,10 @@ const CATALOG: WidgetCatalog = {
     TestDefinedSource: { widget_order: [] },
     TestOverflowWidgets: { widget_order: ['known'] },
     TestGrowingWidgets: { widget_order: ['mode'] },
+    // Built from an option that expands only `mode.a`: the live node under
+    // `faithful` carries one slot more, so the host aliases the tail.
+    TestTwoGrowing: { widget_order: ['mode', 'mode.a'] },
+    TestFlatWidgets: { widget_order: ['known'] },
     TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
     TestPrototypeNamedWidget: { widget_order: ['known'] },
     TestSink: { widget_order: [] }
@@ -170,6 +208,8 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
+  LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
+  LiteGraph.registerNodeType('TestFlatWidgets', TestFlatWidgets)
   LiteGraph.registerNodeType('TestAliasNamedWidget', TestAliasNamedWidget)
   LiteGraph.registerNodeType(
     'TestPrototypeNamedWidget',
@@ -324,6 +364,74 @@ describe('LiveGraphApplier', () => {
       { name: 'mode.detail', value: 90 }
     ])
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('applies a mounted overflow value without blanking the widget before it', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestTwoGrowing',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['faithful', 91, 71]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    /**
+     * The host minted `{mode, mode.a, _extra_2}`. `mode.a` sits past the
+     * constructor's widget list, so `configure` cannot carry it and that
+     * sub-widget keeps its own default — the named half of BE-16625, which
+     * `widgets_values_named` (FE-3036) is what actually resolves. What must not
+     * happen is the stronger failure: sizing the restoration array by
+     * `_extra_2` leaves a hole at position 1, and `addCustomWidget` applies a
+     * hole as a real `undefined`, so `mode.a` renders blank instead of 80.
+     */
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'faithful' },
+      { name: 'mode.a', value: 80 },
+      { name: 'mode.b', value: 71 }
+    ])
+  })
+
+  it('reports an out-of-range overflow key on the creation path too', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestFlatWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 42, 1, 2, 3, 4]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'known', value: 11 },
+      { name: 'overflow', value: 42 }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: `Node 1 (TestFlatWidgets) has no widget '_extra_2'`
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
   })
 
   it('applies an alias to a widget the same frame mounts', () => {

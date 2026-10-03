@@ -335,12 +335,10 @@ function documentWidget(
   node: LGraphNode,
   name: string
 ): IBaseWidget | undefined {
-  const named = node.widgets?.find((widget) => widget.name === name)
-  if (named) return named
-  const overflowIndex = overflowWidgetIndex(name)
-  return overflowIndex === null
-    ? undefined
-    : serializableWidgets(node)[overflowIndex]
+  return (
+    node.widgets?.find((widget) => widget.name === name) ??
+    overflowWidget(node, name)
+  )
 }
 
 /** The live widget an overflow alias addresses, if the node has that position. */
@@ -382,28 +380,28 @@ function supersededOverflowAlias(
 }
 
 /**
- * How many positions the document addresses on this node: every serializable
- * widget it has now, plus any overflow alias beyond them.
+ * The overflow aliases that address a position past the node's constructed
+ * widget list, so `configure` cannot carry them: the restoration array is read
+ * positionally over the widgets the constructor left, and a dynamic combo
+ * mounts its sub-widgets from its own setter, after that array is built.
  *
- * The extra length is what carries a dynamic combo's sub-widget value through
- * node creation. A freshly constructed node has only its selector, so sizing
- * the array by the live widget list alone drops `_extra_1` and the sub-widget
- * silently falls back to its default — the same document would then produce
- * different live state depending on whether the frame created or updated the
- * node. `configure`'s restore loop walks `this.widgets` with a live iterator,
- * so a widget the selector's setter mounts mid-restore still receives the
- * position it was serialized at.
+ * These are applied after `configure` instead of by extending the array.
+ * Extending it leaves a hole at every position the document names rather than
+ * aliases — a freshly constructed node has only its selector, so an index past
+ * it can only be looked up as `_extra_N` — and `getRestoredWidgetValue` hands a
+ * hole to `addCustomWidget` as a real `undefined` restoration, which blanks the
+ * widget that mounts there instead of leaving its own value alone.
  */
-function addressedPositionCount(
-  live: readonly IBaseWidget[],
-  widgets: Readonly<Record<string, unknown>>
-): number {
-  let count = live.length
-  for (const name of Object.keys(widgets)) {
+function mountedOverflowValues(
+  widgets: DocNode['widgets'],
+  constructedCount: number
+): Record<string, unknown> | undefined {
+  if (widgets === undefined || Array.isArray(widgets)) return undefined
+  const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
-    if (index !== null && index >= count) count = index + 1
-  }
-  return count
+    return index !== null && index >= constructedCount
+  })
+  return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
 }
 
 /**
@@ -411,6 +409,9 @@ function addressedPositionCount(
  * restores them positionally over the node's serializable widgets, so project
  * the named map into that order, keeping the constructor default for any
  * widget the document does not mention.
+ *
+ * An overflow alias within that range names the position directly, which is
+ * how a value the host had to alias reaches the widget it belongs to.
  */
 function positionalWidgetValues(
   node: LGraphNode,
@@ -422,18 +423,14 @@ function positionalWidgetValues(
       (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
     )
   }
-  const live = serializableWidgets(node)
-  const length = addressedPositionCount(live, widgets)
-  return Array.from({ length }, (_unused, index): WidgetValue => {
-    const widget = live.at(index)
-    const name =
-      widget && Object.hasOwn(widgets, widget.name)
-        ? widget.name
-        : `_extra_${String(index)}`
+  return serializableWidgets(node).map((widget, index): WidgetValue => {
+    const name = Object.hasOwn(widgets, widget.name)
+      ? widget.name
+      : `_extra_${String(index)}`
     const value = widgets[name]
     return Object.hasOwn(widgets, name) && isWidgetValue(value)
       ? value
-      : widget?.value
+      : widget.value
   })
 }
 
@@ -658,10 +655,21 @@ export class LiveGraphApplier {
       node.last_serialization = info
       node.configure(info)
     } else {
+      const mounted = mountedOverflowValues(
+        docNode.widgets,
+        serializableWidgets(node).length
+      )
       node.configure({
         ...info,
         widgets_values: positionalWidgetValues(node, docNode.widgets)
       })
+      // The node's own setters have now mounted whatever the restored values
+      // asked for, so a position past the constructor's widget list finally
+      // resolves. `applyWidgets` is the same path a later frame takes, which
+      // keeps named-entry precedence and the fail-closed report for an index
+      // that still addresses no widget.
+      if (mounted && !node.isSubgraphNode())
+        this.applyWidgets(node, mounted, docNode.widgets)
     }
     floorSizeToContent(node)
     return node
