@@ -63,6 +63,7 @@ row names more than one destination or changes saved workflow topology.
 | `canvas.selected_nodes`                            | `comfy.graph.selection()`                                                              |
 | `canvas.selectNode(...)`                           | `comfy.graph.select(...)`                                                              |
 | `canvas.centerOnNode(node)`                        | `comfy.graph.centerOn(node)`                                                           |
+| Writing `canvas.ds.offset` to pan                  | `comfy.graph.panBy({ x, y })`                                                          |
 | `LiteGraph.createNode()` plus `graph.add()`        | `comfy.graph.add()`                                                                    |
 | `node.clone()` plus `graph.add()`                  | `comfy.graph.duplicate()`                                                              |
 | `graph.remove(node)`                               | `node.remove()` or `comfy.graph.remove()`                                              |

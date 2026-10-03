@@ -125,13 +125,16 @@ comfy.graph.select([another], { add: true })
 comfy.graph.select([]) // clear
 
 comfy.graph.centerOn(node)
+comfy.graph.panBy({ x: 60, y: 0 })
 comfy.graph.setZoom(1.25)
 const pointer = comfy.graph.pointerPosition()
 ```
 
 Selection and viewport methods address the visible graph and active editor.
 `pointerPosition()` is in graph coordinates and can return `undefined` when no
-canvas is available. `centerOn()` does not change zoom.
+canvas is available. `centerOn()` and `panBy()` do not change zoom. `panBy()`
+uses CSS viewport pixels, with positive values moving graph content right or
+down, so keyboard panning has the same visible distance at every zoom level.
 
 For a panel anchored to a node, read `node.getScreenRect()` and update it when
 the viewport changes:

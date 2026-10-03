@@ -654,6 +654,34 @@ describe('centering the view on a node', () => {
   })
 })
 
+describe('panning the view', () => {
+  it('moves by viewport pixels without changing zoom', () => {
+    const graph = new LGraph()
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    canvas.ds.scale = 2
+    const api = createGraphApi(() => graph)
+
+    api.panBy({ x: 60, y: -30 })
+
+    expect(canvas.ds.offset).toEqual([30, -15])
+    expect(canvas.ds.scale).toBe(2)
+    expect(canvas.dirty_canvas).toBe(true)
+  })
+
+  it('rejects non-finite movement', () => {
+    const graph = new LGraph()
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    const api = createGraphApi(() => graph)
+
+    expect(() => api.panBy({ x: Number.NaN, y: 0 })).toThrow(
+      'delta must contain finite x/y values'
+    )
+    expect(canvas.ds.offset).toEqual([0, 0])
+  })
+})
+
 describe('groups', () => {
   it('returns a stable handle for the same group', () => {
     const graph = new LGraph()

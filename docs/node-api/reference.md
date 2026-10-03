@@ -224,6 +224,7 @@ See [Nodes and definitions](./nodes.md).
 | `remove`    | `(id: string) => boolean`                                             |
 | `select`    | `(nodes: readonly NodeHandle[], options?: { add?: boolean }) => void` |
 | `centerOn`  | `(node: NodeHandle) => void`                                          |
+| `panBy`     | `(delta: Point) => void`                                              |
 | `setZoom`   | `(scale: number) => void`                                             |
 | `batch`     | `<T>(mutations: () => T) => T`                                        |
 

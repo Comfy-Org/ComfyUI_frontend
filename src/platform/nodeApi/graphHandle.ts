@@ -84,6 +84,14 @@ export interface GraphHandle {
    */
   centerOn(node: NodeHandle): void
   /**
+   * Pans the view by a renderer-neutral viewport distance.
+   *
+   * Positive x/y move graph content right/down. Distances are CSS viewport
+   * pixels, so the same command feels the same at every zoom level. Does
+   * nothing when there is no active canvas and never changes zoom.
+   */
+  panBy(delta: Point): void
+  /**
    * The groups on the canvas, in draw order.
    *
    * Packs read `graph._groups` to build a group muter, a group runner, or a
@@ -538,6 +546,19 @@ export function createGraphApi(
       if (target) {
         extensionValue(LGraphCanvas.active_canvas)?.centerOnNode(target)
       }
+    },
+
+    panBy(delta) {
+      if (!Number.isFinite(delta.x) || !Number.isFinite(delta.y)) {
+        throw new ComfyApiError(
+          'Cannot pan: delta must contain finite x/y values.'
+        )
+      }
+      const canvas = extensionValue(LGraphCanvas.active_canvas)
+      if (!canvas) return
+      canvas.ds.offset[0] += delta.x / canvas.ds.scale
+      canvas.ds.offset[1] += delta.y / canvas.ds.scale
+      canvas.setDirty(true, true)
     },
 
     selection() {

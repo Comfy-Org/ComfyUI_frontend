@@ -955,6 +955,14 @@ interface GraphHandle {
    */
   centerOn(node: NodeHandle): void
   /**
+   * Pans the view by a renderer-neutral viewport distance.
+   *
+   * Positive x/y move graph content right/down. Distances are CSS viewport
+   * pixels, so the same command feels the same at every zoom level. Does
+   * nothing when there is no active canvas and never changes zoom.
+   */
+  panBy(delta: Point): void
+  /**
    * The groups on the canvas, in draw order.
    *
    * Packs read `graph._groups` to build a group muter, a group runner, or a
