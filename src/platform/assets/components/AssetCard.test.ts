@@ -10,13 +10,10 @@ import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
-
-const { mockCanCreateNodeForAsset } = vi.hoisted(() => ({
-  mockCanCreateNodeForAsset: vi.fn(() => true)
-}))
+import * as resolveModelNodeFromAsset from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 vi.mock(import('@/platform/assets/utils/resolveModelNodeFromAsset'), () => ({
-  canCreateNodeForAsset: mockCanCreateNodeForAsset
+  canCreateNodeForAsset: vi.fn(() => true)
 }))
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
@@ -78,7 +75,9 @@ function renderCard(
 }
 
 beforeEach(() => {
-  mockCanCreateNodeForAsset.mockReturnValue(true)
+  vi.mocked(resolveModelNodeFromAsset.canCreateNodeForAsset).mockReturnValue(
+    true
+  )
   vi.mocked(useSettingStore().get).mockImplementation(() => 0)
   vi.mocked(useAssetDownloadStore().isDownloadedThisSession).mockImplementation(
     () => false
@@ -92,7 +91,9 @@ beforeEach(() => {
 describe('AssetCard', () => {
   it('allows widget assignment without a node provider', async () => {
     const user = userEvent.setup()
-    mockCanCreateNodeForAsset.mockReturnValue(false)
+    vi.mocked(resolveModelNodeFromAsset.canCreateNodeForAsset).mockReturnValue(
+      false
+    )
 
     const { emitted } = renderCard(createDisplayAsset())
     await user.click(screen.getByRole('button', { name: 'g.use' }))
@@ -102,7 +103,9 @@ describe('AssetCard', () => {
 
   it('exposes and blocks node creation when the asset has no provider', async () => {
     const user = userEvent.setup()
-    mockCanCreateNodeForAsset.mockReturnValue(false)
+    vi.mocked(resolveModelNodeFromAsset.canCreateNodeForAsset).mockReturnValue(
+      false
+    )
 
     const { emitted } = renderCard(createDisplayAsset(), {
       requireNodeProvider: true
