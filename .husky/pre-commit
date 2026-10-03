@@ -31,12 +31,19 @@ if [ -n "$merge_head" ]; then
   # With no stash there is also no revert, and lint-staged stages its tasks'
   # output even when a later task fails. So a --write or --fix task that ran
   # before a failing typecheck would leave its rewrite in the merge index of a
-  # commit git then rejects. Snapshot the index first and put it back by hand:
-  # restoring a tree leaves MERGE_HEAD and the merge's conflict state alone,
-  # which is exactly what a stash pop does not. The refusal above is what makes
-  # the worktree half lossless - every lint target is already identical in the
-  # index and the worktree, so checking them out can only undo a task's write.
-  pre_hook_tree=$(git write-tree 2>/dev/null || true)
+  # commit git then rejects. Copy the index file aside and put it back by hand:
+  # restoring the index leaves MERGE_HEAD and the merge's conflict state alone,
+  # which is exactly what a stash pop does not. A copy and not a
+  # write-tree/read-tree pair, because a tree carries only the index's entries -
+  # it drops the resolve-undo data that records each conflict's three stages, so
+  # a developer's `git checkout -m` to redo a resolution would afterwards exit 0
+  # and silently do nothing. The refusal above is what makes the worktree half
+  # lossless - every lint target is already identical in the index and the
+  # worktree, so checking them out can only undo a task's write.
+  index_file=${GIT_INDEX_FILE:-$(git rev-parse --git-path index)}
+  pre_hook_index=$(mktemp "${TMPDIR:-/tmp}/pre-commit-index.XXXXXX")
+  trap 'rm -f "$pre_hook_index"' EXIT
+  cp -p "$index_file" "$pre_hook_index"
 
   # --diff="..." and not --diff "...": the value starts with a dash, and the
   # option takes an optional argument, so the space form is read as a bare
@@ -44,13 +51,11 @@ if [ -n "$merge_head" ]; then
   lint_status=0
   pnpm exec lint-staged --diff="--cached $merge_head" || lint_status=$?
   if [ "$lint_status" -ne 0 ]; then
-    if [ -n "$pre_hook_tree" ]; then
-      git read-tree "$pre_hook_tree"
-      if [ -n "$lint_target" ]; then
-        printf '%s\n' "$lint_target" | git checkout-index -f --stdin
-      fi
-      printf 'pre-commit: restored the merge index and worktree; merge kept.\n' >&2
+    cp -p "$pre_hook_index" "$index_file"
+    if [ -n "$lint_target" ]; then
+      printf '%s\n' "$lint_target" | git checkout-index -f --stdin
     fi
+    printf 'pre-commit: restored the merge index and worktree; merge kept.\n' >&2
     exit "$lint_status"
   fi
 else

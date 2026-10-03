@@ -199,6 +199,13 @@ function createMergeInProgress({
     received: () => loggedBasenames(receivedLog),
     /** Basenames the task downstream of the rewrite received, sorted. */
     linted: () => loggedBasenames(lintedLog),
+    /** The three conflict stages a resolution records, for `git checkout -m`. */
+    resolveUndo: () => git('ls-files', '--resolve-undo'),
+    /** Redo a resolution the way a developer would after a rejected commit. */
+    recreateConflict: (file: string) => {
+      git('checkout', '-m', '--', file)
+      return readFileSync(path.join(dir, file), 'utf8')
+    },
     runHook: () =>
       spawnSync('bash', [hookPath], {
         cwd: dir,
@@ -294,6 +301,26 @@ describe.skipIf(process.platform === 'win32')(
       expect(repo.staged('shared.ts')).not.toContain(FORMAT_MARKER)
       expect(repo.worktree('shared.ts')).toBe(resolved)
       expect(repo.mergeHead()).toBe(mergeHead)
+    })
+
+    it('keeps the conflict stages a redone resolution needs', () => {
+      const repo = openMergeInProgress({ linterExitCode: 1 })
+      const resolveUndo = repo.resolveUndo()
+      // Not vacuous from the other direction either: resolving the conflict is
+      // what recorded these stages, so the assertion after the hook is about
+      // the hook dropping them rather than about them never being there.
+      expect(resolveUndo).toContain('shared.ts')
+
+      const result = repo.runHook()
+
+      expect(result.status).not.toBe(0)
+      // The index's resolve-undo extension is not part of any tree, so a
+      // restore routed through write-tree/read-tree loses it while every tree
+      // assertion above still passes. `git checkout -m` then exits 0 and leaves
+      // the resolved file as it found it, which is the worst shape the loss can
+      // take: the developer's redo quietly does nothing.
+      expect(repo.resolveUndo()).toBe(resolveUndo)
+      expect(repo.recreateConflict('shared.ts')).toContain('<<<<<<<')
     })
 
     it('leaves the merge index and worktree alone when a task fails', () => {
