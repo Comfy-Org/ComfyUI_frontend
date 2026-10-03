@@ -1,9 +1,12 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
+
+const test = mergeTests(agentConversationTest, hostTelemetryFixture)
 
 const CASE = 'agent-rec-clear-workflow'
 
@@ -135,6 +138,7 @@ test.describe(
 
     test('leaves the canvas empty of the node the same turn put on it', async ({
       agentConversation,
+      hostTelemetry,
       page
     }) => {
       test.setTimeout(90_000)
@@ -143,6 +147,16 @@ test.describe(
 
       await recordMountedNodes(page)
       await agentConversation.runTurns()
+
+      await expect
+        .poll(() =>
+          hostTelemetry.find(
+            ({ event, properties }) =>
+              event === 'app:agent_graph_projection' &&
+              Number(properties.removed_count) > 0
+          )
+        )
+        .toBeTruthy()
 
       // Boot loads a canvas of its own, so this is a containment check, not an
       // equality one: the recorded ids the agent mints are what matter. Polled

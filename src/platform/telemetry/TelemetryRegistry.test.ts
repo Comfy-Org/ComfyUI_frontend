@@ -461,6 +461,28 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
       },
       {
+        method: 'trackAgentGraphProjection',
+        expected: {
+          op_id: 'op-1',
+          op_count: 2,
+          sequence: 7,
+          stage: 'applied',
+          added_count: 0,
+          removed_count: 2,
+          apply_failure_count: 0
+        },
+        invoke: (registry) =>
+          registry.trackAgentGraphProjection({
+            op_id: 'op-1',
+            op_count: 2,
+            sequence: 7,
+            stage: 'applied',
+            added_count: 0,
+            removed_count: 2,
+            apply_failure_count: 0
+          })
+      },
+      {
         method: 'trackAgentStopClicked',
         expected: { method: 'escape', turn_id: 't1', turn_elapsed_ms: 42 },
         invoke: (registry) =>

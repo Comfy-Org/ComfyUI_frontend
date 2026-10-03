@@ -12,6 +12,7 @@ import type { Ref } from 'vue'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { parseNodeId } from '@/types/nodeId'
@@ -87,6 +88,24 @@ interface AgentCrdtOutcomeCounters {
   reset: number
   /** A stale/duplicate frame the bridge discarded before it became a `doc_update` event (`doc_stale`). */
   dropped: number
+}
+
+function reportAgentProjection(
+  update: ClassifiedDocUpdate,
+  nodes: DocNodeDelta,
+  failureCount: number,
+  graphAvailable: boolean
+): void {
+  if (!update.actor?.startsWith('agent:')) return
+  useTelemetry()?.trackAgentGraphProjection({
+    op_id: update.opIds?.[0] ?? null,
+    op_count: update.opIds?.length ?? 0,
+    sequence: update.seq,
+    stage: graphAvailable ? 'applied' : 'received_no_graph',
+    added_count: nodes.added.length,
+    removed_count: nodes.removed.length,
+    apply_failure_count: failureCount
+  })
 }
 
 function liveAddedNodeIds(
@@ -468,18 +487,19 @@ function startAgentCrdtFollower(
     !update.catchUp && update.actor === ownActor()
   const applyFrame = (
     update: ClassifiedDocUpdate
-  ): { created: NodeId[]; nodes: DocNodeDelta } => {
+  ): { created: NodeId[]; nodes: DocNodeDelta; failureCount: number } => {
     if (isOwnEcho(update) && getGraph() !== null) {
       const nodes = projection.discardPending(update.workflowId)
       incrementOutcome('skipped')
-      return { created: [], nodes }
+      return { created: [], nodes, failureCount: 0 }
     }
     const outcome = projection.applyFrame(update)
     incrementOutcome(outcome.applied ? 'applied' : 'skipped')
     if (outcome.applied && !update.catchUp) incrementOutcome('appliedLive')
     return {
       created: outcome.applied ? outcome.createdNodeIds : [],
-      nodes: outcome.nodes
+      nodes: outcome.nodes,
+      failureCount: outcome.applied ? outcome.failureCount : 0
     }
   }
 
@@ -520,7 +540,8 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const { created, nodes } = applyFrame(update)
+    const { created, nodes, failureCount } = applyFrame(update)
+    reportAgentProjection(update, nodes, failureCount, getGraph() !== null)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,

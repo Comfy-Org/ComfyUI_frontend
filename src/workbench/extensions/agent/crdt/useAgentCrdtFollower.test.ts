@@ -64,7 +64,12 @@ const projectionState = vi.hoisted(() => {
   const applied = (
     createdNodeIds: NodeId[] = [],
     nodes: DocNodeDelta = NO_NODES
-  ): FrameOutcome => ({ applied: true, nodes, createdNodeIds })
+  ): FrameOutcome => ({
+    applied: true,
+    nodes,
+    createdNodeIds,
+    failureCount: 0
+  })
   return {
     NO_NODES,
     notApplied,
@@ -85,7 +90,8 @@ const projectionState = vi.hoisted(() => {
 })
 
 const telemetryState = vi.hoisted(() => ({
-  reportError: vi.fn<typeof reportErrorFn>()
+  reportError: vi.fn<typeof reportErrorFn>(),
+  trackAgentGraphProjection: vi.fn()
 }))
 
 const apiState = vi.hoisted(() => {
@@ -147,6 +153,11 @@ vi.mock(import('./devPanelLog'), () => ({
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
+}))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => ({
+    trackAgentGraphProjection: telemetryState.trackAgentGraphProjection
+  })
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
@@ -1038,6 +1049,36 @@ describe('useAgentCrdtFollower', () => {
       expect(projectionState.applyFrame).toHaveBeenCalledExactlyOnceWith(update)
       expect(projectionState.applyCollected).not.toHaveBeenCalled()
       expect(status().outcomes.applied).toBe(1)
+      unmount()
+    })
+
+    it('reports bounded projection stages for an agent frame', () => {
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: [], removed: ['node-private'] })
+      )
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:private-thread:private-turn',
+        opIds: ['op-join', 'op-other']
+      })
+
+      expect(
+        telemetryState.trackAgentGraphProjection
+      ).toHaveBeenCalledExactlyOnceWith({
+        op_id: 'op-join',
+        op_count: 2,
+        sequence: 9,
+        stage: 'applied',
+        added_count: 0,
+        removed_count: 1,
+        apply_failure_count: 0
+      })
+      expect(telemetryState.trackAgentGraphProjection).not.toHaveBeenCalledWith(
+        expect.objectContaining({ actor: expect.anything() })
+      )
       unmount()
     })
 

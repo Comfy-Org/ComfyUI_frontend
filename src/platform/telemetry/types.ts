@@ -978,6 +978,16 @@ export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
 }
+export interface AgentGraphProjectionMetadata extends Record<string, unknown> {
+  /** First creator-owned op id; sufficient to join the frame to its host mutation. */
+  op_id: string | null
+  op_count: number
+  sequence: number
+  stage: 'received_no_graph' | 'applied'
+  added_count: number
+  removed_count: number
+  apply_failure_count: number
+}
 export type AgentStopMethod = 'button' | 'escape'
 export interface AgentStopClickedMetadata extends Record<string, unknown> {
   method: AgentStopMethod
@@ -1443,6 +1453,7 @@ export interface TelemetryProvider {
     metadata: AgentAttachButtonClickedMetadata
   ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentGraphProjection?(metadata: AgentGraphProjectionMetadata): void
   trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
@@ -1616,6 +1627,7 @@ export const TelemetryEvents = {
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_GRAPH_PROJECTION: 'app:agent_graph_projection',
   AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
