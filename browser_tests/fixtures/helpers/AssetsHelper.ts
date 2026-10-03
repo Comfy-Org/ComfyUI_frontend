@@ -10,6 +10,7 @@ import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 
 const jobsListRoutePattern = '**/api/jobs?*'
 const assetsListRoutePattern = /\/api\/assets(?:\?.*)?$/
@@ -137,6 +138,12 @@ export class AssetsHelper {
   >()
 
   constructor(private readonly page: Page) {}
+
+  async dispatchDownload(message: AssetDownloadWsMessage): Promise<void> {
+    await this.page.evaluate((download) => {
+      window.app!.api.dispatchCustomEvent('asset_download', download)
+    }, message)
+  }
 
   async mockOutputHistory(jobs: RawJobListItem[]): Promise<void> {
     this.generatedJobs = [...jobs]

@@ -13,6 +13,7 @@ import type {
   BillingResult,
   CapabilitiesSnapshot,
   SubscribeInput,
+  SubscriptionCommandResult,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import {
@@ -20,7 +21,6 @@ import {
   matchesServerCode
 } from '@comfyorg/account-core/billing'
 import type { BillingEntry } from '@comfyorg/billing-contract'
-import { buildReturnUrl } from '@comfyorg/billing-contract'
 
 import type {
   CheckoutPage,
@@ -31,30 +31,41 @@ import type {
 import {
   RESOLVING,
   UNREADABLE_LINK,
+  awaitingServer,
   challengeToReopen,
   isParked,
   needsConsent,
   railAcceptsPay,
-  reduceCheckoutPage
+  reduceCheckoutPage,
+  settledPlanSource
 } from '@/checkout/checkoutPage'
-import { planCreditsSettingsUrl, pricingTableUrl } from '@/checkout/cloudLinks'
+import { pricingTableUrl } from '@/checkout/cloudLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
 import { checkoutIdentity, createPromoMemory } from '@/checkout/promoMemory'
 import type { PayVerdict } from '@/checkout/payVerdict'
-import { operationOutcomeOf, payVerdictOf } from '@/checkout/payVerdict'
+import {
+  outcomeFor,
+  payVerdictOf,
+  reconciledEvent
+} from '@/checkout/payVerdict'
 import {
   buildSubscribeRequest,
   checkoutReturnUrl
 } from '@/checkout/subscribeRequest'
 import { acceptsPromoCode } from '@/checkout/summaryLedger'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
+import { useCheckoutExit } from '@/composables/useCheckoutExit'
+import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
-import { BILLING_WEB_ENV } from '@/config/env'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { useBillingWebSession } from '@/session/billingWebSession'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
+import {
+  checkoutAttemptOf,
+  createSubscriptionCheckoutTelemetry
+} from '@/telemetry/subscriptionCheckoutTelemetry'
 
 /**
  * What Pay charges: a new method's token, a saved method, or the method on
@@ -68,6 +79,11 @@ export type PayChoice =
 
 const CARD_METHOD_TYPE = 'card'
 
+function selectedRailOf(choice: PayChoice) {
+  if (choice === undefined) return 'on_file'
+  return 'confirmationToken' in choice ? 'new' : 'saved'
+}
+
 /** The method's type when it authenticates away from this page, else nothing. */
 function redirectMethodOf(choice: PayChoice): string | undefined {
   if (choice === undefined || choice.methodType === CARD_METHOD_TYPE)
@@ -80,12 +96,23 @@ type PlannedEntry = BillingEntry & { plan: string }
 /** What the quote answers for a plan slug the catalog does not have. */
 const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
 
+/** The status the server answered a failed read with, when it answered. */
+function withHttpStatus(failure: object) {
+  return 'httpStatus' in failure && typeof failure.httpStatus === 'number'
+    ? { httpStatus: failure.httpStatus }
+    : {}
+}
+
 /** A capability read that ends the page before any quote: unreadable, or refused. */
 function capabilityStop(
   allowed: BillingResult<CapabilitiesSnapshot>
 ): CheckoutPageEvent | undefined {
   if (allowed.status === 'error')
-    return { type: 'capabilitiesFailed', code: allowed.code }
+    return {
+      type: 'capabilitiesFailed',
+      code: allowed.code,
+      ...withHttpStatus(allowed)
+    }
   if (allowed.value.capabilities.can_subscribe_self_serve) return undefined
   return {
     type: 'refused',
@@ -154,6 +181,8 @@ export function useFullPageCheckout() {
   >(undefined)
   const { preview, quote } = usePreviewSubscribe()
   const saved = usePaymentMethods({ immediate: false })
+  const journey = useCheckoutJourney('full_page')
+  journey.enter()
 
   /** A link that names no plan has nothing to quote, so it is as unreadable as a malformed one. */
   const page = shallowRef<CheckoutPage>(
@@ -181,9 +210,11 @@ export function useFullPageCheckout() {
     challengePort,
     autoContinue: () => submitting.value
   })
+  const attempts = createSubscriptionCheckoutTelemetry({ ui: 'full_page' })
 
   /** A page sent back to resolving by the lifecycle reads its capture again. */
   function dispatch(event: CheckoutPageEvent) {
+    journey.observe(event, preview.value)
     const before = page.value
     page.value = reduceCheckoutPage(before, event)
     if (before.kind !== 'resolving' && page.value.kind === 'resolving')
@@ -270,6 +301,10 @@ export function useFullPageCheckout() {
     }
   })
 
+  watch(promo.entry, (after, before) =>
+    journey.promoEntryChanged(before, after)
+  )
+
   const asksReactivation = (quoted: SubscriptionPreview) =>
     quoted.requires_reactivation_confirmation === true
 
@@ -325,7 +360,7 @@ export function useFullPageCheckout() {
       return 'serverCode' in quoted &&
         matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
         ? { type: 'planUnavailable', reason: 'retired' }
-        : { type: 'unavailable', code: quoted.code }
+        : { type: 'unavailable', code: quoted.code, ...withHttpStatus(quoted) }
     const unquotable = quotedStop(quoted.value, arrival)
     if (unquotable !== undefined) return unquotable
     const facts = {
@@ -436,6 +471,7 @@ export function useFullPageCheckout() {
 
   watch(checkout.operation, (operation) => {
     if (operation === undefined) return
+    journey.operationIssued(operation.id)
     const own =
       page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
     dispatch({
@@ -458,25 +494,31 @@ export function useFullPageCheckout() {
   }
 
   /**
-   * "We couldn't confirm your payment" promises to update on its own, but the
-   * lifecycle stops polling an operation the server parked for a human. The
-   * page re-reads it on the parked cadence until it settles either way.
+   * "We couldn't confirm your payment" and "Payment received" promise to
+   * update on their own, but the lifecycle stops polling an operation the
+   * server parked for a human or already settled. The page re-reads it on the
+   * parked cadence until the verdict, or the credits, arrive.
    */
-  const recheckUnconfirmed = useIntervalFn(
+  const recheck = useIntervalFn(
     () => void reconcile(),
     OPERATION_POLL_TIMING.parkedMs,
     { immediate: false }
   )
   watch(
-    () => page.value.kind === 'unconfirmed',
-    (unconfirmed) =>
-      unconfirmed ? recheckUnconfirmed.resume() : recheckUnconfirmed.pause()
+    () => awaitingServer(page.value),
+    (awaiting) => (awaiting ? recheck.resume() : recheck.pause())
   )
 
-  /** A returned payment names the plan the server now lists, never the fresh quote. */
-  async function readSettledPlan() {
-    const [read, catalog] = await Promise.all([status.read(), plans.read()])
-    const slug = read.status === 'ok' ? read.value.status.plan_slug : undefined
+  /**
+   * A settled payment this page did not price names the plan the catalog
+   * lists for its receipt, or for a returned one without a receipt plan, the
+   * plan the status now reports; never the fresh quote.
+   */
+  async function readSettledPlan(receiptSlug: string | undefined) {
+    const [slug, catalog] = await Promise.all([
+      receiptSlug ?? statusPlanSlug(),
+      plans.read()
+    ])
     const listed =
       slug !== undefined && catalog.status === 'ok'
         ? catalog.value.data.plans.find((plan) => plan.slug === slug)
@@ -489,6 +531,11 @@ export function useFullPageCheckout() {
     })
   }
 
+  async function statusPlanSlug() {
+    const read = await status.read()
+    return read.status === 'ok' ? read.value.status.plan_slug : undefined
+  }
+
   /** A finished checkout has no code left to re-apply. */
   watch(
     () => page.value.kind === 'terminal',
@@ -498,14 +545,15 @@ export function useFullPageCheckout() {
   )
 
   watch(
-    () =>
-      page.value.kind === 'terminal' && page.value.attribution === 'returned',
-    (returned) => {
-      if (returned) void readSettledPlan()
+    () => settledPlanSource(page.value)?.key,
+    () => {
+      const source = settledPlanSource(page.value)
+      if (source !== undefined) void readSettledPlan(source.receiptSlug)
     }
   )
 
   function onPaymentPhase(phase: StripePaymentPhase) {
+    journey.track(phase)
     if (phase.phase === 'payment_element_ready' && phase.element === 'payment')
       dispatch({ type: 'elementReady' })
     else if (phase.phase === 'payment_element_failed')
@@ -524,35 +572,7 @@ export function useFullPageCheckout() {
       !promo.busy.value
   )
 
-  /**
-   * Back to the product, with a settled payment's outcome and reference, or
-   * to the workspace's Plan & Credits settings when this family has no
-   * destination for the link's target.
-   */
-  const returnLink = computed(() => {
-    const workspace = billedWorkspace()
-    const arrival = entry.value
-    const current = page.value
-    const host =
-      arrival &&
-      buildReturnUrl({
-        target: arrival.returnTo,
-        environment: BILLING_WEB_ENV,
-        workspace,
-        ...(current.kind === 'terminal'
-          ? { result: 'success', reference: current.operation?.id }
-          : {})
-      })?.href
-    return host ?? planCreditsSettingsUrl(workspace)
-  })
-
-  /** Only a tab a script opened can close itself; any other goes back to `returnLink`. */
-  const openedByScript = Boolean(window.opener)
-
-  function close() {
-    if (openedByScript) window.close()
-    else window.location.assign(returnLink.value)
-  }
+  const { returnLink, openedByScript, close } = useCheckoutExit(page)
 
   /**
    * The live catalog, on the Team tab when the link asked for a team plan:
@@ -656,6 +676,10 @@ export function useFullPageCheckout() {
     dispatch({ type: 'consentMissing' })
   }
 
+  function reportMethodSelected(choice: PayChoice) {
+    journey.methodSelected(selectedRailOf(choice), choice?.methodType)
+  }
+
   let payGeneration = 0
 
   /**
@@ -671,16 +695,28 @@ export function useFullPageCheckout() {
     const arrival = entry.value
     const quoted = preview.value
     if (arrival?.plan === undefined || !quoted || !canPay.value) return
-    if (promo.unapplied.value) return promo.apply()
+    if (promo.unapplied.value) {
+      journey.track({ phase: 'pay_blocked', reason: 'promo_unapplied' })
+      return promo.apply()
+    }
     if (needsConsent(page.value)) return payWithoutConsent()
     const planned = { ...arrival, plan: arrival.plan }
     const mine = ++payGeneration
     const redirectMethod = redirectMethodOf(choice)
+    reportMethodSelected(choice)
+    const press = journey.submitted()
     dispatch({
       type: 'paySubmitted',
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
-    const result = await checkout.subscribe(requestFor(planned, quoted, choice))
+    let result: SubscriptionCommandResult
+    try {
+      result = await attempts.run(checkoutAttemptOf(quoted, arrival), () =>
+        checkout.subscribe(requestFor(planned, quoted, choice))
+      )
+    } finally {
+      journey.submitSettled(press)
+    }
     if (mine !== payGeneration) return
     await settle(payVerdictOf(result), planned)
   }
@@ -711,29 +747,5 @@ export function useFullPageCheckout() {
     pay,
     reopening: shallowReadonly(reopening),
     continueVerification: checkout.continueVerification
-  }
-}
-
-function outcomeFor(operation: BillingOperationState) {
-  const outcome = operationOutcomeOf(operation)
-  return outcome === undefined ? {} : { outcome }
-}
-
-/**
- * A recovery the lifecycle refused is an unknown, not "nothing pending": in
- * resolving it ends on a screen that claims nothing about money, and
- * anywhere else the page keeps what it has rather than opening a form over
- * money it cannot see.
- */
-function reconciledEvent(
-  recovered: BillingResult<BillingOperationState | undefined>
-): CheckoutPageEvent {
-  if (recovered.status === 'error')
-    return { type: 'recheckFailed', code: recovered.code }
-  const operation = recovered.value
-  return {
-    type: 'reconciled',
-    operation,
-    ...(operation === undefined ? {} : outcomeFor(operation))
   }
 }

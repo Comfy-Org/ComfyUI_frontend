@@ -56,7 +56,7 @@ function renderCards(events: ComfyEvent[], reducedMotion: boolean) {
   return render(EventsCardsView, { props: { rows: rowsFor(events) } })
 }
 
-// eslint-disable-next-line testing-library/no-node-access
+// oxlint-disable-next-line testing-library/no-node-access
 const videoIn = (root: Element) => root.querySelector('video')
 
 describe('EventsCardsView', () => {

@@ -5,7 +5,6 @@ import BreadcrumbBar from '../common/BreadcrumbBar.vue'
 import ProductCardsSection from '../common/ProductCardsSection.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
 import { externalLinks, getRoutes } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { tAgent } from './agentTranslations'
@@ -16,6 +15,7 @@ interface Props {
 }
 
 const { noindex = false, locale = 'en' } = Astro.props
+const { t } = Astro.locals
 
 const routes = getRoutes(locale)
 const imageRoot = 'https://media.comfy.org/website/comfy-agent'
@@ -170,9 +170,12 @@ const briefs = [
 >
   <BreadcrumbBar
     crumbs={[
-      { label: t('breadcrumb.home', locale), href: routes.home },
-      { label: t('nav.products', locale), href: '#products' },
-      { label: t('breadcrumb.agent', locale) }
+      {
+        label: t('breadcrumb.home'),
+        href: routes.home
+      },
+      { label: t('nav.products'), href: '#products' },
+      { label: t('breadcrumb.agent') }
     ]}
   />
 
@@ -324,6 +327,15 @@ const briefs = [
           <span
             class="rounded-full bg-transparency-white-t4 px-5 py-2 text-xs font-light text-primary-warm-gray uppercase"
             >{tAgent('agentPage.usecases.featured.tag', locale)}</span
+          >
+        </p>
+        <p class="mt-6">
+          <a
+            href="https://blog.comfy.org/p/comfy-agent-the-first-agent-for-craft"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-xs font-extrabold tracking-wider text-primary-comfy-yellow uppercase underline underline-offset-4 hover:opacity-80"
+            >{tAgent('agentPage.usecases.featured.cta', locale)}</a
           >
         </p>
       </div>

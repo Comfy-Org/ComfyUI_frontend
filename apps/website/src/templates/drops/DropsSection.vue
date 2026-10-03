@@ -7,9 +7,10 @@ import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.v
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
 import type { Drop } from '../../data/drops'
 import { NEW_BADGE, drops, isRecentLaunch } from '../../data/drops'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 function localize(text: LocalizedText): string {
   return text[locale] || text.en
@@ -45,7 +46,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
 
 <template>
   <CardArticleGallery01
-    :title="t('launches.section.title', locale)"
+    :title="t('launches.section.title')"
     :items
     layout="mixed"
   />

@@ -2,22 +2,26 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { EndingKind, EndingScreen } from '@/checkout/endingScreen'
+import type {
+  EndingKind,
+  EndingScreen,
+  ReceiptRow
+} from '@/checkout/endingScreen'
+import { endingReceipt } from '@/checkout/endingScreen'
 import { longDate } from '@/checkout/longDate'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
+import type { SuccessBreakdown } from '@/checkout/successBreakdown'
 import { namedPlan } from '@/checkout/summaryLedger'
 import EndingCodeCard from '@/components/fullPage/EndingCodeCard.vue'
+import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
+import EndingPlanCard from '@/components/fullPage/EndingPlanCard.vue'
 import SuccessCloseFooter from '@/components/fullPage/SuccessCloseFooter.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
-
-export interface EndingPlan {
-  readonly name: string
-  readonly price: string
-  readonly period: string
-}
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 type Tone = 'done' | 'waiting' | 'refused'
 
@@ -31,7 +35,7 @@ const ENDINGS: Readonly<
     EndingKind,
     {
       readonly tone: Tone
-      readonly primary?: 'close' | 'retry' | 'view_plans'
+      readonly primary?: 'close' | 'retry' | 'view_plans' | 'add_credits'
       readonly support: boolean
     }
   >
@@ -44,6 +48,7 @@ const ENDINGS: Readonly<
   unconfirmed: { tone: 'waiting', support: true },
   refused: { tone: 'refused', support: true },
   plan_unavailable: { tone: 'refused', primary: 'view_plans', support: true },
+  link_invalid: { tone: 'refused', primary: 'add_credits', support: true },
   load_failed: { tone: 'refused', primary: 'retry', support: true }
 }
 
@@ -57,21 +62,47 @@ const {
   screen,
   workspace,
   plan,
+  breakdown,
   closesItself = false
 } = defineProps<{
   screen: EndingScreen
   workspace: string
   plan?: EndingPlan
+  breakdown?: SuccessBreakdown
   closesItself?: boolean
 }>()
 
-const emit = defineEmits<{ close: []; retry: []; viewPlans: [] }>()
+const emit = defineEmits<{
+  close: []
+  retry: []
+  viewPlans: []
+  addCredits: []
+}>()
 
 const { t, locale } = useI18n()
 const { coded } = useHostedCopy()
 
+const R = 'checkout.fullPage.ending.receipt'
+const credits = (count: number) =>
+  new Intl.NumberFormat(locale.value).format(count)
+const money = (cents: number) => formatQuoteMoney(cents, 'usd', locale.value)
+
 const ending = computed(() => ENDINGS[screen.kind])
-const copyKey = computed(() => `checkout.fullPage.ending.${screen.kind}`)
+const copyKey = computed(() =>
+  screen.kind === 'success' && screen.purchase === 'credits'
+    ? 'checkout.fullPage.ending.success_credits'
+    : `checkout.fullPage.ending.${screen.kind}`
+)
+/** A top-up's Success leads with the credits the server counted, when it has. */
+const title = computed(() => {
+  const added =
+    screen.kind === 'success' && screen.purchase === 'credits'
+      ? screen.receipt?.creditsAdded
+      : undefined
+  return added === undefined
+    ? t(`${copyKey.value}.title`)
+    : t(`${copyKey.value}.titleCounted`, { count: credits(added) })
+})
 const bodyKey = computed(() => {
   if (screen.kind === 'refused') return `${copyKey.value}.body.${screen.copy}`
   if (screen.kind === 'load_failed')
@@ -92,13 +123,52 @@ const bodyParams = computed(() =>
     : { workspace }
 )
 const code = computed(() => ('code' in screen ? screen.code : undefined))
+const receipt = computed(() => endingReceipt(screen))
+/** A plan card stands in for the reference; without the plan's listing the code stays. */
+const planCard = computed(() => (receipt.value.namesPlan ? plan : undefined))
+const showsCode = computed(
+  () =>
+    code.value !== undefined &&
+    planCard.value === undefined &&
+    !receipt.value.rowsReplaceCode
+)
+const creditsAdded = computed(() =>
+  'receipt' in screen ? screen.receipt?.creditsAdded : undefined
+)
+
+/** Each row the receipt shows, as label and value; a plan row needs the plan's name. */
+const receiptRows = computed(() =>
+  receipt.value.rows.flatMap((row) => {
+    const value = rowValue(row)
+    return value === undefined
+      ? []
+      : [{ kind: row.kind, label: t(`${R}.${row.kind}`), value }]
+  })
+)
+
+function rowValue(row: ReceiptRow): string | undefined {
+  switch (row.kind) {
+    case 'payment':
+    case 'amount_paid':
+      return money(row.cents)
+    case 'adding':
+      return t(`${R}.addingValue`)
+    case 'added':
+      return t(`${R}.creditCount`, { count: credits(row.credits) })
+    case 'plan':
+      return plan?.name
+  }
+}
 const supportLink = computed(() => supportLinkWithCode(code.value))
 const primary = computed(() => ending.value.primary)
 
 function act() {
-  if (primary.value === 'close') emit('close')
-  else if (primary.value === 'retry') emit('retry')
+  if (primary.value === 'close') {
+    reportReturnClicked('success_close')
+    emit('close')
+  } else if (primary.value === 'retry') emit('retry')
   else if (primary.value === 'view_plans') emit('viewPlans')
+  else if (primary.value === 'add_credits') emit('addCredits')
 }
 </script>
 
@@ -115,7 +185,7 @@ function act() {
         <h1
           class="m-0 text-2xl font-semibold text-balance text-base-foreground sm:whitespace-nowrap"
         >
-          {{ t(`${copyKey}.title`) }}
+          {{ title }}
         </h1>
         <p class="m-0 text-sm/5 text-muted-foreground">
           {{ t(bodyKey, bodyParams) }}
@@ -134,22 +204,40 @@ function act() {
         </i18n-t>
       </div>
 
-      <div
-        v-if="screen.kind === 'success' && plan"
-        class="flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-6 text-left"
-        data-testid="checkout-ending-plan"
+      <EndingPlanCard
+        v-if="planCard"
+        :plan="planCard"
+        :credits-added
+        :breakdown
+      />
+
+      <dl
+        v-if="receiptRows.length > 0"
+        class="m-0 flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-4 text-left text-sm"
+        data-testid="checkout-ending-receipt"
       >
-        <p class="m-0 text-base font-bold text-base-foreground">
-          {{ plan.name }}
-        </p>
-        <p class="m-0 text-base-foreground tabular-nums">
-          <span class="text-[2rem] font-semibold">{{ plan.price }}</span>
-          {{ plan.period }}
-        </p>
-      </div>
+        <div
+          v-for="row in receiptRows"
+          :key="row.kind"
+          class="flex items-baseline justify-between gap-4"
+        >
+          <dt class="text-muted-foreground">{{ row.label }}</dt>
+          <dd
+            class="m-0 flex items-center gap-1.5 text-base-foreground tabular-nums"
+          >
+            <i
+              v-if="row.kind === 'added'"
+              class="icon-[lucide--coins] size-4 shrink-0"
+              aria-hidden="true"
+              data-testid="checkout-ending-credits-icon"
+            />
+            <span>{{ row.value }}</span>
+          </dd>
+        </div>
+      </dl>
 
       <EndingCodeCard
-        v-if="code !== undefined"
+        v-if="showsCode && code !== undefined"
         :label="t(`${copyKey}.codeLabel`)"
         :code
       />
