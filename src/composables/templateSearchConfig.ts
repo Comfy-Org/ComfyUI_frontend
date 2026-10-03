@@ -3,6 +3,7 @@ import MiniSearch from 'minisearch'
 import type { SearchResult } from 'minisearch'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { getTemplateKey } from '@/platform/workflow/templates/utils/templateDisplay'
 import { searchRankBoost } from '@/platform/workflow/templates/utils/templateRanking'
 
 // MiniSearch serializes the index but not the search options, so the tokenizer
@@ -139,7 +140,7 @@ export function createTemplateSearchIndex(
   templates: TemplateInfo[]
 ): MiniSearch<TemplateInfo> {
   const index = new MiniSearch<TemplateInfo>({
-    idField: 'name',
+    idField: 'templateKey',
     fields: [...SEARCH_FIELDS],
     // Returned on each hit so ranking can read usage and curation without a
     // second lookup.
@@ -147,6 +148,7 @@ export function createTemplateSearchIndex(
     // Index the localized strings the card actually shows, so a match explains
     // a visible result.
     extractField: (template, field) => {
+      if (field === 'templateKey') return getTemplateKey(template)
       if (field === 'title') return template.localizedTitle ?? template.title
       if (field === 'description') {
         return template.localizedDescription ?? template.description
@@ -157,9 +159,9 @@ export function createTemplateSearchIndex(
     tokenize,
     searchOptions: searchOptions('AND')
   })
-  // Custom-node templates are named by filename, so two packs can share a name;
-  // a duplicate ID makes MiniSearch throw and leaves search showing everything.
-  index.addAll(uniqBy(templates, (template) => template.name))
+  // A pack can ship the same filename in two example folders, giving two
+  // templates one key; MiniSearch throws on duplicate IDs.
+  index.addAll(uniqBy(templates, getTemplateKey))
   return index
 }
 
@@ -191,7 +193,7 @@ export function rankByRelevanceThenUsage(hits: SearchResult[]): SearchResult[] {
     .map((entry) => entry.hit)
 }
 
-/** Ordered template names for a query: literal matches first, then dedup'd expansion matches. */
+/** Ordered template keys for a query: literal matches first, then dedup'd expansion matches. */
 export function searchTemplates(
   index: MiniSearch<TemplateInfo>,
   query: string

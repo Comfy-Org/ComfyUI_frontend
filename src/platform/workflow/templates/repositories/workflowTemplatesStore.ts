@@ -5,6 +5,7 @@ import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
+import { templateKeyFor } from '@/platform/workflow/templates/utils/templateDisplay'
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
@@ -19,6 +20,7 @@ import type {
 // Enhanced template interface for easier filtering
 interface EnhancedTemplate extends TemplateInfo {
   sourceModule: string
+  templateKey: string
   category?: string
   categoryType?: string
   categoryGroup?: string // 'GENERATION TYPE' or 'CLOSED SOURCE MODELS'
@@ -236,6 +238,7 @@ export const useWorkflowTemplatesStore = defineStore(
           const enhancedTemplate: EnhancedTemplate = {
             ...template,
             sourceModule: category.moduleName,
+            templateKey: template.name,
             category: category.title,
             categoryType: category.type,
             categoryGroup: category.category,
@@ -265,6 +268,8 @@ export const useWorkflowTemplatesStore = defineStore(
               mediaType: 'image',
               mediaSubtype: 'jpg',
               sourceModule: moduleName,
+              // Custom templates are named by filename, so two packs can collide.
+              templateKey: templateKeyFor(name, moduleName),
               category: 'Extensions',
               categoryType: 'extension',
               searchableText: `${name} ${moduleName} extension`

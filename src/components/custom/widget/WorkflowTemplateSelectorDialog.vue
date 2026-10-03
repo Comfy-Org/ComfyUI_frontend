@@ -188,14 +188,14 @@
           <!-- Actual Template Cards -->
           <CardContainer
             v-for="{ template, tags } in isLoading ? [] : displayTemplates"
-            :key="template.name"
+            :key="getTemplateKey(template)"
             ref="cardRefs"
             size="auto"
             variant="ghost"
             rounded="lg"
-            :data-testid="`template-workflow-${template.name}`"
+            :data-testid="`template-workflow-${getTemplateKey(template)}`"
             class="group/card h-full transition-colors hover:bg-secondary-background/50"
-            @mouseenter="hoveredTemplate = template.name"
+            @mouseenter="hoveredTemplate = getTemplateKey(template)"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
           >
@@ -219,7 +219,9 @@
                             getEffectiveSourceModule(template)
                           )
                         "
-                        :is-hovered="hoveredTemplate === template.name"
+                        :is-hovered="
+                          hoveredTemplate === getTemplateKey(template)
+                        "
                         :is-video="
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
@@ -238,7 +240,9 @@
                             getEffectiveSourceModule(template)
                           )
                         "
-                        :is-hovered="hoveredTemplate === template.name"
+                        :is-hovered="
+                          hoveredTemplate === getTemplateKey(template)
+                        "
                         :is-video="
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
@@ -254,7 +258,9 @@
                             getEffectiveSourceModule(template)
                           )
                         "
-                        :is-hovered="hoveredTemplate === template.name"
+                        :is-hovered="
+                          hoveredTemplate === getTemplateKey(template)
+                        "
                         :is-video="
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
@@ -269,7 +275,7 @@
                       default-position="right-2 bottom-2"
                     />
                     <Spinner
-                      v-if="loadingTemplateId === template.name"
+                      v-if="loadingTemplateId === getTemplateKey(template)"
                       class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
@@ -455,6 +461,7 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import {
   filterTemplatesByType,
+  getTemplateKey,
   getTemplateTags,
   isAppTemplate
 } from '@/platform/workflow/templates/utils/templateDisplay'

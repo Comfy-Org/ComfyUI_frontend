@@ -21,6 +21,18 @@ export function isAppTemplate(template: TemplateInfo): boolean {
   return template.isApp === true
 }
 
+/** Core templates keep their bare name; custom ones are qualified by pack. */
+export function templateKeyFor(name: string, sourceModule: string): string {
+  return sourceModule === 'default' ? name : `${sourceModule}/${name}`
+}
+
+export function getTemplateKey(template: TemplateInfo): string {
+  return (
+    template.templateKey ??
+    templateKeyFor(template.name, template.sourceModule ?? 'default')
+  )
+}
+
 export function filterTemplatesByType<T extends TemplateInfo>(
   templates: T[],
   type: TemplateTypeFilter

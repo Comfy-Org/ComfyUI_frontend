@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
@@ -68,6 +68,7 @@ beforeEach(() => {
     {
       name: 'example',
       sourceModule: 'default',
+      templateKey: 'example',
       title: 'Example',
       description: 'Example workflow',
       mediaType: 'image',
@@ -153,5 +154,75 @@ describe('template picker close lifecycle', () => {
     expect(afterClose).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackTemplateLibraryClosed).not.toHaveBeenCalled()
     expect(store.loadingTemplateId).toBe('previous')
+  })
+})
+
+describe('custom templates that share a filename', () => {
+  function renderDuplicates() {
+    const duplicate = (pack: string) => ({
+      name: 'decimate',
+      sourceModule: pack,
+      templateKey: `${pack}/decimate`,
+      title: 'decimate',
+      description: 'decimate',
+      mediaType: 'image',
+      mediaSubtype: 'jpg'
+    })
+    Object.assign(useWorkflowTemplatesStore(), {
+      enhancedTemplates: [duplicate('pack-a'), duplicate('pack-b')]
+    })
+    renderPicker()
+  }
+
+  it('renders each pack and loads the clicked one from its own pack', async () => {
+    renderDuplicates()
+
+    expect(
+      await screen.findByTestId('template-workflow-pack-a/decimate')
+    ).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByTestId('template-workflow-pack-b/decimate')
+    )
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/workflow_templates/pack-b/decimate.json'),
+        expect.anything()
+      )
+    )
+  })
+
+  it('shows the loading spinner only on the card being loaded', async () => {
+    const templateFetch = deferred<Response>()
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      String(url).endsWith('/decimate.json')
+        ? templateFetch.promise
+        : Response.json({ nodes: [] })
+    )
+    renderDuplicates()
+
+    await userEvent.click(
+      await screen.findByTestId('template-workflow-pack-b/decimate')
+    )
+
+    expect(
+      within(screen.getByTestId('template-workflow-pack-b/decimate')).getByRole(
+        'progressbar'
+      )
+    ).toBeInTheDocument()
+    expect(
+      within(
+        screen.getByTestId('template-workflow-pack-a/decimate')
+      ).queryByRole('progressbar')
+    ).toBeNull()
+
+    // Settle the load so no async work outlives the test (dialog closes).
+    templateFetch.resolve(Response.json({ nodes: [] }))
+    await waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('template-workflow-pack-b/decimate')
+      ).toBeNull()
+    )
   })
 })
