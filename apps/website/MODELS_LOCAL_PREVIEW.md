@@ -231,8 +231,10 @@ documents under cloud `services/comfy-api/docs/router-schemas/` at commit
 `dc44ade9534d2fba8a61b5e769418c3febd97085`; it is not proof of deployment.
 Every referenced component and output content type is retained.
 
-Refresh from a cloud checkout. This rewrites the snapshot, contracts, index and
-aliases, and prints the added and removed IDs. The contracts and aliases steps
+Refresh from a clean cloud checkout (uncommitted router-schemas edits, or a
+`<cloud-sha>` other than the checked-out commit, are refused). This prints the
+IDs added and removed since the committed snapshot, then rewrites the snapshot,
+contracts, index and aliases. The contracts and aliases steps
 stop until `workshop-router-availability.json` and
 `workshop-router-identity-audit.json` are rechecked against the new commit.
 
@@ -252,9 +254,9 @@ Snapshot input is `[{id, document}]`. The second command reads the packed
 snapshot and optional `src/data/workshop-router-bindings.json` presentation
 overrides. It writes:
 
-- `src/content/workshop-router-contracts.json`: 198 contracts, one per line.
-- `src/content/workshop-router-index.json`: all 207 lightweight browse identities
-  and explicit missing-input markers (209 lines).
+- `src/content/workshop-router-contracts.json`: 229 contracts, one per line.
+- `src/content/workshop-router-index.json`: all 245 lightweight browse identities
+  and explicit missing-input markers (247 lines).
 
 Bindings are optional, not an enablement registry. The first nine retain
 verified media-upload/status selectors and Advanced choices there.
@@ -264,7 +266,7 @@ exclusion are enforced even in native-JSON mode.
 `src/data/workshop-router-identity-audit.json` holds evidence and disposition
 for every original ID, tied to the same backend commit. The alias generator
 validates complete, unique coverage and rejects stale/unknown targets, then
-writes `src/content/workshop-router-aliases.json`: 142 entries / 144 lines.
+writes `src/content/workshop-router-aliases.json`: 144 entries / 146 lines.
 All generated JSON is packed one record per line, marked generated and excluded
 from formatting. It is a valid JSON array, not strict JSONL.
 

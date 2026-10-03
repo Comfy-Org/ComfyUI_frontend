@@ -1,9 +1,14 @@
+import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { collectRouterSchemaDocuments } from './refresh-workshop-router-snapshot'
+import {
+  collectRouterSchemaDocuments,
+  idsOf,
+  resolveSourceCommit
+} from './refresh-workshop-router-snapshot'
 
 const roots: string[] = []
 
@@ -57,5 +62,81 @@ describe('collectRouterSchemaDocuments', () => {
     await expect(collectRouterSchemaDocuments(root)).rejects.toThrow(
       'No Router schema documents'
     )
+  })
+})
+
+describe('collectRouterSchemaDocuments in a working checkout', () => {
+  it('skips dotfiles such as .DS_Store at either level', async () => {
+    const root = await treeWith({
+      '.DS_Store': '',
+      'openai/.DS_Store': '',
+      'openai/gpt-image-2.json': '{}'
+    })
+
+    expect(await collectRouterSchemaDocuments(root)).toEqual([
+      { id: 'openai/gpt-image-2', document: {} }
+    ])
+  })
+
+  it('names the document that is not valid JSON', async () => {
+    const root = await treeWith({ 'openai/gpt-image-2.json': '{' })
+
+    await expect(collectRouterSchemaDocuments(root)).rejects.toThrow(
+      'Router schema openai/gpt-image-2 is not valid JSON'
+    )
+  })
+})
+
+describe('idsOf', () => {
+  it('rejects a snapshot that is not an array of records', () => {
+    expect(() => idsOf('', 'The committed snapshot')).toThrow(
+      'The committed snapshot is not valid JSON'
+    )
+    expect(() => idsOf('{"id":"a"}', 'The committed snapshot')).toThrow()
+    expect(idsOf('[{"id":"a/b"}]', 'x')).toEqual(new Set(['a/b']))
+  })
+})
+
+describe('resolveSourceCommit', () => {
+  const schemas = 'services/comfy-api/docs/router-schemas'
+
+  async function checkout() {
+    const root = await treeWith({
+      [`${schemas}/openai/gpt-image-2.json`]: '{}'
+    })
+    const git = (...args: string[]) =>
+      execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim()
+    git('init', '-q')
+    git('add', '.')
+    git(
+      '-c',
+      'user.name=test',
+      '-c',
+      'user.email=test@example.com',
+      'commit',
+      '-qm',
+      'init'
+    )
+    return { root, head: git('rev-parse', 'HEAD') }
+  }
+
+  it('stamps the checked-out commit', async () => {
+    const { root, head } = await checkout()
+
+    expect(resolveSourceCommit(root)).toBe(head)
+    expect(resolveSourceCommit(root, head)).toBe(head)
+  })
+
+  it('refuses a commit that is not the checked-out tree', async () => {
+    const { root } = await checkout()
+
+    expect(() => resolveSourceCommit(root, 'a'.repeat(40))).toThrow()
+  })
+
+  it('refuses uncommitted Router schema edits', async () => {
+    const { root } = await checkout()
+    await writeFile(join(root, schemas, 'openai/gpt-image-2.json'), '{"x":1}')
+
+    expect(() => resolveSourceCommit(root)).toThrow('Uncommitted changes')
   })
 })
