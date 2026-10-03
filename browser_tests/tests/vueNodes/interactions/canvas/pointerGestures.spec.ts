@@ -46,10 +46,6 @@ test.describe(
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
-      test.fail(
-        true,
-        'FE-2040 / time-based promotion moves the group after 150 ms and 1 px of drift'
-      )
       await expect.poll(() => groupBounds(comfyPage, 'Pair')).toEqual(before)
     })
 

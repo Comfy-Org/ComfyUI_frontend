@@ -178,6 +178,32 @@ describe('CanvasPointer lifecycle callbacks', () => {
     expect(onDragEnd).toHaveBeenCalledWith(up)
     expect(finallyCallback).toHaveBeenCalledOnce()
   })
+
+  it('treats callback-less double clicks as normal clicks', () => {
+    const pointer = new CanvasPointer(document.createElement('canvas'))
+    const onClick = vi.fn()
+
+    for (const timeStamp of [100, 200, 300]) {
+      pointer.down(pointerEvent('pointerdown', 10, 20, { timeStamp }))
+      pointer.onClick = onClick
+      pointer.up(
+        pointerEvent('pointerup', 10, 20, { timeStamp: timeStamp + 1 })
+      )
+    }
+
+    expect(onClick).toHaveBeenCalledTimes(3)
+  })
+
+  it('records pointermove as eUp when it detects a released button', () => {
+    const pointer = new CanvasPointer(document.createElement('canvas'))
+    pointer.clearEventsOnReset = false
+    pointer.down(pointerEvent('pointerdown', 10, 20))
+    const releasedMove = pointerEvent('pointermove', 30, 40, { buttons: 2 })
+
+    pointer.move(releasedMove)
+
+    expect(pointer.eUp).toBe(releasedMove)
+  })
 })
 
 describe('LGraphCanvas pointer gestures', () => {
@@ -277,24 +303,15 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(log).not.toContain('canvas.onNodeMoved')
     })
 
-    it.fails('slow movement within the drift threshold stays a click', () => {
+    it('slow movement within the drift threshold stays a click', () => {
       gesture.press(A_BODY)
-      gesture.move(shifted(A_BODY, NEAR), {}, CanvasPointer.bufferTime + 100)
+      gesture.move(shifted(A_BODY, NEAR), {}, 500)
       gesture.release(shifted(A_BODY, NEAR))
 
       expect({
         moved: log.includes('canvas.onNodeMoved'),
         position: posOf(a)
       }).toEqual({ moved: false, position: [20, 40] })
-    })
-
-    it('records the current slow movement promotion', () => {
-      gesture.press(A_BODY)
-      gesture.move(shifted(A_BODY, NEAR), {}, CanvasPointer.bufferTime + 100)
-      gesture.release(shifted(A_BODY, NEAR))
-
-      expect(posOf(a)).toEqual([21, 40])
-      expect(log).toContain('canvas.onNodeMoved')
     })
 
     it('currently emits onNodeMoved for a far release that did not move the node', () => {
