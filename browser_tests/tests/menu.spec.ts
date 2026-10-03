@@ -61,70 +61,31 @@ test.describe('Menu', { tag: '@ui' }, () => {
     test('Clicking on active state items does not close menu', async ({
       comfyPage
     }) => {
-      // Open the menu
-      await comfyPage.menu.topbar.openTopbarMenu()
-      const menu = comfyPage.page.locator('.comfy-command-menu')
-
-      // Navigate to View menu
-      const viewMenuItem = menu.getByRole('menuitem', {
-        name: 'View',
-        exact: true
-      })
-      await viewMenuItem.hover()
-
-      // Wait for submenu to appear
-      const viewSubmenu = comfyPage.page.locator('[role="menu"]:visible').last()
-      await viewSubmenu.waitFor({ state: 'visible' })
-
-      // Find Bottom Panel menu item
-      const bottomPanelItem = viewSubmenu.getByRole('menuitem', {
-        name: 'Bottom Panel',
-        exact: true
-      })
-      await bottomPanelItem.waitFor({ state: 'visible' })
-
-      // Get checkmark icon element
-      const checkmark = bottomPanelItem.getByTestId('menu-item-indicator')
-
-      // Check initial state of bottom panel (it's initially hidden)
+      const { topbar } = comfyPage.menu
+      const menu = await topbar.openTopbarMenu()
+      const viewSubmenu = await topbar.openSubmenu('View')
+      const bottomPanelItem = topbar.getMenuItem('Bottom Panel', viewSubmenu)
       const { bottomPanel } = comfyPage
       await expect(bottomPanel.root).toBeHidden()
+      await expect(bottomPanelItem).not.toBeChecked()
 
-      // Checkmark should be invisible initially (panel is hidden)
-      await expect(checkmark).toHaveClass(/invisible/)
+      await test.step('Show the panel without closing the menu', async () => {
+        await bottomPanelItem.click()
+        await expect(bottomPanel.root).toBeVisible()
+        await expect(bottomPanelItem).toBeChecked()
+        await expect(menu).toBeVisible()
+        await expect(viewSubmenu).toBeVisible()
+      })
 
-      await bottomPanelItem.click()
+      await test.step('Hide the panel without closing the menu', async () => {
+        await bottomPanelItem.click()
+        await expect(bottomPanel.root).toBeHidden()
+        await expect(bottomPanelItem).not.toBeChecked()
+        await expect(menu).toBeVisible()
+        await expect(viewSubmenu).toBeVisible()
+      })
 
-      // Verify menu is still visible after clicking
-      await expect(menu).toBeVisible()
-      await expect(viewSubmenu).toBeVisible()
-
-      // Verify bottom panel is now visible
-      await expect(bottomPanel.root).toBeVisible()
-
-      // Checkmark should now be visible (panel is shown)
-      await expect(checkmark).not.toHaveClass(/invisible/)
-
-      // Click Bottom Panel again to toggle it off
-      await bottomPanelItem.click()
-
-      // Verify menu is still visible after second click
-      await expect(menu).toBeVisible()
-      await expect(viewSubmenu).toBeVisible()
-
-      // Verify bottom panel is hidden again
-      await expect(bottomPanel.root).toBeHidden()
-
-      // Checkmark should be invisible again (panel is hidden)
-      await expect(checkmark).toHaveClass(/invisible/)
-
-      // Click in top-right corner to close menu (avoid hamburger menu at top-left)
-      const viewport = comfyPage.page.viewportSize()!
-      await comfyPage.page
-        .locator('body')
-        .click({ position: { x: viewport.width - 10, y: 10 } })
-
-      // Verify menu is now closed
+      await topbar.closeTopbarMenu()
       await expect(menu).toBeHidden()
     })
 
