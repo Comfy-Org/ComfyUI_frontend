@@ -94,15 +94,16 @@ watch(
 const complaint = computed<
   { code: FieldErrorCode; source: FieldSchema } | undefined
 >(() => {
-  const own =
+  const current =
     edited.value ||
     (field.presentation?.formConstraint &&
       errors[field.name] === field.presentation.formConstraint.error)
-      ? validateForm([field], values.value)[field.name]
-      : errors[field.name]
+      ? validateForm(group ?? [field], values.value)
+      : errors
+  const own = current[field.name]
   if (own) return { code: own, source: field }
-  const sibling = group?.find((member) => errors[member.name])
-  const code = sibling && errors[sibling.name]
+  const sibling = group?.find((member) => current[member.name])
+  const code = sibling && current[sibling.name]
   return code ? { code, source: sibling } : undefined
 })
 const fieldError = computed(() => complaint.value?.code)

@@ -48,9 +48,17 @@ const uploadGroups = computed(() => indexedUploadGroups(schema))
 const followers = computed(
   () => new Set(uploadGroups.value.flatMap((group) => group.members.slice(1)))
 )
-const primary = computed(() =>
-  groups.value.primary.filter((field) => !followers.value.has(field.name))
-)
+// Which section a slot lands in is the contract's call, so a follower is
+// taken out of whichever one holds it and its leader is given the run there.
+const sections = computed(() => {
+  const shown = (fields: readonly FieldSchema[]) =>
+    fields.filter((field) => !followers.value.has(field.name))
+  return {
+    primary: shown(groups.value.primary),
+    settings: shown(groups.value.settings),
+    advanced: shown(groups.value.advanced)
+  }
+})
 
 // The whole slot, not just its name: a complaint about one of them is written
 // in its own terms, and the control that shows it needs them.
@@ -107,12 +115,12 @@ function onAdvancedToggle(event: Event) {
 <template>
   <div class="flex flex-col gap-8" data-testid="playground-form">
     <div
-      v-if="primary.length"
+      v-if="sections.primary.length"
       class="flex flex-col gap-8"
       data-testid="playground-inputs"
     >
       <PlaygroundField
-        v-for="field in primary"
+        v-for="field in sections.primary"
         :key="field.name"
         v-model="values"
         :field
@@ -131,16 +139,17 @@ function onAdvancedToggle(event: Event) {
     </div>
 
     <div
-      v-if="groups.settings.length"
+      v-if="sections.settings.length"
       class="flex flex-col gap-8"
       data-testid="playground-settings"
     >
       <PlaygroundField
-        v-for="field in groups.settings"
+        v-for="field in sections.settings"
         :key="field.name"
         v-model="values"
         :field
         :errors
+        :group="membersOf(field.name)"
         :locale
         :disabled
         :file-uploads-disabled
@@ -148,7 +157,7 @@ function onAdvancedToggle(event: Event) {
     </div>
 
     <details
-      v-if="groups.advanced.length"
+      v-if="sections.advanced.length"
       class="group rounded-2xl border border-transparency-white-t8"
       data-testid="playground-advanced"
       :open="advancedOpen"
@@ -165,11 +174,12 @@ function onAdvancedToggle(event: Event) {
       </summary>
       <div class="flex flex-col gap-5 px-4 pb-4">
         <PlaygroundField
-          v-for="field in groups.advanced"
+          v-for="field in sections.advanced"
           :key="field.name"
           v-model="values"
           :field
           :errors
+          :group="membersOf(field.name)"
           :locale
           :disabled
           :file-uploads-disabled
