@@ -7,6 +7,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
 
@@ -105,44 +106,89 @@ describe('useBoundingBoxesSources', () => {
       )
     })
 
-    it('falls back to the background saved by its own run when the producer has no preview', () => {
-      const { target, image } = buildGraph()
-      image.connect(0, target, 0)
-      useNodeOutputStore().nodeOutputs[String(target.id)] = {
-        background_images: [{ filename: 'bg_saved.png', type: 'temp' }]
+    it.for([
+      {
+        name: 'the producer preview over the saved background',
+        connected: true,
+        preview: true,
+        saved: true,
+        expected: '/api/view?filename=live.png&type=input'
+      },
+      {
+        name: 'the saved background when the producer has no preview',
+        connected: true,
+        preview: false,
+        saved: true,
+        expected: '/api/view?filename=bg_saved.png&type=temp'
+      },
+      {
+        name: 'nothing when neither has an image',
+        connected: true,
+        preview: false,
+        saved: false,
+        expected: undefined
+      },
+      {
+        name: 'nothing from the saved background once disconnected',
+        connected: false,
+        preview: false,
+        saved: true,
+        expected: undefined
       }
+    ])('shows $name', ({ connected, preview, saved, expected }) => {
+      const { target, image } = buildGraph()
+      if (connected) image.connect(0, target, 0)
+      if (preview)
+        useNodeOutputStore().nodeOutputs[String(image.id)] = {
+          images: [{ filename: 'live.png', type: 'input' }]
+        }
+      if (saved)
+        useNodeOutputStore().nodeOutputs[String(target.id)] = {
+          background_images: [{ filename: 'bg_saved.png', type: 'temp' }]
+        }
 
       const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
 
-      expect(backgroundUrl.value).toBe(
-        '/api/view?filename=bg_saved.png&type=temp'
-      )
+      expect(backgroundUrl.value).toBe(expected)
     })
 
-    it('prefers a producer preview over the background saved by its own run', () => {
-      const { target, image } = buildGraph()
+    it('only falls back to the saved background while its producer is connected', () => {
+      const { graph, target, image } = buildGraph()
+      const other = new LGraphNode('VAEDecode')
+      other.addOutput('IMAGE', 'IMAGE')
+      graph.add(other)
+      image.connect(0, target, 0)
+      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      useNodeOutputStore().nodeOutputs[String(target.id)] = {
+        background_images: [{ filename: 'from_image.png', type: 'temp' }]
+      }
+      const saved = '/api/view?filename=from_image.png&type=temp'
+      expect(backgroundUrl.value).toBe(saved)
+
+      other.connect(0, target, 0)
+      expect(backgroundUrl.value).toBeUndefined()
+
+      image.connect(0, target, 0)
+      expect(backgroundUrl.value).toBe(saved)
+    })
+
+    it('keeps the same URL when an unrelated link changes', () => {
+      const { graph, target, image, boxes } = buildGraph()
+      let rand = 0
+      vi.spyOn(app, 'getRandParam').mockImplementation(() => `&rand=${++rand}`)
       image.connect(0, target, 0)
       useNodeOutputStore().nodeOutputs[String(image.id)] = {
-        images: [{ filename: 'live.png', type: 'input' }]
+        images: [{ filename: 'bg.png', type: 'input' }]
       }
-      useNodeOutputStore().nodeOutputs[String(target.id)] = {
-        background_images: [{ filename: 'stale.png', type: 'temp' }]
-      }
-
       const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const before = backgroundUrl.value
 
-      expect(backgroundUrl.value).toBe('/api/view?filename=live.png&type=input')
-    })
+      const consumer = new LGraphNode('Consumer')
+      consumer.addInput('bboxes', 'BOUNDING_BOX')
+      graph.add(consumer)
+      boxes.connect(0, consumer, 0)
 
-    it('ignores the saved background once the input is disconnected', () => {
-      const { target } = buildGraph()
-      useNodeOutputStore().nodeOutputs[String(target.id)] = {
-        background_images: [{ filename: 'bg_saved.png', type: 'temp' }]
-      }
-
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
-
-      expect(backgroundUrl.value).toBeUndefined()
+      expect(backgroundUrl.value).toBe(before)
     })
 
     it('resolves a producer that sits behind a subgraph boundary', () => {
@@ -167,6 +213,33 @@ describe('useBoundingBoxesSources', () => {
       }
 
       const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+
+      expect(backgroundUrl.value).toBe(
+        '/api/view?filename=inner.png&type=input'
+      )
+    })
+
+    it('picks up a producer connected inside the subgraph after mount', () => {
+      const { graph, target } = buildGraph()
+      const subgraph = createTestSubgraph({
+        rootGraph: graph,
+        outputs: [{ name: 'IMAGE', type: 'IMAGE' }]
+      })
+      const inner = new LGraphNode('LoadImage')
+      inner.addOutput('IMAGE', 'IMAGE')
+      subgraph.add(inner)
+      const subgraphNode = createTestSubgraphNode(subgraph, {
+        parentGraph: graph
+      })
+      graph.add(subgraphNode)
+      subgraphNode.connect(0, target, 0)
+      useNodeOutputStore().nodeOutputs[`${subgraph.id}:${inner.id}`] = {
+        images: [{ filename: 'inner.png', type: 'input' }]
+      }
+      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      expect(backgroundUrl.value).toBeUndefined()
+
+      subgraph.outputNode.slots[0].connect(inner.outputs[0], inner)
 
       expect(backgroundUrl.value).toBe(
         '/api/view?filename=inner.png&type=input'

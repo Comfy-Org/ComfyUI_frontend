@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { isBoundingBox } from '@/composables/boundingBoxes/boundingBoxesUtil'
@@ -30,21 +30,42 @@ export function useBoundingBoxesSources(
     return slot >= 0 && target.isInputConnected(slot)
   })
 
-  const backgroundUrl = computed(() => {
+  const backgroundSource = computed(() => {
     const target = node.value
-    if (!target) return undefined
+    if (!target || !backgroundConnected.value) return undefined
 
-    const slot = target.findInputSlot(BACKGROUND_INPUT)
-    if (slot < 0 || !target.isInputConnected(slot)) return undefined
-
-    const source = resolveInputSourceNode(target, slot)
-    const upstream = source && nodeOutputStore.getNodeImageUrls(source)?.[0]
-    return (
-      upstream ||
-      savedImageUrls(
-        nodeOutputStore.getNodeOutputs(target)?.[BACKGROUND_OUTPUT]
-      )[0]
+    return resolveInputSourceNode(
+      target,
+      target.findInputSlot(BACKGROUND_INPUT)
     )
+  })
+
+  const savedBackground = computed(() => {
+    const target = node.value
+    return target
+      ? nodeOutputStore.getNodeOutputs(target)?.[BACKGROUND_OUTPUT]
+      : undefined
+  })
+
+  const savedBackgroundSource = shallowRef(backgroundSource.value)
+  watch(
+    savedBackground,
+    () => {
+      savedBackgroundSource.value = backgroundSource.value
+    },
+    { flush: 'sync' }
+  )
+
+  const backgroundUrl = computed(() => {
+    const source = backgroundSource.value
+    if (!source) return undefined
+
+    const upstream = nodeOutputStore.getNodeImageUrls(source)?.[0]
+    if (upstream) return upstream
+
+    return savedBackgroundSource.value === source
+      ? savedImageUrls(savedBackground.value)[0]
+      : undefined
   })
 
   const incomingBoxes = computed(() => {

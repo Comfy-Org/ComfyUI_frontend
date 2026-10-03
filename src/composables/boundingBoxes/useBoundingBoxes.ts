@@ -671,9 +671,11 @@ export function useBoundingBoxes(
     }
   }
 
+  const backgroundLoading = ref(false)
   watch(
     backgroundUrl,
     (url, _, onCleanup) => {
+      backgroundLoading.value = !!url
       if (!url) {
         bgImage.value = null
         requestDraw()
@@ -689,7 +691,11 @@ export function useBoundingBoxes(
         if (stale) return
         bgImage.value = img
         applyImageDimensions(img.naturalWidth, img.naturalHeight)
+        backgroundLoading.value = false
         requestDraw()
+      }
+      img.onerror = () => {
+        if (!stale) backgroundLoading.value = false
       }
       img.src = url
     },
@@ -736,7 +742,9 @@ export function useBoundingBoxes(
   }
 
   applyIncomingBoxes(incomingBoxes.value, false)
-  watch(incomingBoxes, (incoming) => applyIncomingBoxes(incoming))
+  watch([incomingBoxes, backgroundLoading], ([incoming, loading]) => {
+    if (!loading) applyIncomingBoxes(incoming)
+  })
   void nextTick(() => requestDraw())
 
   onBeforeUnmount(() => {

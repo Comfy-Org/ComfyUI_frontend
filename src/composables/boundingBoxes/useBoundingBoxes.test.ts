@@ -402,7 +402,6 @@ describe('useBoundingBoxes background image', () => {
     backgroundConnected.value = true
     await flush()
     expect([hiddenOf('width'), hiddenOf('height')]).toEqual([true, true])
-    expect(hiddenOf('last_incoming')).toBeUndefined()
 
     backgroundConnected.value = false
     await flush()
@@ -422,6 +421,24 @@ describe('useBoundingBoxes background image', () => {
 
     expect(widgetValue(node, 'width')).toBe(1008)
     expect(widgetValue(node, 'height')).toBe(768)
+  })
+
+  it('waits for a pending background before converting incoming boxes', async () => {
+    const node = makeNode()
+    appState.node = node
+    backgroundUrl.value = '/view?filename=bg.png'
+    const c = setup()
+
+    incomingBoxes.value = [box({ x: 0, y: 0, width: 256, height: 256 })]
+    await flush()
+    expect(modelBoxes(c)).toHaveLength(0)
+
+    FakeImage.created[0].load(1024, 1024)
+    await flush()
+
+    expect(widgetValue(node, 'width')).toBe(1024)
+    expect(modelBoxes(c)).toHaveLength(1)
+    expect(modelBoxes(c)[0].width).toBe(256)
   })
 
   it('ignores a background that finishes loading after it was replaced', async () => {

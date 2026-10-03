@@ -41,19 +41,22 @@ function makeNode(comfyClass = 'CreateBoundingBoxes') {
   }
 }
 
+const hiddenOf = (node: ReturnType<typeof makeNode>, name: string) =>
+  node.widgets.find((w) => w.name === name)!.hidden
+
 describe('Comfy.CreateBoundingBoxes extension', () => {
   it('ignores nodes of other classes', () => {
     const node = makeNode('SomethingElse')
     state.extension!.nodeCreated(node)
     expect(node.setSize).not.toHaveBeenCalled()
-    expect(node.widgets[1].hidden).toBe(false)
+    expect(hiddenOf(node, 'last_incoming')).toBe(false)
   })
 
   it('enlarges the node and hides only the internal last_incoming widget', () => {
     const node = makeNode()
     state.extension!.nodeCreated(node)
     expect(node.setSize).toHaveBeenCalledWith([420, 560])
-    expect(node.widgets[0].hidden).toBe(false)
-    expect(node.widgets[1].hidden).toBe(true)
+    expect(hiddenOf(node, 'width')).toBe(false)
+    expect(hiddenOf(node, 'last_incoming')).toBe(true)
   })
 })
