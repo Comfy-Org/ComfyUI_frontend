@@ -9,8 +9,7 @@ const PLACEMENT = { x: 400, y: 400 }
  * touched becomes a transparent ghost I cannot select". The tab-switch route is
  * on `main` (`agentPlacedNodeGhostFlag.spec.ts`). `qspec-2` returned the other
  * two routes for budget with no blocker named and they then fell out of every
- * hand-off list; `cover-1` re-opened them
- * (`reports/design/2026-09-26-matrix-coverage-audit.md`).
+ * hand-off list; `cover-1` re-opened them.
  *
  * `flags.ghost` marks a node still following the cursor during a search-box
  * placement. `LGraph.add` sets it before the layout change the follower mints
@@ -22,8 +21,8 @@ const PLACEMENT = { x: 400, y: 400 }
  *      rebuilt from the document after a browser reload must come back solid.
  *   2. INBOUND — a document that does carry it (one written before the strip
  *      existed, or by any other writer) must still not produce an untouchable
- *      node here. This is the black-box twin of the unit guard in
- *      `src/workbench/extensions/agent/crdt/ghostPlacementFlag.test.ts`.
+ *      node here. The narrow unit guards live in `docOpMinter.test.ts` and
+ *      `liveGraphApplier.test.ts` in the same production directory.
  *
  * Both are green regression guards.
  */
@@ -54,6 +53,9 @@ test.describe(
           expect(
             outcomes.filter((outcome) => outcome.outcome === 'rejected')
           ).toEqual([])
+          expect(
+            outcomes.some((outcome) => outcome.outcome === 'applied')
+          ).toBe(true)
           // The node really was a ghost at the moment the op was minted from
           // it; without this the rest of the test proves nothing.
           expect(agentConversation.placementWasGhosted).toBe(true)
@@ -65,8 +67,11 @@ test.describe(
           agentConversation.vueNodes.getNodeLocator(nodeId)
         ).not.toHaveAttribute('data-ghost')
         await expect
-          .poll(() => agentConversation.hostNode(nodeId)?.flags)
-          .not.toHaveProperty('ghost')
+          .poll(() => agentConversation.hostNode(nodeId))
+          .toBeDefined()
+        expect(
+          agentConversation.hostNode(nodeId)?.flags ?? {}
+        ).not.toHaveProperty('ghost')
       })
 
       await test.step('reload with no local workflow, so the node can only come back from the document', async () => {
@@ -102,7 +107,13 @@ test.describe(
         await test.step('place a node through the search box', async () => {
           const added =
             await agentConversation.addNoteThroughSearchBox(PLACEMENT)
-          await agentConversation.waitForHumanOps(1)
+          const outcomes = await agentConversation.waitForHumanOps(1)
+          expect(
+            outcomes.filter((outcome) => outcome.outcome === 'rejected')
+          ).toEqual([])
+          expect(
+            outcomes.some((outcome) => outcome.outcome === 'applied')
+          ).toBe(true)
           expect(agentConversation.placementWasGhosted).toBe(true)
           return added
         })
@@ -113,12 +124,14 @@ test.describe(
       // READ side: an `add_node` arriving with `ghost: true` is exactly what a
       // peer, an older writer, or an agent edit that copied a stale snapshot
       // sends, and the op vocabulary inserts `node` verbatim.
-      const replacementId = String(Number(placedId) + 1000)
-      const pos = [PLACEMENT.x + 320, PLACEMENT.y]
+      const replacementId = '990001'
 
       await test.step('the agent adds a node whose snapshot is still ghosted', async () => {
         const source = agentConversation.hostNode(placedId)
         if (!source) throw new Error('the document lost the placed node')
+        if (!source.pos) throw new Error('the document lost the node position')
+        expect(agentConversation.hostNode(replacementId)).toBeUndefined()
+        const pos = [source.pos[0] + 320, source.pos[1]]
         agentConversation.pushHostOps([
           {
             op: 'add_node',
@@ -133,6 +146,10 @@ test.describe(
             }
           }
         ])
+        expect(agentConversation.hostNode(replacementId)?.flags).toHaveProperty(
+          'ghost',
+          true
+        )
         await expect(
           agentConversation.vueNodes.getNodeLocator(replacementId)
         ).toBeVisible()
