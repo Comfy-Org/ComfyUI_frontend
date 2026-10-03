@@ -44,6 +44,7 @@ describe('prepareSentryEvent', () => {
       contexts: {
         vue_directive_runtime: {
           array_iterator_native: true,
+          loaded_script_count: 1,
           first_party_script_paths: ['/assets/vendor-vue-core.abc123.js']
         }
       }

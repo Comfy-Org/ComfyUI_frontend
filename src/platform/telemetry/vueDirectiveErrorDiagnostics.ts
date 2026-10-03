@@ -84,7 +84,7 @@ export function prepareSentryEvent(
         frontend_version: __COMFYUI_FRONTEND_VERSION__,
         frontend_commit: __COMFYUI_FRONTEND_COMMIT__,
         array_iterator_native: iteratorLooksNative(currentArrayIterator),
-        first_party_script_count: document.scripts.length,
+        loaded_script_count: document.scripts.length,
         first_party_script_paths: scriptPaths
       }
     }
