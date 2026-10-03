@@ -83,6 +83,7 @@ export type FirebaseIdentityConfig =
  * after that; these decide whether it is finished or discarded unused.
  */
 export interface PopupSignInOptions {
+  readonly onStarted?: () => void
   /**
    * Finishes a result that arrived after the popup was reported closed, given
    * the credential still being exchanged. Without it such a result is
@@ -283,6 +284,7 @@ export function createFirebaseIdentity(
         pendingPopup = undefined
       }
       void pendingPopup.then(clearPending, clearPending)
+      options?.onStarted?.()
       return pendingPopup
     }
     if (!config.watchPopupSignIn) return signIn()

@@ -44,6 +44,15 @@ describe('useSocialSignIn when a closed popup’s result arrives late', () => {
 
   beforeEach(() => {
     actions = useAuthActions()
+    for (const provider of [
+      actions.signInWithGoogle,
+      actions.signInWithGithub
+    ]) {
+      vi.mocked(provider).mockImplementation(async (options) => {
+        options?.popup?.onStarted?.()
+        return undefined
+      })
+    }
   })
 
   it.for([
@@ -82,6 +91,23 @@ describe('useSocialSignIn when a closed popup’s result arrives late', () => {
     )
   })
 
+  it.for(['signInWithGoogle', 'signInWithGithub'] as const)(
+    'finishes the abandoned popup after a blocked %s retry',
+    async (retry) => {
+      const { signIn, onSignedIn } = mount()
+      await signIn.signInWithGoogle()
+      const abandoned = popupOptions(actions.signInWithGoogle)
+      vi.mocked(actions[retry]).mockResolvedValueOnce(undefined)
+
+      await signIn[retry]()
+
+      expect(abandoned.keepLateResult?.()).toBe(true)
+      vi.mocked(actions.signInWithGoogle).mockResolvedValueOnce(credential)
+      abandoned.onResumed?.(Promise.resolve(credential))
+      await vi.waitFor(() => expect(onSignedIn).toHaveBeenCalledOnce())
+    }
+  )
+
   it('wants a late result only while the page is open', async () => {
     const { signIn, unmount } = mount()
     await signIn.signInWithGoogle()
@@ -118,7 +144,6 @@ describe('useSocialSignIn when a closed popup’s result arrives late', () => {
       Promise.resolve(credential)
     )
 
-    vi.mocked(actions.signInWithGithub).mockResolvedValueOnce(undefined)
     await signIn.signInWithGithub()
     exchange.resolve(credential)
     await vi.waitFor(() =>

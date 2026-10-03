@@ -31,12 +31,16 @@ export function useSocialSignIn(options: {
     provider: SocialSignIn,
     resumed?: Promise<UserCredential>
   ): Promise<void> {
-    const attempt = ++latest
+    const attempt = latest + 1
+    if (resumed) latest = attempt
     const wanted = () => alive && attempt === latest
     const signedIn = await provider({
       isNewUser: options.isNewUser(),
       resumed,
       popup: {
+        onStarted: () => {
+          latest = attempt
+        },
         onResumed: (credential) => {
           signInWith(provider, credential).catch((error: unknown) =>
             reportError(error, {

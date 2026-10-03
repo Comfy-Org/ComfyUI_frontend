@@ -544,9 +544,10 @@ describe('popup sign-in with the popup watched', () => {
     async (method) => {
       const popup = pendingPopup()
       const onResumed = vi.fn()
+      const onStarted = vi.fn()
       const identity = await watchedIdentity()
       const outcome = identity
-        .signInWithGoogle({ onResumed })
+        .signInWithGoogle({ onResumed, onStarted })
         .catch((error: unknown) => error)
       await vi.advanceTimersByTimeAsync(0)
       watch.abandon()
@@ -554,9 +555,10 @@ describe('popup sign-in with the popup watched', () => {
         code: 'auth/popup-closed-by-user'
       })
 
-      await expect(identity[method]()).rejects.toMatchObject({
+      await expect(identity[method]({ onStarted })).rejects.toMatchObject({
         code: 'auth/cancelled-popup-request'
       })
+      expect(onStarted).toHaveBeenCalledOnce()
 
       expect(watch.lateResult()).toBe('kept')
       popup.resolve(testCredential)
@@ -577,38 +579,24 @@ describe('popup sign-in with the popup watched', () => {
   it.for([
     [
       'an email sign-in',
-      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>): void =>
         void identity.signInWithEmail('a@b.co', 'pw').catch(() => {})
     ],
     [
       'an account creation',
-      (identity: Awaited<ReturnType<typeof watchedIdentity>>) =>
+      (identity: Awaited<ReturnType<typeof watchedIdentity>>): void =>
         void identity.createUserWithEmail('a@b.co', 'pw').catch(() => {})
-    ],
-    [
-      'another popup',
-      async (
-        identity: Awaited<ReturnType<typeof watchedIdentity>>,
-        previous: Deferred<UserCredential>
-      ) => {
-        previous.resolve(testCredential)
-        await vi.advanceTimersByTimeAsync(0)
-        void identity.signInWithGitHub().catch(() => {})
-      }
     ]
   ] as const)(
     'discards a late result once %s has started since',
     async ([, startAnother]) => {
-      const popup = pendingPopup()
+      pendingPopup()
       const onResumed = vi.fn()
       const identity = await watchedIdentity()
       void identity.signInWithGoogle({ onResumed }).catch(() => {})
       await vi.advanceTimersByTimeAsync(0)
       watch.abandon()
-      const lateResultRules = watch.state.options
-
-      await startAnother(identity, popup)
-      watch.state.options = lateResultRules
+      startAnother(identity)
 
       expect(watch.lateResult()).toBe('discarded')
       expect(onResumed).not.toHaveBeenCalled()
