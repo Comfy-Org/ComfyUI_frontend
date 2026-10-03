@@ -24,6 +24,8 @@ interface LedgerRow {
   readonly amount: string
   readonly comparedRate?: ComparedRate
   readonly sublines: readonly string[]
+  /** A credit the server subtracts, muted like a deduction. */
+  readonly credit?: true
 }
 
 /**
@@ -229,22 +231,20 @@ function refillsToLine(r: QuoteReading): string {
 }
 
 /**
- * A money row renders only when the total reconciles with it: today's
- * charge equals the row, or a discount or balance row itemizes the
+ * Money rows render only when the total reconciles with them: today's
+ * charge equals their net, or a discount or balance row itemizes the
  * difference. A $0 first period or a credit the quote does not itemize would
- * leave the row contradicting the total, so it comes off and the total
+ * leave the rows contradicting the total, so they come off and the total
  * stands on its own.
  */
 function moneyItems(
   r: QuoteReading,
-  cents: number,
-  row: Omit<LedgerRow, 'amount'>
-): LedgerRow[] {
+  netCents: number,
+  rows: readonly LedgerRow[]
+): readonly LedgerRow[] {
   const itemized =
     r.promotions.length > 0 || r.quote.balance_applied_cents !== undefined
-  return cents === r.dueCents || itemized
-    ? [{ ...row, amount: r.money(cents) }]
-    : []
+  return netCents === r.dueCents || itemized ? rows : []
 }
 
 function scheduledLedger(r: QuoteReading): FamilyLedger {
@@ -319,22 +319,53 @@ function grantedToday(r: QuoteReading): SummaryLedger['credits'] {
   }
 }
 
+/**
+ * A quote that itemizes its proration reads as the remaining time on the new
+ * plan and the unused-time credit from the old one, at the server's amounts.
+ * Otherwise one net row stands for both.
+ */
+function proratedItems(r: QuoteReading): LedgerRow[] {
+  const remainingCents = r.quote.proration_remaining_cents
+  const unusedCents = r.quote.proration_unused_cents
+  if (remainingCents === undefined || unusedCents === undefined)
+    return [
+      {
+        label: r.t(`${S}.item.prorated`, { plan: r.plan }),
+        amount: r.money(r.quote.cost_today_cents),
+        sublines: [
+          r.t(`${S}.item.remainingTime`, {
+            plan: r.tierName(r.next.tier),
+            current: r.tierName(r.current?.tier ?? r.next.tier)
+          }),
+          refillsToLine(r)
+        ]
+      }
+    ]
+  const current = r.current ?? r.next
+  return [
+    {
+      label: r.t(`${S}.item.remainingTimeOn`, { plan: r.plan }),
+      amount: r.money(remainingCents),
+      sublines: [refillsToLine(r)]
+    },
+    {
+      label: r.t(`${S}.item.unusedTimeOn`, {
+        plan: r.planLabel(current, r.cadenceChanges)
+      }),
+      amount: deduction(r, unusedCents),
+      sublines: [],
+      credit: true
+    }
+  ]
+}
+
 function proratedLedger(r: QuoteReading): FamilyLedger {
   return {
     ...r.shared,
     family: 'prorated_change',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: grantedToday(r),
-    items: moneyItems(r, r.quote.cost_today_cents, {
-      label: r.t(`${S}.item.prorated`, { plan: r.plan }),
-      sublines: [
-        r.t(`${S}.item.remainingTime`, {
-          plan: r.tierName(r.next.tier),
-          current: r.tierName(r.current?.tier ?? r.next.tier)
-        }),
-        refillsToLine(r)
-      ]
-    }),
+    items: moneyItems(r, r.quote.cost_today_cents, proratedItems(r)),
     trailing: [
       r.t(`${S}.trailing.creditsKept`, {}),
       renewalLine(r),
@@ -447,17 +478,15 @@ function chargeNowLedger(r: QuoteReading): FamilyLedger {
     family: 'charge_now',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: chargeNowCredits(r),
-    items: moneyItems(
-      r,
-      r.quote.cost_today_cents,
-      'comparedRate' in rateLine
-        ? {
-            label: r.plan,
-            comparedRate: rateLine.comparedRate,
-            sublines: refills
-          }
-        : { label: r.plan, sublines: [rateLine.subline, ...refills] }
-    ),
+    items: moneyItems(r, r.quote.cost_today_cents, [
+      {
+        label: r.plan,
+        amount: r.money(r.quote.cost_today_cents),
+        ...('comparedRate' in rateLine
+          ? { comparedRate: rateLine.comparedRate, sublines: refills }
+          : { sublines: [rateLine.subline, ...refills] })
+      }
+    ]),
     trailing: chargeNowTrailing(r)
   }
 }

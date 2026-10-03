@@ -89,6 +89,28 @@ describe('CustomersDirectory', () => {
     ])
   })
 
+  it('sorts Watch stories by upload date in both directions', async () => {
+    const laterStory: WatchStoryCard = {
+      ...watchStories[0],
+      slug: 'later-film',
+      title: 'Later film',
+      uploadDate: '2026-05-01T00:00:00+00:00'
+    }
+    render(CustomersDirectory, {
+      props: { watchStories: [laterStory, ...watchStories], readStories }
+    })
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Watch' }))
+    expect(headingTitles()).toEqual(['Later film', 'Black Math film'])
+
+    await user.selectOptions(screen.getByRole('combobox'), 'oldest')
+    expect(headingTitles()).toEqual(['Black Math film', 'Later film'])
+
+    await user.selectOptions(screen.getByRole('combobox'), 'latest')
+    expect(headingTitles()).toEqual(['Later film', 'Black Math film'])
+  })
+
   it('shows an empty state when nothing matches', async () => {
     const user = renderDirectory()
 

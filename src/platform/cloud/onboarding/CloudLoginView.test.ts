@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
@@ -25,6 +27,8 @@ const FREE_RUN_MESSAGES = {
       cloudNewUser: 'New to Comfy?',
       cloudSignUp: 'Sign up here',
       freeRunsSuffix: 'to get {count} free run. | to get {count} free runs.',
+      freeRunsSuffixGoogle:
+        'with Google to get {count} free run. | with Google to get {count} free runs.',
       insecureContextWarning: 'This connection is insecure'
     }
   }
@@ -64,13 +68,41 @@ async function renderLoginView(
 
 afterEach(() => {
   isEmbeddedWebView.value = false
+  remoteConfig.value = {}
 })
 
 describe('CloudLoginView', () => {
-  it('advertises the free runs offered on sign-up', async () => {
+  it('hides the free-runs offer when the server sends none', async () => {
     await renderLoginView('/cloud/login', FREE_RUN_MESSAGES)
 
-    expect(screen.getByText(/to get 5 free runs\./)).toBeInTheDocument()
+    expect(screen.queryByText(/free run/)).not.toBeInTheDocument()
+  })
+
+  it.for<{
+    name: string
+    offer: NonNullable<RemoteConfig['free_tier_offer']>
+    expected: string
+  }>([
+    {
+      name: 'states the server allowance',
+      offer: { job_allowance: 3, requires_google_sign_in: false },
+      expected: 'to get 3 free runs.'
+    },
+    {
+      name: 'uses the singular for one run',
+      offer: { job_allowance: 1, requires_google_sign_in: false },
+      expected: 'to get 1 free run.'
+    },
+    {
+      name: 'names Google when only Google sign-in qualifies',
+      offer: { job_allowance: 5, requires_google_sign_in: true },
+      expected: 'with Google to get 5 free runs.'
+    }
+  ])('$name', async ({ offer, expected }) => {
+    remoteConfig.value = { free_tier_offer: offer }
+    await renderLoginView('/cloud/login', FREE_RUN_MESSAGES)
+
+    expect(screen.getByText(expected)).toBeInTheDocument()
   })
 
   it('carries the incoming query onto the sign-up link', async () => {

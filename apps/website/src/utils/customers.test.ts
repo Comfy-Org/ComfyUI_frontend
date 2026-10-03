@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import { customerStorySchema } from '../content/customers.schema'
-import { nextStory, sortStories, storySlug, toCardProps } from './customers'
+import {
+  filterCustomerCards,
+  nextStory,
+  sortStories,
+  storySlug,
+  toCardProps
+} from './customers'
 
 const validFrontmatter = {
   title:
@@ -128,4 +134,27 @@ describe('toCardProps', () => {
       dateAdded: validFrontmatter.dateAdded
     })
   })
+})
+
+describe('filterCustomerCards', () => {
+  it.for([
+    { sort: 'latest', titles: ['new', 'tie-a', 'tie-b', 'old'] },
+    { sort: 'oldest', titles: ['old', 'tie-a', 'tie-b', 'new'] }
+  ] as const)(
+    'preserves curated order for tied dates when sorting $sort',
+    ({ sort, titles }) => {
+      const cards = [
+        { title: 'tie-a', date: '2026-07-01' },
+        { title: 'new', date: '2026-10-02' },
+        { title: 'tie-b', date: '2026-07-01' },
+        { title: 'old', date: '2026-04-23' }
+      ].map((card) => ({ ...card, category: 'STORY', description: '' }))
+      const original = [...cards]
+
+      const results = filterCustomerCards(cards, '', sort, (card) => card.date)
+
+      expect(results.map((card) => card.title)).toEqual(titles)
+      expect(cards).toEqual(original)
+    }
+  )
 })

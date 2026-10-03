@@ -88,8 +88,8 @@ export function filterCustomerCards<T extends SearchableCard>(
           .includes(needle)
       )
     : [...cards]
-  const latestFirst = matches.sort(
-    (a, b) => Date.parse(dateOf(b)) - Date.parse(dateOf(a))
+  const direction = sort === 'latest' ? -1 : 1
+  return matches.sort(
+    (a, b) => direction * (Date.parse(dateOf(a)) - Date.parse(dateOf(b)))
   )
-  return sort === 'latest' ? latestFirst : latestFirst.reverse()
 }

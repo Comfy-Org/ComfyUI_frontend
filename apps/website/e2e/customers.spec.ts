@@ -1,8 +1,9 @@
 import { expect } from '@playwright/test'
 
 import { customerVideoStories } from '../src/data/customerVideos'
-import { t } from '../src/i18n/translations'
+import { t, translationsFor } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 test.describe('Customers @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,16 +14,20 @@ test.describe('Customers @smoke', () => {
     page
   }) => {
     const breadcrumb = page.getByRole('navigation', {
-      name: t('ui.breadcrumb', 'en')
+      name: t('ui.breadcrumb', {}, { locale: 'en' })
     })
     await expect(
-      breadcrumb.getByRole('link', { name: t('breadcrumb.home', 'en') })
+      breadcrumb.getByRole('link', {
+        name: t('breadcrumb.home', {}, { locale: 'en' })
+      })
     ).toHaveAttribute('href', '/')
     await expect(
-      breadcrumb.getByText(t('nav.customerStories', 'en'))
+      breadcrumb.getByText(t('nav.customerStories', {}, { locale: 'en' }))
     ).toBeVisible()
     await expect(
-      breadcrumb.locator('a', { hasText: t('nav.customerStories', 'en') })
+      breadcrumb.locator('a', {
+        hasText: t('nav.customerStories', {}, { locale: 'en' })
+      })
     ).toHaveCount(0)
   })
 
@@ -43,16 +48,21 @@ test.describe('Customers @smoke', () => {
   test('the WATCH group links each video story to its dedicated watch page', async ({
     page
   }) => {
-    const watchHeading = page.getByText(t('customers.group.watch', 'en'), {
-      exact: true
-    })
+    const watchHeading = page.getByText(
+      t('customers.group.watch', {}, { locale: 'en' }),
+      {
+        exact: true
+      }
+    )
     await expect(watchHeading).toBeVisible()
 
     for (const story of customerVideoStories) {
       const card = page.locator(`a[href="/customers/videos/${story.slug}/"]`)
       await expect(card).toBeVisible()
       await expect(card).toContainText(story.company)
-      await expect(card).toContainText(t('customers.video.watchStory', 'en'))
+      await expect(card).toContainText(
+        t('customers.video.watchStory', {}, { locale: 'en' })
+      )
     }
   })
 
@@ -60,7 +70,9 @@ test.describe('Customers @smoke', () => {
     page
   }) => {
     await expect(
-      page.getByText(t('customers.group.read', 'en'), { exact: true })
+      page.getByText(t('customers.group.read', {}, { locale: 'en' }), {
+        exact: true
+      })
     ).toBeVisible()
   })
 
@@ -133,3 +145,61 @@ test.describe('Customers @smoke', () => {
     expect(blocks[0]).toContain('/zh-CN/customers')
   })
 })
+
+for (const width of [390, 1440]) {
+  for (const locale of ['en', 'zh-CN'] as const) {
+    test(`customer directory search, tabs, and sort work in ${locale} at ${width}px`, async ({
+      page
+    }) => {
+      await page.setViewportSize({ width, height: 900 })
+      const { t } = translationsFor(locale)
+      await page.goto(locale === 'en' ? '/customers/' : '/zh-CN/customers/')
+      const search = page.getByRole('searchbox', {
+        name: t('customers.directory.searchLabel')
+      })
+      await waitForIsland(page, search)
+
+      await page
+        .getByRole('button', {
+          name: t('customers.directory.tab.watch'),
+          exact: true
+        })
+        .click()
+      const headings = page.getByRole('main').getByRole('heading', { level: 3 })
+      await expect(headings).toHaveText([
+        customerVideoStories[0].title,
+        customerVideoStories[1].title
+      ])
+      await page
+        .getByRole('combobox', { name: t('customers.directory.sortLabel') })
+        .selectOption('oldest')
+      await expect(headings).toHaveText([
+        customerVideoStories[1].title,
+        customerVideoStories[0].title
+      ])
+
+      await search.fill('Black Math')
+      await expect(headings).toHaveText([customerVideoStories[0].title])
+      await page
+        .getByRole('button', {
+          name: t('customers.directory.tab.read'),
+          exact: true
+        })
+        .click()
+      await expect(
+        page.getByText(t('customers.directory.empty'), { exact: true })
+      ).toBeVisible()
+
+      await search.fill('Hakoniwa')
+      await expect(headings).toHaveCount(1)
+      await expect(headings).toContainText('YUI')
+      await search.clear()
+      await expect(
+        page.getByText(t('customers.directory.empty'), { exact: true })
+      ).toHaveCount(0)
+      await expect(
+        page.locator('a[href$="/customers/hakoniwa-yui/"]')
+      ).toBeVisible()
+    })
+  }
+}

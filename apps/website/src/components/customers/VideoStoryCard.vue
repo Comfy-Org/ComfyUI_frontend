@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import PlayOverlay from '../blocks/PlayOverlay.vue'
 
 const { story, locale = 'en' } = defineProps<{
@@ -18,6 +18,7 @@ const { story, locale = 'en' } = defineProps<{
   }
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -70,7 +71,7 @@ const { story, locale = 'en' } = defineProps<{
           <img src="/icons/arrow-right.svg" alt="" class="ml-0.5 size-3" />
         </span>
         <span class="text-primary-comfy-canvas">
-          {{ t('customers.video.watchStory', locale) }}
+          {{ t('customers.video.watchStory') }}
         </span>
       </div>
     </div>

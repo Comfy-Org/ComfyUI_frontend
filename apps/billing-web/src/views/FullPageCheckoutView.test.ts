@@ -8,6 +8,7 @@ import type {
   BillingOperationReceipt,
   BillingOperationState,
   BillingResult,
+  CancelOperationResult,
   PendingBillingOperation,
   PreviewSubscribeResult,
   SavedPaymentMethod
@@ -2059,6 +2060,72 @@ describe('FullPageCheckoutView payment authentication', () => {
     nextStep.asked = 0
   })
 
+  it('cancels its own challenge once however often Cancel payment is clicked, then frees the form as typed', async () => {
+    let answer: (result: CancelOperationResult) => void = () => {}
+    const fake = await payReady()
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    fake.cancelOperation.mockImplementation(
+      () => new Promise((resolve) => (answer = resolve))
+    )
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+    const mounts = form.mounts
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Canceling…' }))
+
+    expect(fake.cancelOperation).toHaveBeenCalledExactlyOnceWith('op_3ds')
+    answer({ status: 'canceled' })
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(''))
+    expect(form.locked()).toBe(false)
+    expect(form.mounts).toBe(mounts)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('stops asking after a cancel the server never settles, and offers Cancel payment again', async () => {
+    const fake = await payReady({
+      cancelOperation: { status: 'cancel_requested' }
+    })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+    const cancel = await screen.findByRole('button', { name: 'Cancel payment' })
+
+    vi.useFakeTimers({ toFake: ['setTimeout'] })
+    await userEvent
+      .setup({ advanceTimers: vi.advanceTimersByTime })
+      .click(cancel)
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 30)
+    vi.useRealTimers()
+
+    expect(fake.cancelOperation).toHaveBeenCalledTimes(10)
+    expect(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    ).toBeEnabled()
+    expect(footnote()).toHaveTextContent(PHASE_A)
+  })
+
+  it('offers Cancel payment again when the cancel request throws', async () => {
+    const fake = await payReady()
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    fake.cancelOperation.mockRejectedValue(new Error('network down'))
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    ).toBeEnabled()
+    expect(fake.cancelOperation).toHaveBeenCalledExactlyOnceWith('op_3ds')
+    expect(footnote()).toHaveTextContent(PHASE_A)
+  })
+
   it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
     const fake = await payReady()
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
@@ -2074,9 +2141,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(
       screen.queryByRole('button', { name: 'Back' })
     ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Cancel payment' })
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel payment' })).toBeEnabled()
     expect(
       screen.queryByRole('button', { name: 'Continue verification' })
     ).not.toBeInTheDocument()
@@ -2196,9 +2261,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(
       screen.queryByRole('button', { name: 'Back' })
     ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Cancel payment' })
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel payment' })).toBeEnabled()
     await capturePromisesFlushed()
     fake.reportChallengeStarted.mockClear()
     fake.reportChallengeSettled.mockClear()

@@ -11,7 +11,7 @@ import type {
   WatchStoryCard
 } from '../../utils/customers'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { filterCustomerCards } from '../../utils/customers'
 import StorySection from './StorySection.vue'
 import WatchSection from './WatchSection.vue'
@@ -27,6 +27,8 @@ const {
   readStories: StoryCard[]
   locale?: Locale
 }>()
+
+const { t } = translationsFor(locale)
 
 const query = ref('')
 const tab = ref<CustomerTab>('all')
@@ -65,7 +67,7 @@ const controlClass =
       class="mx-auto flex max-w-9xl flex-col gap-3 px-6 pt-8 pb-6 lg:flex-row lg:items-center lg:px-16"
     >
       <label for="customers-search" class="sr-only">
-        {{ t('customers.directory.searchLabel', locale) }}
+        {{ t('customers.directory.searchLabel') }}
       </label>
       <div class="relative flex-1">
         <Search
@@ -76,7 +78,7 @@ const controlClass =
           id="customers-search"
           v-model="query"
           type="search"
-          :placeholder="t('customers.directory.searchPlaceholder', locale)"
+          :placeholder="t('customers.directory.searchPlaceholder')"
           :class="
             cn(
               controlClass,
@@ -89,7 +91,7 @@ const controlClass =
       <div class="flex items-center justify-between gap-3">
         <div
           role="group"
-          :aria-label="t('customers.directory.formatLabel', locale)"
+          :aria-label="t('customers.directory.formatLabel')"
           class="flex gap-1 rounded-2xl border border-white/15 p-1.5"
         >
           <button
@@ -107,12 +109,12 @@ const controlClass =
             "
             @click="tab = entry"
           >
-            {{ t(`customers.directory.tab.${entry}`, locale) }}
+            {{ t(`customers.directory.tab.${entry}`) }}
           </button>
         </div>
 
         <label for="customers-sort" class="sr-only">
-          {{ t('customers.directory.sortLabel', locale) }}
+          {{ t('customers.directory.sortLabel') }}
         </label>
         <div class="relative">
           <select
@@ -123,10 +125,10 @@ const controlClass =
             "
           >
             <option value="latest">
-              {{ t('customers.directory.sortLatest', locale) }}
+              {{ t('customers.directory.sortLatest') }}
             </option>
             <option value="oldest">
-              {{ t('customers.directory.sortOldest', locale) }}
+              {{ t('customers.directory.sortOldest') }}
             </option>
           </select>
           <ChevronDown
@@ -143,7 +145,7 @@ const controlClass =
       v-if="!visibleWatch.length && !visibleRead.length"
       class="mx-auto max-w-9xl px-6 py-24 text-center text-base font-light text-primary-warm-gray lg:px-16"
     >
-      {{ t('customers.directory.empty', locale) }}
+      {{ t('customers.directory.empty') }}
     </p>
   </div>
 </template>

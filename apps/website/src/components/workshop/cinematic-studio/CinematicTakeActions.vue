@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { Clapperboard, ImagePlus, RotateCcw } from '@lucide/vue'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const {
   take,
@@ -17,6 +17,7 @@ const {
   canReference?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   again: []
@@ -32,7 +33,7 @@ const actionClass =
   <div class="flex items-center gap-1.5">
     <button type="button" :class="actionClass" @click="emit('again')">
       <RotateCcw class="size-3.5" aria-hidden="true" />
-      {{ tc('cinematic.stage.again', locale) }}
+      {{ t('cinematic.stage.again') }}
     </button>
     <button
       v-if="canReference && take.output.kind === 'image'"
@@ -41,7 +42,7 @@ const actionClass =
       @click="emit('reference', take.output.url, take.output.fileName)"
     >
       <ImagePlus class="size-3.5" aria-hidden="true" />
-      {{ tc('cinematic.stage.useAsReference', locale) }}
+      {{ t('cinematic.stage.useAsReference') }}
     </button>
     <button
       v-if="canAnimate && take.output.kind === 'image'"
@@ -50,7 +51,7 @@ const actionClass =
       @click="emit('animate', take.output.url, take.output.fileName)"
     >
       <Clapperboard class="size-3.5" aria-hidden="true" />
-      {{ tc('cinematic.video.animate', locale) }}
+      {{ t('cinematic.video.animate') }}
     </button>
   </div>
 </template>

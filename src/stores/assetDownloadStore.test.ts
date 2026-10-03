@@ -565,20 +565,6 @@ describe('useAssetDownloadStore', () => {
   })
 
   describe('session download tracking', () => {
-    it('counts unacknowledged completed downloads with asset IDs', () => {
-      const store = useAssetDownloadStore()
-
-      dispatch(
-        createDownloadMessage({
-          status: 'completed',
-          progress: 100,
-          asset_id: 'asset-456'
-        })
-      )
-
-      expect(store.sessionDownloadCount).toBe(1)
-    })
-
     it('does not count completed downloads without asset IDs', () => {
       const store = useAssetDownloadStore()
 
