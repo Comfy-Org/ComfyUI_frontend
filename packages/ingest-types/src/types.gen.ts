@@ -3402,7 +3402,7 @@ export type HistoryDetailResponse = {
 }
 
 /**
- * History entry with full prompt data
+ * History entry with full prompt data. The workflow graph (extra_data.extra_pnginfo) is omitted from records persisted after it stopped being stored; older records may still contain it.
  */
 export type HistoryDetailEntry = {
   /**
@@ -3422,7 +3422,7 @@ export type HistoryDetailEntry = {
    */
   prompt?: {
     /**
-     * Additional execution data
+     * Additional execution data. extra_pnginfo (the workflow graph) is omitted from records persisted after it stopped being stored; older records may still contain it.
      */
     extra_data?: {
       [key: string]: unknown
@@ -4610,10 +4610,54 @@ export type BillingCapabilityRolloutDefaults = {
 }
 
 /**
+ * Why a capability resolved false, keyed by the capability. The value
+ * names the policy branch that decided, not customer-facing wording: the
+ * client owns the message.
+ *
+ * The invariant runs one way only. **Presence implies refusal**: a key is
+ * present only alongside `capabilities.<key> == false`, reconciled before
+ * the response is built, so a reason never accompanies a granted
+ * capability. **Absence implies nothing** -- it means no recognised
+ * explanation, not that the capability was granted. Consult
+ * `capabilities`, which stays authoritative for what the client may offer.
+ *
+ * A key is absent for a refused capability whenever this service is
+ * talking to a billing-api that predates the field, and whenever it drops
+ * a reason it does not recognise rather than forwarding a value outside
+ * the enum below. Both are supported states, so a client must never infer
+ * a capability's value from a missing reason -- only from `capabilities`.
+ *
+ * This endpoint omits the entire `denied_reasons` object when no recognised
+ * reason survives. The billing-api endpoint may emit `{}` for the same
+ * logical state, so object presence must not be used to detect support.
+ *
+ */
+export type BillingCapabilityDenials = {
+  /**
+   * not_a_member is unreachable through this endpoint -- a non-member is
+   * answered 403 before capabilities resolve. subscription_not_started
+   * is a subscription row reserved before payment that never began.
+   * subscription_change_in_progress means the current subscription
+   * already has a successor scheduled for a future billing boundary.
+   * subscription_status_unrecognized is the server having no guidance
+   * for the row, as distinct from a deliberate refusal.
+   *
+   */
+  can_subscribe_self_serve?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'tier_not_self_serve'
+    | 'subscription_not_started'
+    | 'subscription_change_in_progress'
+    | 'subscription_status_unrecognized'
+}
+
+/**
  * Effective billing UI guidance for one authenticated user and workspace.
  */
 export type BillingCapabilitiesResponse = {
   capabilities: BillingCapabilities
+  denied_reasons?: BillingCapabilityDenials
   /**
    * Time after which the client must refetch this snapshot.
    */
@@ -4628,6 +4672,14 @@ export type BillingCapabilitiesResponse = {
    */
   revision: number
   rollout_defaults_applied: BillingCapabilityRolloutDefaults
+  /**
+   * Whether a missing subscription row authoritatively means the
+   * workspace has no paid plan. False means a legacy Stripe plan may
+   * exist outside the local projection. The field is absent when
+   * talking to a billing-api version that predates this signal.
+   *
+   */
+  subscription_state_authoritative?: boolean
 }
 
 /**
@@ -5119,6 +5171,24 @@ export type AgentDraftSnapshot = {
    * Monotonic draft version; compare against draft_patch base_version/version to detect gaps.
    */
   version: number
+}
+
+/**
+ * A stop whose cancellation request did not land, or could not be confirmed as landed, on the durable engine. The turn is unaffected and still streaming, so the same request may be retried; cancellation is idempotent per turn. Distinct from the 500, which means the failure was one the service could not classify and a retry may never work.
+ */
+export type AgentCancelUnconfirmed = {
+  /**
+   * `cancel_not_requested` — the engine positively reports no cancellation recorded against a run it can still see, so the stop provably did not land. `cancel_outcome_unknown` — neither answer could be established; the stop may or may not have landed.
+   */
+  code: 'cancel_not_requested' | 'cancel_outcome_unknown'
+  /**
+   * Human-readable error message.
+   */
+  error: string
+  /**
+   * Always true on this response; retrying the same stop is safe.
+   */
+  retryable: boolean
 }
 
 /**
@@ -6257,6 +6327,10 @@ export type AgentCancelMessageErrors = {
    */
   403: ErrorResponse | AgentError
   /**
+   * The turn is no longer running, so there is nothing left to cancel. Two different situations answer this way and they do not repeat alike. Either the durable turn reached its terminal state before (or during) this stop — its terminal message state has already been announced, and a repeat gets the 409 above — or the message row itself no longer exists (a thread deletion or an erasure racing the stop), in which case nothing was announced and a repeat gets the 403 above, because the ownership lookup cannot tell a deleted row from one in another workspace. Not retryable either way.
+   */
+  404: AgentError
+  /**
    * The message is not a running assistant turn
    */
   409: AgentError
@@ -6272,6 +6346,10 @@ export type AgentCancelMessageErrors = {
    * Agent service unavailable
    */
   502: ErrorResponse
+  /**
+   * The cancellation request did not reach the durable engine, or reaching it could not be confirmed. The turn is still running and still stoppable: retry the same request. `code` says which of the two it was, and `Retry-After` carries the suggested delay in seconds.
+   */
+  503: AgentCancelUnconfirmed
 }
 
 export type AgentCancelMessageError =
@@ -10148,6 +10226,20 @@ export type InterruptJobErrors = {
    */
   403: ForbiddenError
   /**
+   * `prompt_id` is not one of the caller's jobs in this workspace, or
+   * is not a job ID (a 36-character UUID) at all. Code NOT_FOUND;
+   * nothing was cancelled.
+   *
+   */
+  404: ErrorResponse
+  /**
+   * The job interrupt would act on runs on a Build's deployment and
+   * cannot be interrupted from here yet. Code GATEWAY_JOB_NOT_CANCELLABLE;
+   * the message names that job, and nothing was cancelled.
+   *
+   */
+  409: ErrorResponse
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -10157,7 +10249,9 @@ export type InterruptJobError = InterruptJobErrors[keyof InterruptJobErrors]
 
 export type InterruptJobResponses = {
   /**
-   * Success - first active job cancelled, or no active job found
+   * Success - the job was cancelled, was already finished or
+   * cancelling, or (without `prompt_id`) no active job was found
+   *
    */
   200: unknown
 }
@@ -10507,6 +10601,13 @@ export type CancelJobErrors = {
    */
   404: ErrorResponse
   /**
+   * The job runs on a Build's deployment, is still pending or running,
+   * and cannot be cancelled from here yet. Code
+   * GATEWAY_JOB_NOT_CANCELLABLE; nothing was cancelled.
+   *
+   */
+  409: ErrorResponse
+  /**
    * Internal server error - cancellation failed
    */
   500: ErrorResponse
@@ -10547,6 +10648,14 @@ export type CancelJobsErrors = {
    * One or more job IDs not found for this user (no jobs cancelled)
    */
   404: ErrorResponse
+  /**
+   * One or more jobs run on a Build's deployment, are still pending or
+   * running, and cannot be cancelled from here yet. Code
+   * GATEWAY_JOB_NOT_CANCELLABLE; the message names those jobs, and no
+   * jobs were cancelled.
+   *
+   */
+  409: ErrorResponse
   /**
    * Internal server error - cancellation failed
    */
@@ -10879,6 +10988,14 @@ export type ManageQueueErrors = {
    * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
+  /**
+   * A job listed in `delete` runs on a Build's deployment, is still
+   * pending or running, and cannot be cancelled from here yet. Code
+   * GATEWAY_JOB_NOT_CANCELLABLE; the message names those jobs, and no
+   * jobs were cancelled.
+   *
+   */
+  409: ErrorResponse
   /**
    * Internal server error
    */
