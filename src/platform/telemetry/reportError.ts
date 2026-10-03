@@ -171,6 +171,7 @@ function dispatch(
     if (sentryLive) {
       try {
         captureException(error, {
+          fingerprint: ['{{ default }}', errorType],
           tags: { ...tags, error_type: errorType, surface },
           extra: context,
           level

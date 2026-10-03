@@ -45,6 +45,10 @@ it('suppresses a report raised by real Sentry payload normalization', async () =
     expect(
       beforeSend.mock.calls.map(([event]) => event.tags?.error_type)
     ).toEqual(['subgraph_load_failure', 'http_error'])
+    expect(beforeSend.mock.calls.map(([event]) => event.fingerprint)).toEqual([
+      ['{{ default }}', 'subgraph_load_failure'],
+      ['{{ default }}', 'http_error']
+    ])
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining('suppressed: raised while reporting'),
       nested
