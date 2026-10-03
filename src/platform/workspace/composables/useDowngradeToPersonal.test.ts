@@ -826,6 +826,14 @@ describe('useDowngradeToPersonal', () => {
         'subscription_checkout.succeeded',
         'operation.succeeded'
       ])
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'downgrade_to_personal',
+          stage: 'succeeded',
+          member_removal_count: 1,
+          duration_ms: expect.any(Number)
+        })
+      )
     })
 
     it('keeps one telemetry attempt when the reactivation amount changes', async () => {
@@ -867,6 +875,14 @@ describe('useDowngradeToPersonal', () => {
         'operation.succeeded'
       ])
       expect(workspaceStore.removeMember).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'downgrade_to_personal',
+          stage: 'succeeded',
+          member_removal_count: 1,
+          duration_ms: expect.any(Number)
+        })
+      )
     })
 
     it('tracks the start of the downgrade with the pending removal count', async () => {
