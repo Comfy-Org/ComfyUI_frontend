@@ -468,6 +468,9 @@ overrides:
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
 
+patchedDependencies:
+  '@vue/runtime-core@3.5.41': 4132b4a463b2e846900ab8f16adb42fa77fb6b6532e18135fc11018ac4f9791e
+
 importers:
 
   .:
@@ -13213,7 +13216,7 @@ snapshots:
     dependencies:
       '@vue/shared': 3.5.41
 
-  '@vue/runtime-core@3.5.41':
+  '@vue/runtime-core@3.5.41(patch_hash=4132b4a463b2e846900ab8f16adb42fa77fb6b6532e18135fc11018ac4f9791e)':
     dependencies:
       '@vue/reactivity': 3.5.41
       '@vue/shared': 3.5.41
@@ -13221,7 +13224,7 @@ snapshots:
   '@vue/runtime-dom@3.5.41':
     dependencies:
       '@vue/reactivity': 3.5.41
-      '@vue/runtime-core': 3.5.41
+      '@vue/runtime-core': 3.5.41(patch_hash=4132b4a463b2e846900ab8f16adb42fa77fb6b6532e18135fc11018ac4f9791e)
       '@vue/shared': 3.5.41
       csstype: 3.2.3
 
