@@ -330,6 +330,10 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
+      // Shared by the queue and history branches below.
+
+      let activeJobIds: Set<string> | null = null
+
       if (queueResult.status === 'fulfilled') {
         const queue = queueResult.value
         // API returns pre-sorted data (sort_by=create_time&order=desc)
@@ -346,7 +350,7 @@ export const useQueueStore = defineStore('queue', () => {
           }
         })
 
-        const activeJobIds = new Set([
+        activeJobIds = new Set([
           ...queue.Running.map((j) => j.id),
           ...queue.Pending.map((j) => j.id)
         ])
@@ -358,6 +362,17 @@ export const useQueueStore = defineStore('queue', () => {
       if (historyResult.status === 'fulfilled') {
         const history = historyResult.value
         const currentHistory = toValue(historyTasks)
+
+        // A job the backend has moved to history while we still hold progress
+        // state for it lost its terminal WebSocket frame. Evicting it here is
+        // the only path that unsticks node progress in that case.
+        if (history.length > 0 && activeJobIds) {
+          const terminalJobIds = new Set(history.map((j) => j.id))
+          useExecutionStore().reconcileTerminalJobs(
+            activeJobIds,
+            terminalJobIds
+          )
+        }
 
         // Sort by create_time descending and limit to maxItems
         const sortedHistory = [...history]

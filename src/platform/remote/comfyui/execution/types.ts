@@ -11,7 +11,7 @@ export type JobId = string
  * workflow with no id, and a server without `workflow_metadata` support never
  * sends it, so every consumer must treat it as optional.
  */
-export type WorkflowId = string
+type WorkflowId = string
 
 export const zResultItem = z.object({
   filename: z.string().optional(),

@@ -970,6 +970,89 @@ export const useExecutionStore = defineStore('execution', () => {
     initializingJobIds.value = next
   }
 
+  /**
+   * Returns the prompt_id the global {@link nodeProgressStates} mirror belongs
+   * to, or null when it is empty. The mirror is replaced wholesale on every
+   * `progress_state` frame, so all of its entries share one prompt_id.
+   */
+  function mirrorOwnerJobId(): JobId | null {
+    const entries = Object.values(nodeProgressStates.value)
+    if (entries.length === 0) return null
+    return entries[0].prompt_id
+  }
+
+  /**
+   * Evict per-job execution artifacts for a job that has reached a terminal
+   * state, without disturbing state owned by a different running job.
+   *
+   * Unlike {@link resetExecutionState} this is safe for any jobId, including
+   * one that is not {@link activeJobId}. It is the recovery path for a dropped
+   * terminal WebSocket frame, which would otherwise leave node progress pinned
+   * forever: the backend broadcasts `execution_success` once and never retries.
+   * Idempotent.
+   */
+  function evictTerminalJob(jobId: JobId) {
+    if (!jobId) return
+
+    if (jobId in nodeProgressStatesByJob.value) {
+      const map = { ...nodeProgressStatesByJob.value }
+      delete map[jobId]
+      nodeProgressStatesByJob.value = map
+    }
+
+    if (jobId in queuedJobs.value) {
+      const next = { ...queuedJobs.value }
+      delete next[jobId]
+      queuedJobs.value = next
+    }
+
+    useJobPreviewStore().clearPreview(jobId)
+    clearInitializationByJobId(jobId)
+    clearTextPreviewsForJob(jobId)
+
+    const isActive = activeJobId.value === jobId
+    // Only clear the shared mirror when it still belongs to the evicted job,
+    // otherwise evicting an old job would blank a live run's progress.
+    if (isActive || mirrorOwnerJobId() === jobId) {
+      nodeProgressStates.value = {}
+      executionIdToLocatorCache.clear()
+    }
+
+    if (_executingNodeProgress.value?.prompt_id === jobId) {
+      _executingNodeProgress.value = null
+    }
+
+    if (isActive) {
+      activeJobId.value = null
+      executionErrorStore.clearPromptError(runErrorKeyForJob(jobId))
+    }
+  }
+
+  /**
+   * Reconcile tracked per-job state against the backend's authoritative job
+   * sets. A job the backend reports as terminal but which still holds progress
+   * state lost its terminal frame, so evict it.
+   *
+   * @param activeJobIds jobs the backend reports as Running or Pending
+   * @param terminalJobIds jobs the backend reports in history
+   */
+  function reconcileTerminalJobs(
+    activeJobIds: Set<JobId>,
+    terminalJobIds: Set<JobId>
+  ) {
+    const tracked = new Set<JobId>([
+      ...Object.keys(nodeProgressStatesByJob.value),
+      ...initializingJobIds.value
+    ])
+    if (activeJobId.value) tracked.add(activeJobId.value)
+
+    for (const jobId of tracked) {
+      if (activeJobIds.has(jobId)) continue
+      if (!terminalJobIds.has(jobId)) continue
+      evictTerminalJob(jobId)
+    }
+  }
+
   function reconcileInitializingJobs(activeJobIds: Set<JobId>) {
     const orphaned = [...initializingJobIds.value].filter(
       (id) => !activeJobIds.has(id)
@@ -1256,6 +1339,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobId,
     clearInitializationByJobIds,
     reconcileInitializingJobs,
+    reconcileTerminalJobs,
     clearActiveJobIfStale,
     bindExecutionEvents,
     unbindExecutionEvents,

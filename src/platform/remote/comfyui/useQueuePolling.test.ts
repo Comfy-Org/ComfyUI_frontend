@@ -39,13 +39,15 @@ describe('useQueuePolling', () => {
     expect(store.update).toHaveBeenCalledOnce()
   })
 
-  it('does not poll when activeJobsCount > 1', async () => {
+  // Polling with several jobs in flight is what recovers per-job progress when
+  // a terminal WebSocket frame is dropped, so it must not be limited to one.
+  it('polls when activeJobsCount > 1', async () => {
     mountUseQueuePolling()
 
     Object.assign(store, { activeJobsCount: 2 })
-    await vi.advanceTimersByTimeAsync(16_000)
+    await vi.advanceTimersByTimeAsync(8_000)
 
-    expect(store.update).not.toHaveBeenCalled()
+    expect(store.update).toHaveBeenCalledOnce()
   })
 
   it('stops polling when activeJobsCount drops to 0', async () => {
