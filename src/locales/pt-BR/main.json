@@ -76,6 +76,8 @@
     "feedbackCaption": "Enviar feedback",
     "focusNode": "Mostrar na tela",
     "focusNodeLabel": "Mostrar {node} na tela",
+    "freeUseNotice": "Os prompts e as execuções de workflow são GRATUITOS durante a BETA.",
+    "freeUseNoticeLabel": "Aviso de uso gratuito",
     "friend": "aí",
     "gotIt": "Entendi",
     "greeting": "Olá, {name},",
@@ -85,6 +87,7 @@
     "historyCurrent": "Atual",
     "historyEarlier": "Anteriores",
     "historyEmpty": "Ainda não há conversas",
+    "historyOpenFailed": "Não foi possível abrir. Selecione este chat para tentar novamente.",
     "historyToday": "Hoje",
     "historyYesterday": "Ontem",
     "latest": "Mais recente",
@@ -124,6 +127,7 @@
       "upgradePlan": "Fazer upgrade do plano"
     },
     "placeholder": "Descreva ideias, {'@'} para referenciar fluxos de trabalho, arraste recursos de mídia e arquivos ou\nmencione nós",
+    "recoveredTurnFailed": "O agente não conseguiu concluir esta resposta.",
     "reference": "Referência",
     "remove": "Remover",
     "removeNodeLabel": "Remover referência a {node}",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "O workflow de destino segue a aba visível até você escolher um destino, nós de referência ou enviar uma mensagem.",
     "targetForThisChat": "Alvo do agente para este chat",
     "targetNavigationUnavailable": "Este destino do fluxo de trabalho não está mais disponível.",
+    "targetWorkflowOpenFailed": "Não foi possível abrir o workflow de destino.",
+    "targetWorkflowUnavailable": "O workflow de destino não está mais disponível.",
     "thinking": "Pensando...",
     "title": "Comfy Agent",
     "toolFailedSkill": "Falha ao carregar {skill}",
@@ -480,6 +486,7 @@
       "forgotPassword": "Esqueceu a senha?",
       "forgotPasswordError": "Falha ao enviar e-mail de redefinição de senha",
       "freeRunsSuffix": "para ganhar {count} execução gratuita. | para ganhar {count} execuções gratuitas.",
+      "freeRunsSuffixGoogle": "com o Google para obter {count} execução gratuita. | com o Google para obter {count} execuções gratuitas.",
       "freeTierBadge": "Elegível para o Plano Gratuito",
       "freeTierDescription": "Cadastre-se com Google para ganhar {credits} créditos gratuitos todo mês. Não precisa de cartão.",
       "freeTierDescriptionGeneric": "Cadastre-se com Google para ganhar créditos gratuitos todo mês. Não precisa de cartão.",
@@ -5210,11 +5217,7 @@
         "body": "Seu plano atual permanece ativo até lá.",
         "title": "Seu plano muda para {plan} em {date}"
       },
-      "updatePayment": "Atualizar pagamento",
-      "warning": {
-        "bodyNoDate": "Seu último pagamento não foi processado. Atualize o pagamento para evitar a pausa.",
-        "title": "Pagamento recusado"
-      }
+      "updatePayment": "Atualizar pagamento"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Rebaixar para membro",

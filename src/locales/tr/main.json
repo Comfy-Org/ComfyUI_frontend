@@ -76,6 +76,8 @@
     "feedbackCaption": "Geri bildirim paylaşın",
     "focusNode": "Tuvalde göster",
     "focusNodeLabel": "{node} öğesini tuvalde göster",
+    "freeUseNotice": "İstemler ve iş akışı çalıştırmaları BETA süresince ÜCRETSİZDİR.",
+    "freeUseNoticeLabel": "Ücretsiz kullanım bildirimi",
     "friend": "orada",
     "gotIt": "Anladım",
     "greeting": "Merhaba {name},",
@@ -85,6 +87,7 @@
     "historyCurrent": "Geçerli",
     "historyEarlier": "Daha önce",
     "historyEmpty": "Henüz konuşma yok",
+    "historyOpenFailed": "Açılamadı. Yeniden denemek için bu sohbeti seçin.",
     "historyToday": "Bugün",
     "historyYesterday": "Dün",
     "latest": "En son",
@@ -124,6 +127,7 @@
       "upgradePlan": "Planı yükselt"
     },
     "placeholder": "Fikirlerinizi açıklayın, iş akışlarına başvurmak için {'@'} kullanın, medya varlıklarını ve dosyaları sürükleyin veya\ndüğümlerden bahsedin",
+    "recoveredTurnFailed": "Aracı bu yanıtı tamamlayamadı.",
     "reference": "Referans",
     "remove": "Kaldır",
     "removeNodeLabel": "{node} referansını kaldır",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "Hedef iş akışı; bir hedef seçene, düğümlere başvuru yapana veya mesaj gönderene kadar görünür sekmeyi takip eder.",
     "targetForThisChat": "Bu sohbet için ajan hedefi",
     "targetNavigationUnavailable": "Bu iş akışı hedefi artık kullanılamıyor.",
+    "targetWorkflowOpenFailed": "Hedef iş akışı açılamadı.",
+    "targetWorkflowUnavailable": "Hedef iş akışı artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
     "title": "Comfy Agent",
     "toolFailedSkill": "{skill} yüklenemedi",
@@ -480,6 +486,7 @@
       "forgotPassword": "Şifrenizi mi unuttunuz?",
       "forgotPasswordError": "Şifre sıfırlama e-postası gönderilemedi",
       "freeRunsSuffix": "{count} ücretsiz deneme almak için. | {count} ücretsiz deneme almak için.",
+      "freeRunsSuffixGoogle": "Google ile {count} ücretsiz çalıştırma almak için | Google ile {count} ücretsiz çalıştırma almak için",
       "freeTierBadge": "Ücretsiz Katman Uygun",
       "freeTierDescription": "Google ile kaydolun, her ay {credits} ücretsiz kredi kazanın. Kart gerekmez.",
       "freeTierDescriptionGeneric": "Google ile kaydolun, her ay ücretsiz kredi kazanın. Kart gerekmez.",
@@ -5210,11 +5217,7 @@
         "body": "Mevcut planınız o tarihe kadar etkin kalır.",
         "title": "Planınız {date} tarihinde {plan} olarak değişecek"
       },
-      "updatePayment": "Ödemeyi güncelle",
-      "warning": {
-        "bodyNoDate": "Son ödemeniz gerçekleşmedi. Duraklatmayı önlemek için ödemeyi güncelleyin.",
-        "title": "Ödeme reddedildi"
-      }
+      "updatePayment": "Ödemeyi güncelle"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Üyeye düşür",

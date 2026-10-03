@@ -76,6 +76,8 @@
     "feedbackCaption": "Condividi feedback",
     "focusNode": "Mostra sul canvas",
     "focusNodeLabel": "Mostra {node} sul canvas",
+    "freeUseNotice": "I prompt e le esecuzioni dei workflow sono GRATUITI durante la BETA.",
+    "freeUseNoticeLabel": "Avviso di utilizzo gratuito",
     "friend": "amico",
     "gotIt": "Ho capito",
     "greeting": "Ciao {name},",
@@ -85,6 +87,7 @@
     "historyCurrent": "Attuale",
     "historyEarlier": "Precedenti",
     "historyEmpty": "Nessuna conversazione ancora",
+    "historyOpenFailed": "Impossibile aprire. Seleziona questa chat per riprovare.",
     "historyToday": "Oggi",
     "historyYesterday": "Ieri",
     "latest": "Più recente",
@@ -124,6 +127,7 @@
       "upgradePlan": "Passa a un piano superiore"
     },
     "placeholder": "Descrivi le idee, {'@'} per fare riferimento ai flussi di lavoro, trascina risorse multimediali e file oppure\nmenziona i nodi",
+    "recoveredTurnFailed": "L'agente non ha potuto completare questa risposta.",
     "reference": "Riferimento",
     "remove": "Rimuovi",
     "removeNodeLabel": "Rimuovi il riferimento a {node}",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "Il workflow di destinazione segue la scheda visibile finché non scegli una destinazione, nodi di riferimento o non invii un messaggio.",
     "targetForThisChat": "Destinazione dell'agente per questa chat",
     "targetNavigationUnavailable": "Questa destinazione del workflow non è più disponibile.",
+    "targetWorkflowOpenFailed": "Impossibile aprire il workflow di destinazione.",
+    "targetWorkflowUnavailable": "Il workflow di destinazione non è più disponibile.",
     "thinking": "Elaborazione in corso...",
     "title": "Comfy Agent",
     "toolFailedSkill": "Impossibile caricare {skill}",
@@ -480,6 +486,7 @@
       "forgotPassword": "Password dimenticata?",
       "forgotPasswordError": "Invio dell'email di reimpostazione password non riuscito",
       "freeRunsSuffix": "per ottenere {count} esecuzione gratuita. | per ottenere {count} esecuzioni gratuite.",
+      "freeRunsSuffixGoogle": "con Google per ottenere {count} esecuzione gratuita. | con Google per ottenere {count} esecuzioni gratuite.",
       "freeTierBadge": "Idoneo per Free Tier",
       "freeTierDescription": "Registrati con Google per ottenere {credits} crediti gratuiti ogni mese. Nessuna carta richiesta.",
       "freeTierDescriptionGeneric": "Registrati con Google per ottenere crediti gratuiti ogni mese. Nessuna carta richiesta.",
@@ -5210,11 +5217,7 @@
         "body": "Il tuo piano attuale rimane attivo fino ad allora.",
         "title": "Il tuo piano passa a {plan} il {date}"
       },
-      "updatePayment": "Aggiorna pagamento",
-      "warning": {
-        "bodyNoDate": "Il tuo pagamento non è stato elaborato. Aggiorna il pagamento per evitare una sospensione.",
-        "title": "Pagamento non riuscito"
-      }
+      "updatePayment": "Aggiorna pagamento"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Retrocedi a membro",

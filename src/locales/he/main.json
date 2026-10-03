@@ -76,6 +76,8 @@
     "feedbackCaption": "שיתוף משוב",
     "focusNode": "הצג בקנבס",
     "focusNodeLabel": "הצג את {node} בקנבס",
+    "freeUseNotice": "הפרומפטים והרצות תהליך העבודה הם ללא עלות במהלך תקופת הבטא.",
+    "freeUseNoticeLabel": "הודעת שימוש ללא עלות",
     "friend": "שם",
     "gotIt": "הבנתי",
     "greeting": "שלום {name},",
@@ -85,6 +87,7 @@
     "historyCurrent": "נוכחי",
     "historyEarlier": "מוקדם יותר",
     "historyEmpty": "אין שיחות עדיין",
+    "historyOpenFailed": "לא ניתן לפתוח. בחרו בצ'אט זה כדי לנסות שוב.",
     "historyToday": "היום",
     "historyYesterday": "אתמול",
     "latest": "העדכני ביותר",
@@ -124,6 +127,7 @@
       "upgradePlan": "שדרוג התוכנית"
     },
     "placeholder": "תארו רעיונות, {'@'} להפניה לתהליכי עבודה, גררו נכסי מדיה וקבצים, או\nציינו צמתים",
+    "recoveredTurnFailed": "הסוכן לא הצליח להשלים תגובה זו.",
     "reference": "הפניה",
     "remove": "הסר",
     "removeNodeLabel": "הסר את ההפניה ל־{node}",
@@ -192,6 +196,8 @@
     "targetFollowsVisibleWorkflow": "תהליך העבודה היעד תואם ללשונית הגלויה עד שתבחרו יעד, צומתי הפניה או תשלחו הודעה.",
     "targetForThisChat": "יעד הסוכן עבור שיחה זו",
     "targetNavigationUnavailable": "יעד זה של תהליך העבודה אינו זמין עוד.",
+    "targetWorkflowOpenFailed": "לא ניתן היה לפתוח את תהליך העבודה היעד.",
+    "targetWorkflowUnavailable": "תהליך העבודה היעד אינו זמין עוד.",
     "thinking": "חושב...",
     "title": "Comfy Agent",
     "toolFailedSkill": "טעינת {skill} נכשלה",
@@ -480,6 +486,7 @@
       "forgotPassword": "שכחת סיסמה?",
       "forgotPasswordError": "שליחת מייל לאיפוס הסיסמה נכשלה",
       "freeRunsSuffix": "לקבלת {count} הרצה חינמית. | לקבלת {count} הרצות חינמיות.",
+      "freeRunsSuffixGoogle": "עם Google כדי לקבל {count} הרצה חינמית. | עם Google כדי לקבל {count} הרצות חינמיות.",
       "freeTierBadge": "זכאי לדרגה החינמית",
       "freeTierDescription": "הירשם באמצעות Google כדי לקבל {credits} קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
       "freeTierDescriptionGeneric": "הירשם באמצעות Google כדי לקבל קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
@@ -5210,11 +5217,7 @@
         "body": "התוכנית הנוכחית שלך נשארת פעילה עד אז.",
         "title": "התוכנית שלך משתנה ל-{plan} ב-{date}"
       },
-      "updatePayment": "עדכן תשלום",
-      "warning": {
-        "bodyNoDate": "התשלום האחרון שלך לא עבר. עדכן את התשלום כדי למנוע השהיה.",
-        "title": "התשלום נדחה"
-      }
+      "updatePayment": "עדכן תשלום"
     },
     "changeRoleDialog": {
       "demoteConfirm": "הורד לחבר רגיל",
