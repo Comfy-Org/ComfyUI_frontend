@@ -7,6 +7,23 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+## 0.3.8 - 2026-10-03
+
+### Added
+
+- Address duplicate widget names by zero-based occurrence so each occurrence
+  has an independent stored value and LWW target. Schema v5 fails closed on
+  older layouts, which the host re-mints from source rather than migrating in
+  place (#266).
+
+### Fixed
+
+- Keep an existing `widgets_values_named` passthrough value coherent when
+  `set_widget` changes the final occurrence of that name, including top-level,
+  subgraph-interior, and promoted-host writes. Earlier duplicate occurrences
+  remain independent, and missing or unresolvable name registers are not
+  invented (#269).
+
 ## 0.3.7 - 2026-09-26
 
 ### Added
