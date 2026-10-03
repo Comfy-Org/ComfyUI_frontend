@@ -112,6 +112,30 @@ export function useAgentWorkflowResolver({
       : undefined
   }
 
+  /**
+   * Whether `cloudIdFor` returning nothing for this workflow means "it has no
+   * cloud workflow" or only "this client could not tell which one it is". Both
+   * look identical at the call site, and only the second must never reach the
+   * server as "no tab is selected" (PM-1847).
+   *
+   * It is the second when the cloud listing is incomplete or when the name the
+   * workflow would resolve by is claimed more than once, by several cloud
+   * records or by several open saved tabs. Both are ambiguity, not absence:
+   * the workflow may be there and is unnameable.
+   *
+   * A temporary tab is never unidentified: having no cloud workflow is its
+   * normal state, and `current_tab_unbound` is how the turn says so.
+   */
+  function cloudIdUnidentified(workflow: ComfyWorkflow): boolean {
+    if (workflow.isTemporary || cloudIdFor(workflow) !== undefined) return false
+    if (!listingComplete.value) return true
+    const name = cloudWorkflowName(workflow)
+    return (
+      cloudIndex.value.filter((entry) => entry.name === name).length > 1 ||
+      savedMatches(name, workflows.openWorkflows).length > 1
+    )
+  }
+
   function indexedNameFor(workflowId: string): string | undefined {
     return cloudIndex.value.find(({ id }) => id === workflowId)?.name
   }
@@ -254,6 +278,7 @@ export function useAgentWorkflowResolver({
     refreshCloudWorkflowIds,
     forgetCloudWorkflowId,
     cloudIdFor,
+    cloudIdUnidentified,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
