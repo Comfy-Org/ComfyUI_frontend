@@ -23,6 +23,7 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   const graphId = node.graph?.rootGraph.id
 
   for (const [index, widget] of widgets.entries()) {
+    if (!widget) continue
     const concreteWidget = toConcreteWidget(widget, node)
     widgets[index] = concreteWidget
     if (graphId) concreteWidget.setNodeId(node.id)
