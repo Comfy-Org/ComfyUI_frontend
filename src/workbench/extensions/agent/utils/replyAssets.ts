@@ -13,6 +13,22 @@ export interface ReplyAsset {
   label?: string
 }
 
+export type ReplyVisualAsset = ReplyAsset & {
+  kind: Exclude<ReplyAssetKind, 'audio'>
+}
+
+export type ReplyAudioAsset = ReplyAsset & { kind: 'audio' }
+
+export function isReplyVisualAsset(
+  asset: ReplyAsset
+): asset is ReplyVisualAsset {
+  return asset.kind !== 'audio'
+}
+
+export function isReplyAudioAsset(asset: ReplyAsset): asset is ReplyAudioAsset {
+  return asset.kind === 'audio'
+}
+
 export function isReplyAssetKind(value: MediaType): value is ReplyAssetKind {
   return (
     value === 'image' ||
