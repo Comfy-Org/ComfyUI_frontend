@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import type { UserConfigResponse } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 
@@ -8,6 +9,9 @@ export interface User {
   userId: string
   username: string
 }
+
+const USER_STYLESHEET_ID = 'user-stylesheet'
+const USER_STYLESHEET_ROUTE = '/userdata/user.css'
 
 export const useUserStore = defineStore('user', () => {
   /**
@@ -37,6 +41,42 @@ export const useUserStore = defineStore('user', () => {
   const initialized = computed(() => userConfig.value !== null)
 
   let initializePromise: Promise<void> | null = null
+  let stylesheetRequestGeneration = 0
+
+  async function loadUserStylesheet() {
+    if (isCloud) return
+
+    if (!isMultiUserServer.value) {
+      const link = document.createElement('link')
+      link.id = USER_STYLESHEET_ID
+      link.rel = 'stylesheet'
+      link.href = api.apiURL(USER_STYLESHEET_ROUTE)
+      document.head.prepend(link)
+      return
+    }
+
+    const requestGeneration = ++stylesheetRequestGeneration
+    document.querySelector(`#${USER_STYLESHEET_ID}`)?.remove()
+
+    try {
+      const response = await api.fetchApi(USER_STYLESHEET_ROUTE)
+      if (!response.ok || requestGeneration !== stylesheetRequestGeneration) {
+        return
+      }
+
+      const stylesheet = await response.text()
+      if (requestGeneration !== stylesheetRequestGeneration) return
+
+      const style =
+        document.querySelector<HTMLStyleElement>(`#${USER_STYLESHEET_ID}`) ??
+        document.createElement('style')
+      style.id = USER_STYLESHEET_ID
+      style.textContent = stylesheet
+      if (!style.isConnected) document.head.prepend(style)
+    } catch {
+      return
+    }
+  }
 
   /**
    * Initialize the user store.
@@ -46,6 +86,10 @@ export const useUserStore = defineStore('user', () => {
       try {
         userConfig.value = await api.getUserConfig()
         currentUserId.value = localStorage['Comfy.userId']
+        if (isMultiUserServer.value && currentUserId.value) {
+          api.user = currentUserId.value
+        }
+        if (!needsLogin.value) await loadUserStylesheet()
       } catch (err) {
         initializePromise = null
         throw err
@@ -90,6 +134,8 @@ export const useUserStore = defineStore('user', () => {
     currentUserId.value = userId
     localStorage['Comfy.userId'] = userId
     localStorage['Comfy.userName'] = username
+    api.user = userId
+    await loadUserStylesheet()
   }
 
   watchEffect(() => {
