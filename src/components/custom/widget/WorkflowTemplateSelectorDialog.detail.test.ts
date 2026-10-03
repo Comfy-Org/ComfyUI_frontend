@@ -5,12 +5,12 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
 import type { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { useLazyPagination } from '@/composables/useLazyPagination'
-import type { useTelemetry } from '@/platform/telemetry'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -117,28 +117,17 @@ const mocks = vi.hoisted(() => ({
   resolveAvailability: vi.fn<
     () => Promise<ResolvedTemplateModelAvailability[]>
   >(async () => [{ model: fixtures.activeModel, status: 'missing' }]),
-  resolveTemplateModelMetadata: vi.fn<
-    () => Promise<
-      | { status: 'completed'; entries: { model: unknown; fileSize: number }[] }
-      | { status: 'aborted' }
-    >
-  >(async () => ({
-    status: 'completed' as const,
-    entries: [
-      {
-        model: fixtures.activeModel,
-        fileSize: 1024
-      },
-      ...[
+  resolveTemplateModelMetadata: vi.fn<typeof resolveTemplateModelMetadata>(
+    async () => ({
+      status: 'completed',
+      entries: [
+        fixtures.activeModel,
         fixtures.failedModel,
         fixtures.activeDownloadModel,
         fixtures.doneModel
-      ].map((model) => ({
-        model,
-        fileSize: 1024
-      }))
-    ]
-  })),
+      ].map((model) => ({ model, fileSize: 1024, gatedRepoUrl: null }))
+    })
+  ),
   rowDownloadDispose: vi.fn(),
   rowDownloadRequest: vi.fn(),
   rowDownloadStateFor: vi.fn<(model: ModelFile) => TemplateModelDownloadState>(
@@ -166,14 +155,23 @@ vi.mock(
   () => ({
     useTemplateWorkflows: () =>
       ({
-        getTemplateDescription: mocks.getTemplateDescription,
+        selectedTemplate: ref<string | null>(null),
+        loadingTemplateId: computed(() => null),
+        isTemplatesLoaded: computed(() => true),
+        allTemplateGroups: computed<WorkflowTemplates[]>(() => []),
+        loadTemplates: mocks.loadTemplates,
+        selectFirstTemplateCategory: vi.fn(),
+        // Narrowing predicate the dialog never calls; satisfied, not modelled.
+        selectTemplateCategory: (
+          category: WorkflowTemplates | null
+        ): category is WorkflowTemplates => category !== null,
         getTemplateThumbnailUrl: mocks.getTemplateThumbnailUrl,
         getTemplateTitle: mocks.getTemplateTitle,
-        loadTemplates: mocks.loadTemplates,
-        loadingTemplateId: computed(() => null),
-        openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
+        getTemplateDescription: mocks.getTemplateDescription,
         prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
-        discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate
+        openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
+        discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate,
+        loadWorkflowTemplate: vi.fn(async () => 'loaded' as const)
       }) as unknown as ReturnType<typeof useTemplateWorkflows>
   })
 )
@@ -201,8 +199,7 @@ vi.mock(
 vi.mock(
   import('@/platform/workflow/templates/utils/templateModelMetadata'),
   () => ({
-    resolveTemplateModelMetadata:
-      mocks.resolveTemplateModelMetadata as unknown as typeof resolveTemplateModelMetadata
+    resolveTemplateModelMetadata: mocks.resolveTemplateModelMetadata
   })
 )
 
@@ -254,12 +251,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    ({
-      trackTemplateLibraryClosed: mocks.trackTemplateLibraryClosed
-    }) as unknown as ReturnType<typeof useTelemetry>
-}))
+vi.mock(import('@/platform/telemetry'))
 
 import WorkflowTemplateSelectorDialog from './WorkflowTemplateSelectorDialog.vue'
 
@@ -475,7 +467,9 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
 
     resolveMetadata?.({
       status: 'completed',
-      entries: [{ model: fixtures.activeModel, fileSize: 1024 }]
+      entries: [
+        { model: fixtures.activeModel, fileSize: 1024, gatedRepoUrl: null }
+      ]
     })
 
     await waitFor(() => {
@@ -671,7 +665,9 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     resolvePreparation?.(fixtures.prepared)
 
     await waitFor(() => {
-      expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
+      expect(mocks.discardPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        fixtures.prepared
+      )
     })
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
     expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()

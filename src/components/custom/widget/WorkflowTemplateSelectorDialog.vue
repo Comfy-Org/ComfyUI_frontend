@@ -972,11 +972,6 @@ watch(
 )
 
 // Methods
-/**
- * Disposes whichever prepared template this view still owns, whether it is
- * still in flight or already shown in Detail. Every invalidation goes through
- * here so no path can strand a preparation in the store's busy state.
- */
 function releasePreparedDetail() {
   const owned = preparedInFlight ?? activeDetail.value?.prepared ?? null
   preparedInFlight = null
