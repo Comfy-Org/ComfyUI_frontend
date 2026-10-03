@@ -800,6 +800,89 @@ describe('ComfyApp', () => {
       expect(ChangeTracker.isLoadingGraph).toBe(false)
     })
 
+    it('does not post a superseded load’s warnings or retire errors a newer load has not recorded yet', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      ChangeTracker.isLoadingGraph = false
+      onTestFinished(() => {
+        ChangeTracker.isLoadingGraph = false
+      })
+      const retireErrors = vi.spyOn(
+        useExecutionErrorStore(),
+        'retireResolvedMissingNodePromptError'
+      )
+      const releaseScan: Array<() => void> = []
+      vi.mocked(runMissingModelPipeline).mockImplementation(async () => {
+        await new Promise<void>((resolve) => releaseScan.push(resolve))
+        return { missingModels: [], confirmedCandidates: [] }
+      })
+      vi.spyOn(
+        missingMediaPipeline,
+        'runMissingMediaPipeline'
+      ).mockResolvedValue(undefined)
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await vi.waitFor(() => expect(releaseScan).toHaveLength(1))
+      const newerLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await vi.waitFor(() => expect(releaseScan).toHaveLength(2))
+
+      releaseScan[0]()
+      await olderLoad
+
+      // The older load's scan results describe a graph that is no longer
+      // live, and the newer load owns the warnings surface and will post its
+      // own.
+      expect(mockWorkflowService.showPendingWarnings).not.toHaveBeenCalled()
+      // The retirement catch-up has to wait for the last overlapping window:
+      // running it here retires the newer load's errors before it has
+      // recorded them.
+      expect(retireErrors).not.toHaveBeenCalled()
+
+      releaseScan[1]()
+      await newerLoad
+
+      expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalledOnce()
+      expect(retireErrors).toHaveBeenCalledOnce()
+    })
+
+    it('does not run a superseded load’s asset scans against the newer load’s graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      vi.mocked(runMissingModelPipeline).mockResolvedValue({
+        missingModels: [],
+        confirmedCandidates: []
+      })
+      vi.spyOn(
+        missingMediaPipeline,
+        'runMissingMediaPipeline'
+      ).mockResolvedValue(undefined)
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      // The older load commits and clears the `afterConfigureGraph` gate,
+      // then suspends in the last hook before the asset pipelines.
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterLoadGraph')
+        .thenReturnOnce(olderLoadBlocked)
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      // `thenReturnOnce` blocks whichever load reaches the hook first, so wait
+      // for the older one to get there before starting its replacement.
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterLoadGraph'
+        )
+      )
+      await app.loadGraphData(createWorkflowGraphData(), false)
+      releaseOlderLoad()
+      await expect(olderLoad).resolves.toBeUndefined()
+
+      // Both pipelines scan `rootGraph` and report against the load's own
+      // workflow, so only the load that owns the live graph may run them.
+      expect(runMissingModelPipeline).toHaveBeenCalledOnce()
+    })
+
     it('lets an older valid load commit when its newer replacement fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
