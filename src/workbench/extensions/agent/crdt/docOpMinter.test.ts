@@ -652,6 +652,7 @@ describe('attachDocOpMinter', () => {
       graph.add(host)
       subgraph.add(interior)
     })
+
     interior.widgets![0].value = 3
     await afterFlush()
 
@@ -781,23 +782,6 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('uses the live serialize flag for direct store-path intents', async () => {
-    const { source } = seedGraph(graph)
-    source.widgets![0].serialize = false
-
-    emitGraphIntent({
-      type: 'set_widget',
-      graphId: graph.id,
-      nodeId: source.id,
-      name: 'steps',
-      value: 21,
-      previous: 20
-    })
-    await afterFlush()
-
-    expect(minted).toEqual([])
-  })
-
   it('lets an explicit live serialize flag override stale store metadata', async () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
@@ -838,6 +822,29 @@ describe('attachDocOpMinter', () => {
     assert.exists(stored)
     stored.serialize = false
     delete widget.serialize
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([])
+  })
+
+  it('uses the store serialize flag when a projected widget leaves it undefined', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    const stored = useWidgetValueStore().getWidget(
+      widgetId(graph.id, source.id, widget.name)
+    )
+    assert.exists(stored)
+    stored.serialize = false
+    widget.serialize = undefined
 
     emitGraphIntent({
       type: 'set_widget',

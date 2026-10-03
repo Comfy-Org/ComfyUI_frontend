@@ -136,8 +136,7 @@ function isValueWidget(
 ): boolean {
   if (!widget && !stored) return false
   const type = widget ? widget.type : stored?.type
-  const serialize =
-    widget && 'serialize' in widget ? widget.serialize : stored?.serialize
+  const serialize = widget?.serialize ?? stored?.serialize
   return type !== 'button' && serialize !== false
 }
 

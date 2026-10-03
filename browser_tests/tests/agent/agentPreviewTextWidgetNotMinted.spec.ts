@@ -149,7 +149,6 @@ test.describe(
       const { hostSocket } = rig
 
       await test.step('stream a text output into the preview widget', async () => {
-        // Through the node's own `onExecuted` hook.
         sendTextOutput(hostSocket, 'tensor([1, 2, 3])')
 
         // The widget really was written, so this test cannot pass by never
@@ -171,6 +170,11 @@ test.describe(
         await expect
           .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
           .toEqual(['applied'])
+
+        sendTextOutput(hostSocket, 'settled after result')
+        await expect
+          .poll(() => rig.widgetValue(PREVIEW_NODE_ID, PREVIEW_WIDGET))
+          .toBe('settled after result')
       })
 
       await test.step('no rejection toast, hand edit still on screen', async () => {

@@ -28,7 +28,11 @@ import type {
 
 const SUBSCRIBE_TIMEOUT = 15_000
 
-/** ComfyUI execution frames the fake host can emit alongside Agent frames. */
+/**
+ * ComfyUI execution frames the fake host can emit alongside doc and agent
+ * frames, typed against the app's own ws message shapes so a fixture cannot
+ * drift from what `executionStore` actually parses.
+ */
 export type ExecutionHostFrame =
   | { type: 'status'; data: StatusWsMessage }
   | { type: 'execution_start'; data: ExecutionStartWsMessage }
@@ -159,6 +163,7 @@ export class AgentFollowerHostSocket {
     if (!this.socket) throw new Error('the app has not opened /ws yet')
     this.socket.send(frame)
   }
+
   async waitForSubscribe(): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined
     const timeout = new Promise<never>((_, reject) => {
