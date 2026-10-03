@@ -3871,6 +3871,12 @@ export const zGetFeaturesResponse = z.object({
       used: z.number().int()
     })
     .optional(),
+  free_tier_offer: z
+    .object({
+      job_allowance: z.number().int(),
+      requires_google_sign_in: z.boolean()
+    })
+    .optional(),
   max_upload_size: z.number().int().optional(),
   stripe_publishable_key: z.string().optional(),
   supports_preview_metadata: z.boolean().optional(),
