@@ -99,7 +99,7 @@ const SKILL_NAME_MAX = 256
 
 /**
  * Display-only, so an over-long name is clamped. Rejecting it would drop
- * the live frame or the whole persisted transcript.
+ * the live frame or the persisted tool call.
  */
 const zSkillName = z
   .string()
