@@ -1,5 +1,5 @@
 import { devices, expect, mergeTests } from '@playwright/test'
-import type { Route, WebSocketRoute } from '@playwright/test'
+import type { Route } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
@@ -11,6 +11,7 @@ import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixtu
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { webSocketFixture } from '@e2e/fixtures/ws'
 
 // PM-1933: a cloud mobile-web reporter said the agent "is disconnected from my
 // workflow and gets lost", and the intake form's "what happened instead"
@@ -41,7 +42,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 // Lands green on main: a regression guard for the binding contract, not a
 // live repro.
 
-const test = mergeTests(agentTest, workflowSelectionTest)
+const test = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 
 // The id agentWorkflowSelectionFixture assigns the first workflow it saves.
 const SAVED_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
@@ -61,7 +62,11 @@ const SECOND_PROMPT = 'Now reduce the step count'
 // 394x853, and the panel's layout breakpoints are the point. Top-level because
 // a device descriptor carries `defaultBrowserType`, which Playwright refuses
 // inside a describe group.
-test.use({ ...devices['Pixel 5'], hasTouch: true })
+test.use({
+  ...devices['Pixel 5'],
+  hasTouch: true,
+  connectWebSocketToServer: false
+})
 
 test.describe(
   'Agent workflow binding on cloud mobile web, opened from a new tab',
@@ -69,7 +74,8 @@ test.describe(
   () => {
     test('follows the tab on screen rather than a saved workflow, and holds a hand-picked target across the next turn', async ({
       page,
-      workflowSelection
+      workflowSelection,
+      getWebSocket
     }) => {
       test.setTimeout(60_000)
 
@@ -94,17 +100,9 @@ test.describe(
       // untestable (and is itself what the reporter sat through: this thread
       // waited 101s and 121s for a first reply). Close each turn over the
       // socket the way the server would.
-      let socket: WebSocketRoute | null = null
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-      })
       const finishTurn = async (messageId: string): Promise<void> => {
-        await expect
-          .poll(() => socket !== null, {
-            message: 'the app never opened /ws'
-          })
-          .toBe(true)
-        socket!.send(
+        const socket = await getWebSocket()
+        socket.send(
           JSON.stringify({
             type: 'agent_message_done',
             data: { message_id: messageId, thread_id: THREAD_ID }
