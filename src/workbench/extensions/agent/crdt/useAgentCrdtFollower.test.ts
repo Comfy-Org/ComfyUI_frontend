@@ -721,14 +721,13 @@ describe('useAgentCrdtFollower', () => {
     bridge().subscribe.mockImplementationOnce((nextWorkflowId: string) => {
       bridge().follower = replacementFollower
       dispatchFrame('follower_replaced', { workflowId: nextWorkflowId })
+      bridge().subscribedWorkflowId = nextWorkflowId
     })
     workflowId.value = 'wf-2'
     await nextTick()
     expect(projectionState.unbind).toHaveBeenCalledExactlyOnceWith('wf-1')
-    expect(projectionState.bind.mock.calls[1]).toEqual([
-      'wf-2',
-      initialFollower
-    ])
+    expect(projectionState.bind.mock.calls[1]?.[0]).toBe('wf-2')
+    expect(projectionState.bind.mock.calls[1]?.[1]).toBe(initialFollower)
     expect(
       projectionState.unbind.mock.invocationCallOrder.at(-1)!
     ).toBeLessThan(projectionState.bind.mock.invocationCallOrder[1])
