@@ -489,10 +489,10 @@ function createAssetService() {
    * @returns The list of model filenames within the specified folder
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
     const buckets = await loadModelBuckets()
     const folderSegments = folder.split('/')
     let assets = buckets.get(folder)
-    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
 
     // Legacy tags are bucketed by their top-level segment, while node widgets
     // can retain a more specific category path from the object-info mapping.
