@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import type { TaskResponse } from '@/platform/tasks/services/taskService'
-import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'
@@ -17,6 +16,7 @@ const eventHandler = vi.hoisted(() => {
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     api_base: '/comfy',
+    apiURL: vi.fn((route: string) => `/comfy${route}`),
     fetchApi: vi.fn(),
     addEventListener: vi.fn((_event: string, handler: ExportEventHandler) => {
       eventHandler.current = handler
