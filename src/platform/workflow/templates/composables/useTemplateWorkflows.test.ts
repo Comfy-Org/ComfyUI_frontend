@@ -86,15 +86,42 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
 
-const { mockDistributionIsCloud } = vi.hoisted(() => ({
-  mockDistributionIsCloud: { value: false }
-}))
+const { mockDistributionIsCloud, mockDistributionIsDesktop } = vi.hoisted(
+  () => ({
+    mockDistributionIsCloud: { value: false },
+    mockDistributionIsDesktop: { value: false }
+  })
+)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
+  get isDesktop() {
+    return mockDistributionIsDesktop.value
+  },
   get isCloud() {
     return mockDistributionIsCloud.value
   }
 }))
+
+const { mockInputAssets } = vi.hoisted(() => ({
+  mockInputAssets: {
+    resolveTemplateInputAssets: vi.fn(async () => []),
+    startMissingTemplateInputDownloads: vi.fn()
+  }
+}))
+
+vi.mock(
+  import('@/platform/workflow/templates/utils/templateInputAssets'),
+  () => mockInputAssets
+)
+
+const { mockGraphSync } = vi.hoisted(() => ({
+  mockGraphSync: { syncCompletedTemplateInputsWithCurrentGraph: vi.fn() }
+}))
+
+vi.mock(
+  import('@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'),
+  () => mockGraphSync
+)
 
 const loadableWorkflow = {
   version: 0.4,
@@ -120,6 +147,7 @@ describe('useTemplateWorkflows', () => {
     )
     mockIsCloud.value = true
     mockDistributionIsCloud.value = false
+    mockDistributionIsDesktop.value = false
     mockLoadedWorkflow.value = { key: 'loaded-template' }
 
     mockWorkflowTemplatesStore = useWorkflowTemplatesStore()
@@ -378,6 +406,51 @@ describe('useTemplateWorkflows', () => {
       }
     )
     expect(loadingTemplateId.value).toBe(null) // Should reset after loading
+  })
+
+  // 'all' is a category label, not a source: it resolves to the template's
+  // real sourceModule, so only the resolved value decides authorization.
+  it.for([
+    { sourceModule: 'default', authorized: true },
+    { sourceModule: 'some-extension', authorized: false }
+  ])(
+    'authorizes input downloads for $sourceModule: $authorized',
+    async ({ sourceModule, authorized }) => {
+      mockDistributionIsDesktop.value = true
+      const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
+      mockWorkflowTemplatesStore.isLoaded = true
+
+      await loadWorkflowTemplate('template1', sourceModule)
+      await flushPromises()
+
+      // Only first-party templates may ask the host to fetch files.
+      expect(mockInputAssets.resolveTemplateInputAssets).toHaveBeenCalledTimes(
+        authorized ? 1 : 0
+      )
+    }
+  )
+
+  it('leaves input downloads to the host outside Desktop', async () => {
+    mockDistributionIsDesktop.value = false
+    const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
+    mockWorkflowTemplatesStore.isLoaded = true
+
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(mockInputAssets.resolveTemplateInputAssets).not.toHaveBeenCalled()
+  })
+
+  it('rebinds completed inputs against the graph it just loaded', async () => {
+    const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
+    mockWorkflowTemplatesStore.isLoaded = true
+
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(
+      mockGraphSync.syncCompletedTemplateInputsWithCurrentGraph
+    ).toHaveBeenCalledOnce()
   })
 
   it('should load a template from a regular category', async () => {
