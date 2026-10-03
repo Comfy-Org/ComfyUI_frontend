@@ -490,7 +490,19 @@ function createAssetService() {
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
     const buckets = await loadModelBuckets()
-    return (buckets.get(folder) ?? []).map((asset) => ({
+    const folderSegments = folder.split('/')
+    let assets = buckets.get(folder)
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
+
+    // Legacy tags are bucketed by their top-level segment, while node widgets
+    // can retain a more specific category path from the object-info mapping.
+    // model_type tags use their complete value as the authoritative key.
+    while (!modelTypeMode && !assets && folderSegments.length > 1) {
+      folderSegments.pop()
+      assets = buckets.get(folderSegments.join('/'))
+    }
+
+    return (assets ?? []).map((asset) => ({
       // `loader_path` is the category-relative path the loader widget expects
       // and the source for the sidebar tree. Backends that predate it (bare-tag
       // mode; today's cloud) fall back to the filename metadata — the same
