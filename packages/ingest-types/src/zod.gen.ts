@@ -1077,6 +1077,15 @@ export const zPlanAvailability = z.object({
  */
 export const zPlan = z.object({
   availability: zPlanAvailability,
+  credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   credits_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -3535,6 +3544,12 @@ export const zGetFeaturesResponse = z.object({
       allowance: z.number().int(),
       remaining: z.number().int(),
       used: z.number().int()
+    })
+    .optional(),
+  free_tier_offer: z
+    .object({
+      job_allowance: z.number().int(),
+      requires_google_sign_in: z.boolean()
     })
     .optional(),
   max_upload_size: z.number().int().optional(),

@@ -1,6 +1,7 @@
 import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -956,11 +957,10 @@ export const useLitegraphService = () => {
   }
 
   function getCanvasCenter(): Point {
-    const dpi = Math.max(window.devicePixelRatio || 1, 1)
     if (!app.isGraphReady) return [0, 0]
     const visibleArea = app.canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
-    return [x + w / dpi / 2, y + h / dpi / 2]
+    return [x + w / 2, y + h / 2]
   }
 
   function goToNode(nodeId: SerializedNodeId) {
@@ -998,7 +998,9 @@ export const useLitegraphService = () => {
     const bounds = createBounds(nodes)
     if (!bounds) return
 
-    canvas.ds.fitToBounds(bounds)
+    canvas.ds.fitToBounds(bounds, {
+      viewport: visibleCanvasViewport(canvas)
+    })
     canvas.setDirty(true, true)
   }
 

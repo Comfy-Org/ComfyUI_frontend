@@ -1699,6 +1699,16 @@ export type PlanAvailability = {
 export type Plan = {
   availability: PlanAvailability
   /**
+   * Raw credit count (not cents) the plan grants for one billing period,
+   * read from the catalog grant the subscription actually receives. An
+   * annual plan carries the whole year's grant. Omitted when the plan
+   * grants no flat credit amount: per-credit Team plans (see
+   * team_credit_stops), team-only seat plans, zero-grant plans and plans
+   * absent from the catalog.
+   *
+   */
+  credits?: number
+  /**
    * Per-member credits in cents (base + one seat)
    */
   credits_cents: number
@@ -8053,6 +8063,19 @@ export type GetFeaturesResponses = {
        * Free jobs consumed so far
        */
       used: number
+    }
+    /**
+     * The free-tier job allowance offered to new users, so a signed-out visitor sees the real offer before signing up. Same value for authenticated and unauthenticated requests. Absent when the free-tier allowance is disabled or zero.
+     */
+    free_tier_offer?: {
+      /**
+       * Number of free jobs granted to a new FREE-tier user
+       */
+      job_allowance: number
+      /**
+       * True when only Google-authenticated sessions receive the allowance; email/password signups get none.
+       */
+      requires_google_sign_in: boolean
     }
     /**
      * Maximum upload size in bytes

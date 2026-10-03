@@ -89,6 +89,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly essentialsTab: Locator
   public readonly sortButton: Locator
   public readonly nodePreview: Locator
+  public readonly nodePreviewInputs: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
@@ -98,6 +99,9 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
     this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
+    this.nodePreviewInputs = this.nodePreview.getByTestId(
+      TestIds.sidebar.nodePreviewInputs
+    )
   }
 
   getTab(name: string) {
