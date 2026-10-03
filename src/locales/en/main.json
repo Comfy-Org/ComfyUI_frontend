@@ -915,6 +915,7 @@
   },
   "sideToolbar": {
     "sidebar": "Sidebar",
+    "closeSidebar": "Close sidebar",
     "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",
@@ -2665,6 +2666,7 @@
       "cloudNewUser": "New to Comfy?",
       "cloudSignUp": "Sign up here",
       "freeRunsSuffix": "to get {count} free run. | to get {count} free runs.",
+      "freeRunsSuffixGoogle": "with Google to get {count} free run. | with Google to get {count} free runs.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -2740,6 +2742,12 @@
       "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?",
       "signOutAnyway": "Sign out anyway",
       "saveFailed": "Sign-out cancelled because saving \"{workflow}\" failed."
+    },
+    "signOutEverywhere": {
+      "action": "Sign out of all devices",
+      "success": "Signed out of all devices",
+      "successDetail": "Every device signed in to your account has been signed out.",
+      "failed": "Couldn't sign out of all devices"
     },
     "accountChanged": {
       "title": "Account changed",
@@ -3360,6 +3368,8 @@
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
+        "personalBody": "Your subscription is paused. Update your payment method to resume.",
+        "personalPaymentFailedBody": "Your payment didn't go through. Update your payment method to resume.",
         "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {

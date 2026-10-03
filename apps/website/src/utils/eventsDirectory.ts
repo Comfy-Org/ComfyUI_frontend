@@ -10,7 +10,7 @@ import {
   toCalendarEvent,
   youtubeWatchHref
 } from '../data/events'
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
 
 /** Sentinel for the "no filter" option in the type and organizer selects. */
 export const DIRECTORY_FILTER_ALL = 'all'
@@ -151,9 +151,9 @@ function mediaOf(event: ComfyEvent, locale: Locale): DirectoryRow['media'] {
 
 /** WATCH NOW for a recorded event's card or row; LEARN MORE otherwise. */
 export function pastCtaLabel(event: ComfyEvent, locale: Locale): string {
+  const { t } = translationsFor(locale)
   return t(
-    eventVideoId(event) ? 'events.past.watchNow' : 'events.past.learnMore',
-    locale
+    eventVideoId(event) ? 'events.past.watchNow' : 'events.past.learnMore'
   )
 }
 
@@ -161,13 +161,14 @@ function registerOf(
   event: ComfyEvent,
   locale: Locale
 ): DirectoryRow['register'] {
+  const { t } = translationsFor(locale)
   if (event.link) {
     return {
       href: localized(event.link.href, locale),
       newTab: event.link.newTab ?? false,
       label: event.ctaLabel
         ? localized(event.ctaLabel, locale)
-        : t('events.directory.learnMore', locale)
+        : t('events.directory.learnMore')
     }
   }
   // An upcoming livestream without an outbound link still has a public
@@ -178,7 +179,7 @@ function registerOf(
     return {
       href: localized(href, locale),
       newTab: true,
-      label: t('events.directory.learnMore', locale)
+      label: t('events.directory.learnMore')
     }
   }
   return undefined
@@ -205,9 +206,10 @@ function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {
 }
 
 function locationOf(event: ComfyEvent, locale: Locale): string {
+  const { t } = translationsFor(locale)
   return event.location
     ? localized(event.location, locale)
-    : t('events.directory.virtual', locale)
+    : t('events.directory.virtual')
 }
 
 function directoryRow(
@@ -215,11 +217,12 @@ function directoryRow(
   locale: Locale,
   now: Date
 ): DirectoryRow {
+  const { t } = translationsFor(locale)
   const upcoming = eventStatus(event, now) === 'upcoming'
   return {
     event,
     upcoming,
-    category: t(`events.category.${event.category}`, locale),
+    category: t(`events.category.${event.category}`),
     title: localized(event.title, locale),
     description: localized(event.description, locale),
     date: eventDateLabel(event, locale),

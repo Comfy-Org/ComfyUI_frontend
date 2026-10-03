@@ -261,6 +261,23 @@ export const zUsageSummary = z.object({
   spend_micros: z.number()
 })
 
+/**
+ * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ */
+export const zUsageNotAvailable = z.object({
+  reason: z.enum(['no_attribution_source'])
+})
+
+export const zUsageGroupLabel = z.object({
+  display_name: z.string().optional(),
+  key: z.string(),
+  key_name: z.string().optional(),
+  key_prefix: z.string().optional(),
+  kind: z.enum(['api_key', 'session', 'deployment']).optional(),
+  owner_display_name: z.string().optional(),
+  owner_user_id: z.string().optional()
+})
+
 export const zUsageBucket = z.object({
   cost_micros: z.number(),
   group_key: z.string(),
@@ -279,8 +296,17 @@ export const zUsageTimeSeries = z.object({
   buckets: z.array(zUsageBucket),
   ending_before: z.string().datetime(),
   granularity: z.enum(['hour', 'day', 'month']),
-  group_by: z.enum(['model', 'endpoint', 'product']),
+  group_by: z.enum([
+    'model',
+    'endpoint',
+    'product',
+    'product_line',
+    'person',
+    'source'
+  ]),
+  group_labels: z.array(zUsageGroupLabel).optional(),
   groups: z.array(z.string()),
+  not_available: zUsageNotAvailable.optional(),
   starting_on: z.string().datetime(),
   summary: zUsageSummary
 })
@@ -458,7 +484,7 @@ export const zTaskEntry = z.object({
   create_time: z.string().datetime(),
   id: z.string().uuid(),
   started_at: z.string().datetime().optional(),
-  status: z.enum(['created', 'running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
   task_name: z.string()
 })
 
@@ -482,7 +508,7 @@ export const zTaskResponse = z.object({
   payload: z.record(z.unknown()),
   result: z.record(z.unknown()).optional(),
   started_at: z.string().datetime().optional(),
-  status: z.enum(['created', 'running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
   task_name: z.string(),
   update_time: z.string().datetime()
 })
@@ -561,7 +587,10 @@ export const zSubscriptionDiscount = z.object({
     })
     .optional(),
   kind: z.enum(['plan', 'promotion']),
-  name: z.string().optional()
+  name: z.string().optional(),
+  term: z
+    .enum(['this_payment', 'first_month', 'first_year', 'months', 'ongoing'])
+    .optional()
 })
 
 /**
@@ -795,6 +824,21 @@ export const zSavedPaymentMethod = z.object({
  */
 export const zRevokeAllSessionsResponse = z.object({
   revoked: z.number().int()
+})
+
+/**
+ * Response after accepting a scheduled-change revert.
+ */
+export const zRevertScheduledChangeResponse = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['reverted', 'pending'])
+})
+
+/**
+ * Request body for undoing a pending scheduled plan change.
+ */
+export const zRevertScheduledChangeRequest = z.object({
+  idempotency_key: z.string().optional()
 })
 
 /**
@@ -1452,7 +1496,7 @@ export const zModelFile = z.object({
  * Workspace member with profile and role information.
  */
 export const zMember = z.object({
-  email: z.string().email(),
+  email: z.string(),
   id: z.string(),
   is_original_owner: z.boolean(),
   joined_at: z.string().datetime(),
@@ -2794,6 +2838,7 @@ export const zBillingCapabilities = z.object({
   can_downgrade_to_personal: z.boolean(),
   can_invite_members: z.boolean(),
   can_reactivate: z.boolean(),
+  can_revert_scheduled_change: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
   can_top_up: z.boolean()
 })
@@ -2878,7 +2923,7 @@ export const zAssetMetadataResponse = z.object({
  */
 export const zAssetDownloadResponse = z.object({
   message: z.string().optional(),
-  status: z.enum(['created', 'running', 'completed', 'failed']),
+  status: z.enum(['created', 'running', 'completed', 'failed', 'cancelled']),
   task_id: z.string().uuid()
 })
 
@@ -3756,6 +3801,13 @@ export const zResubscribeBody = zResubscribeRequest
  */
 export const zResubscribeResponse2 = zResubscribeResponse
 
+export const zRevertScheduledChangeBody = zRevertScheduledChangeRequest
+
+/**
+ * Revert accepted
+ */
+export const zRevertScheduledChangeResponse2 = zRevertScheduledChangeResponse
+
 export const zCreateTopupBody = zCreateTopupRequest
 
 /**
@@ -3779,7 +3831,7 @@ export const zCreateTopupQuoteResponse = zTopupQuoteResponse
 
 export const zGetBillingUsageTimeSeriesQuery = z.object({
   group_by: z
-    .enum(['model', 'endpoint', 'product'])
+    .enum(['model', 'endpoint', 'product', 'product_line', 'person', 'source'])
     .optional()
     .default('model'),
   granularity: z.enum(['hour', 'day', 'month']).optional().default('month'),
@@ -3848,7 +3900,14 @@ export const zGetFeaturesResponse = z.object({
       used: z.number().int()
     })
     .optional(),
+  free_tier_offer: z
+    .object({
+      job_allowance: z.number().int(),
+      requires_google_sign_in: z.boolean()
+    })
+    .optional(),
   max_upload_size: z.number().int().optional(),
+  new_free_tier_subscriptions: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
   supports_preview_metadata: z.boolean().optional(),
   web_session_probe: z.boolean().optional()
@@ -4323,6 +4382,15 @@ export const zListTasksQuery = z.object({
  * Success - Tasks retrieved
  */
 export const zListTasksResponse = zTasksListResponse
+
+export const zCancelTaskPath = z.object({
+  task_id: z.string().uuid()
+})
+
+/**
+ * Cancellation accepted
+ */
+export const zCancelTaskResponse = z.void()
 
 export const zGetTaskPath = z.object({
   task_id: z.string().uuid()

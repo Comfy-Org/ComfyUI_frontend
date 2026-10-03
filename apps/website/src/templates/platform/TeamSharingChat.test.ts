@@ -28,7 +28,9 @@ describe('TeamSharingChat', () => {
     await setAllIntersecting(true)
 
     expect(
-      screen.getByText(t('platform.howItWorks.chat.message', 'en'))
+      screen.getByText(
+        t('platform.howItWorks.chat.message', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
     expect(screen.getByText('video-upscale-4k.run.comfy.app')).toBeTruthy()
 
@@ -38,7 +40,9 @@ describe('TeamSharingChat', () => {
     // exchange (its workflow link) and the head of the S/B exchange are
     // both visible at once.
     expect(
-      screen.getByText(t('platform.howItWorks.chat.messageBgRemove', 'en'))
+      screen.getByText(
+        t('platform.howItWorks.chat.messageBgRemove', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
     expect(screen.getByText('video-upscale-4k.run.comfy.app')).toBeTruthy()
     expect(screen.getByText('bg-remove-batch.run.comfy.app')).toBeTruthy()
@@ -57,7 +61,9 @@ describe('TeamSharingChat', () => {
     await vi.advanceTimersByTimeAsync(1600 * 5)
 
     expect(
-      screen.getByText(t('platform.howItWorks.chat.messageProductShots', 'en'))
+      screen.getByText(
+        t('platform.howItWorks.chat.messageProductShots', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
     expect(screen.getByText('product-shots.run.comfy.app')).toBeTruthy()
 
@@ -65,7 +71,9 @@ describe('TeamSharingChat', () => {
     // the loop is back in view.
     await vi.advanceTimersByTimeAsync(1600 * 3)
     expect(
-      screen.getByText(t('platform.howItWorks.chat.message', 'en'))
+      screen.getByText(
+        t('platform.howItWorks.chat.message', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
     expect(screen.getByText('video-upscale-4k.run.comfy.app')).toBeTruthy()
 
@@ -84,16 +92,24 @@ describe('TeamSharingChat', () => {
     await vi.advanceTimersByTimeAsync(6400)
 
     expect(
-      screen.getByText(t('platform.howItWorks.chat.message', 'en'))
+      screen.getByText(
+        t('platform.howItWorks.chat.message', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
     expect(
-      screen.getByText(t('platform.howItWorks.chat.reply', 'en'))
+      screen.getByText(
+        t('platform.howItWorks.chat.reply', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
     expect(
-      screen.getByText(t('platform.howItWorks.chat.thanks', 'en'))
+      screen.getByText(
+        t('platform.howItWorks.chat.thanks', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
     expect(
-      screen.queryByText(t('platform.howItWorks.chat.messageBgRemove', 'en'))
+      screen.queryByText(
+        t('platform.howItWorks.chat.messageBgRemove', {}, { locale: 'en' })
+      )
     ).toBeNull()
 
     unmount()

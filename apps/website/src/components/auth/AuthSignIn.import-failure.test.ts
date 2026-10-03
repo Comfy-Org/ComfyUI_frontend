@@ -19,7 +19,9 @@ it('leaves the buttons usable when the Firebase chunk fails to load on a click',
   await userEvent.setup().click(button)
 
   await waitFor(() => expect(messages.value).toHaveLength(1))
-  expect(messages.value[0].detail).toBe(t('auth.errors.generic', 'en'))
+  expect(messages.value[0].detail).toBe(
+    t('auth.errors.generic', {}, { locale: 'en' })
+  )
   expect(
     button,
     'a failed chunk load must not strand the page in pending'

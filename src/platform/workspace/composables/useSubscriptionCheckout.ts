@@ -599,7 +599,9 @@ export function useSubscriptionCheckout(
           readRail === null
             ? await workspaceApi.getBillingStatus()
             : await readOnRail(readRail.readStatus)
-        requiresRecovery = status?.billing_status === 'payment_failed'
+        requiresRecovery =
+          status?.billing_status === 'payment_failed' ||
+          status?.billing_status === 'paused'
       } catch {
         return null
       }

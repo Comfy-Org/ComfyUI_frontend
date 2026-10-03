@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { computed } from 'vue'
 
 import type {
@@ -9,9 +10,8 @@ import {
   CAMERA_RANGES,
   cameraZone
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import type { ReshootCopyKey } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import type { ReshootCopyKey } from '../../../../lib/workshop/cinematic-studio/copy'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import ReshootBarField from './ReshootBarField.vue'
 import ReshootGlobe from './ReshootGlobe.vue'
@@ -28,6 +28,7 @@ const {
   disabled?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ aim: [patch: Partial<ReshootCamera>] }>()
 const keepAim = defineModel<boolean>('keepAim', { required: true })
@@ -63,18 +64,18 @@ const zone = computed(() => cameraZone(camera))
 <template>
   <div class="flex flex-col gap-2">
     <p class="text-center text-xs text-primary-warm-gray">
-      {{ rc('reshoot.aim.globe', locale) }}
+      {{ t('reshoot.aim.globe') }}
     </p>
     <ReshootGlobe :clip :camera :disabled :locale @aim="emit('aim', $event)" />
     <ReshootZone :zone class="mx-auto mb-1">
-      {{ rc(`reshoot.zone.${zone}`, locale) }}
+      {{ t(`reshoot.zone.${zone}`) }}
     </ReshootZone>
     <ReshootBarField
       v-for="{ axis, label, format, hint } in MAIN"
       :key="axis"
       :model-value="camera[axis]"
-      :label="rc(label, locale)"
-      :hint="hint && rc(hint, locale)"
+      :label="t(label)"
+      :hint="hint && t(hint)"
       :display="format(camera[axis])"
       v-bind="CAMERA_RANGES[axis]"
       :disabled
@@ -85,7 +86,7 @@ const zone = computed(() => cameraZone(camera))
         v-for="{ axis, label, format } in MORE"
         :key="axis"
         :model-value="camera[axis]"
-        :label="rc(label, locale)"
+        :label="t(label)"
         :display="format(camera[axis])"
         v-bind="CAMERA_RANGES[axis]"
         :disabled
@@ -101,11 +102,11 @@ const zone = computed(() => cameraZone(camera))
             :disabled
             class="accent-primary-comfy-yellow"
           />
-          {{ rc('reshoot.keepAim', locale) }}
+          {{ t('reshoot.keepAim') }}
         </label>
         <InfoTooltip
-          :text="rc('reshoot.keepAimHelp', locale)"
-          :label="rc('reshoot.keepAimHelp', locale)"
+          :text="t('reshoot.keepAimHelp')"
+          :label="t('reshoot.keepAimHelp')"
         />
       </div>
     </div>

@@ -10,10 +10,10 @@ const APPLY_URL = 'https://forms.gle/RS8L2ttcuGap4Q1v6'
 const TERMS_PATH = '/affiliates/terms/'
 const FAQ_COUNT = affiliateFaqs.length
 const FIRST_FAQ = affiliateFaqs[0]
-const HERO_HEADING_TEXT = `${t('affiliate.hero.headingHighlight', 'en')} ${t('affiliate.hero.headingMuted', 'en')}`
-const CTA_HEADING_TEXT = t('affiliate.cta.heading', 'en')
-const CTA_APPLY_LABEL = t('affiliate.cta.apply', 'en')
-const CTA_TERMS_LABEL = t('affiliate.cta.termsLabel', 'en')
+const HERO_HEADING_TEXT = `${t('affiliate.hero.headingHighlight', {}, { locale: 'en' })} ${t('affiliate.hero.headingMuted', {}, { locale: 'en' })}`
+const CTA_HEADING_TEXT = t('affiliate.cta.heading', {}, { locale: 'en' })
+const CTA_APPLY_LABEL = t('affiliate.cta.apply', {}, { locale: 'en' })
+const CTA_TERMS_LABEL = t('affiliate.cta.termsLabel', {}, { locale: 'en' })
 
 test.describe('Affiliates landing — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
