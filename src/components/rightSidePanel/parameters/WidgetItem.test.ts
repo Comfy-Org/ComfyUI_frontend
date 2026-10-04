@@ -231,6 +231,18 @@ describe('WidgetItem', () => {
       expect(stub.hasCallback).toBe(false)
     })
 
+    it('renders a legacy widget with a non-string type', () => {
+      const widget = createMockWidget({ callback: vi.fn() })
+      Reflect.set(widget, 'type', 7)
+
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
+
+      expect(stub.name).toBe('test_widget')
+      expect(stub.type).toBe('7')
+      expect(stub.hasCallback).toBe(false)
+    })
+
     it('passes name from widget state to the widget component', () => {
       const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
       const widget = createMockWidget({ widgetId: id, name: 'source_name' })
