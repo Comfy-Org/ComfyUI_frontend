@@ -9,6 +9,7 @@ import type {
   FieldErrorCode,
   FieldErrors,
   FieldSchema,
+  FileValue,
   FieldValue,
   FormValues
 } from '../../config/workshop-playground'
@@ -30,12 +31,18 @@ const {
   field,
   errors,
   attention,
+  group,
   locale = 'en',
   disabled = false,
   fileUploadsDisabled = false
 } = defineProps<{
   field: FieldSchema
   errors: FieldErrors
+  /**
+   * The numbered sibling fields this one starts, itself first, when a model
+   * takes several of the same upload. One control fills them in order.
+   */
+  group?: readonly FieldSchema[]
   /**
    * The id of a notice about this field's upload. Deliberately not an error:
    * errors abort the run, and this marks something the reader may well decide
@@ -81,47 +88,63 @@ watch(
     edited.value = false
   }
 )
-const fieldError = computed(() =>
-  edited.value ||
-  (field.presentation?.formConstraint &&
-    errors[field.name] === field.presentation.formConstraint.error)
-    ? validateForm([field], values.value)[field.name]
-    : errors[field.name]
-)
+// A grouped control owns its siblings' slots, so a complaint about any of them
+// has nowhere else to appear — and it is written in the terms of the slot it
+// came from, whose limits need not be this one's.
+const complaint = computed<
+  { code: FieldErrorCode; source: FieldSchema } | undefined
+>(() => {
+  const current =
+    edited.value ||
+    (field.presentation?.formConstraint &&
+      errors[field.name] === field.presentation.formConstraint.error)
+      ? validateForm(group ?? [field], values.value)
+      : errors
+  const own = current[field.name]
+  if (own) return { code: own, source: field }
+  const sibling = group?.find((member) => current[member.name])
+  const code = sibling && current[sibling.name]
+  return code ? { code, source: sibling } : undefined
+})
+const fieldError = computed(() => complaint.value?.code)
 
-function uploadLimit(): number {
-  if (field.kind === 'file') return field.maxBytes ?? MAX_UPLOAD_BYTES
-  return urlUploadField(field)?.maxBytes ?? MAX_UPLOAD_BYTES
+function uploadLimit(source: FieldSchema = field): number {
+  if (source.kind === 'file') return source.maxBytes ?? MAX_UPLOAD_BYTES
+  return urlUploadField(source)?.maxBytes ?? MAX_UPLOAD_BYTES
 }
 
-function videoDurationLimit(): string {
-  return String(field.presentation?.maxVideoDurationSeconds ?? '')
+function videoDurationLimit(source: FieldSchema = field): string {
+  return String(source.presentation?.maxVideoDurationSeconds ?? '')
 }
 
-function videoWidthMinimum(): string {
-  return String(field.presentation?.videoWidthPixels?.minimum ?? '')
+function videoWidthMinimum(source: FieldSchema = field): string {
+  return String(source.presentation?.videoWidthPixels?.minimum ?? '')
 }
 
-function videoWidthMaximum(): string {
-  return String(field.presentation?.videoWidthPixels?.maximum ?? '')
+function videoWidthMaximum(source: FieldSchema = field): string {
+  return String(source.presentation?.videoWidthPixels?.maximum ?? '')
 }
 
-function messageForError(error: FieldErrorCode): string {
-  if (error === 'incompatible' && field.hint) return field.hint
+function messageForError(error: FieldErrorCode, source: FieldSchema): string {
+  if (error === 'incompatible' && source.hint) return source.hint
   return t(errorKey[error], {
-    limit: formatWorkshopUploadLimit(uploadLimit(), locale),
-    seconds: videoDurationLimit(),
+    limit: formatWorkshopUploadLimit(uploadLimit(source), locale),
+    seconds: videoDurationLimit(source),
     minimum: String(
-      field.presentation?.imageAspectRatio?.minimum ?? videoWidthMinimum()
+      source.presentation?.imageAspectRatio?.minimum ??
+        videoWidthMinimum(source)
     ),
     maximum: String(
-      field.presentation?.imageAspectRatio?.maximum ?? videoWidthMaximum()
+      source.presentation?.imageAspectRatio?.maximum ??
+        videoWidthMaximum(source)
     )
   })
 }
 
 const errorMessage = computed(() =>
-  fieldError.value ? messageForError(fieldError.value) : ''
+  complaint.value
+    ? messageForError(complaint.value.code, complaint.value.source)
+    : ''
 )
 const invalid = () => fieldError.value !== undefined
 const describedBy = computed(
@@ -184,28 +207,67 @@ const declaredDefault = computed(() =>
     ? undefined
     : field.defaultValue
 )
-const selectedFiles = computed({
+function fileFor(name: string): FileValue | FileValue[] | undefined {
+  const value = values.value[name]
+  const upload = urlUploadField(field)
+  if (typeof value === 'string' && upload && isHttpImageSource(value)) {
+    return (
+      workshopExampleFile(value, upload.accept[0]) ?? {
+        name: new URL(value).pathname.split('/').at(-1) || field.label,
+        type: upload.accept[0] ?? 'application/octet-stream',
+        size: 0,
+        previewUrl: value,
+        sourceUrl: value
+      }
+    )
+  }
+  return typeof value === 'object' ? value : undefined
+}
+
+// Each slot is carried with the value it was read from, so a slot that only
+// moves up the list keeps what it held — an example's URL stays a URL rather
+// than being rewritten as the file it was resolved into for display.
+const groupSlots = computed(() =>
+  (group ?? []).flatMap((member) => {
+    const file = fileFor(member.name)
+    if (file === undefined) return []
+    const files = Array.isArray(file) ? file : [file]
+    return files.map((one) => ({ file: one, held: values.value[member.name] }))
+  })
+)
+const groupFiles = computed<FileValue[]>(() =>
+  groupSlots.value.map((slot) => slot.file)
+)
+const selectedFiles = computed<FileValue | FileValue[] | undefined>({
   get() {
-    const value = values.value[field.name]
-    const upload = urlUploadField(field)
-    if (typeof value === 'string' && upload && isHttpImageSource(value)) {
-      return (
-        workshopExampleFile(value, upload.accept[0]) ?? {
-          name: new URL(value).pathname.split('/').at(-1) || field.label,
-          type: upload.accept[0] ?? 'application/octet-stream',
-          size: 0,
-          previewUrl: value,
-          sourceUrl: value
-        }
-      )
-    }
-    return typeof value === 'object' ? value : undefined
+    return group ? groupFiles.value : fileFor(field.name)
   },
-  set
+  set(value) {
+    if (!group) {
+      set(value)
+      return
+    }
+    const chosen =
+      value === undefined ? [] : Array.isArray(value) ? value : [value]
+    const held = chosen.map(
+      (file) =>
+        groupSlots.value.find((slot) => slot.file === file)?.held ?? file
+    )
+    edited.value = true
+    values.value = {
+      ...values.value,
+      ...Object.fromEntries(group.map((member, at) => [member.name, held[at]]))
+    }
+  }
 })
 const uploadField = computed(() => {
   const upload = urlUploadField(field)
-  return upload ? { ...upload, name: `${field.name}-upload` } : undefined
+  if (!upload) return undefined
+  return {
+    ...upload,
+    name: `${field.name}-upload`,
+    ...(group ? { multiple: true, maxItems: group.length } : {})
+  }
 })
 
 function set(value: FieldValue) {
@@ -382,6 +444,20 @@ function booleanValue(fallback = false): boolean {
             :label="field.hint"
           />
         </div>
+        <span
+          v-if="group"
+          role="status"
+          class="text-xs text-primary-warm-gray tabular-nums"
+          :aria-label="
+            t('workshop.field.chosenOfMax', {
+              count: groupFiles.length,
+              max: group.length
+            })
+          "
+          :data-testid="`field-${field.name}-count`"
+        >
+          {{ groupFiles.length }} / {{ group.length }}
+        </span>
         <input
           v-if="field.kind === 'number' && isSlider"
           type="number"

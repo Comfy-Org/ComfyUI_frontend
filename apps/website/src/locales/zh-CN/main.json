@@ -4498,6 +4498,7 @@
       "aspectRatio": "宽高比",
       "auto": "自动",
       "chooseValue": "选择{label}",
+      "chosenOfMax": "已选 {count} / {max}",
       "defaultValue": "默认值：{value}",
       "duration": "时长（秒）",
       "exactValue": "{label}数值",
