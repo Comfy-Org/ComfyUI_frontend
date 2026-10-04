@@ -1082,6 +1082,10 @@ describe('buildSummaryLedger credit counts', () => {
   const STANDARD_GRANT = { credits_today: 4200, credits_next_period: 4200 }
   const TEAM_STOP_GRANT = { credits_today: 0, credits_next_period: 16_899 }
   const PRORATED_GRANT = { credits_today: 2531, credits_next_period: 16_899 }
+  const UNEQUAL_GRANT_SAME_CENTS = {
+    credits_today: 4201,
+    credits_next_period: 4200
+  }
 
   it.for<{
     name: string
@@ -1146,6 +1150,23 @@ describe('buildSummaryLedger credit counts', () => {
         sublines: [
           'Remaining time for Pro plan, less unused time from Standard plan',
           'Credits refill to 16,899 each month'
+        ]
+      }
+    },
+    {
+      name: 'a grant unequal to the allowance stays dated even when both round to the same cents',
+      quote: {
+        transition_type: 'new_subscription',
+        credits_today_cents: 1991,
+        credits_next_period_cents: 1991,
+        new_plan: planOf('STANDARD', 'MONTHLY', 2000),
+        ...UNEQUAL_GRANT_SAME_CENTS
+      },
+      expected: {
+        credits: { count: '4,201', qualifier: 'credits added today' },
+        sublines: [
+          '$20 /mo, billed monthly',
+          'Credits refill to 4,200 each month'
         ]
       }
     }
