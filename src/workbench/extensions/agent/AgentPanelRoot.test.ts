@@ -12,6 +12,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import {
   computed,
+  createApp,
   defineComponent,
   effectScope,
   h,
@@ -39,7 +40,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import {
   toDocumentUid,
   useDocumentLifecycleStore
@@ -64,7 +65,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@/platform/telemetry/reportError'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
@@ -265,6 +266,7 @@ import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegistry'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -2481,6 +2483,43 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  // The whole point of client_message_id is that the analytics event and the turn
+  // POST carry the SAME value: the server echoes the posted one onto
+  // agent_turn_started, and the funnel joins that to the value on
+  // app:agent_message_sent. If the two ever diverge the join returns zero rows and
+  // nothing else breaks, so neither side's own test would catch it - only this one.
+  it('posts the same client_message_id it reports, so message and turn can be joined', async () => {
+    const messageBodies: Record<string, unknown>[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        messageBodies.push(
+          JSON.parse(String(init?.body)) as Record<string, unknown>
+        )
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+
+    renderWithSelectedTarget()
+    await screen.findByRole('textbox')
+    telemetry.trackAgentMessageSent.mockClear()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() => {
+      expect(messageBodies).toHaveLength(1)
+      expect(telemetry.trackAgentMessageSent).toHaveBeenCalled()
+    })
+    const posted = messageBodies[0].client_message_id
+    expect(posted).toBeTypeOf('string')
+    expect(posted).not.toBe('')
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({ client_message_id: posted })
+    )
+  })
+
   it('uses the submitted filename when the upload response omits a name', async () => {
     const messageBodies: unknown[] = []
     vi.stubGlobal(
@@ -4521,6 +4560,157 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
   })
 
+  it('releases the minimap graph-activity layer even when another teardown step throws', () => {
+    const errorHandler = vi.fn()
+    const first = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    vi.spyOn(
+      useWorkflowTabActivityStore(),
+      'setCreating'
+    ).mockImplementationOnce(() => {
+      throw new Error('teardown failed')
+    })
+
+    first.unmount()
+    // Contained and reported, not escaped: a step that throws must not reach
+    // Vue's error handling, which re-throws out of `invokeArrayFns` and would
+    // abandon the remaining hooks and the rest of `unmountComponent`.
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'teardown failed' }),
+      expect.objectContaining({
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step: 'clearCreatingTab' }
+      })
+    )
+    expect(errorHandler).not.toHaveBeenCalled()
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
+      })
+    )
+  })
+
+  it('resets the canvas sync gate when an earlier teardown step throws', () => {
+    const errorHandler = vi.fn()
+    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
+      docOpMinterDeps.current = deps
+      return fromPartial<DocOpMinter>({
+        detach: vi.fn(() => {
+          throw new Error('detach failed')
+        })
+      })
+    })
+    const panel = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+    // Cleared so the only recorded call is the teardown reset, not this
+    // instance's own live gate registered while it was mounted.
+    setCanvasSyncGate.mockClear()
+
+    panel.unmount()
+
+    // PM-1575: the gate is reset to the always-safe default even though a
+    // step three places ahead of it threw.
+    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
+    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe(false)
+    expect(outcomeCount?.()).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'detach failed' }),
+      expect.objectContaining({
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step: 'detachDocOpMinter' }
+      })
+    )
+    expect(errorHandler).not.toHaveBeenCalled()
+  })
+
+  it('resets the canvas sync gate when reporting a failed teardown step throws', () => {
+    const errorHandler = vi.fn()
+    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
+      docOpMinterDeps.current = deps
+      return fromPartial<DocOpMinter>({
+        detach: vi.fn(() => {
+          throw new Error('detach failed')
+        })
+      })
+    })
+    const panel = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+    setCanvasSyncGate.mockClear()
+    // The reporter is the one part of the loop outside its own try/catch; a
+    // telemetry sink torn down ahead of the panel must not take the remaining
+    // releases with it.
+    vi.mocked(reportError).mockImplementationOnce(() => {
+      throw new Error('reporter failed')
+    })
+
+    panel.unmount()
+
+    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
+    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe(false)
+    expect(outcomeCount?.()).toBe(0)
+    expect(errorHandler).not.toHaveBeenCalled()
+  })
+
+  it('does not claim the minimap graph-activity layer when setup throws', () => {
+    vi.mocked(useFreeUsePlacement).mockImplementationOnce(() => {
+      throw new Error('setup failed')
+    })
+    // Mounted without Testing Library, whose error handler lets a failed
+    // setup finish mounting; Vue itself aborts the mount.
+    const app = createApp(AgentPanelRoot).use(i18n)
+    expect(() => app.mount(document.createElement('div'))).toThrow(
+      'setup failed'
+    )
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
+      })
+    )
+  })
+
+  it('still paints graph activity when a replacement panel sets up before the old one unmounts', async () => {
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    const outgoing = renderWithSelectedTarget()
+    // The handover order the fix above cannot cover: a replacement host builds
+    // its panel while the outgoing one is still mounted and holding the id.
+    renderWithSelectedTarget()
+    outgoing.unmount()
+
+    useAgentGraphActivityStore().recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(301)]
+    )
+    await nextTick()
+
+    expect(
+      getMinimapDecorations({
+        rootGraphId: toRootGraphId('graph-1'),
+        owningGraphId: toOwningGraphId('graph-1')
+      }).map(({ target }) => target.nodeId)
+    ).toEqual(['301'])
+  })
+
   it('clears workflow activity when the panel unmounts', () => {
     const activity = useWorkflowTabActivityStore()
     activity.setEditing('workflows/active.json')
@@ -4556,16 +4746,16 @@ describe('AgentPanelRoot a11y id guard', () => {
   // class) reached main unnoticed because the fast suite never asserted the id
   // count. Assert the document-level count, not a getBy* query, so a second
   // copy of the id fails loudly here instead of only in the Playwright suite
-  // (agentPanelLifecycle.spec.ts, still test.fixme pending FE #16919).
+  // (agentPanelLifecycle.spec.ts, re-enabled in #17132).
   it('renders exactly one #agent-panel-title on the success path', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByText(i18n.global.t('agent.title'))).toBeVisible()
     // Document-level count is the point: the guard must see any duplicate id
     // anywhere in the document, not just within the panel subtree.
-    /* eslint-disable testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-node-access */
     expect(document.querySelectorAll('#agent-panel-title')).toHaveLength(1)
-    /* eslint-enable testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-node-access */
   })
 })
 

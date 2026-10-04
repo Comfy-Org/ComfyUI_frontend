@@ -145,9 +145,22 @@ interface QueuePromptRequestBody {
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
+/**
+ * Which cloud auth path a request actually took, for error diagnostics (PM-1802).
+ *
+ * `none` means no auth scheme was used at all, which covers both a non-cloud
+ * distribution and a cloud request whose auth header was unavailable. Those are
+ * the same statement about the request - nothing authenticated it - and the
+ * deploy surface already distinguishes them, so this stays three values rather
+ * than growing a fourth that only restates `isCloud`.
+ */
+export type AuthScheme = 'web-session' | 'cloud-auth-header' | 'none'
+
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
   onAuthHeader?: (attached: boolean) => void
+  /** Reports which auth path was taken, independent of onAuthHeader's attached/not boolean. */
+  onAuthScheme?: (scheme: AuthScheme) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -424,7 +437,8 @@ export class PromptExecutionError extends Error {
     )) {
       message += '\n' + nodeError.class_type + ':'
       for (const errorReason of nodeError.errors) {
-        message += '\n    - ' + errorReason.message + ': ' + errorReason.details
+        message += '\n    - ' + errorReason.message
+        if (errorReason.details) message += ': ' + errorReason.details
       }
     }
 
@@ -582,11 +596,20 @@ export class ComfyApi extends EventTarget {
     return send?.(url, init)
   }
 
-  /** Adds today's token header; true when a 401 may be re-minted. */
+  /**
+   * Adds today's token header, reporting the scheme that was actually used and
+   * whether a 401 may be re-minted.
+   *
+   * The scheme is returned rather than assumed by the caller because this helper
+   * is the only place that knows whether a header was obtained: it reports
+   * `authHeader !== null` through `onAuthHeader` and attaches nothing when auth
+   * is unavailable. A caller that announced `cloud-auth-header` on entry to this
+   * path would misreport exactly the unauthenticated case PM-1802 is about.
+   */
   private async addCloudAuthHeader(
     headers: HeadersInit,
     onAuthHeader: FetchApiOptions['onAuthHeader']
-  ): Promise<boolean> {
+  ): Promise<{ scheme: AuthScheme; unifiedRetryOn401: boolean }> {
     // Get Firebase JWT token if user is logged in
     const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
       try {
@@ -600,12 +623,15 @@ export class ComfyApi extends EventTarget {
 
     const authHeader = await getAuthHeaderIfAvailable()
     onAuthHeader?.(authHeader !== null)
-    if (!authHeader) return false
+    if (!authHeader) return { scheme: 'none', unifiedRetryOn401: false }
 
     for (const [key, value] of Object.entries(authHeader)) {
       addHeaderEntry(headers, key, value)
     }
-    return shouldRemintCloudRequest()
+    return {
+      scheme: 'cloud-auth-header',
+      unifiedRetryOn401: await shouldRemintCloudRequest()
+    }
   }
 
   /**
@@ -635,6 +661,7 @@ export class ComfyApi extends EventTarget {
     const {
       timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
       onAuthHeader,
+      onAuthScheme,
       ...requestOptions
     } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
@@ -646,11 +673,15 @@ export class ComfyApi extends EventTarget {
       sendOnWebSession = await this.getWebSessionSend()
       if (sendOnWebSession) {
         onAuthHeader?.(true)
+        onAuthScheme?.('web-session')
       } else {
-        unifiedRetryOn401 = await this.addCloudAuthHeader(headers, onAuthHeader)
+        const cloudAuth = await this.addCloudAuthHeader(headers, onAuthHeader)
+        unifiedRetryOn401 = cloudAuth.unifiedRetryOn401
+        onAuthScheme?.(cloudAuth.scheme)
       }
     } else {
       onAuthHeader?.(false)
+      onAuthScheme?.('none')
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)

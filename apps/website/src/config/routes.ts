@@ -71,8 +71,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // exist. Remove a route from this list once its translation ships.
 //
 // affiliateTerms: legal-reviewed English-only document. See the comment
-// header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
-// block in src/i18n/translations.ts for the reasoning.
+// header in src/pages/affiliates/terms.astro and README.md's English-only
+// copy section for the reasoning.
 //
 // termsOfService: legal-reviewed English-only document, same reasoning.
 //

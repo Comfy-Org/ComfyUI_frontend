@@ -336,7 +336,7 @@ describe('AuthSignIn', () => {
     expect(alert.getAttribute('data-severity')).toBe('warn')
     expect(alert.textContent).toContain('Warning')
     expect(alert.textContent).toContain(
-      t('auth.errors.auth/popup-closed-by-user', 'en')
+      t('auth.errors.auth/popup-closed-by-user', {}, { locale: 'en' })
     )
     expect(toasts.value).toHaveLength(1)
     expect(
@@ -965,7 +965,7 @@ describe('AuthSignIn', () => {
     expect(
       alert.textContent,
       'user-not-found collapses to the neutral invalid-credential line so the toast never confirms whether the email has an account'
-    ).toContain(t('auth.errors.auth/invalid-credential', 'en'))
+    ).toContain(t('auth.errors.auth/invalid-credential', {}, { locale: 'en' }))
     expect(toasts.value[0].life).toBeUndefined()
     expect(replace).not.toHaveBeenCalled()
   })
@@ -1648,7 +1648,9 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'a hung email request recovers with a message rather than silently re-enabling'
     ).toHaveLength(1)
-    expect(toasts.value[0].detail).toBe(t('auth.errors.generic', 'en'))
+    expect(toasts.value[0].detail).toBe(
+      t('auth.errors.generic', {}, { locale: 'en' })
+    )
     expect(
       screen.getByRole('button', { name: /^sign in$/i }),
       'a bounded email request frees the controls at its deadline'

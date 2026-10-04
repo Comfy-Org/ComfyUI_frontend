@@ -74,6 +74,18 @@ describe('WidgetToggleSwitch Value Binding', () => {
     return { ...result, user }
   }
 
+  it('uses the display label to identify and toggle a dynamically named field', async () => {
+    const widget = createToggleWidget(false)
+    widget.name = 'loras.0.enabled'
+    widget.label = 'LoRA #1 enabled'
+    const onModelUpdate = vi.fn()
+    const { user } = mountComponent(widget, false, onModelUpdate)
+
+    await user.click(screen.getByRole('switch', { name: 'LoRA #1 enabled' }))
+
+    expect(onModelUpdate).toHaveBeenCalledWith(true)
+  })
+
   describe('Vue Event Emission', () => {
     it('emits Vue event when toggled from false to true', async () => {
       const widget = createToggleWidget(false)
@@ -203,9 +215,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const offButton = screen.getByText('disabled')
       const onButton = screen.getByText('enabled')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(offButton.closest('button')).toHaveAttribute('data-state', 'on')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(onButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 
@@ -218,9 +230,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const offButton = screen.getByText('disabled')
       const onButton = screen.getByText('enabled')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(onButton.closest('button')).toHaveAttribute('data-state', 'on')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(offButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 

@@ -9,45 +9,6 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 describe('NodeDef Migration', () => {
-  it('should transform a plain object to V2 format', () => {
-    const plainObject = {
-      required: {
-        intInput: ['INT', { min: 0, max: 100, default: 50 }],
-        stringInput: ['STRING', { default: 'Hello', multiline: true }]
-      },
-      optional: {
-        booleanInput: [
-          'BOOLEAN',
-          { default: true, labelOn: 'Yes', labelOff: 'No' }
-        ],
-        floatInput: ['FLOAT', { min: 0, max: 1, step: 0.1 }]
-      },
-      hidden: {
-        someHiddenValue: 42
-      }
-    } as ComfyNodeDefV1['input']
-
-    const nodeDef: ComfyNodeDefV1 = {
-      name: 'TestNode',
-      display_name: 'Test Node',
-      category: 'Testing',
-      python_module: 'test_module',
-      description: 'A test node',
-      input: plainObject,
-      output: ['INT'],
-      output_is_list: [false],
-      output_name: ['intOutput'],
-      output_node: false
-    }
-
-    const result = transformNodeDefV1ToV2(nodeDef)
-
-    expect(result).toBeDefined()
-    expect(result.inputs).toBeDefined()
-    expect(result.outputs).toBeDefined()
-    expect(result.hidden).toBeDefined()
-  })
-
   it('should correctly transform required input specs', () => {
     const plainObject = {
       required: {

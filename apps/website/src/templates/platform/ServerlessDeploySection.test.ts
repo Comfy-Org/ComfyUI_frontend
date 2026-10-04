@@ -37,15 +37,17 @@ describe('ServerlessDeploySection', () => {
     expect(
       screen.getByRole('heading', {
         level: 2,
-        name: t('platform.serverlessDeploy.shipHeading', 'en')
+        name: t('platform.serverlessDeploy.shipHeading', {}, { locale: 'en' })
       })
     ).toBeTruthy()
     expect(
-      screen.getByText(t('platform.serverlessDeploy.shipSubtitle', 'en'))
+      screen.getByText(
+        t('platform.serverlessDeploy.shipSubtitle', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
 
     const terminal = screen.getByRole('img', {
-      name: t('platform.serverlessDeploy.heading', 'en')
+      name: t('platform.serverlessDeploy.heading', {}, { locale: 'en' })
     })
     expect(terminal.textContent).toBe(
       '$ comfy build init' +

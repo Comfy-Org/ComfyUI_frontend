@@ -8,9 +8,11 @@ import type {
   BillingOperationReceipt,
   BillingOperationState,
   BillingResult,
+  CancelOperationResult,
   PendingBillingOperation,
   PreviewSubscribeResult,
-  SavedPaymentMethod
+  SavedPaymentMethod,
+  SubscriptionCommandResult
 } from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
@@ -2059,6 +2061,116 @@ describe('FullPageCheckoutView payment authentication', () => {
     nextStep.asked = 0
   })
 
+  it.for([
+    { methodType: 'alipay', reported: [['op_3ds', 'redirect', 'alipay']] },
+    { methodType: 'card', reported: [] }
+  ])(
+    'reports the challenge a $methodType Pay drives as a redirect only when it finishes on another site',
+    async ({ methodType, reported }) => {
+      const fake = await payHeld(methodType)
+
+      fake.publishOperation(challengedOperation('op_3ds', 'required'))
+
+      await waitFor(() =>
+        expect(fake.reportChallengeStarted).toHaveBeenCalledWith('op_3ds')
+      )
+      expect(fake.reportHostedStepOpened.mock.calls).toEqual(reported)
+    }
+  )
+
+  it('cancels its own challenge once however often Cancel payment is clicked, then frees the form as typed', async () => {
+    let answer: (result: CancelOperationResult) => void = () => {}
+    const fake = await payReady()
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    fake.cancelOperation.mockImplementation(
+      () => new Promise((resolve) => (answer = resolve))
+    )
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+    const mounts = form.mounts
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Canceling…' }))
+
+    expect(fake.cancelOperation).toHaveBeenCalledExactlyOnceWith('op_3ds')
+    answer({ status: 'canceled' })
+
+    await waitFor(() => expect(footnote()).toHaveTextContent(''))
+    expect(form.locked()).toBe(false)
+    expect(form.mounts).toBe(mounts)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('stops asking after a cancel the server never settles, and offers Cancel payment again', async () => {
+    const fake = await payReady({
+      cancelOperation: { status: 'cancel_requested' }
+    })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+    const cancel = await screen.findByRole('button', { name: 'Cancel payment' })
+
+    vi.useFakeTimers({ toFake: ['setTimeout'] })
+    await userEvent
+      .setup({ advanceTimers: vi.advanceTimersByTime })
+      .click(cancel)
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 30)
+    vi.useRealTimers()
+
+    expect(fake.cancelOperation).toHaveBeenCalledTimes(10)
+    expect(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    ).toBeEnabled()
+    expect(footnote()).toHaveTextContent(PHASE_A)
+  })
+
+  it('offers Cancel payment again when the cancel request throws', async () => {
+    const fake = await payReady()
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    fake.cancelOperation.mockRejectedValue(new Error('network down'))
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    ).toBeEnabled()
+    expect(fake.cancelOperation).toHaveBeenCalledExactlyOnceWith('op_3ds')
+    expect(footnote()).toHaveTextContent(PHASE_A)
+  })
+
+  it('offers Cancel payment again after a cancel that threw, and still lands the Pay', async () => {
+    let settlePay: (result: SubscriptionCommandResult) => void = () => {}
+    const fake = await payReady()
+    fake.subscribe.mockImplementation(
+      () => new Promise((resolve) => (settlePay = resolve))
+    )
+    fake.cancelOperation.mockRejectedValue(new Error('wake failed'))
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+    const reads = fake.recover.mock.calls.length
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    ).toBeEnabled()
+    expect(fake.recover.mock.calls.length).toBeGreaterThan(reads)
+
+    settlePay({ status: 'ok', value: { phase: 'succeeded' } })
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
+  })
+
   it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
     const fake = await payReady()
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
@@ -2074,9 +2186,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(
       screen.queryByRole('button', { name: 'Back' })
     ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Cancel payment' })
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel payment' })).toBeEnabled()
     expect(
       screen.queryByRole('button', { name: 'Continue verification' })
     ).not.toBeInTheDocument()
@@ -2196,9 +2306,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(
       screen.queryByRole('button', { name: 'Back' })
     ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Cancel payment' })
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel payment' })).toBeEnabled()
     await capturePromisesFlushed()
     fake.reportChallengeStarted.mockClear()
     fake.reportChallengeSettled.mockClear()
@@ -3197,6 +3305,17 @@ describe('FullPageCheckoutView attempt telemetry', () => {
         }
       }
     ])
+  })
+
+  it('reports no attempt for a payment this page only recovers', async () => {
+    await renderCheckout({
+      recover: { status: 'ok', value: succeededOperation('op_done') },
+      preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    await screen.findByRole('heading', { name: 'Already completed' })
+
+    expect(reportedBillingEvents('subscription_checkout')).toEqual([])
   })
 
   it('starts a second attempt only after the first reached its terminal', async () => {

@@ -123,6 +123,18 @@ describe('useBillingBanner', () => {
     expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
   })
 
+  it('refreshes status and balance on focus while the workspace is paused', async () => {
+    const billing = setupBilling()
+    useBillingBanner()
+    billing.billingStatus.value = 'paused'
+
+    window.dispatchEvent(new Event('focus'))
+    await nextTick()
+
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+  })
+
   it('does not refresh payment recovery on focus when the flag is off', async () => {
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
 

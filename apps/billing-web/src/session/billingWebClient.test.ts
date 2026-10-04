@@ -9,6 +9,8 @@ import type {
 } from '@comfyorg/account-core/session'
 
 import { createBillingWebClient } from '@/session/billingWebClient'
+import { createResubscribeTelemetry } from '@/telemetry/resubscribeTelemetry'
+import { createSubscriptionCheckoutTelemetry } from '@/telemetry/subscriptionCheckoutTelemetry'
 
 const h = vi.hoisted(() => ({
   boundWorkspaceId: undefined as string | undefined
@@ -144,6 +146,11 @@ const STATUS_BODY = {
 function stubBillingRoutes(operation: Record<string, unknown>) {
   const answers: Record<string, unknown> = {
     '/api/billing/status': STATUS_BODY,
+    '/api/billing/subscribe': { billing_op_id: 'op_1', status: 'subscribed' },
+    '/api/billing/subscription/resubscribe': {
+      billing_op_id: 'op_1',
+      status: 'active'
+    },
     '/api/billing/ops/op_1': {
       id: 'op_1',
       started_at: '2026-09-14T00:00:00.000Z',
@@ -242,6 +249,83 @@ describe('SDK operation telemetry', () => {
           context: { ...common, ...terminal, duration_ms: expect.any(Number) }
         }
       ])
+    }
+  )
+
+  it('reports a retryable decline inside an issued operation, as the SDK on billing web', async () => {
+    stubBillingRoutes({
+      status: 'pending',
+      authentication_state: 'failed_retryable',
+      decline_reason: 'card_declined'
+    })
+    const client = createBillingWebClient(authenticatedSession())
+    onTestFinished(() => disposeBillingClient(client))
+
+    await client.lifecycle.begin('subscription', issueOperation)
+
+    await vi.waitFor(() =>
+      expect(datadogRum.addAction).toHaveBeenCalledWith(
+        'billing.checkout.challenge_failed',
+        {
+          operation: 'checkout',
+          stage: 'challenge_failed',
+          outcome: 'pending',
+          operation_type: 'subscription',
+          billing_op_id: 'op_1',
+          presentation: 'hosted',
+          resumed: false,
+          decline_reason: 'card_declined',
+          billing_client: 'sdk',
+          billing_surface: 'billing_web'
+        }
+      )
+    )
+  })
+
+  it.for<{
+    name: string
+    run: (client: BillingClient) => Promise<unknown>
+    sequence: string[]
+  }>([
+    {
+      name: 'a checkout',
+      run: (client) =>
+        createSubscriptionCheckoutTelemetry({ ui: 'embedded' }).run(
+          { cycle: 'monthly', checkoutType: 'new' },
+          () => client.commands.subscribe({ plan_slug: 'creator_monthly' })
+        ),
+      sequence: [
+        'billing.subscription_checkout.intent',
+        'billing.subscription_checkout.started',
+        'billing.operation.started',
+        'billing.operation.succeeded',
+        'billing.subscription_checkout.succeeded'
+      ]
+    },
+    {
+      name: 'a resubscribe',
+      run: (client) =>
+        createResubscribeTelemetry().run(undefined, () =>
+          client.commands.resubscribe()
+        ),
+      sequence: [
+        'billing.resubscribe.started',
+        'billing.operation.started',
+        'billing.operation.succeeded',
+        'billing.resubscribe.succeeded'
+      ]
+    }
+  ])(
+    'reports $name once on each stream, over the real SDK',
+    async ({ run, sequence }) => {
+      stubBillingRoutes({ status: 'succeeded' })
+      const client = createBillingWebClient(authenticatedSession())
+
+      await run(client)
+
+      expect(
+        vi.mocked(datadogRum.addAction).mock.calls.map(([name]) => name)
+      ).toEqual(sequence)
     }
   )
 })

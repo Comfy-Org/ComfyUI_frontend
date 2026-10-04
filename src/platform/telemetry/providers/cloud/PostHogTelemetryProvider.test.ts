@@ -1,4 +1,7 @@
-import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
@@ -611,6 +614,27 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it.for([
+      {
+        name: 'session_bootstrap',
+        properties: { outcome: 'restored', origin: 'https://cloud.comfy.org' }
+      },
+      {
+        name: 'session_signed_out_remotely',
+        properties: { origin: 'https://cloud.comfy.org' }
+      }
+    ] as const)('captures the web session event $name as is', async (event) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWebSessionEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        event.name,
+        event.properties
+      )
+    })
+
     it('captures image load failures', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -1144,6 +1168,60 @@ describe('PostHogTelemetryProvider', () => {
         }
       )
     })
+
+    it('stamps the cloud app surface on checkout journey events', async () => {
+      const provider = createProvider()
+      const event = {
+        checkout_journey_id: 'journey-1',
+        checkout_entered_at: '2026-10-01T00:00:00.000Z',
+        assignment_status: 'unavailable',
+        entry_flow: 'initial_subscription',
+        entry_source: 'other',
+        ui_mode: 'full_page',
+        phase: 'entered',
+        payment_intent_source: 'subscribe_to_run'
+      } satisfies CheckoutJourneyTelemetryEvent
+      await vi.dynamicImportSettled()
+
+      provider.trackCheckoutJourneyEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        'billing.checkout.entered',
+        { ...event, schema_version: 1, billing_surface: 'cloud_app' }
+      )
+    })
+
+    it.for([
+      {
+        exit: 'page_exit',
+        options: [{ transport: 'sendBeacon', send_instantly: true }]
+      },
+      { exit: 'dialog_close', options: [] }
+    ] as const)(
+      'captures a checkout abandoned at $exit with the matching transport',
+      async ({ exit, options }) => {
+        const provider = createProvider()
+        const event = {
+          checkout_journey_id: 'journey-1',
+          checkout_entered_at: '2026-10-01T00:00:00.000Z',
+          assignment_status: 'unavailable',
+          entry_flow: 'topup',
+          entry_source: 'settings_billing',
+          phase: 'abandoned',
+          last_phase: 'entered',
+          exit
+        } satisfies CheckoutJourneyTelemetryEvent
+        await vi.dynamicImportSettled()
+
+        provider.trackCheckoutJourneyEvent(event)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(
+          'billing.checkout.abandoned',
+          { ...event, schema_version: 1, billing_surface: 'cloud_app' },
+          ...options
+        )
+      }
+    )
 
     it('captures widget favorite toggled events with their metadata', async () => {
       const provider = createProvider()
