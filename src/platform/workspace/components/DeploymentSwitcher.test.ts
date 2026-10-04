@@ -45,6 +45,7 @@ const i18n = createI18n({
 const D2 = 'dep-a2a2a2a2-0000-4000-8000-000000000002'
 const D1 = 'dep-a1a1a1a1-0000-4000-8000-000000000001'
 const D9 = 'dep-b9b9b9b9-0000-4000-8000-000000000009'
+const GONE = 'dep-0e0e0e0e-0000-4000-8000-0000000000a2'
 
 const listing: WorkspaceDeploymentList = {
   builds_visible: true,
@@ -149,6 +150,50 @@ describe('DeploymentSwitcher', () => {
       ).toHaveTextContent('Studio Build v2')
     )
   })
+
+  it.for([
+    {
+      pick_source: 'browser' as const,
+      default_deployment_id: undefined,
+      line: 'The deployment you picked no longer exists.'
+    },
+    {
+      pick_source: 'workspace_default' as const,
+      default_deployment_id: GONE,
+      line: "The workspace's default deployment no longer exists."
+    }
+  ])(
+    'says Comfy Cloud when the $pick_source pick is no longer listed, and offers it to no one',
+    async ({ pick_source, default_deployment_id, line }) => {
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceId: 'ws-1',
+        activeWorkspace: { id: 'ws-1', role: 'owner' }
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: GONE,
+        pick_source,
+        default_deployment_id
+      })
+      renderSwitcher()
+
+      await waitFor(() =>
+        expect(
+          screen.getByTestId('deployment-switcher-current')
+        ).toHaveTextContent('Comfy Cloud')
+      )
+      expect(screen.getByTestId('deployment-switcher-gone')).toHaveTextContent(
+        line
+      )
+      expect(screen.queryByTestId('deployment-switcher-following')).toBeNull()
+      await userEvent.click(screen.getByTestId('deployment-switcher-trigger'))
+      expect(screen.getByTestId('deployment-row-cloud')).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+      expect(screen.queryByTestId('deployment-switcher-set-default')).toBeNull()
+    }
+  )
 
   it('picks a deployment, which reloads the editor', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)

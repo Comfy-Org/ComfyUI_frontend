@@ -3865,6 +3865,8 @@
     "comfyCloudCaption": "Comfy's own node set",
     "deployment": "{build} v{version}",
     "unnamedDeployment": "Deployment {id}",
+    "pickGone": "The deployment you picked no longer exists.",
+    "defaultGone": "The workspace's default deployment no longer exists.",
     "caption": "{id}, {status}",
     "noDeployments": "This workspace has no deployments yet. Deploy a Release on the Developer Platform first.",
     "buildsHidden": "Build names are not visible to this account.",

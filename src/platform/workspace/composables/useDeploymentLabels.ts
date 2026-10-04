@@ -18,12 +18,8 @@ function shortId(deploymentId: string): string {
  */
 export function useDeploymentLabels() {
   const { t } = useI18n()
-  const {
-    pickedDeploymentId,
-    pickedDeployment,
-    defaultDeploymentId,
-    defaultDeployment
-  } = storeToRefs(useDeploymentPickStore())
+  const { pickedDeployment, defaultDeploymentId, defaultDeployment } =
+    storeToRefs(useDeploymentPickStore())
 
   function deploymentLabel(deployment: WorkspaceDeployment): string {
     if (
@@ -62,8 +58,11 @@ export function useDeploymentLabels() {
     })
   }
 
+  /** A pick the listing no longer has runs on Comfy Cloud. */
   const currentLabel = computed(() =>
-    labelFor(pickedDeploymentId.value, pickedDeployment.value)
+    pickedDeployment.value
+      ? deploymentLabel(pickedDeployment.value)
+      : t('deploymentSwitcher.comfyCloud')
   )
   const defaultLabel = computed(() =>
     labelFor(defaultDeploymentId.value, defaultDeployment.value)
