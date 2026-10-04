@@ -978,11 +978,6 @@ export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
 }
-/**
- * Projection telemetry for agent and actorless frames and for reverted human
- * batches. `op_id` is the join key; no actor, node, widget, workflow or prompt
- * identifier is sent.
- */
 export type AgentGraphProjectionStage =
   | 'received_no_graph'
   | 'applied'
@@ -990,6 +985,11 @@ export type AgentGraphProjectionStage =
   | 'discarded'
   | 'reverted'
 
+/**
+ * Projection telemetry for agent and actorless frames and for reverted human
+ * batches. `op_id` is the join key; no actor, node, widget, workflow or prompt
+ * identifier is sent.
+ */
 export interface AgentGraphProjectionMetadata extends Record<string, unknown> {
   /**
    * First non-empty op id of the frame, or of the rejected batch on
@@ -1009,10 +1009,9 @@ export interface AgentGraphProjectionMetadata extends Record<string, unknown> {
    *   they must not be attributed to this `op_id` alone.
    * - `discarded` — the collected changes were thrown away without applying
    *   (own-echo discard, `doc_reset`, `schema_error`, scope disposal, follower
-   *   replacement, rebind). All
-   *   counts are zero: nothing reached the canvas, so the size of what was
-   *   dropped is deliberately not reported under a count a dashboard would
-   *   read as applied work.
+   *   replacement, rebind). All counts are zero: nothing reached the canvas, so
+   *   the size of what was dropped is deliberately not reported under a count a
+   *   dashboard would read as applied work.
    * - `reverted` — the host rejected a human batch and the document state it
    *   claimed was put back on the canvas. The counts are that revert's.
    */
