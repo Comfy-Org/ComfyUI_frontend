@@ -58,6 +58,16 @@ const NO_DELIVERY: DeliveryState = {
  */
 const pendingReports: PendingReport[] = []
 const MAX_PENDING_REPORTS = 25
+const reportedErrors = new WeakSet<Error>()
+
+/**
+ * Prevents an error with its own complete diagnostic from being reported again
+ * by a higher-level catch boundary. The original error remains unchanged for
+ * user-facing handling.
+ */
+export function markErrorReported(error: Error): void {
+  reportedErrors.add(error)
+}
 
 const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
 
@@ -285,6 +295,7 @@ function logReport(
  */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
+    if (cause instanceof Error && reportedErrors.has(cause)) return
     if (dispatching) {
       logReport(cause, options, ' (suppressed: raised while reporting)')
       return

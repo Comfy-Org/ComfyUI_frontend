@@ -9,6 +9,11 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
+import {
+  markErrorReported,
+  reportError
+} from '@/platform/telemetry/reportError'
+import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
 import {
@@ -32,6 +37,46 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
+
+/**
+ * The agent client's operation vocabulary, used as the telemetry identity of a
+ * failing call (PM-1802).
+ *
+ * This is deliberately a closed union chosen at the call site rather than
+ * anything derived from the request path. Agent routes embed thread, message
+ * and ask ids, and `/workflows` carries a pagination cursor, so a path-derived
+ * tag would both leak user-scoped identifiers into Sentry/Datadog and have
+ * unbounded cardinality. Normalizing a path back down is a regex that can be
+ * got wrong later; naming the operation cannot, because adding a call site
+ * without extending this union is a type error. One name per
+ * method-and-endpoint pair, so the method never has to be a second tag.
+ *
+ * Deliberately not exported: every call site is in this file, and the dead-code
+ * audit gate rejects a type export with no consumers.
+ */
+type AgentApiOperation =
+  | 'answer_thread_ask'
+  | 'cancel_thread_message'
+  | 'get_cloud_workflow'
+  | 'get_run_mode'
+  | 'get_thread_messages'
+  | 'list_cloud_workflows'
+  | 'list_threads'
+  | 'post_thread_message'
+  | 'put_run_mode'
+  | 'upload_image'
+
+type ReportedAuthScheme = AuthScheme | 'unreported'
+
+/**
+ * The reported message for an auth rejection, constant by construction.
+ *
+ * The backend's own text is what `AgentApiError` carries to the caller, but it
+ * is not what gets reported: it is uncontrolled, is not needed to diagnose
+ * PM-1802, and varies enough to fragment issue grouping across what is one
+ * failure mode. Status, operation and auth scheme ride as tags instead.
+ */
+const AUTH_REJECTED_MESSAGE = 'Agent API request rejected by authentication'
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -370,22 +415,54 @@ function asDelaySeconds(seconds: number): number | undefined {
 }
 
 export function createAgentRestClient() {
-  async function toApiError(response: Response): Promise<AgentApiError> {
+  async function toApiError(
+    response: Response,
+    operation: AgentApiOperation,
+    authScheme: ReportedAuthScheme
+  ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
     const message = getErrorMessage(body, response.statusText)
     const retryAfterSeconds = parseRetryAfter(
       response.headers.get('Retry-After')
     )
-    return new AgentApiError(message, response.status, body, retryAfterSeconds)
+    // PM-1802: a prior auth-rejection alert (AgentApiError: authentication
+    // method not allowed) arrived with no failing endpoint and no record of
+    // which auth path was taken, so it couldn't be diagnosed. Reporting both
+    // here means the next occurrence can be.
+    const apiError = new AgentApiError(
+      message,
+      response.status,
+      body,
+      retryAfterSeconds
+    )
+    if (response.status === 401 || response.status === 403) {
+      reportError(new Error(AUTH_REJECTED_MESSAGE), {
+        errorType: 'agent_api_auth_rejected',
+        tags: { operation, status: response.status, authScheme },
+        level: 'warning'
+      })
+      // Callers still receive the backend text for the UI, but their generic
+      // catch boundaries must not emit it as a second, separately-grouped
+      // report after the complete bounded diagnostic above.
+      markErrorReported(apiError)
+    }
+    return apiError
   }
 
   async function request<T>(
+    operation: AgentApiOperation,
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
   ): Promise<T> {
-    const response = await api.fetchApi(route, init)
-    if (!response.ok) throw await toApiError(response)
+    let authScheme: ReportedAuthScheme = 'unreported'
+    const response = await api.fetchApi(route, {
+      ...init,
+      onAuthScheme: (scheme) => {
+        authScheme = scheme
+      }
+    })
+    if (!response.ok) throw await toApiError(response, operation, authScheme)
     let payload: unknown
     try {
       payload = await response.json()
@@ -421,6 +498,7 @@ export function createAgentRestClient() {
       client_message_id: req.clientMessageId
     })
     return request(
+      'post_thread_message',
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),
       zAgentTurnAccepted
@@ -432,6 +510,7 @@ export function createAgentRestClient() {
     options: { signal?: AbortSignal } = {}
   ): Promise<AgentMessages> {
     return request(
+      'get_thread_messages',
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       { method: 'GET', signal: options.signal },
       zAgentMessages
@@ -440,6 +519,7 @@ export function createAgentRestClient() {
 
   async function listThreads(): Promise<AgentThreadSummary[]> {
     const page = await request(
+      'list_threads',
       '/agent/threads',
       { method: 'GET' },
       zAgentThreads
@@ -448,13 +528,19 @@ export function createAgentRestClient() {
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
-    return request('/agent/run-mode', { method: 'GET' }, zAgentRunMode)
+    return request(
+      'get_run_mode',
+      '/agent/run-mode',
+      { method: 'GET' },
+      zAgentRunMode
+    )
   }
 
   async function putRunMode(
     preference: AgentRunModePreference
   ): Promise<AgentRunModePreference> {
     return request(
+      'put_run_mode',
       '/agent/run-mode',
       jsonInit('PUT', preference),
       zAgentRunMode
@@ -469,6 +555,7 @@ export function createAgentRestClient() {
     do {
       const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
       const result = await request(
+        'list_cloud_workflows',
         `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
         { method: 'GET' },
         zCloudWorkflowIndex
@@ -493,6 +580,7 @@ export function createAgentRestClient() {
     workflowId: string
   ): Promise<WorkflowResponse> {
     return request(
+      'get_cloud_workflow',
       `/workflows/${encodeURIComponent(workflowId)}`,
       { method: 'GET' },
       zWorkflowResponse
@@ -504,6 +592,7 @@ export function createAgentRestClient() {
     messageId: string
   ): Promise<AgentCancelAccepted> {
     return request(
+      'cancel_thread_message',
       `/agent/threads/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}/cancel`,
       jsonInit('POST', {}),
       zAgentCancelAccepted
@@ -516,6 +605,7 @@ export function createAgentRestClient() {
     selected: string[]
   ): Promise<AgentAnswerAccepted> {
     return request(
+      'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
       jsonInit('POST', { selected }),
       zAgentAnswerAccepted
@@ -530,6 +620,7 @@ export function createAgentRestClient() {
     const form = new FormData()
     form.append('image', image, filename)
     return request(
+      'upload_image',
       '/upload/image',
       {
         method: 'POST',
