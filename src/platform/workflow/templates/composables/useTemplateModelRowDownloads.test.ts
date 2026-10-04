@@ -592,6 +592,41 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
+  it('refuses a retry claim from a job that already ran', async () => {
+    const request = model('reordered.safetensors')
+    const { downloads, emitDesktop } = createDownloadHarness()
+    const tick = (
+      id: string,
+      status: 'downloading' | 'error' | 'completed'
+    ) => ({
+      id,
+      url: request.url,
+      filename: request.name,
+      directory: request.directory,
+      progress: 0.5,
+      receivedBytes: 1,
+      totalBytes: 2,
+      status
+    })
+
+    downloads.request(request)
+    emitDesktop(tick('job-1', 'downloading'))
+    emitDesktop(tick('job-1', 'error'))
+    downloads.request(request)
+
+    // job-1's transfer can outlive the attempt it served and report before
+    // job-2 does, so arrival order cannot decide which job holds attempt 2.
+    emitDesktop(tick('job-1', 'downloading'))
+    emitDesktop(tick('job-2', 'downloading'))
+    emitDesktop(tick('job-1', 'error'))
+    emitDesktop(tick('job-2', 'completed'))
+
+    expect(downloads.stateFor(request)).toEqual({
+      status: 'done',
+      attempt: 2
+    })
+  })
+
   it('refuses a terminal event from a job that never reported activity', () => {
     const request = model('unannounced.safetensors')
     const { downloads, emitDesktop } = createDownloadHarness()
