@@ -11,6 +11,14 @@ import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as PromiseLike<unknown>).then === 'function'
+  )
+}
+
 type RunOptions = {
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
@@ -45,7 +53,8 @@ export function buildKSamplerError(
  */
 export class ExecutionHelper {
   private jobCounter = 0
-  private workflowId: string | undefined
+  private metadata: Record<string, unknown> | undefined
+  private asyncScopeOpen = false
   private readonly completedJobs: RawJobListItem[] = []
   private readonly page: ComfyPage['page']
   private readonly command: ComfyPage['command']
@@ -71,29 +80,88 @@ export class ExecutionHelper {
   }
 
   /**
-   * Stamp `workflow_id` on every JSON frame sent inside `fn`, the way core's
-   * `send_sync` spreads a prompt's `workflow_metadata` onto outgoing messages.
-   * Leave `workflowId` undefined to emit frames the way a core build without
-   * that support does — the legacy backend profile.
+   * Stamp `workflow_id` on every eligible JSON frame sent inside `fn`, the way
+   * core's `send_sync` spreads a prompt's `workflow_metadata` onto outgoing
+   * messages. Leave `workflowId` undefined to emit frames the way a core build
+   * without that support does — the legacy backend profile.
    */
   withWorkflowId<T>(workflowId: string | undefined, fn: () => T): T {
-    const previous = this.workflowId
-    this.workflowId = workflowId
-    try {
-      return fn()
-    } finally {
-      this.workflowId = previous
+    return this.withMetadata(
+      workflowId === undefined ? undefined : { workflow_id: workflowId },
+      fn
+    )
+  }
+
+  /**
+   * The general form of {@link withWorkflowId}: core accepts an arbitrary
+   * `workflow_metadata` dict, so a scenario can set keys that collide with a
+   * frame's own fields and assert the frame still wins.
+   *
+   * The scope survives `await`s inside `fn`. A callback that returns a promise
+   * keeps the scope open until that promise settles, so frames emitted after an
+   * `await` are still stamped — returning the promise used to restore the
+   * previous scope immediately, silently unstamping (or mis-stamping) every
+   * frame after the first suspension point.
+   *
+   * Opening a second scope while an async one is still in flight throws rather
+   * than guessing: without ambient async context two overlapping scopes cannot
+   * be attributed to their prompts, and the wrong `workflow_id` on a frame is
+   * precisely the bug this harness exists to catch. Await the first scope, or
+   * script the prompts as separate synchronous frames via `BackendSimulator`.
+   */
+  withMetadata<T>(
+    metadata: Record<string, unknown> | undefined,
+    fn: () => T
+  ): T {
+    if (this.asyncScopeOpen) {
+      throw new Error(
+        'ExecutionHelper: an async metadata scope is still in flight. ' +
+          'Await it before opening another one.'
+      )
     }
+
+    const previous = this.metadata
+    this.metadata = metadata
+    const restore = () => {
+      this.metadata = previous
+    }
+
+    let result: T
+    try {
+      result = fn()
+    } catch (error) {
+      restore()
+      throw error
+    }
+
+    if (!isPromiseLike(result)) {
+      restore()
+      return result
+    }
+
+    this.asyncScopeOpen = true
+    // Cast: `T` is promise-like here, and the returned promise settles with the
+    // same value or rejection, only after the scope has been restored.
+    return Promise.resolve(result).finally(() => {
+      this.asyncScopeOpen = false
+      restore()
+    }) as T
   }
 
   /**
    * Metadata first so a frame's own fields always win on collision, matching
    * core's `{**workflow_metadata, **data}`.
+   *
+   * Only frames carrying a `prompt_id` are stamped, which is core's own gate
+   * (`send_sync` checks `"prompt_id" in data`) rather than an event-name
+   * carve-out. `status` is exempt because it has no `prompt_id`, so the
+   * exemption cannot drift out of sync with the list of frame builders.
    */
   private emit(type: string, data: Record<string, unknown>): void {
-    const payload = this.workflowId
-      ? { workflow_id: this.workflowId, ...data }
-      : data
+    const payload =
+      this.metadata && 'prompt_id' in data
+        ? { ...this.metadata, ...data }
+        : data
     this.requireWs().send(JSON.stringify({ type, data: payload }))
   }
 
@@ -306,16 +374,17 @@ export class ExecutionHelper {
   }
 
   /**
-   * Send `status` WS event to update queue count. Deliberately NOT stamped with
-   * `workflow_id`: core exempts `status` because one server-wide socket serves
-   * every workflow, so a queue frame has no single owner.
+   * Send `status` WS event to update queue count.
+   *
+   * Goes through {@link emit} like every other frame and comes out unstamped
+   * because it carries no `prompt_id` — core exempts it for exactly that
+   * reason: one server-wide socket serves every workflow, so a queue frame has
+   * no single owner. Routing it through `emit` is what makes the exemption
+   * testable; sending it directly would make any assertion about it vacuous.
    */
   status(queueRemaining: number): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'status',
-        data: { status: { exec_info: { queue_remaining: queueRemaining } } }
-      })
-    )
+    this.emit('status', {
+      status: { exec_info: { queue_remaining: queueRemaining } }
+    })
   }
 }
