@@ -449,6 +449,36 @@ describe('LGraphCanvas selection', () => {
       expect(onSelectionChange).toHaveBeenCalledTimes(2)
     })
 
+    it('ghost placement reports one change holding the placed node', () => {
+      canvas.select(a)
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.startGhostPlacement(b)
+
+      expect(
+        vi
+          .mocked(onSelectionChange)
+          .mock.calls.map(([selected]) => Object.keys(selected))
+      ).toEqual([[String(b.id)]])
+
+      canvas.finalizeGhostPlacement(true)
+    })
+
+    it('alt aux-clicking a selected reroute reports one change', () => {
+      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+      canvas._visibleReroutes.add(reroute)
+      canvas.visible_nodes = [...graph.nodes]
+      canvas.select(reroute)
+      vi.mocked(onSelectionChange).mockClear()
+
+      const options = { altKey: true, button: 2 }
+      canvas.processMouseDown(pointerEvent('pointerdown', 500, 500, options))
+      canvas.processMouseUp(pointerEvent('pointerup', 500, 500, options))
+
+      expect(graph.reroutes.has(reroute.id)).toBe(false)
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
+    })
+
     it('deleteSelected() empties the selection', () => {
       canvas.select(a)
       canvas.select(b)
@@ -457,6 +487,16 @@ describe('LGraphCanvas selection', () => {
 
       expect(canvas.selectedItems.size).toBe(0)
       expect(graph.nodes).toHaveLength(0)
+    })
+
+    it('deleteSelected() reports one change for the whole deletion', () => {
+      canvas.select(a)
+      canvas.select(b)
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.deleteSelected()
+
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
     })
 
     it('selectItems() preserves incremental hook state and reports one outer change', () => {
