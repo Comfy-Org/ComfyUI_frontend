@@ -151,7 +151,7 @@ describe('applyViewport', () => {
     expect(background.transform).toEqual({ x: 2, y: 2 })
   })
 
-  it('scales a shared foreground/background context only once', () => {
+  it('applies the DPR transform to a shared foreground/background context', () => {
     const { canvas, transform } = createTransformTrackingCanvas()
 
     applyViewport(measureViewport(800, 600, 2), canvas, canvas)
