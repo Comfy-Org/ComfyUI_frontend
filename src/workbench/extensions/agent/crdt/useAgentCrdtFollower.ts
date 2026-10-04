@@ -685,10 +685,10 @@ function startAgentCrdtFollower(
       event instanceof CustomEvent
         ? (event.detail as { workflowId?: string } | null)
         : null
-    if (detail?.workflowId !== undefined)
+    if (detail?.workflowId !== undefined) {
       projection.discardPending(detail.workflowId)
-    if (detail?.workflowId !== undefined)
       reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
+    }
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
