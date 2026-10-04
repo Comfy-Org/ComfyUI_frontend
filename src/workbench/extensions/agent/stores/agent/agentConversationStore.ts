@@ -581,6 +581,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function ingest(event: AgentChatEvent): void {
+      if (isRetiredAskReplay(event)) return
       const activeTransport = activeSlot.value?.transport
       if (activeTransport && event.data.message_id === activeTurnId.value) {
         ingestActiveTurnEvent(event, activeTransport)
@@ -600,6 +601,19 @@ export const useAgentConversationStore = defineStore(
       // every event except `agent_active_tab`, handled above.
       if (eventThreadId === undefined) return
       ingestBackgroundTurnEvent(event, eventThreadId)
+    }
+
+    /**
+     * An `agent_ask` replayed (a resubscribe) for an ask this client already
+     * retired: putting it back would re-arm a settled card or a stale notice.
+     */
+    function isRetiredAskReplay(event: AgentChatEvent): boolean {
+      return (
+        event.type === 'agent_ask' &&
+        resolvedAskIds
+          .get(threadKey(event.data.thread_id))
+          ?.has(event.data.ask_id) === true
+      )
     }
 
     /**
