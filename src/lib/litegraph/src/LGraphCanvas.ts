@@ -35,7 +35,8 @@ import {
   applyLogicalCanvasStyle,
   applyViewport,
   measureViewport,
-  readBrowserDpr
+  readBrowserDpr,
+  releaseLogicalCanvasStyle
 } from '@/renderer/core/canvas/canvasViewport'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -6691,7 +6692,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * This method remains for legacy callers that rely on parent-element fallback sizing.
    */
   resize(width?: number, height?: number): void {
-    if (!width && !height) {
+    const usesParentSize = !width && !height
+    if (usesParentSize) {
       const parent = this.canvas.parentElement
       if (!parent)
         throw new TypeError(
@@ -6699,6 +6701,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         )
       width = parent.offsetWidth
       height = parent.offsetHeight
+      releaseLogicalCanvasStyle(this.canvas)
     }
 
     const bitmapDiscarded = applyLogicalCanvasStyle(

@@ -91,6 +91,22 @@ describe('LGraphCanvas.resize', () => {
     ])
   })
 
+  it('releases its explicit-size pin when returning to parent sizing', () => {
+    const { canvas, parentSize } = createParentSizedCanvas()
+    canvas.resize(640, 480)
+    parentSize.width = 1000
+    parentSize.height = 700
+
+    canvas.resize()
+
+    expect([
+      canvas.canvas.style.width,
+      canvas.canvas.style.height,
+      canvas.canvas.width,
+      canvas.canvas.height
+    ]).toEqual(['1000px', '700px', 2000, 1400])
+  })
+
   it('repaints when the sizing probe discarded the bitmap but nothing resized', () => {
     vi.stubGlobal('devicePixelRatio', 1)
     const { canvas } = createParentSizedCanvas()

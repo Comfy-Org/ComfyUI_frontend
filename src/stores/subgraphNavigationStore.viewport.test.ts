@@ -260,6 +260,23 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
+
+    it('does not cancel the active graph fit for an out-of-order restore', () => {
+      const store = useSubgraphNavigationStore()
+      store.viewportCache.delete(':root')
+      setCanvasVisible(mockCanvas.canvas, false)
+      store.restoreViewport('root')
+
+      mockCanvas.subgraph = createTestSubgraph()
+      store.restoreViewport('root')
+      mockCanvas.subgraph = undefined
+      setMockGraphNodes(ONE_NODE)
+      onTestFinished(() => setMockGraphNodes([]))
+      setCanvasVisible(mockCanvas.canvas, true)
+      useCanvasScheduler().flush()
+
+      expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
+    })
   })
 
   describe('navigation integration', () => {

@@ -21,6 +21,10 @@ const autoSizedStyleByCanvas = new WeakMap<
   HTMLCanvasElement,
   { width?: string; height?: string }
 >()
+const sizeOwnershipByCanvas = new WeakMap<
+  HTMLCanvasElement,
+  { signature: string; ownership: SizeOwnership }
+>()
 
 /**
  * Measures the layout box a canvas has without its backing store's intrinsic
@@ -47,24 +51,47 @@ function probeCssSize(canvas: HTMLCanvasElement): Size {
   }
 }
 
-function matchesRequestedSize(
-  rect: Size,
-  width: number,
-  height: number
-): boolean {
-  return (
-    rect.width > 0 &&
-    rect.height > 0 &&
-    Math.abs(rect.width - width) < 1 &&
-    Math.abs(rect.height - height) < 1
-  )
-}
-
 interface SizeOwnership {
-  /** Whether something other than the backing-store attributes owns the size. */
-  readonly independent: boolean
+  /** Whether something other than the backing-store attributes owns each axis. */
+  readonly independentWidth: boolean
+  readonly independentHeight: boolean
   /** Whether answering the question discarded the canvas bitmap. */
   readonly probed: boolean
+}
+
+interface AxisOwnership {
+  readonly independent: boolean
+  readonly resolved: boolean
+}
+
+function readContentBox(canvas: HTMLCanvasElement, style: CSSStyleDeclaration) {
+  const horizontalInsets =
+    Number.parseFloat(style.paddingLeft) +
+    Number.parseFloat(style.paddingRight) +
+    Number.parseFloat(style.borderLeftWidth) +
+    Number.parseFloat(style.borderRightWidth)
+  const verticalInsets =
+    Number.parseFloat(style.paddingTop) +
+    Number.parseFloat(style.paddingBottom) +
+    Number.parseFloat(style.borderTopWidth) +
+    Number.parseFloat(style.borderBottomWidth)
+  return {
+    width: canvas.offsetWidth - (horizontalInsets || 0),
+    height: canvas.offsetHeight - (verticalInsets || 0)
+  }
+}
+
+function inferAxisOwnership(
+  rectSize: number,
+  requestedSize: number,
+  backingSize: number,
+  layoutSize: number,
+  hasInlineSize: boolean
+): AxisOwnership {
+  const matches = rectSize > 0 && Math.abs(rectSize - requestedSize) < 1
+  if (!matches) return { independent: false, resolved: true }
+  const independent = hasInlineSize || backingSize !== layoutSize
+  return { independent, resolved: independent }
 }
 
 /**
@@ -82,28 +109,71 @@ function readSizeOwnership(
   width: number,
   height: number
 ): SizeOwnership {
-  if (!matchesRequestedSize(rect, width, height))
-    return { independent: false, probed: false }
+  const style = getComputedStyle(canvas)
+  const layout = readContentBox(canvas, style)
+  const signature = [
+    width,
+    height,
+    rect.width,
+    rect.height,
+    layout.width,
+    layout.height,
+    canvas.width,
+    canvas.height,
+    canvas.style.cssText,
+    canvas.className,
+    style.width,
+    style.height,
+    style.boxSizing
+  ].join('|')
+  const cached = sizeOwnershipByCanvas.get(canvas)
+  if (cached?.signature === signature)
+    return { ...cached.ownership, probed: false }
 
   // Inline dimensions already decouple the layout box from the backing store,
   // whether this module pinned them or the caller did.
-  const { style } = canvas
-  if (style.width && style.height) return { independent: true, probed: false }
-
-  // A layout box that differs from the backing-store attributes cannot be
-  // coming from them, so something else already owns the size. This settles a
-  // stylesheet-sized canvas above DPR 1 without the destructive probe; at DPR 1
-  // its box equals its attributes, so every call probes.
-  if (
-    canvas.width !== canvas.offsetWidth ||
-    canvas.height !== canvas.offsetHeight
+  // A content box that differs from the backing-store attributes cannot be
+  // coming from them, so something else already owns that axis. This settles a
+  // stylesheet-sized canvas above DPR 1 without the destructive probe.
+  const widthOwnership = inferAxisOwnership(
+    rect.width,
+    width,
+    canvas.width,
+    layout.width,
+    Boolean(canvas.style.width)
   )
-    return { independent: true, probed: false }
+  const heightOwnership = inferAxisOwnership(
+    rect.height,
+    height,
+    canvas.height,
+    layout.height,
+    Boolean(canvas.style.height)
+  )
+  if (widthOwnership.resolved && heightOwnership.resolved) {
+    const ownership = {
+      independentWidth: widthOwnership.independent,
+      independentHeight: heightOwnership.independent,
+      probed: false
+    }
+    sizeOwnershipByCanvas.set(canvas, { signature, ownership })
+    return ownership
+  }
 
   // Equal is the ambiguous case. Only an `auto`-sized box collapses when the
-  // attributes go away, and finding that out costs the bitmap.
+  // attributes go away. Cache that answer until its sizing inputs change so
+  // steady-state DPR-1 resize calls do not keep discarding the bitmap.
   const probed = probeCssSize(canvas)
-  return { independent: probed.width > 0 && probed.height > 0, probed: true }
+  const ownership = {
+    independentWidth: widthOwnership.resolved
+      ? widthOwnership.independent
+      : probed.width > 0,
+    independentHeight: heightOwnership.resolved
+      ? heightOwnership.independent
+      : probed.height > 0,
+    probed: true
+  }
+  sizeOwnershipByCanvas.set(canvas, { signature, ownership })
+  return ownership
 }
 
 /**
@@ -119,27 +189,40 @@ function applyLogicalCanvasStyle(
 ): boolean {
   if (!(width > 0) || !(height > 0)) return false
 
-  const { independent, probed } = readSizeOwnership(
+  const { independentWidth, independentHeight, probed } = readSizeOwnership(
     canvas,
     canvas.getBoundingClientRect(),
     width,
     height
   )
-  if (independent) return probed
-
   const { style } = canvas
   const previousStyle = autoSizedStyleByCanvas.get(canvas) ?? {}
   const nextStyle: { width?: string; height?: string } = {}
-  if (!style.width || style.width === previousStyle.width) {
+  if (
+    !independentWidth &&
+    (!style.width || style.width === previousStyle.width)
+  ) {
     style.width = `${width}px`
     nextStyle.width = style.width
   }
-  if (!style.height || style.height === previousStyle.height) {
+  if (
+    !independentHeight &&
+    (!style.height || style.height === previousStyle.height)
+  ) {
     style.height = `${height}px`
     nextStyle.height = style.height
   }
   autoSizedStyleByCanvas.set(canvas, nextStyle)
   return probed
+}
+
+function releaseLogicalCanvasStyle(canvas: HTMLCanvasElement): void {
+  const applied = autoSizedStyleByCanvas.get(canvas)
+  if (!applied) return
+  if (canvas.style.width === applied.width) canvas.style.width = ''
+  if (canvas.style.height === applied.height) canvas.style.height = ''
+  autoSizedStyleByCanvas.delete(canvas)
+  sizeOwnershipByCanvas.delete(canvas)
 }
 
 function normalizeDpr(rawDpr: number): number {
@@ -231,5 +314,6 @@ export {
   measureViewport,
   measureViewportFromElement,
   applyLogicalCanvasStyle,
+  releaseLogicalCanvasStyle,
   applyViewport
 }

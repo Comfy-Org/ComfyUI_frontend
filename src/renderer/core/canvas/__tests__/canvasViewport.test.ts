@@ -337,4 +337,38 @@ describe('applyLogicalCanvasStyle', () => {
       applyLogicalCanvasStyle(sizedByAttributes, 800, 600)
     ]).toEqual([true, true])
   })
+
+  it('reuses an unchanged DPR-1 ownership result without probing again', () => {
+    const canvas = createTestCanvasElement({ cssSize: [800, 600] })
+    const widthWrites = vi.spyOn(canvas, 'width', 'set')
+    const heightWrites = vi.spyOn(canvas, 'height', 'set')
+
+    expect(applyLogicalCanvasStyle(canvas, 800, 600)).toBe(true)
+    const writesAfterProbe = [
+      widthWrites.mock.calls.length,
+      heightWrites.mock.calls.length
+    ]
+
+    expect(applyLogicalCanvasStyle(canvas, 800, 600)).toBe(false)
+    expect([
+      widthWrites.mock.calls.length,
+      heightWrites.mock.calls.length
+    ]).toEqual(writesAfterProbe)
+  })
+
+  it('pins only the axis whose size still comes from the backing store', () => {
+    const canvas = createTestCanvasElement({ width: 1600, height: 600 })
+    canvas.style.width = '100%'
+    Object.defineProperties(canvas, {
+      offsetWidth: { configurable: true, value: 800 },
+      offsetHeight: { configurable: true, get: () => canvas.height }
+    })
+    vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(
+      () => new DOMRect(0, 0, 800, canvas.height)
+    )
+
+    applyLogicalCanvasStyle(canvas, 800, 600)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual(['100%', '600px'])
+  })
 })
