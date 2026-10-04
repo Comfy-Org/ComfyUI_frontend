@@ -11,7 +11,7 @@ name: 'PR: Website Auto-Approve'
 
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review, edited]
 
 permissions:
   contents: read

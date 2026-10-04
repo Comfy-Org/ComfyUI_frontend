@@ -4,11 +4,19 @@ import test from 'node:test'
 import {
   alreadyApprovedCurrentHead,
   changedPaths,
+  hasCompleteChangedFileList,
   isSameRepository,
   isWebsiteOnly,
   parseApprovedAuthors,
   targetsDefaultBranch
 } from './website-auto-approve.mjs'
+
+void test('requires complete changed-file enumeration', () => {
+  const files = [{ filename: 'apps/website/a.astro' }]
+  assert.equal(hasCompleteChangedFileList(files, 1), true)
+  assert.equal(hasCompleteChangedFileList(files, 2), false)
+  assert.equal(hasCompleteChangedFileList(files, undefined), false)
+})
 
 void test('parses and normalizes the explicit author allowlist', () => {
   assert.deepEqual(
