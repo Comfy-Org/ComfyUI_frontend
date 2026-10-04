@@ -44,6 +44,7 @@ function setOpen(value: boolean) {
 }
 
 function show(event: Event) {
+  if (event.type === 'contextmenu') event.preventDefault()
   anchorPosition.value = getMenuAnchorPosition(event)
   if (!visible.value) {
     setOpen(true)

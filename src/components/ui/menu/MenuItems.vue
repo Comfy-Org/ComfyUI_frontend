@@ -51,7 +51,7 @@ const emit = defineEmits<{
 }>()
 
 const visibleItems = computed(() =>
-  items.filter((item) => item.separator || toValue(item.visible) !== false)
+  items.filter((item) => toValue(item.visible) !== false)
 )
 </script>
 

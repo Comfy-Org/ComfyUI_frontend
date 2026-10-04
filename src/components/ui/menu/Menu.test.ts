@@ -33,6 +33,32 @@ describe('Menu', () => {
     }
   )
 
+  it.for([
+    { kind: 'boolean', visible: false },
+    { kind: 'getter', visible: () => false }
+  ])('hides separators with $kind visibility', async ({ visible }) => {
+    render(Menu, {
+      props: {
+        items: [
+          { label: 'Download' },
+          { separator: true },
+          { label: 'Inspect' },
+          { separator: true, visible },
+          { label: 'Delete', visible }
+        ]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+    await screen.findByRole('menu')
+
+    expect(screen.getAllByRole('separator')).toHaveLength(1)
+    expect(
+      screen.queryByRole('menuitem', { name: 'Delete' })
+    ).not.toBeInTheDocument()
+  })
+
   it('closes when its owner changes the open state', async () => {
     const { rerender } = render(Menu, {
       props: { items: [{ label: 'Run' }], open: true },
