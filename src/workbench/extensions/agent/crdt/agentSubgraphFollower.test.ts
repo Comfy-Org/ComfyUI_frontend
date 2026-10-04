@@ -10,7 +10,15 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import * as Y from 'yjs'
 
 import {
@@ -129,7 +137,8 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   const valueSlot = subgraph.inputNode.slots[options.extraInput ? 1 : 0]
   valueSlot.connect(interior.inputs[0], interior)
   if (options.promoteExtra) {
-    const extraInterior = LiteGraph.createNode('promoted-widget')!
+    const extraInterior = LiteGraph.createNode('promoted-widget')
+    assert.exists(extraInterior)
     extraInterior.id = toNodeId(9)
     subgraph.add(extraInterior)
     subgraph.inputNode.slots[0].connect(extraInterior.inputs[0], extraInterior)

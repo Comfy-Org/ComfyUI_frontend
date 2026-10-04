@@ -178,7 +178,9 @@ export function agentSubgraphFrames(): {
 
 export function agentSubgraphWidgetDriftFrames(): HostFrame[] {
   const workflow = structuredClone(subgraphWorkflow)
-  workflow.nodes[0].widgets_values = [
+  const host = workflow.nodes.find((node) => node.id === AGENT_SUBGRAPH_HOST_ID)
+  if (!host) throw new Error('Subgraph host fixture is missing')
+  host.widgets_values = [
     AGENT_SUBGRAPH_DRIFT_TEXT,
     AGENT_SUBGRAPH_DRIFT_SEED,
     'extra opaque value'
