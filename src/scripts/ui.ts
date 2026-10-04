@@ -877,7 +877,8 @@ export class ComfyUI {
         () => legacyMenuLocaleMessages(),
         () => {
           this.applyLocalizedText()
-        }
+        },
+        { deep: true }
       )
     })
   }

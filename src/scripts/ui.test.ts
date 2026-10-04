@@ -162,11 +162,9 @@ describe('legacy menu copy', () => {
     modeLabels[1]?.querySelector('input')?.dispatchEvent(new Event('change'))
     expect(ui.autoQueueMode).toBe('change')
     expect(autoQueue).toBeInstanceOf(HTMLInputElement)
-    if (autoQueue instanceof HTMLInputElement) {
-      expect(autoQueue.title).toBe(
-        'Automatically queue prompt when the queue size hits 0'
-      )
-    }
+    expect(autoQueue?.getAttribute('title')).toBe(
+      'Automatically queue prompt when the queue size hits 0'
+    )
   })
 
   it('confirms clear and load-default in English', () => {
@@ -318,6 +316,26 @@ describe('legacy menu copy', () => {
       expect(buttonText(ui.menuContainer, '#comfy-save-button')).toBe('Save')
     } finally {
       i18n.global.setLocaleMessage('en', original)
+      await nextTick()
+    }
+  })
+
+  it('refreshes legacy menu labels when locale messages are merged', async () => {
+    const ui = new ComfyUI(app)
+    const queueButton = ui.menuContainer.querySelector('#queue-button')
+    expect(queueButton?.textContent).toBe('Queue Prompt')
+
+    try {
+      i18n.global.mergeLocaleMessage('en', {
+        legacyMenu: { queuePrompt: 'Merged Queue Prompt' }
+      })
+      await nextTick()
+      expect(queueButton?.textContent).toBe('Merged Queue Prompt')
+      expect(buttonText(ui.menuContainer, '#comfy-save-button')).toBe('Save')
+    } finally {
+      i18n.global.mergeLocaleMessage('en', {
+        legacyMenu: { queuePrompt: 'Queue Prompt' }
+      })
       await nextTick()
     }
   })
