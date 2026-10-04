@@ -8,10 +8,10 @@ import {
 } from './workshop-workflow-catalog-schema'
 
 describe('Workshop apps', () => {
-  it('lists every app declared in the catalog, each at /models/apps/<slug>/', () => {
+  it('lists every app declared in the catalog, each at /hub/apps/<slug>/', () => {
     expect(appModels.map(({ appId, href }) => ({ appId, href }))).toEqual([
-      { appId: 'studio', href: '/models/apps/cinematic-studio/' },
-      { appId: 'reshoot', href: '/models/apps/reshoot/' }
+      { appId: 'studio', href: '/hub/apps/cinematic-studio/' },
+      { appId: 'reshoot', href: '/hub/apps/reshoot/' }
     ])
   })
 

@@ -1,27 +1,87 @@
 <script setup lang="ts">
-import { useMounted } from '@vueuse/core'
+import { useEventListener, useMounted } from '@vueuse/core'
 import { WORKSHOP_INCLUDED } from 'astro:env/client'
-import { computed, defineAsyncComponent, h, shallowRef, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  h,
+  onScopeDispose,
+  shallowRef,
+  watch
+} from 'vue'
 import type { FunctionalComponent } from 'vue'
 
 import { isWorkflowSlug } from '../../config/models-catalogue'
 import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/translations'
-import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
+import { translationsFor } from '../../i18n/translations'
+import {
+  useWorkshopAppsEnabled,
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled,
+  useWorkshopWorkflowsEnabled
+} from '../../scripts/posthog'
 
+import type { CatalogueTab } from './CatalogueTabs.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
+import {
+  workshopEyebrowClass,
+  workshopHeadingClass
+} from './workshopHeadingClasses'
 
-const { slug, workflowId } = defineProps<{
+const { t } = translationsFor('en')
+const {
+  slug,
+  workflowId,
+  heading,
+  section = 'models'
+} = defineProps<{
   slug?: string
   workflowId?: string
+  heading?: string
+  section?: CatalogueTab
 }>()
 
-const loadingLabel = t('workshop.load.pending', 'en')
+const loadingLabel = t('workshop.load.pending')
 const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
 const mounted = useMounted()
+const catalogueRevision = shallowRef(0)
+const catalogueSearch = shallowRef<string>()
+useEventListener<DocumentEventMap['astro:before-swap']>(
+  () => (mounted.value ? document : undefined),
+  'astro:before-swap',
+  (event) => {
+    if (slug) return
+    catalogueSearch.value = event.to.search
+    if (event.from.pathname !== event.to.pathname) return
+    document.addEventListener(
+      'astro:after-swap',
+      () => catalogueRevision.value++,
+      { once: true }
+    )
+  }
+)
+const enabled = useWorkshopEnabled()
+const settled = useWorkshopEnabledSettled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
+const gateAllows = computed(() => {
+  if (isWorkflow.value || section === 'workflows') return workflowsEnabled.value
+  return section === 'apps' ? appsEnabled.value : undefined
+})
+const catalogueView = computed(() => {
+  if (!mounted.value || (section !== 'models' && !settled.value))
+    return 'loading'
+  return section === 'models' || (enabled.value && gateAllows.value)
+    ? 'granted'
+    : 'denied'
+})
+// Inside a category the category's own title carries the page, so the hub's
+// eyebrow and heading give up their space to it. They stay in the document
+// rather than leaving: the page keeps the one heading it is supposed to have,
+// and the category reads as the section of it that it is.
+const inSection = shallowRef(false)
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
 const session =
@@ -57,6 +117,19 @@ watch(
   { immediate: true }
 )
 
+let legacyForward: AbortController | undefined
+onScopeDispose(() => legacyForward?.abort())
+
+async function forwardLegacyLink(): Promise<void> {
+  const href = location.href
+  if (section !== 'models' || !new URL(href).searchParams.has('type')) return
+  legacyForward?.abort()
+  legacyForward = new AbortController()
+  const { signal } = legacyForward
+  const { forwardLegacySection } = await import('./forwardLegacySection')
+  await forwardLegacySection(href, signal)
+}
+
 const Loading: FunctionalComponent = () =>
   h(WorkshopLoading, { label: loadingLabel, 'data-testid': 'models-loading' })
 
@@ -70,7 +143,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
       'data-testid': 'models-load-error'
     },
     [
-      h('p', { class: 'text-lg' }, t('workshop.load.failed', 'en')),
+      h('p', { class: 'text-lg' }, t('workshop.load.failed')),
       h(
         'button',
         {
@@ -82,7 +155,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
             Content.value = createContent()
           }
         },
-        t('workshop.error.retry', 'en')
+        t('workshop.error.retry')
       )
     ]
   )
@@ -112,10 +185,14 @@ function createContent() {
         const { default: ModelPage } = await import('./ModelPage.vue')
         return () => h(ModelPage, { page: { ...page, model } })
       }
-      const [{ default: ModelsCatalogue }, models] = await Promise.all([
+      const forwarding = forwardLegacyLink()
+      const catalogue = Promise.all([
         import('./ModelsCatalogue.vue'),
         fetchModelsCatalogue()
       ])
+      void catalogue.catch(() => undefined)
+      await forwarding
+      const [{ default: ModelsCatalogue }, models] = await catalogue
       return () =>
         h(
           'div',
@@ -124,12 +201,18 @@ function createContent() {
           },
           [
             h(ModelsCatalogue, {
+              key: `${section}:${catalogueRevision.value}`,
+              initialSearch: catalogueSearch.value,
+              onSection: (open: boolean) => {
+                inSection.value = open
+              },
               models: models.filter(
                 (model) =>
                   model.routerId !== undefined ||
                   model.type === 'APP' ||
                   workflowsEnabled.value
-              )
+              ),
+              section
             })
           ]
         )
@@ -148,10 +231,32 @@ const Content = shallowRef(createContent())
 </script>
 
 <template>
+  <template v-if="!slug">
+    <div
+      v-if="heading && catalogueView !== 'denied'"
+      class="mx-auto max-w-10xl px-6 pt-8 max-sm:pt-5 lg:px-8 lg:pt-12"
+    >
+      <div
+        data-testid="workshop-heading"
+        :class="inSection ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3'"
+      >
+        <p :class="workshopEyebrowClass">
+          {{ t('workshop.catalogue.eyebrow') }}
+        </p>
+        <h1 :class="workshopHeadingClass">{{ heading }}</h1>
+      </div>
+    </div>
+    <component :is="Content" v-if="catalogueView === 'granted'" />
+    <WorkshopLoading
+      v-else-if="catalogueView === 'loading'"
+      :label="loadingLabel"
+    />
+    <slot v-else name="fallback" />
+  </template>
   <WorkshopGate
-    v-if="isWorkflow"
-    keep-mounted
-    :allowed="workflowsEnabled"
+    v-else-if="gateAllows !== undefined"
+    :keep-mounted="isWorkflow"
+    :allowed="gateAllows"
     :retain-granted="recoveringWorkflow"
     :allow-recovery="savedWorkflow"
   >

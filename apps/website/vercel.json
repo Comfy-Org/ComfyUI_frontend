@@ -4316,6 +4316,26 @@
       "source": "/models/workflows/virtual-try-on/",
       "destination": "/hub/workflows/virtual-try-on/",
       "permanent": false
+    },
+    {
+      "source": "/models/apps/cinematic-studio",
+      "destination": "/hub/apps/cinematic-studio/",
+      "permanent": false
+    },
+    {
+      "source": "/models/apps/cinematic-studio/",
+      "destination": "/hub/apps/cinematic-studio/",
+      "permanent": false
+    },
+    {
+      "source": "/models/apps/reshoot",
+      "destination": "/hub/apps/reshoot/",
+      "permanent": false
+    },
+    {
+      "source": "/models/apps/reshoot/",
+      "destination": "/hub/apps/reshoot/",
+      "permanent": false
     }
   ]
 }

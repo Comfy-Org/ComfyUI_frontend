@@ -108,31 +108,36 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   multi_select: zMultiSelectOption.optional()
 })
 
-const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
-const zFloatInputSpec = z.tuple([
-  z.literal('FLOAT'),
-  zFloatInputOptions.optional()
-])
-const zBooleanInputSpec = z.tuple([
+/** The backend serialises `("IMAGE",)` as `["IMAGE"]`, so options may be absent. */
+function zInputSpecTuple<T extends z.ZodTypeAny, O extends z.ZodTypeAny>(
+  type: T,
+  options: O
+) {
+  return z.union([z.tuple([type]), z.tuple([type, options.optional()])])
+}
+
+const zIntInputSpec = zInputSpecTuple(z.literal('INT'), zIntInputOptions)
+const zFloatInputSpec = zInputSpecTuple(z.literal('FLOAT'), zFloatInputOptions)
+const zBooleanInputSpec = zInputSpecTuple(
   z.literal('BOOLEAN'),
-  zBooleanInputOptions.optional()
-])
-const zStringInputSpec = z.tuple([
+  zBooleanInputOptions
+)
+const zStringInputSpec = zInputSpecTuple(
   z.literal('STRING'),
-  zStringInputOptions.optional()
-])
+  zStringInputOptions
+)
 /**
  * Legacy combo syntax.
  * @deprecated Use `zComboInputSpecV2` instead.
  */
-const zComboInputSpec = z.tuple([
+const zComboInputSpec = zInputSpecTuple(
   z.array(zComboOption),
-  zComboInputOptions.optional()
-])
-const zComboInputSpecV2 = z.tuple([
+  zComboInputOptions
+)
+const zComboInputSpecV2 = zInputSpecTuple(
   z.literal('COMBO'),
-  zComboInputOptions.optional()
-])
+  zComboInputOptions
+)
 
 export function isComboInputSpecV1(
   inputSpec: InputSpec
@@ -202,19 +207,83 @@ export function getComboSpecComboOptions(
   )
 }
 
-const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
-const zCustomInputSpec = z.tuple([
-  z.string().refine((value) => !excludedLiterals.has(value)),
-  zBaseInputOptions.optional()
+const excludedLiterals = new Set([
+  'INT',
+  'FLOAT',
+  'BOOLEAN',
+  'STRING',
+  'COMBO',
+  'COMFY_DYNAMICGROUP_V3'
 ])
+const zCustomInputSpec = zInputSpecTuple(
+  z.string().refine((value) => !excludedLiterals.has(value)),
+  zBaseInputOptions
+)
 
-const zInputSpec = z.union([
+const zWidgetInputSpec = z.union([
   zIntInputSpec,
   zFloatInputSpec,
   zBooleanInputSpec,
   zStringInputSpec,
   zComboInputSpec,
-  zComboInputSpecV2,
+  zComboInputSpecV2
+])
+
+const zDynamicGroupFields = z.record(
+  z
+    .string()
+    .min(1)
+    .refine(
+      (name) => !name.includes('.'),
+      'DynamicGroup field names must not contain dots'
+    ),
+  z
+    .union([zWidgetInputSpec, zCustomInputSpec])
+    .refine(
+      (spec) => typeof spec[0] !== 'string' || !isDynamicControlType(spec[0]),
+      'DynamicGroup fields must not contain dynamic inputs'
+    )
+    .refine(
+      (spec) => !spec[1]?.forceInput,
+      'DynamicGroup fields must not force input sockets'
+    )
+)
+
+export const zDynamicGroupInputSpec = z.tuple([
+  z.literal('COMFY_DYNAMICGROUP_V3'),
+  zBaseInputOptions
+    .extend({
+      template: z
+        .object({
+          required: zDynamicGroupFields.optional(),
+          optional: zDynamicGroupFields.optional()
+        })
+        .refine(
+          (template) =>
+            Object.keys({ ...template.required, ...template.optional }).length >
+            0,
+          'DynamicGroup template must contain a field'
+        )
+        .refine(
+          (template) =>
+            !Object.keys(template.required ?? {}).some((name) =>
+              Object.hasOwn(template.optional ?? {}, name)
+            ),
+          'DynamicGroup field names must be unique'
+        ),
+      min: z.number().int().nonnegative().default(0),
+      max: z.number().int().positive().max(20).default(20),
+      group_name: z.string().optional()
+    })
+    .refine(({ min, max }) => min <= max, {
+      message: 'DynamicGroup min must not exceed max',
+      path: ['min']
+    })
+])
+
+const zInputSpec = z.union([
+  zWidgetInputSpec,
+  zDynamicGroupInputSpec,
   zCustomInputSpec
 ])
 
@@ -384,6 +453,7 @@ export const zMatchTypeOptions = z.object({
  * a silent gap.
  */
 export const DYNAMIC_CONTROL_TYPES = [
+  'COMFY_DYNAMICGROUP_V3',
   'COMFY_AUTOGROW_V3',
   'COMFY_DYNAMICCOMBO_V3',
   'COMFY_MATCHTYPE_V3'

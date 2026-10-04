@@ -3,13 +3,14 @@ import type { Locale } from '../../i18n/translations'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
 
 import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 
 const { row, locale = 'en' } = defineProps<{
   row: DirectoryRow
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 // The list rows and the cards share one CTA so the upcoming/past rules can
 // never drift apart between the two views.
@@ -21,7 +22,7 @@ const chipClass =
   <AddToCalendarButton v-if="row.calendar" :event="row.calendar" :locale>
     <template #trigger>
       <button type="button" :class="chipClass">
-        {{ t('events.directory.saveTheDate', locale) }}
+        {{ t('events.directory.saveTheDate') }}
       </button>
     </template>
   </AddToCalendarButton>

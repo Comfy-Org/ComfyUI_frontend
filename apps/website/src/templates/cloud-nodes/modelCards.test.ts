@@ -39,7 +39,7 @@ describe('cloudNodeModelCards', () => {
 
   it.for(locales)('translates every card label for %s', (locale) => {
     for (const card of cloudNodeModelCards) {
-      expect(t(card.titleKey, locale)).not.toBe('')
+      expect(t(card.titleKey, {}, { locale })).not.toBe('')
       expect(card.nodeCount).toBeGreaterThan(0)
     }
   })

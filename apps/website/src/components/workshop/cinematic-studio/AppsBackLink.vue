@@ -1,13 +1,14 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { ChevronLeft } from '@lucide/vue'
 
 import { getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
-const href = `${getRoutes(locale).workshop}?type=apps`
+const href = getRoutes(locale).hubApps
 </script>
 
 <template>
@@ -17,6 +18,6 @@ const href = `${getRoutes(locale).workshop}?type=apps`
     data-testid="apps-back"
   >
     <ChevronLeft class="size-4" aria-hidden="true" />
-    {{ tc('cinematic.backToApps', locale) }}
+    {{ t('cinematic.backToApps') }}
   </a>
 </template>

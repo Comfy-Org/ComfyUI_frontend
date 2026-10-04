@@ -9,6 +9,7 @@ import {
   defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
+  onMounted,
   provide,
   readonly,
   ref,
@@ -21,6 +22,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
@@ -38,12 +40,13 @@ import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { api } from '@/scripts/api'
@@ -75,6 +78,7 @@ import {
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -407,32 +411,73 @@ watch(
   },
   { immediate: true }
 )
-const agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
-watch(
-  () => graphActivity.state,
-  (activity) => {
-    if (activity.phase === 'idle') {
-      agentMinimapLayer.replace([])
-      return
+// Claimed on mount rather than in setup so a setup failure cannot leave the id
+// registered with no unmount to release it.
+let agentMinimapLayer: MinimapDecorationLayer | undefined
+function syncAgentMinimapLayer(activity: typeof graphActivity.state): void {
+  if (activity.phase === 'idle') {
+    agentMinimapLayer?.replace([])
+    return
+  }
+  const rootGraphId = toRootGraphId(activity.rootGraphId)
+  agentMinimapLayer?.replace(
+    activity.nodeIds.map((nodeId) => ({
+      target: {
+        rootGraphId,
+        owningGraphId: toOwningGraphId(activity.rootGraphId),
+        nodeId
+      },
+      enter: 'pop'
+    }))
+  )
+  if (
+    activity.phase === 'running' &&
+    !settingStore.get('Comfy.Minimap.Visible')
+  )
+    void settingStore.set('Comfy.Minimap.Visible', true)
+}
+watch(() => graphActivity.state, syncAgentMinimapLayer, { immediate: true })
+onMounted(() => {
+  agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+  syncAgentMinimapLayer(graphActivity.state)
+})
+// Teardown must be total. Nothing is re-thrown: an error escaping an unmount
+// hook reaches Vue's logError, which re-throws outside production builds (this
+// app registers no app.config.errorHandler) and aborts both the steps after it
+// and the rest of unmountComponent -- stranding this panel's later releases on
+// singletons that outlive it, such as the PM-1575 canvas-sync gate below.
+//
+// Steps are keyed rather than positional for two reasons: the key names the
+// failure in telemetry, which is now the only signal that a release was
+// skipped, and insertion order is the run order (no key is integer-like, so
+// Object.entries order is specified). They return `undefined` rather than
+// `void` so an async step -- whose rejection would escape the catch below
+// while still looking contained -- fails to compile instead.
+function runPanelTeardown(
+  steps: Readonly<Record<string, () => undefined>>
+): void {
+  for (const [step, release] of Object.entries(steps)) {
+    try {
+      release()
+    } catch (error) {
+      try {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_tearing_down_agent_panel',
+          tags: { step }
+        })
+      } catch {
+        // A reporter that throws must not abort the teardown it reports on.
+      }
     }
-    const rootGraphId = toRootGraphId(activity.rootGraphId)
-    agentMinimapLayer.replace(
-      activity.nodeIds.map((nodeId) => ({
-        target: {
-          rootGraphId,
-          owningGraphId: toOwningGraphId(activity.rootGraphId),
-          nodeId
-        },
-        enter: 'pop'
-      }))
-    )
-    if (
-      activity.phase === 'running' &&
-      !settingStore.get('Comfy.Minimap.Visible')
-    )
-      void settingStore.set('Comfy.Minimap.Visible', true)
-  },
-  { immediate: true }
+  }
+}
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    disposeMinimapLayer: () => {
+      agentMinimapLayer?.dispose()
+    }
+  })
 )
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
@@ -461,14 +506,29 @@ const coachDeferredBy = computed(() =>
       ? 'tour_active'
       : null
 )
+const coachCompletionWaiters = new Set<() => void>()
+function releaseCoachCompletionWaiters(): void {
+  for (const resolve of coachCompletionWaiters) resolve()
+  coachCompletionWaiters.clear()
+}
 watch(
   [consentAccepted, onboardingKey, coachDeferredBy],
   ([accepted, key, reason]) => {
     if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
+    if (reason !== null) releaseCoachCompletionWaiters()
   },
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+
+async function waitForCoachCompletion(): Promise<void> {
+  const key = onboardingKey.value
+  if (!key || hasSeenCoach(key)) return
+  await nextTick()
+  if (coachDeferredBy.value !== null || !coachRef.value) return
+  await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+}
+
 function restartCoach(): void {
   // Take-the-tour stays clickable while the coach is deferred by App Mode, and
   // there is no instance to hand the transition to. Clearing the persisted flag
@@ -962,6 +1022,7 @@ watch(
       if (completedTurn && billingType.value === 'workspace') {
         void refreshBillingStatus().catch((error: unknown) => {
           reportError(error, {
+            surface: 'agent',
             errorType: 'error_refreshing_agent_billing_status'
           })
         })
@@ -1087,7 +1148,10 @@ async function onAgentActiveTab(
   } catch (error) {
     if (stale()) return false
     bindWorkflow(data.workflow_id)
-    reportError(error, { errorType: 'agent_workflow_open_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_workflow_open_failed'
+    })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
@@ -1209,28 +1273,64 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
-  ++activeTabGeneration
-  if (composerStore.submission?.id === consentHeldSubmissionId)
-    composerStore.invalidateSubmission()
-  docOpMinter.detach()
-  restoreOpMinter.detach()
-  exitNodeSelectionMode()
-  stop()
-  tabActivity.setEditing(null)
-  tabActivity.setCreating(false)
-  agentMinimapLayer.dispose()
-  // PM-1575: the store singleton outlives this component. Without resetting
-  // the gate here, a remount's own setCanvasSyncGate() call is the only
-  // thing standing between the old (now torn-down) follower's gate and a
-  // turn resumed in the meantime reading it -- reset to the always-safe
-  // default instead of leaving whatever this instance last set.
-  conversationStore.setCanvasSyncGate(
-    () => false,
-    () => 0
-  )
+  runPanelTeardown({
+    releaseCoachCompletionWaiters: () => {
+      releaseCoachCompletionWaiters()
+    },
+    invalidateConsentHeldSubmission: () => {
+      if (
+        (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
+        composerStore.submission?.id === consentHeldSubmissionId
+      )
+        composerStore.invalidateSubmission()
+    },
+    detachDocOpMinter: () => {
+      docOpMinter.detach()
+    },
+    detachRestoreOpMinter: () => {
+      restoreOpMinter.detach()
+    },
+    exitNodeSelectionMode: () => {
+      exitNodeSelectionMode()
+    },
+    stopSession: () => {
+      stop()
+    },
+    invalidateActiveTabGeneration: () => {
+      ++activeTabGeneration
+    },
+    clearEditingTab: () => {
+      tabActivity.setEditing(null)
+    },
+    clearCreatingTab: () => {
+      tabActivity.setCreating(false)
+    },
+    // PM-1575: the store singleton outlives this component. Without resetting
+    // the gate here, a remount's own setCanvasSyncGate() call is the only
+    // thing standing between the old (now torn-down) follower's gate and a
+    // turn resumed in the meantime reading it -- reset to the always-safe
+    // default instead of leaving whatever this instance last set.
+    resetCanvasSyncGate: () => {
+      conversationStore.setCanvasSyncGate(
+        () => false,
+        () => 0
+      )
+    }
+  })
 })
 
 const { copy } = useClipboard({ legacy: true })
+
+/**
+ * DES-1221. This component mounts only while the panel is on screen, so
+ * reading the flag here keeps the exposure — and the experiment's
+ * denominator — to the panel openers the hypothesis is about.
+ */
+const { variant: freeUsePlacement } = useFreeUsePlacement()
+
+function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+  useTelemetry()?.trackAgentFreeUseNotice(metadata)
+}
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1265,7 +1365,10 @@ async function refreshHistory(): Promise<void> {
   try {
     history.replaceAll((await listThreads()).map(toChatSession))
   } catch (error) {
-    reportError(error, { errorType: 'agent_thread_list_load_failed' })
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
@@ -1364,6 +1467,7 @@ async function consentAllowsSubmission(
     await withConsent('first_message', () => {
       hasConsent = true
     })
+    if (hasConsent) await waitForCoachCompletion()
   } finally {
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
@@ -1413,8 +1517,16 @@ const { submit: onSend } = useAgentDraftSubmission({
     }
     const selectionWorkflow = selectedTarget.value
     try {
-      return await sendMessage(text, attachments, nodes, references, () =>
-        selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+      return await sendMessage(
+        text,
+        attachments,
+        nodes,
+        references,
+        () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+        // The same id reported on app:agent_message_sent just above. Sent to the
+        // server so it can echo it onto agent_turn_started, which is what makes
+        // the message -> turn step attributable instead of only countable.
+        meta.clientMessageId
       )
     } finally {
       // Normally already consumed by the refresh. A send rejected before it
@@ -1597,7 +1709,13 @@ const attachment = useAttachment({
   remove: composerStore.removeAttachment
 })
 
-onBeforeUnmount(() => attachment.cancelAllUploads())
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    cancelAllUploads: () => {
+      attachment.cancelAllUploads()
+    }
+  })
+)
 
 function onAttach(): void {
   exitNodeSelectionMode()
@@ -1790,6 +1908,8 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
+      :free-use-placement="freeUsePlacement"
+      @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
@@ -1828,6 +1948,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
+      @finished="releaseCoachCompletionWaiters"
     />
   </div>
 </template>

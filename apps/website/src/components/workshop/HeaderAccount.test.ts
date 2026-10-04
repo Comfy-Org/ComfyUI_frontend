@@ -363,7 +363,7 @@ describe('HeaderAccount menu', () => {
 
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(trigger)
   })
 })
@@ -793,7 +793,7 @@ describe('HeaderAccount workspace switcher', () => {
     const retry = await screen.findByTestId('account-workspaces-retry')
     await user.keyboard('{ArrowDown}')
     await waitFor(() => {
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(document.activeElement).toBe(retry)
     })
     await user.keyboard('{Enter}')

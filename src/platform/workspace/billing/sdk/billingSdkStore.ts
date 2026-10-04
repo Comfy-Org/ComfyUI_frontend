@@ -6,6 +6,7 @@
  * dialog performs for the operations it issues itself.
  */
 import type {
+  BillingOperationKind,
   BillingOperationState,
   BillingEventsReadOptions,
   BillingOperationTelemetryEvent,
@@ -17,8 +18,9 @@ import type {
   SubscribeInput
 } from '@comfyorg/account-core/billing'
 import {
+  BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT,
-  awaitsHostedAction,
+  toBillingTelemetryEvent,
   validateActionUrl
 } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -29,6 +31,7 @@ import { computed, shallowRef } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
@@ -41,25 +44,34 @@ import type {
   BillingStatusResponse,
   CreateTopupResponse,
   PreviewSubscribeResponse,
-  SavedPaymentMethod,
-  SubscribeResponse
+  SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
-import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
+import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
+import {
+  isParkedCheckout,
+  needsCustomerAttention,
+  progressToastKind
+} from '@/platform/workspace/billing/customerAttention'
 import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { getCheckoutJourneyPaymentIntentSource } from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
-import { toBillingTelemetryEvent } from './billingSdkTelemetry'
 import { projectBillingStatus } from './billingStatusView'
+import type { BillingSdkOptions } from './createBillingSdk'
 import { createBillingSdk } from './createBillingSdk'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
-import type { SubscriptionRailOutcome } from './subscriptionOperationView'
+import type {
+  SettledCommand,
+  SettledSubscribeResponse,
+  SubscriptionRailOutcome
+} from './subscriptionOperationView'
 import {
   projectPaymentPortalResult,
   projectPreviewSubscribeResult,
@@ -71,8 +83,7 @@ import {
   projectTopupOperation,
   projectTopupResult
 } from './topupOperationView'
-
-type ProgressKind = 'processing' | 'action'
+import { createWebSessionBillingSession } from './webSessionBillingSession'
 
 const PROGRESS_SUMMARY = {
   topup: {
@@ -83,8 +94,16 @@ const PROGRESS_SUMMARY = {
     processing: 'billingOperation.subscriptionProcessing',
     action: 'billingOperation.subscriptionActionRequired'
   }
-} as const satisfies Record<string, Record<ProgressKind, string>>
+} as const satisfies Record<string, Record<ProgressToastKind, string>>
 type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
+
+const FRICTION_EVENT_NAMES: ReadonlySet<string> = new Set(
+  Object.values(BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT)
+)
+
+function isFrictionEvent(event: BillingOperationTelemetryEvent): boolean {
+  return FRICTION_EVENT_NAMES.has(event.name)
+}
 
 async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
   const publishableKey = resolveStripePublishableKey()
@@ -103,21 +122,41 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const workspaceStore = useTeamWorkspaceStore()
   const toastStore = useToastStore()
   const { flags } = useFeatureFlags()
+  const billingCapabilities = useBillingCapabilities()
 
   const operations = shallowRef<readonly BillingOperationState[]>([])
   const dismissed = shallowRef<ReadonlySet<string>>(new Set())
   const resumedOperations = new Set<string>()
+  const callerStarted = new Set<BillingOperationKind>()
   const drivenChallenges = new Set<string>()
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<
     string,
-    { kind: ProgressKind; message: ToastMessage }
+    { kind: ProgressToastKind; message: ToastMessage }
   >()
 
+  function sessionPorts(): Pick<
+    BillingSdkOptions,
+    'session' | 'scopeSource' | 'workspaceId'
+  > {
+    const requests = webSessionRequests()
+    if (requests) {
+      const session = createWebSessionBillingSession(requests)
+      return {
+        session,
+        scopeSource: session,
+        workspaceId: requests.workspaceId
+      }
+    }
+    return {
+      session: workspaceAuthStore.getUnifiedSessionClient(),
+      workspaceId: () => workspaceAuthStore.getUnifiedMintWorkspaceId()
+    }
+  }
+
   const sdk = createBillingSdk({
-    session: workspaceAuthStore.getUnifiedSessionClient(),
+    ...sessionPorts(),
     resolveUrl: workspaceApiUrl,
-    workspaceId: () => workspaceAuthStore.getUnifiedMintWorkspaceId(),
     pointerStorage: sessionStorage,
     embeddedCheckoutAvailable: () =>
       flags.embeddedCheckoutEnabled && Boolean(resolveStripePublishableKey()),
@@ -187,6 +226,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
         record.status === 'pending' &&
         record.authenticationState !== 'requires_action' &&
         record.authenticationState !== 'failed_retryable' &&
+        !isParkedCheckout(record) &&
         record.workspaceId === workspaceStore.activeWorkspaceId
     )
   )
@@ -206,18 +246,44 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   // A top-up the dialog issued is reported by the dialog, exactly as before;
   // the lifecycle's events stand in for the poller's only on an operation
-  // this tab reattached to. A cancel or resubscribe has no such second
-  // reporter on this rail — the poller owned both ends of it on the legacy
-  // one — so the lifecycle's events are the only ones it emits.
+  // this tab reattached to. A cancel or subscribe the caller announced with
+  // its own `started` keeps that one event: the lifecycle's `started` is
+  // dropped inside the caller's command window, and its terminal is always
+  // forwarded, since only the lifecycle holds the operation's id, category
+  // and timing. A command no caller announced — a resubscribe, a checkout
+  // that reports nothing — is reported at both ends by the lifecycle.
+  // Friction inside an operation has no other reporter, so it always goes.
   function reportTelemetry(event: BillingOperationTelemetryEvent) {
-    if (event.operation_type === 'topup' && !event.resumed) return
-    if (
-      event.resumed &&
-      event.name === BILLING_OPERATION_TELEMETRY_EVENT.started
-    ) {
-      resumedOperations.add(event.billing_op_id)
+    if (isFrictionEvent(event)) {
+      useTelemetry()?.trackBillingEvent(toBillingTelemetryEvent(event))
+      return
     }
-    useTelemetry()?.trackBillingEvent(toBillingTelemetryEvent(event))
+    if (event.operation_type === 'topup' && !event.resumed) return
+    const started = event.name === BILLING_OPERATION_TELEMETRY_EVENT.started
+    if (started && event.resumed) resumedOperations.add(event.billing_op_id)
+    if (started && !event.resumed && callerStarted.has(event.operation_type)) {
+      return
+    }
+    useTelemetry()?.trackBillingEvent(
+      toBillingTelemetryEvent(
+        event,
+        getCheckoutJourneyPaymentIntentSource(event.billing_op_id)
+      )
+    )
+  }
+
+  // Sound because the lifecycle runs one command per kind at a time and
+  // emits both of an issued operation's events before the command resolves.
+  async function withCallerStart<T>(
+    kind: BillingOperationKind,
+    run: () => Promise<T>
+  ): Promise<T> {
+    callerStarted.add(kind)
+    try {
+      return await run()
+    } finally {
+      callerStarted.delete(kind)
+    }
   }
 
   function onTopupChanged(state: BillingOperationState) {
@@ -243,12 +309,14 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     state: PendingBillingOperation,
     kind: keyof typeof PROGRESS_SUMMARY
   ) {
-    const progress: ProgressKind = awaitsHostedAction(state)
-      ? 'action'
-      : 'processing'
+    const progress = progressToastKind({
+      actionUrl: state.actionUrl,
+      phase: state.serverPhase
+    })
     const current = progressToasts.get(state.id)
     if (current?.kind === progress) return
     clearProgressToast(state.id)
+    if (progress === undefined) return
     const message: ToastMessage = {
       severity: progress === 'action' ? 'warn' : 'info',
       summary: t(PROGRESS_SUMMARY[kind][progress]),
@@ -305,7 +373,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const offered = offeredActions.get(state.id) ?? new Set<string>()
     if (offered.has(actionUrl)) return
     offeredActions.set(state.id, offered.add(actionUrl))
-    if (window.open(actionUrl, '_blank')) return
+    if (window.open(actionUrl, '_blank')) {
+      sdk.lifecycle.reportHostedStepOpened(state.id, 'new_tab')
+      return
+    }
     toastStore.add({
       severity: 'warn',
       summary: t('g.warning'),
@@ -328,7 +399,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       await Promise.allSettled([
         billingContext.fetchStatus(),
         billingContext.fetchBalance(),
-        useBillingCapabilities().refresh()
+        billingCapabilities.refresh()
       ])
       useDialogStore().closeDialog({ key: 'top-up-credits' })
       useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
@@ -383,7 +454,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     amountCents: number
   ): Promise<CreateTopupResponse | undefined> {
     const result = await sdk.topup.createTopupCheckout({ amountCents })
-    if (result.status === 'ok') void useBillingCapabilities().refresh()
+    if (result.status === 'ok') void billingCapabilities.refresh()
     return projectTopupResult(result, amountCents)
   }
 
@@ -417,7 +488,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     await Promise.allSettled([
       billingContext.fetchStatus(),
       billingContext.fetchBalance(),
-      useBillingCapabilities().refresh()
+      billingCapabilities.refresh()
     ])
   }
 
@@ -425,19 +496,23 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const billingContext = useBillingContext()
     await Promise.allSettled([
       billingContext.reconcileSubscriptionSuccess(),
-      useBillingCapabilities().refresh()
+      billingCapabilities.refresh()
     ])
   }
 
-  function cancelSubscription(): Promise<SubscriptionRailOutcome> {
-    return runSubscriptionCommand(
-      async () =>
-        projectSubscriptionResult(await sdk.commands.cancelSubscription()),
-      refreshAfterCancel
+  function cancelSubscription(): Promise<
+    SubscriptionRailOutcome<SettledCommand>
+  > {
+    return withCallerStart('cancel', () =>
+      runSubscriptionCommand(
+        async () =>
+          projectSubscriptionResult(await sdk.commands.cancelSubscription()),
+        refreshAfterCancel
+      )
     )
   }
 
-  function resubscribe(): Promise<SubscriptionRailOutcome> {
+  function resubscribe(): Promise<SubscriptionRailOutcome<SettledCommand>> {
     return runSubscriptionCommand(
       async () => projectSubscriptionResult(await sdk.commands.resubscribe()),
       refreshAfterSubscriptionChange
@@ -445,12 +520,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   }
 
   function subscribe(
-    input: SubscribeInput
-  ): Promise<SubscriptionRailOutcome<SubscribeResponse>> {
-    return runSubscriptionCommand(
-      async () => projectSubscribeResult(await sdk.commands.subscribe(input)),
-      refreshAfterSubscriptionChange
-    )
+    input: SubscribeInput,
+    { callerStarted: announced = false }: { callerStarted?: boolean } = {}
+  ): Promise<SubscriptionRailOutcome<SettledSubscribeResponse>> {
+    const run = () =>
+      runSubscriptionCommand(
+        async () => projectSubscribeResult(await sdk.commands.subscribe(input)),
+        refreshAfterSubscriptionChange
+      )
+    return announced ? withCallerStart('subscription', run) : run()
   }
 
   // A quote changes nothing, so it refreshes nothing; it shares the route

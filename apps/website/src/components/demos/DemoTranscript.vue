@@ -4,13 +4,14 @@ import type { Locale } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
 const { transcript, locale = 'en' } = defineProps<{
   transcript: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const expanded = ref(false)
 </script>
@@ -18,7 +19,7 @@ const expanded = ref(false)
 <template>
   <section
     class="px-4 py-8 lg:px-20 lg:py-12"
-    :aria-label="t('demos.transcript.label', locale)"
+    :aria-label="t('demos.transcript.label')"
   >
     <div class="mx-auto max-w-4xl">
       <button
@@ -28,17 +29,17 @@ const expanded = ref(false)
         @click="expanded = !expanded"
       >
         <span class="text-sm font-semibold tracking-wide uppercase">
-          {{ t('demos.transcript.label', locale) }}
+          {{ t('demos.transcript.label') }}
         </span>
         <span class="ml-2 text-xs text-primary-warm-gray">
-          {{ t('demos.transcript.note', locale) }}
+          {{ t('demos.transcript.note') }}
         </span>
       </button>
 
       <SafeRichText
         as="div"
         role="region"
-        :aria-label="t('demos.transcript.label', locale)"
+        :aria-label="t('demos.transcript.label')"
         :class="
           cn(
             expanded ? 'mt-4' : 'sr-only',

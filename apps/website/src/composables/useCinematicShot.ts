@@ -1,6 +1,8 @@
-import { computed, onMounted, ref, shallowRef, watchEffect } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 
+import { CINEMATIC_STUDIO_APP_SLUG } from '../lib/workshop/cinematic-studio/analytics'
 import type { CinematicCopyKey } from '../lib/workshop/cinematic-studio/copy'
+import { captureWorkshopEvent } from '../scripts/posthog'
 
 import type {
   AspectRatio,
@@ -65,6 +67,24 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const modeModels = computed(() =>
     mode.value === 'video' ? videoModels : imageModels
   )
+  // The URL's own `model` param can set the mode once on mount; that is a
+  // restore, not a reader's switch, so it is the one change this skips.
+  let restoringModeFromUrl = false
+  watch(mode, (tab) => {
+    if (restoringModeFromUrl) {
+      restoringModeFromUrl = false
+      return
+    }
+    captureWorkshopEvent({
+      name: 'tab_switched',
+      properties: {
+        model_slug: CINEMATIC_STUDIO_APP_SLUG,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        tab
+      }
+    })
+  })
   const scene = ref('')
   const enhance = ref(true)
   const direction = ref<Direction>(DEFAULT_DIRECTION)
@@ -72,7 +92,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const resolution = ref<Resolution>('2K')
   const takes = ref(1)
   const cast = shallowRef<StudioImage>()
-  const palette = shallowRef<StudioImage>()
   const colors = ref<readonly string[]>([])
   const mainColor = ref<number>()
   const duration = ref<number>()
@@ -86,7 +105,9 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     const requested = new URLSearchParams(window.location.search).get('model')
     const picked = models.find((model) => model.slug === requested)
     if (!picked) return
-    mode.value = picked.mode === 'video' ? 'video' : 'image'
+    const nextMode = picked.mode === 'video' ? 'video' : 'image'
+    restoringModeFromUrl = nextMode !== mode.value
+    mode.value = nextMode
     modelSlug.value = picked.slug
   })
 
@@ -96,15 +117,12 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     enhance: enhance.value,
     video: mode.value === 'video',
     cast: mode.value === 'image' && !!cast.value,
-    palette: mode.value === 'image' && !!palette.value,
     colors: colors.value,
     mainColor: mainColor.value
   }))
   const references = computed(() =>
     mode.value === 'image'
-      ? [cast.value, palette.value].filter(
-          (image): image is StudioImage => !!image
-        )
+      ? [cast.value].filter((image): image is StudioImage => !!image)
       : []
   )
   const model = computed(() =>
@@ -322,7 +340,6 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     resolution,
     takes,
     cast,
-    palette,
     colors,
     mainColor,
     references,

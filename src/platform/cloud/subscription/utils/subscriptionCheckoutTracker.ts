@@ -1,3 +1,4 @@
+import type { SubscriptionCheckoutType } from '@comfyorg/account-core/billing'
 import type { SubscriptionDuration } from '@comfyorg/ingest-types'
 import {
   getTierPrice,
@@ -12,7 +13,6 @@ import type {
   BeginCheckoutMetadata,
   PaymentIntentSource,
   ResubscribeClickMetadata,
-  SubscriptionCheckoutType,
   SubscriptionSuccessMetadata
 } from '@/platform/telemetry/types'
 
@@ -84,9 +84,11 @@ export interface PendingSubscriptionCheckoutAttempt {
   /** User and workspace that opened checkout, used to reject another session's attempt. */
   owner_id?: string
   workspace_id?: string | null
+  /** Set when this attempt already emitted `billing.subscription_checkout.started`. */
+  start_reported?: true
 }
 
-interface PendingSubscriptionCheckoutAttemptInput {
+export interface PendingSubscriptionCheckoutAttemptInput {
   tier: TierKey
   cycle: BillingCycle
   checkout_type: SubscriptionCheckoutType
@@ -98,6 +100,7 @@ interface PendingSubscriptionCheckoutAttemptInput {
   resubscribe_source?: ResubscribeClickMetadata['source']
   owner_id?: string
   workspace_id?: string | null
+  start_reported?: true
 }
 
 const dispatchPendingCheckoutChangeEvent = () => {
@@ -236,7 +239,8 @@ const optionalCheckoutAttemptFields = (
   ...(typeof candidate.workspace_id === 'string' ||
   candidate.workspace_id === null
     ? { workspace_id: candidate.workspace_id }
-    : {})
+    : {}),
+  ...(candidate.start_reported === true ? { start_reported: true } : {})
 })
 
 const normalizeAttempt = (
@@ -421,7 +425,8 @@ export const createPendingSubscriptionCheckoutAttempt = (
     ...(input.owner_id ? { owner_id: input.owner_id } : {}),
     ...(input.workspace_id !== undefined
       ? { workspace_id: input.workspace_id }
-      : {})
+      : {}),
+    ...(input.start_reported ? { start_reported: true } : {})
   }
 }
 
@@ -486,7 +491,13 @@ const didAttemptSucceed = (
 
 export const consumePendingSubscriptionCheckoutSuccess = (
   status: SubscriptionStatusSnapshot
-): SubscriptionSuccessMetadata | null => {
+):
+  | (SubscriptionSuccessMetadata &
+      Pick<
+        PendingSubscriptionCheckoutAttempt,
+        'start_reported' | 'started_at_ms'
+      >)
+  | null => {
   const attempt = getPendingSubscriptionCheckoutAttempt()
   if (!attempt || !didAttemptSucceed(attempt, status)) {
     return null
@@ -513,6 +524,8 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     ...(wasReportedTerminal
       ? { recovery_outcome: 'late_success' as const }
       : {}),
+    ...(attempt.start_reported ? { start_reported: true as const } : {}),
+    started_at_ms: attempt.started_at_ms,
     value,
     currency: 'USD',
     ecommerce: {

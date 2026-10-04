@@ -2,6 +2,7 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import type { FeaturedSlide } from '../../components/workshop/FeaturedBanner.vue'
 import type { Locale } from '../../i18n/translations'
 import { bannerName } from './banner-name'
+import { bannerSummary } from './banner-summary'
 import { modelDocsHref } from './model-docs'
 import { taskLabelFor } from './task-label'
 
@@ -29,7 +30,7 @@ export function modelSlides(
       title: bannerName(model.name, taskLabelFor(model, 'en')),
       kind: taskLabelFor(model, locale),
       tags: model.capabilities.slice(0, TAG_LIMIT),
-      summary: model.summary,
+      summary: bannerSummary(model.slug, model.summary),
       media: slideMedia(model),
       docsHref: modelDocsHref(model)
     }))

@@ -1,4 +1,5 @@
 import { isProductionBuild } from './build-env'
+import { hubAppHref, hubAppSlugs } from './hub-models'
 import { LOCALE_CODES, LOCALES } from './locales'
 import type { ModelPageLaunch } from './model-page-launch'
 import { launchedModelPages, launchedWorkflowPages } from './model-page-launch'
@@ -21,8 +22,7 @@ export const NOINDEX_ROUTES = [
   '/forgot-password',
   '/models/showcase',
   '/cinematic-studio',
-  '/models/apps/cinematic-studio',
-  '/models/apps/reshoot',
+  ...hubAppSlugs.map((slug) => hubAppHref(slug).replace(/\/$/, '')),
   '/checkout-opening',
   '/checkout-return',
   '/privacy-policy',

@@ -84,6 +84,7 @@ export function createRejectedOpNotifier() {
     reportError(
       new Error(`the agent doc host rejected a human edit (${code})`),
       {
+        surface: 'agent',
         errorType: widgetWrite
           ? 'error_applying_agent_widget_edit'
           : 'error_applying_agent_graph_edit',

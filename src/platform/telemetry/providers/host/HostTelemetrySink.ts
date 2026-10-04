@@ -1,3 +1,8 @@
+import {
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import type {
   ComfyDesktop2TelemetryBridge,
   ComfyDesktop2TelemetryValue
@@ -10,6 +15,8 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
@@ -29,7 +36,6 @@ import type {
   AgentWorkflowAppliedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -68,12 +74,7 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
-import {
-  CANCELLATION_STAGE_EVENTS,
-  TelemetryEvents,
-  getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload
-} from '../../types'
+import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -370,6 +371,14 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentStarterPromptClickedMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.capture(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.capture(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {

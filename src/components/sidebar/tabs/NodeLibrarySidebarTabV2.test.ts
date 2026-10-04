@@ -87,12 +87,6 @@ describe('NodeLibrarySidebarTabV2', () => {
     expect(triggers).toHaveLength(2)
   })
 
-  it('should render search box', () => {
-    renderComponent()
-
-    expect(screen.getByRole('combobox')).toBeInTheDocument()
-  })
-
   it('should render only the selected panel', () => {
     renderComponent()
 

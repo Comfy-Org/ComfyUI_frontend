@@ -1,4 +1,9 @@
 {
+  "dynamicGroup": {
+    "add": "Add {group}",
+    "remove": "Remove {row}",
+    "row": "{group} #{index}"
+  },
   "g": {
     "shortcutSuffix": " ({shortcut})",
     "megapixelsValue": "{count} MP",
@@ -12,6 +17,7 @@
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
     "downloadAudio": "Download audio",
+    "downloadImages": "Download images",
     "editOrMaskImage": "Edit or mask image",
     "editImage": "Edit image",
     "openLayerEditor": "Open layer editor",
@@ -19,6 +25,7 @@
     "deleteImage": "Delete image",
     "deleteAudioFile": "Delete audio file",
     "increment": "Increment",
+    "validate": "Validate",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
@@ -28,6 +35,7 @@
     "chartLowercase": "chart",
     "file": "file",
     "selectedFile": "Selected file",
+    "selected": "Selected",
     "none": "None",
     "markdown": "markdown",
     "content": "content",
@@ -414,7 +422,8 @@
     "blueprints": "Blueprints",
     "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
-    "expandAll": "Expand all"
+    "expandAll": "Expand all",
+    "retry": "Retry"
   },
   "hdrViewer": {
     "title": "HDR Viewer",
@@ -684,6 +693,7 @@
     "Copy Image": "Copy Image",
     "Paste Image": "Paste Image",
     "Save Image": "Save Image",
+    "Download Images": "Download Images",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
     "FavoriteWidget": "Favorite Widget",
@@ -913,6 +923,7 @@
   },
   "sideToolbar": {
     "sidebar": "Sidebar",
+    "closeSidebar": "Close sidebar",
     "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",
@@ -1222,6 +1233,19 @@
       "title": "Premium template",
       "credits": "Runs with credits"
     },
+    "detail": {
+      "cloudUpsellTitle": "Run this template in Comfy Cloud",
+      "cloudUpsellDescription": "Run on Cloud GPUs without local setup or downloads.",
+      "partnerNodeTitle": "This workflow uses Partner Nodes",
+      "partnerNodeDescription": "Choose whether to run this workflow locally or in Comfy Cloud.",
+      "openInCloud": "Open in Cloud",
+      "requirements": "Template requirements",
+      "models": "Models",
+      "usedBy": "Used by {nodes}",
+      "openTemplate": "Open template",
+      "backToTemplates": "Back to {category}",
+      "breadcrumbLabel": "Template navigation"
+    },
     "sort": {
       "relevance": "Relevance",
       "recommended": "Recommended",
@@ -1267,6 +1291,7 @@
   "zoomControls": {
     "label": "Zoom Controls",
     "zoomToFit": "Zoom To Fit",
+    "zoomPercentage": "Zoom percentage",
     "showMinimap": "Show Minimap",
     "hideMinimap": "Hide Minimap"
   },
@@ -1438,25 +1463,6 @@
     "white": "White",
     "negative": "Negative"
   },
-  "commands": {
-    "runWorkflow": "Run workflow",
-    "runWorkflowFront": "Run workflow (Queue at front)",
-    "run": "Run",
-    "execute": "Execute",
-    "interrupt": "Cancel current run",
-    "refresh": "Refresh node definitions",
-    "clipspace": "Open Clipspace",
-    "resetView": "Reset canvas view",
-    "clear": "Clear workflow",
-    "toggleBottomPanel": "Toggle Bottom Panel",
-    "theme": "Theme",
-    "dark": "Dark",
-    "light": "Light",
-    "manageExtensions": "Extensions",
-    "settings": "Settings",
-    "help": "Help",
-    "queue": "Queue Panel"
-  },
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
@@ -1591,6 +1597,7 @@
     "Unload Models": "Unload Models",
     "Unload Models and Execution Cache": "Unload Models and Execution Cache",
     "New": "New",
+    "Replay Onboarding": "Replay Onboarding",
     "Clipspace": "Clipspace",
     "Manager": "Manager",
     "Open": "Open",
@@ -1930,17 +1937,18 @@
     "seedvr": "seedvr",
     "qwen image": "qwen image",
     "qwen": "qwen",
+    "ming image": "ming image",
     "mage": "mage",
     "joyimage": "joyimage",
     "boogu": "boogu",
     "chroma radiance": "chroma radiance",
-    "z-image": "z-image",
     "supir": "supir",
     "anima": "anima",
     "logic": "logic",
     "": "",
     "kandinsky": "kandinsky",
     "autoregressive": "autoregressive",
+    "z-image": "z-image",
     "shader": "shader",
     "trellis": "trellis",
     "mesh": "mesh",
@@ -1990,7 +1998,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "sync_so": "sync.so",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2371,6 +2378,46 @@
     "monotone_cubic": "Smooth",
     "linear": "Linear"
   },
+  "cameraAngle": {
+    "cameraView": "Camera",
+    "objectView": "Object",
+    "cameraViewTooltip": "Move the camera around the subject",
+    "objectViewTooltip": "Look through the camera and turn the subject",
+    "horizontalLabel": "Horizontal angle",
+    "verticalLabel": "Vertical angle",
+    "zoomLabel": "Shot size",
+    "preview": "Preview",
+    "showPreview": "Show shot preview",
+    "hidePreview": "Hide shot preview",
+    "horizontal": {
+      "front": "Front",
+      "frontRight": "Front right",
+      "right": "Right side",
+      "backRight": "Back right",
+      "back": "Back",
+      "backLeft": "Back left",
+      "left": "Left side",
+      "frontLeft": "Front left"
+    },
+    "vertical": {
+      "lowAngle": "Low angle",
+      "eyeLevel": "Eye level",
+      "elevated": "Elevated",
+      "highAngle": "High angle"
+    },
+    "zoom": {
+      "wide": "Wide shot",
+      "medium": "Medium shot",
+      "closeUp": "Close-up"
+    },
+    "faces": {
+      "back": "BACK",
+      "left": "LEFT",
+      "right": "RIGHT",
+      "top": "TOP",
+      "bottom": "BOTTOM"
+    }
+  },
   "boundingBoxes": {
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
@@ -2467,6 +2514,7 @@
     "pleaseSelectNodesToGroup": "Please select the nodes (or other groups) to create a group for",
     "emptyCanvas": "Empty canvas",
     "fileUploadFailed": "File upload failed",
+    "extraResourcesUploadFailed": "Extra resources upload failed",
     "fileTooLarge": "File too large ({size} MB). Maximum supported size is {maxSize} MB",
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
@@ -2499,6 +2547,7 @@
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
+    "failedToInitializeCameraAngleViewer": "Failed to initialize Camera Angle viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",
@@ -2546,6 +2595,7 @@
       "appTypeNative": "Native app",
       "appTypeWeb": "Web app",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
+      "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
       "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
       "sessionError": "Failed to establish session. Please try again.",
@@ -2566,6 +2616,8 @@
     }
   },
   "auth": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "apiKey": {
       "title": "API Key",
       "label": "API Key",
@@ -2597,6 +2649,7 @@
       "cloudNewUser": "New to Comfy?",
       "cloudSignUp": "Sign up here",
       "freeRunsSuffix": "to get {count} free run. | to get {count} free runs.",
+      "freeRunsSuffixGoogle": "with Google to get {count} free run. | with Google to get {count} free runs.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -2657,6 +2710,11 @@
         "unavailable": "We couldn't reach your account. Try again in a moment.",
         "workspaceDenied": "You don't have access to this workspace. Contact support if this keeps happening.",
         "refused": "Your request was refused. Reload the page and try again."
+      },
+      "reconnecting": {
+        "title": "Reconnecting to your account",
+        "detail": "We can't reach Comfy right now. We'll keep retrying, and you stay signed in.",
+        "retry": "Retry now"
       }
     },
     "signOut": {
@@ -2667,6 +2725,12 @@
       "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?",
       "signOutAnyway": "Sign out anyway",
       "saveFailed": "Sign-out cancelled because saving \"{workflow}\" failed."
+    },
+    "signOutEverywhere": {
+      "action": "Sign out of all devices",
+      "success": "Signed out of all devices",
+      "successDetail": "Every device signed in to your account has been signed out.",
+      "failed": "Couldn't sign out of all devices"
     },
     "accountChanged": {
       "title": "Account changed",
@@ -3284,34 +3348,43 @@
       }
     },
     "billingStatus": {
-      "warning": {
-        "title": "Payment failed",
-        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause.",
-        "bodyWithAmount": "Your payment of {amount} failed to process. Pay the invoice or update payment to avoid a pause."
-      },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
+        "personalBody": "Your subscription is paused. Update your payment method to resume.",
+        "personalPaymentFailedBody": "Your payment didn't go through. Update your payment method to resume.",
         "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {
         "title": "Out of credits",
-        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
-        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
-        "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
+        "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits.",
+        "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
+        "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
-        "dismiss": "Dismiss",
-        "upgradeBody": "Upgrade your plan to add credits and continue generating."
+        "dismiss": "Dismiss"
       },
       "ending": {
         "title": "Your team plan ends on {date}",
-        "body": "Members keep full access until then. Resume your subscription to keep your shared credits and seats.",
+        "body": "Members keep full access until then. Resume your plan to keep your team's shared credits.",
+        "memberBody": "You can run workflows until then.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
-        "reactivate": "Resume subscription"
+        "reactivate": "Resume plan",
+        "contactSales": "Contact sales"
+      },
+      "planEnded": {
+        "teamTitle": "Your team plan ended on {date}",
+        "teamBody": "Resubscribe to run workflows and get shared credits again.",
+        "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "enterpriseTitle": "Your Enterprise plan ended on {date}",
+        "enterpriseBody": "Contact sales to start a new Enterprise plan.",
+        "planTitle": "Your plan ended on {date}",
+        "salesBody": "Contact sales to start a new plan.",
+        "salesMemberBody": "Ask your workspace owner to contact sales."
       },
       "planChange": {
-        "title": "Your plan changes to {plan} on {date}",
+        "title": "Your plan changes to {plan} on {date}.",
         "body": "Your current plan stays active until then."
       },
       "updatePayment": "Update payment",
@@ -3323,13 +3396,17 @@
     "planCredits": {
       "tabs": {
         "activity": "Activity",
-        "overview": "Credits"
+        "overview": "Credits",
+        "invoices": "Invoices"
       }
     },
+    "invoices": {
+      "nextInvoice": "Next invoice",
+      "usd": "USD",
+      "fullHistory": "Full invoice history"
+    },
     "tabs": {
-      "dashboard": "Dashboard",
-      "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "dashboard": "Dashboard"
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
@@ -3341,7 +3418,6 @@
         "justNow": "just now",
         "minutesAgo": "{n} min ago"
       },
-      "header": "Members",
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
@@ -3349,10 +3425,11 @@
         "pendingCount": "Pending ({count})"
       },
       "columns": {
+        "email": "Email",
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
         "role": "Role",
-        "creditsUsed": "Monthly credits"
+        "creditsUsed": "Credits used this month"
       },
       "actions": {
         "copyInviteLink": "Copy invite link",
@@ -3374,19 +3451,25 @@
       "upsellBanner": "To add teammates, upgrade your plan.",
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
-        "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
-        "endedTeamTitle": "Your team plan has ended",
-        "endedEnterpriseTitle": "Your Enterprise plan has ended",
-        "endedPlanTitle": "Your plan has ended",
-        "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
-        "contactSales": "Contact sales",
+      "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
+      "endedTeamTitle": "Your team plan has ended",
+      "endedEnterpriseTitle": "Your Enterprise plan has ended",
+      "endedPlanTitle": "Your plan has ended",
+      "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
+      "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",
+      "totalMembersCount": "{count} of {maxSeats} total members.",
       "needMoreMembers": "Need more members?",
+      "planEndedFooter": "Your plan has ended, so you can't add new members.",
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
+      "noInvitesMatch": "No invites match \"{query}\"",
       "noMembers": "No members",
+      "noMembersMatch": "No members match \"{query}\"",
       "searchPlaceholder": "Search...",
+      "loadFailed": "Couldn't load everything on this page.",
+      "totalMembersUnlimited": "{count} total member. | {count} total members.",
       "expiredOn": "Expired {date}"
     },
     "partnerNodes": {
@@ -3439,6 +3522,7 @@
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
+      "deleteWorkspaceAfterPlanEndsTooltip": "You can delete this workspace after your plan ends on {date}",
       "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
@@ -3503,7 +3587,16 @@
       "sentLead": "Each invite has a personal link you can share directly:",
       "copyLink": "Copy invite link",
       "copied": "Copied!",
-      "copyAll": "Copy invite link | Copy all links ({count})"
+      "copyAll": "Copy invite link | Copy all links ({count})",
+      "copiedToast": "Invite link copied",
+      "copyFailedToast": "Couldn't copy the invite link",
+      "invalidTitle": "This invite link is no longer valid",
+      "invalidBody": "It may have expired or been replaced. Ask the person who invited you for a new link.",
+      "invalidDismiss": "Got it",
+      "wrongAccountTitle": "This invite was sent to a different email",
+      "wrongAccountBody": "You're signed in as {email}. Sign in with the email that received this invite to accept it.",
+      "switchAccount": "Switch account",
+      "wrongAccountBodyGeneric": "This invite was sent to a different email address than the one you're signed in with. Sign in with the email that received it."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
@@ -4014,9 +4107,12 @@
       "failed": "Download failed",
       "inProgress": "Downloading {assetName}..."
     },
-    "rename": {
-      "failed": "Could not rename asset."
-    }
+    "downloadFailed": "Failed to download {name}"
+  },
+  "nodeOutputsExport": {
+    "title": "Download Assets",
+    "downloadAll": "Download all",
+    "download": "Download ({count})"
   },
   "mediaAsset": {
     "assetDelete": {
@@ -5274,6 +5370,8 @@
     "loadFailed": "The agent panel failed to load.",
     "entryButton": "Agent",
     "feedbackCaption": "Share feedback",
+    "freeUseNoticeLabel": "Free use notice",
+    "freeUseNotice": "Prompts and workflow runs are FREE during BETA.",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
@@ -5289,7 +5387,10 @@
       "question": "Do you approve?",
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
-      "run": "Run"
+      "run": "Run",
+      "answerFailed": "Could not send your answer. Reload the page and try again.",
+      "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
+      "answerSuperseded": "This request was already answered somewhere else, so that answer was used instead of yours."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",
@@ -5408,6 +5509,7 @@
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
+    "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
     "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
@@ -5423,6 +5525,9 @@
     "downloadAssets": "Download assets",
     "toolOpenedNewTab": "Opened a new tab",
     "toolOpeningNewTab": "Opening a new tab",
+    "toolLoadedSkill": "Loaded {skill}",
+    "toolFailedSkill": "Failed to load {skill}",
+    "toolLoadingSkill": "Loading {skill}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",

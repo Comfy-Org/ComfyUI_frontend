@@ -1,5 +1,6 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -13,7 +14,75 @@ const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
 const ACTOR = 'human:test-user:tab-1'
 
-function addNode(id: number): GraphOperation {
+type SettlementListener = (outcome: BatchOutcome) => void
+type SettlementSummary = { state: BatchOutcome['state']; nodeIds: unknown[] }
+type AddNodeOperation = Extract<GraphOperation, { op: 'add_node' }>
+
+function nodeIdsOf(ops: readonly Op[]): unknown[] {
+  return ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+}
+
+function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
+  return {
+    state: outcome.state,
+    nodeIds: nodeIdsOf(outcome.ops)
+  }
+}
+
+const detachListenerFailureCases = [
+  [
+    'in-flight',
+    (
+      listener: Mock<SettlementListener>,
+      _record: SettlementListener,
+      fail: SettlementListener
+    ) => listener.mockImplementationOnce(fail),
+    [
+      { state: 'undeliverable', nodeIds: [2] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ]
+  ],
+  [
+    'queued',
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) => listener.mockImplementationOnce(record).mockImplementationOnce(fail),
+    [
+      { state: 'unconfirmed', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ]
+  ],
+  [
+    'open',
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) =>
+      listener
+        .mockImplementationOnce(record)
+        .mockImplementationOnce(record)
+        .mockImplementationOnce(fail),
+    [
+      { state: 'unconfirmed', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ]
+  ]
+] as const satisfies ReadonlyArray<
+  readonly [
+    string,
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) => unknown,
+    readonly SettlementSummary[]
+  ]
+>
+
+function addNode(id: number): AddNodeOperation {
   return {
     op: 'add_node',
     node_id: id,
@@ -21,6 +90,23 @@ function addNode(id: number): GraphOperation {
     pos: [0, 0],
     node: { id, type: 'TestNode' }
   }
+}
+
+function circularAddNode(id: number): AddNodeOperation {
+  const operation = addNode(id)
+  const node: AddNodeOperation['node'] & Record<string, unknown> = {
+    ...operation.node
+  }
+  node.circular = node
+  operation.node = node
+  return operation
+}
+
+function enqueueNodeBacklog(
+  sender: ReturnType<typeof createOpSender>,
+  count: number
+): void {
+  for (let id = 0; id < count; id++) sender.enqueue([addNode(id)])
 }
 
 function disconnect(linkId: number): GraphOperation {
@@ -47,6 +133,9 @@ describe('createOpSender', () => {
   let transportThrows: boolean
   let boundWorkflow: string | null
   let sender: ReturnType<typeof createOpSender>
+  const unsubscribe = vi.fn(() => {
+    resultListener = null
+  })
 
   function ackInFlight(): void {
     const last = sent[sent.length - 1]
@@ -74,9 +163,7 @@ describe('createOpSender', () => {
       },
       onOpsResult: (listener) => {
         resultListener = listener
-        return () => {
-          resultListener = null
-        }
+        return unsubscribe
       },
       workflowId: () => boundWorkflow,
       tab: TAB,
@@ -219,6 +306,42 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
     expect(settled[0].state).toBe('unconfirmed')
+  })
+
+  it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
+    enqueueNodeBacklog(sender, 20_000)
+    boundWorkflow = null
+
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(20_000)
+    expect(settled[0].state).toBe('unconfirmed')
+    expect(
+      settled.slice(1).every(({ state }) => state === 'undeliverable')
+    ).toBe(true)
+    expect(
+      new Set(settled.flatMap((outcome) => outcome.ops.map((op) => op.op_id)))
+        .size
+    ).toBe(20_000)
+    expect(sender.pending()).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('drains an old-workflow backlog before sending the next workflow batch', () => {
+    enqueueNodeBacklog(sender, 20_000)
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(20_000)])
+
+    expect(() => sender.abortIfUnbound()).not.toThrow()
+    expect(settled).toHaveLength(20_000)
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(sent[1].ops[0]).toMatchObject({ node_id: 20_000 })
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+    expect(settled).toHaveLength(20_001)
+    expect(settled.at(-1)?.state).toBe('acknowledged')
+    expect(sender.pending()).toBe(0)
   })
 
   it('abortIfUnbound cascades through every queued batch minted for the dead workflow, synchronously', () => {
@@ -481,6 +604,1004 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(2)])
 
     expect(sent).toHaveLength(1)
+    expect(settled.at(-1)).toMatchObject({
+      state: 'undeliverable',
+      ops: [expect.objectContaining({ node_id: 2 })]
+    })
+  })
+
+  it('detach clears the armed result-timeout timer so no late resend or settlement follows', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+
+    expect(vi.getTimerCount()).toBe(0)
+    const settledAfterDetach = settled.length
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(1)
+    expect(settled).toHaveLength(settledAfterDetach)
+  })
+
+  it('detach clears an armed transport-retry timer so no late retry send follows', () => {
+    transportUp = false
+    const ops = [addNode(1)]
+    sender.enqueue(ops)
+    expect(sent).toHaveLength(0)
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+
+    expect(vi.getTimerCount()).toBe(0)
+    expect(settled).toHaveLength(1)
+    expect(settled[0]).toMatchObject({ state: 'undeliverable', ops })
+    vi.advanceTimersByTime(500 * 6)
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toHaveLength(1)
+  })
+
+  it('detach settles every outstanding batch instead of dropping it silently', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.admit([addNode(3)])
+    expect(sent).toHaveLength(1)
+
+    sender.detach()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([[1], [2], [3]])
+  })
+
+  it('continues pumping queued work when an ordinary settlement listener throws', () => {
+    const localSettled: BatchOutcome[] = []
+    const onBatchSettled = vi
+      .fn<SettlementListener>()
+      .mockImplementationOnce(() => {
+        throw new Error('listener boom')
+      })
+      .mockImplementation((outcome) => localSettled.push(outcome))
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+
+    expect(() => ackInFlight()).not.toThrow()
+
+    expect(sent).toHaveLength(2)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'failure_settling_agent_op_sender' })
+    )
+    ackInFlight()
+    expect(localSettled).toHaveLength(1)
+    localSender.detach()
+  })
+
+  it('reports settlement failures again for later batches', () => {
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+
+    ackInFlight()
+    ackInFlight()
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+    localSender.detach()
+  })
+
+  it('bounds repeated settlement failure telemetry for one sender', () => {
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+
+    localSender.enqueue([addNode(1)])
+    ackInFlight()
+    localSender.enqueue([addNode(2)])
+    ackInFlight()
+    localSender.enqueue([addNode(3)])
+    ackInFlight()
+    localSender.enqueue([addNode(4)])
+    ackInFlight()
+    localSender.enqueue([addNode(5)])
+    ackInFlight()
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    vi.advanceTimersByTime(60_000)
+    localSender.enqueue([addNode(6)])
+    ackInFlight()
+    expect(reportError).toHaveBeenCalledTimes(4)
+    localSender.detach()
+  })
+
+  it('keeps settlement telemetry bounded across intermittent successes', () => {
+    let shouldFail = true
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        if (shouldFail) throw new Error('listener boom')
+      }
+    })
+
+    localSender.enqueue([addNode(1)])
+    ackInFlight()
+    localSender.enqueue([addNode(2)])
+    ackInFlight()
+    localSender.enqueue([addNode(3)])
+    ackInFlight()
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    shouldFail = false
+    localSender.enqueue([addNode(4)])
+    ackInFlight()
+    shouldFail = true
+    localSender.enqueue([addNode(5)])
+    ackInFlight()
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+    shouldFail = false
+    localSender.detach()
+  })
+
+  it('contains settlement failures when admitting while unbound', () => {
+    boundWorkflow = null
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+
+    expect(() => localSender.enqueue([addNode(1)])).not.toThrow()
+    expect(localSender.pending()).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'failure_settling_agent_op_sender' })
+    )
+    localSender.detach()
+  })
+
+  it('a second detach() call is a no-op: no double-settle and no timer left armed', () => {
+    sender.enqueue([addNode(1)])
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+    const settledAfterFirstDetach = [...settled]
+    expect(vi.getTimerCount()).toBe(0)
+
+    sender.detach()
+
+    expect(settled).toEqual(settledAfterFirstDetach)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(unsubscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it.for(detachListenerFailureCases)(
+    'detach settles every other batch and still unsubscribes when the %s listener throws',
+    ([, configureListener, expectedSurvivors]) => {
+      const localSettled: BatchOutcome[] = []
+      let unsubscribed = false
+      const recordSettlement: SettlementListener = (outcome) => {
+        localSettled.push(outcome)
+      }
+      const onBatchSettled = vi.fn(recordSettlement)
+      configureListener(onBatchSettled, recordSettlement, () => {
+        throw new Error('listener boom')
+      })
+      const localSender = createOpSender({
+        sendOps: (workflowId, tab, ops) => {
+          sent.push({ workflowId, tab, ops })
+          return true
+        },
+        onOpsResult: (listener) => {
+          resultListener = listener
+          return () => {
+            unsubscribed = true
+          }
+        },
+        workflowId: () => boundWorkflow,
+        tab: TAB,
+        actor: () => ACTOR,
+        baseVersion: () => 41,
+        onBatchSettled
+      })
+
+      localSender.enqueue([addNode(1)])
+      localSender.enqueue([addNode(2)])
+      localSender.admit([addNode(3)])
+      expect(sent).toHaveLength(1)
+
+      localSender.detach()
+
+      expect(localSettled.map(summarizeSettlement)).toEqual(expectedSurvivors)
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_settling_agent_op_sender_detach'
+        })
+      )
+      expect(unsubscribed).toBe(true)
+    }
+  )
+
+  it('reports a systematically failing detach listener only once', () => {
+    const localUnsubscribe = vi.fn()
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => localUnsubscribe,
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+    localSender.admit([addNode(3)])
+
+    localSender.detach()
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(localUnsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('reports post-detach settlement failures only once across admissions', () => {
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: () => {
+        throw new Error('listener boom')
+      }
+    })
+    localSender.detach()
+
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_settling_agent_op_sender_detach'
+      })
+    )
+  })
+
+  it('clears live state and unsubscribes when teardown cannot chunk an open batch', () => {
+    const circularNode = circularAddNode(1)
+    sender.admit([circularNode])
+
+    expect(() => sender.detach()).not.toThrow()
+
+    expect(sender.pending()).toBe(0)
+    expect(unsubscribe).toHaveBeenCalledOnce()
+    expect(settled).toHaveLength(1)
+    expect(settled[0]).toMatchObject({ state: 'undeliverable' })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_chunking_agent_op_sender_teardown'
+      })
+    )
+  })
+
+  it('reports an open batch it cannot chunk on abort under the abort error type', () => {
+    const circularNode = circularAddNode(1)
+    sender.admit([circularNode])
+
+    sender.abortAll()
+
+    expect(sender.pending()).toBe(0)
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_chunking_agent_op_sender_abort'
+      })
+    )
+  })
+
+  it('sends the valid prefix but rejects a malformed op and its dependent suffix', () => {
+    const circularNode = circularAddNode(2)
+
+    sender.admit([addNode(1), circularNode, addNode(3)])
+    expect(() => sender.flush()).not.toThrow()
+
+    expect(sent).toHaveLength(1)
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([1])
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [2, 3] }
+    ])
+    ackInFlight()
+    expect(sent).toHaveLength(1)
+  })
+
+  it('contains a second serialization failure while rechunking recovery', () => {
+    const unstableNode = addNode(1)
+    let serializations = 0
+    unstableNode.node = {
+      ...unstableNode.node,
+      toJSON() {
+        serializations++
+        if (serializations >= 3) throw new Error('stateful toJSON failed')
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+    const circularNode = circularAddNode(2)
+
+    sender.admit([unstableNode, circularNode])
+
+    expect(() => sender.flush()).not.toThrow()
+    expect(sent).toHaveLength(0)
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1, 2] }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_rechunking_agent_op_sender_recovery'
+      })
+    )
+  })
+
+  it('bounds repeated chunk failure telemetry for one sender', () => {
+    const enqueueCircular = (id: number) =>
+      sender.enqueue([circularAddNode(id)])
+
+    enqueueCircular(1)
+    enqueueCircular(2)
+    enqueueCircular(3)
+    enqueueCircular(4)
+    enqueueCircular(5)
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+  })
+
+  it('keeps chunk telemetry bounded across successful seals and re-arms by time', () => {
+    const enqueueCircular = (id: number) =>
+      sender.enqueue([circularAddNode(id)])
+
+    enqueueCircular(1)
+    enqueueCircular(2)
+    enqueueCircular(3)
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    sender.enqueue([addNode(4)])
+    ackInFlight()
+    enqueueCircular(5)
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+
+    vi.advanceTimersByTime(60_000)
+    enqueueCircular(6)
+    expect(reportError).toHaveBeenCalledTimes(4)
+  })
+
+  it('rejects an unserializable non-batchable op before transport', () => {
+    const clear = {
+      op: 'clear',
+      removed_nodes: [1]
+    } as GraphOperation & Record<string, unknown>
+    clear.circular = clear
+
+    sender.admit([clear])
+
+    expect(() => sender.flush()).not.toThrow()
+    expect(sent).toHaveLength(0)
+    expect(settled).toHaveLength(1)
+    expect(settled[0]).toMatchObject({ state: 'undeliverable' })
+  })
+
+  it('does not recreate an admission after sealing detaches the sender', () => {
+    const circularNode = circularAddNode(1)
+    const localSettled: BatchOutcome[] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        localSender.detach()
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    localSender.detach()
+  })
+
+  it('does not restore an admission across abortAll before same-workflow fresh work', () => {
+    const circularNode = circularAddNode(1)
+    const localSettled: BatchOutcome[] = []
+    const localSent: Op[][] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (_workflowId, _tab, ops) => {
+        localSent.push(ops)
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
+          localSender.abortAll()
+          localSender.admit([addNode(3)])
+        }
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(localSent).toHaveLength(1)
+    expect(
+      localSent[0].map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([3])
+    expect(localSender.pending()).toBe(1)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    localSender.detach()
+  })
+
+  it('keeps a nested admission separate when sealing reenters admit', () => {
+    const circularNode = circularAddNode(1)
+    const localSettled: BatchOutcome[] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
+          workflow = 'wf-nested'
+          localSender.admit([addNode(3)])
+        }
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe('wf-nested')
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([3])
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    localSender.detach()
+  })
+
+  it('settles a displaced admission under the detach error type when sealing detaches', () => {
+    const circularNode = circularAddNode(1)
+    const localSettled: BatchOutcome[] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
+          localSender.detach()
+        throw new Error('listener boom')
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [2] }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_settling_agent_op_sender_detach'
+      })
+    )
+  })
+
+  it('keeps a displaced admission when a nested admit only settles itself unbound', () => {
+    const circularNode = circularAddNode(1)
+    const localSettled: BatchOutcome[] = []
+    let workflow: string | null = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
+          workflow = null
+          localSender.admit([addNode(3)])
+          workflow = 'wf-new'
+        }
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe('wf-new')
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([2])
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ])
+    localSender.detach()
+  })
+
+  it('preserves outer-before-inner order for same-workflow reentrant admission', () => {
+    const circularNode = circularAddNode(1)
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
+          localSender.admit([addNode(3)])
+      }
+    })
+    localSender.admit([circularNode])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+    localSender.flush()
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe('wf-new')
+    expect(
+      sent[0].ops.map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual([2, 3])
+    localSender.detach()
+  })
+
+  it('does not queue chunks when serialization reenters abortAll', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const operation = addNode(1)
+    operation.node = {
+      ...operation.node,
+      toJSON() {
+        localSender.abortAll()
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+
+    localSender.admit([operation])
+    localSender.flush()
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] }
+    ])
+    localSender.detach()
+  })
+
+  it('does not queue chunks when serialization reenters detach', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const operation = addNode(1)
+    operation.node = {
+      ...operation.node,
+      toJSON() {
+        localSender.detach()
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+
+    localSender.admit([operation])
+    localSender.flush()
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] }
+    ])
+  })
+
+  it('settles an interrupted oversized seal in bounded groups', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const operations = Array.from({ length: 300 }, (_, id) => addNode(id))
+    let aborted = false
+    operations[0].node = {
+      ...operations[0].node,
+      toJSON() {
+        if (!aborted) {
+          aborted = true
+          localSender.abortAll()
+        }
+        return { id: 0, type: 'TestNode' }
+      }
+    }
+
+    localSender.admit(operations)
+    localSender.flush()
+
+    expect(localSettled.map((outcome) => outcome.ops.length)).toEqual([256, 44])
+    expect(
+      localSettled.every((outcome) => outcome.state === 'undeliverable')
+    ).toBe(true)
+    expect(
+      localSettled
+        .flatMap((outcome) => outcome.ops)
+        .map((op) => ('node_id' in op ? op.node_id : null))
+    ).toEqual(Array.from({ length: 300 }, (_, id) => id))
+    expect(localSender.pending()).toBe(0)
+    localSender.detach()
+  })
+
+  it('does not rechunk a prefix after serialization aborts and throws', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const first = addNode(1)
+    let firstSerializations = 0
+    first.node = {
+      ...first.node,
+      toJSON() {
+        firstSerializations++
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+    const second = addNode(2)
+    let aborted = false
+    second.node = {
+      ...second.node,
+      toJSON() {
+        if (!aborted) {
+          aborted = true
+          localSender.abortAll()
+        }
+        throw new Error('serialization boom')
+      }
+    }
+
+    localSender.admit([first, second])
+    localSender.flush()
+
+    expect(firstSerializations).toBe(1)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1, 2] }
+    ])
+    expect(localSender.pending()).toBe(0)
+    localSender.detach()
+  })
+
+  it('sends an outer admission before work enqueued during serialization', () => {
+    const localSent: Op[][] = []
+    let localResultListener!: (result: OpsResultView) => void
+    const localSender = createOpSender({
+      sendOps: (_workflowId, _tab, ops) => {
+        localSent.push(ops)
+        return true
+      },
+      onOpsResult: (listener) => {
+        localResultListener = listener
+        return vi.fn()
+      },
+      workflowId: () => WORKFLOW,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: vi.fn()
+    })
+    const outer = addNode(1)
+    let reentered = false
+    outer.node = {
+      ...outer.node,
+      toJSON() {
+        if (!reentered) {
+          reentered = true
+          localSender.enqueue([addNode(2)])
+        }
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+
+    localSender.enqueue([outer])
+    expect(
+      localSent.map((ops) => ('node_id' in ops[0] ? ops[0].node_id : null))
+    ).toEqual([1])
+
+    localResultListener({
+      ok: true,
+      applied: [localSent[0][0].op_id],
+      skipped: []
+    })
+    expect(
+      localSent.map((ops) => ('node_id' in ops[0] ? ops[0].node_id : null))
+    ).toEqual([1, 2])
+    localSender.detach()
+  })
+
+  it('resumes a pump requested during workflow-change sealing', () => {
+    const localSent: Array<{ workflowId: string; ops: Op[] }> = []
+    const localSettled: BatchOutcome[] = []
+    let workflow = 'wf-old'
+    const localSender = createOpSender({
+      sendOps: (workflowId, _tab, ops) => {
+        localSent.push({ workflowId, ops })
+        return true
+      },
+      onOpsResult: () => vi.fn(),
+      workflowId: () => workflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+    const outer = addNode(1)
+    let reentered = false
+    outer.node = {
+      ...outer.node,
+      toJSON() {
+        if (!reentered) {
+          reentered = true
+          localSender.enqueue([addNode(3)])
+        }
+        return { id: 1, type: 'TestNode' }
+      }
+    }
+    localSender.admit([outer])
+    workflow = 'wf-new'
+
+    localSender.admit([addNode(2)])
+
+    expect(localSent).toHaveLength(1)
+    expect(localSent[0].workflowId).toBe('wf-new')
+    expect(nodeIdsOf(localSent[0].ops)).toEqual([3])
+    expect(localSettled.map(summarizeSettlement)).toContainEqual({
+      state: 'undeliverable',
+      nodeIds: [1]
+    })
+    localSender.detach()
+  })
+
+  it('contains a large malformed admission without argument spread overflow', () => {
+    const operations = Array.from({ length: 140_000 }, (_, id) => addNode(id))
+    let serializations = 0
+    operations[0].node = {
+      ...operations[0].node,
+      toJSON() {
+        serializations++
+        if (serializations >= 3) throw new Error('stateful toJSON failed')
+        return { id: 0, type: 'TestNode' }
+      }
+    }
+    const circularNode = operations.at(-1)!
+    const node: AddNodeOperation['node'] & Record<string, unknown> = {
+      ...circularNode.node
+    }
+    node.circular = node
+    circularNode.node = node
+
+    sender.admit([addNode(-1)])
+    expect(() => sender.admit(operations)).not.toThrow()
+
+    expect(() => sender.flush()).not.toThrow()
+    expect(settled.at(-1)?.state).toBe('undeliverable')
+    expect(settled.every((outcome) => outcome.ops.length <= 256)).toBe(true)
+  })
+
+  it('queues the valid prefix before an invalid suffix settlement detaches', () => {
+    const circularNode = circularAddNode(2)
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        localSettled.push(outcome)
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2)) {
+          localSender.detach()
+        }
+      }
+    })
+
+    localSender.admit([addNode(1), circularNode, addNode(3)])
+    localSender.flush()
+
+    expect(localSender.pending()).toBe(0)
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [2, 3] },
+      { state: 'undeliverable', nodeIds: [1] }
+    ])
+  })
+
+  it('contains unsubscribe failures after completing teardown', () => {
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => () => {
+        throw new Error('unsubscribe boom')
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => settled.push(outcome)
+    })
+    localSender.enqueue([addNode(1)])
+
+    expect(() => localSender.detach()).not.toThrow()
+
+    expect(localSender.pending()).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_unsubscribing_agent_op_sender'
+      })
+    )
   })
 
   it('abortAll settles the transmitted batch and every queued batch in mint order', () => {
@@ -508,6 +1629,39 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
   })
 
+  it('abortAll settles every other batch when one settlement listener throws', () => {
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: () => true,
+      onOpsResult: () => vi.fn(),
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      onBatchSettled: (outcome) => {
+        if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2))
+          throw new Error('listener boom')
+        localSettled.push(outcome)
+      }
+    })
+    localSender.enqueue([addNode(1)])
+    localSender.enqueue([addNode(2)])
+    localSender.enqueue([addNode(3)])
+
+    expect(() => localSender.abortAll()).not.toThrow()
+
+    expect(localSettled.map(summarizeSettlement)).toEqual([
+      { state: 'unconfirmed', nodeIds: [1] },
+      { state: 'undeliverable', nodeIds: [3] }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_settling_agent_op_sender_abort'
+      })
+    )
+  })
+
   it('abortAll settles each chunk from one oversized admission', () => {
     sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
 
@@ -525,6 +1679,14 @@ describe('createOpSender', () => {
       Array.from({ length: 256 }, (_, index) => index),
       Array.from({ length: 44 }, (_, index) => index + 256)
     ])
+  })
+
+  it('detach settles an unflushed oversized admission in wire-sized chunks', () => {
+    sender.admit(Array.from({ length: 300 }, (_, index) => addNode(index)))
+
+    sender.detach()
+
+    expect(settled.map((outcome) => outcome.ops.length)).toEqual([256, 44])
   })
 
   it('does not attribute a late anonymous result from an aborted batch to the next batch', () => {
@@ -794,6 +1956,16 @@ describe('createOpSender', () => {
       expect(sender.pending()).toBe(1)
     })
 
+    it('does not attribute an anonymous result to a parked batch that was never sent', () => {
+      parkSecondBatch()
+
+      resultListener?.({ ok: false, applied: [], skipped: [] })
+
+      expect(sent).toHaveLength(1)
+      expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+      expect(sender.pending()).toBe(1)
+    })
+
     it('resume transmits the parked batch to its mint-time workflow with the same op ids', () => {
       const parkedOpId = parkSecondBatch()
       boundWorkflow = WORKFLOW
@@ -834,7 +2006,7 @@ describe('createOpSender', () => {
       expect(sent[1].ops[0].op_id).toBe(sent[0].ops[0].op_id)
     })
 
-    it('detach drops a parked batch', () => {
+    it('detach settles a parked batch undeliverable instead of dropping it', () => {
       parkSecondBatch()
 
       sender.detach()
@@ -843,6 +2015,10 @@ describe('createOpSender', () => {
 
       expect(sent).toHaveLength(1)
       expect(sender.pending()).toBe(0)
+      expect(settled.map((outcome) => outcome.state)).toEqual([
+        'acknowledged',
+        'undeliverable'
+      ])
     })
 
     it('suspend and resume are idempotent and leave an unsuspended sender sending', () => {

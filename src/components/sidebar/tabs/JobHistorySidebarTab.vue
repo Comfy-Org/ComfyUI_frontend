@@ -59,7 +59,6 @@
         >
           <JobAssetsList
             class="scrollbar-custom min-h-0 flex-1"
-            tabindex="0"
             :displayed-job-groups="displayedJobGroups"
             @cancel-item="onCancelItem"
             @delete-item="onDeleteItem"
@@ -85,6 +84,7 @@
 import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
@@ -202,12 +202,7 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
       props: {
         modelUrl: previewOutput.url || ''
       },
-      dialogComponentProps: {
-        renderer: 'reka',
-        size: 'full',
-        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
-        maximizable: true
-      }
+      dialogComponentProps: LOAD3D_VIEWER_DIALOG_PROPS
     })
     return
   }
