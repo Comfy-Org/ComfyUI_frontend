@@ -394,8 +394,10 @@ export class PromptExecutionError extends Error {
     if (typeof this.response.error === 'string') {
       message += this.response.error
     } else if (this.response.error) {
-      message +=
-        this.response.error.message + ': ' + this.response.error.details
+      message += this.response.error.message
+      if (typeof this.response.error.details === 'string') {
+        message += ': ' + this.response.error.details
+      }
     }
 
     for (const [_, nodeError] of Object.entries(
