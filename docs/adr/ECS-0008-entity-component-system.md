@@ -188,9 +188,14 @@ legitimate re-mint rather than an identity collision — which is why
 > The repeat is renamed to `name#1` before any id is derived. Where it cannot
 > be — a `name` whose writes do not stick, or an accessor that throws
 > (`src/types/widgetId.ts`) — the widget is **refused**: it is dropped from
-> `node.widgets` and reported under the stable `errorType`
-> `widget_duplicate_name_refused`. First occurrence wins; renamable collisions
+> `node.widgets` and reported. First occurrence wins; renamable collisions
 > elsewhere on the node are still renamed.
+>
+> Two stable `errorType`s, because the causes need different alerts and
+> collapsing them reports a collision that does not exist:
+> `widget_duplicate_name_refused` for a duplicate that could not be renamed
+> apart, and `widget_unreadable_name_refused` for a widget whose `name`
+> accessor throws — that one has no duplicate at all, only no derivable id.
 >
 > **There are two enforcement points, and looking only at the first one is
 > misleading.** `attachNodeToStores` calls `refuseAmbiguousNodeWidgets` as a
@@ -211,11 +216,20 @@ legitimate re-mint rather than an identity collision — which is why
 >   the join needs its own call rather than falling out of that commit.
 > - **Renamability is judged after normalization.** `toConcreteWidget` merges
 >   the concrete class's writable `name` accessor over a plain object's pinned
->   one, so a raw widget that looks unrenamable usually is not.
-> - **`SubgraphNode` does not commit through this path.** It redefines
->   `widgets` as a computed getter over its promoted widgets and overrides
->   `addCustomWidget`, so an ambiguous pair there keeps the pre-existing
->   behaviour.
+>   one, so a raw widget that looks unrenamable usually is not. Normalizing
+>   first does mean `BaseWidget`'s constructor reads a hostile `name` before
+>   the refusal sees it, so the conversion is guarded per widget and an
+>   unconvertible widget falls through to be refused rather than throwing out
+>   of the commit and wedging every later one.
+> - **`SubgraphNode` does not commit through this path, and neither
+>   enforcement point runs on it.** It redefines `widgets` as a computed getter
+>   over its promoted widgets and overrides `addCustomWidget`, so an ambiguous
+>   pair there keeps the pre-existing behaviour. The join-time call is gated on
+>   the node still exposing this module's mutation view: the getter rebuilds
+>   the array on every read, so a refusal there would splice a throwaway copy
+>   and report a refusal that did not happen. Two promoted inputs carrying the
+>   same inner widget name reach exactly that state, so the gate is
+>   load-bearing rather than defensive.
 >
 > A serialized `(name, occurrence)` identity was proposed instead, so that both
 > widgets could be persisted ([#19717](https://github.com/Comfy-Org/ComfyUI_frontend/pull/19717)).

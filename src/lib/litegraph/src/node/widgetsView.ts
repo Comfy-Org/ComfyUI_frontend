@@ -6,9 +6,13 @@ import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { dropUnrenamableDuplicateWidgets } from '@/types/widgetId'
+import {
+  dropUnrenamableDuplicateWidgets,
+  isWidgetNameUnreadable
+} from '@/types/widgetId'
 
 import { createArrayMutationView } from '../infrastructure/createMutationView'
+import { isNodeBindable } from '../utils/type'
 import { getWidgetIds } from '../utils/widget'
 
 /**
@@ -19,6 +23,15 @@ import { getWidgetIds } from '../utils/widget'
  * See {@link dropUnrenamableDuplicateWidgets}.
  */
 const DUPLICATE_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_refused'
+
+/**
+ * Stable `errorType` for the other refusable state: a widget whose `name`
+ * accessor throws, so no `WidgetId` can be derived for it and no duplicate is
+ * involved. Separate from {@link DUPLICATE_WIDGET_NAME_ERROR_TYPE} because the
+ * two need different alerts — and because collapsing them reports a collision
+ * that does not exist. Also a contract, not an implementation detail.
+ */
+const UNREADABLE_WIDGET_NAME_ERROR_TYPE = 'widget_unreadable_name_refused'
 
 interface WidgetsViewState {
   target: IBaseWidget[]
@@ -90,14 +103,22 @@ function refuseAmbiguousWidgets(
   if (!refused.length) return
 
   for (const widget of refused) {
+    // The two causes are different failures and are alerted on separately: an
+    // unreadable name has no duplicate at all, so reporting one would send
+    // whoever reads the alert looking for a collision that does not exist.
+    const unreadable = isWidgetNameUnreadable(widget)
     const widgetName = safeRead(() => widget.name)
     releaseRefusedWidget(node, widget)
     reportError(
       new Error(
-        `Refused a widget named "${widgetName}": node ${node.id} already has a widget of that name and the duplicate cannot be renamed`
+        unreadable
+          ? `Refused a widget on node ${node.id}: its name could not be read, so no widget identity can be derived for it`
+          : `Refused a widget named "${widgetName}": node ${node.id} already has a widget of that name and the duplicate cannot be renamed`
       ),
       {
-        errorType: DUPLICATE_WIDGET_NAME_ERROR_TYPE,
+        errorType: unreadable
+          ? UNREADABLE_WIDGET_NAME_ERROR_TYPE
+          : DUPLICATE_WIDGET_NAME_ERROR_TYPE,
         surface: 'graph',
         level: 'warning',
         tags: { node_type: node.type },
@@ -144,8 +165,17 @@ export function wasWidgetRefused(
  * This runs where identities actually come into existence — immediately before
  * the node's widgets are registered — which is the first point at which an
  * ambiguous pair can do any harm.
+ *
+ * Only for a node whose widgets list this module owns. `SubgraphNode`'s getter
+ * rebuilds the array on every read, so a refusal there splices a throwaway copy
+ * and nothing leaves the node — while the caller still reports
+ * `widget_duplicate_name_refused` and tears down the slot back-references of a
+ * widget that is still there. Two promoted inputs carrying the same inner
+ * widget name reach exactly that state, so the guard is load-bearing rather
+ * than defensive.
  */
 export function refuseAmbiguousNodeWidgets(node: LGraphNode): void {
+  if (!commitsThroughWidgetsView(node)) return
   const widgets = node.widgets
   if (!widgets?.length) return
   refuseAmbiguousWidgets(node, widgets)
@@ -155,9 +185,18 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   node._widgetSlotsDirty = true
   const graphId = node.graph?.rootGraph.id
 
-  const concreteWidgets = widgets.map((widget) =>
-    toConcreteWidget(widget, node)
-  )
+  // `BaseWidget`'s constructor reads the source object's `name`, so converting
+  // a raw push whose accessor throws throws out of this commit — and out of
+  // every later one, wedging the node with a stale store order. That is the
+  // exact state `UNREADABLE_NAME` exists to contain, so leave the object
+  // unconverted and let the refusal below take it.
+  const concreteWidgets = widgets.map((widget) => {
+    try {
+      return toConcreteWidget(widget, node)
+    } catch {
+      return widget
+    }
+  })
   for (const [index, widget] of concreteWidgets.entries()) {
     widgets[index] = widget
   }
@@ -175,7 +214,11 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   refuseAmbiguousWidgets(node, widgets)
 
   for (const widget of concreteWidgets) {
-    if (widgets.includes(widget)) widget.setNodeId(node.id)
+    // A widget that would not convert is still raw and so not bindable; it has
+    // also just been refused, so it is no longer on the node either.
+    if (widgets.includes(widget) && isNodeBindable(widget)) {
+      widget.setNodeId(node.id)
+    }
   }
 
   useWidgetValueStore().replaceNodeWidgetOrder(

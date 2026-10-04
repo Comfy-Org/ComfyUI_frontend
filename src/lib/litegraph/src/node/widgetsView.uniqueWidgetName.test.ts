@@ -4,7 +4,13 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '../subgraph/__fixtures__/subgraphHelpers'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -253,11 +259,49 @@ describe('unique widget name invariant', () => {
     ).not.toThrow()
 
     expect(names(node)).toEqual(['seed', 'cfg'])
+    // Its own cause, not the duplicate one: this widget has no duplicate, and
+    // an alert that says it does sends the reader hunting for a collision.
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'widget_duplicate_name_refused',
+        errorType: 'widget_unreadable_name_refused',
         context: expect.objectContaining({ widgetName: undefined })
+      })
+    )
+  })
+
+  it('refuses a raw pushed widget whose name throws instead of wedging the node', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+
+    // `BaseWidget`'s constructor reads the source object's `name`, so
+    // converting this throws out of the commit before the refusal can see it —
+    // and out of every later commit too, which is what wedges the node.
+    const hostile = {
+      get name(): string {
+        throw new Error('name is not readable')
+      },
+      type: 'number',
+      value: 2,
+      y: 0,
+      options: {}
+    }
+
+    expect(() => node.widgets!.push(hostile as never)).not.toThrow()
+    // `indexOf` rather than `not.toContain`: the matcher deep-compares, which
+    // reads the getter and throws out of the assertion itself.
+    expect(node.widgets!.indexOf(hostile as never)).toBe(-1)
+
+    // The node still takes widgets afterwards, and the store's order keeps up.
+    expect(() =>
+      node.addWidget('number', 'steps', 3, () => undefined, {})
+    ).not.toThrow()
+    expect(names(node)).toEqual(['seed', 'steps'])
+    expect(storedNames(node)).toEqual(['seed', 'steps'])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'widget_unreadable_name_refused'
       })
     )
   })
@@ -291,6 +335,41 @@ describe('unique widget name invariant', () => {
     node.widgets![0] = secondWidget
 
     expect(names(node)).toEqual(['b', 'a'])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('does not report a refusal it cannot carry out on a subgraph node', () => {
+    // A `SubgraphNode` rebuilds `widgets` on every read, so nothing this
+    // module splices ever leaves the node. Enforcing there anyway reports the
+    // alerting contract `widget_duplicate_name_refused` for a refusal that did
+    // not happen — and promoted projections have a getter-only `name`, so a
+    // node promoting the same inner widget name twice hits it on every add.
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'first', type: 'INT' },
+        { name: 'second', type: 'INT' }
+      ]
+    })
+    const host = createTestSubgraphNode(subgraph)
+    const store = useWidgetValueStore()
+    const rootGraphId = host.rootGraph.id
+
+    for (const [slot, sourceNodeId] of [
+      [0, 900],
+      [1, 901]
+    ] as const) {
+      const id = widgetId(rootGraphId, toNodeId(sourceNodeId), 'seed')
+      store.registerWidget(id, { type: 'number', value: slot, options: {} })
+      host.inputs[slot].widgetId = id
+    }
+
+    expect(host.widgets.map((widget) => widget.name)).toEqual(['seed', 'seed'])
+
+    host.rootGraph.add(host)
+
+    // Still both there: this node class is outside the invariant's reach, and
+    // that is the pre-existing behaviour the refusal must not pretend to change.
+    expect(host.widgets.map((widget) => widget.name)).toEqual(['seed', 'seed'])
     expect(reportError).not.toHaveBeenCalled()
   })
 })

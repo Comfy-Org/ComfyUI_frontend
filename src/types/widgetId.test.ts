@@ -151,6 +151,26 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     expect(widgets.map(({ name }) => name)).toEqual([undefined, 'undefined#1'])
   })
 
+  it('collides names that differ as values but coincide as id strings', () => {
+    // `widgetId` keys on `encodeURIComponent(String(name))`, so these two mint
+    // the same id. Comparing the raw values lets both through and the clash
+    // lands in the store, where nothing is looking for it.
+    const widgets = [
+      { name: undefined as unknown as string },
+      { name: 'undefined' },
+      { name: 1 as unknown as string },
+      { name: '1' }
+    ]
+
+    expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([])
+    expect(widgets.map(({ name }) => name)).toEqual([
+      undefined,
+      'undefined#1',
+      1,
+      '1#1'
+    ])
+  })
+
   it('offers another name when a setter rejects only the first one', () => {
     // `BaseWidget` delegates its `name` setter to the store, which refuses to
     // move onto an id something else already holds. Refusal deletes a widget,

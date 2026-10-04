@@ -105,12 +105,34 @@ function tryRename(widget: { name: string }, name: string): boolean {
   }
 }
 
-/** Every name the array already holds outright, skipping unreadable ones. */
+/**
+ * Whether {@link widget}'s `name` cannot be read at all. Callers that report a
+ * refusal need this to name the cause: a widget refused for an unreadable name
+ * has no duplicate, so saying it has one is wrong.
+ */
+export function isWidgetNameUnreadable(widget: { name: string }): boolean {
+  return readName(widget) === UNREADABLE_NAME
+}
+
+/**
+ * The identity a name actually claims. `widgetId` keys on
+ * `encodeURIComponent(String(name))`, so two names that differ as values but
+ * coincide as strings — `undefined` against `'undefined'`, `1` against `'1'` —
+ * are one identity and have to collide here, or they collide downstream where
+ * nothing is watching.
+ */
+// Takes `unknown` on purpose: `name` is declared `string` and at runtime is
+// whatever a node pack assigned, which is the entire reason the coercion is here.
+function nameKey(name: unknown): string {
+  return String(name)
+}
+
+/** Every name key the array already holds outright, skipping unreadable ones. */
 function readableNames(widgets: readonly { name: string }[]): Set<string> {
   const names = new Set<string>()
   for (const widget of widgets) {
     const name = readName(widget)
-    if (name !== UNREADABLE_NAME) names.add(name)
+    if (name !== UNREADABLE_NAME) names.add(nameKey(name))
   }
   return names
 }
@@ -221,14 +243,15 @@ export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
       continue
     }
 
-    if (!used.has(name)) {
-      used.add(name)
+    const key = nameKey(name)
+    if (!used.has(key)) {
+      used.add(key)
       verdicts.set(widget, true)
       kept.push(widget)
       continue
     }
 
-    const unique = renameApart(widget, name, used, reserved)
+    const unique = renameApart(widget, key, used, reserved)
     if (unique === undefined) {
       verdicts.set(widget, false)
       refused.push(widget)
