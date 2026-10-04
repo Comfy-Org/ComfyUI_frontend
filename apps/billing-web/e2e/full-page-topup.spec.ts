@@ -4,12 +4,18 @@
  */
 import type { Page } from '@playwright/test'
 
-import { capabilitiesWith, succeededOperation } from './fixtures/scenario'
+import {
+  capabilitiesWith,
+  challengeRequiredOperation,
+  succeededOperation
+} from './fixtures/scenario'
+import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
 const test = base.extend<{ fullPage: void }>({
   fullPage: [
-    async ({ cloud }, use) => {
+    async ({ context, cloud }, use) => {
+      await installFakeStripe(context)
       cloud.scenario.checkoutUi = 'full_page'
       await use(undefined)
     },
@@ -99,6 +105,41 @@ test('77-3783: a Pay that goes through names the credits added and what they cos
     (request) => request.path === '/billing/topup'
   )
   expect(topups).toHaveLength(1)
+})
+
+test('a saved card the bank challenges is verified on this page and ends on the credits added, never on the hosted invoice', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.operations.op_topup = {
+    ...challengeRequiredOperation('op_topup', 'pi_topup_secret'),
+    action_url: 'https://invoice.stripe.com/i/e2e_topup'
+  }
+  await page.addInitScript(() => {
+    Object.assign(window, { __e2eStripeHoldNextAction: true })
+  })
+  await signIn(TOPUP)
+  await payButton(page).click()
+
+  await expect
+    .poll(() => page.evaluate('window.__e2eFakeStripe?.nextActionCalls'))
+    .toEqual([{ clientSecret: 'pi_topup_secret' }])
+  await expect(page).toHaveURL(/\/v1\/top-up\?/)
+
+  cloud.scenario.operations.op_topup = {
+    ...succeededOperation('op_topup'),
+    amount_charged_cents: 2500,
+    credits_added: 5275
+  }
+  await page.evaluate(
+    "window.__e2eFakeStripe.releaseNextAction({ paymentIntent: { status: 'succeeded' } })"
+  )
+
+  await expect(
+    page.getByRole('heading', { name: '5,275 credits added' })
+  ).toBeVisible()
+  await expect(page).toHaveURL(/\/v1\/top-up\?/)
 })
 
 test('394-4991 / 410-5225: credits still landing read Payment received, and a reload once they land is Already completed with no balance', async ({
