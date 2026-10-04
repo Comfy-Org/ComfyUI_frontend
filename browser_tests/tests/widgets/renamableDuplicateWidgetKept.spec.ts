@@ -9,43 +9,20 @@ import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowS
 /**
  * The unique-name invariant removes a widget it cannot name uniquely
  * (ADR-ECS-0008). This pins the boundary of "cannot": a widget whose `name` is
- * perfectly writable must never be the price of enforcing it.
+ * writable must never be the price of enforcing it.
  *
- * `BaseWidget.set name` delegates to `widgetValueStore.renameWidget()` and
- * returns without changing the name whenever the store declines — which it does
- * when the node has no entries, the state a node is in after it has been
- * removed from the graph. So a rename that *failed* does not prove the widget
- * is unaddressable, and removing on that signal destroys an ordinary widget.
- *
- * Reproduced through the graph API the way an undo of a node deletion or a
- * paste of a cut node reaches it: the node leaves the graph, the duplicate name
- * appears while it is detached, and it rejoins.
- *
- * Asserted on what the app saves, because that is where the loss is permanent.
- * Measured on the parent commit the node comes back one widget short and saves
- * **one** `widgets_values` entry for a two-widget node; the arity of that array
- * is what positional widget addressing reads, so a dropped slot shifts every
- * later widget. With the invariant's criterion corrected it saves both.
- *
- * The two *values* are asserted too, and that is the stronger half. Arity alone
- * went green over a save this change set used to corrupt: re-registering an
- * ambiguous pair routed the second widget's `name` setter through
- * `renameWidget` on an id the *first* widget had registered, which handed it
- * that widget's store entry — so the two widgets shared one `WidgetState`, both
- * read the first value, and the second value was gone from a two-slot save. A
- * widget's own entry is now the only entry its rename may move
- * (`BaseWidget.set name`), so both values survive and this asserts it.
+ * Driven through the graph API the way an undo of a node deletion or a paste of
+ * a cut node reaches it, and asserted on both the rendered rows and what the
+ * app saves. Two values, not just two slots: an ambiguous pair used to route
+ * the second widget's setter onto the entry the first had registered, so both
+ * read one value while the slot count still looked right.
  */
 
 const NODE_TYPE = 'DevToolsNodeWithOutputList'
 const KEPT_NAME = 'alpha'
 const RENAMED_NAME = 'beta'
 
-/**
- * Patches the node type so every instance carries two distinct, ordinary,
- * serializable widgets. Both names are writable, so neither is ever
- * unaddressable — which is the whole point.
- */
+/** Two distinct, ordinary, serializable widgets, both with writable names. */
 async function installTwoOrdinaryWidgets(comfyPage: ComfyPage): Promise<void> {
   await comfyPage.page.evaluate(
     ({ nodeTypeName, first, second }) => {
@@ -63,10 +40,9 @@ async function installTwoOrdinaryWidgets(comfyPage: ComfyPage): Promise<void> {
 }
 
 /**
- * Takes the node out of the graph, collides the second widget's name with the
- * first while it is detached, and puts it back. Detached is what makes the
- * write land: on a node that is still in the graph the store declines the
- * rename and the collision never forms.
+ * Collides the second widget's name with the first while the node is detached,
+ * then puts it back. Detached is what lets the write land, so this is the
+ * sequence an undo or a paste reaches.
  */
 async function collideNameWhileDetached(
   comfyPage: ComfyPage,
@@ -92,8 +68,7 @@ test.describe(
   'renamable duplicate widget name',
   { tag: ['@canvas', '@widget', '@vue-nodes'] },
   () => {
-    // Per attempt, not per module: a module-scope stamp is shared by every
-    // worker in the process and by a retry.
+    // Per attempt: a module-scope stamp is shared by every worker and retry.
     let workflowName = ''
 
     test.afterEach(async ({ comfyPage }) => {
@@ -121,10 +96,8 @@ test.describe(
       await collideNameWhileDetached(comfyPage, nodeId)
 
       await test.step('both widgets are still drawn after the re-add', async () => {
-        // An unresolved pair makes `ensureUniqueWidgetNames` false, which bails
-        // registration for every widget on the node, so the node draws nothing.
-        // The saved values below cannot see that: they come from the widget
-        // objects, which survive it.
+        // The saved values below cannot see this: they come from the widget
+        // objects, which survive a node that registers nothing.
         await expect(node.getByTestId(TestIds.widgets.widget)).toHaveCount(2)
       })
 
@@ -142,14 +115,11 @@ test.describe(
         )
         const savedNode = saved.nodes.find(({ type }) => type === NODE_TYPE)
 
-        // One entry here is a widget the user lost. Two is the invariant being
-        // enforced without charging them for it.
+        // One entry here is a widget the user lost.
         expect(savedNode?.widgets_values).toHaveLength(2)
 
-        // And two *distinct* values, because arity alone cannot tell a
-        // preserved widget from one welded onto its duplicate's store entry.
-        // `['first default', 'first default']` is the second value destroyed
-        // while the slot count still looks right.
+        // Distinct values, because arity alone cannot tell a preserved widget
+        // from one welded onto its duplicate's entry.
         expect(savedNode?.widgets_values).toEqual([
           'first default',
           'second default'

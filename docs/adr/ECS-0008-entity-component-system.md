@@ -209,15 +209,16 @@ legitimate re-mint rather than an identity collision — which is why
 > gates registration on that, so two copies of the rule disagreeing is a widget
 > destroyed over a disagreement.
 >
-> Three stable `errorType`s, because the causes need different alerts and
-> collapsing them reports a collision that does not exist:
-> `failure_renaming_widget_duplicate_name` for a duplicate that could not be renamed
-> apart, `failure_reading_widget_name` for a widget whose `name` accessor
-> throws — that one has no duplicate at all, only no derivable id — and
-> `failure_resolving_widget_duplicate_name` for a pair the node **keeps**, where the
-> rename was declined rather than impossible. The third is not a report of lost
-> widgets: the widget is still on the node, and a later commit can still
-> resolve it.
+> Four stable `errorType`s, because the causes need different alerts and
+> collapsing them sends whoever reads one after a collision that does not
+> exist: `failure_renaming_widget_duplicate_name` for a duplicate that could
+> not be renamed apart, `failure_reading_widget_name` for a widget no id can be
+> derived from, `failure_resolving_widget_duplicate_name` for a pair the node
+> **keeps**, and `failure_tearing_down_refused_widget` for a removal whose own
+> teardown threw. The third is not a report of lost widgets, but it is not
+> transient either: a kept pair now comes only from a setter that accepts a
+> write and ignores it, which no later commit resolves, so the report is
+> deduplicated per name rather than repeated per commit.
 >
 > **There are two enforcement points, and looking only at the first one is
 > misleading.** `attachNodeToStores` calls `refuseAmbiguousNodeWidgets` as a
