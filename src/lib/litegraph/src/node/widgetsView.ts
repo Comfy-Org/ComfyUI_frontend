@@ -179,6 +179,13 @@ function releaseRefusedWidget(
   } catch (error) {
     reportTeardownFailure(node, error)
   }
+
+  // After `onRemove`, which may still read the value through the entry.
+  try {
+    widget.releaseRegisteredState?.()
+  } catch (error) {
+    reportTeardownFailure(node, error)
+  }
 }
 
 /**
