@@ -3,7 +3,10 @@ import type { Page } from '@playwright/test'
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type {
+  AgentFollowerHostSocket,
+  ExecutionHostFrame
+} from '@e2e/fixtures/agentFollowerHostSocket'
 import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
@@ -23,6 +26,23 @@ export class AgentExecutionHelper {
   private readonly assets: AssetsHelper
   private readonly submitted: unknown[] = []
   private jobCounter = 0
+
+  /**
+   * Whether a run's execution frames are addressed to THIS tab's socket.
+   *
+   * ComfyUI unicasts `execution_start`, `progress_state`, `executed` and
+   * `execution_error` to the single socket whose `client_id` submitted the
+   * prompt (`PromptServer.send_json` delivers to `self.sockets[sid]` and drops
+   * the message when that sid is not connected); only `status` is broadcast,
+   * with `sid=None`. The default is that this tab submitted every run here, so
+   * every frame is addressed to it.
+   *
+   * A spec covering a run submitted under some OTHER id replaces this via
+   * {@link addressFramesWhen}: the job's HTTP surface (`/api/jobs`,
+   * `/api/view`) then advances exactly as the server's does while this tab is
+   * told nothing — the shape PM-1875 reported.
+   */
+  private addressedToThisTab: () => boolean = () => true
 
   constructor(
     private readonly page: Page,
@@ -59,6 +79,22 @@ export class AgentExecutionHelper {
     })
   }
 
+  /**
+   * Narrows which runs this tab is an addressee of. See
+   * {@link addressedToThisTab}; `status` stays broadcast either way, so an
+   * unaddressed run is still visibly active to this tab and merely inert on
+   * its canvas.
+   */
+  addressFramesWhen(predicate: () => boolean): void {
+    this.addressedToThisTab = predicate
+  }
+
+  /** Sends an execution frame only to the socket it is addressed to. */
+  private unicast(frame: ExecutionHostFrame): void {
+    if (!this.addressedToThisTab()) return
+    this.hostSocket.sendExecution(frame)
+  }
+
   submittedPrompts(): readonly unknown[] {
     return this.submitted
   }
@@ -93,7 +129,7 @@ export class AgentExecutionHelper {
       execution_start_time: Date.now(),
       execution_end_time: null
     })
-    this.hostSocket.sendExecution({
+    this.unicast({
       type: 'execution_start',
       data: { prompt_id: jobId, timestamp: Date.now() }
     })
@@ -124,7 +160,7 @@ export class AgentExecutionHelper {
         }
       })
     )
-    this.hostSocket.sendExecution({
+    this.unicast({
       type: 'executed',
       data: {
         prompt_id: jobId,
@@ -133,7 +169,7 @@ export class AgentExecutionHelper {
         output: { images: [{ filename, subfolder: '', type: 'output' }] }
       }
     })
-    this.hostSocket.sendExecution({
+    this.unicast({
       type: 'execution_success',
       data: { prompt_id: jobId, timestamp: Date.now() }
     })
@@ -169,7 +205,7 @@ export class AgentExecutionHelper {
       execution_end_time: Date.now(),
       execution_error: error
     })
-    this.hostSocket.sendExecution({ type: 'execution_error', data: error })
+    this.unicast({ type: 'execution_error', data: error })
     this.status(0)
   }
 
@@ -187,7 +223,7 @@ export class AgentExecutionHelper {
     }: { nodeId: string; value?: number; max?: number }
   ): Promise<void> {
     await this.startJob(jobId)
-    this.hostSocket.sendExecution({
+    this.unicast({
       type: 'progress_state',
       data: {
         prompt_id: jobId,
