@@ -31,13 +31,20 @@ function getSelectedNodeModels(
 ): ModelFile[] {
   const nodeModels = getDeclaredModels(node.properties?.models)
 
-  return (
+  // Selection keeps whatever a node declared, down to a bare name. A template
+  // download needs the url and directory, so narrow back to the strict shape
+  // here rather than widening what this module promises.
+  const selected =
     getSelectedModelsMetadata({
       type: node.type,
       widgets_values: node.widgets_values,
       properties: { models: [...nodeModels, ...workflowModels] }
     }) ?? []
-  )
+
+  return selected.flatMap((model) => {
+    const strict = toModelFile(model)
+    return strict ? [strict] : []
+  })
 }
 
 export type TemplateModelRequirementDetail = {
