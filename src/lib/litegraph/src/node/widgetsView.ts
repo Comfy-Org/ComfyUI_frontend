@@ -46,6 +46,9 @@ interface WidgetsViewState {
   commit: (widgets: IBaseWidget[]) => void
 }
 
+/** Shared empty result, so the common no-refusal path allocates nothing. */
+const EMPTY_REFUSAL: ReadonlySet<IBaseWidget> = new Set()
+
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
 const widgetsViewGetters = new WeakSet<() => IBaseWidget[] | undefined>()
 
@@ -64,38 +67,86 @@ function safeRead(read: () => unknown): string | undefined {
   }
 }
 
+/** Reports a teardown step that failed, so a half-done release is visible. */
+function reportTeardownFailure(node: LGraphNode, error: unknown): void {
+  reportError(error, {
+    errorType: REFUSED_WIDGET_TEARDOWN_ERROR_TYPE,
+    surface: 'graph',
+    level: 'warning',
+    tags: { node_type: node.type },
+    context: { nodeId: String(node.id) }
+  })
+}
+
+/**
+ * Whether {@link input} is bound to the widget being released.
+ *
+ * Two bindings, because production uses both: `_widget` holds a direct
+ * reference (promoted subgraph inputs), while an ordinary node binds its widget
+ * inputs by name and resolves them on read. Matching only the reference finds
+ * nothing on the nodes this refusal actually runs for, and the slot then
+ * re-binds to whichever widget kept the name.
+ */
+function inputBindsWidget(
+  input: LGraphNode['inputs'][number],
+  widget: IBaseWidget,
+  name: string | undefined
+): boolean {
+  if (input._widget === widget) return true
+  return name !== undefined && input.widget?.name === name
+}
+
+/** Drops the slot back-references to a widget the node has just refused. */
+function clearRefusedSlotBindings(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  name: string | undefined
+): void {
+  for (const input of node.inputs) {
+    if (!inputBindsWidget(input, widget, name)) continue
+    input._widget = undefined
+    input.widget = undefined
+    input.pos = undefined
+  }
+}
+
 /**
  * Releases a widget the node has just refused. It is already off the array, so
  * `LGraphNode.removeWidget` can no longer find it and the teardown that method
  * owns has to happen here: slot back-references would otherwise keep pointing
  * at a widget the node no longer has.
  *
+ * Both steps are guarded and reported rather than thrown. This runs after the
+ * array has been spliced, so a throw escaping here would leave the node and the
+ * store's order out of sync — and during `LGraph.add`, a half-attached node.
+ *
  * The widget's store entry is deliberately *not* deleted. A refused widget's
  * name is by definition the one another widget kept, so `widget.widgetId` now
  * resolves to that widget's entry — deleting it would destroy the value of the
  * widget this invariant exists to protect.
  */
-function releaseRefusedWidget(node: LGraphNode, widget: IBaseWidget): void {
-  for (const input of node.inputs) {
-    if (input._widget === widget) {
-      input._widget = undefined
-      input.widget = undefined
-      input.pos = undefined
-    }
+function releaseRefusedWidget(
+  node: LGraphNode,
+  // Typed to admit the nullish case the type system says cannot happen: a hole
+  // or an explicit `undefined` in `node.widgets` reaches the walk as an
+  // unreadable name and is refused like anything else. Matching the teardown on
+  // it would clear every input whose `_widget` is still unset, which is nearly
+  // all of them.
+  widget: IBaseWidget | undefined,
+  name: string | undefined
+): void {
+  if (!widget) return
+
+  try {
+    clearRefusedSlotBindings(node, widget, name)
+  } catch (error) {
+    reportTeardownFailure(node, error)
   }
+
   try {
     widget.onRemove?.()
   } catch (error) {
-    // Its own type: teardown stopping half-done leaves a DOM widget's element
-    // mounted and extension-held resources undisposed, and a bare console log
-    // reaches no telemetry sink, so it reads as zero rather than as a problem.
-    reportError(error, {
-      errorType: REFUSED_WIDGET_TEARDOWN_ERROR_TYPE,
-      surface: 'graph',
-      level: 'warning',
-      tags: { node_type: node.type },
-      context: { nodeId: String(node.id) }
-    })
+    reportTeardownFailure(node, error)
   }
 }
 
@@ -113,9 +164,9 @@ function releaseRefusedWidget(node: LGraphNode, widget: IBaseWidget): void {
 function refuseAmbiguousWidgets(
   node: LGraphNode,
   widgets: IBaseWidget[]
-): void {
+): ReadonlySet<IBaseWidget> {
   const refused = dropUnrenamableDuplicateWidgets(widgets)
-  if (!refused.length) return
+  if (!refused.length) return EMPTY_REFUSAL
 
   for (const { widget, cause, name } of refused) {
     // The two causes are different failures and are alerted on separately: an
@@ -127,7 +178,7 @@ function refuseAmbiguousWidgets(
     // the same way, and the walk may have written to it up to four times
     // before giving up — so a re-read can name a candidate no widget holds.
     const unreadable = cause === 'unreadable-name'
-    releaseRefusedWidget(node, widget)
+    releaseRefusedWidget(node, widget, name)
     reportError(
       new Error(
         unreadable
@@ -152,6 +203,8 @@ function refuseAmbiguousWidgets(
       }
     )
   }
+
+  return new Set(refused.map(({ widget }) => widget))
 }
 
 /**
@@ -249,12 +302,16 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   // class's writable `name` accessor over a plain object's pinned one, so a
   // widget judged unrenamable while still raw would be destroyed even though
   // it renames cleanly a line later.
-  refuseAmbiguousWidgets(node, widgets)
+  const refused = refuseAmbiguousWidgets(node, widgets)
 
   for (const widget of concreteWidgets) {
+    // Membership by set, not by `widgets.includes`: this loop runs on every
+    // commit and `node.widgets` commits once per `addWidget`, so a linear scan
+    // here is quadratic per commit and cubic over building a node.
+    //
     // A widget that would not convert is still raw and so not bindable; it has
     // also just been refused, so it is no longer on the node either.
-    if (widgets.includes(widget) && isNodeBindable(widget)) {
+    if (!refused.has(widget) && isNodeBindable(widget)) {
       widget.setNodeId(node.id)
     }
   }

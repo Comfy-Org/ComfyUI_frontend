@@ -184,19 +184,20 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     expect(widgets).toEqual([fine])
   })
 
-  it('refuses a name whose id the store would reject', () => {
+  it('refuses a name that cannot be encoded into an id, but keeps an empty one', () => {
     // `String(Symbol())` succeeds, so coercion alone says this name is fine —
-    // but `widgetId` encodes the raw value and throws on it. And an empty name
-    // encodes to nothing, minting `graphId:nodeId:`, which the store refuses
-    // to key on: the widget lands in exactly the unaddressable state this walk
-    // exists to catch, silently.
+    // but `widgetId` encodes the raw value and throws on it.
+    //
+    // An empty name is the opposite case and must NOT be refused: it mints an
+    // id the store declines to key on, which costs the widget nothing, while
+    // deleting it loses a widget that renders and serializes.
     const symbolNamed = widgetNamed(Symbol('seed'))
     const empty = widgetNamed('')
     const fine = widgetNamed('seed')
     const widgets = [fine, symbolNamed, empty]
 
-    expect(refusedWidgets(widgets)).toEqual([symbolNamed, empty])
-    expect(widgets).toEqual([fine])
+    expect(refusedWidgets(widgets)).toEqual([symbolNamed])
+    expect(widgets).toEqual([fine, empty])
   })
 
   it('reports the name the walk read, not one the rename attempts left behind', () => {
