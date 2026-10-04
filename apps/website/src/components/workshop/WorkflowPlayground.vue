@@ -17,6 +17,7 @@ import {
   workflowNoticeKey,
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
+import { requestWorkshopBuyCreditsAutomatically } from '../../config/workshop-buy-credits'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -170,7 +171,10 @@ watch(
     state.value.error.code === 'insufficient_credits',
   (refused) => {
     refusal.value = refused ? { credits: credits.value } : undefined
-    if (refused) void refreshWorkshopCredits({ force: true })
+    if (!refused) return
+    if (session.value?.role === 'owner')
+      requestWorkshopBuyCreditsAutomatically()
+    void refreshWorkshopCredits({ force: true })
   }
 )
 watch(credits, (known) => {
@@ -199,6 +203,15 @@ const statusLabel = computed(() => {
 
 function tabIndex(item: (typeof sections)[number]): number {
   return section.value === item ? 0 : -1
+}
+
+function selectSection(item: (typeof sections)[number]) {
+  if (item !== section.value && enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'tab_switched',
+      properties: { ...modelAnalytics, tab: item }
+    })
+  section.value = item
 }
 
 function selectExample(index: number) {
@@ -258,7 +271,7 @@ function start() {
       :aria-controls="`workflow-panel-${item}`"
       :tabindex="tabIndex(item)"
       class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-warm-white"
-      @click="section = item"
+      @click="selectSection(item)"
     >
       {{ t(sectionLabels[item]) }}
     </button>
@@ -370,6 +383,7 @@ function start() {
   </div>
   <section
     v-if="model.examples.length"
+    v-show="section === 'playground'"
     class="mt-14"
     aria-labelledby="workflow-examples-heading"
   >

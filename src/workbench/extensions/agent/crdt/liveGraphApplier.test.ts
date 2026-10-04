@@ -21,9 +21,7 @@ import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {
@@ -348,7 +346,9 @@ describe('LiveGraphApplier', () => {
     expect(graph.getNodeById(toNodeId(2))).toBeNull()
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('Document node 2 is malformed')
+        message: expect.stringContaining(
+          'Document node 2 (TestSink) is malformed'
+        )
       }),
       expect.objectContaining({ errorType: 'agent_graph_node_malformed' })
     )

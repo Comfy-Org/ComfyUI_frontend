@@ -24,15 +24,64 @@ latest check and last successful generation.
 
 ## Formatting
 
-Run `pnpm format:astro` from the repository root to format Astro files, or
-`pnpm format:astro:check` to check them. Both are included in the root format
-commands and shared CI checks. Pre-commit formats staged Astro files after
-ESLint fixes.
+Run `pnpm --filter @comfyorg/website format` from the repository root to format
+the website, or `pnpm --filter @comfyorg/website format:check` to check it. CI
+runs every workspace's format check with
+`pnpm -r --include-workspace-root format:check`. Pre-commit formats staged
+Astro files after ESLint fixes.
 
 Astro files use Prettier with the official Astro plugin; other formats continue
 to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
 and preserves whitespace around inline HTML elements. The Astro editor
 extension also reads this configuration.
+
+## Localization
+
+The site ships English, Simplified Chinese (`zh-CN`) and Japanese (`ja`).
+Catalogs live in `src/locales/<locale>/*.json` in the same nested JSON layout
+and [vue-i18n message syntax](https://vue-i18n.intlify.dev/guide/essentials/syntax)
+as the application's `src/locales/` at the repository root:
+
+- Named placeholders: `"Show {n} models"`, filled with
+  `t('workshop.search.show', { n }, { locale })`.
+- Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
+  `t('cloudNodesLaunch.models.nodeCount', { count }, { locale, plural: count })`.
+- The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
+  written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
+
+`src/i18n/translations.ts` configures vue-i18n and exports its public translation
+API. Astro middleware binds `Astro.locals.t` to the request locale. In Vue and
+TypeScript, bind once with `translationsFor(locale).t`; each locale has its own
+composer because the site renders locales concurrently. Missing messages fall
+back to English. The catalog test compiles every message and checks that each
+English message has Chinese copy.
+
+`main.json` is the catalog for each locale. Keep feature copy grouped under a
+nested feature key.
+
+Add new English copy to the English catalog; translated copy lives in the
+matching file under each locale. Every English message requires a Chinese
+entry; the catalog tests check completeness without using English fallback.
+Catalog files use two-space JSON indentation and a final newline. Legal and
+content pages render their sections in the order they appear in the catalog, so
+keep `en/main.json` in document order and never sort its keys.
+
+### English-only copy
+
+Affiliate terms, Terms of Service (`tos`), and the Enterprise MSA are
+legal-reviewed English documents on English-only routes.
+Do not translate or publish localized versions until legal approves them;
+an unreviewed translation can diverge from the governing English text.
+Their Chinese catalog entries intentionally repeat English, except the two
+translated affiliate page labels. The MiniMax professional license intake
+embeds an English-only HubSpot form and also intentionally repeats English.
+Desktop privacy (`desktop_privacy`) also intentionally repeats the governing
+English copy in its Chinese catalog. This is a catalog exemption: the
+`/zh-CN/privacy/desktop` route exists and renders those English entries.
+All these ranges must remain exempt from automatic translation until an
+approved translation is available. The page headers and
+`LOCALE_INVARIANT_ROUTE_KEYS` document the English-only route policies;
+desktop privacy retains its localized route.
 
 ## Ashby careers integration
 
@@ -190,11 +239,13 @@ with the refreshed snapshot.
 
 The hub has one page per section, linked by the catalogue tabs: `/hub/models/`,
 `/hub/workflows/` and `/hub/apps/`. The workflows and apps pages show the
-showcase until their flag is on, and stay noindex: `/hub/workflows/` lifts with
-`launchedWorkflowPages`, `/hub/apps/` has no switch yet. Being noindex, neither
-has a markdown twin. Old `/hub/models/?type=workflows` and `?type=apps` links
-replace themselves with the section page in the browser, keeping the other
-query parameters.
+showcase until their flag is on. Both are always noindex and left out of the
+sitemap, whatever `launchedWorkflowPages` says (it launches only the
+`/hub/workflows/<slug>/` pages), so neither has a markdown twin. Old
+`/hub/models/?type=workflows` and `?type=apps` links replace themselves with
+the section page in the browser, keeping the other query parameters, once that
+section's flag is on for the visitor; otherwise they stay on the models
+catalogue.
 
 ## Hub workflows routing
 
@@ -396,6 +447,60 @@ sitekey in this mapping, so the client widget stays off there.
 `src/config/workshop-release.ts` owns build inclusion and backend validation.
 The `workshop-release-gate` Astro integration registers the Models routes and
 always removes the retired `/workshop` output, including in enabled builds.
+
+## Authentication
+
+Every account call goes to the Cloud origin that `PUBLIC_WORKSHOP_CLOUD_ENV`
+selects (see [Which Cloud the Workshop talks to](#which-cloud-the-workshop-talks-to)).
+Which identity the header shows is decided once per page load in
+`src/config/workshop-account-source.ts`.
+
+**Flag off (default).** Sign-in is the website's own Firebase login. It is
+exchanged at `${cloud}/api/auth/token` for a workspace-scoped JWT and cached in
+`sessionStorage` (`src/config/workshop-account.ts`). The flag adds one plain
+anonymous `GET /api/features` per page load, read for `web_session_probe`. That
+read sends no cookie and no custom header, so it needs no preflight. The
+session code never loads.
+
+**`unified_web_session` on.** When the probe is `true`, a credentialed
+`GET /api/features` with `X-Comfy-Client` reads `unified_web_session`. Only a
+literal `true` turns it on. If no answer comes within 800 ms, the page keeps the
+Firebase header and never swaps. On the session path:
+
+- Identity comes from `GET ${cloud}/api/auth/session`, read once at boot. The
+  browser attaches the `__Host-comfy_session` cookie because the request goes
+  to the Cloud host with `credentials: 'include'`. The cookie is host-only, so
+  comfy.org itself never receives it. The website runs no heartbeat.
+- The header shows the session account and reads `GET /api/billing/balance` on
+  the cookie, with `X-Comfy-Client` and no `Authorization`. That balance is
+  always the personal workspace's. A 401 hides it. The Buy credits dialog is
+  not mounted.
+- Firebase does not load to answer the header. The session is restored with
+  `POST /api/auth/session` (Firebase ID token as proof) only if this page
+  already loaded a Firebase login. With no session, the Firebase header
+  mounts. A revoked session also signs the local Firebase login out.
+- The website sends no unsafe method on the cookie, so it never needs
+  `X-CSRF-Token`. It never calls `DELETE /api/auth/session`, and a Firebase
+  sign-in on comfy.org does not create the shared session. Sign-in and
+  sign-out on comfy.org are still Firebase's.
+
+**Not wired yet: Run on the session (F3b).** Model pages, workflows and the
+cinematic studio start the Firebase lifecycle whatever the flag says. A Run
+sends the `/api/auth/token` JWT to the Router as `Authorization: Bearer` with
+`credentials: 'omit'`. The session balance's authorizer rejects any mint, so
+the website never calls `POST /api/auth/token` on the cookie. Moving Run onto
+the session is blocked on the backend. The Router must accept tokens minted
+from the session, and ingest must trust comfy.org for credentialed `POST`s.
+
+CLI, MCP, Desktop, API keys and a localhost frontend keep their tokens. The
+cookie never reaches localhost or a preview host, so there the session read
+finds nothing and the Firebase header mounts. The workflow API's `X-API-Key`
+mode (`src/config/workshop-workflow-api.ts`) is unaffected.
+
+See [ADR-AUTH-SESSION-0037](../../docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md)
+for the decision and
+[`packages/account-core/docs/web-session.md`](../../packages/account-core/docs/web-session.md)
+for the shared building blocks.
 
 ## Search indexing
 

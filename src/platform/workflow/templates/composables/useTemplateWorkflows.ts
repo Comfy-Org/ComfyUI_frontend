@@ -32,7 +32,7 @@ function updateTemplateEducation(
   if (isPartnerNode && typeof loadedWorkflow === 'object') {
     educationStore.requestCard(loadedWorkflow.key)
   } else {
-    educationStore.dismissCard()
+    educationStore.retireCard()
   }
 }
 
@@ -217,7 +217,8 @@ export function useTemplateWorkflows() {
 
   async function loadTemplateGraph(
     { json, template }: Awaited<ReturnType<typeof loadTemplateData>>,
-    workflowName: string
+    workflowName: string,
+    sourceModule: string
   ): Promise<TemplateLoadResult> {
     try {
       const loadedWorkflow = await app.loadGraphData(
@@ -228,13 +229,10 @@ export function useTemplateWorkflows() {
         { openSource: 'template' }
       )
       if (loadedWorkflow === false) return 'graph-failed'
+      if (loadedWorkflow === undefined) return 'not-started'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
-      // Counted here rather than at the call site: only this path means the
-      // template reached the canvas. A failed load never showed the user the
-      // compacted-vs-exploded layout the survey asks about, so it must not
-      // push them toward the eligibility threshold.
-      trackFeatureUsed()
+      if (sourceModule === 'default') trackFeatureUsed()
       return 'loaded'
     } catch (error) {
       reportTemplateError(error)
@@ -274,7 +272,7 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
-      return await loadTemplateGraph(data, workflowName)
+      return await loadTemplateGraph(data, workflowName, source)
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'

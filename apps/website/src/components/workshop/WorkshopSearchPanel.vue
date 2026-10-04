@@ -9,7 +9,7 @@ import {
   sortWorkshopModels
 } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 const {
   models,
@@ -26,6 +26,7 @@ const {
   kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   pick: [model: WorkshopModel]
@@ -42,9 +43,9 @@ const suggestions = computed(() =>
 )
 
 function sourceOf(model: WorkshopModel): string | undefined {
-  if (model.type === 'APP') return t('workshop.card.comfyApp', locale)
+  if (model.type === 'APP') return t('workshop.card.comfyApp')
   if (model.routerId === undefined) return model.models?.join(', ')
-  return model.provider ?? t('workshop.card.partnerNode', locale)
+  return model.provider ?? t('workshop.card.partnerNode')
 }
 </script>
 
@@ -68,8 +69,7 @@ function sourceOf(model: WorkshopModel): string | undefined {
           t(
             kind === 'models'
               ? 'workshop.search.models'
-              : 'workshop.hub.workflows',
-            locale
+              : 'workshop.hub.workflows'
           )
         }}
         <span class="tabular-nums opacity-60">({{ matching.length }})</span>
@@ -110,7 +110,7 @@ function sourceOf(model: WorkshopModel): string | undefined {
     </section>
 
     <p v-else-if="query.trim()" class="p-2 text-sm text-primary-warm-gray">
-      {{ t('workshop.hub.facets.noResults', locale) }}
+      {{ t('workshop.hub.facets.noResults') }}
     </p>
   </div>
 </template>

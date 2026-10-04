@@ -1,11 +1,13 @@
 import {
   linksMap,
   nodesMap,
-  OPAQUE_WIDGETS_KEY
+  OPAQUE_WIDGETS_KEY,
+  readStamps
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
+import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeFlags, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
@@ -172,8 +174,80 @@ const zDocNodeFields = zComfyNode
     properties: z.record(zNodeProperty.optional()).optional()
   })
 
+/**
+ * Only the actor's kind is reported: the segments after it in
+ * `agent:<thread>:<turn>` and `human:<user>:<tab>` identify a user.
+ */
+type ActorKind = 'agent' | 'human' | 'unknown'
+type NodeProducer =
+  | { origin: 'operation'; actorKind: ActorKind; opId: string; version: number }
+  | { origin: 'unstamped' | 'unreadable' }
+
 interface MalformedDocNode {
   malformed: string
+  discriminate(): {
+    classType?: string
+    valueShapes: string
+    producer: NodeProducer
+  }
+}
+
+function valueShape(value: unknown): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return `array:${value.length}`
+  if (typeof value === 'object') return `object:${Object.keys(value).length}`
+  return typeof value
+}
+
+/** `absent` when the path's own key is missing, so it is not read as `undefined`. */
+function shapeAtPath(
+  root: unknown,
+  path: readonly (string | number)[]
+): string {
+  let cursor: unknown = root
+  for (const [depth, key] of path.entries()) {
+    if (cursor === null || typeof cursor !== 'object') return 'unreachable'
+    if (!Object.hasOwn(cursor, key))
+      return depth === path.length - 1 ? 'absent' : 'unreachable'
+    cursor = Reflect.get(cursor, key)
+  }
+  return valueShape(cursor)
+}
+
+function issueShapes(fields: unknown, error: z.ZodError): string {
+  return error.issues
+    .map(
+      (issue) =>
+        `${issue.path.join('.')} ${issue.code} ${shapeAtPath(fields, issue.path)}`
+    )
+    .join('; ')
+}
+
+function actorKind(actor: unknown): ActorKind {
+  const kind = typeof actor === 'string' ? actor.split(':', 1)[0] : ''
+  return kind === 'agent' || kind === 'human' ? kind : 'unknown'
+}
+
+function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
+  let stamps: Readonly<Record<string, unknown>>
+  try {
+    stamps = readStamps(doc)
+  } catch {
+    return { origin: 'unreadable' }
+  }
+  const key = JSON.stringify(['node', id])
+  if (!Object.hasOwn(stamps, key)) return { origin: 'unstamped' }
+  const stamp = stamps[key]
+  if (!Array.isArray(stamp)) return { origin: 'unreadable' }
+  const [version, actor, opId]: unknown[] = stamp
+  if (typeof version !== 'number' || typeof opId !== 'string')
+    return { origin: 'unreadable' }
+  return {
+    origin: 'operation',
+    actorKind: actorKind(actor),
+    opId,
+    version
+  }
 }
 
 function readDocNode(
@@ -197,10 +271,18 @@ function readDocNode(
   })
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
+    const { error } = parsed
     return {
-      malformed: parsed.error.issues
+      malformed: error.issues
         .map((issue) => `${issue.path.join('.')} ${issue.message}`)
-        .join('; ')
+        .join('; '),
+      discriminate() {
+        return {
+          classType: typeof fields.type === 'string' ? fields.type : undefined,
+          valueShapes: issueShapes(fields, error),
+          producer: nodeProducer(doc, id)
+        }
+      }
     }
   }
   const {
@@ -591,15 +673,18 @@ export class LiveGraphApplier {
   private readDocNode(doc: Y.Doc, id: string): DocNode | null {
     const read = readDocNode(doc, id)
     if (read === null) return null
+    const key = `node-shape:${id}`
     if (!('malformed' in read)) {
-      this.reported.delete(`node-shape:${id}`)
+      this.reported.delete(key)
       return read
     }
+    if (this.reported.has(key)) return null
+    const { classType, valueShapes, producer } = read.discriminate()
     this.reportOnce(
-      `node-shape:${id}`,
-      `Document node ${id} is malformed: ${read.malformed}`,
+      key,
+      `Document node ${id} (${classType ?? 'unknown class'}) is malformed: ${read.malformed}`,
       'agent_graph_node_malformed',
-      { nodeId: id, issues: read.malformed }
+      { nodeId: id, issues: read.malformed, classType, valueShapes, producer }
     )
     return null
   }
@@ -773,12 +858,7 @@ export class LiveGraphApplier {
       link.originSlot,
       'positional'
     )
-    const targetSlot = resolveSlot(
-      target.inputs.map((input) => input.name),
-      readDocSlotName(doc, link.target, 'inputs', link.targetSlot),
-      link.targetSlot,
-      'none'
-    )
+    const targetSlot = resolveTargetSlot(target, doc, link)
     if (originSlot < 0 || targetSlot < 0) {
       if (graph.links.has(link.id)) graph.removeLink(link.id)
       return 'unresolved'
@@ -873,6 +953,29 @@ function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {
       Object.assign(node, { [key]: value })
     }
   }
+}
+
+/**
+ * The live input index a document link targets. A dynamic input slot the host
+ * grew has no live counterpart until the node's autogrow group is grown to it,
+ * so grow it rather than drop a link the document holds against a slot it
+ * legitimately owns. `growAutogrowInput` refuses a name outside the node's own
+ * groups, leaving a slot the live node really lacks unresolved as before.
+ */
+function resolveTargetSlot(
+  target: LGraphNode,
+  doc: Y.Doc,
+  link: DocLink
+): number {
+  const docName = readDocSlotName(doc, link.target, 'inputs', link.targetSlot)
+  const resolved = resolveSlot(
+    target.inputs.map((input) => input.name),
+    docName,
+    link.targetSlot,
+    'none'
+  )
+  if (resolved >= 0 || docName === undefined) return resolved
+  return growAutogrowInput(target, docName) ?? resolved
 }
 
 /**

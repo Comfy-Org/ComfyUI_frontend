@@ -41,6 +41,7 @@ import {
   PREVIEW_SUBSCRIBE_ROUTE,
   RESUBSCRIBE_ROUTE,
   SUBSCRIBE_ROUTE,
+  cancelOperationRoute,
   createBillingCommands
 } from './subscriptionCommands.js'
 
@@ -246,6 +247,7 @@ const POST_CANCEL = `POST ${CANCEL_SUBSCRIPTION_ROUTE}`
 const POST_PORTAL = `POST ${PAYMENT_PORTAL_ROUTE}`
 const POST_PREVIEW = `POST ${PREVIEW_SUBSCRIBE_ROUTE}`
 const GET_OP = `GET ${operationRoute('op-1')}`
+const POST_CANCEL_OP = `POST ${cancelOperationRoute('op-1')}`
 
 const subscribed = http(200, { billing_op_id: 'op-1', status: 'subscribed' })
 const pendingPayment = http(200, {
@@ -697,6 +699,50 @@ describe('createBillingCommands', () => {
       })
     })
 
+    it('hands back the server-reported subtotal, list price, discount term and applied balance as numbers', async () => {
+      const itemized = http(200, {
+        ...QUOTE_BODY,
+        subtotal_cents: 2000,
+        balance_applied_cents: 300,
+        new_plan: { ...PREVIEW_PLAN, list_price_cents: 2500 },
+        discounts: [
+          {
+            amount_off_cents: 500,
+            code: 'LAUNCH',
+            kind: 'promotion',
+            duration: 'repeating',
+            duration_in_months: 3
+          }
+        ]
+      })
+      const h = harness({
+        status: FREE,
+        script: { [POST_PREVIEW]: [itemized] }
+      })
+
+      const result = await h.commands.previewSubscribe({
+        planSlug: 'pro-monthly'
+      })
+
+      expect(result).toEqual({
+        status: 'ok',
+        value: expect.objectContaining({
+          subtotal_cents: 2000,
+          balance_applied_cents: 300,
+          new_plan: expect.objectContaining({ list_price_cents: 2500 }),
+          discounts: [
+            {
+              amount_off_cents: 500,
+              code: 'LAUNCH',
+              kind: 'promotion',
+              duration: 'repeating',
+              duration_in_months: 3
+            }
+          ]
+        })
+      })
+    })
+
     it('omits the optional fields the caller left out, issuing no operation', async () => {
       const h = harness({ status: FREE, script: { [POST_PREVIEW]: [quote] } })
 
@@ -784,12 +830,19 @@ describe('createBillingCommands', () => {
       'cost_today_cents',
       'credits_next_period_cents',
       'credits_today_cents',
-      'renewal_amount_cents'
+      'renewal_amount_cents',
+      'subtotal_cents',
+      'balance_applied_cents',
+      'proration_remaining_cents',
+      'proration_unused_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview)[]
 
     const PLAN_CENT_FIELDS = [
       'credits_cents',
-      'price_cents'
+      'price_cents',
+      'list_price_cents',
+      'monthly_list_price_cents',
+      'monthly_price_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview['new_plan'])[]
 
     const SEAT_CENT_FIELDS = [
@@ -800,7 +853,8 @@ describe('createBillingCommands', () => {
     type PreviewDiscount = NonNullable<SubscriptionPreview['discounts']>[number]
 
     const DISCOUNT_CENT_FIELDS = [
-      'amount_off_cents'
+      'amount_off_cents',
+      'duration_in_months'
     ] as const satisfies readonly (keyof PreviewDiscount)[]
 
     // Compile-time pins: an amount a regen adds fails the package typecheck
@@ -818,7 +872,7 @@ describe('createBillingCommands', () => {
       >
     >()
     expectTypeOf<(typeof DISCOUNT_CENT_FIELDS)[number]>().toEqualTypeOf<
-      Extract<keyof PreviewDiscount, `${string}_cents`>
+      Extract<keyof PreviewDiscount, `${string}_cents` | `${string}_in_months`>
     >()
 
     const rejectsQuote = async (patch: object) => {
@@ -1255,6 +1309,91 @@ describe('createBillingCommands', () => {
         serverMessage: SERVER_TEXT
       })
       expect(h.invalidate).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('cancelOperation', () => {
+    it.for([
+      {
+        answer: http(200, { billing_op_id: 'op-1', status: 'canceled' }),
+        result: { status: 'canceled' }
+      },
+      {
+        answer: http(202, {
+          billing_op_id: 'op-1',
+          status: 'cancel_requested'
+        }),
+        result: { status: 'cancel_requested' }
+      },
+      {
+        answer: serverError(409, 'NOT_CANCELABLE'),
+        result: { status: 'not_canceled', code: 'NOT_CANCELABLE' }
+      },
+      {
+        answer: serverError(409, 'PAYMENT_IN_FLIGHT'),
+        result: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' }
+      },
+      {
+        answer: serverError(404, 'NOT_FOUND'),
+        result: { status: 'error', code: 'NOT_FOUND', httpStatus: 404 }
+      },
+      {
+        answer: serverError(502, 'PAYMENT_IN_FLIGHT'),
+        result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 502 }
+      },
+      {
+        answer: http(200, { billing_op_id: 'op-1', status: 'charged' }),
+        result: { status: 'error', code: 'MALFORMED_RESPONSE' }
+      }
+    ])(
+      'answers $result.status ($result.code) for a $answer.value.httpStatus',
+      async ({ answer, result }) => {
+        const h = harness({
+          status: PRO_ACTIVE,
+          script: { [POST_CANCEL_OP]: [answer] }
+        })
+
+        await expect(h.commands.cancelOperation('op-1')).resolves.toMatchObject(
+          result
+        )
+        expect(h.posts()).toEqual([
+          expect.objectContaining({ route: cancelOperationRoute('op-1') })
+        ])
+      }
+    )
+
+    it('reads the followed operation back at once after the server cancels it', async () => {
+      const h = harness({
+        status: FREE,
+        script: {
+          [POST_SUBSCRIBE]: [pendingPayment],
+          [POST_CANCEL_OP]: [
+            http(200, { billing_op_id: 'op-1', status: 'canceled' })
+          ],
+          [GET_OP]: [
+            http(200, opStatus({ authentication_state: 'requires_action' })),
+            http(
+              200,
+              opStatus({
+                status: 'failed',
+                decline_reason: 'authentication_failed'
+              })
+            )
+          ]
+        }
+      })
+      const subscribed = h.commands.subscribe(PLAN)
+      await flush()
+      expect(h.lifecycle.get('op-1')).toMatchObject({ phase: 'pending' })
+
+      await h.commands.cancelOperation('op-1')
+      await flush()
+
+      expect(h.lifecycle.get('op-1')).toMatchObject({ phase: 'failed' })
+      await expect(subscribed).resolves.toMatchObject({
+        status: 'ok',
+        value: { phase: 'failed' }
+      })
     })
   })
 

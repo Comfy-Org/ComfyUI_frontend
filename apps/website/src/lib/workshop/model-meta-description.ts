@@ -1,5 +1,5 @@
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { words } from './model-summary'
 import { splitPriceLabel } from './price-label'
 
@@ -28,14 +28,15 @@ function cleanSummary(summary: string | undefined) {
 }
 
 function priceClause(priceEstimate: string | undefined, locale: Locale) {
+  const { t } = translationsFor(locale)
   if (!priceEstimate) return undefined
   const { amount, per } = splitPriceLabel(priceEstimate)
   const credits = amount.match(SINGLE_CREDIT_FIGURE)?.[1]
   if (!credits) return undefined
   const unit = per?.slice(1).toLowerCase()
   return unit
-    ? t('workshop.model.meta.price', locale, { credits, unit })
-    : t('workshop.model.meta.priceNoUnit', locale, { credits })
+    ? t('workshop.model.meta.price', { credits, unit })
+    : t('workshop.model.meta.priceNoUnit', { credits })
 }
 
 export function modelMetaDescription(
@@ -45,21 +46,22 @@ export function modelMetaDescription(
   },
   locale: Locale = 'en'
 ) {
+  const { t } = translationsFor(locale)
   const { name, provider } = page.model
   const summary = cleanSummary(page.model.summary)
   const who =
     provider && !nameCarriesProvider(name, provider)
-      ? t('workshop.model.meta.byProvider', locale, { name, provider })
+      ? t('workshop.model.meta.byProvider', { name, provider })
       : name
   const lead = (shown: string | undefined) =>
     shown
-      ? t('workshop.model.meta.lead', locale, { who, summary: shown })
-      : t('workshop.model.meta.leadNoSummary', locale, { who })
+      ? t('workshop.model.meta.lead', { who, summary: shown })
+      : t('workshop.model.meta.leadNoSummary', { who })
   const compose = (...parts: (string | undefined)[]) =>
     parts.filter(Boolean).join(locale === 'en' ? ' ' : '')
   const price = priceClause(page.priceEstimate, locale)
-  const cta = t('workshop.model.meta.cta', locale)
-  const ctaShort = t('workshop.model.meta.ctaShort', locale)
+  const cta = t('workshop.model.meta.cta')
+  const ctaShort = t('workshop.model.meta.ctaShort')
 
   const fitting =
     [

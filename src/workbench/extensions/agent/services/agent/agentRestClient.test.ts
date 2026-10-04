@@ -115,6 +115,14 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('GET')
   })
 
+  it('getMessages forwards the caller abort signal to the request', async () => {
+    respond(jsonResponse(200, []))
+    const { signal } = new AbortController()
+    await makeClient().getMessages('t7', { signal })
+
+    expect(lastCall().init.signal).toBe(signal)
+  })
+
   it('gets and puts the run-mode preference using the API contract', async () => {
     const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
     const client: AgentRestClient = createAgentRestClient()
@@ -285,6 +293,32 @@ describe('postMessage wire body', () => {
     expect(Object.keys(parsed)).toEqual(['content'])
   })
 
+  // The id this send already reports on app:agent_message_sent has to reach the
+  // server, which echoes it onto agent_turn_started. Without it on the wire the
+  // message -> turn step of the activation funnel is countable but not
+  // attributable, and nothing else fails loudly - so assert the wire key.
+  it('sends client_message_id so the turn can be joined back to this message', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'build it',
+      clientMessageId: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'build it',
+      client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+    })
+  })
+
+  it('omits client_message_id when the caller has none', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'build it' })
+
+    expect(
+      Object.keys(JSON.parse(String(lastCall().init.body)) as object)
+    ).not.toContain('client_message_id')
+  })
+
   it('sends draft.content when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
@@ -376,6 +410,15 @@ describe('success response parsing', () => {
 })
 
 describe('error mapping', () => {
+  it.for(['', '   '])(
+    'gives a status-bearing message when the supplied message is %j',
+    (message) => {
+      expect(new AgentApiError(message, 500, undefined).message).toBe(
+        'Agent request failed (HTTP 500)'
+      )
+    }
+  )
+
   it('maps a plain-string error body to its message with the status and parsed body', async () => {
     respond(jsonResponse(409, { error: 'turn is not running' }))
 
@@ -441,6 +484,19 @@ describe('error mapping', () => {
     expect(error.body).toBeUndefined()
   })
 
+  it('falls back to the HTTP status when the response has no error text', async () => {
+    respond(new Response('', { status: 503 }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 503)'
+    )
+  })
+
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
     respond(jsonResponse(200, { wrong: 'shape' }))
 
@@ -452,7 +508,7 @@ describe('error mapping', () => {
     expect(error).not.toBeInstanceOf(AgentApiError)
   })
 
-  it('distinguishes a truncated 2xx body from a rejected request', async () => {
+  it('keeps a genuinely unreadable POST response distinct without exposing its route', async () => {
     respond(
       new Response('{"message_id":"m1","thread_', {
         status: 202,
@@ -466,7 +522,22 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(AgentResponseUnreadableError)
     expect(error).not.toBeInstanceOf(AgentApiError)
+    expect((error as Error).message).toBe('Unreadable agent response body')
   })
+
+  it.for([
+    new TypeError('Failed to fetch'),
+    new DOMException('The operation was aborted', 'AbortError')
+  ])(
+    'preserves transport failure identity after response headers',
+    async (cause) => {
+      const response = jsonResponse(200, [])
+      vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
+      respond(response)
+
+      await expect(makeClient().listThreads()).rejects.toBe(cause)
+    }
+  )
 })
 
 describe('Retry-After contract', () => {

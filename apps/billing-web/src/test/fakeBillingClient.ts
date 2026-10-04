@@ -18,6 +18,7 @@ import type {
   BillingResult,
   BillingStatusData,
   BillingStatusSnapshot,
+  CancelOperationResult,
   CapabilitiesSnapshot,
   PaymentMethodsSnapshot,
   PaymentPortalResult,
@@ -28,6 +29,8 @@ import type {
   SubscriptionCommandResult,
   SubscriptionPreview,
   TerminalBillingOperation,
+  TopupQuoteResult,
+  TopupResult,
   WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
@@ -61,6 +64,9 @@ export interface FakeBillingClientOptions {
   readonly capabilities?: Partial<BillingCapabilities>
   readonly denials?: CapabilitiesSnapshot['denials']
   readonly status?: BillingStatusData
+  readonly topupQuote?: TopupQuoteResult
+  readonly topup?: TopupResult
+  readonly cancelOperation?: CancelOperationResult
 }
 
 export interface FakeBillingClient {
@@ -74,6 +80,9 @@ export interface FakeBillingClient {
   readonly reportChallengeStarted: Mock<
     BillingClient['lifecycle']['reportChallengeStarted']
   >
+  readonly reportHostedStepOpened: Mock<
+    BillingClient['lifecycle']['reportHostedStepOpened']
+  >
   readonly reportChallengeSettled: Mock<
     BillingClient['lifecycle']['reportChallengeSettled']
   >
@@ -84,7 +93,12 @@ export interface FakeBillingClient {
     BillingClient['commands']['cancelSubscription']
   >
   readonly resubscribe: Mock<BillingClient['commands']['resubscribe']>
+  readonly cancelOperation: Mock<BillingClient['commands']['cancelOperation']>
   readonly recover: Mock<BillingClient['lifecycle']['recover']>
+  readonly quoteTopup: Mock<BillingClient['topup']['quoteTopup']>
+  readonly createTopupCheckout: Mock<
+    BillingClient['topup']['createTopupCheckout']
+  >
   readonly readCapabilities: Mock<BillingClient['capabilities']['read']>
   readonly invalidateCapabilities: BillingClient['capabilities']['invalidate']
   readonly readStatus: Mock<BillingClient['status']['read']>
@@ -126,7 +140,10 @@ export function createFakeBillingClient(
       occupied_seats: 1,
       scheduled_change: null,
       team_credit_stop: null
-    }
+    },
+    topupQuote = { status: 'error', code: 'REQUEST_FAILED' },
+    topup: topupOutcome = { status: 'error', code: 'REQUEST_FAILED' },
+    cancelOperation: cancelOperationOutcome = { status: 'canceled' }
   } = options
 
   const operations = new Map<string, BillingOperationState>()
@@ -163,6 +180,9 @@ export function createFakeBillingClient(
   const reportChallengeStarted: Mock<
     BillingClient['lifecycle']['reportChallengeStarted']
   > = vi.fn()
+  const reportHostedStepOpened: Mock<
+    BillingClient['lifecycle']['reportHostedStepOpened']
+  > = vi.fn()
   const reportChallengeSettled: Mock<
     BillingClient['lifecycle']['reportChallengeSettled']
   > = vi.fn()
@@ -182,7 +202,18 @@ export function createFakeBillingClient(
       return outcome
     })
   }
+  const quoteTopup: Mock<BillingClient['topup']['quoteTopup']> = vi.fn(
+    async () => topupQuote
+  )
+  const createTopupCheckout: Mock<
+    BillingClient['topup']['createTopupCheckout']
+  > = vi.fn(async () => {
+    if ('operation' in topupOutcome) publishOperation(topupOutcome.operation)
+    return topupOutcome
+  })
   const cancelSubscription = commandOf(cancelOutcome)
+  const cancelOperation: Mock<BillingClient['commands']['cancelOperation']> =
+    vi.fn(async () => cancelOperationOutcome)
   const resubscribe = commandOf(resubscribeOutcome)
   const capabilitiesSnapshot: CapabilitiesSnapshot = {
     capabilities: {
@@ -191,6 +222,7 @@ export function createFakeBillingClient(
       can_downgrade_to_personal: false,
       can_invite_members: false,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_subscribe_self_serve: false,
       can_top_up: false,
       ...granted
@@ -235,6 +267,7 @@ export function createFakeBillingClient(
       switchPresentation: unusedByHostedSurfaces(
         'lifecycle.switchPresentation'
       ),
+      reportHostedStepOpened,
       reportChallengeStarted,
       reportChallengeSettled,
       get: (id) => operations.get(id),
@@ -279,7 +312,8 @@ export function createFakeBillingClient(
       dispose: () => {}
     },
     topup: {
-      createTopupCheckout: unusedByHostedSurfaces('topup.createTopupCheckout'),
+      quoteTopup,
+      createTopupCheckout,
       createHostedTopupCheckout: unusedByHostedSurfaces(
         'topup.createHostedTopupCheckout'
       )
@@ -289,6 +323,7 @@ export function createFakeBillingClient(
       previewSubscribe,
       resubscribe,
       cancelSubscription,
+      cancelOperation,
       openPaymentPortal
     }
   }
@@ -316,6 +351,7 @@ export function createFakeBillingClient(
     readPlans,
     readPaymentMethods,
     invalidatePaymentMethods,
+    reportHostedStepOpened,
     reportChallengeStarted,
     reportChallengeSettled,
     previewSubscribe,
@@ -323,7 +359,10 @@ export function createFakeBillingClient(
     subscribe,
     cancelSubscription,
     resubscribe,
+    cancelOperation,
     recover,
+    quoteTopup,
+    createTopupCheckout,
     readCapabilities,
     invalidateCapabilities,
     readStatus,
@@ -393,6 +432,14 @@ function operationIdentity(id: string) {
 
 export function succeededOperation(id = 'op_1'): TerminalBillingOperation {
   return { ...operationIdentity(id), phase: 'succeeded' }
+}
+
+/** Ended without a verdict: the poll budget ran out, the server parked it, or another replaced it. */
+export function unresolvedOperation(
+  phase: 'timed_out' | 'reconciliation_needed' | 'superseded',
+  id = 'op_1'
+): TerminalBillingOperation {
+  return { ...operationIdentity(id), phase }
 }
 
 /** Pending with no continuation on offer: the lifecycle is still polling it. */

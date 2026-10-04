@@ -8,7 +8,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { FieldSchema, FileValue } from '../../config/workshop-playground'
 import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
 import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import SelectedFileRow from './SelectedFileRow.vue'
 
 const {
@@ -27,6 +27,7 @@ const {
   disabled?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 const value = defineModel<FileValue | FileValue[]>()
 const selectedFiles = computed(() =>
   value.value === undefined
@@ -83,14 +84,12 @@ const prompt = computed(() => {
       imageOnly.value
         ? 'workshop.field.selectOrDropImages'
         : 'workshop.field.selectOrDropFiles',
-      locale,
       { count: allowed }
     )
   return t(
     imageOnly.value
       ? 'workshop.field.selectOrDropImage'
-      : 'workshop.field.selectOrDropFile',
-    locale
+      : 'workshop.field.selectOrDropFile'
   )
 })
 
@@ -113,7 +112,7 @@ const rejectionMessage = computed(() => {
     limit: uploadLimit.value,
     ...(limit.value === undefined ? {} : { count: limit.value })
   }
-  return `${t(rejection.value, locale, named)} ${t(unchanged, locale)}`
+  return `${t(rejection.value, named)} ${t(unchanged)}`
 })
 
 function accepts(file: File): boolean {
@@ -228,14 +227,14 @@ function putBack() {
       class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-primary-warm-gray"
       data-testid="removed-file-undo"
     >
-      {{ t('workshop.field.removedFile', locale, { name: removed.file.name }) }}
+      {{ t('workshop.field.removedFile', { name: removed.file.name }) }}
       <button
         type="button"
         class="cursor-pointer font-medium text-primary-comfy-yellow underline underline-offset-2 disabled:cursor-not-allowed"
         :disabled
         @click="putBack"
       >
-        {{ t('workshop.field.undoRemove', locale) }}
+        {{ t('workshop.field.undoRemove') }}
       </button>
     </p>
     <ul v-if="selectedFiles.length" class="flex min-w-0 flex-col gap-2">
@@ -268,7 +267,7 @@ function putBack() {
       <span>{{ prompt }}</span>
       <span class="text-2xs">
         <template v-if="acceptedTypes">{{ acceptedTypes }} · </template>
-        {{ t('workshop.field.uploadLimit', locale, { limit: uploadLimit }) }}
+        {{ t('workshop.field.uploadLimit', { limit: uploadLimit }) }}
       </span>
     </label>
     <input

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../i18n/translations'
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
@@ -12,7 +13,6 @@ import {
   lookGroups
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { shownOption } from '../../../lib/workshop/cinematic-studio/grade-image'
 import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
@@ -29,6 +29,7 @@ const {
   openPicker?: PickerKey
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ open: [key: PickerKey] }>()
 
@@ -37,10 +38,10 @@ const camera = computed(() => {
     directionOption(group.part, direction)
   )
   return {
-    value: tc(body.label, locale),
+    value: t(body.label),
     specs: specs
       .filter((option) => option.id !== 'auto')
-      .map((option) => tc(option.label, locale))
+      .map((option) => t(option.label))
   }
 })
 
@@ -49,8 +50,8 @@ const rows = computed(() =>
     const { label, option } = shownOption(group.part, direction, colors)
     return {
       key: group.part,
-      title: tc(group.title, locale),
-      value: tc(label, locale),
+      title: t(group.title),
+      value: t(label),
       option
     }
   })
@@ -83,7 +84,7 @@ const rowClass = (key: PickerKey) =>
         aria-hidden="true"
       />
       <span class="w-14 shrink-0 text-xs text-primary-warm-gray">
-        {{ tc('cinematic.section.camera', locale) }}
+        {{ t('cinematic.section.camera') }}
       </span>
       <span
         class="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-col max-sm:items-start max-sm:gap-1"
@@ -95,15 +96,27 @@ const rowClass = (key: PickerKey) =>
         </span>
         <span
           v-if="camera.specs.length"
-          class="flex max-w-full flex-wrap items-center gap-1 sm:shrink-0"
+          class="flex max-w-full items-center gap-1 sm:shrink-0"
           data-testid="camera-specs"
         >
           <span
-            v-for="spec in camera.specs"
+            v-for="(spec, index) in camera.specs"
             :key="spec"
-            class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5 text-xs text-primary-comfy-canvas tabular-nums"
+            :class="
+              cn(
+                'truncate rounded-md bg-transparency-white-t8 px-1.5 py-0.5 text-xs text-primary-comfy-canvas tabular-nums',
+                index > 0 && 'max-sm:hidden'
+              )
+            "
           >
             {{ spec }}
+          </span>
+          <span
+            v-if="camera.specs.length > 1"
+            class="shrink-0 rounded-md bg-transparency-white-t8 px-1.5 py-0.5 text-xs text-primary-comfy-canvas tabular-nums sm:hidden"
+            aria-hidden="true"
+          >
+            +{{ camera.specs.length - 1 }}
           </span>
         </span>
       </span>

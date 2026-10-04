@@ -485,6 +485,14 @@ export const useDialogService = () => {
   }
 
   async function showTopUpCreditsDialog(options?: TopUpCreditsDialogOptions) {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'entry',
+      stage: 'add_credits_clicked',
+      outcome: 'pending',
+      payment_intent_source:
+        options?.source ??
+        (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
+    })
     const { type } = useBillingContext()
     const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
       useBillingCapabilities()
@@ -518,20 +526,15 @@ export const useDialogService = () => {
     }
     if (!canTopUp.value) return
 
-    // Only the workspace rail's content declares `source`; the legacy one
-    // takes `isInsufficientCredits` alone, so forwarding the whole options
-    // object there lands `source` in attrs as a stray DOM attribute on its
-    // root rather than as attribution.
-    const isWorkspaceRail = type.value === 'workspace'
+    // Unknown never selects the legacy content, which buys credits directly.
+    const isWorkspaceRail = type.value !== 'legacy'
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
       component: isWorkspaceRail
         ? TopUpCreditsDialogContentWorkspace
         : TopUpCreditsDialogContentLegacy,
-      props: isWorkspaceRail
-        ? options
-        : { isInsufficientCredits: options?.isInsufficientCredits },
+      props: options,
       dialogComponentProps: {
         renderer: 'reka',
         headless: true,
@@ -813,6 +816,34 @@ export const useDialogService = () => {
     })
   }
 
+  async function showInviteLinkInvalidDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteLinkInvalidDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-link-invalid',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
+  async function showInviteWrongAccountDialog(props: { inviteToken: string }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteWrongAccountDialogContent.vue')
+    // showDialog keeps an existing entry's props; close first so a repeat 403
+    // carries the fresh token instead of replaying the previous one.
+    dialogStore.closeDialog({ key: 'invite-wrong-account' })
+    return dialogStore.showDialog({
+      key: 'invite-wrong-account',
+      component,
+      props,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
   async function showRevokeInviteDialog(inviteId: string) {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue')
@@ -845,13 +876,15 @@ export const useDialogService = () => {
   async function showCancelSubscriptionDialog(
     cancelAt?: string,
     flowAlreadyOpened?: boolean,
-    isScopeCurrent?: () => boolean
+    isScopeCurrent?: () => boolean,
+    flowAlreadyConfirmed?: boolean
   ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
     if (isScopeCurrent && !isScopeCurrent()) return false
     const guardedProps = {
       ...(flowAlreadyOpened !== undefined ? { flowAlreadyOpened } : {}),
+      ...(flowAlreadyConfirmed !== undefined ? { flowAlreadyConfirmed } : {}),
       ...(cancelAt !== undefined ? { cancelAt } : {}),
       ...(isScopeCurrent ? { isScopeCurrent } : {})
     }
@@ -878,12 +911,14 @@ export const useDialogService = () => {
       launchWorkspaceId,
       showFallback: ({
         flowAlreadyOpened = false,
+        flowAlreadyConfirmed = false,
         isScopeCurrent = () => true
       } = {}) =>
         showCancelSubscriptionDialog(
           cancelAt,
           flowAlreadyOpened,
-          isScopeCurrent
+          isScopeCurrent,
+          flowAlreadyConfirmed
         )
     })
   }
@@ -897,6 +932,7 @@ export const useDialogService = () => {
   async function showDowngradeToPersonalDialog(options: {
     planName: string
     planSlug: string
+    paymentIntentSource?: PaymentIntentSource
   }): Promise<DowngradeToPersonalResult | null> {
     const {
       useDowngradeToPersonal,
@@ -908,7 +944,9 @@ export const useDialogService = () => {
       refreshMembers,
       previewDowngrade,
       downgradeToPersonal
-    } = useDowngradeToPersonal()
+    } = useDowngradeToPersonal({
+      paymentIntentSource: options.paymentIntentSource
+    })
 
     let requiresReactivation = false
     let chargeCents = 0
@@ -1057,6 +1095,8 @@ export const useDialogService = () => {
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
+    showInviteLinkInvalidDialog,
+    showInviteWrongAccountDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
     showCancelSubscriptionFlow,

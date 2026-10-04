@@ -1,12 +1,14 @@
 /**
  * Projections from the SDK's operation state and top-up result onto the two
  * shapes the top-up dialog already reads: the poller's operation record and
- * the `CreateTopupResponse` the legacy call returned. The dialog is untouched;
- * these give it the same inputs from the other rail.
+ * the `CreateTopupResponse` the legacy call returned, plus the terminal the
+ * SDK observed where those shapes cannot hold it.
  */
 import type {
   BillingDeclineReason,
   BillingOperationState,
+  BillingOperationTerminal,
+  BillingTelemetryFailure,
   TopupFailure,
   TopupResult
 } from '@comfyorg/account-core/billing'
@@ -72,36 +74,98 @@ export function projectTopupOperation(
   }
 }
 
+/**
+ * A purchase the SDK settled without crediting, as the response the dialog
+ * handles, carrying the terminal its status cannot: the decline reason, or
+ * that this tab stopped watching, or that support must reconcile it.
+ */
+export class UncreditedTopupResponse implements CreateTopupResponse {
+  readonly topup_id = ''
+
+  constructor(
+    readonly billing_op_id: string,
+    readonly status: 'failed' | 'pending',
+    readonly amount_cents: number,
+    readonly terminal: BillingOperationTerminal
+  ) {}
+}
+
+/**
+ * Most SDK refusals carry no HTTP status, which a status-less API error
+ * would otherwise report as a network failure, so each names its category.
+ */
 function topupFailureError(failure: TopupFailure): WorkspaceApiError {
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
   return new WorkspaceApiError(
     t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
-    serverCode === undefined ? failure.code : unwrapServerCode(serverCode)
+    serverCode === undefined ? failure.code : unwrapServerCode(serverCode),
+    topupFailureCategory(failure)
   )
 }
 
+function topupFailureCategory(
+  failure: TopupFailure
+): BillingTelemetryFailure['failure_category'] {
+  switch (failure.code) {
+    case 'REQUEST_FAILED':
+      return failure.httpStatus === undefined ? 'network' : 'api_rejected'
+    case 'SUPERSEDED':
+      return 'stale_operation'
+    case 'INVALID_AMOUNT':
+      return 'validation'
+    default:
+      return 'api_rejected'
+  }
+}
+
 /**
- * A settled result as the response the dialog handles today. `unsettled` has
- * no counterpart: the dialog reads an undefined response as "nothing to
- * report" and the operation stays visible through `projectTopupOperation`.
- * `topup_id` is not surfaced by the SDK and nothing reads it.
+ * A settled result as the response the dialog handles today. `unsettled` is
+ * the pending response: the server may still settle it, and the operation
+ * stays visible through `projectTopupOperation`. `topup_id` is not surfaced
+ * by the SDK and nothing reads it.
  */
 export function projectTopupResult(
   result: TopupResult,
   amountCents: number
-): CreateTopupResponse | undefined {
+): CreateTopupResponse {
   switch (result.status) {
     case 'ok':
-    case 'declined':
       return {
         billing_op_id: result.operation.id,
         topup_id: '',
-        status: result.status === 'ok' ? 'completed' : 'failed',
+        status: 'completed',
         amount_cents: amountCents
       }
+    case 'declined':
+      return new UncreditedTopupResponse(
+        result.operation.id,
+        'failed',
+        amountCents,
+        {
+          stage: 'failed',
+          outcome: 'failure',
+          failure_category: 'provider_decline',
+          decline_reason: result.operation.declineReason
+        }
+      )
     case 'unsettled':
-      return undefined
+      return new UncreditedTopupResponse(
+        result.operation.id,
+        'pending',
+        amountCents,
+        result.operation.phase === 'timed_out'
+          ? {
+              stage: 'timeout',
+              outcome: 'failure',
+              failure_category: 'poll_timeout'
+            }
+          : {
+              stage: 'failed',
+              outcome: 'failure',
+              failure_category: 'reconciliation_needed'
+            }
+      )
     case 'error':
       throw topupFailureError(result)
   }

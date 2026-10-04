@@ -7,7 +7,10 @@ import {
   watch
 } from 'vue'
 
-import type { PreviewSubscribeInput } from '@comfyorg/account-core/billing'
+import type {
+  BillingClient,
+  PreviewSubscribeInput
+} from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
@@ -18,6 +21,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
@@ -37,6 +41,7 @@ import type {
   SettledSubscribeResponse,
   SubscriptionRailOutcome
 } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
@@ -337,7 +342,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     void billingOperationStore.startOperation(
       status.pending_billing_op_id,
       resumeModeFor(status.pending_billing_op_type),
-      undefined,
+      { resumed: true },
       status.action_url
     )
     return true
@@ -464,7 +469,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     const rail = useSubscriptionRail()
     if (rail) {
       const response = await onSubscriptionRail(() =>
-        rail.subscribe(subscribeInputFrom(planSlug, options))
+        rail.subscribe(subscribeInputFrom(planSlug, options), {
+          callerStarted: options?.attemptStartedAt !== undefined
+        })
       )
       // The SDK waited for the operation, so the refresh the legacy path fires
       // and forgets has already run on the rail.
@@ -564,13 +571,16 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   }
 
   /** The rail's portal URL, or the legacy client's when the rail declines. */
-  async function requestPortalUrl(): Promise<string | undefined> {
+  async function requestPortalUrl(): Promise<{
+    url: string | undefined
+    billingClient: BillingClient
+  }> {
     const rail = useSubscriptionRail()
     if (rail) {
       const url = await onSubscriptionRail(() =>
         rail.openPaymentPortal(window.location.href)
       )
-      if (url !== DECLINED) return url
+      if (url !== DECLINED) return { url, billingClient: 'sdk' }
     }
 
     isLoading.value = true
@@ -578,7 +588,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     try {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      return response.url || undefined
+      return { url: response.url || undefined, billingClient: 'legacy' }
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
@@ -598,17 +608,26 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     if (hosted === 'opened') return
     if (hosted === 'blocked') return reportBillingTabBlocked()
 
+    const portal = createBillingPortalReporter(telemetry, 'manage_subscription')
     // The handle arms the return refresh, so adding `noopener` here (which
     // nulls it) silently stops billing state from re-reading on return.
     const portalTab = window.open('', '_blank')
-    if (!portalTab) return reportBillingTabBlocked()
+    if (!portalTab) {
+      portal.blocked()
+      return reportBillingTabBlocked()
+    }
     try {
-      const url = await requestPortalUrl()
-      if (!url) return portalTab.close()
+      const { url, billingClient } = await requestPortalUrl()
+      if (!url) {
+        portal.failed(undefined, billingClient)
+        return portalTab.close()
+      }
       portalTab.location.href = url
+      portal.opened(billingClient)
       refreshOnPortalReturn()
     } catch (err) {
       portalTab.close()
+      portal.failed(err)
       throw err
     }
   }
@@ -648,11 +667,11 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       const settled = await onSubscriptionRail(() =>
         rail.cancelSubscription()
       ).catch((err: unknown) => {
-        trackCancelFailed(err)
+        if (!(err instanceof SettledOperationError)) trackCancelFailed(err)
         throw err
       })
       if (settled !== DECLINED) {
-        trackCancelSucceeded()
+        if (!settled.operationObserved) trackCancelSucceeded()
         return
       }
     }

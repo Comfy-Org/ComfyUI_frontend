@@ -13,8 +13,8 @@ const { label, code } = defineProps<{
 const { t } = useI18n()
 const { copy, copied } = useClipboard({ legacy: true })
 
-/** Breaks after its underscores first, and mid-word only when one piece alone overflows. */
-const segments = computed(() => code.split(/(?<=_)/))
+/** Breaks after its underscores and hyphens first, and mid-word only when one piece alone overflows. */
+const segments = computed(() => code.split(/(?<=[_-])/))
 </script>
 
 <template>

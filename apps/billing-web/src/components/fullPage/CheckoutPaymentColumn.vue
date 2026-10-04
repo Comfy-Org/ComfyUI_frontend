@@ -34,9 +34,9 @@ const {
   publishableKey,
   canPay,
   reopening,
-  canCancel = false,
   keepSubscription,
-  savedMethods = []
+  savedMethods = [],
+  purchase = 'plan'
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
@@ -44,10 +44,10 @@ const {
   canPay: boolean
   /** The page is re-opening the challenge on its own, so Complete verification waits. */
   reopening: boolean
-  canCancel?: boolean
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
+  purchase?: 'plan' | 'credits'
 }>()
 
 const emit = defineEmits<{
@@ -154,12 +154,12 @@ const copy = computed<StripePaymentCopy>(() => ({
           />
         </div>
         <CheckoutPayAction
+          :purchase
           disabled
           :loading="locked"
           :locked
           :reopening
           :phase
-          :can-cancel="canCancel"
           @cancel="emit('cancel')"
           @continue-verification="emit('continueVerification')"
         />
@@ -174,13 +174,13 @@ const copy = computed<StripePaymentCopy>(() => ({
         @submit.prevent="emit('pay', undefined)"
       >
         <CheckoutPayAction
+          :purchase
           v-bind="payContext"
           :disabled="!canPay"
           :loading="locked"
           :locked
           :reopening
           :phase
-          :can-cancel="canCancel"
           @confirm-reactivation="emit('confirmReactivation', $event)"
           @consent-missing="emit('consentMissing')"
           @cancel="emit('cancel')"
@@ -206,13 +206,13 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #pay>
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled="!canPay"
               :loading="locked"
               :locked
               :reopening
               :phase
-              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
               @cancel="emit('cancel')"
@@ -240,13 +240,13 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #submit="{ disabled, loading }">
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled
               :loading
               :locked
               :reopening
               :phase="formShown ? phase : undefined"
-              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
               @cancel="emit('cancel')"

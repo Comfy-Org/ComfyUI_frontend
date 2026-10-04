@@ -11,7 +11,7 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -47,6 +47,7 @@ const {
   locale?: Locale
   autoplay?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const activeIndex = ref(0)
 const active = computed<FeaturedSlide | undefined>(
@@ -117,7 +118,7 @@ const fill = computed(() =>
   <section
     v-if="active"
     ref="banner"
-    :aria-label="t('workshop.sections.featured', locale)"
+    :aria-label="t('workshop.sections.featured')"
     class="relative isolate overflow-hidden rounded-3xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
@@ -190,14 +191,14 @@ const fill = computed(() =>
 
         <p
           v-if="active.summary"
-          class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
+          class="line-clamp-1 max-w-prose shrink-0 text-content-secondary short:hidden"
         >
           {{ active.summary }}
         </p>
 
         <div class="pointer-events-auto flex w-fit items-center gap-3">
           <Button as="a" :href="active.href" class="w-fit">
-            {{ active.cta ?? t('workshop.hub.tryNow', locale) }}
+            {{ active.cta ?? t('workshop.hub.tryNow') }}
           </Button>
           <Button
             v-if="active.docsHref"
@@ -209,7 +210,7 @@ const fill = computed(() =>
             class="w-fit"
             data-testid="featured-docs-link"
           >
-            {{ t('workshop.hub.docs', locale) }}
+            {{ t('workshop.hub.docs') }}
           </Button>
         </div>
       </div>

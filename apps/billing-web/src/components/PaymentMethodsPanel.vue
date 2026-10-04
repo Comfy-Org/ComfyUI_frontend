@@ -1,33 +1,25 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
-import {
-  usePaymentMethods,
-  useBillingClient
-} from '@comfyorg/account-ui/billing'
+import { usePaymentMethods } from '@comfyorg/account-ui/billing'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
-
-/** Marks the customer's trip back from the provider's hosted portal. */
-const PORTAL_PARAM = 'portal'
-const PORTAL_RETURN = 'return'
+import { usePaymentPortal } from '@/composables/usePaymentPortal'
 
 const { t } = useI18n()
 const { coded, refusal } = useHostedCopy()
-const route = useRoute()
-const router = useRouter()
-const { commands } = useBillingClient<'commands'>(undefined)
-
-const returningFromPortal = route.query[PORTAL_PARAM] === PORTAL_RETURN
+const {
+  returningFromPortal,
+  opening: openingPortal,
+  refusal: portalRefusal,
+  openPortal,
+  dropReturnMarker
+} = usePaymentPortal('payment_methods')
 
 const { methods, defaultMethod, loading, failure, invalidateAndRefresh } =
   usePaymentMethods({ immediate: !returningFromPortal })
-
-const portalFailure = ref<string | undefined>()
-const openingPortal = ref(false)
 
 const rows = computed(() =>
   (methods.value ?? []).map((method) => ({
@@ -46,34 +38,9 @@ function describe(method: SavedPaymentMethod): string {
   })
 }
 
-function portalReturnUrl(): string {
-  const url = new URL(window.location.href)
-  url.searchParams.set(PORTAL_PARAM, PORTAL_RETURN)
-  return url.href
-}
-
-async function openPortal() {
-  openingPortal.value = true
-  portalFailure.value = undefined
-  const result = await commands.openPaymentPortal({
-    returnUrl: portalReturnUrl()
-  })
-  openingPortal.value = false
-  if (result.status === 'error') {
-    portalFailure.value = refusal(result)
-    return
-  }
-  window.location.assign(result.value.url)
-}
-
 async function resumeFromPortal() {
   await invalidateAndRefresh()
-  await router.replace({
-    path: route.path,
-    query: Object.fromEntries(
-      Object.entries(route.query).filter(([key]) => key !== PORTAL_PARAM)
-    )
-  })
+  await dropReturnMarker()
 }
 
 if (returningFromPortal) void resumeFromPortal()
@@ -107,8 +74,8 @@ if (returningFromPortal) void resumeFromPortal()
       </li>
     </ul>
 
-    <p v-if="portalFailure" class="m-0 text-sm text-destructive-background">
-      {{ portalFailure }}
+    <p v-if="portalRefusal" class="m-0 text-sm text-destructive-background">
+      {{ refusal(portalRefusal) }}
     </p>
     <button
       type="button"
