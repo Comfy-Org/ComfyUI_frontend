@@ -24,7 +24,11 @@ export function useKeybindingService() {
 
     const target = event.composedPath()[0] as HTMLElement
     // Let the active menu own Escape without also triggering the global shortcut.
-    if (event.key === 'Escape' && target.closest('[role="menu"]')) {
+    if (
+      event.key === 'Escape' &&
+      target instanceof Element &&
+      target.closest('[role="menu"]')
+    ) {
       return
     }
 
