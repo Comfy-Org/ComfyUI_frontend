@@ -48,11 +48,7 @@ export interface AgentLocalRunRig {
   finishRunForUser: (jobId: string) => Promise<void>
   /** {@link startRunForUser} then {@link finishRunForUser}. */
   runWorkflowForUser: (jobId: string) => Promise<void>
-  /**
-   * The green running outline on the node the run is executing, matched on the
-   * executing branch's own border class so a merely *selected* node cannot
-   * satisfy it.
-   */
+  /** The executing class on the running node root, independent of selection. */
   runningOutline: Locator
   /** The run's output as rendered on the output node. */
   outputImage: Locator
@@ -63,9 +59,9 @@ export interface AgentLocalRunRig {
 interface AgentLocalRunOptions {
   /**
    * Whether the fake ComfyUI identifies its socket on the `status` frame.
-   * `false` models the window before the first `status` arrives, and the state
-   * `api.resetSocket()` leaves behind on an identity change: `api.clientId` is
-   * `undefined`, with a stale id still sitting in `sessionStorage`.
+   * `false` models the window before the first `status` arrives:
+   * `api.clientId` is undefined while the in-memory `api.initialClientId`
+   * snapshot can still contain an id inherited from an earlier session.
    */
   socketReportsId: boolean
 }
@@ -120,6 +116,13 @@ export const agentLocalRunTest = agentTest.extend<
     const lastTurnClientId = () => turnPosts.at(-1)?.['client_id']
     execution.addressFramesWhen(() => lastTurnClientId() === SOCKET_SID)
 
+    if (socketReportsId) {
+      await page.waitForFunction(
+        (expectedSid) => sessionStorage.getItem('clientId') === expectedSid,
+        SOCKET_SID
+      )
+    }
+
     await harness.bindAndAwaitFirstTurn()
 
     const startRunForUser = async (jobId: string) => {
@@ -143,7 +146,7 @@ export const agentLocalRunTest = agentTest.extend<
         await finishRunForUser(jobId)
       },
       runningOutline: harness.targetNode.locator(
-        '[data-testid="node-state-outline-overlay"].border-node-stroke-executing'
+        ':scope.outline-node-stroke-executing'
       ),
       outputImage: harness.outputImage(SOURCE_NODE_ID),
       outputFilename
