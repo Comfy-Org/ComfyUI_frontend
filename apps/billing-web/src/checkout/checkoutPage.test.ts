@@ -1398,6 +1398,10 @@ const challengedOperation = (id = 'op_3ds'): PendingBillingOperation => ({
   ...pendingOperation(id),
   authenticationState: 'requires_action'
 })
+const openChallenge = (id = 'op_3ds'): PendingBillingOperation => ({
+  ...challengedOperation(id),
+  challenge: { clientSecret: 'cs', status: 'in_progress' }
+})
 const refusedChallenge = (id = 'op_3ds'): PendingBillingOperation => ({
   ...pendingOperation(id),
   authenticationState: 'failed_retryable'
@@ -1522,12 +1526,29 @@ describe('submitPhaseOf', () => {
       }
     },
     {
-      name: 'a Pay whose operation is processing',
+      name: 'a Pay the server still reports as processing before any challenge',
       page: capturing({
         kind: 'sent',
         operation: { ...pendingOperation(), authenticationState: 'processing' }
       }),
+      phase: { kind: 'unknown' }
+    },
+    {
+      name: 'a Pay processing once the bank asked for a challenge',
+      page: capturing({
+        kind: 'sent',
+        operation: {
+          ...pendingOperation(),
+          authenticationState: 'processing',
+          customerActionSeen: true
+        }
+      }),
       phase: { kind: 'processing' }
+    },
+    {
+      name: "a Pay whose challenge is open in Stripe's window",
+      page: capturing({ kind: 'sent', operation: openChallenge() }),
+      phase: { kind: 'challenge', operation: openChallenge() }
     },
     {
       name: 'an Alipay Pay, even over a challenge',
@@ -2069,7 +2090,11 @@ describe('reduceCheckoutPage through Cancel payment', () => {
       name: 'a cancel the server refused',
       events: [...challenged, cancel, refusedAs('NOT_CANCELABLE')]
     },
-    { name: 'a Pay with no operation yet', events: [...live, submitted] }
+    { name: 'a Pay with no operation yet', events: [...live, submitted] },
+    {
+      name: "a challenge open in Stripe's window",
+      events: [...live, submitted, changed(openChallenge())]
+    }
   ])('cancels $target on $name', ({ events, target }) => {
     expect(cancelTarget(replay(events))).toBe(target)
   })

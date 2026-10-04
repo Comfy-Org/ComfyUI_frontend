@@ -504,6 +504,10 @@ function cancelOf(page: CheckoutPage): PaymentCancel | undefined {
 export const isCanceling = (page: CheckoutPage) =>
   cancelOf(page) === 'canceling'
 
+/** The customer asked to cancel the payment, whatever the server answered. */
+export const isCancelAsked = (page: CheckoutPage) =>
+  cancelOf(page) !== undefined
+
 function withCancel(
   page: CheckoutPage,
   cancel: PaymentCancel | undefined
@@ -1109,7 +1113,9 @@ export type SubmitPhase =
 
 /**
  * What Cancel payment offers on a challenge. Absent for an operation the
- * server never cancels (a top-up), so the button never shows there.
+ * server never cancels (a top-up), and while Stripe's challenge window covers
+ * the page, where the button cannot be reached and closing the window is the
+ * way out.
  */
 export type CancelOffer = 'offered' | 'canceling' | 'not_cancelable'
 
@@ -1122,9 +1128,22 @@ export function submitPhaseOf(
   const { redirectMethod, operation, cancel } = page.attempt
   if (redirectMethod !== undefined)
     return { kind: 'redirecting', method: redirectMethod }
-  return operation === undefined
+  return operation === undefined ||
+    (cancel === undefined && isStillConfirming(operation))
     ? { kind: 'unknown' }
     : phaseOver(operation, cancel)
+}
+
+/**
+ * The server reports an intent it has not confirmed yet as `processing`, the
+ * same as one past the bank, so this page's own Pay is past a challenge only
+ * once the customer was asked for one.
+ */
+function isStillConfirming(operation: PendingBillingOperation): boolean {
+  return (
+    operation.authenticationState === 'processing' &&
+    !operation.customerActionSeen
+  )
 }
 
 /** A payment the server would not cancel because it is already moving is Phase B on its word. */
@@ -1153,7 +1172,11 @@ function cancelOfferOf(
   operation: PendingBillingOperation,
   cancel: Exclude<PaymentCancel, 'PAYMENT_IN_FLIGHT'> | undefined
 ): { readonly cancel?: CancelOffer } {
-  if (operation.kind !== 'subscription') return {}
+  if (
+    operation.kind !== 'subscription' ||
+    operation.challenge?.status === 'in_progress'
+  )
+    return {}
   return { cancel: cancel === undefined ? 'offered' : CANCEL_OFFER[cancel] }
 }
 
@@ -1187,6 +1210,21 @@ export function isChallengeReopenable(
   if (operation.presentation === 'hosted')
     return operation.actionUrl !== undefined
   return operation.challenge?.status === 'required'
+}
+
+/**
+ * A plan payment whose in-page challenge Stripe's window ended unfinished,
+ * closed by the customer or failed by the bank. Nothing was charged, but the
+ * server still holds the plan change for it until it is canceled.
+ */
+export function abandonedChallengeOf(
+  operation: BillingOperationState | undefined
+): string | undefined {
+  return operation?.phase === 'pending' &&
+    operation.kind === 'subscription' &&
+    operation.challenge?.status === 'failed'
+    ? operation.id
+    : undefined
 }
 
 /**
