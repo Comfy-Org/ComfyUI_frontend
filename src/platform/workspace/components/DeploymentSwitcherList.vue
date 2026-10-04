@@ -5,7 +5,7 @@
   <DeploymentSwitcherRow
     :label="$t('deploymentSwitcher.comfyCloud')"
     :caption="$t('deploymentSwitcher.comfyCloudCaption')"
-    :checked="pickedDeploymentId === null"
+    :checked="pickedDeployment === null"
     data-testid="deployment-row-cloud"
     @click="emit('choose', null)"
   />
@@ -56,6 +56,7 @@ const { t } = useI18n()
 const {
   deployments,
   pickedDeploymentId,
+  pickedDeployment,
   defaultDeploymentId,
   followsWorkspace,
   buildsVisible
