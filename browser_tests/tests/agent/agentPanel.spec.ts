@@ -7,6 +7,7 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
@@ -179,13 +180,12 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
-  test('shows an admission paywall without losing the rejected prompt', async ({
+  test('localizes an admission paywall without losing the rejected prompt', async ({
     agentPanel,
     comfyPage
   }) => {
     const page = comfyPage.page
     const panel = agentPanel.root
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const prompt = 'Build a product photo workflow'
 
     await test.step('reject the next turn with a no-funds admission error', async () => {
@@ -204,19 +204,29 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await test.step('open the agent panel on a workflow', async () => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
+      await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
     })
 
     await test.step('send a prompt the server will reject', async () => {
+      const composer = panel.getByRole('textbox', {
+        name: /^Décrivez vos idées/
+      })
       await composer.fill(prompt)
-      await panel.getByRole('button', { name: 'Send' }).click()
+      await panel.getByRole('button', { name: frMessages.agent.send }).click()
     })
 
     await test.step('keep the rejected prompt and surface the paywall', async () => {
+      const composer = panel.getByRole('textbox', {
+        name: /^Décrivez vos idées/
+      })
       await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
       await expect(composer).toHaveText(prompt)
       const paywall = panel.getByRole('alert')
-      await expect(paywall).toContainText(enMessages.agent.paywall.title)
-      await expect(paywall).toContainText('Add credits to continue.')
+      await expect(paywall).toContainText(frMessages.agent.paywall.title)
+      await expect(paywall).toContainText(
+        frMessages.agent.paywall.body.subscribed
+      )
+      await expect(paywall).not.toContainText('Add credits to continue.')
     })
   })
 
