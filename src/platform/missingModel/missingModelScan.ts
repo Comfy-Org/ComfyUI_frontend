@@ -436,9 +436,7 @@ function collectEmbeddedModels(
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
   graphData: MissingModelWorkflowData
 ): DeclaredModelFile[] {
-  // Node-level entries only have to name a model; the top-level list is
-  // declared strict. Enrichment fills each field where present, so both can
-  // ride in one array.
+  // Node entries only name a model; enrichment fills each field where present.
   const result: DeclaredModelFile[] = []
   const nodesById = new Map(allNodes.map((node) => [String(node.id), node]))
 

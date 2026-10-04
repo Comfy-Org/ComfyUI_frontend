@@ -66,13 +66,9 @@ const zModelFile = z.object({
 })
 
 /**
- * What a node's `properties.models` entry has to carry to be usable at all.
- * Only `name` is required, because that is what selection and enrichment key
- * on; everything else is filled in where present and left alone where not.
- *
- * Separate from `zModelFile`, which is the strict shape a workflow must
- * declare to pass validation. Workflows that failed strict validation still
- * load, and their entries are the ones most likely to be partial.
+ * A node's declared model entry. Only `name` is required - the shape a
+ * workflow must declare to pass validation is `zModelFile`, and a workflow
+ * that failed it still loads.
  */
 export const zDeclaredModelFile = z.object({
   name: z.string(),
