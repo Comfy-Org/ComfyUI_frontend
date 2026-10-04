@@ -4841,7 +4841,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } finally {
       this.selectionNotificationDepth--
     }
-    if (notify && selected.size !== resultingSelectionSize)
+    if (
+      notify &&
+      this.selectionNotificationDepth === 0 &&
+      selected.size !== resultingSelectionSize
+    )
       this.onSelectionChange?.(this.selected_nodes)
   }
 
