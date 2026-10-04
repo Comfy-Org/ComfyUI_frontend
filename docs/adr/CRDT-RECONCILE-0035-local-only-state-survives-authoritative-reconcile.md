@@ -72,8 +72,8 @@ any change to the apply path.
 1. **Pending local intent is never silently discarded by a remote apply.** A
    node, link or widget value the human changed locally, and that the
    document has not yet accepted, is not removed, recreated or overwritten by
-   a frame that does not name it. This holds whatever state the op that
-   carried the edit is in, including after it timed out.
+   a frame that does not name it. The requirement covers every state the
+   carrying op can be in, including after it has timed out.
 2. **A host rejection is reported.** When the host explicitly refuses a human
    op, the user is told and the refused registers are put back to the
    document's value.
@@ -86,7 +86,7 @@ any change to the apply path.
 
 How well main holds each one:
 
-- **Hold structurally.** Requirement 2 holds for every op kind. Requirement 1
+- **Hold.** Requirement 2 holds for every op kind. Requirement 1
   holds by construction in merge mode, which is every apply except the first
   one after a `doc_reset`.
 - **Hold only partially.** A `doc_reset` replace removes local-only nodes and
