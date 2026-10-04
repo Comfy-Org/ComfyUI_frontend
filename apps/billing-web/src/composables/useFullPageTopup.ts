@@ -90,6 +90,12 @@ export function useFullPageTopup() {
     () => page.value.kind === 'capture' && page.value.attempt.kind === 'sent'
   )
 
+  /**
+   * The lifecycle runs the bank's check in this page only when it already
+   * holds this origin's Stripe key; a Pay started before then goes to the
+   * hosted invoice, which never returns here.
+   */
+  const stripeKeyRead = awaitBillingWebStripeKey()
   const challengePort = createDeferredStripeChallengePort(
     awaitBillingWebStripeKey
   )
@@ -194,6 +200,7 @@ export function useFullPageTopup() {
     if (!canPay.value) return
     const mine = ++payGeneration
     dispatch({ type: 'paySubmitted' })
+    await stripeKeyRead
     const verdict = topupVerdictOf(await purchase.submit())
     if (mine !== payGeneration) return
     if (verdict.kind === 'settled') dispatch({ type: 'paySettled' })
