@@ -281,6 +281,40 @@ export function useTemplateModelRowDownloads({
    * Non-terminal activity claims the attempt if nothing else holds it;
    * a terminal event is only honoured from the job that made that claim.
    */
+  /** The job holding this attempt, if one does. */
+  function claimantOf(row: TrackedRow, attempt: number): string | undefined {
+    return row.job?.attempt === attempt ? row.job.jobId : undefined
+  }
+
+  function acceptsTerminal(
+    identity: string,
+    row: TrackedRow,
+    attempt: number,
+    jobId: string
+  ): boolean {
+    if (claimantOf(row, attempt) !== jobId) return false
+    rows.set(identity, {
+      ...row,
+      endedJobs: new Set([...(row.endedJobs ?? []), jobId])
+    })
+    return true
+  }
+
+  function acceptsActivity(
+    identity: string,
+    row: TrackedRow,
+    attempt: number,
+    jobId: string
+  ): boolean {
+    const claimant = claimantOf(row, attempt)
+    if (claimant !== undefined) return claimant === jobId
+    // A joined retry reuses a running job's id, so only an ended one is out.
+    if (row.endedJobs?.has(jobId)) return false
+
+    rows.set(identity, { ...row, job: { attempt, jobId } })
+    return true
+  }
+
   function acceptsJob(
     identity: string,
     event: TemplateModelDownloadHostEvent,
@@ -288,23 +322,9 @@ export function useTemplateModelRowDownloads({
   ): boolean {
     const row = rows.get(identity)
     if (!row) return false
-    const claimant =
-      row.job?.attempt === event.attempt ? row.job.jobId : undefined
-
-    if (event.type !== 'started' && event.type !== 'progress') {
-      if (claimant !== jobId) return false
-      rows.set(identity, {
-        ...row,
-        endedJobs: new Set([...(row.endedJobs ?? []), jobId])
-      })
-      return true
-    }
-    if (claimant !== undefined) return claimant === jobId
-    // A joined retry reuses a running job's id, so only an ended one is out.
-    if (row.endedJobs?.has(jobId)) return false
-
-    rows.set(identity, { ...row, job: { attempt: event.attempt, jobId } })
-    return true
+    return event.type === 'started' || event.type === 'progress'
+      ? acceptsActivity(identity, row, event.attempt, jobId)
+      : acceptsTerminal(identity, row, event.attempt, jobId)
   }
 
   function forMatchingModels(
