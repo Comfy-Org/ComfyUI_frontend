@@ -93,7 +93,12 @@ const projectionState = vi.hoisted(() => {
 
 const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>(),
-  trackAgentGraphProjection: vi.fn()
+  trackAgentGraphProjection:
+    vi.fn<
+      NonNullable<
+        ReturnType<typeof useTelemetryFn>
+      >['trackAgentGraphProjection']
+    >()
 }))
 
 const apiState = vi.hoisted(() => {
@@ -1083,9 +1088,6 @@ describe('useAgentCrdtFollower', () => {
         removed_count: 1,
         apply_failure_count: 0
       })
-      expect(telemetryState.trackAgentGraphProjection).not.toHaveBeenCalledWith(
-        expect.objectContaining({ actor: expect.anything() })
-      )
       unmount()
     })
 
@@ -1109,9 +1111,6 @@ describe('useAgentCrdtFollower', () => {
         removed_count: 0,
         apply_failure_count: 0
       })
-      expect(telemetryState.trackAgentGraphProjection).not.toHaveBeenCalledWith(
-        expect.objectContaining({ actor: expect.anything() })
-      )
       unmount()
     })
 
@@ -1161,6 +1160,17 @@ describe('useAgentCrdtFollower', () => {
         catchUp: false
       })
       expect(onMaterialized).not.toHaveBeenCalled()
+      expect(
+        telemetryState.trackAgentGraphProjection
+      ).toHaveBeenCalledExactlyOnceWith({
+        op_id: null,
+        op_count: 0,
+        sequence: 9,
+        stage: 'received_no_graph',
+        added_count: 1,
+        removed_count: 0,
+        apply_failure_count: 0
+      })
 
       projectionState.applyCollected.mockReturnValue(
         projectionState.applied(
@@ -1185,7 +1195,7 @@ describe('useAgentCrdtFollower', () => {
           op_id: null,
           op_count: 0,
           sequence: 9,
-          stage: 'applied',
+          stage: 'applied_deferred',
           added_count: 1,
           removed_count: 0,
           apply_failure_count: 1
@@ -1194,8 +1204,164 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('keeps every deferred agent frame joinable when the collected batch flushes', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', true, () => graph.value)
+      projectionState.applyFrame
+        .mockReturnValueOnce(
+          projectionState.notApplied({ added: ['3'], removed: [] })
+        )
+        .mockReturnValueOnce(
+          projectionState.notApplied({ added: ['4'], removed: [] })
+        )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn-a',
+        opIds: ['op-a']
+      })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'agent:thread:turn-b',
+        opIds: ['op-b']
+      })
+      projectionState.applyCollected.mockReturnValue(
+        projectionState.applied([], { added: ['3', '4'], removed: ['9'] })
+      )
+      telemetryState.trackAgentGraphProjection.mockClear()
+
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(
+        telemetryState.trackAgentGraphProjection.mock.calls.flat()
+      ).toEqual([
+        {
+          op_id: 'op-a',
+          op_count: 1,
+          sequence: 9,
+          stage: 'applied_deferred',
+          added_count: 2,
+          removed_count: 1,
+          apply_failure_count: 0
+        },
+        {
+          op_id: 'op-b',
+          op_count: 1,
+          sequence: 10,
+          stage: 'applied_deferred',
+          added_count: 2,
+          removed_count: 1,
+          apply_failure_count: 0
+        }
+      ])
+      unmount()
+    })
+
+    it('keeps deferred frames joinable when a later live frame flushes the batch', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', true, () => graph.value)
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn-a',
+        opIds: ['op-a']
+      })
+      telemetryState.trackAgentGraphProjection.mockClear()
+
+      // The graph arrives and the next frame lands in the same tick, so the
+      // frame flushes the collector before the readiness watcher can.
+      graph.value = fakeGraph
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['3'], removed: [] }, 2)
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'agent:thread:turn-b',
+        opIds: ['op-b']
+      })
+
+      expect(
+        telemetryState.trackAgentGraphProjection.mock.calls.flat()
+      ).toEqual([
+        {
+          op_id: 'op-b',
+          op_count: 1,
+          sequence: 10,
+          stage: 'applied',
+          added_count: 1,
+          removed_count: 0,
+          apply_failure_count: 2
+        },
+        {
+          op_id: 'op-a',
+          op_count: 1,
+          sequence: 9,
+          stage: 'applied_deferred',
+          added_count: 1,
+          removed_count: 0,
+          apply_failure_count: 2
+        }
+      ])
+      unmount()
+    })
+
+    it('does not let a trailing non-agent frame erase the deferred agent outcome', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', true, () => graph.value)
+      projectionState.applyFrame
+        .mockReturnValueOnce(
+          projectionState.notApplied({ added: ['3'], removed: [] })
+        )
+        .mockReturnValueOnce(
+          projectionState.notApplied({ added: ['4'], removed: [] })
+        )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn-a',
+        opIds: ['op-a']
+      })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'human:someone:tab-7',
+        opIds: ['op-human']
+      })
+      projectionState.applyCollected.mockReturnValue(
+        projectionState.applied([], { added: ['3', '4'], removed: [] })
+      )
+      telemetryState.trackAgentGraphProjection.mockClear()
+
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(
+        telemetryState.trackAgentGraphProjection.mock.calls.flat()
+      ).toEqual([
+        {
+          op_id: 'op-a',
+          op_count: 1,
+          sequence: 9,
+          stage: 'applied_deferred',
+          added_count: 2,
+          removed_count: 0,
+          apply_failure_count: 0
+        }
+      ])
+      unmount()
+    })
+
     it.for(['doc_reset', 'follower_replaced'])(
-      'does not report stale pending metadata after %s discards it',
+      'terminates a pending frame as discarded, not applied, after %s drops it',
       async (discardEvent) => {
         const graph = shallowRef<LGraph | null>(null)
         const { unmount } = mountFollower('wf-1', true, () => graph.value)
@@ -1206,19 +1372,87 @@ describe('useAgentCrdtFollower', () => {
         dispatchFrame('doc_update', {
           workflowId: 'wf-1',
           seq: 9,
-          actor: 'agent:thread:turn'
+          actor: 'agent:thread:turn',
+          opIds: ['op-a']
         })
         telemetryState.trackAgentGraphProjection.mockClear()
 
         dispatchFrame(discardEvent, { workflowId: 'wf-1' })
+        projectionState.applyCollected.mockReturnValue(
+          projectionState.applied([], { added: ['3'], removed: [] })
+        )
         graph.value = fakeGraph
         await nextTick()
 
+        // The discard is reported once, against the frame that was dropped;
+        // the later flush must not re-report it as applied.
         expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
-        expect(telemetryState.trackAgentGraphProjection).not.toHaveBeenCalled()
+        expect(
+          telemetryState.trackAgentGraphProjection
+        ).toHaveBeenCalledExactlyOnceWith({
+          op_id: 'op-a',
+          op_count: 1,
+          sequence: 9,
+          stage: 'discarded',
+          added_count: 0,
+          removed_count: 0,
+          apply_failure_count: 0
+        })
         unmount()
       }
     )
+
+    it('terminates a pending frame as discarded when an own echo drops the collected changes', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, enqueue } = mountFollower(
+        'wf-1',
+        true,
+        () => graph.value
+      )
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        opIds: ['op-a']
+      })
+      enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+      await Promise.resolve()
+      const [, , ops] = clientState.sendOps.mock.calls[0]
+      telemetryState.trackAgentGraphProjection.mockClear()
+
+      graph.value = fakeGraph
+      // The echo throws away collected changes that were going somewhere. A
+      // discard must still report zero: those nodes never reached the canvas,
+      // and `added_count` is what a dashboard reads as applied work.
+      projectionState.discardPending.mockReturnValueOnce({
+        added: ['3'],
+        removed: ['9']
+      })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: ops[0].actor,
+        catchUp: false
+      })
+
+      expect(projectionState.discardPending).toHaveBeenCalledWith('wf-1')
+      expect(
+        telemetryState.trackAgentGraphProjection
+      ).toHaveBeenCalledExactlyOnceWith({
+        op_id: 'op-a',
+        op_count: 1,
+        sequence: 9,
+        stage: 'discarded',
+        added_count: 0,
+        removed_count: 0,
+        apply_failure_count: 0
+      })
+      unmount()
+    })
 
     it('does not apply for a graph that appears while the target is inactive', async () => {
       const graph = shallowRef<LGraph | null>(null)
@@ -1471,11 +1705,13 @@ describe('useAgentCrdtFollower', () => {
       [ops[1]]
     )
     expect(projectionState.applyCollected).not.toHaveBeenCalled()
+    // `reverted`, not `applied`: this op id is the rejected human op's, so the
+    // two must not be read as the same stage downstream.
     expect(telemetryState.trackAgentGraphProjection).toHaveBeenLastCalledWith({
       op_id: ops[1].op_id,
       op_count: 1,
       sequence: 10,
-      stage: 'applied',
+      stage: 'reverted',
       added_count: 0,
       removed_count: 0,
       apply_failure_count: 0

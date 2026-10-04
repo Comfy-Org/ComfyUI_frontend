@@ -978,14 +978,63 @@ export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
 }
+/**
+ * PM-1586: splits "the host accepted the mutation but the canvas did not
+ * change" into stages that can be told apart in production. This type is the
+ * only place `app:agent_graph_projection` is documented, so the contract lives
+ * here. Join on `op_id`: every frame this diagnostic covers emits exactly one
+ * terminal stage under its own op id, so a receipt with no terminal row is a
+ * real gap and not an unmeasured path.
+ *
+ * Emitted for agent-minted and actorless frames only, plus the human-op revert
+ * path (`reverted`). Carries no actor, node, widget, workflow or prompt
+ * identifier — an op id is a creator-minted uuid4, not a user identifier.
+ *
+ * A frame that arrives with no graph emits `received_no_graph` and then
+ * terminates in exactly one of `applied_deferred` or `discarded`, so a receipt
+ * with no terminal event means the client stopped reporting (page closed,
+ * telemetry dropped) rather than an unmeasured path.
+ */
 export interface AgentGraphProjectionMetadata extends Record<string, unknown> {
-  /** First creator-owned op id; sufficient to join the frame to its host mutation. */
+  /**
+   * First non-empty op id of the frame, or of the rejected batch on
+   * `reverted`. Not necessarily creator-owned: `reverted` carries the first
+   * rejected HUMAN op id. `null` when the frame carried no op ids.
+   */
   op_id: string | null
+  /** How many non-empty op ids it carried; `op_id` is the first of them. */
   op_count: number
   sequence: number
-  stage: 'received_no_graph' | 'applied'
+  /**
+   * - `received_no_graph` — delivered, nothing applied yet (no graph bound).
+   * - `applied` — this frame applied; the counts are its own.
+   * - `applied_deferred` — a batch flush applied this earlier no-graph frame.
+   *   The counts are the WHOLE batch's and are repeated across its frames, so
+   *   they must not be attributed to this `op_id` alone.
+   * - `discarded` — the collected changes were thrown away without applying
+   *   (own-echo discard, `doc_reset`, follower replacement, rebind). All
+   *   counts are zero: nothing reached the canvas, so the size of what was
+   *   dropped is deliberately not reported under a count a dashboard would
+   *   read as applied work.
+   * - `reverted` — the host rejected a human batch and the document state it
+   *   claimed was put back on the canvas. The counts are that revert's.
+   */
+  stage:
+    | 'received_no_graph'
+    | 'applied'
+    | 'applied_deferred'
+    | 'discarded'
+    | 'reverted'
   added_count: number
+  /**
+   * Newly reported document deletes. Excludes entries already reported on an
+   * earlier pending frame, and replace-mode `removeAbsent` removals.
+   */
   removed_count: number
+  /**
+   * Apply steps that threw, plus reported degradations that did not throw
+   * (an unresolved link, a subgraph definition that failed to register).
+   */
   apply_failure_count: number
 }
 export type AgentStopMethod = 'button' | 'escape'

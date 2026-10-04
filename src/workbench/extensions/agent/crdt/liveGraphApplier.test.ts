@@ -236,6 +236,94 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it('counts each frame against its own depth when an extension hook re-enters the applier', () => {
+    const { graph, doc, applier, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: []
+    })
+    applyCollected()
+    const outer = graph.getNodeById(toNodeId(1))
+    const victim = graph.getNodeById(toNodeId(2))
+    if (!outer || !victim) throw new Error('nodes 1 and 2 were not created')
+    victim.onRemoved = () => {
+      throw new Error('inner hook exploded')
+    }
+
+    // The inner apply fails on its own terms. Its one failure must not land on
+    // the outer frame, and unwinding it must not take the outer frame's count
+    // with it — a single shared counter passes every other case in this file.
+    let inner: ReturnType<typeof applier.applyChanges> | undefined
+    outer.onRemoved = () => {
+      inner = applier.applyChanges(
+        doc,
+        {
+          nodes: new Map([['2', 'delete']]),
+          widgets: new Map(),
+          resyncNodes: new Set(),
+          links: new Set()
+        },
+        { actor: 'agent:inner', opIds: ['op-inner'] }
+      )
+      throw new Error('extension hook exploded')
+    }
+
+    const result = applyEdit(() => {
+      nodesMap(doc).delete('1')
+    })
+
+    expect(inner?.failureCount).toBe(1)
+    expect(result.failureCount).toBe(1)
+  })
+
+  it('counts a degradation that never threw: an unresolved link', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: [[7, 1, 0, 2, 0, 'IMAGE']]
+    })
+    applyCollected()
+    expect(graph.links.has(toLinkId(7))).toBe(true)
+
+    const result = applyEdit(() => {
+      nodesMap(doc)
+        .get('2')
+        ?.set('inputs', [{ name: 'bogus', type: 'IMAGE', link: 7 }])
+      linksMap(doc).set('7', [7, 1, 0, 2, 0, 'IMAGE'])
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_graph_link_unresolved' })
+    )
+  })
+
+  it('counts a degradation that never threw: a subgraph definition that will not register', () => {
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+
+    const result = applyEdit(() => {
+      doc
+        .getMap<unknown>('definitions')
+        .set(
+          'bad',
+          new Y.Map<unknown>(
+            Object.entries({ id: 'not-a-uuid', name: 'Broken' })
+          )
+        )
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'agent_subgraph_definitions_failed'
+      })
+    )
+  })
+
   it('restores a widget and its mirrored property when a widget callback throws', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1)],
