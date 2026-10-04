@@ -47,6 +47,15 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
         (d) => d.deployment_id === pickedDeploymentId.value
       ) ?? null
   )
+  /**
+   * True when the pick (this browser's own, or the workspace default it
+   * follows) names a deployment the listing no longer has, for example one
+   * deleted since. Ingest serves such a browser Comfy Cloud, so that is what
+   * it runs on.
+   */
+  const pickIsGone = computed(
+    () => pickedDeploymentId.value !== null && pickedDeployment.value === null
+  )
   const pickSource = computed<DeploymentPickSource | null>(() =>
     'pickSource' in state.value ? state.value.pickSource : null
   )
@@ -207,6 +216,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     deployments,
     pickedDeploymentId,
     pickedDeployment,
+    pickIsGone,
     pickSource,
     defaultDeploymentId,
     defaultDeployment,

@@ -7,7 +7,8 @@
      that answered stays shown when a newer load fails or never answers.
      Shows the workspace's default deployment when an owner set one (BE-17480):
      a browser with no pick of its own follows it, and an owner sets or
-     clears it from the panel's footer. -->
+     clears it from the panel's footer. A pick the listing no longer has
+     shows as Comfy Cloud, which is what ingest serves it. -->
 <template>
   <div v-if="isVisible" class="relative" data-testid="deployment-switcher">
     <button
@@ -37,7 +38,18 @@
             {{ currentLabel }}
           </span>
           <span
-            v-if="showsFollowing"
+            v-if="pickIsGone"
+            class="text-xs text-muted-foreground"
+            data-testid="deployment-switcher-gone"
+          >
+            {{
+              followsWorkspace
+                ? $t('deploymentSwitcher.defaultGone')
+                : $t('deploymentSwitcher.pickGone')
+            }}
+          </span>
+          <span
+            v-else-if="showsFollowing"
             class="text-xs text-muted-foreground"
             data-testid="deployment-switcher-following"
           >
@@ -94,6 +106,8 @@ const { t } = useI18n()
 const store = useDeploymentPickStore()
 const {
   pickedDeploymentId,
+  pickedDeployment,
+  pickIsGone,
   defaultDeploymentId,
   followsWorkspace,
   canSetDefault,
@@ -126,7 +140,7 @@ const showsFollowing = computed(
 )
 const canSetPicked = computed(
   () =>
-    pickedDeploymentId.value !== null &&
+    pickedDeployment.value !== null &&
     pickedDeploymentId.value !== defaultDeploymentId.value
 )
 
