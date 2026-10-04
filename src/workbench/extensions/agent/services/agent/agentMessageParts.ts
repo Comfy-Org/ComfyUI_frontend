@@ -103,6 +103,12 @@ export interface AskUserPart {
   allowOther: boolean
   /** The nodes a `delete_approval` would remove; absent for `ask_user`. */
   nodes?: AskNodeRef[]
+  /**
+   * How many of the host's delete targets the card does not list (past the
+   * display cap, or unreadable), so a Delete answer never covers nodes the
+   * user was not told about.
+   */
+  hiddenNodeCount?: number
   /** Set once the ask is resolved; the card then reads back the answer. */
   resolution?: AskUserResolution
 }
@@ -237,20 +243,28 @@ function toAskNodeRef(value: unknown): AskNodeRef | undefined {
   }
 }
 
-/** The host's `context.nodes`, read defensively: a malformed list is empty. */
-function toAskNodeRefs(context: AskInput['context']): AskNodeRef[] {
-  const nodes: unknown = context?.nodes
-  if (!Array.isArray(nodes)) return []
-  return nodes
+/**
+ * The host's `context.nodes`, read defensively: a list that is not an array
+ * shows nothing, and entries past the cap or unreadable are counted as hidden.
+ */
+function toAskNodeRefs(
+  context: AskInput['context']
+): Pick<AskUserPart, 'nodes' | 'hiddenNodeCount'> {
+  const raw: unknown = context?.nodes
+  if (!Array.isArray(raw)) return {}
+  const nodes = raw
     .slice(0, ASK_USER_LIMITS.nodes)
     .flatMap((node) => toAskNodeRef(node) ?? [])
+  const hidden = raw.length - nodes.length
+  return {
+    ...(nodes.length > 0 && { nodes }),
+    ...(hidden > 0 && { hiddenNodeCount: hidden })
+  }
 }
 
 function toDeleteApprovalPart(ask: AskInput): AskUserPart | undefined {
   const part = toAskUserPart(ask)
-  if (!part) return undefined
-  const nodes = toAskNodeRefs(ask.context)
-  return nodes.length > 0 ? { ...part, nodes } : part
+  return part && { ...part, ...toAskNodeRefs(ask.context) }
 }
 
 /**

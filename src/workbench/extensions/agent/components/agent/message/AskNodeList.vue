@@ -3,13 +3,17 @@ import { useI18n } from 'vue-i18n'
 
 import type { AskNodeRef } from '../../../services/agent/agentMessageParts'
 
-const { nodes } = defineProps<{ nodes: readonly AskNodeRef[] }>()
+const { nodes = [], hiddenCount = 0 } = defineProps<{
+  nodes?: readonly AskNodeRef[]
+  hiddenCount?: number
+}>()
 
 const { t } = useI18n()
 </script>
 
 <template>
   <ul
+    v-if="nodes.length > 0 || hiddenCount > 0"
     :aria-label="t('agent.askUser.nodesToDelete')"
     class="m-0 flex max-h-40 list-none flex-col gap-0.5 overflow-y-auto rounded-md bg-component-node-background p-2 text-xs/5"
   >
@@ -24,6 +28,9 @@ const { t } = useI18n()
       <span class="shrink-0 text-muted-foreground">
         {{ t('agent.askUser.nodeId', { id: node.id }) }}
       </span>
+    </li>
+    <li v-if="hiddenCount > 0" class="text-muted-foreground">
+      {{ t('agent.askUser.moreNodes', { count: hiddenCount }, hiddenCount) }}
     </li>
   </ul>
 </template>
