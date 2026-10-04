@@ -597,13 +597,14 @@ export function prepareWorkflowLogoutTransition(): void {
 }
 
 export function registerWorkflowLogoutIntentListener(): () => void {
-  const handleStorage = (event: StorageEvent) => {
+  function handleStorage(event: StorageEvent): void {
     if (
       event.storageArea === localStorage &&
       event.key === WORKFLOW_SIGN_OUT_INTENT_KEY &&
       event.newValue !== null
     ) {
       enterWorkflowLogoutTransition()
+      clearAllWorkspaceStorage()
     }
   }
 
