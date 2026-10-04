@@ -135,8 +135,12 @@ function isValueWidget(
   stored?: WidgetState
 ): boolean {
   if (!widget && !stored) return false
-  const type = widget ? widget.type : stored?.type
-  const serialize = widget?.serialize ?? stored?.serialize
+  // A destructuring default fires on absent AND present-but-undefined alike,
+  // which is what `IBaseWidget`'s own optional fields mean: the live widget
+  // did not state this, so the registration the intent was keyed by answers.
+  // One construct for both fields, so the two halves of the guard cannot
+  // drift apart again.
+  const { type = stored?.type, serialize = stored?.serialize } = widget ?? {}
   return type !== 'button' && serialize !== false
 }
 
