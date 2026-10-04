@@ -4,6 +4,7 @@
     :items="menuItems"
     :data-testid="`subgraph-breadcrumb-menu-${item.key}`"
     @update:open="menuOpen = Boolean($event && isActive && !isEditing)"
+    @close-auto-focus="onMenuCloseAutoFocus"
   >
     <template #trigger>
       <button
@@ -170,6 +171,10 @@ const startRename = async () => {
 
 const { menuItems } = useWorkflowActionsMenu(startRename, { isRoot })
 
+function onMenuCloseAutoFocus(event: Event) {
+  if (isEditing.value) event.preventDefault()
+}
+
 function handleKeydown(event: KeyboardEvent) {
   if (isActive || isEditing.value || !['Enter', ' '].includes(event.key)) return
   event.preventDefault()
@@ -190,7 +195,7 @@ const handleClick = (event: MouseEvent) => {
     menuOpen.value = false
     event.stopPropagation()
     event.preventDefault()
-    void nextTick(startRename)
+    void startRename()
   }
 }
 
