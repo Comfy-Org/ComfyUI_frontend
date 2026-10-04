@@ -73,7 +73,10 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     const jobId = await exec.run()
     await comfyPage.nextFrame()
     const running = simulator.prompt(jobId, { workflowId: workflowAId })
-    simulator.play([running.start(), running.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    simulator.play([
+      running.start(),
+      ...running.nodeRunning(KSAMPLER_NODE, 1, 4)
+    ])
 
     await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
     const workflowBId = await activeWorkflowId(comfyPage)
@@ -83,7 +86,7 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
 
     // Tab A's run continues while the user looks at tab B.
     simulator.play([
-      running.nodeRunning(KSAMPLER_NODE, 3, 4),
+      ...running.nodeRunning(KSAMPLER_NODE, 3, 4),
       running.executed(SAVE_IMAGE_NODE, imageOutput('a.png')),
       running.success()
     ])
@@ -108,7 +111,10 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     const jobId = await exec.run()
     await comfyPage.nextFrame()
     const running = simulator.prompt(jobId, { workflowId: workflowAId })
-    simulator.play([running.start(), running.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    simulator.play([
+      running.start(),
+      ...running.nodeRunning(KSAMPLER_NODE, 1, 4)
+    ])
 
     await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
     const tabA = comfyPage.menu.topbar.getWorkflowTab(WORKFLOW_A)
@@ -167,7 +173,10 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     const jobId = await exec.run()
     await comfyPage.nextFrame()
     const running = simulator.prompt(jobId, { workflowId: workflowAId })
-    simulator.play([running.start(), running.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    simulator.play([
+      running.start(),
+      ...running.nodeRunning(KSAMPLER_NODE, 1, 4)
+    ])
     await comfyPage.nextFrame()
 
     // Both workflows own a KSampler numbered 3, which is what makes this
@@ -187,7 +196,7 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     })
 
     // A keeps running out of sight; none of it may surface on B.
-    simulator.play([running.nodeRunning(KSAMPLER_NODE, 3, 4)])
+    simulator.play([...running.nodeRunning(KSAMPLER_NODE, 3, 4)])
     await comfyPage.nextFrame()
     expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
       progress: null,

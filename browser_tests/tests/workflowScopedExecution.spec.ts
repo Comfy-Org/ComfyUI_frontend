@@ -7,7 +7,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   BackendSimulator,
-  duplicateFrame,
+  duplicateFrames,
   interleave,
   swapFrames
 } from '@e2e/fixtures/helpers/BackendSimulator'
@@ -76,7 +76,7 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     const mine = simulator.prompt(jobId, {
       workflowId: await activeWorkflowId(comfyPage)
     })
-    simulator.play([mine.start(), mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    simulator.play([mine.start(), ...mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
 
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
@@ -104,7 +104,7 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     })
     simulator.play([
       foreign.start(),
-      foreign.nodeRunning(KSAMPLER_NODE, 1, 4),
+      ...foreign.nodeRunning(KSAMPLER_NODE, 1, 4),
       foreign.executing(KSAMPLER_NODE)
     ])
 
@@ -161,13 +161,13 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
       interleave(
         [
           mine.start(),
-          mine.nodeRunning(KSAMPLER_NODE, 1, 4),
+          ...mine.nodeRunning(KSAMPLER_NODE, 1, 4),
           mine.executed(SAVE_IMAGE_NODE, imageOutput('mine.png')),
           mine.success()
         ],
         [
           foreign.start(),
-          foreign.nodeRunning(KSAMPLER_NODE, 3, 4),
+          ...foreign.nodeRunning(KSAMPLER_NODE, 3, 4),
           foreign.executed(SAVE_IMAGE_NODE, imageOutput('theirs.png')),
           foreign.success()
         ],
@@ -227,7 +227,7 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     ]
 
     simulator.play(
-      duplicateFrame(script, `${workflowId ?? jobId}:execution_success`)
+      duplicateFrames(script, `${workflowId ?? jobId}:execution_success`)
     )
 
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(1)
@@ -246,7 +246,7 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     // `workflow_metadata` emits it. This is the control for the 90% of users
     // whose server has not been updated.
     const legacy = simulator.prompt(jobId)
-    simulator.play([legacy.start(), legacy.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    simulator.play([legacy.start(), ...legacy.nodeRunning(KSAMPLER_NODE, 1, 4)])
 
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
@@ -277,7 +277,7 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
       workflowId: FOREIGN_WORKFLOW_ID
     })
 
-    simulator.play([mine.start(), mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    simulator.play([mine.start(), ...mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
     ).toBeVisible()
@@ -316,7 +316,7 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     const jobId = await exec.run()
     await comfyPage.nextFrame()
     const mine = simulator.prompt(jobId, { workflowId })
-    simulator.play([mine.start(), mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    simulator.play([mine.start(), ...mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
     ).toBeVisible()
@@ -351,7 +351,7 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
       workflowId: FOREIGN_WORKFLOW_ID
     })
 
-    simulator.play([mine.start(), mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    simulator.play([mine.start(), ...mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
 
     // Binary frames carry a JSON header with prompt_id but core does not stamp
     // workflow_id on them, so this leans on the queue-time mapping. Pinned
