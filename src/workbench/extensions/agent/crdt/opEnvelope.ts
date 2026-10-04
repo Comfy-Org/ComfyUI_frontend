@@ -82,12 +82,17 @@ function isDocOp(value: unknown): value is DocOp {
   )
 }
 
+const ENVELOPE_FIELDS = ['op', 'op_id', 'actor'] as const
+
 /**
  * Serialize an op once to prove it can ride a `doc_ops` frame and learn its
  * wire form and size. Throws `TypeError` for anything `JSON.stringify` cannot
  * turn into a wire object (a cycle in a custom-node value, a `toJSON` that
- * yields a non-object). Callers reject such an op at admission; the original
- * op is never serialized again.
+ * yields a non-object) and for a wire form whose envelope — kind, `op_id`,
+ * `actor` — differs from the op's: the chunker classifies and the sender
+ * settles by the semantic op, so the wire must carry the same identity.
+ * Callers reject such an op at admission; the original op is never
+ * serialized again.
  */
 export function measureWireOp(op: Op): SizedOp {
   const json = JSON.stringify(op)
@@ -96,6 +101,8 @@ export function measureWireOp(op: Op): SizedOp {
   const wire: unknown = JSON.parse(json)
   if (!isDocOp(wire))
     throw new TypeError('Operation did not serialize to a wire object')
+  if (ENVELOPE_FIELDS.some((field) => wire[field] !== op[field]))
+    throw new TypeError('Operation serialized with a different envelope')
   return { op, wire, bytes: new TextEncoder().encode(json).length }
 }
 

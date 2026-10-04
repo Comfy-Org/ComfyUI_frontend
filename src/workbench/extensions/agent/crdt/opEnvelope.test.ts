@@ -190,4 +190,29 @@ describe('measureWireOp', () => {
       'Operation did not serialize to a wire object'
     )
   })
+
+  it.for([
+    { label: 'kind', patch: { op: 'clear' } },
+    { label: 'op_id', patch: { op_id: mintOpId() } },
+    { label: 'actor', patch: { actor: 'human:other-user:tab-9' } }
+  ])('rejects an op whose toJSON rewrites the envelope $label', ({ patch }) => {
+    const [op] = mintWireOps([addNode(1)], MINT)
+    Object.assign(op, { toJSON: () => ({ ...op, ...patch }) })
+
+    expect(() => measureWireOp(op)).toThrow(
+      'Operation serialized with a different envelope'
+    )
+  })
+
+  it('keeps a clear disguised by toJSON as add_node out of a multi-op batch', () => {
+    const [first, disguised, last] = mintWireOps(
+      [addNode(1), addNode(2), addNode(3)],
+      MINT
+    )
+    Object.assign(disguised, { toJSON: () => ({ ...disguised, op: 'clear' }) })
+
+    expect(() =>
+      chunkWireOps([first, disguised, last].map(measureWireOp))
+    ).toThrow(TypeError)
+  })
 })
