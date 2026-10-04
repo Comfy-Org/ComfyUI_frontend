@@ -626,9 +626,35 @@ describe('error mapping', () => {
       reportedError().message,
       vi.mocked(reportError).mock.calls.at(-1)?.[1]
     ])
-    for (const identifier of identifiers) {
-      expect(serialized).not.toContain(identifier)
-    }
+    expect(
+      identifiers.map((identifier) => serialized.includes(identifier))
+    ).toEqual([false, false, false])
+  })
+
+  it('never reports a message id from a failed cancel path (PM-1802)', async () => {
+    respondWithAuthScheme(
+      jsonResponse(403, { error: 'access denied' }),
+      'cloud-auth-header'
+    )
+
+    await makeClient()
+      .cancelMessage('t-secret', 'm-secret')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'cancel_thread_message',
+      status: 403,
+      authScheme: 'cloud-auth-header'
+    })
+    const serialized = JSON.stringify([
+      reportedError().message,
+      vi.mocked(reportError).mock.calls.at(-1)?.[1]
+    ])
+    expect(
+      ['t-secret', 'm-secret'].map((identifier) =>
+        serialized.includes(identifier)
+      )
+    ).toEqual([false, false])
   })
 
   it('never reports a pagination cursor or query value (PM-1802)', async () => {
@@ -681,7 +707,9 @@ describe('error mapping', () => {
     expect(reportedError().message).toBe(
       'Agent API request rejected by authentication'
     )
-    expect((error as AgentApiError).message).toBe(
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect(error).toHaveProperty(
+      'message',
       'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
     )
     expect(markErrorReported).toHaveBeenCalledExactlyOnceWith(error)
