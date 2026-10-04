@@ -389,7 +389,6 @@ function runPanelTeardown(
     } catch (error) {
       try {
         reportError(error, {
-          surface: 'agent',
           errorType: 'failure_tearing_down_agent_panel',
           tags: { step }
         })
