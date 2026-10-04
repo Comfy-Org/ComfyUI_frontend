@@ -191,18 +191,31 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
+function cloneWidgetValue(value: TWidgetValue): TWidgetValue {
+  return value != null && typeof value === 'object'
+    ? JSON.parse(JSON.stringify(value))
+    : (value ?? null)
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
     const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
-    positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
+    // Each register gets its own clone. They used to share one object, so a
+    // consumer rewriting a value in place through one reached the other.
+    positional.push(cloneWidgetValue(value))
+    // Not `named[widget.name] = …`: for a widget named `__proto__` that runs
+    // the inherited setter instead of creating an own key, so the value never
+    // reaches the file and the restore — which checks `Object.hasOwn` — hands
+    // the widget its default back.
+    Object.defineProperty(named, widget.name, {
+      value: cloneWidgetValue(value),
+      writable: true,
+      enumerable: true,
+      configurable: true
+    })
   }
   return { widgets_values: positional, widgets_values_named: named }
 }
