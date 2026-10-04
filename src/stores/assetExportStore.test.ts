@@ -293,9 +293,9 @@ describe('assetExportStore triggerDownload', () => {
       expected: 'https://storage.example.com/exports/e.zip?signature=abc'
     },
     {
-      name: 'a protocol-relative signed URL unchanged',
-      url: '//storage.example.com/exports/e.zip?signature=abc',
-      expected: 'http://storage.example.com/exports/e.zip?signature=abc'
+      name: 'a document-relative URL under the document base',
+      url: 'exports/e.zip',
+      expected: new URL('exports/e.zip', document.baseURI).href
     }
   ])('downloads $name', async ({ url, expected }) => {
     const originalBase = api.api_base
@@ -320,9 +320,17 @@ describe('assetExportStore triggerDownload', () => {
     expect(clickedHrefs).toEqual([expected])
   })
 
-  it('rejects non-HTTP download URLs', async () => {
+  it.for([
+    { name: 'a non-HTTP URL', url: 'javascript:alert(1)' },
+    {
+      name: 'a protocol-relative URL',
+      url: '//storage.example.com/exports/e.zip?signature=abc'
+    },
+    { name: 'an empty URL', url: '' },
+    { name: 'a whitespace-only URL', url: '   ' }
+  ])('rejects $name', async ({ url }) => {
     vi.mocked(assetService.getExportDownloadUrl).mockResolvedValue({
-      url: 'javascript:alert(1)'
+      url
     })
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
     const store = useAssetExportStore()
@@ -333,7 +341,7 @@ describe('assetExportStore triggerDownload', () => {
 
     expect(click).not.toHaveBeenCalled()
     expect(store.exportList[0].downloadError).toBe(
-      'Unsupported export download URL'
+      'exportToast.unsupportedDownloadUrl'
     )
   })
 })
