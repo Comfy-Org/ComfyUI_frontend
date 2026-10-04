@@ -37,8 +37,6 @@ describe('serialised widget registers', () => {
         { name: '__proto__', value: { replaced: true } }
       ]).widgets_values_named!
 
-      // Assigning an object under this name would have made it the prototype,
-      // leaving the register with no own key and a poisoned lookup chain.
       expect(Object.getPrototypeOf(named)).toBe(Object.prototype)
       expect(Object.hasOwn(named, '__proto__')).toBe(true)
     })
