@@ -49,6 +49,12 @@ test.describe(
       // can see where in the workflow it is.
       await expect(runningOutline).toBeVisible()
 
+      // The queue dialog is a separate consumer from the canvas outline. Pin
+      // the visible per-node percentage from the reported "stuck at 0%"
+      // symptom before proving the terminal Save-node output below.
+      const queuePanel = new QueuePanel(page)
+      await expect(queuePanel.overlay).toContainText('25%')
+
       await finishRunForUser(jobId)
 
       // ...and when it finishes the output reaches the Save node on this
@@ -59,7 +65,6 @@ test.describe(
         new RegExp(outputFilename(jobId).replace('.', '\\.'))
       )
 
-      const queuePanel = new QueuePanel(page)
       await queuePanel.open()
       await expect(queuePanel.jobRow(jobId)).toBeVisible()
     })
