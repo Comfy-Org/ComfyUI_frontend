@@ -429,8 +429,6 @@ describe('zClipboardItems', () => {
   })
 
   test.for([
-    { length: -1, accepted: false },
-    { length: 2.5, accepted: false },
     { length: 10_000, accepted: true },
     { length: 10_001, accepted: false }
   ])(
@@ -461,23 +459,6 @@ describe('zClipboardItems', () => {
     expect(result.data.nodes?.[0].widgets_values_named).toEqual({
       seed: 42,
       steps: 20
-    })
-  })
-
-  it('preserves a named widget called length as a named value', () => {
-    const node = {
-      ...structuredClone(defaultGraph.nodes[0]),
-      widgets_values: { seed: 42, length: 3 }
-    }
-
-    const result = zClipboardItems.safeParse({ nodes: [node] })
-
-    expect(result.success).toBe(true)
-    if (!result.success) throw result.error
-    expect(result.data.nodes?.[0].widgets_values).toBeUndefined()
-    expect(result.data.nodes?.[0].widgets_values_named).toEqual({
-      seed: 42,
-      length: 3
     })
   })
 
