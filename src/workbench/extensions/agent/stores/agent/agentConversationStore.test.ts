@@ -6,6 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
+import { askIdOf } from '../../services/agent/agentMessageParts'
 
 import { useAgentConversationStore } from './agentConversationStore'
 
@@ -929,6 +930,29 @@ describe('useAgentConversationStore', () => {
       ])
       expect(store.isStreaming).toBe(true)
     })
+
+    it.for(['run_approval', 'something_new'])(
+      'does not put a %s ask back when it is replayed after it resolved',
+      (kind) => {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        const ask = {
+          ...pendingAskUser,
+          ask_id: 'turn-1:call-2',
+          kind,
+          thread_id: 'th'
+        }
+        store.hydrate(askUserTranscript())
+        store.ingest(chat({ type: 'agent_ask', data: ask }))
+        store.retireAsk('turn-1:call-2', 'th')
+
+        store.ingest(chat({ type: 'agent_ask', data: ask }))
+
+        expect(
+          store.messages.flatMap((message) => message.parts.map(askIdOf))
+        ).not.toContain('turn-1:call-2')
+      }
+    )
 
     // The read-only card is the record of the user's answer; a refetch that
     // still lists the ask as pending must neither re-arm it nor erase it.
