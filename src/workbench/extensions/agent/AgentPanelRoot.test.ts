@@ -3942,6 +3942,38 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
   })
 
+  it('invalidates queued active tabs before detaching the doc op minter', async () => {
+    const tab = addTab('workflows/current.json')
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(202, ack('wf-42')))
+    )
+    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
+      docOpMinterDeps.current = deps
+      return fromPartial<DocOpMinter>({
+        detach: vi.fn(() => {
+          ws.emit('agent_active_tab', {
+            workflow_id: 'wf-detach',
+            name: 'Detach delivery',
+            thread_id: 'th-1'
+          })
+        })
+      })
+    })
+    const panel = renderWithSelectedTarget()
+    await sendFromComposer('work here')
+
+    panel.unmount()
+
+    await vi.waitFor(() =>
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-detach')).toBe(
+        'workflows/Detach delivery.json'
+      )
+    )
+  })
+
   it('releases the minimap graph-activity layer even when another teardown step throws', () => {
     const errorHandler = vi.fn()
     const first = render(AgentPanelRoot, {

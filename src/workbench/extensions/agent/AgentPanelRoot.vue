@@ -1111,6 +1111,9 @@ async function openNewAgentTab(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
+    invalidateActiveTabGeneration: () => {
+      ++activeTabGeneration
+    },
     releaseCoachCompletionWaiters: () => {
       releaseCoachCompletionWaiters()
     },
@@ -1132,9 +1135,6 @@ onBeforeUnmount(() => {
     },
     stopSession: () => {
       stop()
-    },
-    invalidateActiveTabGeneration: () => {
-      ++activeTabGeneration
     },
     clearEditingTab: () => {
       tabActivity.setEditing(null)
