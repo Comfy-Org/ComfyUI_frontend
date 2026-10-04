@@ -12,7 +12,7 @@
             !isVertical
               ? 'icon-[lucide--ellipsis]'
               : 'icon-[lucide--more-vertical]',
-            'text-sm'
+            'size-4'
           )
         "
       />
@@ -21,7 +21,7 @@
     <Popover
       ref="popover"
       align="end"
-      content-class="bg-secondary-background"
+      :content-class="menuContentClass"
       @show="
         () => {
           isOpen = true
@@ -35,10 +35,7 @@
         }
       "
     >
-      <div
-        class="flex min-w-40 flex-col gap-2 p-2"
-        data-testid="more-menu-content"
-      >
+      <div class="flex min-w-40 flex-col" data-testid="more-menu-content">
         <slot :close="hide" />
       </div>
     </Popover>
@@ -50,6 +47,7 @@ import Popover from '@/components/common/ImperativePopover.vue'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { menuContentClass } from '@/components/ui/menu/menuStyles'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({

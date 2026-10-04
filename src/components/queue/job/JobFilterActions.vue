@@ -11,7 +11,7 @@
       class="flex shrink-0 items-center gap-2"
       :class="{ 'ml-2': !showSearch }"
     >
-      <Popover :show-arrow="false">
+      <Popover :show-arrow="false" :class="menuContentClass">
         <template #button>
           <Button
             v-tooltip.top="filterTooltipConfig"
@@ -27,11 +27,10 @@
           </Button>
         </template>
         <template #default="{ close }">
-          <div class="flex min-w-48 flex-col items-stretch">
-            <Button
-              class="w-full justify-between"
-              variant="textonly"
-              size="md"
+          <div class="flex flex-col">
+            <button
+              type="button"
+              :class="cn(menuButtonClass, 'justify-between')"
               @click="onSelectWorkflowFilter('all', close)"
             >
               <span>{{
@@ -41,12 +40,11 @@
                 v-if="selectedWorkflowFilter === 'all'"
                 class="icon-[lucide--check] size-4"
               />
-            </Button>
+            </button>
             <div class="mx-2 mt-1 h-px" />
-            <Button
-              class="w-full justify-between"
-              variant="textonly"
-              size="md"
+            <button
+              type="button"
+              :class="cn(menuButtonClass, 'justify-between')"
               @click="onSelectWorkflowFilter('current', close)"
             >
               <span>{{
@@ -56,11 +54,11 @@
                 v-if="selectedWorkflowFilter === 'current'"
                 class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
               />
-            </Button>
+            </button>
           </div>
         </template>
       </Popover>
-      <Popover :show-arrow="false">
+      <Popover :show-arrow="false" :class="menuContentClass">
         <template #button>
           <Button
             v-tooltip.top="sortTooltipConfig"
@@ -76,12 +74,11 @@
           </Button>
         </template>
         <template #default="{ close }">
-          <div class="flex min-w-48 flex-col items-stretch">
+          <div class="flex flex-col">
             <template v-for="(mode, index) in jobSortModes" :key="mode">
-              <Button
-                class="w-full justify-between"
-                variant="textonly"
-                size="md"
+              <button
+                type="button"
+                :class="cn(menuButtonClass, 'justify-between')"
                 @click="onSelectSortMode(mode, close)"
               >
                 <span>{{ sortLabel(mode) }}</span>
@@ -89,7 +86,7 @@
                   v-if="selectedSortMode === mode"
                   class="icon-[lucide--check] size-4 text-text-secondary"
                 />
-              </Button>
+              </button>
               <div
                 v-if="index < jobSortModes.length - 1"
                 class="mx-2 mt-1 h-px"
@@ -119,10 +116,15 @@ import { useI18n } from 'vue-i18n'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import {
+  menuButtonClass,
+  menuContentClass
+} from '@/components/ui/menu/menuStyles'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   hideShowAssetsAction = false,

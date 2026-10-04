@@ -25,6 +25,10 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
+import {
+  menuContentClass,
+  menuItemClass
+} from '@/components/ui/menu/menuStyles'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
@@ -611,7 +615,7 @@ defineExpose({
               side="top"
               align="start"
               :side-offset="4"
-              class="agent-scope z-1100 box-border w-max min-w-46.5 rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+              :class="cn(menuContentClass, 'agent-scope w-max min-w-46.5')"
             >
               <AccessibleTooltip
                 :label="nodeReferenceDisabledReason ?? ''"
@@ -624,7 +628,7 @@ defineExpose({
                   <DropdownMenuItem
                     :disabled="!!nodeReferenceDisabledReason"
                     :aria-description="nodeReferenceDisabledReason"
-                    class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
+                    :class="menuItemClass"
                     @select="onSelectNodes"
                   >
                     <span class="icon-[comfy--node] size-4 shrink-0" />
@@ -638,9 +642,7 @@ defineExpose({
                 v-model:open="workflowSubmenuOpen"
                 @update:open="onWorkflowSubmenuOpenChange"
               >
-                <DropdownMenuSubTrigger
-                  class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                >
+                <DropdownMenuSubTrigger :class="menuItemClass">
                   <span class="icon-[comfy--workflow] size-4 shrink-0" />
                   <span class="flex-1 text-left whitespace-nowrap">
                     {{ t('agent.workflows') }}
@@ -650,10 +652,12 @@ defineExpose({
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent
                     :side-offset="4"
-                    class="agent-scope z-1100 box-border max-h-64 min-w-46.5 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+                    :class="
+                      cn(menuContentClass, 'agent-scope max-h-64 min-w-46.5')
+                    "
                   >
                     <DropdownMenuItem
-                      class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                      :class="menuItemClass"
                       @select.prevent="workflowSubmenuOpen = false"
                     >
                       <span
@@ -665,7 +669,7 @@ defineExpose({
                       v-for="workflow in eligibleWorkflows"
                       :key="workflow.id ?? workflow.tabPath"
                       :disabled="workflowSelecting"
-                      class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                      :class="menuItemClass"
                       @select.prevent="pickWorkflow(workflow)"
                     >
                       <span class="icon-[comfy--workflow] size-4 shrink-0" />
@@ -687,7 +691,7 @@ defineExpose({
               </DropdownMenuSub>
               <DropdownMenuItem
                 v-if="canOpenAssets"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                :class="menuItemClass"
                 @select="emit('openAssets')"
               >
                 <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
@@ -701,7 +705,7 @@ defineExpose({
               />
               <DropdownMenuItem
                 v-if="canAttach"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                :class="menuItemClass"
                 @select="emit('attach')"
               >
                 <i-lucide:paperclip class="size-4 shrink-0" />

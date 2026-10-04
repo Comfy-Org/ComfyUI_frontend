@@ -92,16 +92,10 @@
               <DropdownMenuContent
                 align="end"
                 :side-offset="4"
-                class="z-1001 min-w-36 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
+                :class="cn(menuContentClass, 'min-w-36')"
               >
-                <DropdownMenuItem as-child @select="saveAs()">
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    class="w-full justify-start font-normal"
-                  >
-                    {{ t('builderToolbar.saveAs') }}
-                  </Button>
+                <DropdownMenuItem :class="menuItemClass" @select="saveAs()">
+                  {{ t('builderToolbar.saveAs') }}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenuPortal>
@@ -137,6 +131,11 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import {
+  menuContentClass,
+  menuItemClass
+} from '@/components/ui/menu/menuStyles'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'

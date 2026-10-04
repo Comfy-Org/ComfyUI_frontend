@@ -58,11 +58,10 @@
           variant="muted-textonly"
           :aria-label="$t('g.moreOptions')"
         >
-          <Button
+          <button
             v-if="invite.token"
-            variant="textonly"
-            size="unset"
-            :class="menuItemClass"
+            type="button"
+            :class="menuButtonClass"
             @click="
               () => {
                 close()
@@ -74,11 +73,10 @@
             <span>{{
               $t('workspacePanel.members.actions.copyInviteLink')
             }}</span>
-          </Button>
-          <Button
-            variant="textonly"
-            size="unset"
-            :class="menuItemClass"
+          </button>
+          <button
+            type="button"
+            :class="menuButtonClass"
             @click="
               () => {
                 close()
@@ -89,11 +87,10 @@
             <!-- fallow-ignore-next-line css-token-drift -->
             <i class="icon-[lucide--mail-plus] size-4" />
             <span>{{ $t('workspacePanel.members.actions.resendInvite') }}</span>
-          </Button>
-          <Button
-            variant="textonly"
-            size="unset"
-            :class="menuItemClass"
+          </button>
+          <button
+            type="button"
+            :class="menuButtonClass"
             @click="
               () => {
                 close()
@@ -104,7 +101,7 @@
             <!-- fallow-ignore-next-line css-token-drift -->
             <i class="icon-[lucide--mail-x] size-4" />
             <span>{{ $t('workspacePanel.members.actions.cancelInvite') }}</span>
-          </Button>
+          </button>
         </MoreButton>
       </div>
     </div>
@@ -127,16 +124,14 @@
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
+import { menuButtonClass } from '@/components/ui/menu/menuStyles'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import Button from '@/components/ui/button/Button.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   buildInviteLink,
   copyTextSilently
 } from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
-
-const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
 
 const toastStore = useToastStore()
 

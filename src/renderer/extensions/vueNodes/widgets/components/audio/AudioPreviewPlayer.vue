@@ -92,11 +92,7 @@
         </Button>
 
         <!-- Options Button -->
-        <Menu
-          v-if="showOptionsButton"
-          :items="menuItems"
-          class="border-component-node-border bg-component-node-widget-background"
-        >
+        <Menu v-if="showOptionsButton" :items="menuItems">
           <template #trigger>
             <Button
               variant="textonly"
@@ -110,7 +106,7 @@
             </Button>
           </template>
           <template #item="{ item }">
-            <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
+            <div v-if="item.key === 'volume'" class="w-48">
               <label class="mb-2 block text-xs text-base-foreground">{{
                 item.label
               }}</label>
@@ -123,16 +119,7 @@
                 @update:model-value="handleVolumeChange"
               />
             </div>
-            <div
-              v-else
-              class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
-            >
-              <span class="text-base-foreground">{{ item.label }}</span>
-              <i
-                v-if="item.checked"
-                class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
-              />
-            </div>
+            <MenuItemContent v-else :item :has-submenu="false" />
           </template>
         </Menu>
       </div>
@@ -150,6 +137,7 @@ import { useToast } from 'primevue/usetoast'
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
+import MenuItemContent from '@/components/ui/menu/MenuItemContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 
 import { formatTime } from '@/utils/formatUtil'

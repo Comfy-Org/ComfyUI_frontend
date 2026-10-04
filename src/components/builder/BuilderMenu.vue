@@ -1,5 +1,5 @@
 <template>
-  <Popover :show-arrow="false" class="min-w-56 p-3">
+  <Popover :show-arrow="false" :class="cn(menuContentClass, 'min-w-56')">
     <template #button>
       <button
         :class="
@@ -21,16 +21,15 @@
     <template #default="{ close }">
       <template v-for="(item, index) in menuItems" :key="item.label">
         <div v-if="index > 0" class="my-1 border-t border-border-default" />
-        <Button
-          variant="textonly"
-          size="unset"
-          class="flex w-full items-center justify-start gap-3 rounded-md px-3 py-2 text-sm"
+        <button
+          type="button"
+          :class="menuButtonClass"
           :disabled="item.disabled"
           @click="item.action(close)"
         >
           <i :class="cn(item.icon, 'size-4')" />
           {{ item.label }}
-        </Button>
+        </button>
       </template>
     </template>
   </Popover>
@@ -41,8 +40,11 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
+import {
+  menuButtonClass,
+  menuContentClass
+} from '@/components/ui/menu/menuStyles'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -13,6 +14,10 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import {
+  menuContentClass,
+  menuItemClass
+} from '@/components/ui/menu/menuStyles'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 
 import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
@@ -232,11 +237,11 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                   side="bottom"
                   align="end"
                   :side-offset="4"
-                  class="agent-scope z-1100 flex w-32 flex-col gap-1 overflow-clip rounded-lg bg-secondary-background p-1 shadow-md ring-1 ring-border-subtle ring-inset"
+                  :class="cn(menuContentClass, 'agent-scope w-32 min-w-32')"
                   @close-auto-focus="onMenuCloseAutoFocus"
                 >
                   <DropdownMenuItem
-                    class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                    :class="menuItemClass"
                     @select="startRename(session)"
                   >
                     <span class="icon-[lucide--pencil] size-4 shrink-0" />
@@ -246,7 +251,12 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                     class="relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-component-node-border"
                   />
                   <DropdownMenuItem
-                    class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover data-highlighted:text-destructive-background"
+                    :class="
+                      cn(
+                        menuItemClass,
+                        'data-highlighted:text-destructive-background'
+                      )
+                    "
                     @select="emit('delete', session.id)"
                   >
                     <span class="icon-[lucide--trash-2] size-4 shrink-0" />

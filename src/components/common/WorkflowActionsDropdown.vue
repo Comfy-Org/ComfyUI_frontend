@@ -18,6 +18,7 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { menuContentClass } from '@/components/ui/menu/menuStyles'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -256,7 +257,7 @@ const tooltipPt = {
         :align
         :side-offset="8"
         :collision-padding="10"
-        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
+        :class="cn(menuContentClass, 'min-w-56')"
       >
         <WorkflowActionsList :items="menuItems" />
       </DropdownMenuContent>

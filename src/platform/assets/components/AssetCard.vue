@@ -54,15 +54,14 @@
           size="sm"
         >
           <template #default>
-            <Button
-              variant="secondary"
-              size="md"
-              class="justify-start"
+            <button
+              type="button"
+              :class="menuButtonClass"
               @click="confirmDeletion"
             >
               <i class="icon-[lucide--trash-2]" />
               <span>{{ $t('g.delete') }}</span>
-            </Button>
+            </button>
           </template>
         </MoreButton>
       </IconGroup>
@@ -138,6 +137,7 @@ import MoreButton from '@/components/button/MoreButton.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import { menuButtonClass } from '@/components/ui/menu/menuStyles'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'

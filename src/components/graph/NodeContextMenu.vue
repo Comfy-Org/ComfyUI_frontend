@@ -6,7 +6,7 @@
     @hide="onMenuHide"
   >
     <template #item="{ item, hasSubmenu }">
-      <div class="flex items-center gap-2 px-3 py-1.5">
+      <div class="flex w-full items-center gap-2">
         <span
           v-if="getItemColor(item)"
           class="size-5 rounded-full border border-border-default"
@@ -21,7 +21,7 @@
         <span class="flex-1">{{ item.label }}</span>
         <span
           v-if="item.shortcut"
-          class="flex h-3.5 min-w-3.5 items-center justify-center rounded-sm bg-interface-menu-keybind-surface-default px-1 py-0 text-xs"
+          class="ml-auto rounded-sm border border-border-default bg-secondary-background p-1 text-xs text-nowrap text-muted"
         >
           {{ item.shortcut }}
         </span>

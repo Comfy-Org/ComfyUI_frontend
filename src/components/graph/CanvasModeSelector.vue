@@ -26,13 +26,13 @@
     ref="popover"
     side="top"
     :side-offset="8"
-    content-class="min-w-39 select-none border-interface-stroke bg-nav-background p-2 px-3 text-text-primary"
+    :content-class="cn(menuContentClass, 'min-w-39 select-none')"
     @show="onPopoverShow"
     @hide="onPopoverHide"
   >
     <div
       ref="menuRef"
-      class="flex flex-col gap-1"
+      class="flex flex-col"
       role="menu"
       :aria-label="$t('graphCanvasMenu.canvasMode')"
     >
@@ -41,7 +41,7 @@
         role="menuitemradio"
         :aria-checked="!isCanvasReadOnly"
         :tabindex="!isCanvasReadOnly ? 0 : -1"
-        class="flex w-full cursor-pointer items-center justify-between rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered"
+        :class="cn(menuButtonClass, 'justify-between')"
         :aria-label="$t('graphCanvasMenu.select')"
         @click="setMode('select')"
         @keydown.arrow-down.prevent="focusNextItem"
@@ -64,7 +64,7 @@
         role="menuitemradio"
         :aria-checked="isCanvasReadOnly"
         :tabindex="isCanvasReadOnly ? 0 : -1"
-        class="flex w-full cursor-pointer items-center justify-between rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered"
+        :class="cn(menuButtonClass, 'justify-between')"
         :aria-label="$t('graphCanvasMenu.hand')"
         @click="setMode('hand')"
         @keydown.arrow-down.prevent="focusNextItem"
@@ -91,8 +91,13 @@ import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import {
+  menuButtonClass,
+  menuContentClass
+} from '@/components/ui/menu/menuStyles'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface Props {
   buttonStyles?: Record<string, string>

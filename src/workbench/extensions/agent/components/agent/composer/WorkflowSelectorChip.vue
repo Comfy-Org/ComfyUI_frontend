@@ -14,6 +14,10 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import {
+  menuContentClass,
+  menuItemClass
+} from '@/components/ui/menu/menuStyles'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
@@ -168,7 +172,12 @@ function onSearchKeydown(event: KeyboardEvent): void {
           align="start"
           :side-offset="8"
           :reference="composerReference"
-          class="agent-scope z-1100 box-border w-(--reka-dropdown-menu-trigger-width) overflow-hidden rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+          :class="
+            cn(
+              menuContentClass,
+              'agent-scope w-(--reka-dropdown-menu-trigger-width) min-w-0 overflow-hidden'
+            )
+          "
         >
           <Input
             ref="searchInput"
@@ -203,7 +212,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 :value="tab.path"
                 :disabled="disabled || selectingTabPath !== null"
                 :aria-busy="selectingTabPath === tab.path || undefined"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                :class="cn(menuItemClass, 'w-full')"
                 @select.prevent
               >
                 <span

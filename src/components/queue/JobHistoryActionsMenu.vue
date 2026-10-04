@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center gap-1">
-    <Popover :show-arrow="false">
+    <Popover :show-arrow="false" :class="cn(menuContentClass, 'min-w-56')">
       <template #button>
         <Button
           v-tooltip.top="moreTooltipConfig"
@@ -14,12 +14,11 @@
         </Button>
       </template>
       <template #default="{ close }">
-        <div class="flex min-w-56 flex-col items-stretch font-inter">
-          <Button
+        <div class="flex flex-col">
+          <button
+            type="button"
             data-testid="docked-job-history-action"
-            class="w-full justify-between text-sm font-light"
-            variant="textonly"
-            size="md"
+            :class="cn(menuButtonClass, 'justify-between')"
             @click="onToggleDockedJobHistory(close)"
           >
             <span class="flex items-center gap-2">
@@ -34,12 +33,11 @@
               v-if="isQueuePanelV2Enabled"
               class="icon-[lucide--check] size-4"
             />
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             data-testid="show-run-progress-bar-action"
-            class="w-full justify-between text-sm font-light"
-            variant="textonly"
-            size="md"
+            :class="cn(menuButtonClass, 'justify-between')"
             @click="onToggleRunProgressBar"
           >
             <span class="flex items-center gap-2">
@@ -52,15 +50,16 @@
               v-if="isRunProgressBarEnabled"
               class="icon-[lucide--check] size-4"
             />
-          </Button>
+          </button>
           <!-- TODO: Bug in assets sidebar panel derives assets from history, so despite this not deleting the assets, it still effectively shows to the user as deleted -->
           <template v-if="showClearHistoryAction">
             <div class="my-1 border-t border-interface-stroke" />
-            <Button
+            <button
+              type="button"
               data-testid="clear-history-action"
-              class="h-auto min-h-8 w-full items-start justify-start whitespace-normal"
-              variant="textonly"
-              size="md"
+              :class="
+                cn(menuButtonClass, 'h-auto items-start whitespace-normal')
+              "
               @click="onClearHistoryFromMenu(close)"
             >
               <i
@@ -80,7 +79,7 @@
                   }}
                 </span>
               </span>
-            </Button>
+            </button>
           </template>
         </div>
       </template>
@@ -94,12 +93,17 @@ import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import {
+  menuButtonClass,
+  menuContentClass
+} from '@/components/ui/menu/menuStyles'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const emit = defineEmits<{
   (e: 'clearHistory'): void

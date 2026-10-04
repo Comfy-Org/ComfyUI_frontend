@@ -52,14 +52,17 @@
         side="top"
         align="end"
         :side-offset="8"
-        :class="panelClass"
+        :class="menuPanelClass"
       >
         <button
           v-for="speed in speedOptions"
           :key="speed"
           type="button"
           :class="
-            cn(rowClass, selectedSpeed === speed && 'bg-button-active-surface')
+            cn(
+              menuButtonClass,
+              selectedSpeed === speed && 'bg-secondary-background-hover'
+            )
           "
           @click="setSpeed(speed)"
         >
@@ -85,7 +88,7 @@
         side="top"
         align="end"
         :side-offset="8"
-        :class="panelClass"
+        :class="menuPanelClass"
       >
         <button
           v-for="clip in animations"
@@ -93,8 +96,9 @@
           type="button"
           :class="
             cn(
-              rowClass,
-              selectedAnimation === clip.index && 'bg-button-active-surface'
+              menuButtonClass,
+              selectedAnimation === clip.index &&
+                'bg-secondary-background-hover'
             )
           "
           @click="setClip(clip.index)"
@@ -115,13 +119,13 @@ import { formatAnimationTime } from '@/components/load3d/formatAnimationTime'
 import {
   chipClass,
   iconBtnClass,
-  panelClass,
-  rowClass,
+  menuPanelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { menuButtonClass } from '@/components/ui/menu/menuStyles'
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { AnimationItem } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'

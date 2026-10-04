@@ -12,6 +12,10 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
+import {
+  menuContentClass,
+  menuItemClass
+} from '@/components/ui/menu/menuStyles'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
@@ -172,10 +176,10 @@ async function downloadAssets(): Promise<void> {
           <DropdownMenuContent
             align="end"
             :side-offset="4"
-            class="agent-scope z-1100 h-9 w-36 rounded-lg border border-border-subtle bg-secondary-background p-1 shadow-lg"
+            :class="cn(menuContentClass, 'agent-scope w-36 min-w-36')"
           >
             <DropdownMenuItem
-              class="flex h-7 w-full cursor-pointer items-center rounded-lg px-1.5 text-[14px]/5 font-normal whitespace-nowrap text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+              :class="cn(menuItemClass, 'w-full whitespace-nowrap')"
               @select="copy(markdown)"
             >
               {{ t('agent.copyMarkdown') }}

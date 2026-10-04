@@ -34,7 +34,7 @@
     <template #item="{ item }">
       <a
         v-if="item.key !== 'nodes-2.0-toggle'"
-        class="flex w-full items-center gap-2 px-4 py-2"
+        class="flex w-full items-center gap-2"
         :href="item.url"
         target="_blank"
         :class="toValue(item.class)"
@@ -56,7 +56,7 @@
         <i v-if="isNewBlankWorkflow(item)" class="ml-auto" :class="item.icon" />
         <span
           v-if="toValue(item.shortcut)"
-          class="ml-auto rounded-sm border border-border-default bg-interface-menu-component-surface-hovered p-1 text-xs text-nowrap text-muted"
+          class="ml-auto rounded-sm border border-border-default bg-secondary-background p-1 text-xs text-nowrap text-muted"
         >
           {{ toValue(item.shortcut) }}
         </span>
@@ -67,7 +67,7 @@
       </a>
       <div
         v-else
-        class="flex cursor-pointer items-center justify-between px-4 py-2 select-none"
+        class="flex w-full items-center justify-between select-none"
         data-testid="nodes-2-toggle-item"
       >
         <span class="text-nowrap">{{ item.label }}</span>

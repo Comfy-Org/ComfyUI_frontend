@@ -3,23 +3,20 @@
     ref="jobItemPopoverRef"
     :dismissable="false"
     align="start"
-    content-class="border-none bg-transparent p-0 pt-2 font-inter"
+    :side-offset="8"
+    :content-class="cn(menuContentClass, 'min-w-56')"
     @show="isVisible = true"
     @hide="onHide"
   >
-    <div
-      ref="contentRef"
-      class="flex min-w-56 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3 font-inter"
-    >
+    <div ref="contentRef" class="flex flex-col">
       <template v-for="entry in entries" :key="entry.key">
         <div v-if="entry.kind === 'divider'" class="px-2 py-1">
           <div class="h-px bg-interface-stroke" />
         </div>
-        <Button
+        <button
           v-else
-          class="w-full justify-start bg-transparent"
-          variant="textonly"
-          size="sm"
+          type="button"
+          :class="menuButtonClass"
           :aria-label="entry.label"
           :disabled="entry.disabled"
           @click="onEntry(entry)"
@@ -32,7 +29,7 @@
             ]"
           />
           <span>{{ entry.label }}</span>
-        </Button>
+        </button>
       </template>
     </div>
   </Popover>
@@ -42,9 +39,13 @@
 import Popover from '@/components/common/ImperativePopover.vue'
 import { nextTick, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import {
+  menuButtonClass,
+  menuContentClass
+} from '@/components/ui/menu/menuStyles'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineProps<{ entries: MenuEntry[] }>()
 

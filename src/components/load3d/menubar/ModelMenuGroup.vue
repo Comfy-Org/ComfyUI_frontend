@@ -15,13 +15,18 @@
       side="bottom"
       align="start"
       :side-offset="8"
-      :class="panelClass"
+      :class="menuPanelClass"
     >
       <button
         v-for="d in upDirections"
         :key="d"
         type="button"
-        :class="cn(rowClass, upDirection === d && 'bg-button-active-surface')"
+        :class="
+          cn(
+            menuButtonClass,
+            upDirection === d && 'bg-secondary-background-hover'
+          )
+        "
         @click="setUpDirection(d)"
       >
         {{ d.toUpperCase() }}
@@ -45,13 +50,18 @@
       side="bottom"
       align="start"
       :side-offset="8"
-      :class="panelClass"
+      :class="menuPanelClass"
     >
       <button
         v-for="m in materialModes"
         :key="m"
         type="button"
-        :class="cn(rowClass, materialMode === m && 'bg-button-active-surface')"
+        :class="
+          cn(
+            menuButtonClass,
+            materialMode === m && 'bg-secondary-background-hover'
+          )
+        "
         @click="setMaterialMode(m)"
       >
         {{ t(`load3d.materialModes.${m}`) }}
@@ -79,13 +89,13 @@ import { useI18n } from 'vue-i18n'
 
 import {
   actionClass,
-  panelClass,
-  rowClass,
+  menuPanelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { menuButtonClass } from '@/components/ui/menu/menuStyles'
 import type {
   MaterialMode,
   ModelConfig,

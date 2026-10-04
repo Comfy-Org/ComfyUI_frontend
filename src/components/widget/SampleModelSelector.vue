@@ -25,8 +25,9 @@
         </Button>
         <MoreButton>
           <template #default="{ close }">
-            <Button
-              variant="secondary"
+            <button
+              type="button"
+              :class="menuButtonClass"
               @click="
                 () => {
                   close()
@@ -35,9 +36,10 @@
             >
               <i class="icon-[lucide--download]" />
               <span>{{ $t('g.settings') }}</span>
-            </Button>
-            <Button
-              variant="primary"
+            </button>
+            <button
+              type="button"
+              :class="menuButtonClass"
               @click="
                 () => {
                   close()
@@ -46,7 +48,7 @@
             >
               <i class="icon-[lucide--scroll]" />
               <span>{{ $t('g.profile') }}</span>
-            </Button>
+            </button>
           </template>
         </MoreButton>
       </div>
@@ -132,6 +134,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
+import { menuButtonClass } from '@/components/ui/menu/menuStyles'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'

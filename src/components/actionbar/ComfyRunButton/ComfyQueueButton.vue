@@ -40,27 +40,20 @@
       <DropdownMenuPortal>
         <DropdownMenuContent
           :side-offset="4"
-          class="z-1000 min-w-44 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
+          :class="cn(menuContentClass, 'min-w-44')"
         >
           <DropdownMenuItem
             v-for="item in queueModeMenuItems"
             :key="item.key"
-            as-child
+            v-tooltip="{ value: item.tooltip, showDelay: 600 }"
+            :class="menuItemClass"
             @select.prevent="item.command"
           >
-            <Button
-              v-tooltip="{
-                value: item.tooltip,
-                showDelay: 600
-              }"
-              :variant="
-                item.key === selectedQueueMode ? 'primary' : 'secondary'
-              "
-              size="sm"
-              :class="queueMenuItemButtonClass"
-            >
-              {{ item.label }}
-            </Button>
+            <span class="flex-1">{{ item.label }}</span>
+            <i
+              v-if="item.key === selectedQueueMode"
+              class="icon-[lucide--check] size-4"
+            />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>
@@ -84,6 +77,10 @@ import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import {
+  menuContentClass,
+  menuItemClass
+} from '@/components/ui/menu/menuStyles'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
@@ -211,7 +208,6 @@ const queueButtonVariant = computed<
 )
 const queueMenuTriggerClass =
   'h-full w-6 rounded-l-none rounded-r-lg border-l border-border-subtle p-0 text-muted-foreground data-[state=open]:bg-secondary-background-hover'
-const queueMenuItemButtonClass = 'w-full justify-start font-normal'
 
 const iconClass = computed(() => {
   if (paymentRecoveryLock) {
