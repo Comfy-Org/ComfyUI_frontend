@@ -205,6 +205,22 @@ describe('useAssetExportStore polling', () => {
     })
   })
 
+  it('requires consecutive task-not-found responses before settling', async () => {
+    const store = useAssetExportStore()
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValue(new Response(null, { status: 404 }))
+    dispatch(createExportMessage())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(store.activeExports).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(store.finishedExports[0].status).toBe('failed')
+    expect(api.fetchApi).toHaveBeenCalledTimes(4)
+  })
+
   it('keeps completion terminal when fetching the download URL fails', async () => {
     const store = useAssetExportStore()
     vi.mocked(assetService.getExportDownloadUrl).mockRejectedValueOnce(
@@ -325,6 +341,10 @@ describe('assetExportStore triggerDownload', () => {
     {
       name: 'a protocol-relative URL',
       url: '//storage.example.com/exports/e.zip?signature=abc'
+    },
+    {
+      name: 'a backslash-prefixed authority URL',
+      url: '\\\\storage.example.com/exports/e.zip?signature=abc'
     },
     { name: 'an empty URL', url: '' },
     { name: 'a whitespace-only URL', url: '   ' }

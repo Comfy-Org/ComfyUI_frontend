@@ -98,7 +98,11 @@ function resolveExportDownloadUrl(
   url: string
 ): { ok: true; value: URL } | { ok: false; error: string } {
   const trimmedUrl = url.trim()
-  if (!trimmedUrl || trimmedUrl.startsWith('//')) {
+  if (
+    !trimmedUrl ||
+    trimmedUrl.startsWith('//') ||
+    trimmedUrl.startsWith('\\\\')
+  ) {
     return { ok: false, error: t('exportToast.unsupportedDownloadUrl') }
   }
   const resolvedUrl = trimmedUrl.startsWith('/')
@@ -287,6 +291,8 @@ export const useAssetExportStore = defineStore('assetExport', () => {
         if (!result.ok) {
           if (result.error instanceof TaskNotFoundError) {
             handleMissingExportTask(exp)
+          } else {
+            taskNotFoundAttempts.delete(exp.taskId)
           }
           return
         }
