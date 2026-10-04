@@ -6,7 +6,7 @@ globs:
 
 # Error Handling: failure is data
 
-How to tell a caller that a function could not do what was asked.
+How to tell a caller that a function failed.
 
 > **Treat expected failure as data, validate before mutation, and throw only
 > for a genuine invariant violation with a guaranteed handler.**
@@ -60,10 +60,10 @@ export function measureWireOp(op: Op): WireMeasurement {
 }
 ```
 
-Do not return a stand-in for a result the function did not produce: an empty
-array when the fetch failed, `0` when the count is unknown, or a default object
-when parsing failed. A sentinel is safe only when the caller cannot mistake it
-for success.
+Do not return a placeholder when the work failed: an empty array when the
+fetch failed, `0` when the count is unknown, or a default object when parsing
+failed. A sentinel is safe only when it is distinguishable from every success
+value.
 
 ## 2. Convert at the untrusted call, not up the stack
 
@@ -103,7 +103,7 @@ what to undo.
 - After a failed refresh or load, keep the last valid state. After an
   ambiguous remote outcome, invalidate or refetch; do not assume success.
 
-If a precondition check and the mutation it guards cannot be separated, stage
+If you cannot separate a precondition check from the mutation it guards, stage
 the mutation (build the new value, swap it in at the end) so a failure midway
 leaves the old value in place.
 
@@ -142,8 +142,8 @@ layer that owns the decision:
   many times, budget the reports (first N, or first per key) so telemetry
   stays readable.
 
-Do both. A failure that is reported but not returned still leaves state wrong;
-a failure that is returned but never reported is invisible in production.
+Do both. If you only report, the caller proceeds on bad state. If you only
+return, the failure stays out of telemetry.
 
 ## 6. When throwing is still right
 
@@ -152,8 +152,8 @@ catch it:
 
 - a security boundary would be crossed (credentials, origin, permissions);
 - data would be corrupted or an invalid object constructed;
-- a programmer error that no caller can recover from, such as an impossible
-  state in a constructor.
+- a programmer error with no recovery path, such as an impossible state in a
+  constructor.
 
 Name the handler in your head before you write the `throw`. If you cannot
 (it is "whoever calls this"), return a value instead. Parsers at a trust
@@ -167,7 +167,7 @@ custom-node repositories depends on those contracts.
 ## 7. Test the refusal path as a value
 
 A recoverable contract has at least one test that triggers the refusal,
-asserts the returned value, and asserts that state did not change.
+asserts the returned value, and asserts that state is unchanged.
 `expect(() => fn()).not.toThrow()` proves only that no exception escaped; it
 does not prove the function produced the right result. If the failure is
 reported, assert the
@@ -178,12 +178,11 @@ against the throwing version.
 
 ## The tells
 
-- A `try/catch` wrapped around your own function, not around a platform or
-  third-party call.
+- A `try/catch` around your own function instead of around the platform or
+  third-party call inside it.
 - A return type with no failure arm, so callers treat every result as
   success.
 - A `throw` after a `push`, `set`, `add`, or store assignment in the same
   function.
-- `catch (e) { console.error(e) }` that neither returns a failure value nor
-  calls `reportError`.
+- A `catch` block whose only statement is `console.error(e)`.
 - `expect(...).not.toThrow()` as the only assertion on a failure path.
