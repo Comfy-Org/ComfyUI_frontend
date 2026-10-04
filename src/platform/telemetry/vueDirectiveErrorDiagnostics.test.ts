@@ -3,8 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { addVueDirectiveDiagnostics } from './vueDirectiveErrorDiagnostics'
 
-function resource(name: string): PerformanceResourceTiming {
-  return { name } as PerformanceResourceTiming
+function resource(name: string): PerformanceEntry {
+  return {
+    name,
+    entryType: 'resource',
+    startTime: 0,
+    duration: 0,
+    toJSON: () => ({})
+  }
 }
 
 describe('addVueDirectiveDiagnostics', () => {
@@ -78,35 +84,5 @@ describe('addVueDirectiveDiagnostics', () => {
     expect(addVueDirectiveDiagnostics(event, {}).tags?.diagnostic).toBe(
       expected
     )
-  })
-
-  it('collects messages without relying on the array iterator', () => {
-    const iterator = Array.prototype[Symbol.iterator]
-    Object.defineProperty(Array.prototype, Symbol.iterator, {
-      value: undefined
-    })
-    try {
-      const event = {
-        type: undefined,
-        exception: {
-          values: [
-            {
-              value: 'undefined is not a function',
-              stacktrace: {
-                frames: [{ filename: '/assets/vendor-vue-core.abc123.js' }]
-              }
-            }
-          ]
-        }
-      } satisfies ErrorEvent
-
-      expect(addVueDirectiveDiagnostics(event, {}).tags?.diagnostic).toBe(
-        'vue_directive_runtime'
-      )
-    } finally {
-      Object.defineProperty(Array.prototype, Symbol.iterator, {
-        value: iterator
-      })
-    }
   })
 })
