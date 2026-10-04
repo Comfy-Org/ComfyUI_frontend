@@ -186,16 +186,36 @@ legitimate re-mint rather than an identity collision — which is why
 > identity twice, and nothing downstream can tell the two apart.
 >
 > The repeat is renamed to `name#1` before any id is derived. Where it cannot
-> be — a `name` whose writes do not stick, or an accessor that throws
+> be — a `name` that cannot be written at all, or an accessor that throws
 > (`src/types/widgetId.ts`) — the widget is **refused**: it is dropped from
 > `node.widgets` and reported. First occurrence wins; renamable collisions
 > elsewhere on the node are still renamed.
 >
-> Two stable `errorType`s, because the causes need different alerts and
+> **Refusal keys on whether the write was possible, not on whether it landed,
+> and the difference is load-bearing.** `BaseWidget.set name` delegates to
+> `widgetValueStore.renameWidget()` and returns without changing the name
+> whenever the store declines — which it does when the node has no entries,
+> precisely the state an ambiguous pair leaves a node in and the state a node
+> is in after it has been removed from the graph. So a failed read-back is a
+> recoverable store refusal at least as often as it is a hostile object, and
+> removing on it destroys ordinary, renamable widgets on the very nodes this
+> repairs: a node deleted and undone comes back a widget short, saving one
+> `widgets_values` entry for a two-widget node. The read-back still decides
+> whether the pair is **reported**; `nameIsWritable` decides whether the widget
+> is **removed**, and it is deliberately the same predicate
+> `ensureUniqueWidgetNames` uses to decide it may rename at all — `setNodeId`
+> gates registration on that, so two copies of the rule disagreeing is a widget
+> destroyed over a disagreement.
+>
+> Three stable `errorType`s, because the causes need different alerts and
 > collapsing them reports a collision that does not exist:
 > `widget_duplicate_name_refused` for a duplicate that could not be renamed
-> apart, and `widget_unreadable_name_refused` for a widget whose `name`
-> accessor throws — that one has no duplicate at all, only no derivable id.
+> apart, `widget_unreadable_name_refused` for a widget whose `name` accessor
+> throws — that one has no duplicate at all, only no derivable id — and
+> `widget_duplicate_name_unresolved` for a pair the node **keeps**, where the
+> rename was declined rather than impossible. The third is not a report of lost
+> widgets: the widget is still on the node, and a later commit can still
+> resolve it.
 >
 > **There are two enforcement points, and looking only at the first one is
 > misleading.** `attachNodeToStores` calls `refuseAmbiguousNodeWidgets` as a
@@ -205,7 +225,7 @@ legitimate re-mint rather than an identity collision — which is why
 > assignment all commit through it — but it enforces nothing until `graphId`
 > exists, so it does not cover the join itself.
 >
-> Three boundaries on that, because each one is load-bearing and none is
+> Four boundaries on that, because each one is load-bearing and none is
 > obvious from the rule:
 >
 > - **Enforcement starts when the node joins a graph**, not when a detached

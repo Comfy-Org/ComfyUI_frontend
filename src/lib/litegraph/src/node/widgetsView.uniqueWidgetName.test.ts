@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -520,8 +521,10 @@ describe('unique widget name invariant', () => {
       {}
     )
     // Stores a transformed value, so it never answers to the candidate it was
-    // offered and is refused — and afterwards it holds a name no widget on the
-    // node owns, which is what the report must not quote.
+    // offered — and afterwards it holds a name no widget on the node owns,
+    // which is what the report must not quote. Its `name` is writable, so the
+    // pair is reported as unresolved and the widget is kept, but the name the
+    // report has to carry is the same either way.
     let stored = 'seed'
     Object.defineProperty(normalising, 'name', {
       get: () => stored,
@@ -537,10 +540,34 @@ describe('unique widget name invariant', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'widget_duplicate_name_refused',
+        errorType: 'widget_duplicate_name_unresolved',
         context: expect.objectContaining({ widgetName: 'seed' })
       })
     )
+    // Kept, not removed: a setter that declines is a recoverable refusal.
+    expect(node.widgets).toContain(normalising)
+  })
+
+  it('registers an unresolved widget that the node keeps', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    const unresolved = node.addWidget('number', 'steps', 2, () => undefined, {})
+    let stored = 'seed'
+    Object.defineProperty(unresolved, 'name', {
+      get: () => stored,
+      set: (value: string) => {
+        stored = `${value}-normalised`
+      },
+      configurable: true
+    })
+    expect(isNodeBindable(unresolved)).toBe(true)
+    if (!isNodeBindable(unresolved)) throw new Error('Expected concrete widget')
+    const setNodeId = vi.spyOn(unresolved, 'setNodeId')
+
+    node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    expect(node.widgets).toContain(unresolved)
+    expect(setNodeId).toHaveBeenCalledWith(node.id)
   })
 
   it('does not report a refusal it cannot carry out on a subgraph node', () => {

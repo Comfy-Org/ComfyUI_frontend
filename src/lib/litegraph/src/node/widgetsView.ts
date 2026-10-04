@@ -6,6 +6,7 @@ import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { RefusedWidget } from '@/types/widgetId'
 import {
   dropUnrenamableDuplicateWidgets,
   isWidgetNameUnreadable
@@ -34,6 +35,19 @@ const DUPLICATE_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_refused'
 const UNREADABLE_WIDGET_NAME_ERROR_TYPE = 'widget_unreadable_name_refused'
 
 /**
+ * Stable `errorType` for an ambiguous pair the node **keeps**: the rename did
+ * not take, but `name` is writable, so the failure is a store refusal that a
+ * later commit can still resolve rather than a widget that can never be
+ * addressed. Removing it would cost the user a widget to repair a transient
+ * state, so it is reported and left in place.
+ *
+ * Distinct from {@link DUPLICATE_WIDGET_NAME_ERROR_TYPE} precisely because the
+ * widget is still on the node: an alert on this one is not a report of lost
+ * widgets. Also a contract, not an implementation detail.
+ */
+const UNRESOLVED_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_unresolved'
+
+/**
  * Stable `errorType` for a refused widget whose own teardown threw, which
  * leaves its release half-done. Also a contract, not an implementation detail.
  */
@@ -48,6 +62,23 @@ interface WidgetsViewState {
 
 /** Shared empty result, so the common no-refusal path allocates nothing. */
 const EMPTY_REFUSAL: ReadonlySet<IBaseWidget> = new Set()
+
+/**
+ * The unresolved names already reported for a node, so a pair that no later
+ * commit can resolve is alerted on once instead of on every commit.
+ *
+ * An unresolved pair — unlike the two removing causes — survives the walk, so
+ * every subsequent `syncWidgetOrder` (`push`, `splice`, a reorder, each
+ * `addWidget`) and every `attachNodeToStores` finds it again. `reportError`
+ * builds an `Error` with a stack and dispatches to Sentry and Datadog with no
+ * dedupe or throttle of its own, so reporting per pass is an unbounded stream
+ * of identical warnings for as long as the session lasts. The removing causes
+ * self-clear after one report because the widget is gone, and are not tracked.
+ *
+ * Replaced rather than added to on each pass: a name that stops being
+ * ambiguous and later collides again is a new event and is reported again.
+ */
+const reportedUnresolvedNames = new WeakMap<LGraphNode, Set<string>>()
 
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
 const widgetsViewGetters = new WeakSet<() => IBaseWidget[] | undefined>()
@@ -166,45 +197,110 @@ function refuseAmbiguousWidgets(
   widgets: IBaseWidget[]
 ): ReadonlySet<IBaseWidget> {
   const refused = dropUnrenamableDuplicateWidgets(widgets)
-  if (!refused.length) return EMPTY_REFUSAL
-
-  for (const { widget, cause, name } of refused) {
-    // The two causes are different failures and are alerted on separately: an
-    // unreadable name has no duplicate at all, so reporting one would send
-    // whoever reads the alert looking for a collision that does not exist.
-    //
-    // Both the cause and the name come from the walk, never from another read
-    // of the accessor. It is hostile by definition, it need not answer twice
-    // the same way, and the walk may have written to it up to four times
-    // before giving up — so a re-read can name a candidate no widget holds.
-    const unreadable = cause === 'unreadable-name'
-    releaseRefusedWidget(node, widget, name)
-    reportError(
-      new Error(
-        unreadable
-          ? // Deliberately not "the accessor threw": a name that will not
-            // coerce or will not percent-encode reads perfectly and still
-            // yields no id.
-            `Refused a widget on node ${node.id}: no widget identity can be derived from its name`
-          : `Refused a widget named "${name}": node ${node.id} already has a widget of that name and the duplicate cannot be renamed`
-      ),
-      {
-        errorType: unreadable
-          ? UNREADABLE_WIDGET_NAME_ERROR_TYPE
-          : DUPLICATE_WIDGET_NAME_ERROR_TYPE,
-        surface: 'graph',
-        level: 'warning',
-        tags: { node_type: node.type },
-        context: {
-          nodeId: String(node.id),
-          widgetName: name,
-          widgetType: safeRead(() => widget.type)
-        }
-      }
-    )
+  if (!refused.length) {
+    reportedUnresolvedNames.delete(node)
+    return EMPTY_REFUSAL
   }
 
-  return new Set(refused.map(({ widget }) => widget))
+  const alreadyReported = takeUnresolvedReportGate(node, refused)
+
+  for (const finding of refused) {
+    // An unresolved pair this node has already been alerted on is not a new
+    // event. Skipping before the teardown below would be wrong for any other
+    // cause, but an unresolved duplicate is never released, so there is
+    // nothing here to skip past.
+    if (alreadyReported(finding)) continue
+
+    // Only a widget the walk took off the array needs releasing; an unresolved
+    // duplicate is still the node's widget and must keep its slot wiring.
+    if (finding.removed) {
+      releaseRefusedWidget(node, finding.widget, finding.name)
+    }
+    reportRefusal(node, finding)
+  }
+
+  return new Set(
+    refused.filter(({ removed }) => removed).map(({ widget }) => widget)
+  )
+}
+
+/**
+ * Records which names are unresolved on {@link node} now, and returns the
+ * predicate for "already alerted on before this pass".
+ *
+ * Replaces the record rather than adding to it, so a name that stops being
+ * ambiguous and later collides again is reported again.
+ */
+function takeUnresolvedReportGate(
+  node: LGraphNode,
+  refused: readonly RefusedWidget<IBaseWidget>[]
+): (finding: RefusedWidget<IBaseWidget>) => boolean {
+  const previous = reportedUnresolvedNames.get(node)
+  const unresolved = new Set(
+    refused
+      .filter(({ cause }) => cause === 'unresolved-duplicate')
+      .map(({ name }) => String(name))
+  )
+  if (unresolved.size) reportedUnresolvedNames.set(node, unresolved)
+  else reportedUnresolvedNames.delete(node)
+
+  return ({ cause, name }) =>
+    cause === 'unresolved-duplicate' && !!previous?.has(String(name))
+}
+
+/**
+ * The alert for one finding. The three causes are different failures and are
+ * alerted on separately: an unreadable name has no duplicate at all, so
+ * reporting one would send whoever reads the alert looking for a collision that
+ * does not exist, and an unresolved pair is still on the node rather than lost.
+ *
+ * `cause` and `name` come from the walk, never from another read of the
+ * accessor. It is hostile by definition, it need not answer twice the same way,
+ * and the walk may have written to it up to four times before giving up — so a
+ * re-read can name a candidate no widget holds.
+ */
+const REFUSAL_ALERTS: Record<
+  RefusedWidget<IBaseWidget>['cause'],
+  {
+    errorType: string
+    message: (nodeId: LGraphNode['id'], name: string | undefined) => string
+  }
+> = {
+  // Deliberately not "the accessor threw": a name that will not coerce or will
+  // not percent-encode reads perfectly and still yields no id.
+  'unreadable-name': {
+    errorType: UNREADABLE_WIDGET_NAME_ERROR_TYPE,
+    message: (nodeId) =>
+      `Refused a widget on node ${nodeId}: no widget identity can be derived from its name`
+  },
+  'unresolved-duplicate': {
+    errorType: UNRESOLVED_WIDGET_NAME_ERROR_TYPE,
+    message: (nodeId, name) =>
+      `Kept a widget named "${name}" that node ${nodeId} already has under that name: the rename was declined rather than impossible, so the widget is left in place and the pair is unresolved for now`
+  },
+  'duplicate-name': {
+    errorType: DUPLICATE_WIDGET_NAME_ERROR_TYPE,
+    message: (nodeId, name) =>
+      `Refused a widget named "${name}": node ${nodeId} already has a widget of that name and the duplicate cannot be renamed`
+  }
+}
+
+function reportRefusal(
+  node: LGraphNode,
+  { widget, cause, name }: RefusedWidget<IBaseWidget>
+): void {
+  const alert = REFUSAL_ALERTS[cause]
+  reportError(new Error(alert.message(node.id, name)), {
+    errorType: alert.errorType,
+    surface: 'graph',
+    level: 'warning',
+    tags: { node_type: node.type },
+    context: {
+      nodeId: String(node.id),
+      widgetName: name,
+      widgetType: safeRead(() => widget.type)
+    }
+  })
 }
 
 /**
