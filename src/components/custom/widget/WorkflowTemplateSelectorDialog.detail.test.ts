@@ -321,7 +321,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       name: fixtures.template.title
     })
     expect(
-      within(detail).getByText(/^Checkpoint · Used by Active loader$/)
+      within(detail).getByText(/^Checkpoints · Used by Active loader$/)
     ).toBeInTheDocument()
 
     resolveMetadata?.({
@@ -333,7 +333,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
 
     await waitFor(() => {
       expect(
-        within(detail).getByText(/^Checkpoint · 1 KB · Used by Active loader$/)
+        within(detail).getByText(/^Checkpoints · 1 KB · Used by Active loader$/)
       ).toBeInTheDocument()
     })
   })
@@ -366,7 +366,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
 
     await waitFor(() => {
       expect(
-        within(detail).getByText(/^Checkpoint · Used by Active loader$/)
+        within(detail).getByText(/^Checkpoints · Used by Active loader$/)
       ).toBeInTheDocument()
     })
     expect(detail).toBeInTheDocument()

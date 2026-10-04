@@ -15,23 +15,12 @@ type TemplateModelSetupStatus =
   | 'unavailable'
   | 'unknown'
 
-type TemplateModelTypeKey =
-  | 'model'
-  | 'checkpoint'
-  | 'diffusionModel'
-  | 'textEncoder'
-  | 'vae'
-  | 'lora'
-
-type TemplateModelType =
-  | { kind: 'known'; key: TemplateModelTypeKey }
-  | { kind: 'directory'; raw: string }
-
 type TemplateModelSetupRowBase = {
   model: ModelFile
   usedBy: readonly string[]
   fileSize: number | null
-  modelType: TemplateModelType
+  /** Unformatted; the view labels it. */
+  modelDirectory: string
 }
 
 export type TemplateModelSetupRow =
@@ -57,14 +46,6 @@ type TemplateModelSetupOptions = {
   isDownloadable: (model: ModelWithUrl) => boolean
 }
 
-const modelTypeKeys: Readonly<Partial<Record<string, TemplateModelTypeKey>>> = {
-  checkpoints: 'checkpoint',
-  diffusion_models: 'diffusionModel',
-  text_encoders: 'textEncoder',
-  vae: 'vae',
-  loras: 'lora'
-}
-
 function indexByIdentity<T extends { model: ModelWithUrl }>(
   entries: readonly T[]
 ): Map<string, T> {
@@ -74,16 +55,6 @@ function indexByIdentity<T extends { model: ModelWithUrl }>(
     if (!indexed.has(identity)) indexed.set(identity, entry)
   }
   return indexed
-}
-
-function deriveModelType(directory: string): TemplateModelType {
-  const normalized = directory.trim()
-  if (!normalized) return { kind: 'known', key: 'model' }
-
-  const knownKey = modelTypeKeys[normalized]
-  if (knownKey) return { kind: 'known', key: knownKey }
-
-  return { kind: 'directory', raw: normalized }
 }
 
 function normalizeFileSize(fileSize: number | null | undefined): number | null {
@@ -100,12 +71,11 @@ function deriveRow(
   metadata: TemplateModelMetadataEntry | undefined,
   isDownloadable: (model: ModelWithUrl) => boolean
 ): TemplateModelSetupRow {
-  const modelType = deriveModelType(model.directory)
   const row = {
     model,
     usedBy,
     fileSize: normalizeFileSize(metadata?.fileSize),
-    modelType
+    modelDirectory: model.directory.trim()
   }
 
   if (availability?.status === 'installed') {
