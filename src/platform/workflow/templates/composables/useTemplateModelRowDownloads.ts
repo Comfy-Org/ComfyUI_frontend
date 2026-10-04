@@ -233,7 +233,7 @@ export function useTemplateModelRowDownloads({
     const identity = getTemplateModelDownloadIdentity(model)
     const row = rows.get(identity)
     // A host result can settle after the row moved to a different URL, and
-    // reporting it then would resurrect the row it replaced.
+    // applying it then would fail the replacement row.
     if (row?.model.url !== model.url) return
 
     let current = row.state
