@@ -71,32 +71,38 @@ function nameIsWritable(widget: { name: string }): boolean {
  * never registered and can never be handed the first widget's state. It is the
  * collateral loss that goes away.
  *
- * Every read of another widget's `name` is guarded. A widget whose accessor
- * throws is refused in its own right by {@link dropUnrenamableDuplicateWidgets}
- * and must not also decide whether an unrelated widget has an identity.
+ * Names are compared through {@link readName}, so the comparison is on the
+ * **key** an id would be built from rather than on the raw value — a widget
+ * named `1` and one named `'1'` are one identity however different they look.
+ * {@link dropUnrenamableDuplicateWidgets} reads names the same way, so the walk
+ * that decides *which* widget is the duplicate and this predicate agree on what
+ * a duplicate is. ({@link ensureUniqueWidgetNames} still compares raw values,
+ * so it calls that pair unambiguous and renames nothing. The disagreement is
+ * safe in this direction and only in this direction: this predicate withholds
+ * an id, it never removes a widget, so the pair is kept and under-registered
+ * rather than destroyed.)
+ *
+ * A widget whose `name` cannot be read owns nothing: that is the
+ * `unreadable-name` refusal's own case, and it mints no id anyway. An
+ * unreadable name on *another* widget is likewise that widget's problem and
+ * must not decide whether this one has an identity, which is why the read is
+ * guarded per candidate rather than around the loop.
  */
 export function widgetOwnsItsName(
   widgets: readonly { name: string }[],
   widget: { name: string }
 ): boolean {
-  let name: string
-  try {
-    name = widget.name
-  } catch {
-    // No name read, no id. This is the `unreadable-name` refusal's own case.
-    return false
-  }
+  const key = readName(widget)
+  if (key === UNREADABLE_NAME) return false
 
   for (const candidate of widgets) {
     // Reached this widget without an earlier holder, so the name is its own.
     // Identity, not position: the same object may transiently occupy two
     // slots during an index-assignment reorder, and that is one widget.
     if (candidate === widget) return true
-    try {
-      if (candidate.name === name) return false
-    } catch {
-      continue
-    }
+    // An unreadable candidate answers `UNREADABLE_NAME`, which is never equal
+    // to a key, so it is skipped rather than blocking this widget.
+    if (readName(candidate) === key) return false
   }
 
   // Not on the array at all, and no widget on it holds this name. A widget the

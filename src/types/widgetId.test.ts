@@ -6,7 +6,8 @@ import {
   ensureUniqueWidgetNames,
   isWidgetId,
   parseWidgetId,
-  widgetId
+  widgetId,
+  widgetOwnsItsName
 } from './widgetId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -339,6 +340,72 @@ describe('dropUnrenamableDuplicateWidgets', () => {
 
     expect(refusedWidgets(widgets)).toEqual([other])
     expect(widgets).toEqual([shared, shared])
+  })
+})
+
+/**
+ * Which widget on a node may mint an id for the name it holds. The whole-node
+ * question `ensureUniqueWidgetNames` answers is the wrong one for this: a node
+ * carrying one pair nothing could rename apart has to keep registering its
+ * other widgets, or the node's whole widget order empties and a Vue node draws
+ * nothing.
+ */
+describe('widgetOwnsItsName', () => {
+  it('gives the name to the first widget holding it, and to no later one', () => {
+    const first = { name: 'seed' }
+    const later = { name: 'seed' }
+    const unrelated = { name: 'cfg' }
+    const widgets = [first, later, unrelated]
+
+    expect(widgetOwnsItsName(widgets, first)).toBe(true)
+    expect(widgetOwnsItsName(widgets, later)).toBe(false)
+    // The whole point: a widget that collides with nothing keeps its identity
+    // even while the node is ambiguous.
+    expect(widgetOwnsItsName(widgets, unrelated)).toBe(true)
+  })
+
+  it('treats one widget in two array slots as one widget, not a collision', () => {
+    // An index-assignment reorder transiently repeats the same object.
+    const shared = { name: 'seed' }
+
+    expect(widgetOwnsItsName([shared, shared], shared)).toBe(true)
+  })
+
+  it('collides names that differ as values but coincide as id strings', () => {
+    // `widgetId` keys on `encodeURIComponent(String(name))`, so these two mint
+    // one id. Comparing raw values would hand both an identity and let the
+    // clash land in the store, which is the registration this gate exists to
+    // refuse.
+    const numeric = { name: 1 as unknown as string }
+    const textual = { name: '1' }
+    const widgets = [numeric, textual]
+
+    expect(widgetOwnsItsName(widgets, numeric)).toBe(true)
+    expect(widgetOwnsItsName(widgets, textual)).toBe(false)
+  })
+
+  it('refuses a widget whose own name cannot be read', () => {
+    const hostile = {
+      get name(): string {
+        throw new Error('nope')
+      }
+    }
+
+    expect(widgetOwnsItsName([hostile], hostile)).toBe(false)
+  })
+
+  it('does not let an unreadable name on another widget decide this one', () => {
+    // That widget is refused in its own right. Letting its accessor throw
+    // through here would deny an identity to a widget it has nothing to do
+    // with — and abort the walk mid-`LGraph.add`.
+    const hostile = {
+      get name(): string {
+        throw new Error('nope')
+      }
+    }
+    const ordinary = { name: 'seed' }
+
+    expect(widgetOwnsItsName([hostile, ordinary], ordinary)).toBe(true)
   })
 })
 
