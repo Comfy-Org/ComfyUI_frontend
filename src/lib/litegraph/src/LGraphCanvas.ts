@@ -6707,11 +6707,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       height ?? 0
     )
 
-    const viewport = measureViewport(
-      width ?? 0,
-      height ?? 0,
-      window.devicePixelRatio
-    )
+    const viewport = measureViewport(width ?? 0, height ?? 0, readBrowserDpr())
 
     if (
       !bitmapDiscarded &&
