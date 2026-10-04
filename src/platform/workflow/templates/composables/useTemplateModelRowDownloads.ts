@@ -202,6 +202,12 @@ export function useTemplateModelRowDownloads({
     activeAttempt?: number
     /** Job holding the current attempt, where the host sends an id. */
     job?: { attempt: number; jobId: string }
+    /**
+     * Every job id this row has already seen. A retry's job is new, so a job
+     * that reported against an earlier attempt can never claim a later one -
+     * even when it reports first, which no reordering is needed to produce.
+     */
+    seenJobs?: ReadonlySet<string>
   }
   const rows = shallowReactive(new Map<string, TrackedRow>())
 
@@ -291,12 +297,13 @@ export function useTemplateModelRowDownloads({
     if (event.type === 'started' || event.type === 'progress') {
       if (claimant !== undefined) return claimant === jobId
       const row = rows.get(identity)
-      if (row) {
-        rows.set(identity, {
-          ...row,
-          job: { attempt: event.attempt, jobId }
-        })
-      }
+      if (!row) return false
+      if (row.seenJobs?.has(jobId)) return false
+      rows.set(identity, {
+        ...row,
+        job: { attempt: event.attempt, jobId },
+        seenJobs: new Set([...(row.seenJobs ?? []), jobId])
+      })
       return true
     }
     return claimant === jobId
