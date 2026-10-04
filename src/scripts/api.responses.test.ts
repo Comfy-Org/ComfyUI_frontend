@@ -35,6 +35,25 @@ describe('ComfyApi response boundaries', () => {
     ).toBe('Gateway rejected prompt')
   })
 
+  it('formats node errors without optional details', () => {
+    expect(
+      new PromptExecutionError({
+        node_errors: {
+          '1': {
+            class_type: 'PreviewAny',
+            dependent_outputs: [],
+            errors: [
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing'
+              }
+            ]
+          }
+        }
+      }).toString()
+    ).toBe('\nPreviewAny:\n    - Required input is missing')
+  })
+
   it.for([
     { name: 'null response', payload: null },
     { name: 'missing data', payload: {} },

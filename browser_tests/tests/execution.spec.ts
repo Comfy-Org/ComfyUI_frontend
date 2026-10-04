@@ -213,7 +213,9 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
         TestIds.dialogs.errorOverlay
       )
       await expect(errorOverlay).toBeVisible()
-      await expect(errorOverlay).toContainText(VALIDATION_ERROR_MESSAGE)
+      await expect(errorOverlay).toContainText(
+        'PreviewAny is missing a required input: source'
+      )
       expect(await comfyPage.page.pageErrors()).toEqual([])
     }
   )
