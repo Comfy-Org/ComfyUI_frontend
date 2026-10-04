@@ -14,7 +14,7 @@ How a function tells its caller that it could not do what was asked.
 A thrown exception is a non-local jump. The function that throws does not
 know who catches, the caller cannot see the throw in the signature, and any
 state mutated before the throw stays mutated. Those three properties make
-`throw` the wrong tool for every failure a caller could reasonably handle.
+`throw` the wrong tool for every failure a caller could handle.
 
 This document is the guidance half of
 [ADR-TELEMETRY-DIAGNOSTICS-0019](../adr/TELEMETRY-DIAGNOSTICS-0019-recoverable-event-diagnostics.md)
@@ -85,14 +85,14 @@ function stringifyOp(op: Op): { json: string } | { cause: unknown } {
 
 Once the failure is a value, it travels through ordinary returns. A `try/catch`
 two or three frames above the risky call, around your own code, is the tell
-that an exception is being used as a return channel.
+that the code uses an exception as a return channel.
 
 ## 3. Validate before you mutate
 
 Check inputs, dependencies, permissions, and resources first. Then change
 state. A function that adds a node, then discovers the node type is missing,
-then throws has already corrupted the graph; nothing upstream can reliably undo
-that.
+then throws has already corrupted the graph, and no caller can tell what to
+undo.
 
 - Preflight the whole operation (every node in a paste, every file in an
   upload, every member in a downgrade) before applying any part of it. If it
@@ -109,8 +109,8 @@ leaves the old value in place.
 ## 4. Propagate the outcome through callers
 
 A refusal stops dependent effects. History capture, downloads, selection
-changes, cache invalidation, toasts that say "saved": each runs only after the
-step it depends on reported success.
+changes, cache invalidation, and the toast that says "saved" each run only
+after the step they depend on reports success.
 
 ```ts
 // ✗ the effect runs whether or not the save happened
@@ -136,7 +136,7 @@ decision reports it:
   stable slug (naming rules in `src/AGENTS.md`), then return the failure value.
   Never `captureException` or `datadogRum.addError` directly.
 - UI commands and components turn a returned failure into a toast or dialog
-  with an actionable message through `vue-i18n`.
+  whose `vue-i18n` message tells the user what to do next.
 - Report each failure once. When a loop or retry can produce the same failure
   many times, budget the reports (first N, or first per key) so telemetry
   stays readable.
@@ -151,8 +151,8 @@ catch it:
 
 - a security boundary would be crossed (credentials, origin, permissions);
 - data would be corrupted or an invalid object constructed;
-- a programmer error that no caller can meaningfully recover from, such as an
-  impossible state in a constructor.
+- a programmer error that no caller can recover from, such as an impossible
+  state in a constructor.
 
 Name the handler in your head before you write the `throw`. If you cannot
 (it is "whoever calls this"), return a value instead. Parsers at a trust
@@ -160,8 +160,8 @@ boundary may throw as part of their documented contract, provided the boundary
 code catches and converts.
 
 Never throw from reporting, cleanup, or teardown. Never throw across an
-extension-facing API where custom-node code is the caller; those contracts are
-load-bearing for 40+ repositories.
+extension-facing API where custom-node code is the caller; code in 40+
+custom-node repositories depends on those contracts.
 
 ## 7. Test the refusal path as a value
 
