@@ -594,7 +594,7 @@ defineExpose({
         </div>
       </div>
 
-      <div class="flex items-center justify-between px-3 py-2">
+      <div class="flex shrink-0 items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
           <DropdownMenuTrigger as-child>
             <Button
