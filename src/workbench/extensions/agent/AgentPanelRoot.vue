@@ -9,6 +9,7 @@ import {
   defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
+  onMounted,
   provide,
   readonly,
   ref,
@@ -37,6 +38,7 @@ import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
@@ -391,33 +393,37 @@ watch(
   },
   { immediate: true }
 )
-const agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
-watch(
-  () => graphActivity.state,
-  (activity) => {
-    if (activity.phase === 'idle') {
-      agentMinimapLayer.replace([])
-      return
-    }
-    const rootGraphId = toRootGraphId(activity.rootGraphId)
-    agentMinimapLayer.replace(
-      activity.nodeIds.map((nodeId) => ({
-        target: {
-          rootGraphId,
-          owningGraphId: toOwningGraphId(activity.rootGraphId),
-          nodeId
-        },
-        enter: 'pop'
-      }))
-    )
-    if (
-      activity.phase === 'running' &&
-      !settingStore.get('Comfy.Minimap.Visible')
-    )
-      void settingStore.set('Comfy.Minimap.Visible', true)
-  },
-  { immediate: true }
-)
+// Claimed on mount rather than in setup so a setup failure cannot leave the id
+// registered with no unmount to release it.
+let agentMinimapLayer: MinimapDecorationLayer | undefined
+function syncAgentMinimapLayer(activity: typeof graphActivity.state): void {
+  if (activity.phase === 'idle') {
+    agentMinimapLayer?.replace([])
+    return
+  }
+  const rootGraphId = toRootGraphId(activity.rootGraphId)
+  agentMinimapLayer?.replace(
+    activity.nodeIds.map((nodeId) => ({
+      target: {
+        rootGraphId,
+        owningGraphId: toOwningGraphId(activity.rootGraphId),
+        nodeId
+      },
+      enter: 'pop'
+    }))
+  )
+  if (
+    activity.phase === 'running' &&
+    !settingStore.get('Comfy.Minimap.Visible')
+  )
+    void settingStore.set('Comfy.Minimap.Visible', true)
+}
+watch(() => graphActivity.state, syncAgentMinimapLayer, { immediate: true })
+onMounted(() => {
+  agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+  syncAgentMinimapLayer(graphActivity.state)
+})
+onBeforeUnmount(() => agentMinimapLayer?.dispose())
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
@@ -1081,7 +1087,6 @@ onBeforeUnmount(() => {
   stop()
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
-  agentMinimapLayer.dispose()
   // PM-1575: the store singleton outlives this component. Without resetting
   // the gate here, a remount's own setCanvasSyncGate() call is the only
   // thing standing between the old (now torn-down) follower's gate and a
