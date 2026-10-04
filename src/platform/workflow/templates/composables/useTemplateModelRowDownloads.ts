@@ -191,46 +191,37 @@ export function useTemplateModelRowDownloads({
   subscribeDesktopProgress = subscribeToDesktopProgress,
   subscribeLegacyProgress = subscribeToLegacyProgress
 }: TemplateModelRowDownloadDependencies) {
-  const states = shallowReactive(new Map<string, TemplateModelDownloadState>())
-  const models = new Map<string, ModelWithUrl>()
-  const nativeActivityAttempts = new Map<string, number>()
   /**
-   * The desktop job id observed carrying this row's current attempt. Native
-   * payloads are stamped with whatever the row says now, so the stamp cannot
-   * tell a live stream from an abandoned one; the job id can. Bound by
-   * non-terminal activity only, so an abandoned stream's terminal event
-   * cannot claim a fresh attempt.
+   * One record per row identity. A URL change or a retry resets the whole
+   * record, so the native bookkeeping cannot outlive the state it describes.
    */
-  const nativeJobs = new Map<string, { attempt: number; jobId: string }>()
+  type TrackedRow = {
+    model: ModelWithUrl
+    state: TemplateModelDownloadState
+    /** Attempt whose stream has reported non-terminal activity. */
+    activeAttempt?: number
+    /** Job holding the current attempt, where the host sends an id. */
+    job?: { attempt: number; jobId: string }
+  }
+  const rows = shallowReactive(new Map<string, TrackedRow>())
 
   function initializeState(model: ModelWithUrl): TemplateModelDownloadState {
     const identity = getTemplateModelDownloadIdentity(model)
-    const previousModel = models.get(identity)
-    if (previousModel && previousModel.url !== model.url) {
-      const initial = createTemplateModelDownloadState()
-      models.set(identity, model)
-      states.set(identity, initial)
-      nativeActivityAttempts.delete(identity)
-      nativeJobs.delete(identity)
-      return initial
-    }
+    const existing = rows.get(identity)
+    if (existing && existing.model.url === model.url) return existing.state
 
-    models.set(identity, model)
-    const current = states.get(identity)
-    if (current) return current
-
-    const initial = createTemplateModelDownloadState()
-    states.set(identity, initial)
-    return initial
+    const state = createTemplateModelDownloadState()
+    rows.set(identity, { model, state })
+    return state
   }
 
   function stateFor(model: ModelWithUrl): TemplateModelDownloadState {
     const identity = getTemplateModelDownloadIdentity(model)
-    const state = states.get(identity)
-    if (models.get(identity)?.url !== model.url) {
+    const row = rows.get(identity)
+    if (row?.model.url !== model.url) {
       return createTemplateModelDownloadState()
     }
-    return state ?? createTemplateModelDownloadState()
+    return row.state
   }
 
   function applyEvent(
@@ -250,7 +241,13 @@ export function useTemplateModelRowDownloads({
         attempt: current.attempt
       })
     }
-    states.set(identity, reduceTemplateModelDownloadState(current, event))
+    const row = rows.get(identity)
+    if (row) {
+      rows.set(identity, {
+        ...row,
+        state: reduceTemplateModelDownloadState(current, event)
+      })
+    }
   }
 
   function applyNativeEvent(
@@ -261,13 +258,14 @@ export function useTemplateModelRowDownloads({
     const identity = getTemplateModelDownloadIdentity(model)
     if (jobId !== undefined && !acceptsJob(identity, event, jobId)) return
     if (event.type === 'started' || event.type === 'progress') {
-      nativeActivityAttempts.set(identity, event.attempt)
+      const row = rows.get(identity)
+      if (row) rows.set(identity, { ...row, activeAttempt: event.attempt })
     } else if (
       // Everything else is terminal. A retry only ends on a stream that was
       // seen running; attempt 1 is exempt because a transfer can finish
       // without ever reporting progress.
       event.attempt > 1 &&
-      nativeActivityAttempts.get(identity) !== event.attempt
+      rows.get(identity)?.activeAttempt !== event.attempt
     ) {
       return
     }
@@ -285,14 +283,20 @@ export function useTemplateModelRowDownloads({
     event: TemplateModelDownloadHostEvent,
     jobId: string
   ): boolean {
-    const bound = nativeJobs.get(identity)
+    const bound = rows.get(identity)?.job
     const claimant =
       bound !== undefined && bound.attempt === event.attempt
         ? bound.jobId
         : undefined
     if (event.type === 'started' || event.type === 'progress') {
       if (claimant !== undefined) return claimant === jobId
-      nativeJobs.set(identity, { attempt: event.attempt, jobId })
+      const row = rows.get(identity)
+      if (row) {
+        rows.set(identity, {
+          ...row,
+          job: { attempt: event.attempt, jobId }
+        })
+      }
       return true
     }
     return claimant === jobId
@@ -303,9 +307,9 @@ export function useTemplateModelRowDownloads({
     apply: (model: ModelWithUrl, attempt: number) => void
   ): void {
     const matches: { model: ModelWithUrl; attempt: number }[] = []
-    for (const [identity, model] of models) {
+    for (const { model, state } of rows.values()) {
       if (!modelMatchesProgress(model, progress)) continue
-      const attempt = activeAttempt(states.get(identity))
+      const attempt = activeAttempt(state)
       if (attempt === undefined) continue
       matches.push({ model, attempt })
     }
@@ -392,7 +396,8 @@ export function useTemplateModelRowDownloads({
     })
     if (queued === current) return
 
-    states.set(identity, queued)
+    const row = rows.get(identity)
+    if (row) rows.set(identity, { ...row, state: queued })
     dispatch(model, queued.attempt)
   }
 

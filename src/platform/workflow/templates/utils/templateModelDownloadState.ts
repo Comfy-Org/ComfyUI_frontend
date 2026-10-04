@@ -21,7 +21,6 @@ export type TemplateModelDownloadState =
       reason: TemplateModelDownloadFailureReason
     }
 
-/** Every event a host reports, all of which name the attempt they describe. */
 export type TemplateModelDownloadHostEvent =
   | { type: 'started'; attempt: number }
   | {
