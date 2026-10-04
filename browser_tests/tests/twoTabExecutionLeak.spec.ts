@@ -101,21 +101,25 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     simulator.play([running.start(), running.nodeRunning(KSAMPLER_NODE, 1, 4)])
 
     await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
+    const tabA = comfyPage.menu.topbar.getWorkflowTab(WORKFLOW_A)
+
+    // Terminal frames arrive while tab A is in the background. That is the
+    // stuck-progress report: the run must reach its end, not stay Running.
     simulator.play([
       running.executed(SAVE_IMAGE_NODE, imageOutput('a.png')),
       running.success()
     ])
+    await expect(tabA.getByRole('img', { name: 'Completed' })).toBeVisible()
+    await expect(tabA.getByRole('img', { name: 'Running' })).toHaveCount(0)
+
     await comfyPage.workflow.switchToTab(WORKFLOW_A)
 
-    // The terminal frames arrived while this tab was in the background, which
-    // is the stuck-progress report: nothing may still read as running.
-    const tabA = comfyPage.menu.topbar.getWorkflowTab(WORKFLOW_A)
-    await expect(tabA.getByRole('img', { name: 'Running' })).toHaveCount(0)
-    await expect(tabA.getByRole('img', { name: 'Completed' })).toBeVisible()
+    // An active tab deliberately carries no status badge (WorkflowTab.vue:235
+    // — the user is already looking at it), so the absence of Completed here
+    // proves nothing. What must hold is that nothing anywhere still reads as
+    // running once the run has ended.
     await expect(
-      comfyPage.menu.topbar
-        .getWorkflowTab(WORKFLOW_B)
-        .getByRole('img', { name: 'Running' })
+      comfyPage.menu.topbar.workflowTabs.getByRole('img', { name: 'Running' })
     ).toHaveCount(0)
   })
 
