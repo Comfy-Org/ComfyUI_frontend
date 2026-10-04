@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { assert, describe, expect, it } from 'vitest'
 
+import { websiteRoot } from '@website/paths'
+
 import { productWorkflow } from './productWorkflow'
 import { createWorkflowMotion } from './workflowMotion'
-
-import { websiteRoot } from '@website/paths'
 
 function animationFrames(
   motion: ReturnType<typeof createWorkflowMotion>,

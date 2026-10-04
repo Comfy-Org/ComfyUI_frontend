@@ -289,8 +289,15 @@ export const noRelativePackages: Rule = {
   }
 }
 
-const PATH_BUILDERS = new Set(['join', 'resolve'])
+const PATH_BUILDERS = new Set(
+  ['node:path', 'path'].flatMap((module) => [
+    `${module}#join`,
+    `${module}#resolve`
+  ])
+)
+const URL_CONSTRUCTORS = new Set(['global#URL', 'node:url#URL', 'url#URL'])
 
+type Identifier = Extract<Node, { type: 'Identifier' }>
 function leadingText(node: Node): string | undefined {
   if (node.type === 'Literal' && typeof node.value === 'string')
     return node.value
@@ -298,10 +305,42 @@ function leadingText(node: Node): string | undefined {
     return node.quasis[0]?.value.cooked ?? undefined
 }
 
-function calleeName(node: Node): string | undefined {
-  if (node.type === 'Identifier') return node.name
-  if (node.type === 'MemberExpression' && node.property.type === 'Identifier')
-    return node.property.name
+function importedExport(node: Node): string {
+  if (node.type === 'ImportSpecifier')
+    return node.imported.type === 'Identifier'
+      ? node.imported.name
+      : node.imported.value
+  return node.type === 'ImportNamespaceSpecifier' ? '*' : 'default'
+}
+
+function bindingName(
+  context: Context,
+  identifier: Identifier
+): string | undefined {
+  let scope: ReturnType<Context['sourceCode']['getScope']> | null =
+    context.sourceCode.getScope(identifier)
+  while (scope) {
+    const variable = scope.set.get(identifier.name)
+    if (variable) {
+      const definition = variable.defs.find(
+        (candidate) => candidate.type === 'ImportBinding'
+      )
+      if (definition?.parent?.type !== 'ImportDeclaration') return
+      return `${definition.parent.source.value}#${importedExport(definition.node)}`
+    }
+    scope = scope.upper
+  }
+  return `global#${identifier.name}`
+}
+
+function importedName(context: Context, callee: Node): string | undefined {
+  if (callee.type === 'Identifier') return bindingName(context, callee)
+  if (callee.type !== 'MemberExpression' || callee.computed) return
+  if (callee.property.type !== 'Identifier') return
+  const module = importedName(context, callee.object)?.match(
+    /^(.+)#(?:default|\*)$/
+  )?.[1]
+  return module && `${module}#${callee.property.name}`
 }
 
 export const noRelativeParentPaths: Rule = {
@@ -317,10 +356,14 @@ export const noRelativeParentPaths: Rule = {
     return {
       NewExpression(node) {
         const first = node.arguments.at(0)
-        if (calleeName(node.callee) === 'URL' && first) check(first)
+        if (
+          first &&
+          URL_CONSTRUCTORS.has(importedName(context, node.callee) ?? '')
+        )
+          check(first)
       },
       CallExpression(node) {
-        if (PATH_BUILDERS.has(calleeName(node.callee) ?? ''))
+        if (PATH_BUILDERS.has(importedName(context, node.callee) ?? ''))
           node.arguments.forEach(check)
       }
     }

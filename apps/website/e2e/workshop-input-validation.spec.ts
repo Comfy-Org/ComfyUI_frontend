@@ -1,5 +1,5 @@
-import { join } from 'node:path'
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 

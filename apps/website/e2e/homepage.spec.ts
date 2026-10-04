@@ -1,9 +1,9 @@
 import { join } from 'node:path'
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/workshopVisibility'
-
 import { repoRoot } from '@website/paths'
+
+import { test } from './fixtures/workshopVisibility'
 
 const caseStudyVideoPath = join(
   repoRoot,

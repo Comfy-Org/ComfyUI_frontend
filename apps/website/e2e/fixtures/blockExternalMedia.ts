@@ -1,7 +1,7 @@
-import { join } from 'node:path'
 import { once } from 'node:events'
 import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { join } from 'node:path'
 
 import type { Route } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'

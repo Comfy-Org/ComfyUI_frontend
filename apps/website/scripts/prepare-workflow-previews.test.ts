@@ -4,9 +4,9 @@ import { join } from 'node:path'
 import { Window } from 'happy-dom'
 import { describe, expect, it, onTestFinished } from 'vitest'
 
-import { workflowPreviewSvg } from './prepare-workflow-previews'
-
 import { websiteRoot } from '@website/paths'
+
+import { workflowPreviewSvg } from './prepare-workflow-previews'
 
 const source = {
   nodes: [

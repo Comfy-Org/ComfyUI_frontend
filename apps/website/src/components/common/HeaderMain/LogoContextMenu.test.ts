@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import LogoContextMenu from './LogoContextMenu.vue'
-
 import { websiteRoot } from '@website/paths'
+
+import LogoContextMenu from './LogoContextMenu.vue'
 
 function servedIcon(file: string) {
   return readFileSync(join(websiteRoot, 'public/icons', file), 'utf8')

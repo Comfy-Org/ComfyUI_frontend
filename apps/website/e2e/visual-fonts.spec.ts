@@ -1,10 +1,10 @@
 import { join } from 'node:path'
 import { expect } from '@playwright/test'
 
+import { websiteRoot } from '@website/paths'
+
 import { test } from './fixtures/blockExternalMedia'
 import { waitForPpFormulaLight } from './fixtures/visualFonts'
-
-import { websiteRoot } from '@website/paths'
 
 const ppFormulaLightPath = join(
   websiteRoot,

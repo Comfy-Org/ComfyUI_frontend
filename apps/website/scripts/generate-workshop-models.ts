@@ -8,10 +8,10 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
+import { repoRoot, websiteRoot } from '@website/paths'
+
 import { API_PROVIDER_MAP } from './generate-models'
 import { sliceBalanced } from './python-source-parser'
-
-import { repoRoot, websiteRoot } from '@website/paths'
 
 const TEMPLATES_DIR = join(dirname(repoRoot), 'workflow_templates/templates')
 const API_NODES_DIR = join(dirname(repoRoot), 'ComfyUI/comfy_api_nodes')

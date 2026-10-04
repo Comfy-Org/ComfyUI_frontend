@@ -68,6 +68,10 @@ const catalogs = [...catalogFiles]
   })
 
 describe('site translations', () => {
+  it('discovers the English catalogs', () => {
+    expect(catalogs.map(({ file }) => file)).toContain('main.json')
+  })
+
   it('binds translations to a locale', () => {
     expect(translationsFor('zh-CN').t('hero.title')).toBe(
       '视觉 AI 的\n最强可控性'
