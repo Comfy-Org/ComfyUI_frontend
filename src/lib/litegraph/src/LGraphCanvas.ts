@@ -311,20 +311,6 @@ interface ClipboardPasteContext {
   targetSlotByLink: Map<LinkId, number>
 }
 
-/** Legacy selection views derived from the selection store. */
-interface SelectionView {
-  items: SelectedItemsView
-  selectedNodes: Dictionary<LGraphNode>
-  highlightedLinks: Dictionary<boolean>
-}
-
-interface SelectionViewCache {
-  graph: LGraph
-  graphVersion: number
-  selectionRevision: number
-  view: SelectionView
-}
-
 /** Options for {@link LGraphCanvas.pasteFromClipboard}. */
 interface IPasteFromClipboardOptions {
   /** If `true`, always attempt to connect inputs of pasted nodes - including to nodes that were not pasted. */
@@ -8999,8 +8985,7 @@ function rollbackClipboardPaste(
       }
     } catch (error) {
       reportError(error, {
-        errorType: 'failure_rolling_back_clipboard_item',
-        surface: 'graph'
+        errorType: 'failure_rolling_back_clipboard_item'
       })
     }
   }
@@ -9012,8 +8997,7 @@ function rollbackClipboardPaste(
     graph.releaseSubgraphs(registeredSubgraphs)
   } catch (error) {
     reportError(error, {
-      errorType: 'failure_rolling_back_clipboard_subgraphs',
-      surface: 'graph'
+      errorType: 'failure_rolling_back_clipboard_subgraphs'
     })
   }
 }

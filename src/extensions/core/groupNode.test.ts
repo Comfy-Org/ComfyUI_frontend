@@ -1,7 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { describe, expect, it, test, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
 

@@ -69,31 +69,9 @@ function createDataTransfer(files: File[] = []): DataTransfer {
   return dataTransfer
 }
 
-function pastedClipboard(kind: 'workflow JSON' | 'an image'): DataTransfer {
-  if (kind === 'an image') return createDataTransfer([createImageFile()])
-  const dataTransfer = new DataTransfer()
-  dataTransfer.setData(
-    'text/plain',
-    JSON.stringify({ version: '1.0', nodes: [], extra: {} })
-  )
-  return dataTransfer
-}
-
 function clipboardHtml(data: unknown, attribute = 'data-comfy-metadata') {
   const encoded = btoa(JSON.stringify(data))
   return `<meta charset="utf-8"><div><span ${attribute}="${encoded}"></span></div><span style="white-space:pre-wrap;">Text</span>`
-}
-
-function mountRichTextEditor() {
-  const editor = document.createElement('div')
-  editor.contentEditable = 'true'
-  const paragraph = editor.appendChild(document.createElement('p'))
-  const chip = paragraph.appendChild(document.createElement('span'))
-  chip.contentEditable = 'false'
-  const chipLabel = chip.appendChild(document.createElement('span'))
-  chipLabel.textContent = 'KSampler #5'
-  document.body.append(editor)
-  return { editor, paragraph, chipLabel }
 }
 
 const mockCanvas = {
