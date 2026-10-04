@@ -25,7 +25,12 @@ interface BoundTarget {
   reportedPendingNodes: Map<string, NodeChange>
 }
 
-/** Document node entries one frame added and removed. */
+/**
+ * Document node entries a projection outcome reports as added and removed.
+ * Not necessarily one frame's: `applyCollected` reports a whole collected
+ * batch, and the no-graph `applyFrame` path omits entries already reported
+ * on an earlier pending frame (`reportedPendingNodes`).
+ */
 export interface DocNodeDelta {
   added: readonly string[]
   removed: readonly string[]
@@ -138,7 +143,7 @@ export class AgentCrdtProjection {
     }
     const changes = target.collector.take()
     target.reportedPendingNodes.clear()
-    const { createdNodeIds, failureCount } = this.apply(
+    return this.apply(
       update.workflowId,
       target,
       changes,
@@ -148,12 +153,6 @@ export class AgentCrdtProjection {
       },
       this.takeApplyMode(update.workflowId)
     )
-    return {
-      applied: true,
-      nodes: docNodeDelta(changes),
-      createdNodeIds,
-      failureCount
-    }
   }
 
   /**
@@ -166,20 +165,13 @@ export class AgentCrdtProjection {
     if (!target || !this.getGraph())
       return { applied: false, nodes: EMPTY_DELTA }
     target.reportedPendingNodes.clear()
-    const changes = target.collector.take()
-    const { createdNodeIds, failureCount } = this.apply(
+    return this.apply(
       workflowId,
       target,
-      changes,
+      target.collector.take(),
       { actor: 'agent-collected', opIds: [] },
       this.takeApplyMode(workflowId)
     )
-    return {
-      applied: true,
-      nodes: docNodeDelta(changes),
-      createdNodeIds,
-      failureCount
-    }
   }
 
   /**
@@ -192,22 +184,15 @@ export class AgentCrdtProjection {
     const target = this.targets.get(workflowId)
     if (!target || ops.length === 0 || !this.getGraph())
       return { applied: false, nodes: EMPTY_DELTA }
-    const changes = changesForRejectedOps(target.follower.doc, ops)
-    const { createdNodeIds, failureCount } = this.apply(
+    return this.apply(
       workflowId,
       target,
-      changes,
+      changesForRejectedOps(target.follower.doc, ops),
       {
         actor: 'agent:revert',
         opIds: ops.map((op) => op.op_id)
       }
     )
-    return {
-      applied: true,
-      nodes: docNodeDelta(changes),
-      createdNodeIds,
-      failureCount
-    }
   }
 
   /**
@@ -251,25 +236,35 @@ export class AgentCrdtProjection {
     this.localWrites.clear()
   }
 
+  /**
+   * The one place an applied outcome is built. Every public entry point ends
+   * in `return this.apply(...)`, so a new field on the `applied: true` arm is
+   * added here once instead of in three places that must agree.
+   */
   private apply(
     workflowId: string,
     target: BoundTarget,
     changes: FrameChanges,
     context: RemoteApplyContext,
     mode: ApplyMode = 'merge'
-  ): { createdNodeIds: NodeId[]; failureCount: number } {
-    const result = this.applier.applyChanges(
+  ): Extract<FrameOutcome, { applied: true }> {
+    const { createdNodeIds, failureCount } = this.applier.applyChanges(
       target.follower.doc,
       changes,
       context,
       mode
     )
-    if (result.createdNodeIds.length > 0) {
+    if (createdNodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
         workflowId,
-        nodeIds: result.createdNodeIds
+        nodeIds: createdNodeIds
       })
     }
-    return result
+    return {
+      applied: true,
+      nodes: docNodeDelta(changes),
+      createdNodeIds,
+      failureCount
+    }
   }
 }
