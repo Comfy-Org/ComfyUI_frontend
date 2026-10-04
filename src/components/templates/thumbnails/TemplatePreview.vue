@@ -18,7 +18,7 @@ const {
   overlayImageSrc: string
   alt: string
   getLogoUrl: (provider: string) => string
-  /** Owned by the parent, which tracks which card the pointer is over. */
+  /** Owned by the parent, which tracks what the pointer is over. */
   isHovered: boolean
   hoverZoom?: number
 }>()

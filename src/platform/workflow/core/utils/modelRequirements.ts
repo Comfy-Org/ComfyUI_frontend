@@ -15,6 +15,12 @@ type NodeModelMetadata = {
   properties?: { models?: unknown }
 }
 
+export function getModelFileKey(
+  model: Pick<DeclaredModelFile, 'name' | 'directory'>
+): string {
+  return JSON.stringify([model.name, model.directory])
+}
+
 function declaredModels(models: unknown): DeclaredModelFile[] {
   if (!Array.isArray(models)) return []
   return models.flatMap((entry) => {
