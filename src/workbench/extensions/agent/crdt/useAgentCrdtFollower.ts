@@ -91,44 +91,21 @@ interface AgentCrdtOutcomeCounters {
   dropped: number
 }
 
-/**
- * PM-1586: the identity half of one projection event — which frame (or
- * rejected batch) it is about. Kept separate from the outcome so a deferred
- * frame's identity survives a flush that applies several frames at once.
- */
 interface ProjectionFrameId {
   opIds?: readonly string[]
   seq: number
 }
 
-/**
- * The outcome a retained frame terminates with when its collected changes are
- * thrown away rather than applied. Zero counts are the truth here: nothing
- * reached the graph, and `stage: 'discarded'` is what says so.
- */
 const NOTHING_APPLIED: FrameOutcome = {
   applied: false,
   nodes: { added: [], removed: [] }
 }
 
-/**
- * Only agent-minted and actorless frames are this diagnostic's subject. A
- * `human:` frame is a different actor's write; it must neither emit an event
- * nor displace a retained agent frame, which is what made the terminal event
- * disappear entirely when a human frame happened to arrive last.
- */
+/** Agent-minted and actorless frames; `human:` writes are excluded. */
 function isAgentFrame(actor: string | undefined): boolean {
   return actor === undefined || actor.startsWith('agent:')
 }
 
-/**
- * PM-1586: splits "the mutation was accepted but the canvas did not change"
- * into stages, joined by the frame's first op id. The outcome travels as the
- * `FrameOutcome` the projection returned — never reshaped on the way here, so
- * `apply_failure_count` cannot be reported for a frame that never applied.
- * No actor, node, widget or workflow identifier is recorded; see
- * `AgentGraphProjectionMetadata` for the payload contract.
- */
 function reportAgentProjection(
   frame: ProjectionFrameId,
   stage: AgentGraphProjectionMetadata['stage'],
@@ -501,16 +478,7 @@ function startAgentCrdtFollower(
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
-  /**
-   * PM-1586: every agent frame received while no graph could take it, in
-   * arrival order, so the batch that eventually applies them reports an
-   * outcome for each one rather than only for whichever frame arrived last.
-   * Retention is bounded by the frames the session already received — each
-   * one already emitted its own `received_no_graph` event and already merged
-   * a Yjs update into the document — so this adds no unbounded growth and at
-   * most doubles the event count. Only agent and actorless frames are kept
-   * (`isAgentFrame`): a `human:` frame must not displace a retained one.
-   */
+  /** Deferred agent and actorless frames per workflow, in arrival order. */
   const pendingProjectionFrames = new Map<string, ProjectionFrameId[]>()
   const reportMaterialized = (
     workflowId: string,
@@ -530,12 +498,6 @@ function startAgentCrdtFollower(
     if (frames) frames.push(frame)
     else pendingProjectionFrames.set(update.workflowId, [frame])
   }
-  /**
-   * Reports one terminal event per retained frame, so a join on any pending
-   * frame's op id finds an outcome. The counts are the whole flushed batch's
-   * and are deliberately repeated across its frames — the `applied_deferred`
-   * stage is what tells a reader they are batch totals, not that frame's.
-   */
   const reportPendingFrames = (
     workflowId: string,
     stage: Extract<
@@ -549,14 +511,6 @@ function startAgentCrdtFollower(
     for (const frame of frames ?? [])
       reportAgentProjection(frame, stage, outcome)
   }
-  /**
-   * PM-1586: one delivered frame's whole telemetry story. A single three-way
-   * decision drives both this frame's event and the terminal event for frames
-   * retained earlier, so the two can never disagree about why nothing applied.
-   * `received_no_graph` is read off the graph rather than off `applied`,
-   * because an own echo or an unbound target also fails to apply while a graph
-   * is very much present.
-   */
   const reportFrameProjection = (
     update: ClassifiedDocUpdate,
     outcome: FrameOutcome
@@ -567,9 +521,6 @@ function startAgentCrdtFollower(
         ? 'received_no_graph'
         : 'discarded'
     if (isAgentFrame(update.actor)) {
-      // Nothing reached the canvas on a discard, and the counts say so: a
-      // dashboard reading `added_count` as "nodes the user can now see" must
-      // not be handed the size of what was thrown away.
       const reported = stage === 'discarded' ? NOTHING_APPLIED : outcome
       reportAgentProjection(update, stage, reported)
     }
@@ -577,10 +528,6 @@ function startAgentCrdtFollower(
       if (isAgentFrame(update.actor)) retainPendingFrame(update)
       return
     }
-    // On `applied` this frame's apply took the whole collector, including
-    // anything the retained frames contributed, so they terminate here. On
-    // `discarded` they will never be applied at all, and a receipt with no
-    // outcome is the shape this event exists to rule out.
     if (stage === 'applied')
       reportPendingFrames(update.workflowId, 'applied_deferred', outcome)
     else reportPendingFrames(update.workflowId, 'discarded', NOTHING_APPLIED)
@@ -745,6 +692,8 @@ function startAgentCrdtFollower(
         : null
     if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
+    if (detail?.workflowId !== undefined)
+      reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
@@ -959,7 +908,11 @@ function startAgentCrdtFollower(
       () => sender.detach(),
       () => rejectedOpNotifier.cancel(),
       () => coalescer.detach(),
-      () => projection.destroy(),
+      () => {
+        for (const workflowId of pendingProjectionFrames.keys())
+          reportPendingFrames(workflowId, 'discarded', NOTHING_APPLIED)
+        projection.destroy()
+      },
       () => bridge.destroy(),
       () => client.destroy()
     ])
