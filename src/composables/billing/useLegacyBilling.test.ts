@@ -1,9 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
+import { computed } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { AuthStoreError } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import type {
+  BillingStatusResponse,
+  RenewalInvoice
+} from '@/platform/workspace/api/workspaceApi'
 import { useLegacyBilling } from './useLegacyBilling'
 
 vi.mock(import('firebase/auth'))
@@ -16,6 +21,59 @@ const refusal = () =>
   new AuthStoreError('refused', 409, 'WORKSPACE_BILLING_REQUIRED')
 
 describe('useLegacyBilling', () => {
+  describe('renewalInvoice', () => {
+    const invoice: RenewalInvoice = {
+      amount_due: 2000,
+      currency: 'usd',
+      hosted_invoice_url: 'https://invoice.stripe.com/i/test'
+    }
+
+    const statusWith = (partial: Partial<BillingStatusResponse>) =>
+      ({ is_active: true, ...partial }) as BillingStatusResponse
+
+    // The shared mock always grants access; derive it from the status as the
+    // real composable does.
+    const useInactiveStatus = (status: BillingStatusResponse) => {
+      const sub = useSubscription()
+      sub.subscriptionStatus.value = status
+      Object.assign(sub, {
+        canAccessSubscriptionFeatures: computed(() => status.is_active)
+      })
+    }
+
+    it('exposes the renewal invoice from the billing status', () => {
+      useSubscription().subscriptionStatus.value = statusWith({
+        renewal_invoice: invoice
+      })
+
+      expect(useLegacyBilling().renewalInvoice.value).toEqual(invoice)
+    })
+
+    it('keeps a tierless past-due status as a subscription', () => {
+      useInactiveStatus(
+        statusWith({
+          is_active: false,
+          billing_status: 'payment_failed',
+          renewal_invoice: invoice
+        })
+      )
+
+      expect(useLegacyBilling().subscription.value).not.toBeNull()
+    })
+
+    it('still nulls the subscription for an inactive tierless status without an invoice', () => {
+      useInactiveStatus(statusWith({ is_active: false }))
+
+      expect(useLegacyBilling().subscription.value).toBeNull()
+    })
+
+    it('is null when the billing status carries no renewal invoice', () => {
+      useSubscription().subscriptionStatus.value = statusWith({})
+
+      expect(useLegacyBilling().renewalInvoice.value).toBeNull()
+    })
+  })
+
   describe('resubscribe', () => {
     it('performs the checkout via the unwrapped subscribeDirect', async () => {
       const billing = useLegacyBilling()
