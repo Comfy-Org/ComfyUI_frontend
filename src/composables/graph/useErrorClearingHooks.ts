@@ -29,6 +29,7 @@ import {
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { releaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
 import {
   isMissingMediaCandidateActive,
   isMissingMediaCandidateScopeActive,
@@ -220,7 +221,8 @@ function scanSingleNodeModelsAndTypes(
     rootGraph,
     node,
     assetService.shouldUseWidgetAssetPicker,
-    (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
+    (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType),
+    isCloud ? releaseModelOptions : undefined
   )
   const confirmedModels = modelCandidates.filter((c) => c.isMissing === true)
   if (confirmedModels.length) {

@@ -1978,6 +1978,61 @@ describe('verifyAssetSupportedCandidates', () => {
   })
 })
 
+describe('on a developer-platform deployment', () => {
+  const releaseModelOptions = async (nodeType: string, widgetName: string) =>
+    nodeType === 'CheckpointLoaderSimple' && widgetName === 'ckpt_name'
+      ? ['release_model.safetensors']
+      : undefined
+
+  beforeEach(() => {
+    mockUpdateModelsForNodeType.mockResolvedValue(undefined)
+    mockGetAssets.mockReturnValue([])
+  })
+
+  it.for([
+    {
+      when: 'the Release lists the model',
+      widget: makeAssetWidget('ckpt_name', 'release_model.safetensors'),
+      options: releaseModelOptions,
+      isMissing: false
+    },
+    {
+      when: 'the Release lists the model on an asset-supported combo',
+      widget: makeComboWidget('ckpt_name', 'release_model.safetensors'),
+      options: releaseModelOptions,
+      isMissing: false
+    },
+    {
+      when: 'the Release does not list the model',
+      widget: makeAssetWidget('ckpt_name', 'other_model.safetensors'),
+      options: releaseModelOptions,
+      isMissing: true
+    },
+    {
+      when: 'the editor runs on Comfy Cloud',
+      widget: makeAssetWidget('ckpt_name', 'release_model.safetensors'),
+      options: undefined,
+      isMissing: true
+    }
+  ])(
+    'takes the model as missing: $isMissing, when $when',
+    async ({ widget, options, isMissing }) => {
+      const graph = makeGraph([makeNode(1, 'CheckpointLoaderSimple', [widget])])
+      const candidates = scanAllModelCandidates(
+        graph,
+        () => true,
+        undefined,
+        options
+      )
+
+      await verifyAssetSupportedCandidates(candidates)
+
+      expect(candidates).toHaveLength(1)
+      expect(candidates[0].isMissing).toBe(isMissing)
+    }
+  )
+})
+
 describe('remote combo inventory', () => {
   function makeRemoteCombo(value: string) {
     const widget = makeComboWidget('file_name', value, ['0', '1'])

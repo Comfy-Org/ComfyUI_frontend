@@ -1796,19 +1796,22 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       rootGraph,
       outerSubgraphNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(modelScanSpy).toHaveBeenCalledWith(
       rootGraph,
       leafNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(modelScanSpy).toHaveBeenCalledWith(
       rootGraph,
       innerSubgraphNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, outerSubgraphNode)
     expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode)
