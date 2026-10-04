@@ -141,9 +141,22 @@ interface QueuePromptRequestBody {
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
+/**
+ * Which cloud auth path a request actually took, for error diagnostics (PM-1802).
+ *
+ * `none` means no auth scheme was used at all, which covers both a non-cloud
+ * distribution and a cloud request whose auth header was unavailable. Those are
+ * the same statement about the request - nothing authenticated it - and the
+ * deploy surface already distinguishes them, so this stays three values rather
+ * than growing a fourth that only restates `isCloud`.
+ */
+export type AuthScheme = 'web-session' | 'cloud-auth-header' | 'none'
+
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
   onAuthHeader?: (attached: boolean) => void
+  /** Reports which auth path was taken, independent of onAuthHeader's attached/not boolean. */
+  onAuthScheme?: (scheme: AuthScheme) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -569,6 +582,7 @@ export class ComfyApi extends EventTarget {
     const {
       timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
       onAuthHeader,
+      onAuthScheme,
       ...requestOptions
     } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
@@ -597,8 +611,12 @@ export class ComfyApi extends EventTarget {
         }
         unifiedRetryOn401 = await shouldRemintCloudRequest()
       }
+      // Reported from the header actually obtained, not assumed on entry: an
+      // unavailable header sends nothing, which is the unauthenticated case.
+      onAuthScheme?.(authHeader ? 'cloud-auth-header' : 'none')
     } else {
       onAuthHeader?.(false)
+      onAuthScheme?.('none')
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
