@@ -20,6 +20,14 @@ const i18n = createI18n({
 
 const globalConfig = { plugins: [i18n] }
 
+function renderedVideo(): HTMLVideoElement {
+  const video = screen.getByTestId('media-asset-video')
+  if (!(video instanceof HTMLVideoElement)) {
+    throw new Error('Expected media-asset-video to be a video element')
+  }
+  return video
+}
+
 function createVideoAsset(
   src: string,
   mimeType: AssetMeta['mime_type'] = 'video/mp4'
@@ -72,13 +80,13 @@ describe('MediaVideoTop', () => {
       global: globalConfig
     })
 
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-    const video = container.querySelector('video')!
+    const video = renderedVideo()
     await fireEvent.error(video)
     await vi.advanceTimersByTimeAsync(500)
 
-    expect(video).toBeInTheDocument()
-    expect(video).toHaveAttribute('src', 'https://example.com/thumb.jpg')
+    const reloaded = renderedVideo()
+    expect(reloaded).toBeInTheDocument()
+    expect(reloaded).toHaveAttribute('src', 'https://example.com/thumb.jpg')
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- assert the failed-state fallback is absent
     expect(container.querySelector('[role="img"]')).not.toBeInTheDocument()
   })
@@ -242,5 +250,152 @@ describe('MediaVideoTop', () => {
     await user.click(video)
 
     expect(pauseSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not start a selected preview that unmounts before metadata loads', async () => {
+    const { unmount } = render(MediaVideoTop, {
+      props: {
+        asset: createVideoAsset('https://example.com/thumb.jpg'),
+        previewStartedAt: Date.now()
+      },
+      global: globalConfig
+    })
+
+    const video = renderedVideo()
+    const playSpy = vi
+      .spyOn(video, 'play')
+      .mockImplementation(() => Promise.resolve())
+    await nextTick()
+    expect(playSpy).not.toHaveBeenCalled()
+
+    unmount()
+    await fireEvent(video, new Event('loadedmetadata'))
+
+    expect(playSpy).not.toHaveBeenCalled()
+  })
+
+  it('plays from the selection join time and stops without restarting the group', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(10_000)
+    const startedAt = Date.now() - 2500
+    const asset = createVideoAsset('https://example.com/thumb.jpg')
+    const { rerender } = render(MediaVideoTop, {
+      props: { asset, previewStartedAt: startedAt },
+      global: globalConfig
+    })
+
+    const video = renderedVideo()
+    const playSpy = vi
+      .spyOn(video, 'play')
+      .mockImplementation(() => Promise.resolve())
+    const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
+    let currentTime = 0
+    Object.defineProperty(video, 'duration', { value: 10, configurable: true })
+    Object.defineProperty(video, 'currentTime', {
+      configurable: true,
+      get: () => currentTime,
+      set: (value: number) => {
+        currentTime = value
+      }
+    })
+
+    await nextTick()
+    await fireEvent(video, new Event('loadedmetadata'))
+
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    expect(currentTime).toBeCloseTo(2.5)
+
+    playSpy.mockClear()
+    await rerender({ asset, previewStartedAt: startedAt })
+    await fireEvent(video, new Event('loadedmetadata'))
+    expect(playSpy).not.toHaveBeenCalled()
+
+    await rerender({ asset, previewStartedAt: null })
+    expect(pauseSpy).toHaveBeenCalled()
+    expect(currentTime).toBe(0)
+  })
+
+  it('starts playback when metadata is loaded but duration is not yet known', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(10_000)
+    const asset = createVideoAsset('https://example.com/thumb.jpg')
+    const { rerender } = render(MediaVideoTop, {
+      props: { asset, previewStartedAt: null },
+      global: globalConfig
+    })
+
+    const video = renderedVideo()
+    Object.defineProperty(video, 'readyState', {
+      value: 1,
+      configurable: true
+    })
+    Object.defineProperty(video, 'duration', {
+      value: Number.NaN,
+      configurable: true
+    })
+    let currentTime = 0
+    Object.defineProperty(video, 'currentTime', {
+      configurable: true,
+      get: () => currentTime,
+      set: (value: number) => {
+        currentTime = value
+      }
+    })
+    const playSpy = vi
+      .spyOn(video, 'play')
+      .mockImplementation(() => Promise.resolve())
+
+    await rerender({ asset, previewStartedAt: Date.now() - 2500 })
+
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    expect(currentTime).toBe(0)
+
+    Object.defineProperty(video, 'duration', { value: 10, configurable: true })
+    await fireEvent(video, new Event('durationchange'))
+
+    expect(currentTime).toBeCloseTo(2.5)
+    expect(playSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('restarts the selected preview after a source retry', async () => {
+    const asset = createVideoAsset('https://example.com/thumb.jpg')
+    render(MediaVideoTop, {
+      props: { asset, previewStartedAt: Date.now() },
+      global: globalConfig
+    })
+
+    const video = renderedVideo()
+    Object.defineProperty(video, 'readyState', {
+      value: 2,
+      configurable: true
+    })
+    Object.defineProperty(video, 'duration', { value: 10, configurable: true })
+    const playSpy = vi
+      .spyOn(video, 'play')
+      .mockImplementation(() => Promise.resolve())
+
+    await nextTick()
+    await fireEvent(video, new Event('loadedmetadata'))
+    expect(playSpy).toHaveBeenCalledTimes(1)
+
+    await fireEvent.error(video)
+    await vi.advanceTimersByTimeAsync(500)
+    await nextTick()
+
+    const retried = renderedVideo()
+    expect(retried).not.toBe(video)
+    Object.defineProperty(retried, 'readyState', {
+      value: 2,
+      configurable: true
+    })
+    Object.defineProperty(retried, 'duration', {
+      value: 10,
+      configurable: true
+    })
+    const retryPlaySpy = vi
+      .spyOn(retried, 'play')
+      .mockImplementation(() => Promise.resolve())
+
+    await fireEvent(retried, new Event('loadedmetadata'))
+
+    expect(retryPlaySpy).toHaveBeenCalledTimes(1)
   })
 })
