@@ -8,6 +8,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { BackendSimulator } from '@e2e/fixtures/helpers/BackendSimulator'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { toNodeId } from '@/types/nodeId'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 /**
@@ -39,6 +40,15 @@ async function activeWorkflowId(
       .activeWorkflow
     return workflow?.activeState.id ?? workflow?.initialState.id ?? undefined
   })
+}
+
+async function canvasNodeRender(comfyPage: ComfyPage, nodeId: string) {
+  return comfyPage.page.evaluate((id) => {
+    const node = window.app!.graph.getNodeById(id)
+    if (!node) return null
+    const stroke = node.strokeStyles['running']?.call(node)
+    return { progress: node.progress ?? null, outlined: stroke !== undefined }
+  }, toNodeId(nodeId))
 }
 
 test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
@@ -144,5 +154,54 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     const tabA = comfyPage.menu.topbar.getWorkflowTab(WORKFLOW_A)
     await expect(tabA.getByRole('img', { name: 'Completed' })).toBeVisible()
     await expect(tabA.getByRole('img', { name: 'Running' })).toHaveCount(0)
+  })
+
+  test('the node the user is looking at does not take over a foreign run', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
+    const simulator = new BackendSimulator(exec)
+    const workflowAId = await activeWorkflowId(comfyPage)
+
+    const jobId = await exec.run()
+    await comfyPage.nextFrame()
+    const running = simulator.prompt(jobId, { workflowId: workflowAId })
+    simulator.play([running.start(), running.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    await comfyPage.nextFrame()
+
+    // Both workflows own a KSampler numbered 3, which is what makes this
+    // reachable: node progress is keyed by a locator resolved against the
+    // graph that happens to be in front, so A's entry lands on B's node.
+    expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
+      progress: 0.25,
+      outlined: true
+    })
+
+    await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
+    await comfyPage.nextFrame()
+
+    expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
+      progress: null,
+      outlined: false
+    })
+
+    // A keeps running out of sight; none of it may surface on B.
+    simulator.play([running.nodeRunning(KSAMPLER_NODE, 3, 4)])
+    await comfyPage.nextFrame()
+    expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
+      progress: null,
+      outlined: false
+    })
+
+    await comfyPage.workflow.switchToTab(WORKFLOW_A)
+    await comfyPage.nextFrame()
+
+    // Returning to A shows where its run actually got to, not where it was
+    // when the user left.
+    expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
+      progress: 0.75,
+      outlined: true
+    })
   })
 })
