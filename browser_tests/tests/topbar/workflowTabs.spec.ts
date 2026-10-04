@@ -305,7 +305,7 @@ test.describe('Workflow tabs', () => {
       await test.step('Keyboard overflow menu opens below its trigger', async () => {
         await topbar.openWorkflowOverflowMenu()
         await expect(async () => {
-          const gap = await topbar.getWorkflowOverflowMenuGap()
+          const gap = await topbar.getWorkflowOverflowMenuVerticalGap()
           expect(gap).toBeGreaterThanOrEqual(0)
           expect(gap).toBeLessThan(10)
         }).toPass({ timeout: 5000 })

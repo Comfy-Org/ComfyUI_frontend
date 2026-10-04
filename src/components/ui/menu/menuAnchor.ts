@@ -1,4 +1,4 @@
-export function getMenuAnchor(event: Event) {
+export function getMenuAnchorPosition(event: Event) {
   if (event instanceof MouseEvent) {
     return { x: event.clientX, y: event.clientY }
   }

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { getMenuAnchor } from './menuAnchor'
+import { getMenuAnchorPosition } from './menuAnchor'
 
-describe('getMenuAnchor', () => {
+describe('getMenuAnchorPosition', () => {
   it('preserves zero mouse coordinates instead of using the element bounds', () => {
     const target = document.createElement('button')
     vi.spyOn(target, 'getBoundingClientRect').mockReturnValue(
@@ -11,7 +11,7 @@ describe('getMenuAnchor', () => {
     const event = new MouseEvent('click', { clientX: 0, clientY: 0 })
     Object.defineProperty(event, 'currentTarget', { value: target })
 
-    expect(getMenuAnchor(event)).toEqual({ x: 0, y: 0 })
+    expect(getMenuAnchorPosition(event)).toEqual({ x: 0, y: 0 })
   })
 
   it('uses the trigger position for non-mouse events', () => {
@@ -22,6 +22,6 @@ describe('getMenuAnchor', () => {
     const event = new Event('open')
     Object.defineProperty(event, 'target', { value: target })
 
-    expect(getMenuAnchor(event)).toEqual({ x: 20, y: 30 })
+    expect(getMenuAnchorPosition(event)).toEqual({ x: 20, y: 30 })
   })
 })

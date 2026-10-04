@@ -41,7 +41,7 @@ async function setupSizing({ left = 400, right = 200, total = 1000 } = {}) {
         <div />
         <button data-panel-resize-handle-id="right-handle" data-orientation="horizontal" @pointerdown="onResizeDragging(true, 'right')">Right handle</button>
         <div data-panel-id="right" data-testid="right" />
-        <output data-testid="sizes">{{ sizes }}</output>
+        <output data-testid="sizes">{{ panelPercentages }}</output>
       </div>
     `
   })

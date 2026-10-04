@@ -19,7 +19,7 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     await expect(bottomPanel.root).toBeHidden()
   })
 
-  test('should display resize gutter when panel is open', async ({
+  test('should display resize handle when panel is open', async ({
     comfyPage
   }) => {
     const { bottomPanel } = comfyPage
@@ -27,18 +27,18 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     await bottomPanel.toggleButton.click()
     await expect(
       bottomPanel.root,
-      'Panel should be open before checking the resize gutter'
+      'Panel should be open before checking the resize handle'
     ).toBeVisible()
-    await expect(bottomPanel.resizeGutter).toBeVisible()
+    await expect(bottomPanel.resizeHandle).toBeVisible()
   })
 
-  test('should hide resize gutter when panel is closed', async ({
+  test('should hide resize handle when panel is closed', async ({
     comfyPage
   }) => {
     const { bottomPanel } = comfyPage
 
     await expect(bottomPanel.root).toBeHidden()
-    await expect(bottomPanel.resizeGutter).toBeHidden()
+    await expect(bottomPanel.resizeHandle).toBeHidden()
   })
 
   test('preserves a resized panel when the sidebar remounts the layout', async ({
@@ -64,7 +64,7 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
             ),
           {
             message:
-              'Panel height should increase after dragging the resize gutter'
+              'Panel height should increase after dragging the resize handle'
           }
         )
         .toBeGreaterThan(initialHeight)

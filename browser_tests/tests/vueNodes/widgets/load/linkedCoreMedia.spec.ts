@@ -147,7 +147,7 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
 
       for (const actionName of imageActionNames) {
         await expect(
-          comfyPage.contextMenu.applicationMenu.getByText(actionName, {
+          comfyPage.contextMenu.ariaMenu.getByText(actionName, {
             exact: true
           })
         ).toHaveCount(0)
@@ -164,7 +164,7 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
 
       for (const actionName of imageActionNames) {
         await expect(
-          comfyPage.contextMenu.applicationMenu.getByText(actionName, {
+          comfyPage.contextMenu.ariaMenu.getByText(actionName, {
             exact: true
           })
         ).toBeVisible()

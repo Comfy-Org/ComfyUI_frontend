@@ -36,7 +36,7 @@ class ComfyNodeSearchFilterSelectionPanel {
 
 export class ComfyNodeSearchBox {
   public readonly input: Locator
-  public readonly dropdown: Locator
+  public readonly resultsListbox: Locator
   public readonly filterButton: Locator
   public readonly filterChips: Locator
   public readonly filterSelectionPanel: ComfyNodeSearchFilterSelectionPanel
@@ -45,7 +45,7 @@ export class ComfyNodeSearchBox {
     this.input = page.locator(
       '.comfy-vue-node-search-container input[type="text"]'
     )
-    this.dropdown = page.getByRole('listbox')
+    this.resultsListbox = page.getByRole('listbox')
     this.filterButton = page.locator(
       '.comfy-vue-node-search-container .filter-button'
     )
@@ -59,13 +59,15 @@ export class ComfyNodeSearchBox {
   ) {
     await this.input.waitFor({ state: 'visible' })
     await this.input.fill(nodeName)
-    await this.dropdown.waitFor({ state: 'visible' })
+    await this.resultsListbox.waitFor({ state: 'visible' })
 
     const nodeOption = options?.exact
-      ? this.dropdown
+      ? this.resultsListbox
           .getByRole('option', { name: nodeName, exact: true })
           .first()
-      : this.dropdown.getByRole('option').nth(options?.suggestionIndex ?? 0)
+      : this.resultsListbox
+          .getByRole('option')
+          .nth(options?.suggestionIndex ?? 0)
 
     await expect(nodeOption).toBeVisible()
     await nodeOption.click()
@@ -87,6 +89,6 @@ export class ComfyNodeSearchBox {
    * Returns a locator for a search result containing the specified text.
    */
   findResult(text: string): Locator {
-    return this.dropdown.getByRole('option').filter({ hasText: text })
+    return this.resultsListbox.getByRole('option').filter({ hasText: text })
   }
 }

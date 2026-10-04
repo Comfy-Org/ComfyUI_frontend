@@ -18,21 +18,21 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 
-    async function expectShapePopoverVisible(comfyPage: ComfyPage) {
-      const popover = comfyPage.page
+    async function expectShapeSubmenuVisible(comfyPage: ComfyPage) {
+      const submenu = comfyPage.page
         .getByRole('menu')
         .filter({ hasText: 'Default' })
-      await expect(popover).toBeVisible()
-      await expect(popover).toContainText('Box')
-      await expect(popover).toContainText('Card')
+      await expect(submenu).toBeVisible()
+      await expect(submenu).toContainText('Box')
+      await expect(submenu).toContainText('Card')
 
-      const popoverBox = await popover.boundingBox()
-      expect(popoverBox).not.toBeNull()
-      expect(popoverBox!.width).toBeGreaterThan(0)
-      expect(popoverBox!.height).toBeGreaterThan(0)
+      const submenuBox = await submenu.boundingBox()
+      expect(submenuBox).not.toBeNull()
+      expect(submenuBox!.width).toBeGreaterThan(0)
+      expect(submenuBox!.height).toBeGreaterThan(0)
     }
 
-    test('Shape popover opens when the menu fits in the viewport', async ({
+    test('Shape submenu opens when the menu fits in the viewport', async ({
       comfyPage
     }) => {
       await comfyPage.page.setViewportSize({ width: 1280, height: 900 })
@@ -43,10 +43,10 @@ test.describe(
         .toBe(true)
 
       await menu.getByRole('menuitem', { name: 'Shape' }).click()
-      await expectShapePopoverVisible(comfyPage)
+      await expectShapeSubmenuVisible(comfyPage)
     })
 
-    test('Shape popover opens even when the menu must scroll', async ({
+    test('Shape submenu opens even when the menu must scroll', async ({
       comfyPage
     }) => {
       await comfyPage.page.setViewportSize({ width: 1280, height: 600 })
@@ -55,7 +55,7 @@ test.describe(
       const shapeItem = menu.getByRole('menuitem', { name: 'Shape' })
       await shapeItem.scrollIntoViewIfNeeded()
       await shapeItem.click()
-      await expectShapePopoverVisible(comfyPage)
+      await expectShapeSubmenuVisible(comfyPage)
     })
 
     test('Color submenu items render their color swatches', async ({

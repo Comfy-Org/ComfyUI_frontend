@@ -3,7 +3,7 @@ import type { SplitterPanel } from 'reka-ui'
 import { computed, nextTick, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-interface SidePanel {
+interface SidePanelSizingConfig {
   id: string
   storageKey: MaybeRefOrGetter<string>
   visible: MaybeRefOrGetter<boolean>
@@ -12,38 +12,43 @@ interface SidePanel {
 }
 
 export function usePanelSizing(
-  panels: [SidePanel, SidePanel],
+  panelConfigs: [SidePanelSizingConfig, SidePanelSizingConfig],
   containerWidth: MaybeRefOrGetter<number>,
   reservedWidth: MaybeRefOrGetter<number>
 ) {
-  const stored = panels.map((panel) => {
-    const width = useStorage<number | null>(panel.storageKey, null, undefined, {
-      serializer: StorageSerializers.number
-    })
+  const storedPanels = panelConfigs.map((config) => {
+    const width = useStorage<number | null>(
+      config.storageKey,
+      null,
+      undefined,
+      {
+        serializer: StorageSerializers.number
+      }
+    )
     watch(
-      [width, () => toValue(panel.visible)],
+      [width, () => toValue(config.visible)],
       () => {
-        if (!toValue(panel.visible)) return
+        if (!toValue(config.visible)) return
         if (
           width.value === null ||
           !Number.isFinite(width.value) ||
           width.value <= 0
         ) {
-          width.value = panel.defaultWidth()
+          width.value = config.defaultWidth()
         }
       },
       { immediate: true }
     )
-    return { ...panel, width }
+    return { ...config, width }
   })
 
-  const sizes = computed(() => {
+  const panelPercentages = computed(() => {
     const total = toValue(containerWidth)
     if (total <= 0) return [20, 60, 20]
-    const minimums = stored.map((panel) =>
+    const minimums = storedPanels.map((panel) =>
       toValue(panel.visible) ? toValue(panel.minWidth) : 0
     )
-    const excesses = stored.map((panel, i) =>
+    const excesses = storedPanels.map((panel, i) =>
       toValue(panel.visible)
         ? Math.max(0, (panel.width.value ?? panel.defaultWidth()) - minimums[i])
         : 0
@@ -60,7 +65,7 @@ export function usePanelSizing(
   })
 
   const layoutKey = computed(() =>
-    stored
+    storedPanels
       .map((panel) => `${toValue(panel.storageKey)}:${toValue(panel.visible)}`)
       .join(':')
   )
@@ -73,14 +78,18 @@ export function usePanelSizing(
     async () => {
       await nextTick()
       const updates = [panelRefs.first.value, panelRefs.last.value].flatMap(
-        (panel, index) => {
-          if (!panel || !toValue(stored[index].visible)) return []
-          const size = sizes.value[index * 2]
-          return [{ panel, size, delta: size - panel.getSize() }]
+        (splitterPanel, index) => {
+          if (!splitterPanel || !toValue(storedPanels[index].visible)) return []
+          const size = panelPercentages.value[index * 2]
+          return [
+            { splitterPanel, size, delta: size - splitterPanel.getSize() }
+          ]
         }
       )
-      for (const { panel, size } of updates.sort((a, b) => a.delta - b.delta)) {
-        panel.resize(size)
+      for (const { splitterPanel, size } of updates.sort(
+        (a, b) => a.delta - b.delta
+      )) {
+        splitterPanel.resize(size)
       }
     },
     { flush: 'post' }
@@ -98,9 +107,9 @@ export function usePanelSizing(
     if (gesture) return
     const element = document.querySelector(`[data-panel-id="${panelId}"]`)
     if (!(element instanceof HTMLElement)) return
-    const index = stored.findIndex((panel) => panel.id === panelId)
+    const index = storedPanels.findIndex((panel) => panel.id === panelId)
     if (index < 0) return
-    const panel = stored[index]
+    const panel = storedPanels[index]
     if (!toValue(panel.visible)) return
     gesture = {
       index,
@@ -119,7 +128,7 @@ export function usePanelSizing(
         : null
     if (!handle || gesture) return
     const adjacent = [handle.previousElementSibling, handle.nextElementSibling]
-    const panel = stored.find(({ id }) =>
+    const panel = storedPanels.find(({ id }) =>
       adjacent.some((element) => element?.getAttribute('data-panel-id') === id)
     )
     if (panel) capturePanel(panel.id)
@@ -132,7 +141,7 @@ export function usePanelSizing(
 
   function onResizeEnd() {
     if (!gesture) return
-    const panel = stored[gesture.index]
+    const panel = storedPanels[gesture.index]
     const width = gesture.element.getBoundingClientRect().width
     if (
       gesture.element.isConnected &&
@@ -146,7 +155,7 @@ export function usePanelSizing(
   }
 
   return {
-    sizes,
+    panelPercentages,
     layoutKey,
     panelRefs,
     onResizeStart,

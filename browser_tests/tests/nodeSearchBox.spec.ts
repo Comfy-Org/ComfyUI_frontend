@@ -140,9 +140,11 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await comfyPage.canvasOps.doubleClick()
     await comfyPage.searchBox.input.waitFor({ state: 'visible' })
     await comfyPage.searchBox.input.fill(node)
-    await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
+    await comfyPage.searchBox.resultsListbox.waitFor({ state: 'visible' })
 
-    const firstResult = comfyPage.searchBox.dropdown.getByRole('option').first()
+    const firstResult = comfyPage.searchBox.resultsListbox
+      .getByRole('option')
+      .first()
     await expect(firstResult).toHaveAccessibleName(node)
   })
 

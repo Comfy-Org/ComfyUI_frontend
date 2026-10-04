@@ -6,19 +6,17 @@ import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 export class Topbar {
-  private readonly menuLocator: Locator
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
   readonly tabs: Locator
   readonly integratedTabBarActions: Locator
-  readonly menuRootList: Locator
+  public readonly menuRoot: Locator
   readonly workflowOverflowButton: Locator
 
   constructor(public readonly page: Page) {
-    this.menuLocator = page.locator('.comfy-command-menu')
+    this.menuRoot = page.locator('.comfy-command-menu')
     this.menuTrigger = page.getByTestId('comfy-menu-button')
-    this.menuRootList = this.menuLocator
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
     this.tabs = this.workflowTabs.getByTestId(TestIds.topbar.workflowTab)
@@ -44,7 +42,7 @@ export class Topbar {
    * Get a menu item by its label, optionally within a specific parent container
    */
   getMenuItem(itemLabel: string, parent?: Locator): Locator {
-    const menu = parent ?? this.menuLocator
+    const menu = parent ?? this.menuRoot
     const options = { name: itemLabel, exact: true }
     return menu
       .getByRole('menuitem', options)
@@ -190,7 +188,7 @@ export class Topbar {
     await this.page.getByRole('menu').waitFor({ state: 'hidden' })
   }
 
-  async getWorkflowOverflowMenuGap() {
+  async getWorkflowOverflowMenuVerticalGap() {
     const [triggerBox, menuBox] = await Promise.all([
       this.workflowOverflowButton.boundingBox(),
       this.page.getByRole('menu').boundingBox()
@@ -201,19 +199,19 @@ export class Topbar {
 
   async openTopbarMenu() {
     await this.dismissWorkflowPopover()
-    if (await this.menuLocator.isVisible()) return this.menuLocator
+    if (await this.menuRoot.isVisible()) return this.menuRoot
 
     await this.menuTrigger.click()
-    await this.menuLocator.waitFor({ state: 'visible' })
-    await expect(this.menuLocator).not.toHaveClass(
+    await this.menuRoot.waitFor({ state: 'visible' })
+    await expect(this.menuRoot).not.toHaveClass(
       /\bp-connected-overlay-enter-active\b/
     )
-    return this.menuLocator
+    return this.menuRoot
   }
 
   async closeTopbarMenu() {
     await this.page.keyboard.press('Escape')
-    await this.menuLocator.waitFor({ state: 'hidden' })
+    await this.menuRoot.waitFor({ state: 'hidden' })
   }
 
   /**
@@ -241,7 +239,7 @@ export class Topbar {
   }
 
   async focusMenuItem(itemLabel: string): Promise<void> {
-    const items = this.menuRootList.locator('[role^="menuitem"]')
+    const items = this.menuRoot.locator('[role^="menuitem"]')
     const itemCount = await items.count()
 
     for (let step = 0; step < itemCount; step++) {
@@ -255,7 +253,7 @@ export class Topbar {
   }
 
   private async getFocusedMenuItemLabel(): Promise<string | null> {
-    const focusedItem = this.menuRootList.locator('[role^="menuitem"]:focus')
+    const focusedItem = this.menuRoot.locator('[role^="menuitem"]:focus')
     if ((await focusedItem.count()) === 0) return null
     return (
       (await focusedItem.getAttribute('aria-label')) ??
@@ -320,10 +318,10 @@ export class Topbar {
       submenu = await this.openSubmenu(tabName)
     } catch {
       await this.page.locator('body').click({ position: { x: 500, y: 300 } })
-      await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
-      await this.menuLocator.waitFor({ state: 'detached', timeout: 1000 })
+      await this.menuRoot.waitFor({ state: 'hidden', timeout: 1000 })
+      await this.menuRoot.waitFor({ state: 'detached', timeout: 1000 })
       await this.menuTrigger.click()
-      await this.menuLocator.waitFor({ state: 'visible' })
+      await this.menuRoot.waitFor({ state: 'visible' })
       submenu = await this.openSubmenu(tabName)
     }
 

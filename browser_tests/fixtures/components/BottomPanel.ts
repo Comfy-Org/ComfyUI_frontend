@@ -43,7 +43,7 @@ export class BottomPanel {
   readonly keyboardShortcutsButton: Locator
   readonly toggleButton: Locator
   readonly closeButton: Locator
-  readonly resizeGutter: Locator
+  readonly resizeHandle: Locator
   readonly shortcuts: ShortcutsTab
   readonly logs: LogsTab
 
@@ -56,7 +56,7 @@ export class BottomPanel {
       name: /Toggle Bottom Panel/i
     })
     this.closeButton = this.root.getByRole('button', { name: /^Close$/i })
-    this.resizeGutter = page.locator('#graph-canvas-panel + [role="separator"]')
+    this.resizeHandle = page.locator('#graph-canvas-panel + [role="separator"]')
     this.shortcuts = new ShortcutsTab(page)
     this.logs = new LogsTab(page)
   }
@@ -70,17 +70,17 @@ export class BottomPanel {
   }
 
   async resizeByDragging(deltaY: number): Promise<void> {
-    const gutterBox = await this.resizeGutter.boundingBox()
-    if (!gutterBox) {
-      throw new Error('Bottom panel resize gutter should have layout')
+    const handleBox = await this.resizeHandle.boundingBox()
+    if (!handleBox) {
+      throw new Error('Bottom panel resize handle should have layout')
     }
 
-    const gutterCenterX = gutterBox.x + gutterBox.width / 2
-    const gutterCenterY = gutterBox.y + gutterBox.height / 2
+    const handleCenterX = handleBox.x + handleBox.width / 2
+    const handleCenterY = handleBox.y + handleBox.height / 2
 
-    await this.page.mouse.move(gutterCenterX, gutterCenterY)
+    await this.page.mouse.move(handleCenterX, handleCenterY)
     await this.page.mouse.down()
-    await this.page.mouse.move(gutterCenterX, gutterCenterY + deltaY, {
+    await this.page.mouse.move(handleCenterX, handleCenterY + deltaY, {
       steps: 5
     })
     await this.page.mouse.up()

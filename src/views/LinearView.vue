@@ -81,7 +81,9 @@ const rightPanelVisible = computed(
 function sidePanelMinSize(isBuilder: boolean) {
   return Math.max(
     isBuilder ? BUILDER_MIN_SIZE : SIDEBAR_MIN_SIZE,
-    panelWidth.value > 0 ? (SIDEBAR_MIN_WIDTH / panelWidth.value) * 100 : 0
+    availableSplitterWidth.value > 0
+      ? (SIDEBAR_MIN_WIDTH / availableSplitterWidth.value) * 100
+      : 0
   )
 }
 
@@ -93,7 +95,7 @@ const panelComposition = computed(() => [
 const layoutMode = computed(() => (isArrangeMode.value ? 'arrange' : 'app'))
 const workspaceRef = useTemplateRef('workspace')
 const { width: workspaceWidth } = useElementSize(workspaceRef)
-const panelWidth = computed(() =>
+const availableSplitterWidth = computed(() =>
   Math.max(
     0,
     workspaceWidth.value -
@@ -103,7 +105,7 @@ const panelWidth = computed(() =>
   )
 )
 const {
-  sizes,
+  panelPercentages,
   layoutKey,
   panelRefs,
   onResizeStart,
@@ -128,7 +130,7 @@ const {
         Math.max(SIDEBAR_MIN_WIDTH, (window.innerWidth * SIDE_PANEL_SIZE) / 100)
     }
   ],
-  panelWidth,
+  availableSplitterWidth,
   () => window.innerWidth * 0.2
 )
 const splitterKey = computed(
@@ -182,7 +184,7 @@ function dragDrop(e: DragEvent) {
             :ref="panelRefs.first"
             data-testid="linear-left-panel"
             :order="1"
-            :default-size="sizes[0]"
+            :default-size="panelPercentages[0]"
             :min-size="sidePanelMinSize(showLeftBuilder)"
             class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
           >
@@ -209,9 +211,11 @@ function dragDrop(e: DragEvent) {
             v-coachmark="COACH_IDS.outputs"
             :order="2"
             data-testid="linear-center-panel"
-            :default-size="sizes[1]"
+            :default-size="panelPercentages[1]"
             :min-size="
-              panelWidth > 0 ? ((workspaceWidth * 0.2) / panelWidth) * 100 : 0
+              availableSplitterWidth > 0
+                ? ((workspaceWidth * 0.2) / availableSplitterWidth) * 100
+                : 0
             "
             class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
             @drop="dragDrop"
@@ -239,7 +243,7 @@ function dragDrop(e: DragEvent) {
             :ref="panelRefs.last"
             data-testid="linear-right-panel"
             :order="3"
-            :default-size="sizes[2]"
+            :default-size="panelPercentages[2]"
             :min-size="sidePanelMinSize(showRightBuilder)"
             class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
           >

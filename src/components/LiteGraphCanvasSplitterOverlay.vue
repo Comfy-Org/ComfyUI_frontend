@@ -29,7 +29,7 @@
             @layout="saveMainSplitterLayout"
           >
             <SplitterPanel
-              v-if="firstPanelShown"
+              v-if="firstPanelRendered"
               id="first-side-panel"
               :ref="panelRefs.first"
               :order="1"
@@ -63,7 +63,7 @@
               />
             </SplitterPanel>
             <SplitterResizeHandle
-              v-if="firstPanelShown"
+              v-if="firstPanelRendered"
               :class="
                 cn(
                   'pointer-events-auto',
@@ -77,7 +77,7 @@
               id="main-panel"
               :order="2"
               :min-size="isSelectMode ? 0 : centerMinSize"
-              :default-size="mainPanelDefaultSize"
+              :default-size="centerPanelDefaultSize"
               class="flex flex-col"
             >
               <div
@@ -135,7 +135,7 @@
             </SplitterPanel>
 
             <SplitterResizeHandle
-              v-if="lastPanelShown"
+              v-if="lastPanelRendered"
               :class="
                 cn(
                   'pointer-events-auto',
@@ -145,7 +145,7 @@
               @dragging="onResizeDragging($event, 'last-side-panel')"
             />
             <SplitterPanel
-              v-if="lastPanelShown"
+              v-if="lastPanelRendered"
               id="last-side-panel"
               :ref="panelRefs.last"
               :order="3"
@@ -293,14 +293,14 @@ const firstPanelVisible = computed(
 const lastPanelVisible = computed(
   () => sidebarLocation.value === 'right' || showOffsideSplitter.value
 )
-const firstPanelShown = computed(
+const firstPanelRendered = computed(
   () =>
     firstPanelVisible.value &&
     !focusMode.value &&
     !agentNodeSelectionActive.value &&
     (sidebarLocation.value === 'right' || sidebarPanelVisible.value)
 )
-const lastPanelShown = computed(
+const lastPanelRendered = computed(
   () =>
     lastPanelVisible.value &&
     !focusMode.value &&
@@ -315,24 +315,26 @@ const bothSidePanelsVisible = computed(
 
 const mainSplitterRef = ref<HTMLElement | null>(null)
 const { width: mainSplitterWidth } = useElementSize(mainSplitterRef)
-const panelWidth = computed(() =>
+const availableSplitterWidth = computed(() =>
   Math.max(
     0,
     mainSplitterWidth.value -
-      Number(firstPanelShown.value) -
-      Number(lastPanelShown.value)
+      Number(firstPanelRendered.value) -
+      Number(lastPanelRendered.value)
   )
 )
 const centerMinSize = computed(() =>
-  panelWidth.value > 0 ? (CENTER_PANEL_MIN_WIDTH / panelWidth.value) * 100 : 0
+  availableSplitterWidth.value > 0
+    ? (CENTER_PANEL_MIN_WIDTH / availableSplitterWidth.value) * 100
+    : 0
 )
 const sidebarMinSize = computed(() =>
-  panelWidth.value
-    ? (SIDEBAR_MIN_WIDTH / panelWidth.value) * 100
+  availableSplitterWidth.value
+    ? (SIDEBAR_MIN_WIDTH / availableSplitterWidth.value) * 100
     : SIDEBAR_MIN_SIZE
 )
 
-const centerPanelDefaultSize = computed(() =>
+const centerPanelFallbackSize = computed(() =>
   bothSidePanelsVisible.value ? 100 - 2 * SIDE_PANEL_SIZE : CENTER_PANEL_SIZE
 )
 
@@ -359,7 +361,7 @@ const mainSplitterStateKey = computed(() =>
     : sidebarStateKey.value
 )
 const mainPanelCount = computed(
-  () => 1 + Number(firstPanelShown.value) + Number(lastPanelShown.value)
+  () => 1 + Number(firstPanelRendered.value) + Number(lastPanelRendered.value)
 )
 const savedMainPanelSizes = shallowRef<number[]>()
 watchEffect(() => {
@@ -375,28 +377,29 @@ const sidebarWidthKey = computed(() => {
       : 'Comfy.Sidebar.RightWidth'
   return unifiedWidth.value ? base : `${base}.${sidebarTabKey.value}`
 })
-function defaultPanelWidth(sidebar: boolean) {
-  const plainKey =
+function defaultPanelWidth(isSidebarPanel: boolean) {
+  const plainStateKey =
     sidebarLocation.value === 'left'
       ? sidebarTabKey.value
       : `${sidebarTabKey.value}-right`
-  const offsideKey = `${sidebarTabKey.value}-${sidebarLocation.value}-with-offside`
-  const keys = sidebar
+  const offsideStateKey = `${sidebarTabKey.value}-${sidebarLocation.value}-with-offside`
+  const stateKeys = isSidebarPanel
     ? showOffsideSplitter.value
-      ? [offsideKey, plainKey]
-      : [plainKey, offsideKey]
-    : [offsideKey]
-  const edge = (sidebarLocation.value === 'left') === sidebar ? 'first' : 'last'
+      ? [offsideStateKey, plainStateKey]
+      : [plainStateKey, offsideStateKey]
+    : [offsideStateKey]
+  const edge =
+    (sidebarLocation.value === 'left') === isSidebarPanel ? 'first' : 'last'
   const percent =
-    savedPanelPercent((key) => localStorage.getItem(key), keys, edge) ??
+    savedPanelPercent((key) => localStorage.getItem(key), stateKeys, edge) ??
     SIDE_PANEL_SIZE
   return Math.max(
-    sidebar ? SIDEBAR_MIN_WIDTH : 0,
+    isSidebarPanel ? SIDEBAR_MIN_WIDTH : 0,
     Math.round((percent / 100) * (window.innerWidth - SIDE_TOOLBAR_WIDTH))
   )
 }
 const {
-  sizes: pixelSizes,
+  panelPercentages,
   layoutKey,
   panelRefs,
   onResizeStart,
@@ -410,7 +413,7 @@ const {
         sidebarLocation.value === 'left'
           ? sidebarWidthKey.value
           : 'Comfy.RightSidePanel.Width',
-      visible: () => firstPanelShown.value && !isSelectMode.value,
+      visible: () => firstPanelRendered.value && !isSelectMode.value,
       minWidth: () =>
         sidebarLocation.value === 'left' ? SIDEBAR_MIN_WIDTH : 0,
       defaultWidth: () => defaultPanelWidth(sidebarLocation.value === 'left')
@@ -421,31 +424,31 @@ const {
         sidebarLocation.value === 'right'
           ? sidebarWidthKey.value
           : 'Comfy.RightSidePanel.Width',
-      visible: () => lastPanelShown.value && !isSelectMode.value,
+      visible: () => lastPanelRendered.value && !isSelectMode.value,
       minWidth: () =>
         sidebarLocation.value === 'right' ? SIDEBAR_MIN_WIDTH : 0,
       defaultWidth: () => defaultPanelWidth(sidebarLocation.value === 'right')
     }
   ],
-  panelWidth,
+  availableSplitterWidth,
   CENTER_PANEL_MIN_WIDTH
 )
 const firstPanelDefaultSize = computed(() =>
   !isSelectMode.value
-    ? pixelSizes.value[0]
+    ? panelPercentages.value[0]
     : (savedMainPanelSizes.value?.[0] ??
       (sidebarLocation.value === 'left'
         ? Math.max(SIDE_PANEL_SIZE, sidebarMinSize.value)
         : SIDE_PANEL_SIZE))
 )
-const mainPanelDefaultSize = computed(() => {
-  if (!isSelectMode.value) return pixelSizes.value[1]
-  const index = firstPanelShown.value ? 1 : 0
-  return savedMainPanelSizes.value?.[index] ?? centerPanelDefaultSize.value
+const centerPanelDefaultSize = computed(() => {
+  if (!isSelectMode.value) return panelPercentages.value[1]
+  const index = firstPanelRendered.value ? 1 : 0
+  return savedMainPanelSizes.value?.[index] ?? centerPanelFallbackSize.value
 })
 const lastPanelDefaultSize = computed(() =>
   !isSelectMode.value
-    ? pixelSizes.value[2]
+    ? panelPercentages.value[2]
     : (savedMainPanelSizes.value?.[mainPanelCount.value - 1] ??
       (sidebarLocation.value === 'right'
         ? Math.max(SIDE_PANEL_SIZE, sidebarMinSize.value)

@@ -42,7 +42,7 @@
         @click="handleItemClick(item, $event)"
       >
         <i
-          v-if="hasActiveStateSiblings(item)"
+          v-if="hasCheckableSiblings(item)"
           data-testid="menu-item-indicator"
           class="icon-[lucide--check] size-4"
           :class="{ invisible: !toValue(item.checked) }"
@@ -267,7 +267,6 @@ const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
 }
 
 const handleItemClick = (item: MenuItem, event: MouseEvent) => {
-  // Prevent the menu from closing for zoom commands or commands that have active state
   if (isZoomCommand(item) || item.checked !== undefined) {
     event.preventDefault()
     event.stopPropagation()
@@ -281,13 +280,12 @@ const handleItemClick = (item: MenuItem, event: MouseEvent) => {
   }
 }
 
-const hasActiveStateSiblings = (item: MenuItem): boolean => {
-  // Check if this item has siblings with active state (either from store or theme items)
+const hasCheckableSiblings = (item: MenuItem): boolean => {
   return Boolean(
     isCommandMenuItem(item) &&
     item.parentPath &&
     (item.parentPath === 'theme' ||
-      menuItemStore.menuItemHasActiveStateChildren[item.parentPath])
+      menuItemStore.menuGroupHasCheckableItems[item.parentPath])
   )
 }
 

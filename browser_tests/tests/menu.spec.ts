@@ -211,7 +211,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
       name: 'Nodes 2.0'
     })
 
-    await topbar.menuRootList.focus()
+    await topbar.menuRoot.focus()
     await comfyPage.page.keyboard.press('n')
     await expect
       .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))

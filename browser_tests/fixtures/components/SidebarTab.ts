@@ -37,10 +37,10 @@ export class SidebarTab {
   }
 
   async resize(comfyMouse: ComfyMouse, deltaX: number, startOffset = 0) {
-    const gutter = this.page.getByRole('separator').first()
-    await expect(gutter).toBeVisible()
-    const box = await gutter.boundingBox()
-    if (!box) throw new Error('Sidebar gutter has no bounding box')
+    const resizeHandle = this.page.getByRole('separator').first()
+    await expect(resizeHandle).toBeVisible()
+    const box = await resizeHandle.boundingBox()
+    if (!box) throw new Error('Sidebar resize handle has no bounding box')
     const from = {
       x: box.x + box.width / 2 + startOffset,
       y: box.y + box.height / 2

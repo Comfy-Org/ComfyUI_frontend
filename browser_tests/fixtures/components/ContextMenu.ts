@@ -2,20 +2,20 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 export class ContextMenu {
-  public readonly applicationMenu: Locator
+  public readonly ariaMenu: Locator
   public readonly litegraphMenu: Locator
   public readonly litegraphContextMenu: Locator
   public readonly menuItems: Locator
   protected readonly anyMenu: Locator
 
   constructor(public readonly page: Page) {
-    this.applicationMenu = page.locator('[role="menu"]:visible')
+    this.ariaMenu = page.locator('[role="menu"]:visible')
     this.litegraphMenu = page.locator('.litemenu')
     this.litegraphContextMenu = page.locator('.litecontextmenu')
     this.menuItems = page
       .getByRole('menuitem')
       .or(page.locator('.litemenu-entry'))
-    this.anyMenu = this.applicationMenu
+    this.anyMenu = this.ariaMenu
       .or(this.litegraphMenu)
       .or(this.litegraphContextMenu)
   }
@@ -108,13 +108,13 @@ export class ContextMenu {
   async openForVueNode(header: Locator): Promise<this> {
     await header.click()
     await header.click({ button: 'right' })
-    await this.applicationMenu.waitFor({ state: 'visible' })
+    await this.ariaMenu.waitFor({ state: 'visible' })
     return this
   }
 
   async waitForHidden(): Promise<void> {
     await Promise.all([
-      this.applicationMenu.waitFor({ state: 'hidden' }),
+      this.ariaMenu.waitFor({ state: 'hidden' }),
       this.litegraphMenu.waitFor({ state: 'hidden' }),
       this.litegraphContextMenu.waitFor({ state: 'hidden' })
     ])

@@ -54,13 +54,13 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
     }
   })
 
-  test.describe('Popover lifecycle', () => {
-    test('closes on viewport resize rather than leaving a detached popup', async ({
+  test.describe('Menu lifecycle', () => {
+    test('closes on viewport resize rather than leaving a detached menu', async ({
       comfyPage
     }) => {
       const selector = new CanvasModeSelector(comfyPage.page)
 
-      await test.step('Open the canvas mode popup', async () => {
+      await test.step('Open the canvas mode menu', async () => {
         await comfyPage.page.setViewportSize({ width: 1280, height: 720 })
         await selector.open()
         await comfyPage.canvas.hover()
@@ -202,7 +202,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await expect(handItem).toBeFocused()
     })
 
-    test('Escape closes popover and restores focus to trigger', async ({
+    test('Escape closes menu and restores focus to trigger', async ({
       comfyPage
     }) => {
       const { trigger, menu, selectItem, handItem } = getLocators(

@@ -81,9 +81,9 @@ const { y: scrollY } = useScroll(sectionsContainerRef, {
   eventListenerOptions: { passive: true }
 })
 
-const lastPanelRef = ref<HTMLElement | null>(null)
+const latestLogContainerRef = ref<HTMLElement | null>(null)
 const isUserScrolling = ref(false)
-const lastPanelLogs = computed(
+const latestTaskLogLines = computed(
   () =>
     tabs.value.find((tab) => tab.value === activeTab.value)?.logs.at(-1)?.logs
 )
@@ -92,8 +92,8 @@ function setSectionsContainer(el: Element | ComponentPublicInstance | null) {
   sectionsContainerRef.value = el instanceof HTMLElement ? el : null
 }
 
-function setLastPanel(el: Element | ComponentPublicInstance | null) {
-  lastPanelRef.value = el instanceof HTMLElement ? el : null
+function setLatestLogContainer(el: Element | ComponentPublicInstance | null) {
+  latestLogContainerRef.value = el instanceof HTMLElement ? el : null
 }
 
 function isAtBottom(el: HTMLElement | null) {
@@ -102,9 +102,10 @@ function isAtBottom(el: HTMLElement | null) {
   return Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
 }
 
-function scrollLastPanelToBottom() {
-  if (!lastPanelRef.value || isUserScrolling.value) return
-  lastPanelRef.value.scrollTop = lastPanelRef.value.scrollHeight
+function scrollLatestLogToBottom() {
+  if (!latestLogContainerRef.value || isUserScrolling.value) return
+  latestLogContainerRef.value.scrollTop =
+    latestLogContainerRef.value.scrollHeight
 }
 
 function scrollContentToBottom() {
@@ -117,16 +118,16 @@ function resetUserScrolling() {
 
 function handleScroll(e: Event) {
   const target = e.target as HTMLElement
-  if (target !== lastPanelRef.value) return
+  if (target !== latestLogContainerRef.value) return
   isUserScrolling.value = !isAtBottom(target)
 }
 
 function onLogsAdded() {
   if (isUserScrolling.value) return
-  scrollLastPanelToBottom()
+  scrollLatestLogToBottom()
 }
 
-whenever(lastPanelLogs, onLogsAdded, { flush: 'post', deep: true })
+whenever(latestTaskLogLines, onLogsAdded, { flush: 'post', deep: true })
 whenever(() => isExpanded.value, scrollContentToBottom)
 whenever(() => !isExpanded.value, resetUserScrolling)
 
@@ -216,7 +217,11 @@ onBeforeUnmount(() => {
                 />
               </summary>
               <div
-                :ref="index === tab.logs.length - 1 ? setLastPanel : undefined"
+                :ref="
+                  index === tab.logs.length - 1
+                    ? setLatestLogContainer
+                    : undefined
+                "
                 :class="
                   cn(
                     'h-64 overflow-y-auto rounded-lg bg-black',

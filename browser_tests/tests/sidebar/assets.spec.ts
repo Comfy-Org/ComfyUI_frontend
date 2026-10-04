@@ -1201,10 +1201,8 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
     await assetsTab.assetCards.nth(index).click({ button: 'right' })
 
-    await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
-    await comfyPage.contextMenu.applicationMenu
-      .getByText('Insert as node')
-      .click()
+    await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
+    await comfyPage.contextMenu.ariaMenu.getByText('Insert as node').click()
 
     await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')

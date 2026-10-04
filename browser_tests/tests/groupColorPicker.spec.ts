@@ -79,7 +79,7 @@ test.describe(
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
-      await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
 
       const colorSubmenu = await comfyPage.contextMenu.openColorSubmenu()
       const redSwatch = colorSubmenu.getByRole('menuitem', {
@@ -109,7 +109,7 @@ test.describe(
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
-      await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
       await comfyPage.contextMenu.openColorSubmenu()
 
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -136,7 +136,7 @@ test.describe(
         await comfyPage.page.mouse.click(groupPos.x, groupPos.y, {
           button: 'right'
         })
-        await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
         const colorSubmenu = await comfyPage.contextMenu.openColorSubmenu()
         const redSwatch = colorSubmenu.getByRole('menuitem', {
           name: 'Red',

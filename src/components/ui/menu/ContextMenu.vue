@@ -14,7 +14,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 
 import MenuItems from './MenuItems.vue'
-import { getMenuAnchor } from './menuAnchor'
+import { getMenuAnchorPosition } from './menuAnchor'
 import { menuContentClass } from './menuStyles'
 import type { MenuItem } from './types'
 
@@ -30,7 +30,7 @@ const content = useTemplateRef<ComponentPublicInstance>('content')
 const trigger = useTemplateRef<HTMLElement>('trigger')
 const visible = ref(false)
 const generatedId = useId()
-const anchor = ref({ x: 0, y: 0 })
+const anchorPosition = ref({ x: 0, y: 0 })
 const showRequest = ref(0)
 const contentStyle = useModalLiftedZIndex(visible)
 
@@ -44,7 +44,7 @@ function setOpen(value: boolean) {
 }
 
 function show(event: Event) {
-  anchor.value = getMenuAnchor(event)
+  anchorPosition.value = getMenuAnchorPosition(event)
   if (!visible.value) {
     setOpen(true)
     return
@@ -107,7 +107,7 @@ defineExpose({ container: content, hide, show, toggle, visible })
         tabindex="-1"
         aria-hidden="true"
         class="pointer-events-none fixed size-px opacity-0"
-        :style="{ left: `${anchor.x}px`, top: `${anchor.y}px` }"
+        :style="{ left: `${anchorPosition.x}px`, top: `${anchorPosition.y}px` }"
       />
     </DropdownMenuTrigger>
     <DropdownMenuPortal>

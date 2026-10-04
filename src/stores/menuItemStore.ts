@@ -20,7 +20,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   const canvasStore = useCanvasStore()
   const commandStore = useCommandStore()
   const menuItems = ref<AppMenuItem[]>([])
-  const menuItemHasActiveStateChildren = ref<Record<string, boolean>>({})
+  const menuGroupHasCheckableItems = ref<Record<string, boolean>>({})
   const hasSeenLinear = ref(false)
 
   whenever(
@@ -68,10 +68,9 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     // Add the new items to the last level
     currentLevel.push(...items)
 
-    // Store if any of the children have active state as we will hide the icon if they do
     const parentPath = path.join('.')
-    if (!menuItemHasActiveStateChildren.value[parentPath]) {
-      menuItemHasActiveStateChildren.value[parentPath] = items.some(
+    if (!menuGroupHasCheckableItems.value[parentPath]) {
+      menuGroupHasCheckableItems.value[parentPath] = items.some(
         (item) => item.checked !== undefined
       )
     }
@@ -128,7 +127,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerCommands,
     loadExtensionMenuCommands,
     registerCoreMenuCommands,
-    menuItemHasActiveStateChildren,
+    menuGroupHasCheckableItems,
     hasSeenLinear,
     commandIdToMenuItem
   }

@@ -391,7 +391,7 @@ bulkInsertionTest.describe(
           cancelable: true,
           button: 2
         })
-        await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
         await tab.contextMenuItem('Insert all assets as nodes').click()
 
         await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
