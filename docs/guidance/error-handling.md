@@ -6,15 +6,15 @@ globs:
 
 # Error Handling: failure is data
 
-How a function tells its caller that it could not do what was asked.
+How to tell a caller that a function could not do what was asked.
 
 > **Treat expected failure as data, validate before mutation, and throw only
 > for a genuine invariant violation with a guaranteed handler.**
 
-A thrown exception is a non-local jump. The function that throws does not
-know who catches, the caller cannot see the throw in the signature, and any
-state mutated before the throw stays mutated. Those three properties make
-`throw` the wrong tool for every failure a caller could handle.
+A thrown exception is a non-local jump. The throw site has no reference to
+the catch site, the signature does not mention the throw, and any state
+mutated before the throw stays mutated. Those three properties make `throw`
+the wrong tool for every failure a caller could handle.
 
 This document is the guidance half of
 [ADR-TELEMETRY-DIAGNOSTICS-0019](../adr/TELEMETRY-DIAGNOSTICS-0019-recoverable-event-diagnostics.md)
@@ -22,7 +22,7 @@ and of the principles recorded on
 [FE-1859](https://linear.app/comfyorg/issue/FE-1859/audit-and-replace-unsafe-throw-new-error-paths-with-fail-safe-handling).
 The lint rule `comfy/no-new-error-throw` enforces the mechanically checkable
 part: no new `throw new Error(...)` in production code under `src/`. The rule
-sees only that literal form. The guidance applies to every `throw`, including
+matches only that literal form. The guidance applies to every `throw`, including
 `TypeError`, custom subclasses, and re-throws.
 
 ## 1. Return the outcome instead of throwing it
@@ -41,7 +41,7 @@ the failure arm's fields minimal: a `reason` the caller can branch on, and the
 `cause` when a boundary will report it.
 
 ```ts
-// ✗ the signature promises a SizedOp; the failure mode is invisible
+// ✗ the return type is SizedOp; the failure mode is not in it
 export function measureWireOp(op: Op): SizedOp {
   const json = JSON.stringify(op) // a user toJSON can throw here
   if (!isDocOp(JSON.parse(json))) throw new TypeError('not a wire object')
@@ -54,15 +54,16 @@ export type WireMeasurement =
   | { readonly admitted: false; readonly op: Op; readonly cause: unknown }
 
 export function measureWireOp(op: Op): WireMeasurement {
-  const serialized = stringifyOp(op) // try/catch lives here, once
+  const serialized = stringifyOp(op) // the only try/catch is inside stringifyOp
   if ('cause' in serialized) return { admitted: false, op, cause: serialized.cause }
   …
 }
 ```
 
-Do not return a value that lies: an empty array when the fetch failed, `0`
-when the count is unknown, or a default object when parsing failed. A sentinel
-is safe only when the caller cannot mistake it for success.
+Do not return a stand-in for a result the function did not produce: an empty
+array when the fetch failed, `0` when the count is unknown, or a default object
+when parsing failed. A sentinel is safe only when the caller cannot mistake it
+for success.
 
 ## 2. Convert at the untrusted call, not up the stack
 
@@ -83,24 +84,24 @@ function stringifyOp(op: Op): { json: string } | { cause: unknown } {
 }
 ```
 
-Once the failure is a value, it travels through ordinary returns. A `try/catch`
+Once the failure is a value, pass it up with ordinary returns. A `try/catch`
 two or three frames above the risky call, around your own code, is the tell
-that the code uses an exception as a return channel.
+that the author used an exception as a return channel.
 
 ## 3. Validate before you mutate
 
 Check inputs, dependencies, permissions, and resources first. Then change
-state. A function that adds a node, then discovers the node type is missing,
-then throws has already corrupted the graph, and no caller can tell what to
-undo.
+state. A function that adds a node, then fails the node-type check, then
+throws has already corrupted the graph, and the catch site has no record of
+what to undo.
 
 - Preflight the whole operation (every node in a paste, every file in an
   upload, every member in a downgrade) before applying any part of it. If it
   cannot complete, do nothing and say so.
 - Commit to stores, history, previews, widgets, and the active workflow only
   after persistence or server validation succeeds.
-- A failed refresh or load keeps the last valid state. An ambiguous remote
-  outcome invalidates or refetches; it does not assume success.
+- After a failed refresh or load, keep the last valid state. After an
+  ambiguous remote outcome, invalidate or refetch; do not assume success.
 
 If a precondition check and the mutation it guards cannot be separated, stage
 the mutation (build the new value, swap it in at the end) so a failure midway
@@ -108,9 +109,9 @@ leaves the old value in place.
 
 ## 4. Propagate the outcome through callers
 
-A refusal stops dependent effects. History capture, downloads, selection
-changes, cache invalidation, and the toast that says "saved" each run only
-after the step they depend on reports success.
+When a step is refused, skip every effect that depends on it. Run history
+capture, downloads, selection changes, cache invalidation, and the "saved"
+toast only after the step they depend on has succeeded.
 
 ```ts
 // ✗ the effect runs whether or not the save happened
@@ -129,8 +130,8 @@ explain or branch.
 
 ## 5. Report at the ownership boundary, once
 
-A value-shaped failure must not become a silent one. The layer that owns the
-decision reports it:
+Returning a failure as a value must not make it silent. Report it from the
+layer that owns the decision:
 
 - Services and stores call `reportError(cause, { errorType, surface })` with a
   stable slug (naming rules in `src/AGENTS.md`), then return the failure value.
@@ -141,8 +142,8 @@ decision reports it:
   many times, budget the reports (first N, or first per key) so telemetry
   stays readable.
 
-Do both. A reported failure the caller cannot see still leaves state wrong;
-a returned failure nobody reports is invisible in production.
+Do both. A failure that is reported but not returned still leaves state wrong;
+a failure that is returned but never reported is invisible in production.
 
 ## 6. When throwing is still right
 
@@ -167,8 +168,9 @@ custom-node repositories depends on those contracts.
 
 A recoverable contract has at least one test that triggers the refusal,
 asserts the returned value, and asserts that state did not change.
-`expect(() => fn()).not.toThrow()` proves only that nothing escaped; it does not
-prove the function did the right thing. If the failure is reported, assert the
+`expect(() => fn()).not.toThrow()` proves only that no exception escaped; it
+does not prove the function produced the right result. If the failure is
+reported, assert the
 `reportError` call and its `errorType`.
 
 A bugfix that converts a throw into a value must have a test that was red
@@ -178,7 +180,8 @@ against the throwing version.
 
 - A `try/catch` wrapped around your own function, not around a platform or
   third-party call.
-- A function whose return type cannot express "no", so callers assume yes.
+- A return type with no failure arm, so callers treat every result as
+  success.
 - A `throw` after a `push`, `set`, `add`, or store assignment in the same
   function.
 - `catch (e) { console.error(e) }` that neither returns a failure value nor
