@@ -991,9 +991,7 @@ function invalidateDetailWork() {
 }
 
 function getModelTypeLabel(row: TemplateModelSetupRow): string {
-  return row.modelType.kind === 'known'
-    ? t(`templateWorkflows.detail.modelTypes.${row.modelType.key}`)
-    : formatCategoryLabel(row.modelType.raw)
+  return formatCategoryLabel(row.modelDirectory)
 }
 
 function getModelDetailDescription(row: TemplateModelSetupRow): string {
