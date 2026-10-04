@@ -1348,6 +1348,14 @@ async function onAnswerAsk(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
+    // First, as on this release line before the backport: the steps below
+    // synchronously notify listeners and `flush: 'sync'` watchers, so the
+    // staleness fence has to be raised before any of them can observe the
+    // old generation as current and run invalidated onAgentActiveTab work
+    // mid-teardown.
+    invalidateActiveTabGeneration: () => {
+      ++activeTabGeneration
+    },
     releaseCoachCompletionWaiters: () => {
       releaseCoachCompletionWaiters()
     },
@@ -1366,9 +1374,6 @@ onBeforeUnmount(() => {
     },
     stopSession: () => {
       stop()
-    },
-    invalidateActiveTabGeneration: () => {
-      ++activeTabGeneration
     },
     clearEditingTab: () => {
       tabActivity.setEditing(null)
