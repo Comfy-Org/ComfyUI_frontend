@@ -2,7 +2,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
+import {
+  getNodeInfo,
+  routeObjectInfoFromSetupApi
+} from '@e2e/fixtures/utils/objectInfo'
 
 test.describe(
   'backend fallback widget-name restoration',
@@ -15,13 +18,14 @@ test.describe(
       }
     })
 
-    test('an empty fallback name list restores visible values by name', async ({
+    test('an empty fallback list activates the existing named register', async ({
       comfyPage
     }) => {
       const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
         comfyPage.page,
         (objectInfo) => {
-          objectInfo.KSampler.fallbackWidgetsValuesNames = []
+          const kSampler = getNodeInfo(objectInfo, 'KSampler')
+          kSampler.fallbackWidgetsValuesNames = []
         }
       )
 
@@ -32,12 +36,27 @@ test.describe(
         )
 
         const node = comfyPage.vueNodes.getNodeLocator('1')
-        await expect(node.getByText('seed', { exact: true })).toBeVisible()
-        await expect(node.getByRole('spinbutton').nth(0)).toHaveValue(
-          '987654321'
-        )
-        await expect(node.getByText('steps', { exact: true })).toBeVisible()
-        await expect(node.getByRole('spinbutton').nth(1)).toHaveValue('37')
+        await expect(
+          node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+        ).toHaveValue('987654321')
+        await expect(
+          node.getByLabel('steps', { exact: true }).getByRole('spinbutton')
+        ).toHaveValue('37')
+        await expect(
+          node.getByLabel('cfg', { exact: true }).getByRole('spinbutton')
+        ).toHaveValue('6.0')
+        await expect(
+          node.getByLabel('denoise', { exact: true }).getByRole('spinbutton')
+        ).toHaveValue('0.75')
+        await expect(
+          node.getByRole('button', { name: 'Fixed Value', exact: true })
+        ).toBeVisible()
+        await expect(
+          node.getByRole('combobox', { name: 'sampler_name', exact: true })
+        ).toContainText('heun')
+        await expect(
+          node.getByRole('combobox', { name: 'scheduler', exact: true })
+        ).toContainText('karras')
       } finally {
         await unrouteObjectInfo()
       }

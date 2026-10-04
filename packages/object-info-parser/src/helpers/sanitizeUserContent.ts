@@ -7,7 +7,8 @@ import type {
 } from '../schemas/nodeDefSchema'
 import {
   isComboInputSpecV1,
-  isComboInputSpecV2
+  isComboInputSpecV2,
+  zDynamicGroupInputSpec
 } from '../schemas/nodeDefSchema'
 
 const USER_CONTENT_REGEX =
@@ -96,6 +97,24 @@ function sanitizeInputSpec(inputSpec: unknown, forceEmpty: boolean): unknown {
 
   if (isComboInputSpecV2(inputSpec as InputSpec)) {
     return sanitizeComboInputSpecV2(inputSpec as ComboInputSpecV2, forceEmpty)
+  }
+
+  if (inputSpec[0] === 'COMFY_DYNAMICGROUP_V3') {
+    const group = zDynamicGroupInputSpec.safeParse(inputSpec)
+    if (group.success) {
+      const { template } = group.data[1]
+      return [
+        inputSpec[0],
+        {
+          ...inputSpec[1],
+          template: {
+            ...template,
+            required: sanitizeInputSpecSection(template.required, forceEmpty),
+            optional: sanitizeInputSpecSection(template.optional, forceEmpty)
+          }
+        }
+      ]
+    }
   }
 
   return inputSpec
