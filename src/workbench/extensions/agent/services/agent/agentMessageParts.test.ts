@@ -4,7 +4,9 @@ import { assert, describe, expect, it } from 'vitest'
 import type { MessagePart } from './agentMessageParts'
 import {
   ASK_USER_LIMITS,
+  RENDERED_ASK_KINDS,
   isAskPart,
+  isRenderedAskKind,
   retireAskParts,
   toAskOrNoticePart,
   toAskPart
@@ -172,6 +174,88 @@ describe('toAskPart ask_user', () => {
         })
       )
     ).toBeUndefined()
+  })
+})
+
+describe('toAskPart delete_approval', () => {
+  const deleteApproval = (ask: Partial<AskInput> = {}): AskInput =>
+    askUser({
+      kind: 'delete_approval',
+      prompt: 'Delete 2 nodes?',
+      options: [
+        { id: 'delete', label: 'Delete' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      context: {
+        action: 'delete_nodes',
+        nodes: [
+          { id: '12', type: 'KSampler', title: 'Hero sampler' },
+          { id: 13, type: 'VAEDecode' }
+        ]
+      },
+      ...ask
+    })
+
+  it('renders as a question card that lists the nodes, title before type', () => {
+    expect(toAskPart(deleteApproval())).toEqual({
+      type: 'askUser',
+      askId: 'turn-1:call-1',
+      prompt: 'Delete 2 nodes?',
+      options: [
+        { id: 'delete', label: 'Delete' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      minSelections: 1,
+      maxSelections: 1,
+      allowOther: false,
+      nodes: [
+        { id: '12', name: 'Hero sampler' },
+        { id: '13', name: 'VAEDecode' }
+      ]
+    })
+  })
+
+  it('keeps the prompt and options when context.nodes is missing or malformed', () => {
+    for (const context of [
+      undefined,
+      { action: 'delete_nodes' },
+      { action: 'delete_nodes', nodes: 'oops' },
+      { action: 'delete_nodes', nodes: [null, 7, { type: 'NoId' }] }
+    ]) {
+      const part = toAskPart(deleteApproval({ context }))
+      assert(part?.type === 'askUser')
+      expect(part.options.map(({ id }) => id)).toEqual(['delete', 'keep'])
+      expect(part.nodes).toBeUndefined()
+    }
+  })
+
+  it('bounds an untrusted node list', () => {
+    const nodes = Array.from({ length: ASK_USER_LIMITS.nodes + 5 }, (_, i) => ({
+      id: i,
+      title: 'x'.repeat(ASK_USER_LIMITS.label + 10)
+    }))
+    const part = toAskPart(
+      deleteApproval({ context: { action: 'delete_nodes', nodes } })
+    )
+    assert(part?.type === 'askUser')
+    expect(part.nodes).toHaveLength(ASK_USER_LIMITS.nodes)
+    expect(part.nodes?.[0].name).toHaveLength(ASK_USER_LIMITS.label)
+  })
+})
+
+describe('RENDERED_ASK_KINDS', () => {
+  it('lists every kind toAskPart renders, and only those', () => {
+    expect(RENDERED_ASK_KINDS).toEqual([
+      'run_approval',
+      'ask_user',
+      'delete_approval'
+    ])
+    for (const kind of RENDERED_ASK_KINDS) {
+      expect(isRenderedAskKind(kind)).toBe(true)
+      expect(toAskPart(askUser({ kind }))).toBeDefined()
+    }
+    for (const kind of ['paused', 'permission', 'toString', undefined])
+      expect(isRenderedAskKind(kind)).toBe(false)
   })
 })
 

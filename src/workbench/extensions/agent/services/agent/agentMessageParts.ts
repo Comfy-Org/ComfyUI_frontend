@@ -79,7 +79,20 @@ export interface AskUserResolution {
   otherText?: string
 }
 
-/** The generic `ask_user` question: a prompt plus every option the agent offered. */
+/**
+ * A canvas node a `delete_approval` ask would remove, as the host listed it in
+ * `context.nodes`. `name` is the node's title, falling back to its type.
+ */
+export interface AskNodeRef {
+  id: string
+  name?: string
+}
+
+/**
+ * A question card: the generic `ask_user` prompt plus every option the agent
+ * offered, or a `delete_approval` (host-supplied delete/keep options) that
+ * also lists the nodes it would remove.
+ */
 export interface AskUserPart {
   type: 'askUser'
   askId: string
@@ -88,6 +101,8 @@ export interface AskUserPart {
   minSelections: number
   maxSelections: number
   allowOther: boolean
+  /** The nodes a `delete_approval` would remove; absent for `ask_user`. */
+  nodes?: AskNodeRef[]
   /** Set once the ask is resolved; the card then reads back the answer. */
   resolution?: AskUserResolution
 }
@@ -165,7 +180,8 @@ export const ASK_USER_LIMITS = {
   options: 50,
   prompt: 2000,
   label: 200,
-  description: 500
+  description: 500,
+  nodes: 50
 } as const
 
 function clip(text: string, max: number): string {
@@ -208,25 +224,71 @@ function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   }
 }
 
+function toAskNodeRef(value: unknown): AskNodeRef | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const { id, type, title } = value as Record<string, unknown>
+  if (typeof id !== 'string' && typeof id !== 'number') return undefined
+  const label = [title, type].find(
+    (text): text is string => typeof text === 'string' && text.trim() !== ''
+  )
+  return {
+    id: clip(String(id), ASK_USER_LIMITS.label),
+    name: label ? clip(label.trim(), ASK_USER_LIMITS.label) : undefined
+  }
+}
+
+/** The host's `context.nodes`, read defensively: a malformed list is empty. */
+function toAskNodeRefs(context: AskInput['context']): AskNodeRef[] {
+  const nodes: unknown = context?.nodes
+  if (!Array.isArray(nodes)) return []
+  return nodes
+    .slice(0, ASK_USER_LIMITS.nodes)
+    .flatMap((node) => toAskNodeRef(node) ?? [])
+}
+
+function toDeleteApprovalPart(ask: AskInput): AskUserPart | undefined {
+  const part = toAskUserPart(ask)
+  if (!part) return undefined
+  const nodes = toAskNodeRefs(ask.context)
+  return nodes.length > 0 ? { ...part, nodes } : part
+}
+
+/**
+ * The card builder for each ask kind this panel renders. It is the one list
+ * of renderable kinds: `toAskPart` dispatches through it and the turn request
+ * advertises its keys as `ask_kinds`, so the two cannot drift.
+ */
+const ASK_PART_BUILDERS = {
+  run_approval: (ask: AskInput): AskPart => ({
+    type: 'runApproval',
+    askId: ask.ask_id,
+    workflowId: ask.context?.workflow_id || undefined,
+    workflowName: ask.context?.workflow_name || undefined
+  }),
+  ask_user: toAskUserPart,
+  delete_approval: toDeleteApprovalPart
+} satisfies Record<string, (ask: AskInput) => AskPart | undefined>
+
+export type RenderedAskKind = keyof typeof ASK_PART_BUILDERS
+
+/** The ask kinds this panel can render, sent as `ask_kinds` on each turn. */
+export const RENDERED_ASK_KINDS = Object.freeze(
+  Object.keys(ASK_PART_BUILDERS) as RenderedAskKind[]
+)
+
+export function isRenderedAskKind(kind: unknown): kind is RenderedAskKind {
+  return (RENDERED_ASK_KINDS as readonly unknown[]).includes(kind)
+}
+
 /**
  * The card for an ask, by its explicit kind. An unknown or missing kind maps to
  * nothing: a privileged ask that lost its discriminator must not render as a
  * generic chooser.
  */
 export function toAskPart(ask: AskInput): AskPart | undefined {
-  switch (ask.kind) {
-    case 'run_approval':
-      return {
-        type: 'runApproval',
-        askId: ask.ask_id,
-        workflowId: ask.context?.workflow_id || undefined,
-        workflowName: ask.context?.workflow_name || undefined
-      }
-    case 'ask_user':
-      return toAskUserPart(ask)
-    default:
-      return undefined
-  }
+  return isRenderedAskKind(ask.kind)
+    ? ASK_PART_BUILDERS[ask.kind](ask)
+    : undefined
 }
 
 /**

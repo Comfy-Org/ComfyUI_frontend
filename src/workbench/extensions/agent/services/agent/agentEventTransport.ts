@@ -10,6 +10,7 @@ import type {
 } from './agentMessageParts'
 import {
   isAskPart,
+  isRenderedAskKind,
   retireAskParts,
   snapshotMessage,
   toAskOrNoticePart,
@@ -354,7 +355,7 @@ export function createAgentEventTransport(
     if (!toAskPart(data))
       reportUndeliverableAsk(
         data,
-        data.kind === 'ask_user' ? 'unrendered-kind' : 'unknown-kind'
+        isRenderedAskKind(data.kind) ? 'unrendered-kind' : 'unknown-kind'
       )
     dropDraft()
     closeOpenText()

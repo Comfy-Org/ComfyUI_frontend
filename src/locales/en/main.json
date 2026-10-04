@@ -5387,7 +5387,9 @@
       "submit": "Submit",
       "answered": "Answered",
       "otherAnswer": "Other: {text}",
-      "closed": "This question was closed without an answer."
+      "closed": "This question was closed without an answer.",
+      "nodesToDelete": "Nodes to delete",
+      "nodeId": "#{id}"
     },
     "dismiss": "Dismiss",
     "latest": "Latest",
