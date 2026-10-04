@@ -10,7 +10,15 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
+import {
+  computed,
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+  reactive,
+  ref
+} from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
@@ -4489,20 +4497,44 @@ describe('AgentPanelRoot lifecycle', () => {
   })
 
   it('releases the minimap graph-activity layer even when another teardown step throws', () => {
+    const errorHandler = vi.fn()
+    const first = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
     vi.spyOn(
       useWorkflowTabActivityStore(),
       'setCreating'
     ).mockImplementationOnce(() => {
       throw new Error('teardown failed')
     })
-    // Mirror production, where Vue reports a failing hook and carries on.
-    const errorHandler = vi.fn()
 
-    const first = render(AgentPanelRoot, {
-      global: { plugins: [i18n], config: { errorHandler } }
-    })
     first.unmount()
-    expect(errorHandler).toHaveBeenCalledOnce()
+    expect(errorHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'teardown failed' }),
+      expect.anything(),
+      'beforeUnmount hook'
+    )
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
+      })
+    )
+  })
+
+  it('does not claim the minimap graph-activity layer when setup throws', () => {
+    vi.mocked(useFreeUsePlacement).mockImplementationOnce(() => {
+      throw new Error('setup failed')
+    })
+    // Mounted without Testing Library, whose error handler lets a failed
+    // setup finish mounting; Vue itself aborts the mount.
+    const app = createApp(AgentPanelRoot).use(i18n)
+    expect(() => app.mount(document.createElement('div'))).toThrow(
+      'setup failed'
+    )
 
     renderWithSelectedTarget().unmount()
 
