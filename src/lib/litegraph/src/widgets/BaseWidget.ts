@@ -145,20 +145,24 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const store = useWidgetValueStore()
     const previousId = widgetId(graphId, nodeId, previous)
 
-    // A `WidgetId` is `graphId:nodeId:name`, so two widgets that share a name
-    // on one node claim the same id — and `previousId` then names whichever of
-    // them actually registered it, which need not be this one. Moving an entry
-    // this widget is not bound to would hand it the other widget's state: the
-    // rename reads back as success, `_state` is reassigned to that object, and
-    // the pair is welded onto one `WidgetState` with one value between them.
-    //
-    // Only this widget's own entry is this widget's to move. When the id holds
-    // someone else's, the rename is declined exactly as it is when the store
-    // has no entry at all — the caller's read-back reports the failure, and
-    // `ensureUniqueWidgetNames` turns that into a refusal to register rather
-    // than a colliding id.
     const registered = store.getWidget(previousId)
-    if (registered && registered !== this._state) return
+
+    // Nothing in the store answers to the old name, so there is nothing to keep
+    // consistent and the write is this widget's own business. `_state.nodeId`
+    // outlives `graph.remove`, which clears the node's entries, so declining
+    // here left a re-added node holding two widgets under one name: every
+    // `setNodeId` on it then bails on `ensureUniqueWidgetNames` and the node
+    // registers — and renders — no widgets at all.
+    if (!registered) {
+      this._name = value
+      return
+    }
+
+    // `previousId` names whichever widget actually registered it, which need
+    // not be this one when two share a name. Moving an entry this widget is not
+    // bound to welds the pair onto one `WidgetState` with one value between
+    // them, and the rename still reads back as success.
+    if (registered !== this._state) return
 
     const moved = store.renameWidget(
       previousId,

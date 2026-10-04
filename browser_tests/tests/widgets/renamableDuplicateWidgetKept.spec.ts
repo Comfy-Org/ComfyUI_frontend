@@ -120,6 +120,14 @@ test.describe(
 
       await collideNameWhileDetached(comfyPage, nodeId)
 
+      await test.step('both widgets are still drawn after the re-add', async () => {
+        // An unresolved pair makes `ensureUniqueWidgetNames` false, which bails
+        // registration for every widget on the node, so the node draws nothing.
+        // The saved values below cannot see that: they come from the widget
+        // objects, which survive it.
+        await expect(node.getByTestId(TestIds.widgets.widget)).toHaveCount(2)
+      })
+
       await test.step('and the node still saves both widget slots', async () => {
         const savedRequest = comfyPage.page.waitForRequest(
           (request) =>

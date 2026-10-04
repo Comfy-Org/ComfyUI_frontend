@@ -16,14 +16,24 @@ vi.mock(import('@/platform/telemetry/reportError'))
  * - **the descriptor** — remove only when `name` could not be written at all.
  *
  * `BaseWidget.set name` delegates to `widgetValueStore.renameWidget()` and
- * returns without changing `_name` whenever the store declines, which it does
- * when the node has no entries. So the read-back reports failure for an
- * ordinary, fully renamable widget, and removing on it destroys that widget.
+ * returns without changing `_name` whenever the store declines a move it owns.
+ * So the read-back can report failure for a widget that is addressable in
+ * principle, and removing on it destroys that widget.
  */
 function reportedTypes(): (string | undefined)[] {
   return vi
     .mocked(reportError)
     .mock.calls.map((call) => call[1].errorType as string | undefined)
+}
+
+function names(node: LGraphNode): string[] {
+  return (node.widgets ?? []).map((widget) => widget.name)
+}
+
+function storedNames(graph: LGraph, node: LGraphNode): string[] {
+  return useWidgetValueStore()
+    .getNodeWidgets(graph.id, node.id)
+    .map((widget) => widget.name)
 }
 
 describe('unique-name refusal criterion', () => {
@@ -32,54 +42,38 @@ describe('unique-name refusal criterion', () => {
     vi.mocked(reportError).mockClear()
   })
 
-  it('keeps an ordinary renamable duplicate on a node that was removed and re-added', () => {
+  it('resolves an ordinary renamable duplicate on a node that was removed and re-added', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
     const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
     const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
 
-    // Both registered, so each widget's `_state` is the store's object and
-    // carries `nodeId`.
-    expect(
-      useWidgetValueStore()
-        .getNodeWidgets(graph.id, node.id)
-        .map((widget) => widget.name)
-    ).toEqual(['seed', 'steps'])
+    expect(storedNames(graph, node)).toEqual(['seed', 'steps'])
 
-    // Node removal runs `clearNodeOwnedStoreState`, deleting the store
-    // entries. Nothing resets `_state.nodeId` on the widgets, so the next
-    // rename attempt asks the store to move an entry that is no longer there.
+    // Node removal deletes the store entries and leaves `_state.nodeId` set, so
+    // the next rename asks the store to move an entry that is no longer there.
     graph.remove(node)
 
-    // Off-graph, so `BaseWidget.set name` takes its `!graphId` path and the
-    // write lands. This is an ordinary duplicate-name state, reachable by an
-    // extension renaming a widget while the node is detached.
+    // Reachable by an extension renaming a widget while the node is detached.
     steps.name = 'seed'
     expect(steps.name).toBe('seed')
 
-    // Re-adding commits `node.widgets`, which runs the refusal walk. Undoing a
-    // node deletion and pasting a cut node both land here.
+    // Undoing a node deletion and pasting a cut node both land here.
     graph.add(node)
 
-    // The invariant must not pay for itself with a widget. Both are writable,
-    // so neither is unaddressable and neither may be removed.
+    // The invariant must not pay for itself with a widget, and it must not pay
+    // with the node's registration either: a pair that stays ambiguous makes
+    // `ensureUniqueWidgetNames` false, which bails `setNodeId` for *every*
+    // widget on the node and renders none of them.
     expect(node.widgets).toContain(seed)
     expect(node.widgets).toContain(steps)
-    expect(node.widgets).toHaveLength(2)
+    expect(names(node)).toEqual(['seed', 'seed#1'])
+    expect(storedNames(graph, node)).toEqual(['seed', 'seed#1'])
+    expect(reportedTypes()).toEqual([])
 
-    // It is still reported, so the pair is observable rather than tolerated in
-    // silence — under its own `errorType`, because nothing was lost.
-    expect(reportedTypes()).toEqual(['failure_resolving_widget_duplicate_name'])
-    expect(reportedTypes()).not.toContain(
-      'failure_renaming_widget_duplicate_name'
-    )
-
-    // Keeping the pair must not be paid for with a *value* either, which the
-    // widget array's length cannot show. An ambiguous pair registers neither
-    // widget, so each keeps its own state and the two stay independent —
-    // rather than both resolving to one store entry under the shared name.
-    expect(useWidgetValueStore().getNodeWidgets(graph.id, node.id)).toEqual([])
+    // Two entries, so the two values stay independent rather than resolving to
+    // one entry under the shared name.
     expect(seed.value).toBe(1)
     expect(steps.value).toBe(2)
 
@@ -100,21 +94,17 @@ describe('unique-name refusal criterion', () => {
     steps.name = 'seed'
     graph.add(node)
 
-    // `steps` claims `graphId:nodeId:seed` because identity is derived from the
-    // name it now shares. That id is `seed`'s to hold, so a rename of `steps`
-    // must not move it: being handed that entry is what welded the pair onto
-    // one `WidgetState` and destroyed the second value.
+    // While the names collided, `steps` claimed `graphId:nodeId:seed` because
+    // identity is derived from the name it then shared. That id is `seed`'s to
+    // hold: being handed that entry is what welded the pair onto one
+    // `WidgetState` and destroyed the second value.
     const store = useWidgetValueStore()
-    expect(store.getNodeWidgets(graph.id, node.id)).toEqual([])
-
-    // The write is declined rather than silently redirected, so the name the
-    // walk could not resolve is still ambiguous and still reported as such.
-    steps.name = 'seed#1'
-    expect(
-      store.getWidget(widgetId(graph.id, node.id, 'seed#1'))
-    ).toBeUndefined()
-    expect(seed.value).toBe(1)
-    expect(steps.value).toBe(2)
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed'))?.value).toBe(1)
+    expect(seed.widgetId).toBe(widgetId(graph.id, node.id, 'seed'))
+    expect(steps.widgetId).toBe(widgetId(graph.id, node.id, 'seed#1'))
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed#1'))?.value).toBe(
+      2
+    )
   })
 
   it('does not let a duplicate rename steal the entry of a widget on another node', () => {
@@ -163,19 +153,27 @@ describe('unique-name refusal criterion', () => {
     node.addWidget('number', 'seed', 1, () => undefined, {})
     const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
 
-    graph.remove(node)
-    steps.name = 'seed'
-    graph.add(node)
+    // A setter that accepts every write and keeps the old name. It is writable,
+    // so the widget is addressable in principle and must not be removed, and no
+    // candidate the walk offers can ever stick.
+    Object.defineProperty(steps, 'name', {
+      get: () => 'seed',
+      set: () => undefined,
+      configurable: true
+    })
 
+    node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    expect(node.widgets).toContain(steps)
     expect(reportedTypes()).toEqual(['failure_resolving_widget_duplicate_name'])
 
     // A kept pair is re-found by every later commit, and `reportError` has no
-    // dedupe of its own — each call builds an `Error` with a stack and
+    // dedupe of its own: each call builds an `Error` with a stack and
     // dispatches to Sentry and Datadog. An unresolvable pair would otherwise
     // emit an identical warning for the rest of the session.
-    node.addWidget('number', 'cfg', 3, () => undefined, {})
+    node.addWidget('number', 'denoise', 4, () => undefined, {})
     node.widgets?.push(
-      node.addWidget('number', 'denoise', 4, () => undefined, {})
+      node.addWidget('number', 'guidance', 5, () => undefined, {})
     )
 
     expect(reportedTypes()).toEqual(['failure_resolving_widget_duplicate_name'])
