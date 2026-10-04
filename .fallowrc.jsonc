@@ -46,8 +46,9 @@
   ],
 
   "ignoreDependencies": [
-    // Iconify icon sets consumed at build time by the iconify tailwind plugin /
-    // importmap, never via a JS import (mirrors knip ignoreDependencies).
+    // Icon sets loaded at build time, never via a JS import: unplugin-icons
+    // for `i-prefix:name` components, design-system's Tailwind plugins for
+    // `icon-[prefix--name]` classes. Only lucide has a dedicated package.
     "@iconify/json",
     "@iconify-json/lucide",
     // Loaded by config, not imported: oxlint jsPlugin (.oxlintrc.json) and

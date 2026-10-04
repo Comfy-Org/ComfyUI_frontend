@@ -2,12 +2,12 @@
 // PrimeVue Dialogs, Toasts) teleport to body. Reka treats clicks on
 // body-portaled elements as outside its dialog and would auto-dismiss on the
 // first interaction, tearing the overlay down mid-interaction. Treat any
-// PrimeVue overlay click as inside. Toasts matter for focus-outside: when a
-// button disables itself mid-action (e.g. a confirm entering its loading
-// state), the browser drops focus and recovery can land on the toast's close
-// button, which must not dismiss the dialog underneath.
+// PrimeVue overlay click as inside. Toasts match per message, mirroring the
+// pointer-events opt-in in the design system: dismissing a toast stacked over
+// a dialog must not take the dialog with it, while a click in the empty
+// container space beside a toast stays an ordinary scrim click.
 const PRIMEVUE_OVERLAY_SELECTORS =
-  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog, .p-toast'
+  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog, .p-toast-message'
 
 // Reka portals its own dialogs / popovers / menus into the body too. When a
 // nested Reka layer opens on top of a non-modal parent, the parent's

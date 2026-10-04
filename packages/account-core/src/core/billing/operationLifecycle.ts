@@ -549,6 +549,11 @@ export function createBillingOperationLifecycle(
     return request
   }
 
+  function savedRedirect(scope: BillingScope, operationId: string) {
+    const saved = pointers.read(scope)
+    return saved?.operationId === operationId ? saved.redirect : undefined
+  }
+
   function writePointer(
     scope: BillingScope,
     state: BillingOperationState,
@@ -1053,7 +1058,11 @@ export function createBillingOperationLifecycle(
     const refusal = refusedSwitch(state, presentation)
     if (refusal !== undefined) return refusal
     dispatch(record, switchEvent(presentation))
-    writePointer(record.context.scope, record.state)
+    writePointer(
+      record.context.scope,
+      record.state,
+      savedRedirect(record.context.scope, operationId)
+    )
     record.delayMs = undefined
     schedule(record)
     return 'switched'
