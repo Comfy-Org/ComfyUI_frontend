@@ -263,30 +263,30 @@ function legacyMenuText(
   return typeof translated === 'string' ? translated : key
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value != null
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return isRecord(value) ? value : undefined
+}
+
 function legacyMenuLocaleMessages() {
   const moduleExports: object = i18nModule
-  if (!('i18n' in moduleExports)) return
-  const exported = Reflect.get(moduleExports, 'i18n')
+  const exported =
+    'i18n' in moduleExports
+      ? asRecord(Reflect.get(moduleExports, 'i18n'))
+      : undefined
+  const composer =
+    exported && 'global' in exported ? asRecord(exported.global) : undefined
+  const getLocaleMessage = composer?.getLocaleMessage
+  const localeValue = asRecord(composer?.locale)?.value
   if (
-    typeof exported !== 'object' ||
-    exported == null ||
-    !('global' in exported)
+    typeof getLocaleMessage !== 'function' ||
+    typeof localeValue !== 'string'
   ) {
     return
   }
-  const composer = Reflect.get(exported, 'global')
-  if (typeof composer !== 'object' || composer == null) return
-  const locale = Reflect.get(composer, 'locale')
-  const getLocaleMessage = Reflect.get(composer, 'getLocaleMessage')
-  if (
-    typeof locale !== 'object' ||
-    locale == null ||
-    typeof getLocaleMessage !== 'function'
-  ) {
-    return
-  }
-  const localeValue: unknown = Reflect.get(locale, 'value')
-  if (typeof localeValue !== 'string') return
   return getLocaleMessage(localeValue)
 }
 
