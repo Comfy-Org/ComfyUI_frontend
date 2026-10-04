@@ -151,29 +151,57 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
+  const pickGone = 'The deployment you picked no longer exists.'
+  const defaultGone = "The workspace's default deployment no longer exists."
+
   it.for([
     {
-      pick_source: 'browser' as const,
-      default_deployment_id: undefined,
-      line: 'The deployment you picked no longer exists.'
+      gone: 'its own pick, unlisted by an older ingest',
+      reply: { picked_deployment_id: GONE, pick_source: 'browser' },
+      line: pickGone
     },
     {
-      pick_source: 'workspace_default' as const,
-      default_deployment_id: GONE,
-      line: "The workspace's default deployment no longer exists."
+      gone: 'the default it follows, unlisted by an older ingest',
+      reply: {
+        picked_deployment_id: GONE,
+        pick_source: 'workspace_default',
+        default_deployment_id: GONE
+      },
+      line: defaultGone
+    },
+    {
+      gone: 'its own pick, with no default',
+      reply: { gone_picked_deployment_id: GONE },
+      line: pickGone
+    },
+    {
+      gone: 'its own pick, with a live default',
+      reply: {
+        pick_source: 'browser',
+        default_deployment_id: D1,
+        gone_picked_deployment_id: GONE
+      },
+      line: pickGone
+    },
+    {
+      gone: 'the default it follows',
+      reply: { gone_default_deployment_id: GONE },
+      line: defaultGone
     }
-  ])(
-    'says Comfy Cloud when the $pick_source pick is no longer listed, and offers it to no one',
-    async ({ pick_source, default_deployment_id, line }) => {
+  ] satisfies {
+    gone: string
+    reply: Partial<WorkspaceDeploymentList>
+    line: string
+  }[])(
+    'says Comfy Cloud when $gone is gone, and offers it to no one',
+    async ({ reply, line }) => {
       Object.assign(useTeamWorkspaceStore(), {
         workspaceId: 'ws-1',
         activeWorkspace: { id: 'ws-1', role: 'owner' }
       })
       mockWorkspaceApi.listDeployments.mockResolvedValue({
         ...listing,
-        picked_deployment_id: GONE,
-        pick_source,
-        default_deployment_id
+        ...reply
       })
       renderSwitcher()
 
@@ -194,6 +222,23 @@ describe('DeploymentSwitcher', () => {
       expect(screen.queryByTestId('deployment-switcher-set-default')).toBeNull()
     }
   )
+
+  it("does not tell an owner with a pick of its own that the default it doesn't follow is gone", async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2,
+      pick_source: 'browser',
+      gone_default_deployment_id: GONE
+    })
+    renderSwitcher()
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('deployment-switcher-current')
+      ).toHaveTextContent('Studio Build v2')
+    )
+    expect(screen.queryByTestId('deployment-switcher-gone')).toBeNull()
+  })
 
   it.for([
     {

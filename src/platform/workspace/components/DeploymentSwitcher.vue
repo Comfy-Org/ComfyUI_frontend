@@ -40,14 +40,14 @@
             {{ currentLabel }}
           </span>
           <span
-            v-if="pickIsGone"
+            v-if="goneDeployment"
             class="text-xs text-muted-foreground"
             data-testid="deployment-switcher-gone"
           >
             {{
-              followsWorkspace
-                ? $t('deploymentSwitcher.defaultGone')
-                : $t('deploymentSwitcher.pickGone')
+              goneDeployment === 'pick'
+                ? $t('deploymentSwitcher.pickGone')
+                : $t('deploymentSwitcher.defaultGone')
             }}
           </span>
           <span
@@ -127,7 +127,7 @@ const store = useDeploymentPickStore()
 const {
   pickedDeploymentId,
   pickedDeployment,
-  pickIsGone,
+  goneDeployment,
   defaultDeploymentId,
   followsWorkspace,
   canSetDefault,
