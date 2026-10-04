@@ -37,6 +37,12 @@ export function isWebsiteOnly(paths) {
   )
 }
 
+export function hasCompleteChangedFileList(files, changedFileCount) {
+  return (
+    Number.isSafeInteger(changedFileCount) && files.length === changedFileCount
+  )
+}
+
 export function changedPaths(files) {
   const pathGroups = files.map(changedPathGroup)
   if (pathGroups.includes(null)) return null
@@ -236,6 +242,10 @@ async function main() {
   const liveHeadSha = pull.head.sha
 
   const files = await github.paginate(`/pulls/${config.prNumber}/files`)
+  if (!hasCompleteChangedFileList(files, pull.changed_files)) {
+    summary('Skipped: could not enumerate every changed file.')
+    return
+  }
   const paths = changedPaths(files)
   if (paths === null || !isWebsiteOnly(paths)) {
     summary('Skipped: at least one changed file is outside apps/website/**.')
@@ -243,6 +253,11 @@ async function main() {
   }
 
   const reviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
+  const recheckedPull = await github.request(`/pulls/${config.prNumber}`)
+  if (recheckedPull?.head?.sha !== liveHeadSha) {
+    summary('Skipped: the pull request head advanced during validation.')
+    return
+  }
   if (
     alreadyApprovedCurrentHead(reviews, config.expectedApprover, liveHeadSha)
   ) {
