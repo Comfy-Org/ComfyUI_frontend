@@ -265,6 +265,16 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].type).toBe('custom_widget')
   })
 
+  it('rejects an array slot type when no widget describes its construction', () => {
+    const primitive = new PrimitiveNode('Primitive')
+    const target = new LGraphNode('Target')
+    target.addInput('seed', ['INT'])
+
+    expect(primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)).toBe(
+      false
+    )
+  })
+
   it('restores its serialized value through the reroute lifecycle', async () => {
     await widgetInputsExtension.registerCustomNodes?.(app)
     localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')

@@ -299,11 +299,11 @@ export type Direction = 'top' | 'bottom' | 'left' | 'right'
 export type CompassCorners = 'NE' | 'SE' | 'SW' | 'NW'
 
 /**
- * A string that represents a specific data / slot type, e.g. `STRING`.
+ * A value that represents a specific data / slot type, e.g. `STRING`.
  *
- * Can be comma-delimited to specify multiple allowed types, e.g. `STRING,INT`.
+ * Multiple allowed types may be comma-delimited or stored as an array.
  */
-export type ISlotType = number | string
+export type ISlotType = number | string | string[]
 
 export interface INodeSlot extends HasBoundingRect {
   /**
