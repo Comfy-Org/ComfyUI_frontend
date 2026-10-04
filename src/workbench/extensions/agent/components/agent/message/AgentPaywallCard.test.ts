@@ -43,6 +43,24 @@ describe('AgentPaywallCard visual contract', () => {
     expect(onPaywallAction.mock.calls).toEqual([['upgrade'], ['addCredits']])
   })
 
+  // The transient read. Rendering the English server prose here and replacing
+  // it on settle would re-announce this `role="alert"` with different content,
+  // so `unresolved` keeps the localized generic body throughout.
+  it('keeps localized copy while the capability read is still in flight', () => {
+    render(AgentPaywallCard, {
+      props: {
+        presentation: { kind: 'unresolved' },
+        message: 'Add credits to continue.'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const card = screen.getByRole('alert')
+    expect(card).toHaveTextContent("You've run out of available credits.")
+    expect(card).not.toHaveTextContent('Add credits to continue.')
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
   it('announces the server denial without purchase actions when capabilities are unknown', () => {
     render(AgentPaywallCard, {
       props: { message: 'Your workspace spend limit was reached.' },

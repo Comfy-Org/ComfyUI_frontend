@@ -24,7 +24,8 @@ const bodyKeys: Record<AgentPaywallPresentation['kind'], string> = {
   member: 'agent.paywall.body.member',
   salesManaged: 'agent.paywall.body.salesManaged',
   local: 'agent.paywall.body.local',
-  unavailable: 'agent.paywall.body.subscriptionRequired'
+  unavailable: 'agent.paywall.body.subscriptionRequired',
+  unresolved: 'agent.paywall.body.subscriptionRequired'
 }
 const bodyKey = computed(() => bodyKeys[presentation.kind])
 const showUpgrade = computed(
@@ -52,6 +53,15 @@ const showAddCredits = computed(
         <p class="m-0 text-base-foreground">
           {{ $t('agent.paywall.title') }}
         </p>
+        <!--
+          A resolved presentation already names the limit that was hit, so its
+          localized body wins over `message` — the server's prose is always
+          English. `unavailable` is the one kind that resolved to nothing
+          actionable, so there the server diagnostic is the better body.
+          `unresolved` is excluded deliberately: it is the transient read, and
+          rendering English prose there only to replace it on settle is what
+          this gate exists to prevent.
+        -->
         <p class="m-0 text-muted-foreground">
           {{
             presentation.kind === 'unavailable' && message
