@@ -18,7 +18,7 @@
         draggable="false"
         :class="
           cn(
-            'p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none',
+            'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit]',
             isActive &&
               'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
             menuOpen && 'p-breadcrumb-item-link-menu-visible'
