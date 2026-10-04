@@ -216,7 +216,7 @@ export function useTemplateModelRowDownloads({
     return state
   }
 
-  function stateFor(model: ModelWithUrl): TemplateModelDownloadState {
+  function stateFor(model: ModelWithUrl): Readonly<TemplateModelDownloadState> {
     const identity = getTemplateModelDownloadIdentity(model)
     const row = rows.get(identity)
     if (row?.model.url !== model.url) {
@@ -343,7 +343,14 @@ export function useTemplateModelRowDownloads({
     })
   }
 
+  /**
+   * A host result can settle after the row moved to a different URL. Reporting
+   * it then would resurrect the old row through `initializeState`, so only the
+   * row that is still this model's current attempt may be failed.
+   */
   function fail(model: ModelWithUrl, attempt: number): void {
+    const row = rows.get(getTemplateModelDownloadIdentity(model))
+    if (row?.model.url !== model.url || row.state.attempt !== attempt) return
     applyEvent(model, { type: 'error', attempt })
   }
 

@@ -55,12 +55,27 @@ describe('useElectronDownloadStore progress observation', () => {
   let emitProgress: (download: ElectronDownload) => void
 
   beforeEach(() => {
-    emitProgress = vi.fn().mockResolvedValue([])
+    emitProgress = vi.fn()
+    downloadManager.getAllDownloads.mockResolvedValue([])
     downloadManager.onDownloadProgress.mockImplementation(
       (listener: (download: ElectronDownload) => void) => {
         emitProgress = listener
       }
     )
+  })
+
+  it('restores an empty snapshot without taking the failure path', async () => {
+    const store = useElectronDownloadStore()
+    await vi.waitFor(() =>
+      expect(downloadManager.getAllDownloads).toHaveBeenCalled()
+    )
+
+    // An unconfigured snapshot used to resolve undefined, so `initialize()`
+    // caught the iteration error and every case ran through that branch.
+    await expect(
+      downloadManager.getAllDownloads.mock.results[0]?.value
+    ).resolves.toEqual([])
+    expect(store.downloads).toEqual([])
   })
 
   it('restores status, bytes, and a valid byte fraction', async () => {
