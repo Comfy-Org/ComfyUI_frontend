@@ -963,25 +963,6 @@
     "workflowName": "Çalışma akışı adı",
     "workflowNamePlaceholder": "İpucu: Araması kolay, açıklayıcı bir isim girin"
   },
-  "commands": {
-    "clear": "İş akışını temizle",
-    "clipspace": "Clipspace'i Aç",
-    "dark": "Karanlık",
-    "execute": "Yürüt",
-    "help": "Yardım",
-    "interrupt": "Mevcut çalışmayı iptal et",
-    "light": "Açık",
-    "manageExtensions": "Uzantıları Yönet",
-    "queue": "Kuyruk Paneli",
-    "refresh": "Düğüm tanımlarını yenile",
-    "resetView": "Tuval görünümünü sıfırla",
-    "run": "Çalıştır",
-    "runWorkflow": "İş akışını çalıştır",
-    "runWorkflowFront": "İş akışını çalıştır (Öne kuyrukla)",
-    "settings": "Ayarlar",
-    "theme": "Tema",
-    "toggleBottomPanel": "Alt Paneli Aç/Kapat"
-  },
   "compositor": {
     "downloadPsd": "PSD indir",
     "empty": "Birleştirilmiş görüntü oluşturmak için iş akışını çalıştırın",

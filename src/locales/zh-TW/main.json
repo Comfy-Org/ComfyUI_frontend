@@ -963,25 +963,6 @@
     "workflowName": "工作流程名稱",
     "workflowNamePlaceholder": "提示：輸入容易搜尋且具描述性的名稱"
   },
-  "commands": {
-    "clear": "清除工作流程",
-    "clipspace": "開啟 Clipspace",
-    "dark": "深色",
-    "execute": "執行",
-    "help": "說明",
-    "interrupt": "取消目前執行",
-    "light": "淺色",
-    "manageExtensions": "管理擴充功能",
-    "queue": "佇列面板",
-    "refresh": "重新整理節點定義",
-    "resetView": "重設畫布視圖",
-    "run": "執行",
-    "runWorkflow": "執行工作流程",
-    "runWorkflowFront": "執行工作流程（在前方排隊）",
-    "settings": "設定",
-    "theme": "主題",
-    "toggleBottomPanel": "切換底部面板"
-  },
   "compositor": {
     "downloadPsd": "下載 PSD",
     "empty": "請執行工作流程以產生合成圖",

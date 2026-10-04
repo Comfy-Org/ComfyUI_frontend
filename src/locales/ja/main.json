@@ -963,25 +963,6 @@
     "workflowName": "ワークフロー名",
     "workflowNamePlaceholder": "ヒント：検索しやすい説明的な名前を入力してください"
   },
-  "commands": {
-    "clear": "ワークフローをクリア",
-    "clipspace": "Clipspaceを開く",
-    "dark": "ダーク",
-    "execute": "実行",
-    "help": "ヘルプ",
-    "interrupt": "現在の実行をキャンセル",
-    "light": "ライト",
-    "manageExtensions": "拡張機能を管理",
-    "queue": "キューパネル",
-    "refresh": "ノード定義を更新",
-    "resetView": "キャンバスビューをリセット",
-    "run": "実行",
-    "runWorkflow": "ワークフローを実行",
-    "runWorkflowFront": "ワークフローを実行（先頭に追加）",
-    "settings": "設定",
-    "theme": "テーマ",
-    "toggleBottomPanel": "下部パネルの切り替え"
-  },
   "compositor": {
     "downloadPsd": "PSDをダウンロード",
     "empty": "ワークフローを実行して合成画像を生成してください",

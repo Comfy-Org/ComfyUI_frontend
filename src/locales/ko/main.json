@@ -963,25 +963,6 @@
     "workflowName": "워크플로우 이름",
     "workflowNamePlaceholder": "팁: 검색하기 쉬운 설명적인 이름을 입력하세요"
   },
-  "commands": {
-    "clear": "워크플로 지우기",
-    "clipspace": "클립스페이스 열기",
-    "dark": "어두운",
-    "execute": "실행",
-    "help": "도움말",
-    "interrupt": "현재 실행 취소",
-    "light": "밝은",
-    "manageExtensions": "확장 관리",
-    "queue": "큐 패널",
-    "refresh": "노드 정의 새로고침",
-    "resetView": "캔버스 보기 재설정",
-    "run": "실행",
-    "runWorkflow": "워크플로 실행",
-    "runWorkflowFront": "워크플로 실행 (맨 앞에 대기열 추가)",
-    "settings": "설정",
-    "theme": "테마",
-    "toggleBottomPanel": "하단 패널 전환"
-  },
   "compositor": {
     "downloadPsd": "PSD 다운로드",
     "empty": "워크플로우를 실행하여 합성 이미지를 생성하세요",

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import mainMessages from './locales/en/main.json' with { type: 'json' }
+
 import { i18n, t, te } from './i18n'
 
 // Deliberately unmocked, unlike i18n.test.ts: these assertions are only
@@ -25,4 +27,17 @@ describe('locale keys referenced from source', () => {
       t('assetBrowser.downloadFailed', { name: 'sd_xl_base.safetensors' })
     ).toContain('sd_xl_base.safetensors')
   })
+})
+
+// buildLocale overwrites these namespaces with the generated catalogs, while
+// eslint.config.ts reads main.json and those catalogs as separate localeDir
+// entries and unions them. A key here would therefore pass lint and resolve to
+// nothing at runtime.
+describe('main.json', () => {
+  it.for([['commands'], ['nodeDefs'], ['settings']])(
+    'leaves %s to the generated catalog',
+    ([namespace]) => {
+      expect(mainMessages).not.toHaveProperty(namespace)
+    }
+  )
 })

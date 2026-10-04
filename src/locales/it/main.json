@@ -963,25 +963,6 @@
     "workflowName": "Titolo",
     "workflowNamePlaceholder": "Suggerimento: inserisci un nome descrittivo facile da cercare"
   },
-  "commands": {
-    "clear": "Cancella workflow",
-    "clipspace": "Apri Clipspace",
-    "dark": "Scuro",
-    "execute": "Esegui",
-    "help": "Aiuto",
-    "interrupt": "Annulla esecuzione corrente",
-    "light": "Chiaro",
-    "manageExtensions": "Estensioni",
-    "queue": "Pannello Coda",
-    "refresh": "Aggiorna definizioni nodo",
-    "resetView": "Reimposta vista canvas",
-    "run": "Esegui",
-    "runWorkflow": "Esegui workflow",
-    "runWorkflowFront": "Esegui workflow (Metti in cima alla coda)",
-    "settings": "Impostazioni",
-    "theme": "Tema",
-    "toggleBottomPanel": "Mostra/Nascondi Pannello Inferiore"
-  },
   "compositor": {
     "downloadPsd": "Scarica PSD",
     "empty": "Esegui il workflow per generare una composizione",

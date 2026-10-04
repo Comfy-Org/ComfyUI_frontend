@@ -963,25 +963,6 @@
     "workflowName": "Titel",
     "workflowNamePlaceholder": "Tipp: Geben Sie einen aussagekräftigen, leicht auffindbaren Namen ein"
   },
-  "commands": {
-    "clear": "Workflow leeren",
-    "clipspace": "Clipspace öffnen",
-    "dark": "Dunkel",
-    "execute": "Ausführen",
-    "help": "Hilfe",
-    "interrupt": "Aktuelle Ausführung abbrechen",
-    "light": "Hell",
-    "manageExtensions": "Erweiterungen",
-    "queue": "Warteschlangenbereich",
-    "refresh": "Node-Definitionen aktualisieren",
-    "resetView": "Canvas-Ansicht zurücksetzen",
-    "run": "Ausführen",
-    "runWorkflow": "Workflow ausführen",
-    "runWorkflowFront": "Workflow ausführen (Vorne einreihen)",
-    "settings": "Einstellungen",
-    "theme": "Design",
-    "toggleBottomPanel": "Unteres Bedienfeld ein-/ausblenden"
-  },
   "compositor": {
     "downloadPsd": "PSD herunterladen",
     "empty": "Führen Sie den Workflow aus, um eine Komposition zu erstellen",

@@ -963,25 +963,6 @@
     "workflowName": "اسم سير العمل",
     "workflowNamePlaceholder": "نصيحة: أدخل اسمًا وصفيًا يسهل البحث عنه"
   },
-  "commands": {
-    "clear": "مسح سير العمل",
-    "clipspace": "فتح مساحة القص",
-    "dark": "داكن",
-    "execute": "تنفيذ",
-    "help": "مساعدة",
-    "interrupt": "إلغاء التشغيل الحالي",
-    "light": "فاتح",
-    "manageExtensions": "إدارة الإضافات",
-    "queue": "لوحة قائمة الانتظار",
-    "refresh": "تحديث تعريفات العقد",
-    "resetView": "إعادة تعيين عرض اللوحة",
-    "run": "تشغيل",
-    "runWorkflow": "تشغيل سير العمل",
-    "runWorkflowFront": "تشغيل سير العمل (إضافة في المقدمة)",
-    "settings": "الإعدادات",
-    "theme": "المظهر",
-    "toggleBottomPanel": "تبديل اللوحة السفلية"
-  },
   "compositor": {
     "downloadPsd": "تحميل PSD",
     "empty": "شغّل سير العمل لإنشاء تركيب",
