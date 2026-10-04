@@ -113,6 +113,8 @@ type PlannedEntry = BillingEntry & { plan: string }
 /** What the quote answers for a plan slug the catalog does not have. */
 const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
 
+const RATE_LIMITED = 429
+
 /** The status the server answered a failed read with, when it answered. */
 function withHttpStatus(failure: object) {
   return 'httpStatus' in failure && typeof failure.httpStatus === 'number'
@@ -122,7 +124,8 @@ function withHttpStatus(failure: object) {
 
 /**
  * A quote the server refused in its own words: a 4xx carrying its code. A
- * 5xx or a request that never reached it is a quote it could not give.
+ * 5xx, a rate limit, or a request that never reached it is a quote it could
+ * not give, which Try again can still get.
  */
 function refusalOf(
   failure: SubscriptionCommandFailure
@@ -130,7 +133,12 @@ function refusalOf(
   if (!('serverCode' in failure) || failure.serverCode === undefined)
     return undefined
   const { httpStatus, serverMessage } = failure
-  if (httpStatus === undefined || httpStatus < 400 || httpStatus >= 500)
+  if (
+    httpStatus === undefined ||
+    httpStatus < 400 ||
+    httpStatus >= 500 ||
+    httpStatus === RATE_LIMITED
+  )
     return undefined
   return {
     code: unwrapServerCode(failure.serverCode),

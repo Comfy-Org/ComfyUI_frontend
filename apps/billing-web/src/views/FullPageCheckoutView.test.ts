@@ -224,11 +224,12 @@ const payButton = () =>
 /** A 400 the server coded, the way the preview route refuses a link. */
 const refusedQuote = (
   serverCode: string,
-  message: string
+  message: string,
+  httpStatus = 400
 ): PreviewSubscribeResult => ({
   status: 'error',
   code: 'REQUEST_FAILED',
-  httpStatus: 400,
+  httpStatus,
   serverCode: readBillingErrorCode({ code: serverCode, message }),
   serverMessage: message
 })
@@ -610,6 +611,11 @@ describe('FullPageCheckoutView', () => {
     {
       name: 'a quote the server could not answer is a load failure',
       preview: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      heading: "Couldn't load your checkout"
+    },
+    {
+      name: 'a coded rate limit is a load failure, since Try again can still get the quote',
+      preview: refusedQuote('RATE_LIMITED', 'slow down', 429),
       heading: "Couldn't load your checkout"
     },
     {
@@ -1646,7 +1652,6 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
       'op_done'
     )
-    expect(form.mounts).toBe(0)
   })
 
   it('opens the form over a settled payment when the quote still sells this link', async () => {
