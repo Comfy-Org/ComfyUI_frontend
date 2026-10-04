@@ -266,7 +266,7 @@ function scanSingleNodeMedia(
   if (!rootGraph) return
   if (!getActiveExecutionId(node)) return
 
-  const mediaCandidates = scanNodeMediaCandidates(rootGraph, node, isCloud)
+  const mediaCandidates = scanNodeMediaCandidates(rootGraph, node)
   const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
   if (confirmedMedia.length) {
     useMissingMediaStore().addMissingMedia(confirmedMedia)

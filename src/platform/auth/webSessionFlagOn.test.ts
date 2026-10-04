@@ -155,6 +155,12 @@ const { default: router } = await import('@/router')
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 
+const cookieRevokeAll = {
+  authorization: null,
+  client: COMFY_CLIENT,
+  csrf: 'csrf-user-a'
+}
+
 const USER_A = fromPartial<User>({
   uid: 'user-a',
   getIdToken: async () => 'firebase-id-token'
@@ -218,6 +224,12 @@ function installServer(
     session: initial,
     requests: [] as SessionRequest[],
     dropPosts: false,
+    revokeAllStatus: 200,
+    revokeAllRequests: [] as {
+      authorization: string | null
+      client: string | null
+      csrf: string | null
+    }[],
     featureReads: [] as {
       credentials: RequestCredentials | null
       client: string | null
@@ -253,6 +265,21 @@ function installServer(
     return answerRead()
   }
 
+  const answerRevokeAll = (init: RequestInit | undefined): Response => {
+    const headers = new Headers(init?.headers)
+    server.revokeAllRequests.push({
+      authorization: headers.get('authorization'),
+      client: headers.get('x-comfy-client'),
+      csrf: headers.get('x-csrf-token')
+    })
+    if (server.revokeAllStatus !== 200) {
+      const error = { code: 'unavailable', message: 'down' }
+      return jsonResponse(error, server.revokeAllStatus)
+    }
+    server.session = 'revoked'
+    return jsonResponse({ revoked: 2 })
+  }
+
   const answerFeatures = (init: RequestInit | undefined): Response => {
     const client = new Headers(init?.headers).get('x-comfy-client')
     const credentials = init?.credentials ?? null
@@ -275,6 +302,9 @@ function installServer(
       const url = new URL(String(input), location.href)
       const method = (init?.method ?? 'GET').toUpperCase()
       if (url.pathname === '/api/features') return answerFeatures(init)
+      if (url.pathname === '/api/auth/sessions/revoke-all') {
+        return answerRevokeAll(init)
+      }
       if (url.pathname !== '/api/auth/session') {
         return jsonResponse({ id: 'customer-1' }, 201)
       }
@@ -427,6 +457,36 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
       name: 'session_signed_out_remotely',
       properties: { origin: location.origin }
     })
+  })
+
+  it.for([
+    { name: 'ok revokes every session', status: 200, result: { status: 'ok' } },
+    {
+      name: 'a server failure is returned, not thrown',
+      status: 503,
+      result: { status: 'error', code: 'SESSION_UNAVAILABLE' }
+    }
+  ])('revoke-all: $name', async ({ status, result }) => {
+    const server = installServer({ userId: 'user-a' })
+    server.revokeAllStatus = status
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    const webSession = useCloudWebSessionStore()
+
+    expect(await webSession.revokeAllSessions()).toMatchObject(result)
+    expect(server.revokeAllRequests).toEqual([cookieRevokeAll])
+  })
+
+  it('revoke-all works on a session-only tab with no Firebase login', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    await useSessionCookie().ensureSessionCookie()
+    const webSession = useCloudWebSessionStore()
+    expect(webSession.state.phase).toBe('signed_in')
+
+    expect(await webSession.revokeAllSessions()).toEqual({ status: 'ok' })
+    expect(server.revokeAllRequests).toEqual([cookieRevokeAll])
   })
 
   it('resets the tab and tells the user when another account takes the session', async () => {

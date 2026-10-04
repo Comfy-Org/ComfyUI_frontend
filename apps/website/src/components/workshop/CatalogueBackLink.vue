@@ -4,7 +4,7 @@ import { onMounted, ref } from 'vue'
 
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 
@@ -19,6 +19,7 @@ const {
   fallback?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const catalogueHref = catalogue ?? getRoutes(locale).workshop
 const href = ref(catalogueHref)
@@ -33,7 +34,7 @@ onMounted(() => {
   const url = new URL(catalogueHref, location.origin)
   url.searchParams.set('useCase', shelf)
   href.value = `${url.pathname}${url.search}${url.hash}`
-  category.value = t(useCaseLabelKey[shelf], locale)
+  category.value = t(useCaseLabelKey[shelf])
 })
 </script>
 
@@ -46,8 +47,8 @@ onMounted(() => {
     <ChevronLeft class="size-4" aria-hidden="true" />
     {{
       category
-        ? t('workshop.model.backTo', locale, { category })
-        : (fallback ?? t('workshop.model.back', locale))
+        ? t('workshop.model.backTo', { category })
+        : (fallback ?? t('workshop.model.back'))
     }}
   </a>
 </template>
