@@ -410,6 +410,10 @@ watch(
   { immediate: true }
 )
 const agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+// Released in its own hook, registered right next to the registration and
+// ahead of every other teardown step, so a later step that throws cannot leave
+// the id claimed and make the next mount report a duplicate layer.
+onBeforeUnmount(() => agentMinimapLayer.dispose())
 watch(
   () => graphActivity.state,
   (activity) => {
@@ -1243,7 +1247,6 @@ onBeforeUnmount(() => {
   ++activeTabGeneration
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
-  agentMinimapLayer.dispose()
   // PM-1575: the store singleton outlives this component. Without resetting
   // the gate here, a remount's own setCanvasSyncGate() call is the only
   // thing standing between the old (now torn-down) follower's gate and a

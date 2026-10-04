@@ -4488,6 +4488,32 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
   })
 
+  it('releases the minimap graph-activity layer even when another teardown step throws', () => {
+    vi.spyOn(
+      useWorkflowTabActivityStore(),
+      'setCreating'
+    ).mockImplementationOnce(() => {
+      throw new Error('teardown failed')
+    })
+    // Mirror production, where Vue reports a failing hook and carries on.
+    const errorHandler = vi.fn()
+
+    const first = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    first.unmount()
+    expect(errorHandler).toHaveBeenCalledOnce()
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
+      })
+    )
+  })
+
   it('clears workflow activity when the panel unmounts', () => {
     const activity = useWorkflowTabActivityStore()
     activity.setEditing('workflows/active.json')
