@@ -397,9 +397,6 @@ function mountedWidgetValues(
  * restores them positionally over the node's serializable widgets, so project
  * the named map into that order, keeping the constructor default for any
  * widget the document does not mention.
- *
- * An overflow alias within that range names the position directly, which is
- * how a value the host had to alias reaches the widget it belongs to.
  */
 function positionalWidgetValues(
   node: LGraphNode,
