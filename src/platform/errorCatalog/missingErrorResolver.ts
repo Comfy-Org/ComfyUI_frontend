@@ -2,6 +2,7 @@ import type {
   MissingErrorMessageSource,
   ResolvedMissingErrorMessage
 } from './types'
+import type { CatalogParams } from './catalogI18n'
 import { normalizeNodeName, translateCatalogMessage } from './catalogI18n'
 import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import { countMissingModels } from '@/platform/missingModel/missingModelGrouping'
@@ -44,7 +45,31 @@ function isMissingNodeType(nodeType: NodeTypeErrorItem): boolean {
   return typeof nodeType === 'string' || !nodeType.isReplaceable
 }
 
+/**
+ * On a developer-platform deployment (FE-2434) the editor's nodes are its
+ * Release's, so a message names the deployment instead of Cloud. Null on
+ * Comfy Cloud and outside Cloud.
+ */
+function deploymentMessage(
+  source: { deploymentLabel?: string },
+  key: string,
+  fallback: string,
+  params: CatalogParams = {}
+): string | null {
+  if (!source.deploymentLabel) return null
+  return translateCatalogMessage(key, fallback, {
+    ...params,
+    deployment: source.deploymentLabel
+  })
+}
+
 function resolveMissingNodeDisplayMessage(source: MissingNodeSource): string {
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_node.displayMessageDeployment',
+    "These nodes aren't on {deployment}. Replace them, or pick a deployment that has them."
+  )
+  if (onDeployment) return onDeployment
   const key = source.isCloud
     ? 'errorCatalog.missingErrors.missing_node.displayMessageCloud'
     : 'errorCatalog.missingErrors.missing_node.displayMessageOss'
@@ -60,6 +85,13 @@ function resolveMissingNodeToastTitle(source: MissingNodeSource): string {
   )
   const [firstLabel] = labels
   if (labels.length === 1 && firstLabel) {
+    const onDeployment = deploymentMessage(
+      source,
+      'errorCatalog.missingErrors.missing_node.toastTitleOneDeployment',
+      "{nodeType} isn't on {deployment}",
+      { nodeType: firstLabel }
+    )
+    if (onDeployment) return onDeployment
     const key = source.isCloud
       ? 'errorCatalog.missingErrors.missing_node.toastTitleOneCloud'
       : 'errorCatalog.missingErrors.missing_node.toastTitleOneOss'
@@ -69,6 +101,12 @@ function resolveMissingNodeToastTitle(source: MissingNodeSource): string {
     return translateCatalogMessage(key, fallback, { nodeType: firstLabel })
   }
 
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_node.toastTitleManyDeployment',
+    "Nodes aren't on {deployment}"
+  )
+  if (onDeployment) return onDeployment
   const key = source.isCloud
     ? 'errorCatalog.missingErrors.missing_node.toastTitleManyCloud'
     : 'errorCatalog.missingErrors.missing_node.toastTitleManyOss'
@@ -85,6 +123,12 @@ function resolveMissingNodeToastMessage(source: MissingNodeSource): string {
   const count = labels.length || source.count
 
   if (count === 1) {
+    const onDeployment = deploymentMessage(
+      source,
+      'errorCatalog.missingErrors.missing_node.toastMessageOneDeployment',
+      'Replace this node, or pick a deployment that has it.'
+    )
+    if (onDeployment) return onDeployment
     const key = source.isCloud
       ? 'errorCatalog.missingErrors.missing_node.toastMessageOneCloud'
       : 'errorCatalog.missingErrors.missing_node.toastMessageOneOss'
@@ -94,6 +138,12 @@ function resolveMissingNodeToastMessage(source: MissingNodeSource): string {
     return translateCatalogMessage(key, fallback)
   }
 
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_node.toastMessageManyDeployment',
+    'Replace these nodes, or pick a deployment that has them.'
+  )
+  if (onDeployment) return onDeployment
   const key = source.isCloud
     ? 'errorCatalog.missingErrors.missing_node.toastMessageManyCloud'
     : 'errorCatalog.missingErrors.missing_node.toastMessageManyOss'
@@ -337,12 +387,13 @@ export function resolveMissingErrorMessage(
     case 'missing_node':
       return {
         catalogId: 'missing_node',
-        displayTitle: source.isCloud
-          ? st(
-              'rightSidePanel.missingNodePacks.unsupportedTitle',
-              'Unsupported Node Packs'
-            )
-          : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
+        displayTitle:
+          source.isCloud && !source.deploymentLabel
+            ? st(
+                'rightSidePanel.missingNodePacks.unsupportedTitle',
+                'Unsupported Node Packs'
+              )
+            : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
         displayMessage: resolveMissingNodeDisplayMessage(source),
         toastTitle: resolveMissingNodeToastTitle(source),
         toastMessage: resolveMissingNodeToastMessage(source)

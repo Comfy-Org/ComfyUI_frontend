@@ -1,3 +1,4 @@
+import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
@@ -90,6 +91,16 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    */
   const isVisible = computed(() => 'deployments' in state.value)
   const isSwitching = computed(() => state.value.phase === 'switching')
+  /**
+   * The deployment this page booted on, from the first listing that
+   * answered: null for Comfy Cloud (a gone pick included), undefined before
+   * any listing answered. The editor's node catalog is that deployment's
+   * Release as it was at boot, since a pick or a workspace switch reloads
+   * the page.
+   */
+  const bootDeployment = shallowRef<WorkspaceDeployment | null | undefined>(
+    undefined
+  )
 
   /**
    * Orders the answers. Each `load()` takes the next number (`latestRequest`);
@@ -123,6 +134,20 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     }
     lastApplied = request
     dispatch(event)
+    if (event.type === 'loaded' && bootDeployment.value === undefined) {
+      bootDeployment.value = pickedDeployment.value
+    }
+  }
+
+  let firstLoad: Promise<void> | null = null
+
+  /**
+   * The page's first `load()`, started at boot so the editor learns which
+   * deployment it booted on; later calls wait on that same load.
+   */
+  function loadOnce(): Promise<void> {
+    if (!firstLoad && workspaceStore.workspaceId) firstLoad = load()
+    return firstLoad ?? Promise.resolve()
   }
 
   /**
@@ -225,7 +250,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     buildsVisible,
     isVisible,
     isSwitching,
+    bootDeployment,
     load,
+    loadOnce,
     pick,
     followWorkspace,
     setDefault
