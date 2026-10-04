@@ -3141,37 +3141,6 @@ describe('AgentPanelRoot lifecycle', () => {
     )
   })
 
-  it('resets the canvas sync gate when reporting a failed teardown step throws', () => {
-    const errorHandler = vi.fn()
-    vi.mocked(attachMintPortWiring).mockImplementationOnce((deps) => {
-      mintPortWiringDeps.current = deps
-      return fromPartial<MintPortWiring>({
-        detach: vi.fn(() => {
-          throw new Error('detach failed')
-        })
-      })
-    })
-    const panel = render(AgentPanelRoot, {
-      global: { plugins: [i18n], config: { errorHandler } }
-    })
-    const setCanvasSyncGate = vi.spyOn(
-      useAgentConversationStore(),
-      'setCanvasSyncGate'
-    )
-    setCanvasSyncGate.mockClear()
-    vi.mocked(reportError).mockImplementationOnce(() => {
-      throw new Error('reporter failed')
-    })
-
-    panel.unmount()
-
-    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
-    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
-    expect(gate?.()).toBe(false)
-    expect(outcomeCount?.()).toBe(0)
-    expect(errorHandler).not.toHaveBeenCalled()
-  })
-
   it('clears workflow activity when the panel unmounts', () => {
     const activity = useWorkflowTabActivityStore()
     activity.setEditing('workflows/active.json')

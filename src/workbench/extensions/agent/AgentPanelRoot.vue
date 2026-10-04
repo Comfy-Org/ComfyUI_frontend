@@ -387,14 +387,10 @@ function runPanelTeardown(
     try {
       release()
     } catch (error) {
-      try {
-        reportError(error, {
-          errorType: 'failure_tearing_down_agent_panel',
-          tags: { step }
-        })
-      } catch {
-        // A reporter that throws must not abort the teardown it reports on.
-      }
+      reportError(error, {
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step }
+      })
     }
   }
 }
