@@ -378,6 +378,27 @@ const agentTabGraph: ComfyWorkflowJSON = {
 }
 
 const canvasStore = useCanvasStore()
+// Teardown must be total. A release failure must not strand later singleton
+// cleanup, especially the canvas-sync gate reset below.
+function runPanelTeardown(
+  steps: Readonly<Record<string, () => undefined>>
+): void {
+  for (const [step, release] of Object.entries(steps)) {
+    try {
+      release()
+    } catch (error) {
+      try {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_tearing_down_agent_panel',
+          tags: { step }
+        })
+      } catch {
+        // A reporter that throws must not abort the teardown it reports on.
+      }
+    }
+  }
+}
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
@@ -1110,29 +1131,46 @@ async function onAgentActiveTab(
 }
 
 void refreshCloudWorkflowIds()
-onBeforeUnmount(() => {
-  ++activeTabGeneration
-  releaseCoachCompletionWaiters()
-  if (
-    (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
-    composerStore.submission?.id === consentHeldSubmissionId
-  )
-    composerStore.invalidateSubmission()
-  mintPortWiring.detach()
-  exitNodeSelectionMode()
-  stop()
-  tabActivity.setEditing(null)
-  tabActivity.setCreating(false)
-  // PM-1575: the store singleton outlives this component. Without resetting
-  // the gate here, a remount's own setCanvasSyncGate() call is the only
-  // thing standing between the old (now torn-down) follower's gate and a
-  // turn resumed in the meantime reading it -- reset to the always-safe
-  // default instead of leaving whatever this instance last set.
-  conversationStore.setCanvasSyncGate(
-    () => false,
-    () => 0
-  )
-})
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    invalidateActiveTabGeneration: () => {
+      ++activeTabGeneration
+    },
+    releaseCoachCompletionWaiters: () => {
+      releaseCoachCompletionWaiters()
+    },
+    invalidateConsentHeldSubmission: () => {
+      if (
+        (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
+        composerStore.submission?.id === consentHeldSubmissionId
+      )
+        composerStore.invalidateSubmission()
+    },
+    detachMintPortWiring: () => {
+      mintPortWiring.detach()
+    },
+    exitNodeSelectionMode: () => {
+      exitNodeSelectionMode()
+    },
+    stopSession: () => {
+      stop()
+    },
+    clearEditingTab: () => {
+      tabActivity.setEditing(null)
+    },
+    clearCreatingTab: () => {
+      tabActivity.setCreating(false)
+    },
+    // PM-1575: the store singleton outlives this component. Reset to the
+    // always-safe default even if an earlier release throws.
+    resetCanvasSyncGate: () => {
+      conversationStore.setCanvasSyncGate(
+        () => false,
+        () => 0
+      )
+    }
+  })
+)
 
 const history = useAgentChatHistoryStore()
 
@@ -1548,12 +1586,18 @@ watch(
   { flush: 'sync' }
 )
 
-onBeforeUnmount(() => {
-  attachment.cancelAllUploads()
-  for (const timer of removedUploadCancellationTimers.values())
-    window.clearTimeout(timer)
-  removedUploadCancellationTimers.clear()
-})
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    cancelAllUploads: () => {
+      attachment.cancelAllUploads()
+    },
+    clearUploadCancellationTimers: () => {
+      for (const timer of removedUploadCancellationTimers.values())
+        window.clearTimeout(timer)
+      removedUploadCancellationTimers.clear()
+    }
+  })
+)
 
 function onAttach(): void {
   exitNodeSelectionMode()
