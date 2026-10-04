@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
@@ -49,7 +50,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       apiEventHandlers.delete(event)
     }),
     clientId: 'test-client',
-    apiURL: vi.fn((path: string) => `/api${path}`)
+    apiURL: vi.fn((path: string) => `/api${path}`),
+    lastExecutingMessage: null
   }
 }))
 
@@ -80,6 +82,20 @@ const workflowA = workflow(WORKFLOW_A_ID, 'workflows/a.json')
 const workflowB = workflow(WORKFLOW_B_ID, 'workflows/b.json')
 
 const RAF_COALESCED = new Set(['progress_state', 'progress'])
+
+/**
+ * `executing` is dispatched with a bare node id for extension compatibility,
+ * so the store reads the ids off the raw message api recorded. Mirror that.
+ */
+function fireExecuting(
+  node: string | null,
+  ids: { prompt_id: string; workflow_id?: string }
+) {
+  api.lastExecutingMessage = { node, ...ids }
+  const handler = apiEventHandlers.get('executing')
+  if (!handler) throw new Error('executing handler not bound')
+  handler(new CustomEvent('executing', { detail: node }))
+}
 
 function fire(event: string, detail: Record<string, unknown>) {
   const handler = apiEventHandlers.get(event)
@@ -113,6 +129,7 @@ describe('executionStore workflow gating', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
+    api.lastExecutingMessage = null
     mockShowTextPreview.mockClear()
     revokePreviews = vi
       .spyOn(useNodeOutputStore(), 'revokePreviewsByExecutionId')
@@ -405,11 +422,9 @@ describe('executionStore workflow gating', () => {
         workflow_id: WORKFLOW_A_ID,
         timestamp: 1
       })
-      fire('executing', {
+      fireExecuting('1', {
         prompt_id: 'job-a',
-        workflow_id: WORKFLOW_A_ID,
-        node: '1',
-        display_node: '1'
+        workflow_id: WORKFLOW_A_ID
       })
 
       fire('progress_state', {
@@ -427,11 +442,9 @@ describe('executionStore workflow gating', () => {
         workflow_id: WORKFLOW_A_ID,
         timestamp: 1
       })
-      fire('executing', {
+      fireExecuting('1', {
         prompt_id: 'job-a',
-        workflow_id: WORKFLOW_A_ID,
-        node: '1',
-        display_node: '1'
+        workflow_id: WORKFLOW_A_ID
       })
 
       fire('progress_state', {
@@ -618,6 +631,182 @@ describe('executionStore workflow gating', () => {
       })
 
       expect(store.nodeProgressStates['1']).toBeUndefined()
+    })
+  })
+
+  describe('executing frames', () => {
+    beforeEach(() => {
+      useWorkflowStore().activeWorkflow = workflowA
+      fire('execution_start', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        timestamp: 1
+      })
+    })
+
+    // The event detail is a bare node id for extension compatibility, so this
+    // path can only gate via the raw message api records. Before that, the
+    // other tab's final `executing: null` cleared the visible tab's run.
+    it('does not let another workflow clear the visible active job', () => {
+      fireExecuting(null, {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID
+      })
+
+      expect(store.activeJobId).toBe('job-a')
+    })
+
+    it('clears the active job on the visible workflow own terminal executing', () => {
+      fireExecuting(null, {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID
+      })
+
+      expect(store.activeJobId).toBeNull()
+    })
+
+    it('does not clear node progress for another workflow executing frame', () => {
+      fireExecuting('1', { prompt_id: 'job-a', workflow_id: WORKFLOW_A_ID })
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 5) }
+      })
+      expect(store._executingNodeProgress?.value).toBe(5)
+
+      fireExecuting('9', { prompt_id: 'job-b', workflow_id: WORKFLOW_B_ID })
+
+      expect(store._executingNodeProgress?.value).toBe(5)
+    })
+
+    it('still works when the raw message was never recorded', () => {
+      // Defensive: an `executing` dispatched by an extension or a test rather
+      // than by the socket has no raw message, and must behave as before.
+      const handler = apiEventHandlers.get('executing')!
+      handler(new CustomEvent('executing', { detail: null }))
+
+      expect(store.activeJobId).toBeNull()
+    })
+  })
+
+  describe('progress frames', () => {
+    beforeEach(() => {
+      useWorkflowStore().activeWorkflow = workflowA
+      fire('execution_start', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        timestamp: 1
+      })
+    })
+
+    it('applies a progress frame from the active workflow', () => {
+      fire('progress', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        node: '1',
+        value: 4,
+        max: 10
+      })
+
+      expect(store._executingNodeProgress?.value).toBe(4)
+    })
+
+    it('drops a progress frame from another workflow', () => {
+      fire('progress', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        node: '1',
+        value: 7,
+        max: 10
+      })
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+  })
+
+  describe('mixed backend, upgraded mid-session', () => {
+    beforeEach(() => {
+      useWorkflowStore().activeWorkflow = workflowA
+    })
+
+    it('accepts its own frames before and after the field appears', () => {
+      queueJobFrom('job-a', workflowA)
+
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        nodes: { '1': nodeState('job-a', '1', 'running', 2) }
+      })
+      expect(store.nodeProgressStates['1']?.value).toBe(2)
+
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 6) }
+      })
+
+      expect(store.nodeProgressStates['1']?.value).toBe(6)
+    })
+
+    it('rejects a foreign job both before and after the field appears', () => {
+      queueJobFrom('job-b', workflowB)
+
+      fire('progress_state', {
+        prompt_id: 'job-b',
+        nodes: { '1': nodeState('job-b', '1', 'running', 2) }
+      })
+      fire('progress_state', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        nodes: { '1': nodeState('job-b', '1', 'running', 6) }
+      })
+
+      expect(store.nodeProgressStates['1']).toBeUndefined()
+      expect(store.nodeProgressStatesByJob['job-b']?.['1']?.value).toBe(6)
+    })
+  })
+
+  describe('switching tabs mid-run', () => {
+    it('stops writing the mirror once the user switches away', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 3) }
+      })
+      expect(store.nodeProgressStates['1']?.value).toBe(3)
+
+      useWorkflowStore().activeWorkflow = workflowB
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 8) }
+      })
+
+      // The mirror keeps whatever was last written for the tab the user left;
+      // per-job state is what the returning tab reads.
+      expect(store.nodeProgressStates['1']?.value).toBe(3)
+      expect(store.nodeProgressStatesByJob['job-a']?.['1']?.value).toBe(8)
+    })
+
+    it('resumes writing when the user switches back', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      useWorkflowStore().activeWorkflow = workflowB
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 8) }
+      })
+
+      useWorkflowStore().activeWorkflow = workflowA
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 9) }
+      })
+
+      expect(store.nodeProgressStates['1']?.value).toBe(9)
     })
   })
 })

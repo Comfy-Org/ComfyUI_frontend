@@ -260,4 +260,107 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(1)
     await expect(comfyPage.appMode.outputHistory.skeletons).toHaveCount(0)
   })
+
+  test('another workflow finishing does not end the visible run', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
+    const simulator = new BackendSimulator(exec)
+    const workflowId = await activeWorkflowId(comfyPage)
+    expect(workflowId, 'the loaded workflow must carry an id').toBeDefined()
+
+    const jobId = await exec.run()
+    await comfyPage.nextFrame()
+    const mine = simulator.prompt(jobId, { workflowId })
+    const foreign = simulator.prompt('foreign-job', {
+      workflowId: FOREIGN_WORKFLOW_ID
+    })
+
+    simulator.play([mine.start(), mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeVisible()
+
+    // The other tab's run ends. Its terminal `executing: null` must not tear
+    // down this tab's run — the frame carries only a node id on the public
+    // event, so this is the path that needed the raw message to gate.
+    simulator.play([
+      foreign.start(),
+      foreign.executing(null),
+      foreign.success()
+    ])
+
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeVisible()
+
+    simulator.play([
+      mine.executed(SAVE_IMAGE_NODE, imageOutput('mine.png')),
+      mine.success()
+    ])
+
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(1)
+  })
+
+  test('a reconnect mid-run does not duplicate the output', async ({
+    comfyPage,
+    getWebSocket,
+    nextWebSocket
+  }) => {
+    const ws = await getWebSocket()
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const simulator = new BackendSimulator(exec)
+    const workflowId = await activeWorkflowId(comfyPage)
+
+    const jobId = await exec.run()
+    await comfyPage.nextFrame()
+    const mine = simulator.prompt(jobId, { workflowId })
+    simulator.play([mine.start(), mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeVisible()
+
+    // Arm the waiter before dropping the socket, then replay the run's frames
+    // on the reconnected socket the way a catch-up would.
+    const reconnected = nextWebSocket()
+    await ws.close()
+    const nextRoute = await reconnected
+    const afterReconnect = new BackendSimulator(
+      new ExecutionHelper(comfyPage, nextRoute)
+    ).prompt(jobId, { workflowId })
+
+    afterReconnect.executed(SAVE_IMAGE_NODE, imageOutput('mine.png')).send()
+    afterReconnect.success().send()
+
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(1)
+  })
+
+  test('a binary preview for another workflow does not reach the visible tab', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
+    const simulator = new BackendSimulator(exec)
+    const workflowId = await activeWorkflowId(comfyPage)
+
+    const jobId = await exec.run()
+    await comfyPage.nextFrame()
+    const mine = simulator.prompt(jobId, { workflowId })
+    const foreign = simulator.prompt('foreign-job', {
+      workflowId: FOREIGN_WORKFLOW_ID
+    })
+
+    simulator.play([mine.start(), mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
+
+    // Binary frames carry a JSON header with prompt_id but core does not stamp
+    // workflow_id on them, so this leans on the queue-time mapping. Pinned
+    // here because the binary contract is a separate follow-up.
+    simulator.play([foreign.latentPreview(KSAMPLER_NODE)])
+
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(0)
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeVisible()
+  })
 })

@@ -478,6 +478,13 @@ export class ComfyApi extends EventTarget {
    */
   clientId?: string
   /**
+   * The last `executing` message as the server sent it, including `prompt_id`
+   * and `workflow_id`. The public `executing` event carries only the node id
+   * for backwards compatibility with extensions, so a consumer that needs to
+   * know which run a frame belongs to reads it here.
+   */
+  lastExecutingMessage: ExecutingWsMessage | null = null
+  /**
    * The current user id.
    */
   user: string
@@ -1141,6 +1148,11 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
             case 'executing':
+              // The public `executing` event keeps its bare NodeId detail —
+              // extensions depend on that shape — so the ids travel here
+              // instead, for consumers that must know which run the frame
+              // belongs to.
+              this.lastExecutingMessage = msg.data
               this.dispatchCustomEvent(
                 'executing',
                 msg.data.display_node || msg.data.node

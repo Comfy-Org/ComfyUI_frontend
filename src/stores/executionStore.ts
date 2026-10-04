@@ -575,6 +575,15 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent<SerializedNodeId | null>): void {
+    // The event detail is just the node id, for extension compatibility, so
+    // the ids come from the raw message. Without this, the final
+    // `executing: null` of a job started in another workflow tab would clear
+    // the visible tab's active job and its node progress.
+    const raw = api.lastExecutingMessage
+    if (raw && !messageMatchesActiveWorkflow(raw.prompt_id, raw.workflow_id)) {
+      return
+    }
+
     progressCoalescer.cancel()
     if (e.detail == null) progressStateCoalescer.cancel()
 
