@@ -743,10 +743,6 @@ describe('attachDocOpMinter', () => {
     subgraph.clear()
     await afterFlush()
 
-    // The divergence this pins has two halves and both are asserted: the local
-    // graph really did change, and nothing observable left the minter. Without
-    // the first assertion the other two would hold just as well for a clear
-    // that did nothing at all, which is not what is being pinned.
     expect(subgraph.nodes).toEqual([])
     expect(minted).toEqual([])
     expect(vi.mocked(reportError)).not.toHaveBeenCalled()
