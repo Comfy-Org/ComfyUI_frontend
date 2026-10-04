@@ -115,13 +115,17 @@ export interface PostMessageInput {
 }
 
 /**
- * The turn POST body, plus `client_message_id`.
+ * The turn POST body, plus `client_message_id` and `client_id`.
  *
  * Widened here rather than in `agentApiSchema.ts` because the generated types are
- * published from the cloud repo's `openapi.yaml`, so the field is only typed
- * locally until the next package release carries it. One line to delete then.
+ * published from the cloud repo's `openapi.yaml`. `client_id` is in that spec, so
+ * it is typed locally only until the next package release carries it;
+ * `client_message_id` is not in the spec at all and stays local.
  */
-type TurnPostBody = AgentPostMessageRequest & { client_message_id?: string }
+type TurnPostBody = AgentPostMessageRequest & {
+  client_message_id?: string
+  client_id?: string
+}
 
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
@@ -422,7 +426,12 @@ export function createAgentRestClient() {
       attachments: req.attachments,
       draft: req.draft && { content: req.draft.content },
       current_tab_unbound: req.currentTabUnbound,
-      client_message_id: req.clientMessageId
+      client_message_id: req.clientMessageId,
+      // Not `client_message_id`'s sibling: this is THIS TAB's ComfyUI socket
+      // id, which local agent runs are submitted under so their execution
+      // events reach this canvas (PM-1875). Read ambiently rather than taken
+      // from `req` because it belongs to the socket, not to the message.
+      client_id: api.clientId
     })
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,

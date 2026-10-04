@@ -67,6 +67,7 @@ const turnAccepted = {
 
 beforeEach(() => {
   vi.mocked(api.fetchApi).mockReset()
+  vi.mocked(api).clientId = undefined
 })
 
 describe('agentRestClient route + method', () => {
@@ -317,6 +318,30 @@ describe('postMessage wire body', () => {
     expect(
       Object.keys(JSON.parse(String(lastCall().init.body)) as object)
     ).not.toContain('client_message_id')
+  })
+
+  // ComfyUI delivers a prompt's execution events only to the socket that
+  // submitted it, so a local run the agent starts on our behalf has to be
+  // submitted as THIS tab or the canvas shows no node highlights, no progress
+  // and no outputs for it (PM-1875). Nothing else carries the id to the server.
+  it("sends this tab's socket id so agent runs reach this canvas", async () => {
+    vi.mocked(api).clientId = 'tab-socket-id'
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'run it' })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'run it',
+      client_id: 'tab-socket-id'
+    })
+  })
+
+  it('omits client_id before the socket has reported one', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'run it' })
+
+    expect(
+      Object.keys(JSON.parse(String(lastCall().init.body)) as object)
+    ).not.toContain('client_id')
   })
 
   it('sends draft.content when a draft is provided', async () => {
