@@ -306,6 +306,35 @@ describe('unique widget name invariant', () => {
     )
   })
 
+  it('reports the cause the walk decided, not the one a later read suggests', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    const flaky = node.addWidget('number', 'steps', 2, () => undefined, {})
+
+    // Throws for the reserved-names pass and for the walk, then succeeds. The
+    // walk refuses it for an unreadable name; anything that asks the accessor
+    // again afterwards gets a readable name and would call it a duplicate.
+    let reads = 0
+    Object.defineProperty(flaky, 'name', {
+      get(): string {
+        reads++
+        if (reads <= 2) throw new Error('name is not readable')
+        return 'seed'
+      },
+      configurable: true
+    })
+
+    node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    expect(node.widgets!.indexOf(flaky)).toBe(-1)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'widget_unreadable_name_refused'
+      })
+    )
+  })
+
   it('does not swallow a conversion failure the refusal would not take', () => {
     const node = createNode()
     node.addWidget('number', 'seed', 1, () => undefined, {})

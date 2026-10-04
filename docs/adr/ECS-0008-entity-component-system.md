@@ -218,9 +218,15 @@ legitimate re-mint rather than an identity collision — which is why
 >   the concrete class's writable `name` accessor over a plain object's pinned
 >   one, so a raw widget that looks unrenamable usually is not. Normalizing
 >   first does mean `BaseWidget`'s constructor reads a hostile `name` before
->   the refusal sees it, so the conversion is guarded per widget and an
->   unconvertible widget falls through to be refused rather than throwing out
->   of the commit and wedging every later one.
+>   the refusal sees it, so the conversion is guarded **for that one case**:
+>   a widget whose name cannot be read falls through to be refused instead of
+>   throwing out of the commit and wedging every later one. Any other
+>   conversion failure still throws, because the refusal has no reason to drop
+>   that widget and swallowing it would leave an unconverted object on the node
+>   with nothing reported. The guard also only covers the commit path — a raw
+>   `push`, a splice, a whole-array assignment. `addCustomWidget` converts
+>   before it pushes, so `addWidget` and `addDOMWidget` with a hostile accessor
+>   still throw to their caller and never reach the refusal.
 > - **`SubgraphNode` does not commit through this path, and neither
 >   enforcement point runs on it.** It redefines `widgets` as a computed getter
 >   over its promoted widgets and overrides `addCustomWidget`, so an ambiguous

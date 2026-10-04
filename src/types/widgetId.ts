@@ -79,16 +79,48 @@ export function ensureUniqueWidgetNames(
 }
 
 /**
- * A `name` that could not be read at all, because the accessor threw. Distinct
- * from a widget whose name *is* `undefined`: that one has an identity, a bad
- * one, and two of them collide with each other.
+ * A `name` from which no identity can be derived — the accessor threw, the
+ * value would not coerce to a string, or the result is not something
+ * {@link widgetId} can encode. Distinct from a widget whose name *is*
+ * `undefined`: that one has an identity, a bad one, and two of them collide
+ * with each other.
  */
 const UNREADABLE_NAME = Symbol('unreadable widget name')
 
-/** Reads `name` without letting a throwing accessor escape. */
+/** Why a widget could not be given a unique name on its node. */
+type WidgetRefusalCause = 'unreadable-name' | 'duplicate-name'
+
+/** A refused widget, with the cause recorded by the walk that refused it. */
+export interface RefusedWidget<T> {
+  widget: T
+  cause: WidgetRefusalCause
+}
+
+/**
+ * Reads `name` and derives the identity it claims, without letting a hostile
+ * accessor escape.
+ *
+ * Returns the **key**, not the raw value. `widgetId` keys on
+ * `encodeURIComponent(String(name))`, so two names that differ as values but
+ * coincide as strings — `undefined` against `'undefined'`, `1` against `'1'` —
+ * are one identity and have to collide here or they collide downstream where
+ * nothing is watching.
+ *
+ * All three steps are inside the guard on purpose. A getter that throws is the
+ * obvious case; a name that does not coerce (`Object.create(null)`) and one
+ * that `encodeURIComponent` rejects (a lone surrogate) are the same failure
+ * wearing different clothes, and letting either escape wedges this commit and
+ * every later one on the node.
+ */
 function readName(widget: { name: string }): string | typeof UNREADABLE_NAME {
   try {
-    return widget.name
+    // `name` is declared `string` and at runtime is whatever a node pack
+    // assigned, which is the entire reason the coercion is here.
+    const raw: unknown = widget.name
+    const key = String(raw)
+    // Mirrors `widgetId`: the key is only usable if the id can be built from it.
+    encodeURIComponent(key)
+    return key
   } catch {
     return UNREADABLE_NAME
   }
@@ -114,25 +146,12 @@ export function isWidgetNameUnreadable(widget: { name: string }): boolean {
   return readName(widget) === UNREADABLE_NAME
 }
 
-/**
- * The identity a name actually claims. `widgetId` keys on
- * `encodeURIComponent(String(name))`, so two names that differ as values but
- * coincide as strings — `undefined` against `'undefined'`, `1` against `'1'` —
- * are one identity and have to collide here, or they collide downstream where
- * nothing is watching.
- */
-// Takes `unknown` on purpose: `name` is declared `string` and at runtime is
-// whatever a node pack assigned, which is the entire reason the coercion is here.
-function nameKey(name: unknown): string {
-  return String(name)
-}
-
 /** Every name key the array already holds outright, skipping unreadable ones. */
 function readableNames(widgets: readonly { name: string }[]): Set<string> {
   const names = new Set<string>()
   for (const widget of widgets) {
     const name = readName(widget)
-    if (name !== UNREADABLE_NAME) names.add(nameKey(name))
+    if (name !== UNREADABLE_NAME) names.add(name)
   }
   return names
 }
@@ -210,14 +229,17 @@ function renameApart(
  * accepts the write and ignores it satisfies that check, so delegating would
  * report success over a node that still carries the ambiguous pair.
  *
- * @returns the removed widgets, in array order. Empty when the node was
- * already unambiguous, which is the overwhelmingly common case.
+ * @returns the removed widgets with the cause of each refusal, in array order.
+ * Empty when the node was already unambiguous, which is the overwhelmingly
+ * common case. The cause is recorded here rather than re-derived by the
+ * caller: re-reading a hostile accessor to ask "was this one unreadable?" can
+ * answer differently the second time and mislabel the report.
  */
 export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
   widgets: T[]
-): T[] {
+): RefusedWidget<T>[] {
   const kept: T[] = []
-  const refused: T[] = []
+  const refused: RefusedWidget<T>[] = []
   const used = new Set<string>()
   const reserved = readableNames(widgets)
   /** Every widget already walked, against whether that walk kept it. */
@@ -239,11 +261,12 @@ export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
       // node makes `ensureUniqueWidgetNames` fail on every later call — which
       // bails registration for every *other* widget on the node too.
       verdicts.set(widget, false)
-      refused.push(widget)
+      refused.push({ widget, cause: 'unreadable-name' })
       continue
     }
 
-    const key = nameKey(name)
+    // `readName` already returned the key, not the raw value.
+    const key = name
     if (!used.has(key)) {
       used.add(key)
       verdicts.set(widget, true)
@@ -254,7 +277,7 @@ export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
     const unique = renameApart(widget, key, used, reserved)
     if (unique === undefined) {
       verdicts.set(widget, false)
-      refused.push(widget)
+      refused.push({ widget, cause: 'duplicate-name' })
       continue
     }
     used.add(unique)

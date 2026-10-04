@@ -102,11 +102,14 @@ function refuseAmbiguousWidgets(
   const refused = dropUnrenamableDuplicateWidgets(widgets)
   if (!refused.length) return
 
-  for (const widget of refused) {
+  for (const { widget, cause } of refused) {
     // The two causes are different failures and are alerted on separately: an
     // unreadable name has no duplicate at all, so reporting one would send
     // whoever reads the alert looking for a collision that does not exist.
-    const unreadable = isWidgetNameUnreadable(widget)
+    // The cause comes from the walk rather than from another read of the
+    // accessor, which is hostile by definition and need not answer twice the
+    // same way.
+    const unreadable = cause === 'unreadable-name'
     const widgetName = safeRead(() => widget.name)
     releaseRefusedWidget(node, widget)
     reportError(
@@ -196,8 +199,11 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
     } catch (error) {
       // Only the unreadable-name case is swallowed, and only because the
       // refusal below is about to take this widget anyway. Conversion reads
-      // `type` too, and a failure there leaves a widget the refusal has no
-      // reason to drop — so it keeps throwing, as it did before.
+      // `type`, `options` and `value` too, and a failure in any of those
+      // leaves a widget the refusal has no reason to drop — so it keeps
+      // throwing, as it did before. This also only covers the commit path:
+      // `addCustomWidget` converts before it pushes, so `addWidget` and
+      // `addDOMWidget` still throw to their caller.
       if (!isWidgetNameUnreadable(widget)) throw error
       return widget
     }
