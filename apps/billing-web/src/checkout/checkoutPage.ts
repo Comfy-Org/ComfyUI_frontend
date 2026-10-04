@@ -17,6 +17,12 @@ export interface ScheduledChange {
   readonly effectiveAt: string
 }
 
+/** A quote the server refused in its own words: its code, and the sentence it wrote for the customer. */
+export interface ServerRefusal {
+  readonly code: string
+  readonly message?: string
+}
+
 /** `none` means the read succeeded and the workspace has no saved method. */
 type SavedStatus = 'loading' | 'ready' | 'none' | 'failed'
 
@@ -159,6 +165,7 @@ export type CheckoutPage =
       readonly reason: CapabilityDenialReason
       readonly scheduled?: ScheduledChange
     }
+  | { readonly kind: 'refused'; readonly server: ServerRefusal }
   | {
       readonly kind: 'unavailable'
       readonly cause: LoadFailure
@@ -214,8 +221,11 @@ export type CheckoutPageEvent =
   /** The lifecycle could not say what the workspace is waiting on. */
   | { readonly type: 'recheckFailed'; readonly code: string }
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
-  /** The quote answered `allowed: false`; its free-text reason is never read. */
-  | { readonly type: 'notAllowed' }
+  /**
+   * The server will not sell this link: a quote answering `allowed: false`,
+   * whose free-text reason is never read, or a coded 4xx refusal (`server`).
+   */
+  | { readonly type: 'notAllowed'; readonly server?: ServerRefusal }
   /** The server's catalog named the plan a settled payment bought. */
   | { readonly type: 'settledPlanRead'; readonly plan: SettledPlan }
   /** Try again on a checkout that could not load. */
@@ -394,7 +404,7 @@ function isStopEvent(event: CheckoutPageEvent): event is StopEvent {
 /**
  * The page a read that ends resolving leaves behind. A refused quote over a
  * success this tab already saw is that success revisited; any other is a
- * checkout the server will not sell, for a reason it gives no code for.
+ * checkout the server will not sell, in its own words when it coded them.
  */
 function stoppedOn(
   page: Extract<CheckoutPage, { kind: 'resolving' }>,
@@ -402,9 +412,7 @@ function stoppedOn(
 ): CheckoutPage {
   switch (event.type) {
     case 'notAllowed':
-      return page.settled === undefined
-        ? { kind: 'refused', reason: 'unspecified' }
-        : { kind: 'terminal', operation: page.settled, attribution: 'settled' }
+      return notSoldOn(page, event)
     case 'refused':
       return {
         kind: 'refused',
@@ -420,6 +428,18 @@ function stoppedOn(
     case 'planUnavailable':
       return { kind: 'plan_unavailable', reason: event.reason }
   }
+}
+
+/** A link the server will not sell is the success this tab already saw, revisited, or a refusal. */
+function notSoldOn(
+  page: Extract<CheckoutPage, { kind: 'resolving' }>,
+  event: Extract<CheckoutPageEvent, { type: 'notAllowed' }>
+): CheckoutPage {
+  if (page.settled !== undefined)
+    return { kind: 'terminal', operation: page.settled, attribution: 'settled' }
+  return event.server === undefined
+    ? { kind: 'refused', reason: 'unspecified' }
+    : { kind: 'refused', server: event.server }
 }
 
 /** An event that means nothing in the current state returns it untouched. */

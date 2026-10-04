@@ -646,6 +646,14 @@ const changed = (
 })
 const settledOnTheSpot: CheckoutPageEvent = { type: 'paySettled' }
 const notAllowed: CheckoutPageEvent = { type: 'notAllowed' }
+const ALREADY_CURRENT = {
+  code: 'TRANSITION_NOT_ALLOWED',
+  message: 'the selected plan is already the current plan'
+}
+const refusedByServer: CheckoutPageEvent = {
+  type: 'notAllowed',
+  server: ALREADY_CURRENT
+}
 const declinedElsewhere: OperationOutcome = {
   kind: 'declined',
   reason: 'card_declined',
@@ -1175,6 +1183,29 @@ describe("reduceCheckoutPage over this tab's own operation", () => {
       name: 'a quote the server refuses, with nothing of this tab settled, is Checkout not available',
       events: [reconciled(undefined), notAllowed],
       expected: { kind: 'refused', reason: 'unspecified' }
+    },
+    {
+      name: 'a quote the server refuses with its own code, with nothing of this tab settled, keeps that code and sentence',
+      events: [reconciled(undefined), refusedByServer],
+      expected: { kind: 'refused', server: ALREADY_CURRENT }
+    },
+    {
+      name: 'a success found on mount that the server refuses with its own code is Already completed',
+      events: [reconciled(succeededOperation()), refusedByServer],
+      expected: {
+        kind: 'terminal',
+        operation: succeededOperation(),
+        attribution: 'settled'
+      }
+    },
+    {
+      name: 'a coded refusal read after Already completed leaves it standing',
+      events: [reconciled(succeededOperation()), notAllowed, refusedByServer],
+      expected: {
+        kind: 'terminal',
+        operation: succeededOperation(),
+        attribution: 'settled'
+      }
     },
     {
       name: 'its own payment found settled on a return is Success, whatever the quote says',

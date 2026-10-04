@@ -18,12 +18,14 @@ import type {
   CancelOperationResult,
   CapabilitiesSnapshot,
   SubscribeInput,
+  SubscriptionCommandFailure,
   SubscriptionCommandResult,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
-  matchesServerCode
+  matchesServerCode,
+  unwrapServerCode
 } from '@comfyorg/account-core/billing'
 import type { BillingEntry } from '@comfyorg/billing-contract'
 
@@ -31,7 +33,8 @@ import type {
   CheckoutPage,
   CheckoutPageEvent,
   PaymentTab,
-  SavedArrival
+  SavedArrival,
+  ServerRefusal
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
@@ -115,6 +118,24 @@ function withHttpStatus(failure: object) {
   return 'httpStatus' in failure && typeof failure.httpStatus === 'number'
     ? { httpStatus: failure.httpStatus }
     : {}
+}
+
+/**
+ * A quote the server refused in its own words: a 4xx carrying its code. A
+ * 5xx or a request that never reached it is a quote it could not give.
+ */
+function refusalOf(
+  failure: SubscriptionCommandFailure
+): ServerRefusal | undefined {
+  if (!('serverCode' in failure) || failure.serverCode === undefined)
+    return undefined
+  const { httpStatus, serverMessage } = failure
+  if (httpStatus === undefined || httpStatus < 400 || httpStatus >= 500)
+    return undefined
+  return {
+    code: unwrapServerCode(failure.serverCode),
+    ...(serverMessage === undefined ? {} : { message: serverMessage })
+  }
 }
 
 /** A capability read that ends the page before any quote: unreadable, or refused. */
@@ -382,11 +403,7 @@ export function useFullPageCheckout() {
     if (expiredPromo !== undefined) promo.expire()
     const stopped = capabilityStop(allowed)
     if (stopped !== undefined) return withScheduledChange(stopped)
-    if (quoted.status === 'error')
-      return 'serverCode' in quoted &&
-        matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
-        ? { type: 'planUnavailable', reason: 'retired' }
-        : { type: 'unavailable', code: quoted.code, ...withHttpStatus(quoted) }
+    if (quoted.status === 'error') return quoteFailureEvent(quoted, arrival)
     const unquotable = quotedStop(quoted.value, arrival)
     if (unquotable !== undefined) return unquotable
     const facts = {
@@ -398,6 +415,43 @@ export function useFullPageCheckout() {
       ...railOf(quoted.value, arrivalOf(methods), stripeKey),
       ...facts
     }
+  }
+
+  /**
+   * A quote the server would not give: a slug its catalog lacks, a team
+   * plan its catalog lists but the link names without a stop, a refusal in
+   * its own words, or a read that failed.
+   */
+  async function quoteFailureEvent(
+    failure: SubscriptionCommandFailure,
+    arrival: PlannedEntry
+  ): Promise<CheckoutPageEvent> {
+    if (
+      'serverCode' in failure &&
+      matchesServerCode(failure, UNKNOWN_PLAN_SERVER_CODE)
+    )
+      return { type: 'planUnavailable', reason: 'retired' }
+    const server = refusalOf(failure)
+    if (server === undefined)
+      return {
+        type: 'unavailable',
+        code: failure.code,
+        ...withHttpStatus(failure)
+      }
+    if (await namesTeamWithoutStop(arrival))
+      return { type: 'planUnavailable', reason: 'team_stop_missing' }
+    return { type: 'notAllowed', server }
+  }
+
+  async function namesTeamWithoutStop(arrival: PlannedEntry) {
+    if (arrival.teamCreditStopId !== undefined) return false
+    const catalog = await plans.read()
+    return (
+      catalog.status === 'ok' &&
+      catalog.value.data.plans.some(
+        (plan) => plan.slug === arrival.plan && plan.tier === 'TEAM'
+      )
+    )
   }
 
   /** Capture never renders before reconciliation has answered (rule 3). */

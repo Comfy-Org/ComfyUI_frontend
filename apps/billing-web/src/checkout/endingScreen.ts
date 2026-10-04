@@ -79,6 +79,8 @@ export type EndingScreen =
       readonly kind: 'refused'
       readonly code: string
       readonly copy: RefusalCopy
+      /** The sentence the server wrote for a quote it refused, shown in place of the copy. */
+      readonly serverMessage?: string
     }
   | {
       readonly kind: 'refused'
@@ -126,6 +128,15 @@ export function endingOf(page: CheckoutPage): EndingScreen | undefined {
 function refusedEnding(
   page: Extract<CheckoutPage, { kind: 'refused' }>
 ): EndingScreen {
+  if ('server' in page) {
+    const { code, message } = page.server
+    return {
+      kind: 'refused',
+      code,
+      copy: 'unknown',
+      ...(message === undefined ? {} : { serverMessage: message })
+    }
+  }
   const code = page.reason.toUpperCase()
   return page.scheduled === undefined
     ? { kind: 'refused', code, copy: REFUSAL_COPY[page.reason] }

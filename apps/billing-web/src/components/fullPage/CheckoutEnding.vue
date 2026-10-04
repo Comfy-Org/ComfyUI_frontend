@@ -122,6 +122,12 @@ const bodyParams = computed(() =>
       }
     : { workspace }
 )
+/** A refusal the server worded reads in its words. */
+const body = computed(
+  () =>
+    ('serverMessage' in screen ? screen.serverMessage : undefined) ??
+    t(bodyKey.value, bodyParams.value)
+)
 const code = computed(() => ('code' in screen ? screen.code : undefined))
 const receipt = computed(() => endingReceipt(screen))
 /** A plan card stands in for the reference; without the plan's listing the code stays. */
@@ -188,7 +194,7 @@ function act() {
           {{ title }}
         </h1>
         <p class="m-0 text-sm/5 text-muted-foreground">
-          {{ t(bodyKey, bodyParams) }}
+          {{ body }}
         </p>
         <i18n-t
           v-if="screen.kind === 'in_progress'"
