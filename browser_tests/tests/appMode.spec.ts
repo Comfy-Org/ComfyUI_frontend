@@ -277,6 +277,10 @@ test.describe('App mode usage', () => {
   })
 
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+    })
+
     test('panel navigation', async ({ comfyPage }) => {
       const { mobile } = comfyPage.appMode
       await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)

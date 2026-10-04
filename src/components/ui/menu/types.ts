@@ -69,3 +69,8 @@ export type MenuItem =
   | MenuItemSubmenu
   | MenuItemRadioGroup
   | MenuItemAction
+
+export type MenuItemSlotProps = {
+  item: MenuItem
+  hasSubmenu: boolean
+}
