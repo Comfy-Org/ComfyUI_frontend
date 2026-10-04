@@ -49,6 +49,12 @@ import { assertReadableSchema } from "./schema-version.js";
 import { NODE_INCARNATION_KEY, type WidgetCatalog, type WorkflowJSON, type WorkflowNode } from "./types.js";
 import { hasDynamicCombos, optionOwnedWidgets, projectedLength, widgetLayoutForWidgets } from "./dynamic-combos.js";
 import { widgetIdentityFromStorageKey, widgetOccurrenceAt, widgetStorageKey, widgetIndexOf } from "./widget-identity.js";
+import {
+  WIDGET_FORM_FIELD,
+  WIDGET_FORM_KEY,
+  projectWidgetForm,
+  storedWidgetFormOf,
+} from "./widget-form.js";
 import { numericId } from "./remap.js";
 
 /** Sorted-by-id comparator: numeric when both ids are numbers, else string order. */
@@ -181,6 +187,19 @@ function projectWidgets(
       return structuredClone(ym.get(OPAQUE_WIDGETS_KEY));
     case "named":
       return widgetsToPositional(nodeType, ym.get("widgets") as Y.Map<unknown>, catalog);
+    case "self": {
+      // A24: rebuilt in the shape the producer serialized, from the node's own
+      // declared order plus the stored residue. No catalog lookup — the
+      // mapping this needs arrived with the node.
+      const form = storedWidgetFormOf(ym);
+      const widgets = ym.get("widgets");
+      // An unreadable form is not self-described (`storedWidgetFormOf`), so
+      // `widgetStorageOf` and this read can only disagree on doc state no
+      // writer here produces. Fall back to the catalog path rather than
+      // inventing a shape, which keeps the KA-12 refusal loud.
+      if (!form) return widgetsToPositional(nodeType, widgets as Y.Map<unknown>, catalog);
+      return projectWidgetForm(form, widgets instanceof Y.Map ? widgets : undefined);
+    }
     default:
       return assertNever(storage, "project: widget-storage strategy");
   }
@@ -193,10 +212,16 @@ function projectNode(ym: Y.Map<unknown>, catalog: WidgetCatalog): WorkflowNode {
   ym.forEach((v, k) => {
     if (k === NODE_INCARNATION_KEY) {
       return;
-    } else if (k === OPAQUE_WIDGETS_KEY || k === "widgets") {
-      // Both storage keys project to the same workflow key; which one is
+    } else if (k === OPAQUE_WIDGETS_KEY || k === "widgets" || k === WIDGET_FORM_KEY) {
+      // All three storage keys project to the same workflow key; which one is
       // authoritative is `widgetStorageOf`'s decision, not iteration order's.
+      // A self-described node additionally re-emits its producer declaration
+      // (A24) — it is a workflow field the producer owns, and a round trip
+      // through `project()` -> `mint()` (which is what `compact()` is) has to
+      // give it back or the next mint loses the layout.
       out["widgets_values"] = projectWidgets(nodeType, ym, catalog);
+      const form = storedWidgetFormOf(ym);
+      if (form) out[WIDGET_FORM_FIELD] = { order: [...form.order] };
     } else if (v instanceof Y.Array) {
       const projector = k === "outputs" ? projectOutputSlot : projectSlot;
       out[k] = v.toArray().map((slot) => projector(slot));
@@ -265,8 +290,12 @@ function projectNode(ym: Y.Map<unknown>, catalog: WidgetCatalog): WorkflowNode {
  */
 function tryProjectNode(value: unknown, catalog: WidgetCatalog): WorkflowNode | null {
   if (!(value instanceof Y.Map)) return null;
+  // `named` and `self` (A24) both treat the identity-keyed `widgets` slot as
+  // authoritative, so a non-`Y.Map` there is unwalkable for either. `opaque`
+  // is unaffected: its own key stays authoritative over a stale named slot.
+  const storage = widgetStorageOf(value);
   if (
-    widgetStorageOf(value) === "named" &&
+    (storage === "named" || storage === "self") &&
     value.has("widgets") &&
     !(value.get("widgets") instanceof Y.Map)
   ) {

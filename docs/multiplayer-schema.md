@@ -114,6 +114,7 @@ Keyed in `nodes` by `String(node.id)`. Fields:
 | `order`, `mode` | plain | execution order is node state and IS preserved (§7) |
 | `properties` | plain object | passthrough |
 | `widgets` | **identity-keyed Y.Map** | occurrence 0 uses the widget name; later same-name occurrences use the schema-v5 reserved identity key. See §1.2 |
+| `__widgets_form` | plain object | internal: the node's OWN declared widget layout (Amendment A24) — serialization shape, declared order, and the verbatim residue of serialized keys that are not widgets. Never projected; `project()` re-emits `widgets_values_form` from it |
 | `__incarnation` | plain string | internal node lifetime token; never projected. Imported nodes use `"0"`; modern adds carry a creator token (normally their `op_id`), while legacy adds map to `"0"` |
 | `inputs` | Y.Array\<Y.Map\> | slot records `{name, type, link, widget?, grow_id?}`; autogrow appends carry `grow_id` (§8.3) |
 | `outputs` | Y.Array\<Y.Map\> | slot records; `links` is a Y.Array of link ids, or `null` preserved verbatim (§7) |
@@ -176,6 +177,16 @@ addressable.
   over the definition's widget-backed inputs. That array is A2's opaque
   storage, and a promoted host `set_widget` (carrying `promoted.value_index`) is
   a whole-value replace of it: one index written, never decomposed by name.
+
+- Fifth consequence, pinned (Amendment A24): the catalog is per-CLASS and
+  cannot describe two shapes that are per-INSTANCE — a node with two
+  same-named serializable widgets, and a node whose custom serializer emits an
+  OBJECT whose non-widget keys must survive. A node may therefore DECLARE its
+  own ordered widget identity in `widgets_values_form`, and a node that does is
+  decomposed, addressed and projected through that declaration instead of
+  through `widget_order`, with no catalog lookup on any leg. A declaration is
+  not a guess, so this does not relax KA-12; an undeclared node is unaffected.
+  See Amendment A24.
 
 Note the residual conflict semantics: a name-keyed Y.Map fixes the
 *structural* corruption, but Y.Map's native conflict pick is client-based,
@@ -2285,3 +2296,187 @@ duplicate `op_id` replay stays byte-identical and both arrival orders converge.
 Known remaining gap, pre-existing and **not** addressed here: the §8.3 autogrow
 `inputcount` bump writes the `widgets` map directly and maintains **neither**
 passthrough field, so both go stale on a `grow` connect.
+
+## Amendment A24 — 2026-10-04 — node-local widget form (no schema change)
+
+**Touches:** §1.1, §1.2, §7. Enacts FE-3036 row 5's "lossless ordered
+identity" and KEEP-ALIVE 12's catalog boundary; does not change the
+replication contract (§2) in any respect.
+
+### The two shapes that had no lossless representation
+
+§1.2 resolves a widget name to a projection position through the PINNED
+CATALOG's class-level `widget_order`. That is the right default and it has two
+reachable holes, both of which end with a user's edit silently unavailable:
+
+1. A class the catalog cannot describe has no `widget_order` and can never get
+   one, so A2 stores its non-empty positional `widgets_values` whole under
+   `__widgets_opaque`. That round-trips verbatim but is not name-addressable at
+   all, so `set_widget` against it is rejected `opaque_widgets`.
+2. A node whose serializer emits an OBJECT rather than an array (ComfyUI's
+   custom `serialize_widgets`, e.g. the `VHS_*` family) was decomposed into a
+   name-keyed map of the serializer's OWN keys and then projected back through
+   `widget_order` as a positional ARRAY. The object shape was therefore lost,
+   every key in it that is not a widget was dropped, and for an uncatalogued
+   class `project()` threw for the whole document.
+
+Neither is repairable from the end state. An opaque array and a serializer's
+object both say nothing about which entry is which widget, so a repair pass
+would be re-deriving intent from an end state, which is the same mistake FC-8
+names one op over (never re-derive an `add_node` payload from a schema on
+replay) and which the program-level invariant list calls out directly — and
+guessing is how a widget write lands on the wrong slot. Duplicate widget names are separately
+proven reachable (A22), which rules out a plain name-keyed object as the
+destination.
+
+### The rule
+
+A node MAY carry one producer-owned workflow field:
+
+```jsonc
+{ "id": 7, "type": "VHS_LoadVideo",
+  "widgets_values": { "video": "clip.mp4", "videopreview": { }, "force_rate": 0 },
+  "widgets_values_form": { "order": ["video", "force_rate"] } }
+```
+
+`order` is the ordered identity of THIS instance's serializable widgets.
+Duplicates are legal — that is the case the class-level catalog cannot express
+— and each entry's occurrence is its position among equal names, exactly as
+schema v5 already defines widget identity. The declaration is CLOSED: an
+unrecognised key inside it is refused, never ignored, because a producer that
+starts emitting a second field must land with the consumer that reads it.
+
+A node carrying the field is **self-described**, and for it:
+
+- widget values are stored in the SAME identity-keyed `widgets` Y.Map as the
+  `named` strategy, decomposed through `order` instead of `widget_order`, so a
+  `set_widget` remains one map `set` against one scalar register and §1.2's
+  positional merge corruption cannot arise;
+- the derived form is stored beside them under the reserved per-node key
+  `__widgets_form`: the serialization `shape` (`array` or `object`), the
+  declared `order`, and for an object the original own-key order (`keys`) plus
+  the verbatim residue of keys `order` does not name (`extra`). The residue is
+  one whole plain value under one key — whole-value LWW, never merged
+  element-wise, the same justification A2 gives `__widgets_opaque`;
+- `set_widget` resolves `(widget, widget_occurrence)` against `order` and does
+  **not consult the catalog at all**, so neither `opaque_widgets` nor
+  `uncatalogued_widget_write` can arise. A name or occurrence `order` does not
+  list is `unknown_widget`, exactly as a missing `widget_order` entry would be;
+- `project()` rebuilds `widgets_values` in the shape the producer serialized —
+  an array of `order.length`, or the object in its original key order with each
+  declared widget taking its live value and every other key its verbatim
+  residue — and re-emits `widgets_values_form` so the round trip
+  `project()` → `mint()` (which is what `compact()` is) does not lose the
+  layout. No catalog lookup on either leg.
+
+Two guards exist because a declaration creates two new ways for the document
+to contradict itself, and both have a silent wrong answer available:
+
+- **A promoted host write (A15) carries TWO addresses for one target** — the
+  widget name and `promoted.value_index` — and on a self-described node both
+  resolve. A disagreement is `malformed_op`, which is the rule A15 already
+  applies one field over where `promoted.instance_path` must join to `node_id`.
+  Preferring the name would apply a write whose author believed it was editing
+  a different slot: acknowledged and wrong, strictly worse than refused.
+- **A stored `object` form whose `order` repeats a name reads as NOT
+  self-described**, routing the node back to the catalog path and its loud
+  refusals. Object keys are unique, so projection reads every declared key at
+  occurrence 0; a duplicate would authorize a write at occurrence 1 that
+  projection can never render. The asymmetry with `array` — where a repeat is
+  the primary case — is deliberate. `deriveWidgetForm` already refuses this on
+  the write side, so the read-side check exists for untrusted doc state: a raw
+  update folded in by a host.
+
+Only ONE field is declared; everything else is DERIVED here. The shape comes
+from `typeof widgets_values`, the key order from `Object.keys`, the residue
+from set difference. That is deliberate: four declared fields are four ways for
+a producer to contradict itself.
+
+Both shapes are validated so the declaration and the values cannot disagree,
+because every disagreement has a silent wrong answer available. An ARRAY must
+be exactly as long as `order` — shorter and a declared widget has no value,
+longer and a value has no identity, which is the `_extra_N` guess this field
+replaces. An OBJECT must own every name in `order`, and `order` must not repeat
+a name, since object keys are unique and a repeat could not address two values.
+A refusal is a `TypeError` from `createNodeMap`, which `mint` surfaces directly
+and `add_node` converts to `invalid_node_payload`.
+
+### This does not relax KA-12
+
+A self-described node skips the catalog because it does not need it: the
+name↔position mapping arrived WITH the node, from the only party that knows
+it. KA-12 exists to stop this package guessing a mapping it was never given,
+and a declaration is not a guess. An undeclared node is entirely unaffected —
+same catalog, same `widget_order`, same `opaque_widgets` and
+`uncatalogued_widget_write` refusals — and `meta.catalog_version` still pins
+the catalog every other node projects against.
+
+### `SCHEMA_VERSION` is NOT bumped — the reasoning, for review
+
+The layout gains a per-node key, which §10 would normally call a layout change.
+It is not bumped on A2's precedent, and the condition A2 relied on holds here
+literally: `__widgets_form` can only appear on a node whose payload carried
+`widgets_values_form`, and no producer emitted that field before this
+amendment, so **no existing v5 document can contain the key**. This is the
+distinction against A22, which DID bump: A22 changed how already-reachable
+content (a repeated widget name) was stored, so the same source workflow minted
+before and after produced different documents. A24 changes nothing for a
+payload that does not opt in.
+
+Forward-compat holds — a new reader reads old documents unchanged. Backward
+compat does not: an older reader projecting a newer document emits
+`__widgets_form` as an unknown passthrough key and mis-projects
+`widgets_values`. That is the ordinary consequence of a SHA-pinned consumer
+moving its pin, as A1 and A2 both document, and it is why the pins move in a
+deliberate coordinated step.
+
+### Guarded by
+
+`test/node-local-widget-form.test.ts` — the three round trips the amendment
+exists for (duplicate names, unknown keys in a custom-serialized object,
+occurrence-addressed mutation of an uncatalogued class), both arrival orders
+converging, a replayed `op_id` leaving the encoded document byte-identical,
+survival through `compact()`, the catalog-less `readGraph` surface and the
+encoded wire token agreeing with `fixtures/golden-vectors/wire-layout.json`,
+the declaration winning over a catalogued class's `widget_order`, the
+`add_node` / `insert_workflow` / subgraph-interior write paths, `__proto__` as
+an own serializer key in both the declared and residue paths, both guards
+above, every fail-closed refusal, and — the regression half — that an
+UNDECLARED node still stores an uncatalogued array opaquely, still refuses a
+named write to it, and still resolves a catalogued class through the pinned
+`widget_order`.
+
+Each rejection case additionally asserts that the encoded document is
+byte-identical, that the `op_id` was not consumed into `__applied`, and that a
+following VALID op in the same batch did not apply (§4 abort-remainder), with a
+control proving that follower applies on its own. Asserting the outcome code
+alone would pass even if the write had landed and then been reported as
+rejected.
+
+### Consumer impact
+
+The producer half is not in this package. A frontend that custom-serializes
+widget values, or serializes a node with two same-named widgets, must emit
+`widgets_values_form` for that node; until it does, nothing changes for it and
+the existing refusals stand. `WIDGET_FORM_FIELD`, `WIDGET_FORM_KEY`,
+`WidgetValuesForm` and `WidgetFormShape` are exported so neither the frontend
+nor `services/agent/dochost` hardcodes the names. Deriving, validating and
+projecting a form stay package-private, so a consumer cannot build a second
+interpretation of the same declaration.
+
+### Two residuals, stated rather than left to be discovered
+
+**`insert_workflow` is narrower than every other path, and the narrowing is
+pre-existing.** `prepareInsertedWorkflow` runs `scrubPrivateKeys` over the
+whole template, deleting every `__`-prefixed key at every depth so a template
+cannot forge a doc-internal one. A serializer's own `__`-prefixed DATA key
+inside `widgets_values` is collateral: it does not survive that path, while the
+same node minted, added or written through `set_widget` keeps it. Widening the
+scrub is a change to an anti-forgery guard and belongs to whoever owns it, not
+to this amendment, so the behaviour is PINNED by test — both halves, the loss
+on that path and the retention on every other — rather than papered over.
+
+**The §8.3 autogrow `inputcount` bump is unchanged.** It writes the `widgets`
+map directly, maintains neither passthrough register (A23's gap), and does not
+consult a declared order either. Pre-existing, one op over, and not addressed
+here.

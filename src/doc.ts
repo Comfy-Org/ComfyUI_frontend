@@ -32,6 +32,13 @@ import {
   type WorkflowNode,
 } from "./types.js";
 import { widgetOccurrenceAt, widgetStorageKey } from "./widget-identity.js";
+import {
+  WIDGET_FORM_FIELD,
+  WIDGET_FORM_KEY,
+  deriveWidgetForm,
+  parseWidgetValuesForm,
+  type WidgetValuesForm,
+} from "./widget-form.js";
 
 // ---------------------------------------------------------------------------
 // Opaque widgets (schema §1.2 — unknown classes)
@@ -138,7 +145,7 @@ export function parseOverflowWidgetName(name: string): number | null {
 // ---------------------------------------------------------------------------
 
 /** The widget-storage strategies a node may use (schema §1.2). */
-export const WIDGET_STORAGE_STRATEGIES = ["named", "opaque"] as const;
+export const WIDGET_STORAGE_STRATEGIES = ["named", "opaque", "self"] as const;
 
 /**
  * How a node's widget values are stored:
@@ -151,18 +158,33 @@ export const WIDGET_STORAGE_STRATEGIES = ["named", "opaque"] as const;
  *   {@link OPAQUE_WIDGETS_KEY}, for a class the pinned catalog cannot
  *   describe (frontend-only `Note`/`MarkdownNote`). Whole-value LWW, never
  *   element-wise merge.
+ * - `self` — the identity-keyed `widgets` Y.Map again, but decomposed from
+ *   the node's OWN declared `widgets_values_form` rather than from the
+ *   catalog, with the serialization shape and any non-widget residue stored
+ *   beside it under {@link WIDGET_FORM_KEY} (schema Amendment A24). Chosen
+ *   whenever the node declares a form, catalogued or not: a declaration is
+ *   more specific than a class-level `widget_order` and is the only thing
+ *   that can describe duplicate names or an object-shaped serializer.
  */
 export type WidgetStorage = (typeof WIDGET_STORAGE_STRATEGIES)[number];
 
 /**
  * WRITE side: which strategy a `widgets_values` payload must use, given the
- * pinned catalog's `widget_order` for the node's class. Used by
- * `createNodeMap` (and therefore by `mint` and `add_node`).
+ * pinned catalog's `widget_order` for the node's class and the node's own
+ * declaration. Used by `createNodeMap` (and therefore by `mint` and
+ * `add_node`).
+ *
+ * A declaration wins over both other strategies. It is per-INSTANCE and the
+ * catalog is per-CLASS, so for the two shapes A24 exists for the catalog has
+ * no answer at all; and routing a declared node to `opaque` would store it in
+ * the one strategy that is not name-addressable, which is the defect.
  */
 export function widgetStorageFor(
   wv: unknown,
   widgetOrder: readonly string[] | undefined,
+  declared?: WidgetValuesForm | null,
 ): WidgetStorage {
+  if (declared) return "self";
   return isOpaqueWidgets(wv, widgetOrder) ? "opaque" : "named";
 }
 
@@ -179,6 +201,7 @@ export function widgetStorageFor(
  * {@link widgetStorageFor} instead.
  */
 export function widgetStorageOf(node: Y.Map<unknown>): WidgetStorage {
+  if (node.has(WIDGET_FORM_KEY)) return "self";
   return node.has(OPAQUE_WIDGETS_KEY) ? "opaque" : "named";
 }
 
@@ -787,6 +810,49 @@ function widgetsToYMap(wv: unknown, widgetOrder: readonly string[] | undefined):
 }
 
 /**
+ * Store one node's `widgets_values` under whichever strategy
+ * {@link widgetStorageFor} picks (schema §1.2 / Amendments A2, A24).
+ *
+ * Split out of {@link createNodeMap} so the strategy switch is one unit: each
+ * arm writes a DIFFERENT set of per-node keys, and that is the part a reader
+ * has to see together.
+ */
+function storeWidgetValues(
+  m: Y.Map<unknown>,
+  wv: unknown,
+  widgetOrder: readonly string[] | undefined,
+  declared: WidgetValuesForm | null,
+): void {
+  const storage = widgetStorageFor(wv, widgetOrder, declared);
+  switch (storage) {
+    case "opaque":
+      // Whole-value storage: never merged element-wise, so §1.2's
+      // positional-array corruption cannot arise. See OPAQUE_WIDGETS_KEY.
+      m.set(OPAQUE_WIDGETS_KEY, cloneForMap(wv, "widgets_values"));
+      return;
+    case "named":
+      m.set("widgets", widgetsToYMap(wv, widgetOrder));
+      return;
+    case "self": {
+      // A24: the node's own declaration decomposes the values, so no catalog
+      // is consulted. Values go to the SAME identity-keyed map the `named`
+      // strategy uses — one scalar register per widget — and only the layout
+      // plus the non-widget residue is stored beside it.
+      const { form, values } = deriveWidgetForm(declared!, wv);
+      const widgets = new Y.Map<unknown>();
+      for (const [storageKey, value] of values) {
+        widgets.set(storageKey, cloneForMap(value, `widgets_values[${storageKey}]`));
+      }
+      m.set("widgets", widgets);
+      m.set(WIDGET_FORM_KEY, cloneForMap(form, WIDGET_FORM_FIELD));
+      return;
+    }
+    default:
+      assertNever(storage, "createNodeMap: widget-storage strategy");
+  }
+}
+
+/**
  * Build the per-node Y.Map for a workflow node — FAITHFUL passthrough: every
  * key present on the source node (and only those) is stored, so projection
  * reproduces the node without inventing defaults. Special-cased per schema §1.1:
@@ -798,6 +864,12 @@ function widgetsToYMap(wv: unknown, widgetOrder: readonly string[] | undefined):
  *   catalog is stored whole under {@link OPAQUE_WIDGETS_KEY} and round-trips
  *   verbatim — frontend-only classes (`Note`, `MarkdownNote`) can never have a
  *   `widget_order`.
+ *   SECOND EXCEPTION (A24): a node carrying `widgets_values_form` decomposes
+ *   its values through its OWN declared order instead of the catalog's, and
+ *   the derived form — serialization shape, declared order, and the verbatim
+ *   residue of any serialized key that is not a widget — is stored under
+ *   {@link WIDGET_FORM_KEY}. The declaration itself is not stored twice;
+ *   `project()` re-emits it from the form.
  * - `flags` → nested Y.Map.
  * - `inputs` / `outputs` → Y.Array of slot Y.Maps; `outputs[].links: null`
  *   preserved verbatim, arrays become Y.Arrays (schema §7).
@@ -809,8 +881,23 @@ function widgetsToYMap(wv: unknown, widgetOrder: readonly string[] | undefined):
  */
 export function createNodeMap(node: WorkflowNode, widgetOrder?: readonly string[]): Y.Map<unknown> {
   const m = new Y.Map<unknown>();
+  // Read and validate the A24 declaration BEFORE the loop, for two reasons
+  // that are both correctness and not tidiness: `Object.entries` order decides
+  // nothing here (the declaration must be known when `widgets_values` is
+  // reached, whichever comes first in the payload), and a declaration with no
+  // `widgets_values` to describe must be refused even though the branch that
+  // consumes it is never reached.
+  const declared = parseWidgetValuesForm(node[WIDGET_FORM_FIELD]);
+  if (declared && !Object.hasOwn(node, "widgets_values")) {
+    throw new TypeError(`${WIDGET_FORM_FIELD}: declared on a node that carries no widgets_values`);
+  }
   for (const [k, v] of Object.entries(node)) {
-    if (k === OPAQUE_WIDGETS_KEY || k === "widgets" || k === NODE_INCARNATION_KEY) {
+    if (k === WIDGET_FORM_FIELD) {
+      // Consumed by the `widgets_values` branch below and re-emitted by
+      // `project()` from the derived form, so storing it again would be a
+      // second copy of the layout that a later write could contradict.
+      continue;
+    } else if (k === OPAQUE_WIDGETS_KEY || k === "widgets" || k === NODE_INCARNATION_KEY || k === WIDGET_FORM_KEY) {
       // Both are DOC-INTERNAL storage keys owned by this module (schema §1.2);
       // a workflow node carries `widgets_values`, never either of these. An
       // untrusted payload that sets them directly would shadow the name-keyed
@@ -820,19 +907,7 @@ export function createNodeMap(node: WorkflowNode, widgetOrder?: readonly string[
         `createNodeMap(${String(node.type)}): node carries the reserved key '${k}' (doc-internal storage; schema §1.2 — a workflow node carries 'widgets_values')`,
       );
     } else if (k === "widgets_values") {
-      const storage = widgetStorageFor(v, widgetOrder);
-      switch (storage) {
-        case "opaque":
-          // Whole-value storage: never merged element-wise, so §1.2's
-          // positional-array corruption cannot arise. See OPAQUE_WIDGETS_KEY.
-          m.set(OPAQUE_WIDGETS_KEY, cloneForMap(v, "widgets_values"));
-          break;
-        case "named":
-          m.set("widgets", widgetsToYMap(v, widgetOrder));
-          break;
-        default:
-          assertNever(storage, "createNodeMap: widget-storage strategy");
-      }
+      storeWidgetValues(m, v, widgetOrder, declared);
     } else if (k === "flags" && isPlainObject(v)) {
       m.set("flags", plainToYMap(v, "flags"));
     } else if ((k === "inputs" || k === "outputs") && Array.isArray(v)) {

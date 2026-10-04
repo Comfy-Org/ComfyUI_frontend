@@ -676,6 +676,19 @@ export interface WorkflowNode {
   inputs?: unknown[];
   outputs?: unknown[];
   widgets_values?: unknown[] | Record<string, unknown>;
+  /**
+   * The producer's declaration of THIS instance's ordered widget identity
+   * (schema Amendment A24, `src/widget-form.ts`). Present means
+   * `widgets_values` is decomposed by this declaration instead of by the
+   * pinned catalog's class-level `widget_order`, which is what makes an
+   * uncatalogued class and a duplicate widget name addressable and what
+   * preserves an object-shaped custom serializer's non-widget keys.
+   *
+   * Typed as `unknown` deliberately: it arrives as untrusted input and is
+   * validated by `parseWidgetValuesForm`, which refuses an unrecognised key
+   * rather than ignoring it. Use the exported `WidgetValuesForm` to build one.
+   */
+  widgets_values_form?: unknown;
   [key: string]: unknown;
 }
 

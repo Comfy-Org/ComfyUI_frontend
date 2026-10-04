@@ -102,6 +102,13 @@ import {
   stampsMap,
   widgetStorageOf,
 } from "./doc.js";
+import {
+  declaresWidgetForm,
+  formDeclares,
+  formFinalOccurrence,
+  formIndexOf,
+  storedWidgetFormOf,
+} from "./widget-form.js";
 import { linkHasMissingEndpoint, remapInsertedWorkflowIds } from "./remap.js";
 import { sha256Hex } from "./digest.js";
 import { CMP_EVENT_SCHEMA_VERSION, emitCmpEvent, type CmpCallContext } from "./events.js";
@@ -910,7 +917,7 @@ function validateDefinitionWidgets(definition: Record<string, unknown>, catalog:
     if (!isPlainRecord(candidate)) {
       throw new OpRejectedError("malformed_op", "define_subgraph: every interior node must be an object");
     }
-    rejectUnprojectableWidgets(candidate.type, candidate.widgets_values, catalogEntry(catalog, candidate.type));
+    rejectUnprojectableWidgets(candidate, candidate.type, candidate.widgets_values, catalogEntry(catalog, candidate.type));
   });
   const nested = definition.definitions;
   if (isPlainRecord(nested) && Array.isArray(nested.subgraphs)) {
@@ -1121,10 +1128,13 @@ function applyInsertWorkflow(doc: Y.Doc, op: InsertWorkflowOp, catalog?: WidgetC
     const node = structuredClone(candidate);
     const wv = node.widgets_values;
     const entry = catalogEntry(catalog, node.type);
-    if (!catalog && Array.isArray(wv) && wv.length > 0) {
-      throw new OpRejectedError("catalog_required", `insert_workflow(${node.type}): positional widgets_values needs a catalog`);
+    // A24: a declared node needs neither check — see `rejectUnprojectableWidgets`.
+    if (!declaresWidgetForm(node)) {
+      if (!catalog && Array.isArray(wv) && wv.length > 0) {
+        throw new OpRejectedError("catalog_required", `insert_workflow(${node.type}): positional widgets_values needs a catalog`);
+      }
+      rejectUnprojectableWidgets(node, node.type, wv, entry);
     }
-    rejectUnprojectableWidgets(node.type, wv, entry);
     try {
       nodeWrites.push([String(node.id), node.id, createNodeMap(node, widgetOrderForValues(entry, node.widgets_values))]);
     } catch (err) {
@@ -1221,12 +1231,24 @@ function updateInsertedWorkflowMeta(
  * failure `rejectIfOpaqueWidgets` exists to prevent (schema §1.2, §3 pin 4).
  * A positional array for an uncatalogued class is NOT this case: it is stored
  * opaquely and round-trips verbatim.
+ *
+ * A24: neither is a payload that DECLARES its own `widgets_values_form`. The
+ * whole premise here is that `project()` resolves names through the catalog, so
+ * a name the catalog does not describe poisons the document — and a declared
+ * node projects without the catalog, so there is nothing for it to be
+ * unprojectable against. Its own validation (`deriveWidgetForm`, inside
+ * `createNodeMap`) is stricter: the declaration must account for every value.
+ * Presence is the right test, not well-formedness; a malformed declaration is
+ * refused there rather than quietly judged by a catalog rule the producer
+ * never invoked.
  */
 function rejectUnprojectableWidgets(
+  node: unknown,
   nodeType: unknown,
   wv: unknown,
   entry: WidgetCatalog["types"][string] | undefined,
 ): void {
+  if (declaresWidgetForm(node)) return;
   if (typeof wv !== "object" || wv === null || Array.isArray(wv)) return;
   const names = Object.keys(wv);
   if (names.length === 0) return;
@@ -1276,13 +1298,20 @@ function createAddedNode(op: AddNodeOp, catalog?: WidgetCatalog): Y.Map<unknown>
   const wv = op.node.widgets_values;
   const entry = catalogEntry(catalog, op.node.type);
   const order = widgetOrderForValues(entry, wv);
-  if (!catalog && Array.isArray(wv) && wv.length > 0) {
-    throw new OpRejectedError(
-      "catalog_required",
-      `add_node(${op.node.type}): positional widgets_values needs the pinned catalog widget_order to decompose into the name-keyed widgets map (schema §1.2)`,
-    );
+  // A24: a payload that declares its own `widgets_values_form` needs neither
+  // check. Both exist because a payload the catalog cannot describe would
+  // become unprojectable — and a declared node projects WITHOUT the catalog,
+  // so there is nothing to be unprojectable against. A malformed declaration
+  // is still refused, by `createNodeMap` below, as `invalid_node_payload`.
+  if (!declaresWidgetForm(op.node)) {
+    if (!catalog && Array.isArray(wv) && wv.length > 0) {
+      throw new OpRejectedError(
+        "catalog_required",
+        `add_node(${op.node.type}): positional widgets_values needs the pinned catalog widget_order to decompose into the name-keyed widgets map (schema §1.2)`,
+      );
+    }
+    rejectUnprojectableWidgets(op.node, op.node.type, wv, entry);
   }
-  rejectUnprojectableWidgets(op.node.type, wv, entry);
   try {
     return createNodeMap(op.node, order);
   } catch (err) {
@@ -1424,6 +1453,23 @@ function validateWidgetName(
   node?: Y.Map<unknown>,
   occurrence = 0,
 ): void {
+  // A24: a self-described node answers this question itself, from the ordered
+  // identity its producer declared, and the catalog is not consulted at all —
+  // with or without one. That is the whole unlock: a class the catalog cannot
+  // describe is name-addressable when the node carries its own mapping. The
+  // declaration is still CLOSED, so a name or occurrence it does not list is
+  // `unknown_widget` exactly as a missing `widget_order` entry would be.
+  const form = node ? storedWidgetFormOf(node) : null;
+  if (form) {
+    if (!formDeclares(form, widget, occurrence)) {
+      const at = occurrence === 0 ? "" : ` occurrence ${String(occurrence)}`;
+      throw new OpRejectedError(
+        "unknown_widget",
+        `widget '${widget}'${at} is not declared by ${nodeType} node ${String(node?.get("id"))}'s widgets_values_form; declared: ${form.order.join(", ")}`,
+      );
+    }
+    return;
+  }
   if (!catalog) return;
   const entry = catalogEntry(catalog, nodeType);
   if (!entry) {
@@ -1469,6 +1515,12 @@ function rejectIfOpaqueWidgets(node: Y.Map<unknown>, widget: string): void {
   switch (storage) {
     case "named":
       // Name-addressable: the write proceeds against the `widgets` Y.Map.
+      return;
+    case "self":
+      // A24: also name-addressable, and against the same `widgets` Y.Map. The
+      // name→position mapping came from the node's own declaration, so the
+      // reason this guard rejects an `opaque` node — there is no mapping and
+      // the write cannot be expressed — does not hold here.
       return;
     case "opaque": {
       const type = String(node.get("type") ?? "");
@@ -1524,6 +1576,12 @@ function isFinalWidgetOccurrence(
   name: string,
   occurrence: number,
 ): boolean {
+  // A24: a declared order resolves finality without a catalog, which is
+  // exactly the case this function used to have to answer `false` for. A
+  // self-described uncatalogued node therefore keeps `widgets_values_named`
+  // coherent (A23) instead of leaving the pre-op value in it.
+  const form = storedWidgetFormOf(node);
+  if (form) return formFinalOccurrence(form, name, occurrence);
   if (!catalog) return false;
   const entry = catalogEntry(catalog, String(node.get("type") ?? ""));
   if (!entry) return false;
@@ -1738,6 +1796,13 @@ function hostWriteStorage(node: Y.Map<unknown>, catalog: WidgetCatalog | undefin
   switch (storage) {
     case "opaque":
       return "positional";
+    case "self":
+      // A24: the node declared its own order, so the named path can express
+      // the write and `validateWidgetName` checks it against that declaration.
+      // A promoted host write carries a `value_index` as well, and both
+      // addresses resolve here, so `requirePromotedFormAgreement` refuses a
+      // disagreement instead of this silently preferring one.
+      return "named";
     case "named": {
       const type = String(node.get("type") ?? "");
       if (catalogEntry(catalog, type)) return "named";
@@ -1759,6 +1824,43 @@ function hostWriteStorage(node: Y.Map<unknown>, catalog: WidgetCatalog | undefin
     default:
       return assertNever(storage, "applier.hostWriteStorage");
   }
+}
+
+/**
+ * A promoted host write carries TWO addresses for one target — the widget
+ * NAME and `promoted.value_index` — and on a self-described node (A24) both
+ * resolve. Refuse a disagreement rather than silently preferring one.
+ *
+ * This is the rule `promotedHostWrite` already applies one field over, where
+ * `promoted.instance_path` must join to `node_id`: a payload naming a
+ * destination two ways must name the same one, or the op is `malformed_op`.
+ * Preferring the name would apply a write whose author believed it was editing
+ * a different slot — acknowledged, and wrong, which is strictly worse than
+ * refused.
+ *
+ * Nothing to check when the node is not self-described: the A15 path then owns
+ * the index and the name is not positionally resolvable at all.
+ *
+ * The verdict reads the NODE, so it sits below the delete-wins return and
+ * joins the documented arrival-order-dependent rejection class (A6 /
+ * `EXCEPTIONS.md` KA-4) rather than being hoisted — exactly like
+ * `validateWidgetName`, whose verdict it accompanies.
+ */
+function requirePromotedFormAgreement(
+  node: Y.Map<unknown>,
+  widget: string,
+  occurrence: number,
+  valueIndex: number,
+): void {
+  const form = storedWidgetFormOf(node);
+  if (!form) return;
+  const declared = formIndexOf(form, widget, occurrence);
+  if (declared < 0 || declared === valueIndex) return;
+  const at = occurrence === 0 ? "" : ` occurrence ${String(occurrence)}`;
+  throw new OpRejectedError(
+    "malformed_op",
+    `set_widget: promoted.value_index ${String(valueIndex)} names a different slot than widget '${widget}'${at}, which node ${String(node.get("id"))}'s widgets_values_form puts at ${String(declared)}`,
+  );
 }
 
 /**
@@ -1794,6 +1896,7 @@ function applyPromotedHostWrite(
     case "named":
       {
         const occurrence = op.widget_occurrence ?? 0;
+        requirePromotedFormAgreement(target, op.widget, occurrence, promoted.valueIndex);
         validateWidgetName(catalog, String(target.get("type") ?? ""), op.widget, target, occurrence);
         mset(widgetsOf(target), widgetStorageKey(op.widget, occurrence), structuredClone(op.value));
         updateOrderedWidgetValue(target, op.widget, occurrence, op.value);
@@ -1903,7 +2006,12 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
     // OWN-property lookup (#13): an inherited key such as `__proto__` must read
     // as "absent from the catalog", not resolve to a prototype object.
     const entry = catalogEntry(catalog, nodeType);
-    if (entry) {
+    // A24: a self-described node's projected length comes from its OWN
+    // declared order, and `validateWidgetName` already held the write against
+    // that order. Measuring it against the catalog's `widget_order` instead
+    // would reject or admit by a layout this node does not use — and for a
+    // declared node the two legitimately differ, which is the point.
+    if (entry && !storedWidgetFormOf(target)) {
       const current = target.get("widgets");
       const stored = current instanceof Y.Map ? current : undefined;
       const layout = widgetLayoutForWidgets(entry, stored);

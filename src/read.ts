@@ -68,6 +68,7 @@ import {
 } from "./doc.js";
 import { assertReadableSchema } from "./schema-version.js";
 import { LINK_STATE_DESCRIPTOR_VERSION } from "./types.js";
+import { WIDGET_FORM_KEY } from "./widget-form.js";
 
 /**
  * The reserved per-node key holding a whole `widgets_values` array verbatim for
@@ -80,6 +81,20 @@ import { LINK_STATE_DESCRIPTOR_VERSION } from "./types.js";
  * side is exactly the schema-drift ADR-004 closed.
  */
 export { OPAQUE_WIDGETS_KEY };
+
+/**
+ * The reserved per-node key holding a node's OWN declared widget layout
+ * (schema Amendment A24): the serialization shape, the ordered widget
+ * identity its producer declared, and the verbatim residue of serialized keys
+ * that are not widgets.
+ *
+ * Re-exported for the same reason as {@link OPAQUE_WIDGETS_KEY} and under the
+ * same constraint (a string literal carries no reachability). A follower
+ * rendering a document it holds no catalog for needs this key to tell the
+ * three widget-storage strategies apart, and a node carrying this one is the
+ * only kind it can position WITHOUT a catalog.
+ */
+export { WIDGET_FORM_KEY };
 
 /**
  * Depth ceiling for the snapshot walk.
@@ -307,7 +322,7 @@ function assertSnapshotReadable(doc: Y.Doc, context: string): void {
  * `project(doc, catalog)` remains the full-fidelity read for a caller that has
  * the catalog and wants every field.
  */
-const NODE_SNAPSHOT_KEYS: readonly string[] = ["type", "pos", "widgets", OPAQUE_WIDGETS_KEY];
+const NODE_SNAPSHOT_KEYS: readonly string[] = ["type", "pos", "widgets", OPAQUE_WIDGETS_KEY, WIDGET_FORM_KEY];
 
 /**
  * One node, as plain frozen data. Every field is typed `unknown` because the
@@ -324,6 +339,13 @@ export interface NodeSnapshot {
   readonly widgets?: unknown;
   /** Verbatim `widgets_values` for a class the pinned catalog cannot describe. */
   readonly [OPAQUE_WIDGETS_KEY]?: unknown;
+  /**
+   * The node's own declared widget layout (schema Amendment A24). Present
+   * exactly when `widgets` is positioned by the node's declaration rather
+   * than by the pinned catalog, which is what lets a catalog-less follower
+   * place these values at all.
+   */
+  readonly [WIDGET_FORM_KEY]?: unknown;
 }
 
 /** Root-graph nodes and links as plain frozen data, keyed by String(id). */

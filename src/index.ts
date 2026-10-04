@@ -79,6 +79,21 @@ export {
   nodesMap,
   type EncodingLoss,
 } from "./doc.js";
+/**
+ * Amendment A24 — the node-local widget form. `WIDGET_FORM_FIELD` is the
+ * workflow field a PRODUCER writes and `WidgetValuesForm` is its shape, so a
+ * serializer does not hardcode the name; `WIDGET_FORM_KEY` is the doc-internal
+ * storage key a catalog-less follower reads to tell the three widget-storage
+ * strategies apart. No applier internals are exported: deriving, validating
+ * and projecting a form stay owned by this package, so a consumer cannot
+ * build a second interpretation of the same declaration.
+ */
+export {
+  WIDGET_FORM_FIELD,
+  WIDGET_FORM_KEY,
+  type WidgetFormShape,
+  type WidgetValuesForm,
+} from "./widget-form.js";
 export { applyOps, inspectOps } from "./applier.js";
 export { project } from "./project.js";
 export { mint } from "./mint.js";

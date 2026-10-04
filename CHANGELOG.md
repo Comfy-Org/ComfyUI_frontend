@@ -7,6 +7,25 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+### Added
+
+- Let a producer declare one node instance's ordered serializable-widget
+  identity in `widgets_values_form` (schema Amendment A24). A node that
+  declares one is decomposed, addressed by `(widget, widget_occurrence)` and
+  projected back in its original serialization shape through that declaration
+  with no catalog lookup — so an uncatalogued class becomes writable instead of
+  rejected `opaque_widgets`, two same-named widgets stay independently
+  addressable where a class-level `widget_order` cannot describe them, and
+  every serialized key the declaration does not name round-trips verbatim and
+  cannot be clobbered by a widget write. The declaration is closed to
+  `{order}`, a malformed one is refused rather than ignored, and a node that
+  carries none behaves exactly as before. `SCHEMA_VERSION` is unchanged at v5:
+  the reserved `__widgets_form` key is reachable only on a node that opted in,
+  so no earlier v5 document can contain it.
+- Export `WIDGET_FORM_FIELD`, `WIDGET_FORM_KEY`, `WidgetValuesForm` and
+  `WidgetFormShape` so a producer and a catalog-less follower do not hardcode
+  the names. Interpreting a declaration stays package-private.
+
 ## 0.3.8 - 2026-10-03
 
 ### Added

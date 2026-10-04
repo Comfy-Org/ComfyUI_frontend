@@ -267,7 +267,10 @@ the host's layout and never writes the shared document or calls `applyOps`.
 `createNodeMap`, `resolveDefinition`, `countDefinitionInstances`,
 `isOpaqueWidgets`, `WIDGET_STORAGE_STRATEGIES`, `WidgetStorage`,
 `widgetStorageFor`, and `widgetStorageOf` were re-exported through an earlier
-release and are now module-private.
+release and are now module-private. A24's form machinery
+(`parseWidgetValuesForm`, `deriveWidgetForm`, `projectWidgetForm`) is private
+for the same reason: the field names and its type are exported so consumers do
+not hardcode them, but interpreting a declaration stays in one place.
 
 Read-only intent was never the problem; reachability was. The same import that
 hands you `nodesMap` for a read hands you a live `Y.Map` you can write, and a
@@ -295,7 +298,7 @@ deep-copied data** — never a live Yjs type, at any depth.
 
 | | |
 |---|---|
-| `readGraph(doc)` | `{ nodes, links }` keyed by `String(id)`. Each node carries `type`, `pos`, and `widgets` (name-keyed) or `__widgets_opaque`. Not the whole node — see below. |
+| `readGraph(doc)` | `{ nodes, links }` keyed by `String(id)`. Each node carries `type`, `pos`, and `widgets` (identity-keyed) or `__widgets_opaque`, plus `__widgets_form` when the node declared its own layout (A24). Not the whole node — see below. |
 | `readMeta(doc)` | The `meta` root: `schema_version`, `catalog_version`, id high-water marks, and the §6 passthrough keys. |
 | `docCatalogPin(doc)` | The catalog SHA the document was minted with, or `""` when there is none to compare (KA-12). |
 | `hasNode(doc, id)` | Whether a node id already exists. |
@@ -303,6 +306,7 @@ deep-copied data** — never a live Yjs type, at any depth.
 | `appliedOpIds(doc)` | Every applied `op_id` (a set, not an order). |
 | `readStamps(doc)` | The LWW ledger: write-target key → `[base_version, actor, op_id]`. |
 | `OPAQUE_WIDGETS_KEY` | The reserved key above, as a constant, so consumers do not hardcode it. |
+| `WIDGET_FORM_KEY` | The reserved A24 layout key, as a constant. A node carrying it is the only kind a catalog-less follower can position. |
 
 Three properties hold mechanically, and `test/readonly-surface.test.ts` proves
 each by attempting the violation:
@@ -659,6 +663,33 @@ last-writer-wins — which is what you want for a sticky note.
 
 The cost is that such values are not name-addressable: a `set_widget` against
 one is **rejected** with `opaque_widgets` rather than silently doing nothing.
+
+### Node-local widget form
+
+The cost above, and the matching loss for a serializer that emits an OBJECT
+rather than an array, are both paid by the CATALOG being per-class while the
+two shapes that need describing are per-instance. So a producer may declare
+the ordered widget identity of one node instance:
+
+```jsonc
+{ "id": 7, "type": "VHS_LoadVideo",
+  "widgets_values": { "video": "clip.mp4", "videopreview": { }, "force_rate": 0 },
+  "widgets_values_form": { "order": ["video", "force_rate"] } }
+```
+
+A node that declares one is decomposed, addressed by `(widget,
+widget_occurrence)`, and projected back in its original shape through that
+declaration, with no catalog lookup on any leg — so an uncatalogued class
+becomes writable, two same-named widgets stay independently addressable, and
+every serialized key the declaration does not name (`videopreview` above)
+round-trips verbatim and cannot be clobbered by a widget write. Duplicates are
+legal in `order`; a name or occurrence it does not list is `unknown_widget`.
+
+The declaration is closed to `{order}` and refused rather than ignored when
+malformed, and nothing changes for a node that does not carry it. This does not
+relax KA-12: a declaration is the name→position mapping, supplied by the party
+that knows it, not a guess at one. Contract and reasoning: schema Amendment
+A24. Exported for producers as `WIDGET_FORM_FIELD` / `WidgetValuesForm`.
 
 ## Purity
 

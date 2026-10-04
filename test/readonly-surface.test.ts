@@ -810,6 +810,13 @@ describe("read-only surface — classification", () => {
     "readApplied",
     "readStamps",
     "OPAQUE_WIDGETS_KEY",
+    // A24 names, not machinery: both are string literals, so neither carries
+    // reachability back to a live Y type. `WIDGET_FORM_FIELD` is the workflow
+    // field a producer writes and `WIDGET_FORM_KEY` is the reserved per-node
+    // layout key a catalog-less follower reads. Deriving, validating and
+    // projecting a form stay module-private.
+    "WIDGET_FORM_FIELD",
+    "WIDGET_FORM_KEY",
   ];
 
   it("classifies every runtime export as op layer/types or read surface", () => {
