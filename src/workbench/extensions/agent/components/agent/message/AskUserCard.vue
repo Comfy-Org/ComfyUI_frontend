@@ -11,6 +11,7 @@ import type {
   AskUserOption,
   AskUserPart
 } from '../../../services/agent/agentMessageParts'
+import AskNodeList from './AskNodeList.vue'
 import AskUserAnswer from './AskUserAnswer.vue'
 import AskUserOptionLabel from './AskUserOptionLabel.vue'
 import AskUserRadioOptions from './AskUserRadioOptions.vue'
@@ -163,6 +164,8 @@ const rowClass =
         {{ hint }}
       </p>
     </div>
+
+    <AskNodeList v-if="part.nodes?.length" :nodes="part.nodes" />
 
     <AskUserAnswer
       v-if="part.resolution"

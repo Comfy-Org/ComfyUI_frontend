@@ -27,6 +27,7 @@ import type {
   CloudWorkflowEntry
 } from '../../schemas/agentApiSchema'
 import type { AgentAskAnswer } from './agentMessageParts'
+import { RENDERED_ASK_KINDS } from './agentMessageParts'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
@@ -104,6 +105,15 @@ export interface PostMessageInput {
    * presenting the turn to the model as having no workflow selected.
    */
   currentTabUnbound?: boolean
+}
+
+/**
+ * The turn request plus `ask_kinds`: the ask kinds this panel renders. The
+ * server parks a turn on an ask only when its kind is listed here, so a
+ * client that cannot show a card never leaves a turn waiting on it.
+ */
+type AgentTurnRequestBody = AgentPostMessageRequest & {
+  ask_kinds: string[]
 }
 
 interface IngestErrorBody {
@@ -383,8 +393,9 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body: AgentPostMessageRequest = {
-      content: req.content
+    const body: AgentTurnRequestBody = {
+      content: req.content,
+      ask_kinds: [...RENDERED_ASK_KINDS]
     }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
     if (req.tabs !== undefined) {

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import { RENDERED_ASK_KINDS } from './agentMessageParts'
 
 vi.mock(import('@/scripts/api'))
 
@@ -288,6 +289,7 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
+      ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1']
@@ -303,7 +305,22 @@ describe('postMessage wire body', () => {
       string,
       unknown
     >
-    expect(Object.keys(parsed)).toEqual(['content'])
+    expect(Object.keys(parsed)).toEqual(['content', 'ask_kinds'])
+  })
+
+  it('advertises exactly the ask kinds the panel renders as ask_kinds', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'tidy up' })
+
+    const parsed = JSON.parse(String(lastCall().init.body)) as {
+      ask_kinds: unknown
+    }
+    expect(parsed.ask_kinds).toEqual([...RENDERED_ASK_KINDS])
+    expect(parsed.ask_kinds).toEqual([
+      'run_approval',
+      'ask_user',
+      'delete_approval'
+    ])
   })
 
   it('sends draft.content when a draft is provided', async () => {
@@ -315,6 +332,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
+      ask_kinds: [...RENDERED_ASK_KINDS],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
   })
