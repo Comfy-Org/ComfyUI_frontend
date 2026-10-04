@@ -285,7 +285,7 @@
   },
   "Comfy_NodeSearchBoxImpl_ShowCategory": {
     "name": "検索結果にノードカテゴリを表示",
-    "tooltip": "v1（レガシー）にのみ適用されます"
+    "tooltip": "v1（レガシー）とデフォルトの実装に適用されます"
   },
   "Comfy_NodeSearchBoxImpl_ShowIdName": {
     "name": "検索結果にノードID名を表示",
@@ -293,7 +293,7 @@
   },
   "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
     "name": "検索結果にノード頻度を表示",
-    "tooltip": "v1（レガシー）にのみ適用されます"
+    "tooltip": "v1（レガシー）とデフォルトの実装に適用されます"
   },
   "Comfy_NodeSuggestions_number": {
     "name": "ノード提案の数",
