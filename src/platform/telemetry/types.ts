@@ -983,6 +983,13 @@ export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
  * batches. `op_id` is the join key; no actor, node, widget, workflow or prompt
  * identifier is sent.
  */
+export type AgentGraphProjectionStage =
+  | 'received_no_graph'
+  | 'applied'
+  | 'applied_deferred'
+  | 'discarded'
+  | 'reverted'
+
 export interface AgentGraphProjectionMetadata extends Record<string, unknown> {
   /**
    * First non-empty op id of the frame, or of the rejected batch on
@@ -1009,12 +1016,7 @@ export interface AgentGraphProjectionMetadata extends Record<string, unknown> {
    * - `reverted` — the host rejected a human batch and the document state it
    *   claimed was put back on the canvas. The counts are that revert's.
    */
-  stage:
-    | 'received_no_graph'
-    | 'applied'
-    | 'applied_deferred'
-    | 'discarded'
-    | 'reverted'
+  stage: AgentGraphProjectionStage
   added_count: number
   /**
    * Newly reported document deletes. Excludes entries already reported on an

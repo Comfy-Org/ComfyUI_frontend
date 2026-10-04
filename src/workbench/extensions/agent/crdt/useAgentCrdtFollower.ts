@@ -14,7 +14,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentGraphProjectionMetadata } from '@/platform/telemetry/types'
+import type { AgentGraphProjectionStage } from '@/platform/telemetry/types'
 import { api } from '@/scripts/api'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -108,7 +108,7 @@ function isAgentFrame(actor: string | undefined): boolean {
 
 function reportAgentProjection(
   frame: ProjectionFrameId,
-  stage: AgentGraphProjectionMetadata['stage'],
+  stage: AgentGraphProjectionStage,
   outcome: FrameOutcome
 ): void {
   const opIds = frame.opIds?.filter((id) => id.length > 0) ?? []
@@ -498,10 +498,7 @@ function startAgentCrdtFollower(
   }
   const reportPendingFrames = (
     workflowId: string,
-    stage: Extract<
-      AgentGraphProjectionMetadata['stage'],
-      'applied_deferred' | 'discarded'
-    >,
+    stage: Extract<AgentGraphProjectionStage, 'applied_deferred' | 'discarded'>,
     outcome: FrameOutcome
   ): void => {
     const frames = pendingProjectionFrames.get(workflowId)
