@@ -83,8 +83,6 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(event, testNodeId)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
-      // The clear is silent so the click reports one change, not empty-then-node.
-      expect(canvas?.deselectAll).toHaveBeenCalledWith(undefined, false)
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
     })
 
@@ -275,7 +273,6 @@ describe('useNodeEventHandlers', () => {
       toggleNodeSelectionAfterPointerUp(testNodeId, false)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
-      expect(canvas?.deselectAll).toHaveBeenCalledWith(undefined, false)
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
     })
 

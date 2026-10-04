@@ -471,6 +471,17 @@ function connectSearchBoxNodeTo(
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
  */
+type DeselectAllOptions = {
+  keepSelected?: Positionable
+  notify?: boolean
+}
+
+function isDeselectAllOptions(
+  value: Positionable | DeselectAllOptions | undefined
+): value is DeselectAllOptions {
+  return value !== undefined && ('keepSelected' in value || 'notify' in value)
+}
+
 export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap> {
   static DEFAULT_BACKGROUND_IMAGE =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII='
@@ -3950,7 +3961,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // One notification for the whole placement: suppress the clear so
     // listeners only see the completed selection.
-    this.deselectAll(undefined, false)
+    this.deselectAll({ notify: false })
     this.select(node)
     this.isDragging = true
 
@@ -4683,9 +4694,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (!item) {
       if (!eitherModifier || this.multi_select)
-        this.deselectAll(undefined, false)
+        this.deselectAll({ notify: false })
     } else if (!isCanvasItemSelected(this, item)) {
-      if (!modifySelection) this.deselectAll(item, false)
+      if (!modifySelection)
+        this.deselectAll({ keepSelected: item, notify: false })
       this.select(item, { notify: false })
     } else if (modifySelection && !sticky) {
       if (!ownsSelectable(this, item)) return
@@ -4696,10 +4708,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (item instanceof LGraphGroup && this.groupSelectChildren) {
         setCanvasItemSelected(this, item, false)
       } else {
-        this.deselect(item, false)
+        this.deselect(item, { notify: false })
       }
     } else if (!sticky) {
-      this.deselectAll(item, false)
+      this.deselectAll({ keepSelected: item, notify: false })
     } else {
       return
     }
@@ -4733,7 +4745,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   deselect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable,
-    notify = true
+    { notify = true }: { notify?: boolean } = {}
   ): void {
     if (!isCanvasItemSelected(this, item)) return
     if (
@@ -4785,7 +4797,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       (item) => ownsSelectable(this, item)
     )
     if (itemsToSelect.length === 0 && items?.length) return
-    if (!add_to_current_selection) this.deselectAll(undefined, false)
+    if (!add_to_current_selection) this.deselectAll({ notify: false })
     changeCanvasSelection(this, itemsToSelect, true)
     this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
@@ -4804,12 +4816,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.deselect(node)
   }
 
-  /**
-   * Deselects all items on the canvas.
-   * @param keepSelected If set, this item will not be removed from the selection.
-   */
-  deselectAll(keepSelected?: Positionable, notify = true): void {
+  /** Deselects all items on the canvas. */
+  deselectAll(options?: DeselectAllOptions): void
+  /** @deprecated Pass `{ keepSelected }` instead. */
+  deselectAll(keepSelected?: Positionable): void
+  deselectAll(optionsOrKeepSelected?: Positionable | DeselectAllOptions): void {
     if (!this.graph) return
+
+    const { keepSelected, notify = true } = isDeselectAllOptions(
+      optionsOrKeepSelected
+    )
+      ? optionsOrKeepSelected
+      : { keepSelected: optionsOrKeepSelected }
 
     const selected = this.selectedItems
     if (!selected.size) return
