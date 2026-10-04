@@ -161,9 +161,7 @@ const billingWebI18nSettings = {
     localeDir: [
       {
         pattern: './apps/billing-web/src/locales/en/main.json',
-        localeKey: 'path',
-        localePattern:
-          /^\.?\/?apps\/billing-web\/src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+        localeKey: 'path'
       }
     ],
     cwd: import.meta.dirname,
