@@ -33,6 +33,19 @@ const DUPLICATE_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_refused'
  */
 const UNREADABLE_WIDGET_NAME_ERROR_TYPE = 'widget_unreadable_name_refused'
 
+/**
+ * Stable `errorType` for an ambiguous pair the node **keeps**: the rename did
+ * not take, but `name` is writable, so the failure is a store refusal that a
+ * later commit can still resolve rather than a widget that can never be
+ * addressed. Removing it would cost the user a widget to repair a transient
+ * state, so it is reported and left in place.
+ *
+ * Distinct from {@link DUPLICATE_WIDGET_NAME_ERROR_TYPE} precisely because the
+ * widget is still on the node: an alert on this one is not a report of lost
+ * widgets. Also a contract, not an implementation detail.
+ */
+const UNRESOLVED_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_unresolved'
+
 interface WidgetsViewState {
   target: IBaseWidget[]
   view: IBaseWidget[]
@@ -102,26 +115,32 @@ function refuseAmbiguousWidgets(
   const refused = dropUnrenamableDuplicateWidgets(widgets)
   if (!refused.length) return
 
-  for (const { widget, cause } of refused) {
-    // The two causes are different failures and are alerted on separately: an
+  for (const { widget, cause, removed } of refused) {
+    // The causes are different failures and are alerted on separately: an
     // unreadable name has no duplicate at all, so reporting one would send
-    // whoever reads the alert looking for a collision that does not exist.
-    // The cause comes from the walk rather than from another read of the
-    // accessor, which is hostile by definition and need not answer twice the
-    // same way.
-    const unreadable = cause === 'unreadable-name'
+    // whoever reads the alert looking for a collision that does not exist, and
+    // an unresolved pair is still on the node rather than lost. The cause comes
+    // from the walk rather than from another read of the accessor, which is
+    // hostile by definition and need not answer twice the same way.
     const widgetName = safeRead(() => widget.name)
-    releaseRefusedWidget(node, widget)
+    // Only a widget the walk took off the array needs releasing; an unresolved
+    // duplicate is still the node's widget and must keep its slot wiring.
+    if (removed) releaseRefusedWidget(node, widget)
     reportError(
       new Error(
-        unreadable
+        cause === 'unreadable-name'
           ? `Refused a widget on node ${node.id}: its name could not be read, so no widget identity can be derived for it`
-          : `Refused a widget named "${widgetName}": node ${node.id} already has a widget of that name and the duplicate cannot be renamed`
+          : cause === 'unresolved-duplicate'
+            ? `Kept a widget named "${widgetName}" that node ${node.id} already has under that name: the rename was declined rather than impossible, so the widget is left in place and the pair is unresolved for now`
+            : `Refused a widget named "${widgetName}": node ${node.id} already has a widget of that name and the duplicate cannot be renamed`
       ),
       {
-        errorType: unreadable
-          ? UNREADABLE_WIDGET_NAME_ERROR_TYPE
-          : DUPLICATE_WIDGET_NAME_ERROR_TYPE,
+        errorType:
+          cause === 'unreadable-name'
+            ? UNREADABLE_WIDGET_NAME_ERROR_TYPE
+            : cause === 'unresolved-duplicate'
+              ? UNRESOLVED_WIDGET_NAME_ERROR_TYPE
+              : DUPLICATE_WIDGET_NAME_ERROR_TYPE,
         surface: 'graph',
         level: 'warning',
         tags: { node_type: node.type },

@@ -47,9 +47,26 @@ function widgetNamed(name: unknown): { name: string } {
   return { name } as { name: string }
 }
 
-/** The refused widgets alone; the cause is asserted separately where it matters. */
+/**
+ * The widgets the walk took off the array; the cause is asserted separately
+ * where it matters. Not every reported widget is removed — an
+ * `unresolved-duplicate` is reported and kept — and "was it removed" is what
+ * these cases are about.
+ */
 function refusedWidgets<T extends { name: string }>(widgets: T[]): T[] {
-  return dropUnrenamableDuplicateWidgets(widgets).map(({ widget }) => widget)
+  return dropUnrenamableDuplicateWidgets(widgets)
+    .filter(({ removed }) => removed)
+    .map(({ widget }) => widget)
+}
+
+/** Every widget the walk reported, removed or not, against its cause. */
+function reportedCauses<T extends { name: string }>(
+  widgets: T[]
+): [T, string][] {
+  return dropUnrenamableDuplicateWidgets(widgets).map(({ widget, cause }) => [
+    widget,
+    cause
+  ])
 }
 
 describe('dropUnrenamableDuplicateWidgets', () => {
@@ -123,19 +140,48 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     ])
   })
 
-  it('refuses a widget whose setter silently ignores the rename', () => {
+  it('reports a widget whose setter silently ignores the rename, without removing it', () => {
     const stubborn = {
       get name() {
         return 'seed'
       },
       set name(_value: string) {}
     }
-    const widgets = [{ name: 'seed' }, pinned('seed'), stubborn]
+    const unrenamable = pinned('seed')
+    const widgets = [{ name: 'seed' }, unrenamable, stubborn]
 
     // Its descriptor has a setter, so a descriptor check believes the rename
-    // will take; only reading the name back afterwards proves it did not.
-    expect(refusedWidgets(widgets)).toContain(stubborn)
-    expect(widgets.map(({ name }) => name)).toEqual(['seed'])
+    // will take; only reading the name back afterwards proves it did not. That
+    // read is what makes the pair *observable* — but it cannot decide removal,
+    // because `BaseWidget`'s own setter declines exactly this way whenever the
+    // store has no entry for the node, which is the ordinary state of a node
+    // carrying an ambiguous pair. The pinned widget beside it is removed; this
+    // one is kept and reported.
+    expect(reportedCauses(widgets)).toEqual([
+      [unrenamable, 'duplicate-name'],
+      [stubborn, 'unresolved-duplicate']
+    ])
+    expect(widgets).toEqual([{ name: 'seed' }, stubborn])
+  })
+
+  it('keeps a declining setter rather than removing it, and says the pair is unresolved', () => {
+    const declining = {
+      get name() {
+        return 'seed'
+      },
+      set name(_value: string) {}
+    }
+    const widgets = [{ name: 'seed' }, declining]
+
+    const reported = dropUnrenamableDuplicateWidgets(widgets)
+
+    expect(reported).toEqual([
+      { widget: declining, cause: 'unresolved-duplicate', removed: false }
+    ])
+    // Still on the array: removing it would cost the user a widget to repair a
+    // state a later commit can resolve on its own.
+    expect(widgets).toHaveLength(2)
+    expect(widgets[1]).toBe(declining)
   })
 
   it('refuses a widget whose name accessor throws, without letting it escape', () => {
@@ -268,11 +314,17 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     const renamable = { name: 'seed' }
     const widgets = [{ name: 'seed' }, stubborn, renamable]
 
-    expect(refusedWidgets(widgets)).toEqual([stubborn])
+    // Nothing is removed: `stubborn` declined the write but could have taken
+    // it, so it is reported and kept.
+    expect(refusedWidgets(widgets)).toEqual([])
     // `seed#1` was offered to `stubborn` and did not take, so it is still free
     // for the next widget — a name one setter refuses is not a name in use.
     expect(offered).toContain('seed#1')
-    expect(widgets.map((widget) => widget.name)).toEqual(['seed', 'seed#1'])
+    expect(widgets.map((widget) => widget.name)).toEqual([
+      'seed',
+      'seed',
+      'seed#1'
+    ])
   })
 
   it('refuses every occurrence of a widget it refused once', () => {
