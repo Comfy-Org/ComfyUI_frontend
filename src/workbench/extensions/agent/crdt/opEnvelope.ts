@@ -82,28 +82,50 @@ function isDocOp(value: unknown): value is DocOp {
   )
 }
 
+export type WireMeasurement =
+  | { readonly admitted: true; readonly sized: SizedOp }
+  | { readonly admitted: false; readonly op: Op; readonly cause: unknown }
+
 const ENVELOPE_FIELDS = ['op', 'op_id', 'actor'] as const
+
+function stringifyOp(op: Op): { json: string } | { cause: unknown } {
+  try {
+    const json: unknown = JSON.stringify(op)
+    return typeof json === 'string'
+      ? { json }
+      : { cause: new TypeError('Operation did not serialize to JSON') }
+  } catch (cause) {
+    return { cause }
+  }
+}
+
+function rejected(op: Op, message: string): WireMeasurement {
+  return { admitted: false, op, cause: new TypeError(message) }
+}
 
 /**
  * Serialize an op once to prove it can ride a `doc_ops` frame and learn its
- * wire form and size. Throws `TypeError` for anything `JSON.stringify` cannot
- * turn into a wire object (a cycle in a custom-node value, a `toJSON` that
- * yields a non-object) and for a wire form whose envelope — kind, `op_id`,
- * `actor` — differs from the op's: the chunker classifies and the sender
- * settles by the semantic op, so the wire must carry the same identity.
- * Callers reject such an op at admission; the original op is never
- * serialized again.
+ * wire form and size. Never throws: anything `JSON.stringify` cannot turn
+ * into a wire object (a cycle in a custom-node value, a `toJSON` that throws
+ * or yields a non-object) and any wire form whose envelope — kind, `op_id`,
+ * `actor` — differs from the op's comes back as a rejection carrying the
+ * cause. The chunker classifies and the sender settles by the semantic op,
+ * so the wire must carry the same identity. Callers settle a rejected op at
+ * admission; the original op is never serialized again.
  */
-export function measureWireOp(op: Op): SizedOp {
-  const json = JSON.stringify(op)
-  if (typeof json !== 'string')
-    throw new TypeError('Operation did not serialize to JSON')
-  const wire: unknown = JSON.parse(json)
+export function measureWireOp(op: Op): WireMeasurement {
+  const serialized = stringifyOp(op)
+  if ('cause' in serialized)
+    return { admitted: false, op, cause: serialized.cause }
+  const wire: unknown = JSON.parse(serialized.json)
   if (!isDocOp(wire))
-    throw new TypeError('Operation did not serialize to a wire object')
+    return rejected(op, 'Operation did not serialize to a wire object')
   if (ENVELOPE_FIELDS.some((field) => wire[field] !== op[field]))
-    throw new TypeError('Operation serialized with a different envelope')
-  return { op, wire, bytes: new TextEncoder().encode(json).length }
+    return rejected(op, 'Operation serialized with a different envelope')
+  return {
+    admitted: true,
+    sized: { op, wire, bytes: new TextEncoder().encode(serialized.json).length }
+  }
 }
 
 /**

@@ -103,6 +103,14 @@ function circularAddNode(id: number): AddNodeOperation {
   return operation
 }
 
+function clearDisguisedAddNode(id: number): AddNodeOperation {
+  const operation: AddNodeOperation & Record<string, unknown> = addNode(id)
+  operation.toJSON = function serializeAsClear(this: Op) {
+    return { ...this, op: 'clear' }
+  }
+  return operation
+}
+
 function enqueueNodeBacklog(
   sender: ReturnType<typeof createOpSender>,
   count: number
@@ -965,18 +973,28 @@ describe('createOpSender', () => {
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
 
-  it('sends the valid ops around a malformed one and rejects only that op', () => {
-    sender.admit([addNode(1), circularAddNode(2), addNode(3)])
-    expect(() => sender.flush()).not.toThrow()
+  it.for([
+    { label: 'a cycle', malformed: circularAddNode },
+    {
+      label: 'a toJSON that rewrites it as clear',
+      malformed: clearDisguisedAddNode
+    }
+  ])(
+    'sends the valid ops around an op with $label and rejects only that op',
+    ({ malformed }) => {
+      sender.admit([addNode(1), malformed(2), addNode(3)])
+      expect(() => sender.flush()).not.toThrow()
 
-    expect(sent).toHaveLength(1)
-    expect(nodeIdsOf(sent[0].ops)).toEqual([1, 3])
-    expect(settled.map(summarizeSettlement)).toEqual([
-      { state: 'undeliverable', nodeIds: [2] }
-    ])
-    ackInFlight()
-    expect(sent).toHaveLength(1)
-  })
+      expect(sent).toHaveLength(1)
+      expect(nodeIdsOf(sent[0].ops)).toEqual([1, 3])
+      expect(sent[0].ops.map((op) => op.op)).toEqual(['add_node', 'add_node'])
+      expect(settled.map(summarizeSettlement)).toEqual([
+        { state: 'undeliverable', nodeIds: [2] }
+      ])
+      ackInFlight()
+      expect(sent).toHaveLength(1)
+    }
+  )
 
   it.for([
     { label: 'returns a different value', secondCall: (): unknown => 'second' },

@@ -415,18 +415,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     rejected: Op[]
     cause: unknown
   } {
-    const admitted: SizedOp[] = []
-    const rejected: Op[] = []
-    let cause: unknown
-    for (const op of minted) {
-      try {
-        admitted.push(measureWireOp(op))
-      } catch (error) {
-        cause ??= error
-        rejected.push(op)
-      }
+    const measured = minted.map(measureWireOp)
+    const rejections = measured.filter((result) => !result.admitted)
+    return {
+      admitted: measured.flatMap((result) =>
+        result.admitted ? [result.sized] : []
+      ),
+      rejected: rejections.map((rejection) => rejection.op),
+      cause: rejections[0]?.cause
     }
-    return { admitted, rejected, cause }
   }
 
   function mintAdmission(
