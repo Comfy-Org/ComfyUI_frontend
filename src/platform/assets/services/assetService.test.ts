@@ -750,7 +750,7 @@ describe(assetService.getAssetModels, () => {
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
   })
 
-  it.fails("resolves models when queried by the node-widget's full category path, not just the bucket's top-level folder key", async () => {
+  it("resolves models when queried by the node-widget's full category path, not just the bucket's top-level folder key", async () => {
     vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     const category =
       useModelToNodeStore().getCategoryForNodeType('LoadChatGLM3')

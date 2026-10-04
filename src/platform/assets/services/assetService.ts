@@ -490,7 +490,9 @@ function createAssetService() {
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
     const buckets = await loadModelBuckets()
-    return (buckets.get(folder) ?? []).map((asset) => ({
+    const legacyFolder = folder.split('/')[0]
+    const assets = buckets.get(folder) ?? buckets.get(legacyFolder) ?? []
+    return assets.map((asset) => ({
       // `loader_path` is the category-relative path the loader widget expects
       // and the source for the sidebar tree. Backends that predate it (bare-tag
       // mode; today's cloud) fall back to the filename metadata — the same
