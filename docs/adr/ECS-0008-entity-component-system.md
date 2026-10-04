@@ -211,10 +211,10 @@ legitimate re-mint rather than an identity collision — which is why
 >
 > Three stable `errorType`s, because the causes need different alerts and
 > collapsing them reports a collision that does not exist:
-> `widget_duplicate_name_refused` for a duplicate that could not be renamed
-> apart, `widget_unreadable_name_refused` for a widget whose `name` accessor
+> `failure_renaming_widget_duplicate_name` for a duplicate that could not be renamed
+> apart, `failure_reading_widget_name` for a widget whose `name` accessor
 > throws — that one has no duplicate at all, only no derivable id — and
-> `widget_duplicate_name_unresolved` for a pair the node **keeps**, where the
+> `failure_resolving_widget_duplicate_name` for a pair the node **keeps**, where the
 > rename was declined rather than impossible. The third is not a report of lost
 > widgets: the widget is still on the node, and a later commit can still
 > resolve it.

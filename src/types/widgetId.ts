@@ -259,12 +259,11 @@ function freeSuffixedName(
 /**
  * How many distinct names a colliding widget is offered before it is refused.
  *
- * One attempt is not enough: a `name` setter can reject one target and accept
- * another. `BaseWidget`'s delegates to `widgetValueStore.renameWidget`, which
- * refuses to move onto an id the store already holds — so a stale entry under
- * `seed#1` makes a perfectly renamable widget look unrenamable. Refusal
- * deletes the widget, so it has to be the answer to "no name works", not to
- * "the first name I tried did not".
+ * One attempt is not enough: `BaseWidget`'s `name` setter declines a move onto
+ * an id the store already holds, so one stale entry can reject a candidate a
+ * widget would otherwise take. Whether the widget is *removed* does not rest on
+ * this ({@link nameIsWritable} decides that), but whether the pair is reported
+ * as unresolved does.
  */
 const RENAME_ATTEMPTS = 4
 

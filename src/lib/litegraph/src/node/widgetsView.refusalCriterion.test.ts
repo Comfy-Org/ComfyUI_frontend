@@ -70,8 +70,8 @@ describe('unique-name refusal criterion', () => {
 
     // It is still reported, so the pair is observable rather than tolerated in
     // silence — under its own `errorType`, because nothing was lost.
-    expect(reportedTypes()).toEqual(['widget_duplicate_name_unresolved'])
-    expect(reportedTypes()).not.toContain('widget_duplicate_name_refused')
+    expect(reportedTypes()).toEqual(['failure_resolving_widget_duplicate_name'])
+    expect(reportedTypes()).not.toContain('failure_renaming_widget_duplicate_name')
 
     // Keeping the pair must not be paid for with a *value* either, which the
     // widget array's length cannot show. An ambiguous pair registers neither
@@ -165,7 +165,7 @@ describe('unique-name refusal criterion', () => {
     steps.name = 'seed'
     graph.add(node)
 
-    expect(reportedTypes()).toEqual(['widget_duplicate_name_unresolved'])
+    expect(reportedTypes()).toEqual(['failure_resolving_widget_duplicate_name'])
 
     // A kept pair is re-found by every later commit, and `reportError` has no
     // dedupe of its own — each call builds an `Error` with a stack and
@@ -176,7 +176,7 @@ describe('unique-name refusal criterion', () => {
       node.addWidget('number', 'denoise', 4, () => undefined, {})
     )
 
-    expect(reportedTypes()).toEqual(['widget_duplicate_name_unresolved'])
+    expect(reportedTypes()).toEqual(['failure_resolving_widget_duplicate_name'])
   })
 
   it('leaves a kept duplicate wired up, rather than tearing it down in place', () => {
@@ -228,6 +228,6 @@ describe('unique-name refusal criterion', () => {
     // Nothing can address this one, so keeping it would silently share the
     // other widget's value. Removal is correct here and is not weakened.
     expect(node.widgets).not.toContain(doomed)
-    expect(reportedTypes()).toContain('widget_duplicate_name_refused')
+    expect(reportedTypes()).toContain('failure_renaming_widget_duplicate_name')
   })
 })

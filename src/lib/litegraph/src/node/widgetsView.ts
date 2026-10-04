@@ -17,41 +17,10 @@ import { isNodeBindable } from '../utils/type'
 import { getWidgetIds } from '../utils/widget'
 
 /**
- * Stable `errorType` for the one state that breaks widget identity: a node
- * holding two widgets under one name that could not be renamed apart, so the
- * second is refused. Alerting is keyed on this string — treat it as a
- * contract, not an implementation detail.
- * See {@link dropUnrenamableDuplicateWidgets}.
+ * `errorType` slugs here follow `src/AGENTS.md`'s
+ * `<category>_<operation>_<subject>` form.
  */
-const DUPLICATE_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_refused'
-
-/**
- * Stable `errorType` for the other refusable state: a widget whose `name`
- * accessor throws, so no `WidgetId` can be derived for it and no duplicate is
- * involved. Separate from {@link DUPLICATE_WIDGET_NAME_ERROR_TYPE} because the
- * two need different alerts — and because collapsing them reports a collision
- * that does not exist. Also a contract, not an implementation detail.
- */
-const UNREADABLE_WIDGET_NAME_ERROR_TYPE = 'widget_unreadable_name_refused'
-
-/**
- * Stable `errorType` for an ambiguous pair the node **keeps**: the rename did
- * not take, but `name` is writable, so the failure is a store refusal that a
- * later commit can still resolve rather than a widget that can never be
- * addressed. Removing it would cost the user a widget to repair a transient
- * state, so it is reported and left in place.
- *
- * Distinct from {@link DUPLICATE_WIDGET_NAME_ERROR_TYPE} precisely because the
- * widget is still on the node: an alert on this one is not a report of lost
- * widgets. Also a contract, not an implementation detail.
- */
-const UNRESOLVED_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_unresolved'
-
-/**
- * Stable `errorType` for a refused widget whose own teardown threw, which
- * leaves its release half-done. Also a contract, not an implementation detail.
- */
-const REFUSED_WIDGET_TEARDOWN_ERROR_TYPE = 'widget_refusal_teardown_failed'
+const REFUSAL_TEARDOWN_ERROR_TYPE = 'failure_tearing_down_refused_widget'
 
 interface WidgetsViewState {
   target: IBaseWidget[]
@@ -101,7 +70,7 @@ function safeRead(read: () => unknown): string | undefined {
 /** Reports a teardown step that failed, so a half-done release is visible. */
 function reportTeardownFailure(node: LGraphNode, error: unknown): void {
   reportError(error, {
-    errorType: REFUSED_WIDGET_TEARDOWN_ERROR_TYPE,
+    errorType: REFUSAL_TEARDOWN_ERROR_TYPE,
     surface: 'graph',
     level: 'warning',
     tags: { node_type: node.type },
@@ -191,9 +160,10 @@ function releaseRefusedWidget(
 /**
  * Enforces the unique-name invariant where `node.widgets` is committed: the
  * array is a mutation view, so `addWidget`, a raw `widgets.push`, a splice and
- * a whole-array assignment all pass through here. A widget refused here is
- * never registered with the store and never rendered, because it is off the
- * node before either happens.
+ * a whole-array assignment all pass through here. A widget removed here is off
+ * the node before it can be rendered, and its own entry is released — it may
+ * already have one, from a name it held before an extension pinned it onto
+ * another widget's.
  *
  * `SubgraphNode` does **not** commit through here and keeps the pre-existing
  * behaviour: it redefines `widgets` as a computed getter over its promoted
@@ -276,17 +246,17 @@ const REFUSAL_ALERTS: Record<
   // Deliberately not "the accessor threw": a name that will not coerce or will
   // not percent-encode reads perfectly and still yields no id.
   'unreadable-name': {
-    errorType: UNREADABLE_WIDGET_NAME_ERROR_TYPE,
+    errorType: 'failure_reading_widget_name',
     message: (nodeId) =>
       `Refused a widget on node ${nodeId}: no widget identity can be derived from its name`
   },
   'unresolved-duplicate': {
-    errorType: UNRESOLVED_WIDGET_NAME_ERROR_TYPE,
+    errorType: 'failure_resolving_widget_duplicate_name',
     message: (nodeId, name) =>
       `Kept a widget named "${name}" that node ${nodeId} already has under that name: the rename was declined rather than impossible, so the widget is left in place and the pair is unresolved for now`
   },
   'duplicate-name': {
-    errorType: DUPLICATE_WIDGET_NAME_ERROR_TYPE,
+    errorType: 'failure_renaming_widget_duplicate_name',
     message: (nodeId, name) =>
       `Refused a widget named "${name}": node ${nodeId} already has a widget of that name and the duplicate cannot be renamed`
   }
@@ -346,9 +316,9 @@ export function wasWidgetRefused(
  *
  * Only for a node whose widgets list this module owns. `SubgraphNode`'s getter
  * rebuilds the array on every read, so a refusal there splices a throwaway copy
- * and nothing leaves the node — while the caller still reports
- * `widget_duplicate_name_refused` and tears down the slot back-references of a
- * widget that is still there. Two promoted inputs carrying the same inner
+ * and nothing leaves the node — while the caller still reports a
+ * refusal and tears down the slot back-references of a widget that is still
+ * there. Two promoted inputs carrying the same inner
  * widget name reach exactly that state, so the guard is load-bearing rather
  * than defensive.
  */

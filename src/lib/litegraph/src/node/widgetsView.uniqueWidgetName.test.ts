@@ -94,7 +94,7 @@ describe('unique widget name invariant', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'widget_duplicate_name_refused',
+        errorType: 'failure_renaming_widget_duplicate_name',
         surface: 'graph'
       })
     )
@@ -273,7 +273,7 @@ describe('unique widget name invariant', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'widget_unreadable_name_refused',
+        errorType: 'failure_reading_widget_name',
         context: expect.objectContaining({ widgetName: undefined })
       })
     )
@@ -310,7 +310,7 @@ describe('unique widget name invariant', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'widget_unreadable_name_refused'
+        errorType: 'failure_reading_widget_name'
       })
     )
   })
@@ -339,7 +339,7 @@ describe('unique widget name invariant', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'widget_unreadable_name_refused'
+        errorType: 'failure_reading_widget_name'
       })
     )
   })
@@ -458,8 +458,8 @@ describe('unique widget name invariant', () => {
     expect(
       vi.mocked(reportError).mock.calls.map(([, options]) => options.errorType)
     ).toEqual([
-      'widget_refusal_teardown_failed',
-      'widget_duplicate_name_refused'
+      'failure_tearing_down_refused_widget',
+      'failure_renaming_widget_duplicate_name'
     ])
   })
 
@@ -540,7 +540,7 @@ describe('unique widget name invariant', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'widget_duplicate_name_unresolved',
+        errorType: 'failure_resolving_widget_duplicate_name',
         context: expect.objectContaining({ widgetName: 'seed' })
       })
     )
@@ -573,7 +573,7 @@ describe('unique widget name invariant', () => {
   it('does not report a refusal it cannot carry out on a subgraph node', () => {
     // A `SubgraphNode` rebuilds `widgets` on every read, so nothing this
     // module splices ever leaves the node. Enforcing there anyway reports the
-    // alerting contract `widget_duplicate_name_refused` for a refusal that did
+    // alerting contract `failure_renaming_widget_duplicate_name` for a refusal that did
     // not happen — and promoted projections have a getter-only `name`, so a
     // node promoting the same inner widget name twice hits it on every add.
     const subgraph = createTestSubgraph({
