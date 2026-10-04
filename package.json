@@ -58,6 +58,7 @@
     "stylelint": "stylelint --cache --cache-strategy content '{apps,packages,src}/**/*.{css,vue}'",
     "comfy-test": "tsx tools/test-recorder/src/index.ts",
     "test:assets-flag-artifact": "tsx scripts/checkAssetsFlagArtifact.ts",
+    "test:expected-failure-ratchet": "tsx scripts/cicd/expected-failure-ratchet.ts",
     "test:browser": "pnpm exec playwright test",
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 tsx scripts/test-browser-local.ts",
