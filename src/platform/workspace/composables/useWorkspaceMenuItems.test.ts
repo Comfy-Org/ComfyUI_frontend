@@ -5,6 +5,8 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import enMessages from '@/locales/en/main.json'
+
 import { useWorkspaceMenuItems as createWorkspaceMenuItems } from './useWorkspaceMenuItems'
 
 const state = vi.hoisted(() => ({
@@ -81,7 +83,9 @@ vi.mock(import('@/services/dialogService'))
 
 const apps: App<Element>[] = []
 
-function useWorkspaceMenuItems(): ReturnType<typeof createWorkspaceMenuItems> {
+function useWorkspaceMenuItems(
+  messages = {}
+): ReturnType<typeof createWorkspaceMenuItems> {
   let result: ReturnType<typeof createWorkspaceMenuItems> | undefined
   const app = createApp(
     defineComponent({
@@ -91,7 +95,9 @@ function useWorkspaceMenuItems(): ReturnType<typeof createWorkspaceMenuItems> {
       }
     })
   )
-  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+  app.use(
+    createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
+  )
   app.mount(document.createElement('div'))
   apps.push(app)
   if (!result) throw new Error('workspace menu items not initialized')
@@ -377,6 +383,21 @@ describe('useWorkspaceMenuItems', () => {
     )
 
     expect(deleteItem).toMatchObject({ disabled: true, command: undefined })
+  })
+
+  it('tells the owner of a cancelled plan when Delete becomes available', () => {
+    state.canManageSubscription = true
+    state.isDeleteDisabled = true
+    state.isSubscriptionCancelled = true
+
+    const { menuItems } = useWorkspaceMenuItems(enMessages)
+    const deleteItem = menuItems.value.find(
+      (item) => item.label === 'Delete Workspace'
+    )
+
+    expect(deleteItem?.tooltip).toBe(
+      'You can delete this workspace after your plan ends on Aug 1, 2026'
+    )
   })
 
   it('rechecks owner permission before opening the Delete dialog', () => {
