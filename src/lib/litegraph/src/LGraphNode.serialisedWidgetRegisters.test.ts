@@ -4,14 +4,6 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
-/**
- * `LGraphNode.serialize()` writes widget values into two registers:
- * `widgets_values` by position and `widgets_values_named` by name. Two
- * independent defects in how that pair is built, found while reviewing
- * [#19717](https://github.com/Comfy-Org/ComfyUI_frontend/pull/19717) and split
- * out of it at the reviewer's request. Neither is about duplicate names.
- */
-
 function serialisedNode(
   widgets: readonly { name: string; value: WidgetValue }[]
 ): ISerialisedNode {
