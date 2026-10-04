@@ -203,6 +203,12 @@ export function useTemplateModelRowDownloads({
     activeAttempt?: number
     /** Job holding the current attempt, where the host sends an id. */
     job?: { attempt: number; jobId: string }
+    /**
+     * Every job id this row has already seen. A retry's job is new, so a job
+     * that reported against an earlier attempt can never claim a later one -
+     * even when it reports first, which no reordering is needed to produce.
+     */
+    seenJobs?: ReadonlySet<string>
   }
   const rows = shallowReactive(new Map<string, TrackedRow>())
 
@@ -284,23 +290,30 @@ export function useTemplateModelRowDownloads({
     event: TemplateModelDownloadHostEvent,
     jobId: string
   ): boolean {
-    const bound = rows.get(identity)?.job
+    const row = rows.get(identity)
+    if (!row) return false
     const claimant =
-      bound !== undefined && bound.attempt === event.attempt
-        ? bound.jobId
-        : undefined
-    if (event.type === 'started' || event.type === 'progress') {
-      if (claimant !== undefined) return claimant === jobId
-      const row = rows.get(identity)
-      if (row) {
-        rows.set(identity, {
-          ...row,
-          job: { attempt: event.attempt, jobId }
-        })
-      }
-      return true
+      row.job?.attempt === event.attempt ? row.job.jobId : undefined
+
+    if (event.type !== 'started' && event.type !== 'progress') {
+      return claimant === jobId
     }
-    return claimant === jobId
+    if (claimant !== undefined) return claimant === jobId
+    // A job that already spoke for any attempt is the abandoned one. It can
+    // report before the retry's job does, which needs no reordering: a host
+    // refusal fails the attempt while its transfer keeps running, so the
+    // retry's first activity may well come from the old job.
+    if (row.seenJobs?.has(jobId)) return false
+    // An attempt the host never acknowledged leaves no job to remember, so a
+    // job appearing for the first time on a later attempt is accepted. Only a
+    // host-side request token could tell those apart.
+
+    rows.set(identity, {
+      ...row,
+      job: { attempt: event.attempt, jobId },
+      seenJobs: new Set([...(row.seenJobs ?? []), jobId])
+    })
+    return true
   }
 
   function forMatchingModels(
