@@ -4516,7 +4516,8 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'teardown failed' }),
       expect.objectContaining({
-        errorType: 'failure_tearing_down_agent_panel'
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step: 'clearCreatingTab' }
       })
     )
     expect(errorHandler).not.toHaveBeenCalled()
@@ -4563,9 +4564,44 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'detach failed' }),
       expect.objectContaining({
-        errorType: 'failure_tearing_down_agent_panel'
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step: 'detachDocOpMinter' }
       })
     )
+    expect(errorHandler).not.toHaveBeenCalled()
+  })
+
+  it('resets the canvas sync gate when reporting a failed teardown step throws', () => {
+    const errorHandler = vi.fn()
+    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
+      docOpMinterDeps.current = deps
+      return fromPartial<DocOpMinter>({
+        detach: vi.fn(() => {
+          throw new Error('detach failed')
+        })
+      })
+    })
+    const panel = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+    setCanvasSyncGate.mockClear()
+    // The reporter is the one part of the loop outside its own try/catch; a
+    // telemetry sink torn down ahead of the panel must not take the remaining
+    // releases with it.
+    vi.mocked(reportError).mockImplementationOnce(() => {
+      throw new Error('reporter failed')
+    })
+
+    panel.unmount()
+
+    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
+    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe(false)
+    expect(outcomeCount?.()).toBe(0)
     expect(errorHandler).not.toHaveBeenCalled()
   })
 
