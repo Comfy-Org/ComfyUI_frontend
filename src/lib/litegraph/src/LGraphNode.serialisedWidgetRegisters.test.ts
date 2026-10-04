@@ -61,8 +61,6 @@ describe('serialised widget registers', () => {
       node.addWidget('custom', '__proto__', 'default', () => undefined, {})
       node.configure(saved)
 
-      // The restore reads through `Object.hasOwn`, so a name that never became
-      // an own key resolves to nothing and the widget keeps its default.
       expect(node.widgets![0].value).toBe('kept')
     })
   })
