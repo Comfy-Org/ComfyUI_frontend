@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -784,7 +785,12 @@ describe('executionStore workflow gating', () => {
   })
 
   describe('switching tabs mid-run', () => {
-    it('stops writing the mirror once the user switches away', () => {
+    // The QA run on a real generation found this: gating stops a background
+    // workflow writing the mirror, but whatever it wrote while it was in front
+    // stays there, and `nodeLocationProgressStates` resolves node ids against
+    // the *currently* active graph. Two workflows sharing a node id therefore
+    // show the stale entry on the newly visible node.
+    it('clears the mirror when switching to a workflow with no running job', async () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
       fire('progress_state', {
@@ -795,36 +801,75 @@ describe('executionStore workflow gating', () => {
       expect(store.nodeProgressStates['1']?.value).toBe(3)
 
       useWorkflowStore().activeWorkflow = workflowB
+      await nextTick()
+
+      expect(store.nodeProgressStates['1']).toBeUndefined()
+      expect(store._executingNodeProgress).toBeNull()
+    })
+
+    it('replays the active workflow own progress when switching back', async () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 3) }
+      })
+
+      useWorkflowStore().activeWorkflow = workflowB
+      await nextTick()
+      expect(store.nodeProgressStates['1']).toBeUndefined()
+
+      // A's run advanced while it was in the background; per-job state kept it.
       fire('progress_state', {
         prompt_id: 'job-a',
         workflow_id: WORKFLOW_A_ID,
         nodes: { '1': nodeState('job-a', '1', 'running', 8) }
       })
 
-      // The mirror keeps whatever was last written for the tab the user left;
-      // per-job state is what the returning tab reads.
-      expect(store.nodeProgressStates['1']?.value).toBe(3)
-      expect(store.nodeProgressStatesByJob['job-a']?.['1']?.value).toBe(8)
+      useWorkflowStore().activeWorkflow = workflowA
+      await nextTick()
+
+      expect(store.nodeProgressStates['1']?.value).toBe(8)
     })
 
-    it('resumes writing when the user switches back', () => {
+    it('keeps recording per-job progress for the backgrounded workflow', async () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
       useWorkflowStore().activeWorkflow = workflowB
+      await nextTick()
+
       fire('progress_state', {
         prompt_id: 'job-a',
         workflow_id: WORKFLOW_A_ID,
         nodes: { '1': nodeState('job-a', '1', 'running', 8) }
       })
 
+      expect(store.nodeProgressStates['1']).toBeUndefined()
+      expect(store.nodeProgressStatesByJob['job-a']?.['1']?.value).toBe(8)
+    })
+
+    it('shows the newly active workflow own job rather than the one it replaced', async () => {
       useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      queueJobFrom('job-b', workflowB)
       fire('progress_state', {
         prompt_id: 'job-a',
         workflow_id: WORKFLOW_A_ID,
-        nodes: { '1': nodeState('job-a', '1', 'running', 9) }
+        nodes: { '1': nodeState('job-a', '1', 'running', 2) }
       })
+      fire('progress_state', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        nodes: { '1': nodeState('job-b', '1', 'running', 7) }
+      })
+      expect(store.nodeProgressStates['1']?.value).toBe(2)
 
-      expect(store.nodeProgressStates['1']?.value).toBe(9)
+      useWorkflowStore().activeWorkflow = workflowB
+      await nextTick()
+
+      expect(store.nodeProgressStates['1']?.value).toBe(7)
+      expect(store.nodeProgressStates['1']?.prompt_id).toBe('job-b')
     })
   })
 })

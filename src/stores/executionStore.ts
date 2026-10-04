@@ -1052,6 +1052,61 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
+   * Re-point the shared mirror at the now-active workflow's own job.
+   *
+   * Gating stops a background workflow's frames from *writing* the mirror, but
+   * whatever was written while that workflow was in front stays there — and
+   * `nodeLocationProgressStates` resolves node ids against the *currently*
+   * active graph, so two workflows that share a node id will show the stale
+   * entry on the newly visible node. Replay the active workflow's own per-job
+   * progress instead, or clear the mirror when it has no running job.
+   */
+  function reconcileMirrorForActiveWorkflow() {
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return
+
+    const activeId = activeWorkflowGraphId()
+    const activePath = activeWorkflow.path
+
+    const jobIds = Object.keys(nodeProgressStatesByJob.value)
+    let matchedJobId: JobId | null = null
+    for (let i = jobIds.length - 1; i >= 0; i--) {
+      const jobId = jobIds[i]
+      const idMatch =
+        activeId !== null && jobIdToWorkflowId.value.get(jobId) === activeId
+      const pathMatch =
+        jobIdToSessionWorkflowPath.value.get(jobId) === activePath
+      if (idMatch || pathMatch) {
+        matchedJobId = jobId
+        break
+      }
+    }
+
+    if (matchedJobId) {
+      nodeProgressStates.value =
+        nodeProgressStatesByJob.value[matchedJobId] ?? {}
+      executionIdToLocatorCache.clear()
+      if (_executingNodeProgress.value?.prompt_id !== matchedJobId) {
+        _executingNodeProgress.value = null
+      }
+      return
+    }
+
+    if (Object.keys(nodeProgressStates.value).length > 0) {
+      nodeProgressStates.value = {}
+      executionIdToLocatorCache.clear()
+    }
+    _executingNodeProgress.value = null
+  }
+
+  watch(
+    () => workflowStore.activeWorkflow,
+    () => {
+      reconcileMirrorForActiveWorkflow()
+    }
+  )
+
+  /**
    * Reconcile tracked per-job state against the backend's authoritative job
    * sets. A job the backend reports as terminal but which still holds progress
    * state lost its terminal frame, so evict it.
@@ -1371,6 +1426,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobIds,
     reconcileInitializingJobs,
     reconcileTerminalJobs,
+    reconcileMirrorForActiveWorkflow,
     clearActiveJobIfStale,
     bindExecutionEvents,
     unbindExecutionEvents,
