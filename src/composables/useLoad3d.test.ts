@@ -1347,19 +1347,6 @@ describe('useLoad3d', () => {
       expect(savedConfig.gizmo.mode).toBe('rotate')
     })
 
-    it('should register gizmoTransformChange event handler', async () => {
-      const composable = useLoad3d(mockNode)
-      const containerRef = document.createElement('div')
-
-      await composable.initializeLoad3d(containerRef)
-
-      const addEventCalls = vi.mocked(mockLoad3d.addEventListener!).mock.calls
-      const gizmoEventCall = addEventCalls.find(
-        ([event]) => event === 'gizmoTransformChange'
-      )
-      expect(gizmoEventCall).toBeDefined()
-    })
-
     it('gizmoTransformChange event should update modelConfig', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')

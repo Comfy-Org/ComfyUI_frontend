@@ -9,6 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { InlineOutcome, SubmitPhase } from '@/checkout/checkoutPage'
 import { isChallengeReopenable } from '@/checkout/checkoutPage'
 import { supportLinkFor } from '@/checkout/payVerdict'
+import CancelPaymentControl from '@/components/fullPage/CancelPaymentControl.vue'
 import InlineOutcomeCard from '@/components/fullPage/InlineOutcomeCard.vue'
 import type { KeepSubscriptionConsent } from '@/components/fullPage/KeepSubscriptionNotice.vue'
 import KeepSubscriptionNotice from '@/components/fullPage/KeepSubscriptionNotice.vue'
@@ -23,7 +24,6 @@ const {
   disabled,
   loading = false,
   phase,
-  canCancel = false,
   locked = false,
   reopening = false,
   outcome,
@@ -37,8 +37,6 @@ const {
     loading?: boolean
     /** The submit area's phase; only the visible pay action carries one, so the page has one live region. */
     phase?: SubmitPhase
-    /** Cancel payment renders only once the server can cancel a pending payment. */
-    canCancel?: boolean
     /** Money is on its way, so the consent it was sent with stands. */
     locked?: boolean
     /** The page is re-opening the challenge on its own; offering it too would flash. */
@@ -115,6 +113,12 @@ const challenge = computed(() =>
   phase?.kind === 'challenge' ? phase.operation : undefined
 )
 
+const cancel = computed(() =>
+  phase?.kind === 'challenge' ? phase.cancel : undefined
+)
+
+const canceling = computed(() => cancel.value === 'canceling')
+
 /** A challenge the page is not showing, and is not about to, turns Pay into the one way back to it. */
 const reopenable = computed(
   () =>
@@ -125,9 +129,6 @@ const reopenable = computed(
 
 const PRIMARY_BUTTON =
   'flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
-
-const SECONDARY_BUTTON =
-  'flex h-10 w-full cursor-pointer items-center justify-center rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-base-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none'
 </script>
 
 <template>
@@ -161,6 +162,7 @@ const SECONDARY_BUTTON =
       <button
         v-if="reopenable"
         type="button"
+        :disabled="canceling"
         :class="PRIMARY_BUTTON"
         @click="emit('continueVerification')"
       >
@@ -183,14 +185,11 @@ const SECONDARY_BUTTON =
           {{ payLabel }}
         </span>
       </button>
-      <button
-        v-if="challenge && canCancel"
-        type="button"
-        :class="SECONDARY_BUTTON"
-        @click="emit('cancel')"
-      >
-        {{ t('checkout.fullPage.phase.cancel') }}
-      </button>
+      <CancelPaymentControl
+        v-if="cancel"
+        :offer="cancel"
+        @cancel="emit('cancel')"
+      />
       <a
         v-if="supportLink"
         :href="supportLink"

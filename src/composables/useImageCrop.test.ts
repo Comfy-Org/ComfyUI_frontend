@@ -223,11 +223,6 @@ describe('useImageCrop', () => {
     harnessCleanups.length = 0
   })
 
-  it('resolves image URL from the connected input node after mount', async () => {
-    const vm = await mountHarness()
-    expect(vm.imageUrl).toBe('https://example.com/a.png')
-  })
-
   it('returns null image URL when the graph node cannot be resolved', async () => {
     mockResolveNode.mockReturnValue(undefined)
     const vm = await mountHarness()

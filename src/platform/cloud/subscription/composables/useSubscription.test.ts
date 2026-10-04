@@ -20,6 +20,7 @@ import {
   claimPendingCheckoutTerminal
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 
 const {
   mockGetCheckoutAttribution,
@@ -34,7 +35,6 @@ const {
   mockLocalStorage,
   mockReportTelemetryError,
   mockReportError,
-  mockAccessBillingPortal,
   mockAccessBillingPortalDirect
 } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
@@ -48,7 +48,6 @@ const {
 
     mockReportTelemetryError: vi.fn(),
     mockReportError: vi.fn(),
-    mockAccessBillingPortal: vi.fn(),
     mockAccessBillingPortalDirect: vi.fn(),
     mockGetCheckoutAttribution: vi.fn(() => ({
       im_ref: 'impact-click-001',
@@ -130,7 +129,6 @@ vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: vi.fn(() => ({
     reportError: mockReportError,
-    accessBillingPortal: mockAccessBillingPortal,
     accessBillingPortalDirect: mockAccessBillingPortalDirect
   }))
 }))
@@ -246,7 +244,6 @@ beforeEach(() => {
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
   )
-  mockAccessBillingPortal.mockResolvedValue(true)
   mockAccessBillingPortalDirect.mockResolvedValue(true)
 })
 
@@ -2710,15 +2707,15 @@ describe('useSubscription', () => {
       windowOpenSpy.mockRestore()
     })
 
-    it('should call accessBillingPortal for invoice history', async () => {
+    it('should open the billing portal for invoice history', async () => {
       const { handleInvoiceHistory } = useSubscriptionWithScope()
 
       await handleInvoiceHistory()
 
-      expect(useAuthActions().accessBillingPortal).toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
     })
 
-    it('should call accessBillingPortal for manage subscription', async () => {
+    it('should open the billing portal for manage subscription', async () => {
       const { manageSubscription } = useSubscriptionWithScope()
 
       await manageSubscription()
@@ -2726,26 +2723,140 @@ describe('useSubscription', () => {
       expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
     })
 
-    it('rethrows a rail-mismatch refusal from the billing portal', async () => {
-      const refusal = new AuthStoreError(
-        'refused',
-        409,
-        'WORKSPACE_BILLING_REQUIRED'
+    describe('portal telemetry', () => {
+      type PortalAction = 'manageSubscription' | 'handleInvoiceHistory'
+
+      function portalEvents() {
+        return mockTelemetry.trackBillingEvent.mock.calls
+          .map(([event]) => event)
+          .filter((event) => event.operation === 'portal')
+      }
+
+      function leaveAndReturn() {
+        window.dispatchEvent(new Event('blur'))
+        window.dispatchEvent(new Event('focus'))
+      }
+
+      beforeEach(() => {
+        mockTelemetry.trackBillingEvent.mockClear()
+      })
+
+      it.for<{ action: PortalAction; target: string }>([
+        { action: 'manageSubscription', target: 'manage_subscription' },
+        { action: 'handleInvoiceHistory', target: 'invoices' }
+      ])(
+        'reports $action opening the portal and one return',
+        async ({ action, target }) => {
+          await useSubscriptionWithScope()[action]()
+          leaveAndReturn()
+          leaveAndReturn()
+
+          expect(portalEvents()).toEqual([
+            {
+              operation: 'portal',
+              stage: 'opened',
+              outcome: 'pending',
+              target,
+              billing_client: 'legacy'
+            },
+            {
+              operation: 'portal',
+              stage: 'returned',
+              outcome: 'pending',
+              target,
+              billing_client: 'legacy'
+            }
+          ])
+        }
       )
-      mockAccessBillingPortalDirect.mockRejectedValueOnce(refusal)
-      const { manageSubscription } = useSubscriptionWithScope()
 
-      await expect(manageSubscription()).rejects.toBe(refusal)
-      expect(mockReportError).not.toHaveBeenCalled()
-    })
+      it.for<{
+        action: PortalAction
+        target: string
+        settles: (run: Promise<void>) => Promise<void>
+      }>([
+        {
+          action: 'manageSubscription',
+          target: 'manage_subscription',
+          settles: (run) => expect(run).rejects.toThrow()
+        },
+        {
+          action: 'handleInvoiceHistory',
+          target: 'invoices',
+          settles: (run) => expect(run).resolves.toBeUndefined()
+        }
+      ])(
+        'reports $action as a failed open when the tab is blocked',
+        async ({ action, target, settles }) => {
+          mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
 
-    it('reports other billing portal failures instead of throwing', async () => {
-      const failure = new Error('portal down')
-      mockAccessBillingPortalDirect.mockRejectedValueOnce(failure)
-      const { manageSubscription } = useSubscriptionWithScope()
+          await settles(useSubscriptionWithScope()[action]())
+          leaveAndReturn()
 
-      await expect(manageSubscription()).resolves.toBeUndefined()
-      expect(mockReportError).toHaveBeenCalledWith(failure)
+          expect(portalEvents()).toEqual([
+            {
+              operation: 'portal',
+              stage: 'failed',
+              outcome: 'failure',
+              target,
+              billing_client: 'legacy',
+              failure_category: 'redirect',
+              error_code: 'payment_popup_blocked'
+            }
+          ])
+        }
+      )
+
+      it.for([
+        {
+          name: 'a refused portal request',
+          failure: new AuthStoreError('Portal refused', 500),
+          category: { failure_category: 'api_rejected' }
+        },
+        {
+          name: 'a rail-mismatch refusal',
+          failure: new AuthStoreError(
+            'refused',
+            409,
+            'WORKSPACE_BILLING_REQUIRED'
+          ),
+          category: {}
+        }
+      ])(
+        'reports $name as a failed open and rejects without reporting the error',
+        async ({ failure, category }) => {
+          mockAccessBillingPortalDirect.mockRejectedValueOnce(failure)
+
+          await expect(
+            useSubscriptionWithScope().manageSubscription()
+          ).rejects.toBe(failure)
+
+          expect(portalEvents()).toMatchObject([
+            {
+              operation: 'portal',
+              stage: 'failed',
+              outcome: 'failure',
+              target: 'manage_subscription',
+              billing_client: 'legacy',
+              ...category
+            }
+          ])
+          expect(mockReportError).not.toHaveBeenCalled()
+        }
+      )
+
+      it('rejects a blocked manage subscription tab with the blocked-tab message, without reporting it', async () => {
+        mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
+
+        await expect(
+          useSubscriptionWithScope().manageSubscription()
+        ).rejects.toEqual(
+          new PaymentPopupBlockedError(
+            "Couldn't open the billing page. Allow pop-ups for this site and try again."
+          )
+        )
+        expect(mockReportError).not.toHaveBeenCalled()
+      })
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
@@ -2763,7 +2874,11 @@ describe('useSubscription', () => {
       await fetchStatus()
       mockGetBillingStatus.mockClear()
 
-      await manageSubscription()
+      const blockedOpen = manageSubscription()
+      await expect(blockedOpen).rejects.toBeInstanceOf(PaymentPopupBlockedError)
+      await expect(blockedOpen).rejects.toThrow(
+        "Couldn't open the billing page. Allow pop-ups for this site and try again."
+      )
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(mockGetBillingStatus).not.toHaveBeenCalled()

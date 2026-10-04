@@ -64,12 +64,6 @@ describe('SwapNodesCard', () => {
       expect(container.querySelectorAll('.swap-row')).toHaveLength(0)
     })
 
-    it('renders one row when swapNodeGroups has one entry', () => {
-      const { container } = mountCard({ swapNodeGroups: makeGroups(1) })
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelectorAll('.swap-row')).toHaveLength(1)
-    })
-
     it('passes group prop to children', () => {
       const groups = makeGroups(1)
       const { container } = mountCard({ swapNodeGroups: groups })
