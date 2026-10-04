@@ -3456,6 +3456,7 @@
       "deny": "Annuler",
       "detailsHeader": "Détails",
       "errorExpired": "Cette demande de consentement a expiré ou a déjà été utilisée. Veuillez redémarrer depuis l’application cliente.",
+      "errorOriginRefused": "Nous n’avons pas pu approuver cela depuis cette page. Rouvrez la connexion depuis l’application.",
       "errorScopeBroadening": "Les autorisations précédemment approuvées ne couvrent pas cette demande. Vous devrez réautoriser avec les nouvelles autorisations.",
       "errorUnavailable": "Cette fonctionnalité n’est pas disponible pour le moment. Veuillez contacter le support si le problème persiste.",
       "genericError": "La demande OAuth a échoué. Veuillez redémarrer depuis l’application cliente.",

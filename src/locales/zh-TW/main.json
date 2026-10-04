@@ -3456,6 +3456,7 @@
       "deny": "取消",
       "detailsHeader": "詳細資訊",
       "errorExpired": "此授權請求已過期或已被使用。請從用戶端應用程式重新啟動。",
+      "errorOriginRefused": "我們無法在此頁面核准此操作。請從應用程式重新開啟登入。",
       "errorScopeBroadening": "先前核准的權限不涵蓋此請求。您需要以新權限重新授權。",
       "errorUnavailable": "此功能目前無法使用。如問題持續，請聯絡客服。",
       "genericError": "OAuth 請求失敗。請從用戶端應用程式重新啟動。",

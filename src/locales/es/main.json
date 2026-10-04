@@ -3456,6 +3456,7 @@
       "deny": "Cancelar",
       "detailsHeader": "Detalles",
       "errorExpired": "Esta solicitud de consentimiento ha expirado o ya ha sido utilizada. Por favor, reinicia desde la aplicación cliente.",
+      "errorOriginRefused": "No pudimos aprobar esto desde esta página. Vuelve a abrir el inicio de sesión desde la aplicación.",
       "errorScopeBroadening": "Los permisos aprobados previamente no cubren esta solicitud. Necesitas volver a autorizar con los nuevos permisos.",
       "errorUnavailable": "Esta función no está disponible en este momento. Por favor, contacta con soporte si el problema persiste.",
       "genericError": "La solicitud OAuth ha fallado. Por favor, reinicia desde la aplicación cliente.",
