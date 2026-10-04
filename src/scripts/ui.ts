@@ -1,7 +1,7 @@
 import { effectScope, watch } from 'vue'
 
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
-import { i18n, t } from '@/i18n'
+import * as i18nModule from '@/i18n'
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -251,14 +251,53 @@ function setControlLabel(element: Element, label: string) {
   element.prepend(label)
 }
 
+function legacyMenuText(
+  key: string,
+  values?: Record<string, string | number>
+): string {
+  const moduleExports: object = i18nModule
+  if (!('t' in moduleExports)) return key
+  const translate = Reflect.get(moduleExports, 't')
+  if (typeof translate !== 'function') return key
+  const translated: unknown = values ? translate(key, values) : translate(key)
+  return typeof translated === 'string' ? translated : key
+}
+
+function legacyMenuLocaleMessages() {
+  const moduleExports: object = i18nModule
+  if (!('i18n' in moduleExports)) return
+  const exported = Reflect.get(moduleExports, 'i18n')
+  if (
+    typeof exported !== 'object' ||
+    exported == null ||
+    !('global' in exported)
+  ) {
+    return
+  }
+  const composer = Reflect.get(exported, 'global')
+  if (typeof composer !== 'object' || composer == null) return
+  const locale = Reflect.get(composer, 'locale')
+  const getLocaleMessage = Reflect.get(composer, 'getLocaleMessage')
+  if (
+    typeof locale !== 'object' ||
+    locale == null ||
+    typeof getLocaleMessage !== 'function'
+  ) {
+    return
+  }
+  const localeValue: unknown = Reflect.get(locale, 'value')
+  if (typeof localeValue !== 'string') return
+  return getLocaleMessage(localeValue)
+}
+
 function legacyMenuSectionLabel(section: string): string {
   switch (section) {
     case 'Running':
-      return t('legacyMenu.running')
+      return legacyMenuText('legacyMenu.running')
     case 'Pending':
-      return t('legacyMenu.pending')
+      return legacyMenuText('legacyMenu.pending')
     case 'history':
-      return t('legacyMenu.historySection')
+      return legacyMenuText('legacyMenu.historySection')
     default:
       return section
   }
@@ -287,8 +326,8 @@ class ComfyList {
 
   private get listLabel() {
     return this.list === 'queue'
-      ? t('legacyMenu.queue')
-      : t('legacyMenu.history')
+      ? legacyMenuText('legacyMenu.queue')
+      : legacyMenuText('legacyMenu.history')
   }
 
   get visible() {
@@ -308,16 +347,16 @@ class ComfyList {
               const removeAction =
                 section === 'Running'
                   ? {
-                      name: t('legacyMenu.cancel'),
+                      name: legacyMenuText('legacyMenu.cancel'),
                       cb: () => api.interrupt(item.id)
                     }
                   : {
-                      name: t('legacyMenu.delete'),
+                      name: legacyMenuText('legacyMenu.delete'),
                       cb: () => api.deleteItem(this.list, item.id)
                     }
               return $el('div', { textContent: item.priority + ': ' }, [
                 $el('button', {
-                  textContent: t('legacyMenu.load'),
+                  textContent: legacyMenuText('legacyMenu.load'),
                   onclick: async () => {
                     const job = await api.getJobDetail(item.id)
                     if (!job) return
@@ -342,14 +381,16 @@ class ComfyList {
       ]),
       $el('div.comfy-list-actions', [
         $el('button', {
-          textContent: t('legacyMenu.clearList', { name: this.listLabel }),
+          textContent: legacyMenuText('legacyMenu.clearList', {
+            name: this.listLabel
+          }),
           onclick: async () => {
             await api.clearItems(this.list)
             await this.load()
           }
         }),
         $el('button', {
-          textContent: t('legacyMenu.refresh'),
+          textContent: legacyMenuText('legacyMenu.refresh'),
           onclick: () => this.load()
         })
       ])
@@ -377,7 +418,8 @@ class ComfyList {
 
   async show() {
     this.element.style.display = 'block'
-    if (this.button) this.button.textContent = t('legacyMenu.close')
+    if (this.button)
+      this.button.textContent = legacyMenuText('legacyMenu.close')
 
     await this.load()
   }
@@ -385,7 +427,7 @@ class ComfyList {
   hide() {
     this.element.style.display = 'none'
     if (this.button) {
-      this.button.textContent = t('legacyMenu.viewList', {
+      this.button.textContent = legacyMenuText('legacyMenu.viewList', {
         name: this.listLabel
       })
     }
@@ -394,8 +436,8 @@ class ComfyList {
   applyLocalizedChrome() {
     if (this.button) {
       this.button.textContent = this.visible
-        ? t('legacyMenu.close')
-        : t('legacyMenu.viewList', { name: this.listLabel })
+        ? legacyMenuText('legacyMenu.close')
+        : legacyMenuText('legacyMenu.viewList', { name: this.listLabel })
     }
     if (this.visible && this.lastSections) this.render(this.lastSections)
   }
@@ -475,14 +517,14 @@ export class ComfyUI {
       'autoQueueMode',
       [
         {
-          text: t('legacyMenu.instant'),
+          text: legacyMenuText('legacyMenu.instant'),
           value: 'instant',
-          tooltip: t('legacyMenu.instantTooltip')
+          tooltip: legacyMenuText('legacyMenu.instantTooltip')
         },
         {
-          text: t('legacyMenu.change'),
+          text: legacyMenuText('legacyMenu.change'),
           value: 'change',
-          tooltip: t('legacyMenu.changeTooltip')
+          tooltip: legacyMenuText('legacyMenu.changeTooltip')
         }
       ],
       {
@@ -722,7 +764,7 @@ export class ComfyUI {
           onclick: () => {
             if (
               !useSettingStore().get('Comfy.ConfirmClear') ||
-              confirm(t('legacyMenu.confirmClear'))
+              confirm(legacyMenuText('legacyMenu.confirmClear'))
             ) {
               app.clean()
               useLitegraphService().resetView()
@@ -735,7 +777,7 @@ export class ComfyUI {
           onclick: async () => {
             if (
               !useSettingStore().get('Comfy.ConfirmClear') ||
-              confirm(t('legacyMenu.confirmLoadDefault'))
+              confirm(legacyMenuText('legacyMenu.confirmLoadDefault'))
             ) {
               useLitegraphService().resetView()
               await app.loadGraphData()
@@ -757,27 +799,33 @@ export class ComfyUI {
 
     this.applyLocalizedText = () => {
       if (extraOptionsLabel) {
-        setControlLabel(extraOptionsLabel, t('legacyMenu.extraOptions'))
+        setControlLabel(
+          extraOptionsLabel,
+          legacyMenuText('legacyMenu.extraOptions')
+        )
       }
       if (batchCountLabel) {
-        setControlLabel(batchCountLabel, t('legacyMenu.batchCount'))
+        setControlLabel(
+          batchCountLabel,
+          legacyMenuText('legacyMenu.batchCount')
+        )
       }
       if (autoQueueLabel) {
-        setControlLabel(autoQueueLabel, t('legacyMenu.autoQueue'))
+        setControlLabel(autoQueueLabel, legacyMenuText('legacyMenu.autoQueue'))
       }
       if (autoQueueInput) {
-        autoQueueInput.title = t('legacyMenu.autoQueueTooltip')
+        autoQueueInput.title = legacyMenuText('legacyMenu.autoQueueTooltip')
       }
 
       const modeLabels = [...autoQueueModeEl.querySelectorAll('label')]
       const modes = [
         {
-          text: t('legacyMenu.instant'),
-          tooltip: t('legacyMenu.instantTooltip')
+          text: legacyMenuText('legacyMenu.instant'),
+          tooltip: legacyMenuText('legacyMenu.instantTooltip')
         },
         {
-          text: t('legacyMenu.change'),
-          tooltip: t('legacyMenu.changeTooltip')
+          text: legacyMenuText('legacyMenu.change'),
+          tooltip: legacyMenuText('legacyMenu.changeTooltip')
         }
       ]
       for (const [index, mode] of modes.entries()) {
@@ -787,16 +835,22 @@ export class ComfyUI {
       }
 
       const controls = [
-        ['#queue-button', t('legacyMenu.queuePrompt')],
-        ['#queue-front-button', t('legacyMenu.queueFront')],
-        ['#comfy-save-button', t('legacyMenu.save')],
-        ['#comfy-dev-save-api-button', t('legacyMenu.saveApiFormat')],
-        ['#comfy-load-button', t('legacyMenu.load')],
-        ['#comfy-refresh-button', t('legacyMenu.refresh')],
-        ['#comfy-clipspace-button', t('legacyMenu.clipspace')],
-        ['#comfy-clear-button', t('legacyMenu.clear')],
-        ['#comfy-load-default-button', t('legacyMenu.loadDefault')],
-        ['#comfy-reset-view-button', t('legacyMenu.resetView')]
+        ['#queue-button', legacyMenuText('legacyMenu.queuePrompt')],
+        ['#queue-front-button', legacyMenuText('legacyMenu.queueFront')],
+        ['#comfy-save-button', legacyMenuText('legacyMenu.save')],
+        [
+          '#comfy-dev-save-api-button',
+          legacyMenuText('legacyMenu.saveApiFormat')
+        ],
+        ['#comfy-load-button', legacyMenuText('legacyMenu.load')],
+        ['#comfy-refresh-button', legacyMenuText('legacyMenu.refresh')],
+        ['#comfy-clipspace-button', legacyMenuText('legacyMenu.clipspace')],
+        ['#comfy-clear-button', legacyMenuText('legacyMenu.clear')],
+        [
+          '#comfy-load-default-button',
+          legacyMenuText('legacyMenu.loadDefault')
+        ],
+        ['#comfy-reset-view-button', legacyMenuText('legacyMenu.resetView')]
       ] as const
       for (const [selector, label] of controls) {
         const element = this.menuContainer.querySelector(selector)
@@ -805,8 +859,8 @@ export class ComfyUI {
 
       this.queueSize.textContent =
         this.displayedQueueRemaining == null
-          ? t('legacyMenu.queueSizePlaceholder')
-          : t('legacyMenu.queueSize', {
+          ? legacyMenuText('legacyMenu.queueSizePlaceholder')
+          : legacyMenuText('legacyMenu.queueSize', {
               count: this.displayedQueueRemaining
             })
 
@@ -820,7 +874,7 @@ export class ComfyUI {
   private startLocaleSync() {
     effectScope().run(() => {
       watch(
-        () => i18n.global.getLocaleMessage(i18n.global.locale.value),
+        () => legacyMenuLocaleMessages(),
         () => {
           this.applyLocalizedText()
         }
@@ -833,7 +887,7 @@ export class ComfyUI {
     if (queueRemaining == null) return
 
     this.displayedQueueRemaining = queueRemaining
-    this.queueSize.textContent = t('legacyMenu.queueSize', {
+    this.queueSize.textContent = legacyMenuText('legacyMenu.queueSize', {
       count: queueRemaining
     })
     if (
