@@ -119,12 +119,8 @@
             class="w-full"
           />
         </label>
-        <DropdownMenu
-          v-if="isRestricted"
-          :entries="bulkMenuEntries"
-          :modal="false"
-        >
-          <template #button>
+        <Menu v-if="isRestricted" :items="bulkMenuEntries" :modal="false">
+          <template #trigger>
             <Button
               variant="secondary"
               size="lg"
@@ -137,7 +133,7 @@
               />
             </Button>
           </template>
-        </DropdownMenu>
+        </Menu>
       </div>
 
       <p
@@ -366,7 +362,7 @@ import { useI18n } from 'vue-i18n'
 import type { MenuItem } from '@/components/ui/menu/types'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'

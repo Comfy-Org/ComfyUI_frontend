@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import type { MenuItem } from '@/components/ui/menu/types'
 import enMessages from '@/locales/en/main.json'
 
-import DropdownMenu from './DropdownMenu.vue'
+import Menu from './Menu.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -15,9 +15,10 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderMenu(entries: MenuItem[] = [{ label: 'Item A' }]) {
-  return render(DropdownMenu, {
-    props: { entries },
+function renderMenu(items: MenuItem[] = [{ label: 'Item A' }]) {
+  return render(Menu, {
+    props: { items },
+    slots: { trigger: '<button>Open</button>' },
     global: { plugins: [i18n], directives: { tooltip: {} } }
   })
 }
@@ -31,7 +32,7 @@ afterEach(() => {
   }
 })
 
-describe('DropdownMenu z-index', () => {
+describe('Menu z-index', () => {
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
     ZIndex.set('modal', openModal, 1700)

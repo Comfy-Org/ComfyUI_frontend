@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   DropdownMenuContent,
+  DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuTrigger
@@ -18,6 +19,7 @@ defineOptions({ inheritAttrs: false })
 
 const { items = [], modal = true } = defineProps<{
   items?: MenuItem[]
+  label?: string
   modal?: boolean
   to?: string | HTMLElement
 }>()
@@ -45,6 +47,12 @@ const contentStyle = useModalLiftedZIndex(open)
         "
         :style="contentStyle"
       >
+        <DropdownMenuLabel
+          v-if="label"
+          class="px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+        >
+          {{ label }}
+        </DropdownMenuLabel>
         <slot :content-style>
           <MenuItems :items :content-style @select="open = false">
             <template v-if="$slots.item" #item="slotProps">

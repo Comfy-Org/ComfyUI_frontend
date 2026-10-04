@@ -11,6 +11,7 @@ describe('Menu', () => {
   it('gives custom menu content keyboard selection and dismissal', async () => {
     const command = vi.fn()
     render(Menu, {
+      props: { label: 'Actions' },
       slots: {
         trigger: '<button>Open</button>',
         default: () =>
@@ -21,6 +22,8 @@ describe('Menu', () => {
     const trigger = screen.getByRole('button', { name: 'Open' })
     await user.click(trigger)
     const item = await screen.findByRole('menuitem', { name: 'Rename' })
+    expect(screen.getByText('Actions')).toBeVisible()
+    expect(screen.getAllByRole('menuitem')).toEqual([item])
     await user.keyboard('{ArrowDown}')
     await waitFor(() => expect(item).toHaveFocus())
     await user.keyboard('{Enter}')

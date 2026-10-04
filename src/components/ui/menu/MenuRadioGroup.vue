@@ -5,7 +5,7 @@ import MenuItemContent from './MenuItemContent.vue'
 import { menuItemClass } from './menuStyles'
 
 defineProps<{
-  options: { value: T; label: string }[]
+  options: { value: T; label: string; icon?: string }[]
 }>()
 
 const selected = defineModel<T>({ required: true })
@@ -21,7 +21,11 @@ const selected = defineModel<T>({ required: true })
       @select="selected = option.value"
     >
       <MenuItemContent
-        :item="{ label: option.label, checked: selected === option.value }"
+        :item="{
+          label: option.label,
+          icon: option.icon,
+          checked: selected === option.value
+        }"
         :has-submenu="false"
       />
     </DropdownMenuRadioItem>

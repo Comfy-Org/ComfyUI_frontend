@@ -6,16 +6,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { MenuItemAction } from './types'
 
-const {
-  item,
-  itemClass,
-  disableCommandless = false,
-  legacyCheckedRole = false
-} = defineProps<{
+const { item, itemClass } = defineProps<{
   item: MenuItemAction
   itemClass: string
-  disableCommandless?: boolean
-  legacyCheckedRole?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -27,7 +20,7 @@ function select(event: Event) {
     event.preventDefault()
     return
   }
-  if (!legacyCheckedRole && item.checked !== undefined) {
+  if (item.checked !== undefined) {
     event.preventDefault()
     void item.command({ originalEvent: event, item })
     return
@@ -40,14 +33,12 @@ function select(event: Event) {
 <template>
   <component
     :is="
-      item.checked === undefined || legacyCheckedRole
-        ? DropdownMenuItem
-        : DropdownMenuCheckboxItem
+      item.checked === undefined ? DropdownMenuItem : DropdownMenuCheckboxItem
     "
     v-tooltip="{ value: item.tooltip, showDelay: 0 }"
     :aria-label="toValue(item.label)"
     :aria-description="toValue(item.description)"
-    :disabled="toValue(item.disabled) ?? (disableCommandless && !item.command)"
+    :disabled="toValue(item.disabled)"
     :class="
       cn(
         itemClass,
@@ -55,14 +46,7 @@ function select(event: Event) {
         toValue(item.class)
       )
     "
-    v-bind="
-      legacyCheckedRole && item.checked !== undefined
-        ? {
-            role: 'menuitemradio',
-            'aria-checked': Boolean(toValue(item.checked))
-          }
-        : { modelValue: toValue(item.checked) }
-    "
+    :model-value="toValue(item.checked)"
     @select="select"
   >
     <slot />

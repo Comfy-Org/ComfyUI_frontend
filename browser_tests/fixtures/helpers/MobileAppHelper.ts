@@ -22,7 +22,7 @@ export class MobileAppHelper {
 
   async switchWorkflow(workflowName: string) {
     await this.workflows.click()
-    await this.page.getByRole('menu').getByText(workflowName).click()
+    await this.page.getByRole('menuitemradio', { name: workflowName }).click()
   }
   async navigateTab(name: 'run' | 'outputs' | 'assets') {
     await this.navigation.getByRole('tab', { name }).click()

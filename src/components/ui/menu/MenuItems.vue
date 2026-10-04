@@ -29,20 +29,16 @@ const [DefineItemContent, ReuseItemContent] =
 
 const {
   contentClass = menuContentClass,
-  disableCommandless = false,
   itemClass = menuItemClass,
   itemContent,
   items,
-  legacyCheckedRole = false,
   separatorClass = 'my-1 h-px bg-border-subtle'
 } = defineProps<{
   items: MenuItem[]
   contentClass?: string
   contentStyle?: StyleValue
-  disableCommandless?: boolean
   itemClass?: string
   itemContent?: Slot<ItemSlotProps>
-  legacyCheckedRole?: boolean
   separatorClass?: string
 }>()
 
@@ -95,24 +91,15 @@ const visibleItems = computed(() =>
             :items="item.items"
             :content-class
             :content-style
-            :disable-commandless
             :item-class
             :item-content="itemContent ?? $slots.item"
-            :legacy-checked-role
             :separator-class
             @select="emit('select')"
           />
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
     </DropdownMenuSub>
-    <MenuAction
-      v-else
-      :item
-      :item-class
-      :disable-commandless
-      :legacy-checked-role
-      @select="emit('select')"
-    >
+    <MenuAction v-else :item :item-class @select="emit('select')">
       <ReuseItemContent :item :has-submenu="false" />
     </MenuAction>
   </template>

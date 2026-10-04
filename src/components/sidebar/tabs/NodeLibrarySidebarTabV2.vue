@@ -26,16 +26,19 @@
             v-model="nodeFilters"
             :filter-labels="nodeFilterLabels"
           />
-          <DropdownMenu
+          <Menu
             v-if="selectedTab === 'essentials'"
-            :entries="jumpMenuEntries"
+            :items="jumpMenuEntries"
+            :label="$t('essentials.jumpTo')"
           >
-            <template #button>
-              <Button size="icon" :aria-label="$t('essentials.jumpTo')">
-                <i class="icon-[lucide--list-tree] size-4" />
-              </Button>
+            <template #trigger>
+              <Button
+                size="icon"
+                :aria-label="$t('essentials.jumpTo')"
+                icon="icon-[lucide--list-tree]"
+              />
             </template>
-          </DropdownMenu>
+          </Menu>
           <Menu v-else>
             <template #trigger>
               <Button
@@ -105,7 +108,6 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import FilterDropdown from '@/components/common/FilterDropdown.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
@@ -399,23 +401,19 @@ async function jumpToSubgroup(subgroupKey: string) {
 }
 
 const jumpMenuEntries = computed<MenuItem[]>(() => {
-  const entries = ESSENTIAL_SECTIONS.map((section) => {
+  return ESSENTIAL_SECTIONS.map((section) => {
     if (!section.subgroups)
       return {
         label: t(`essentials.${section.key}`),
-        command: () => jumpToSection(section.key),
-        noIcon: true
+        command: () => jumpToSection(section.key)
       }
 
     const items = section.subgroups.map((subgroup) => ({
       label: t(`essentials.${subgroup.key}`),
-      command: () => jumpToSubgroup(subgroup.key),
-      noIcon: true
+      command: () => jumpToSubgroup(subgroup.key)
     }))
     return { label: t(`essentials.${section.key}`), items }
   })
-  const label = t('essentials.jumpTo').toUpperCase()
-  return [{ label, noIcon: true }, ...entries]
 })
 
 const tabs = computed<Array<{ value: TabId; label: string }>>(() => {
