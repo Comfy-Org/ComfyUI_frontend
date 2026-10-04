@@ -4,6 +4,10 @@ import type { Mock } from 'vitest'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { AuthStoreError } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import type {
+  BillingStatusResponse,
+  RenewalInvoice
+} from '@/platform/workspace/api/workspaceApi'
 import { useLegacyBilling } from './useLegacyBilling'
 
 vi.mock(import('firebase/auth'))
@@ -16,6 +20,31 @@ const refusal = () =>
   new AuthStoreError('refused', 409, 'WORKSPACE_BILLING_REQUIRED')
 
 describe('useLegacyBilling', () => {
+  describe('renewalInvoice', () => {
+    const invoice: RenewalInvoice = {
+      amount_due: 2000,
+      currency: 'usd',
+      hosted_invoice_url: 'https://invoice.stripe.com/i/test'
+    }
+
+    const statusWith = (partial: Partial<BillingStatusResponse>) =>
+      ({ is_active: true, ...partial }) as BillingStatusResponse
+
+    it('exposes the renewal invoice from the billing status', () => {
+      useSubscription().subscriptionStatus.value = statusWith({
+        renewal_invoice: invoice
+      })
+
+      expect(useLegacyBilling().renewalInvoice.value).toEqual(invoice)
+    })
+
+    it('is null when the billing status carries no renewal invoice', () => {
+      useSubscription().subscriptionStatus.value = statusWith({})
+
+      expect(useLegacyBilling().renewalInvoice.value).toBeNull()
+    })
+  })
+
   describe('resubscribe', () => {
     it('performs the checkout via the unwrapped subscribeDirect', async () => {
       const billing = useLegacyBilling()

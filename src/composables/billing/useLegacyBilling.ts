@@ -287,7 +287,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     subscriptionStatus,
     tier,
     renewalDate,
-    renewalInvoice: computed(() => null),
+    renewalInvoice: computed(
+      () => legacySubscriptionStatus.value?.renewal_invoice ?? null
+    ),
 
     // Actions
     initialize,
