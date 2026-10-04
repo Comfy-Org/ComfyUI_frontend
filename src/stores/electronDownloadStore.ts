@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { isDesktop } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { electronAPI } from '@/utils/envUtil'
 
 export interface ElectronDownload extends Pick<
@@ -58,7 +59,10 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
       try {
         listener(download)
       } catch (error) {
-        console.error('Electron download progress listener failed:', error)
+        reportError(error, {
+          surface: 'platform',
+          errorType: 'error_notifying_download_progress_listener'
+        })
       }
     }
   }
