@@ -4910,7 +4910,12 @@
         "toastMessageOneCloud": "This model isn't supported. Choose a different one.",
         "toastMessageOneOss": "{nodeName} is missing a required model file.",
         "toastMessageManyCloud": "Some models aren't supported. Choose different ones.",
-        "toastMessageManyOss": "{count} model files are missing."
+        "toastMessageManyOss": "{count} model files are missing.",
+        "displayMessageDeployment": "These models aren't on {deployment}. Open the node to choose one it has.",
+        "toastTitleOneDeployment": "{modelName} isn't on {deployment}",
+        "toastTitleManyDeployment": "Models aren't on {deployment}",
+        "toastMessageOneDeployment": "Choose a different model, or pick a deployment that has it.",
+        "toastMessageManyDeployment": "Choose different models, or pick a deployment that has them."
       },
       "missing_media": {
         "displayMessage": "A required media input has no file selected.",

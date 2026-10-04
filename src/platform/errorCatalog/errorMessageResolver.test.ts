@@ -1731,6 +1731,39 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('names the deployment the editor runs on instead of Cloud in missing model copy', () => {
+    const onDeployment = { isCloud: true, deploymentLabel: 'Studio Build v2' }
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_model',
+        groups: missingModelGroups('sdxl.safetensors'),
+        count: 1,
+        ...onDeployment
+      })
+    ).toEqual({
+      catalogId: 'missing_model',
+      displayTitle: 'Missing Models',
+      displayMessage:
+        "These models aren't on Studio Build v2. Open the node to choose one it has.",
+      toastTitle: "sdxl.safetensors isn't on Studio Build v2",
+      toastMessage:
+        'Choose a different model, or pick a deployment that has it.'
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_model',
+        groups: missingModelGroups('sdxl.safetensors', 'vae.safetensors'),
+        count: 2,
+        ...onDeployment
+      })
+    ).toMatchObject({
+      toastTitle: "Models aren't on Studio Build v2",
+      toastMessage:
+        'Choose different models, or pick a deployment that has them.'
+    })
+  })
+
   it('preserves special characters in catalog copy for model names', () => {
     const modelName = 'sd&xl<v2>.safetensors'
     expect(

@@ -776,7 +776,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           kind: 'missing_model',
           groups: missingModelGroups.value,
           count,
-          isCloud
+          isCloud,
+          deploymentLabel: deploymentLabel?.value
         })
       }
     ]
@@ -889,7 +890,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           kind: 'missing_model',
           groups: missingModelGroupsForSelection.value,
           count,
-          isCloud
+          isCloud,
+          deploymentLabel: deploymentLabel?.value
         })
       }
     ]

@@ -46,9 +46,9 @@ function isMissingNodeType(nodeType: NodeTypeErrorItem): boolean {
 }
 
 /**
- * On a developer-platform deployment (FE-2434) the editor's nodes are its
- * Release's, so a message names the deployment instead of Cloud. Null on
- * Comfy Cloud and outside Cloud.
+ * On a developer-platform deployment (FE-2434) the editor's nodes and models
+ * are its Release's, so a message names the deployment instead of Cloud.
+ * Null on Comfy Cloud and outside Cloud.
  */
 function deploymentMessage(
   source: { deploymentLabel?: string },
@@ -222,6 +222,12 @@ function getMissingModelCount(source: MissingModelSource): number {
 }
 
 function resolveMissingModelDisplayMessage(source: MissingModelSource): string {
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_model.displayMessageDeployment',
+    "These models aren't on {deployment}. Open the node to choose one it has."
+  )
+  if (onDeployment) return onDeployment
   const key = source.isCloud
     ? 'errorCatalog.missingErrors.missing_model.displayMessageCloud'
     : 'errorCatalog.missingErrors.missing_model.displayMessageOss'
@@ -236,6 +242,13 @@ function resolveMissingModelToastTitle(source: MissingModelSource): string {
   const count = getMissingModelCount(source)
 
   if (count === 1 && firstModel) {
+    const onDeployment = deploymentMessage(
+      source,
+      'errorCatalog.missingErrors.missing_model.toastTitleOneDeployment',
+      "{modelName} isn't on {deployment}",
+      { modelName: firstModel.name }
+    )
+    if (onDeployment) return onDeployment
     const key = source.isCloud
       ? 'errorCatalog.missingErrors.missing_model.toastTitleOneCloud'
       : 'errorCatalog.missingErrors.missing_model.toastTitleOneOss'
@@ -247,6 +260,14 @@ function resolveMissingModelToastTitle(source: MissingModelSource): string {
     })
   }
 
+  if (count > 1) {
+    const onDeployment = deploymentMessage(
+      source,
+      'errorCatalog.missingErrors.missing_model.toastTitleManyDeployment',
+      "Models aren't on {deployment}"
+    )
+    if (onDeployment) return onDeployment
+  }
   const useCloudPluralTitle = source.isCloud && count > 1
   const key = useCloudPluralTitle
     ? 'errorCatalog.missingErrors.missing_model.toastTitleManyCloud'
@@ -271,6 +292,12 @@ function resolveMissingModelToastMessage(source: MissingModelSource): string {
   const count = getMissingModelCount(source)
 
   if (!firstModel || count !== 1) {
+    const onDeployment = deploymentMessage(
+      source,
+      'errorCatalog.missingErrors.missing_model.toastMessageManyDeployment',
+      'Choose different models, or pick a deployment that has them.'
+    )
+    if (onDeployment) return onDeployment
     const key = source.isCloud
       ? 'errorCatalog.missingErrors.missing_model.toastMessageManyCloud'
       : 'errorCatalog.missingErrors.missing_model.toastMessageManyOss'
@@ -280,6 +307,12 @@ function resolveMissingModelToastMessage(source: MissingModelSource): string {
     return translateCatalogMessage(key, fallback, { count })
   }
 
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_model.toastMessageOneDeployment',
+    'Choose a different model, or pick a deployment that has it.'
+  )
+  if (onDeployment) return onDeployment
   if (source.isCloud) {
     return translateCatalogMessage(
       'errorCatalog.missingErrors.missing_model.toastMessageOneCloud',
