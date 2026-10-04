@@ -215,21 +215,35 @@ describe('toAskPart delete_approval', () => {
     })
   })
 
-  it('keeps the prompt and options when context.nodes is missing or malformed', () => {
-    for (const context of [
-      undefined,
-      { action: 'delete_nodes' },
-      { action: 'delete_nodes', nodes: 'oops' },
-      { action: 'delete_nodes', nodes: [null, 7, { type: 'NoId' }] }
-    ]) {
+  it.for([
+    { name: 'no context', context: undefined, hidden: undefined },
+    {
+      name: 'no nodes',
+      context: { action: 'delete_nodes' },
+      hidden: undefined
+    },
+    {
+      name: 'nodes not an array',
+      context: { action: 'delete_nodes', nodes: 'oops' },
+      hidden: undefined
+    },
+    {
+      name: 'unreadable entries',
+      context: { action: 'delete_nodes', nodes: [null, 7, { type: 'NoId' }] },
+      hidden: 3
+    }
+  ])(
+    'keeps the prompt and options with $name in context',
+    ({ context, hidden }) => {
       const part = toAskPart(deleteApproval({ context }))
       assert(part?.type === 'askUser')
       expect(part.options.map(({ id }) => id)).toEqual(['delete', 'keep'])
       expect(part.nodes).toBeUndefined()
+      expect(part.hiddenNodeCount).toBe(hidden)
     }
-  })
+  )
 
-  it('bounds an untrusted node list', () => {
+  it('bounds an untrusted node list and counts what it does not list', () => {
     const nodes = Array.from({ length: ASK_USER_LIMITS.nodes + 5 }, (_, i) => ({
       id: i,
       title: 'x'.repeat(ASK_USER_LIMITS.label + 10)
@@ -240,23 +254,30 @@ describe('toAskPart delete_approval', () => {
     assert(part?.type === 'askUser')
     expect(part.nodes).toHaveLength(ASK_USER_LIMITS.nodes)
     expect(part.nodes?.[0].name).toHaveLength(ASK_USER_LIMITS.label)
+    expect(part.hiddenNodeCount).toBe(5)
   })
 })
 
 describe('RENDERED_ASK_KINDS', () => {
-  it('lists every kind toAskPart renders, and only those', () => {
+  it('is exactly the kinds the panel renders', () => {
     expect(RENDERED_ASK_KINDS).toEqual([
       'run_approval',
       'ask_user',
       'delete_approval'
     ])
-    for (const kind of RENDERED_ASK_KINDS) {
-      expect(isRenderedAskKind(kind)).toBe(true)
-      expect(toAskPart(askUser({ kind }))).toBeDefined()
-    }
-    for (const kind of ['paused', 'permission', 'toString', undefined])
-      expect(isRenderedAskKind(kind)).toBe(false)
   })
+
+  it.for(RENDERED_ASK_KINDS)('renders a card for %s', (kind) => {
+    expect(isRenderedAskKind(kind)).toBe(true)
+    expect(toAskPart(askUser({ kind }))).toBeDefined()
+  })
+
+  it.for(['paused', 'permission', 'toString', undefined])(
+    'does not claim %s',
+    (kind) => {
+      expect(isRenderedAskKind(kind)).toBe(false)
+    }
+  )
 })
 
 describe('isAskPart', () => {

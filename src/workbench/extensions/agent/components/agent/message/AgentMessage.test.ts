@@ -857,6 +857,25 @@ describe('AgentMessage delete_approval', () => {
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
   })
 
+  it('says how many delete targets the list leaves out', () => {
+    render(AgentMessage, {
+      props: {
+        message: messageWith(
+          deleteFrame({
+            context: {
+              action: 'delete_nodes',
+              nodes: [{ id: 12, type: 'KSampler' }, { title: 'no id' }]
+            }
+          })
+        )
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const nodes = within(screen.getByRole('list', { name: 'Nodes to delete' }))
+    expect(nodes.getByText('1 more node not listed')).toBeInTheDocument()
+  })
+
   it('reads back the answer once resolved, with no way to answer again', () => {
     const [part] = messageWith(deleteFrame()).parts
     assert(part.type === 'askUser')

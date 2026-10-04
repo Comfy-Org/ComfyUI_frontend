@@ -165,7 +165,7 @@ const rowClass =
       </p>
     </div>
 
-    <AskNodeList v-if="part.nodes?.length" :nodes="part.nodes" />
+    <AskNodeList :nodes="part.nodes" :hidden-count="part.hiddenNodeCount" />
 
     <AskUserAnswer
       v-if="part.resolution"
