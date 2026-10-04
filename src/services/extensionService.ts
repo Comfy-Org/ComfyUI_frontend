@@ -31,7 +31,6 @@ export function shouldLoadExtension(
   return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
-/** Paths named in a batch report before the rest are elided to a count. */
 const MAX_NAMED_FAILED_EXTENSIONS = 10
 
 export interface ExtensionLoadFailure {
@@ -74,10 +73,11 @@ export function reportExtensionLoadFailures(
   const named = failures.slice(0, MAX_NAMED_FAILED_EXTENSIONS)
   const elided = failures.length - named.length
   const paths = named.map(({ ext }) => ext).join(', ')
+  const noun = failures.length === 1 ? 'extension' : 'extensions'
 
   reportError(
     new Error(
-      `Error loading ${failures.length} ${failures.length === 1 ? 'extension' : 'extensions'}: ${paths}` +
+      `Error loading ${failures.length} ${noun}: ${paths}` +
         (elided > 0 ? ` (+${elided} more)` : ''),
       { cause: failures[0].error }
     ),
