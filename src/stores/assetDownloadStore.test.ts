@@ -781,6 +781,28 @@ describe('useAssetDownloadStore', () => {
       expect(taskService.getTask).toHaveBeenCalledTimes(1)
     })
 
+    it('keeps a terminally reconciled failure terminal after late progress', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({
+          status: 'failed',
+          result: undefined,
+          error_message: 'Download failed'
+        })
+      })
+      dispatch(createDownloadMessage({ status: 'failed' }))
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
+
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'failed',
+        error: 'Download failed'
+      })
+      expect(store.activeDownloads).toHaveLength(0)
+    })
+
     it('settles a pending cancellation the backend never confirms', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockResolvedValue({
@@ -1023,6 +1045,27 @@ describe('useAssetDownloadStore', () => {
       store.clearFinishedDownloads()
 
       expect(store.finishedDownloads).toHaveLength(0)
+    })
+
+    it('keeps a cleared unconfirmed cancellation hidden from late progress', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({ status: 'running', result: undefined })
+      })
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      store.clearFinishedDownloads()
+      dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
+
+      expect(store.downloadList).toHaveLength(0)
     })
   })
 

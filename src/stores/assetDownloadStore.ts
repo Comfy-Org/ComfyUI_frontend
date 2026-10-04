@@ -325,6 +325,11 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
     const data = e.detail
     if (consumeDismissedDownload(data)) return
+    if (
+      terminalReconciledFailures.has(data.task_id) &&
+      activeStatuses.has(data.status)
+    )
+      return
     const existing = downloads.value.get(data.task_id)
 
     // WebSocket payloads are not runtime-validated at the event boundary.
@@ -479,6 +484,9 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   function clearFinishedDownloads() {
     for (const download of finishedDownloads.value) {
+      if (download.status === 'cancellation_unconfirmed') {
+        dismissedPendingDownloads.set(download.taskId, download.modelType)
+      }
       taskNotFoundAttempts.delete(download.taskId)
       terminalReconciledFailures.delete(download.taskId)
       downloads.value.delete(download.taskId)
