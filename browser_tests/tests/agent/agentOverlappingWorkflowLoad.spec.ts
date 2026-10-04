@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const STALL_EXTENSION = 'e2e.op329.stallBeforeLoadGraph'
 
@@ -32,20 +32,15 @@ function noteWorkflow(title: string): ComfyWorkflowJSON {
   }
 }
 
-// Regression for https://github.com/Comfy-Org/ComfyUI_frontend/issues/19971
 test.describe(
   'Overlapping workflow loads',
-  { tag: ['@cloud', '@agent', '@vue-nodes'] },
+  { tag: ['@cloud', '@vue-nodes'] },
   () => {
     test('the newer workflow survives an older load resuming', async ({
-      comfyPage,
-      agentPanel
+      comfyPage
     }) => {
       test.setTimeout(60_000)
       const { page, vueNodes } = comfyPage
-
-      await agentPanel.open()
-      await vueNodes.setEnabled(true)
 
       await test.step('hold the first load open, then start a second', async () => {
         await page.evaluate(
@@ -88,14 +83,10 @@ test.describe(
     })
 
     test('the newer workflow survives a superseded API JSON import', async ({
-      comfyPage,
-      agentPanel
+      comfyPage
     }) => {
       test.setTimeout(60_000)
       const { page, vueNodes } = comfyPage
-
-      await agentPanel.open()
-      await vueNodes.setEnabled(true)
 
       await test.step('hold an API JSON import open, then load a workflow', async () => {
         await page.evaluate(

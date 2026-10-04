@@ -1700,12 +1700,13 @@ export class ComfyApp {
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
-      await useWorkflowService().afterLoadNewGraph(
+      const activated = await useWorkflowService().afterLoadNewGraph(
         workflow,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
         effectiveShareId,
         { isCurrent: () => this.ownsGraphLoad(loadId) }
       )
+      if (!activated) return await this.rejectSupersededGraphLoad()
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
 
       if (!this.ownsGraphLoad(loadId)) {
@@ -2360,12 +2361,16 @@ export class ComfyApp {
         await this.rejectSupersededGraphLoad()
         return
       }
-      await useWorkflowService().afterLoadNewGraph(
+      const activated = await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
         undefined,
         { isCurrent: () => this.ownsGraphLoad(loadId) }
       )
+      if (!activated) {
+        await this.rejectSupersededGraphLoad()
+        return
+      }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
     }
@@ -2723,12 +2728,16 @@ export class ComfyApp {
       await this.rejectSupersededGraphLoad()
       return
     }
-    await useWorkflowService().afterLoadNewGraph(
+    const activated = await useWorkflowService().afterLoadNewGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
       undefined,
       { isCurrent: () => this.ownsGraphLoad(loadId) }
     )
+    if (!activated) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (!this.ownsGraphLoad(loadId)) {
       await this.rejectSupersededGraphLoad()

@@ -308,7 +308,7 @@ describe('ComfyApp', () => {
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
     mockImportA1111.mockResolvedValue('imported')
-    mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+    mockWorkflowService.afterLoadNewGraph.mockResolvedValue(true)
     useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
     mockValidateWorkflow.mockReset().mockResolvedValue({ graphData: null })
     vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(null)
@@ -344,6 +344,7 @@ describe('ComfyApp', () => {
       ])
       mockWorkflowService.afterLoadNewGraph.mockImplementation(async () => {
         store.setActiveGraph(graphId)
+        return true
       })
       return store
     }
@@ -4126,8 +4127,8 @@ describe('ComfyApp', () => {
         }
       )
       let resolveAfterLoad: (() => void) | undefined
-      const afterLoad = new Promise<void>((resolve) => {
-        resolveAfterLoad = resolve
+      const afterLoad = new Promise<boolean>((resolve) => {
+        resolveAfterLoad = () => resolve(true)
       })
       mockWorkflowService.afterLoadNewGraph.mockReturnValue(afterLoad)
 

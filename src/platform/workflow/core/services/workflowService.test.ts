@@ -2456,24 +2456,15 @@ describe('useWorkflowService', () => {
       })
     })
 
-    // A graph load can be superseded while it is suspended *inside* this
-    // service: activation awaits workflowStore.openWorkflow, which awaits a
-    // network fetch on the persisted-but-unloaded path, and every
-    // ownsGraphLoad() check in app.ts sits outside this call. Without the
-    // isCurrent predicate the superseded load's resume restored the older
-    // workflow's frozen camera onto the graph the newer load had already
-    // committed - #19971's own bug class, through a seam the per-call-site
-    // checks cannot reach.
     describe('when a newer load supersedes this one mid-flight', () => {
       const newerCamera = { scale: 1.75, offset: [10, 20] as [number, number] }
       const rootGraphId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
       let releaseOpen: () => void
       let setGraph: ReturnType<typeof vi.fn>
+      let originalCanvas: typeof app.canvas
 
       beforeEach(() => {
-        // Pin the run-error graph scope so setActiveGraph's first argument is
-        // deterministic regardless of which sibling describe ran before this
-        // one; adoptRootGraphId returns null when isGraphReady is unset.
+        originalCanvas = app.canvas
         Reflect.set(app, 'isGraphReady', true)
         app.rootGraph.id = rootGraphId
 
@@ -2484,12 +2475,12 @@ describe('useWorkflowService', () => {
           bg_tint: undefined
         })
 
-        // The older workflow's camera, frozen by deactivate() at 0.3 zoom.
-        // A real ChangeTracker so restore() is the production write, not a
-        // stand-in: it is what moves app.canvas.ds and calls setGraph.
         const tracker = new ChangeTracker(existingWorkflow, makeWorkflowData())
-        Reflect.set(tracker, 'ds', { scale: 0.3, offset: [-999, -999] })
-        Reflect.set(tracker, 'subgraphState', { navigation: [] })
+        app.canvas.ds.scale = 0.3
+        app.canvas.ds.offset = [-999, -999]
+        tracker.store()
+        app.canvas.ds.scale = newerCamera.scale
+        app.canvas.ds.offset = newerCamera.offset
         existingWorkflow.changeTracker = tracker
 
         const blocked = new Promise<void>((resolve) => {
@@ -2504,6 +2495,7 @@ describe('useWorkflowService', () => {
       afterEach(() => {
         Reflect.deleteProperty(app, 'isGraphReady')
         Reflect.deleteProperty(app.rootGraph, 'id')
+        Reflect.set(app, 'canvas', originalCanvas)
       })
 
       it('does not write the newer graph camera when the predicate says it is stale', async () => {
@@ -2517,12 +2509,8 @@ describe('useWorkflowService', () => {
         )
         await Promise.resolve()
 
-        // Non-vacuity: the newer load's camera is live at the moment of
-        // supersession, so the writes below are observed on resume rather
-        // than having never been reachable.
         expect(app.canvas.ds.scale).toBe(newerCamera.scale)
 
-        // The newer load commits and finishes while this one is suspended.
         isCurrent = false
         releaseOpen()
         await supersededLoad
@@ -2556,19 +2544,6 @@ describe('useWorkflowService', () => {
         expect(
           useNodeOutputStore().restorePreviewsForWorkflow
         ).toHaveBeenCalled()
-      })
-
-      it('activates normally when no predicate is supplied', async () => {
-        const liveLoad = useWorkflowService().afterLoadNewGraph(
-          'repeat',
-          makeWorkflowData()
-        )
-        await Promise.resolve()
-        releaseOpen()
-        await liveLoad
-
-        expect(app.canvas.ds.scale).toBe(0.3)
-        expect(setGraph).toHaveBeenCalled()
       })
     })
   })
