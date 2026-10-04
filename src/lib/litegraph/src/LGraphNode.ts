@@ -234,54 +234,6 @@ function configureCanonicalField(
 }
 
 /**
- * Mirrors `MAX_CLIPBOARD_WIDGET_VALUES` in the workflow schema, which bounds
- * the same shape on the clipboard path. Duplicated rather than imported because
- * `src/lib` is vendored leaf code and cannot reach an app layer.
- */
-const MAX_POSITIONAL_WIDGET_VALUES = 10_000
-
-/**
- * The positional register a node's `widgets_values` carries.
- *
- * `zWidgetValues` is `z.union([z.array(…), z.record(…)])`, `zComfyNode` is
- * `.passthrough()`, and only the clipboard schemas run
- * `normalizeClipboardNodeWidgets` — so on the workflow-load path this field can
- * be an array, the indexed array-like `{ 0: v, 1: v, length: n }` form
- * {@link ISerialisedNode} documents for custom nodes, or a name-keyed record.
- *
- * `Array.from` alone handles the first two and **trusts `length` without a
- * bound**: `{ "length": 1000000000 }` passes load validation and materialises a
- * billion-element array, which freezes the tab. Rejecting every non-array
- * instead is not the fix either — that discards the documented array-like form,
- * turning a freeze into silent total loss for a shape that used to restore
- * correctly. So the array-like is mapped under the same bound the clipboard
- * path applies, and anything else contributes no positional values.
- */
-function positionalWidgetValues(values: unknown): TWidgetValue[] {
-  if (Array.isArray(values)) return Array.from(values)
-  if (values === null || typeof values !== 'object') return []
-
-  const { length } = values as { length?: unknown }
-  if (
-    typeof length !== 'number' ||
-    !Number.isSafeInteger(length) ||
-    length < 0 ||
-    length > MAX_POSITIONAL_WIDGET_VALUES
-  ) {
-    return []
-  }
-
-  const positional: TWidgetValue[] = Array.from({ length })
-  for (const [key, value] of Object.entries(values)) {
-    const index = Number(key)
-    if (Number.isInteger(index) && index >= 0 && index < length) {
-      positional[index] = value as TWidgetValue
-    }
-  }
-  return positional
-}
-
-/**
  * A `fallbackWidgetsValuesNames` entry names a legacy slot only if it is a
  * non-empty string. The list is read off unvalidated `/object_info`, so its
  * declared element type is not a runtime guarantee and a non-string entry says
@@ -387,7 +339,7 @@ export function createWidgetRestorationState(
   info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
   fallbackNames?: readonly unknown[]
 ) {
-  const positional = positionalWidgetValues(info.widgets_values)
+  const positional = Array.from(info.widgets_values ?? [])
   // `nodeData` is built from unvalidated `/object_info` and then mutated in
   // place by `beforeRegisterNodeDef` extensions, so this may be any value. A
   // bare string is indexable, which would otherwise attribute one slot per
@@ -402,13 +354,14 @@ export function createWidgetRestorationState(
   return {
     positional,
     named: named ? { ...named } : undefined,
-    // The opt-in is gated on the field being *present*, not on it being
-    // usable: a node ships it because its widget order changed, so suppressing
-    // named restoration over a malformed list would place every value of a
-    // workflow that supplied its own `widgets_values_named` by index — which is
-    // the error the list exists to prevent. Only derivation needs `list`.
+    // Deliberately `fallbackNames`, not the validated `list`: only derivation
+    // needs a usable list. A node ships this field because its widget order
+    // changed, so suppressing the opt-in over a malformed one would read a
+    // workflow that supplied its own `widgets_values_named` by index — the
+    // error the field exists to prevent. Leaving the condition exactly as it
+    // was also keeps `null`, `''` and `0` out, which read as "no list".
     restoreNamed: Boolean(
-      named && (LiteGraph.namedValuesRestore || fallbackNames !== undefined)
+      named && (LiteGraph.namedValuesRestore || fallbackNames)
     )
   }
 }
@@ -1370,15 +1323,11 @@ export class LGraphNode
 
     realignGroupWidgetChildLinks(this, info)
 
-    const fallbackList = this.constructor.nodeData?.fallbackWidgetsValuesNames
-    const restoration = createWidgetRestorationState(info, fallbackList)
+    const restoration = createWidgetRestorationState(
+      info,
+      this.constructor.nodeData?.fallbackWidgetsValuesNames
+    )
     const namedValues = restoration.named
-    // A node that ships the list but derives no register is reported with an
-    // empty one rather than skipped. The shadow diff is the only existing
-    // signal that a node definition's list is unusable, and gating it on
-    // `namedValues` being truthy would silence exactly the nodes that need it.
-    const shadowValues =
-      namedValues ?? (fallbackList === undefined ? undefined : {})
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
@@ -1428,14 +1377,14 @@ export class LGraphNode
       }
 
       this.onConfigure?.(extensionConfigureView(this, info))
-      if (this.widgets && shadowValues) {
+      if (this.widgets && namedValues) {
         const legacyShadow = computeLegacyWidgetShadow(
           this.widgets,
-          restoration.positional
+          info.widgets_values
         )
         reportNamedValuesShadowDiff(
           this,
-          diffNamedValuesShadow(shadowValues, legacyShadow),
+          diffNamedValuesShadow(namedValues, legacyShadow),
           Boolean(info.widgets_values_named)
         )
       }

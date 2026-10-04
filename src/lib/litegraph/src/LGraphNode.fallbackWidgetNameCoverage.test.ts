@@ -132,6 +132,26 @@ describe('fallback widget-name coverage', () => {
       expect(widgetValues(node)).toStrictEqual([12345, 37])
     })
 
+    it('does not treat a null list as supplied', () => {
+      // `null` is the natural JSON encoding of "this node has no list", and
+      // `nodeData` reaches here unvalidated. Treating it as supplied would
+      // force named-only restoration on a node that never shipped one, where
+      // any widget the supplied register omits resets to its default.
+      const restoration = createWidgetRestorationState(
+        {
+          widgets_values: [111, 12],
+          widgets_values_named: { seed: 987654321 }
+        },
+        asMalformedList(null)
+      )
+
+      expect(restoration).toStrictEqual({
+        positional: [111, 12],
+        named: { seed: 987654321 },
+        restoreNamed: false
+      })
+    })
+
     it('reports an empty list as declaring no derivable register', () => {
       const restoration = createWidgetRestorationState(
         { widgets_values: [12345, 37] },
@@ -241,49 +261,6 @@ describe('fallback widget-name coverage', () => {
 
       expect(Object.hasOwn(restoration.named!, '__proto__')).toBe(true)
       expect(restoration.named!['__proto__']).toBe(5)
-    })
-  })
-
-  describe('`widgets_values` is not always an array', () => {
-    it('maps the indexed array-like form custom nodes serialize', () => {
-      const restoration = createWidgetRestorationState(
-        asMalformedInfo({ widgets_values: { 0: 12345, 1: 37, length: 2 } }),
-        ['seed', 'steps']
-      )
-
-      expect(restoration).toStrictEqual({
-        positional: [12345, 37],
-        named: { seed: 12345, steps: 37 },
-        restoreNamed: true
-      })
-    })
-
-    it('does not materialise an array from an unbounded array-like `length`', () => {
-      // `zWidgetValues` accepts the record form with any numeric value and the
-      // 10k clipboard clamp is not wired into the load path, so this passes
-      // validation. `Array.from` on it allocates a billion elements.
-      const restoration = createWidgetRestorationState(
-        asMalformedInfo({ widgets_values: { length: 1_000_000_000 } }),
-        ['seed']
-      )
-
-      expect(restoration.positional).toStrictEqual([])
-    })
-
-    it('takes no positional values from a name-keyed record', () => {
-      // Known gap rather than a fix: the record form is only normalized on the
-      // clipboard path, and promoting it here would not restore anything
-      // either, because the opt-in still gates on the list or the user setting.
-      const restoration = createWidgetRestorationState(
-        asMalformedInfo({ widgets_values: { seed: 12345, steps: 37 } }),
-        ['seed', 'steps']
-      )
-
-      expect(restoration).toStrictEqual({
-        positional: [],
-        named: undefined,
-        restoreNamed: false
-      })
     })
   })
 
