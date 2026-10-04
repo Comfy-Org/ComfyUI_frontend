@@ -233,6 +233,38 @@ function configureCanonicalField(
   }
 }
 
+/**
+ * Rebuilds a named register from the legacy positional one, using the node
+ * definition's `fallbackWidgetsValuesNames` as the name of each legacy slot.
+ *
+ * Returns `undefined` — refusing to derive at all — unless the list names every
+ * slot the workflow actually saved, with no name used twice. Named restoration
+ * does not consult `positional` per widget: a widget absent from the register
+ * keeps its node default. So a list that names only some slots does not restore
+ * part of the node, it silently discards the rest of the saved workflow, and an
+ * empty list discards all of it. Refusing leaves those nodes on the positional
+ * path they were loaded by before the node opted in, which is the only outcome
+ * that loses nothing.
+ *
+ * A repeated name is refused for the same reason rather than resolved here: the
+ * register can hold one value per name, so deriving would drop the other.
+ */
+function deriveNamedFromFallbackNames(
+  positional: readonly TWidgetValue[],
+  fallbackNames: readonly string[]
+): Record<string, TWidgetValue> | undefined {
+  const names = positional.map((_, index) => fallbackNames[index])
+  if (names.some((name) => !name)) return
+  if (new Set(names).size !== names.length) return
+
+  // Built by `fromEntries`, not by assignment: a widget may legitimately be
+  // named `__proto__`, and assigning that key hits the prototype setter
+  // instead of creating the own property `Object.hasOwn` later looks for.
+  return Object.fromEntries(
+    positional.map((value, index) => [names[index], value])
+  )
+}
+
 export function createWidgetRestorationState(
   info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
   fallbackNames?: readonly string[]
@@ -241,11 +273,7 @@ export function createWidgetRestorationState(
   const named =
     info.widgets_values_named ??
     (info.widgets_values && fallbackNames
-      ? Object.fromEntries(
-          positional.flatMap((value, index) =>
-            fallbackNames[index] ? [[fallbackNames[index], value]] : []
-          )
-        )
+      ? deriveNamedFromFallbackNames(positional, fallbackNames)
       : undefined)
 
   return {
