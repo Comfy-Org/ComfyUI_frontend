@@ -675,7 +675,12 @@ export function createAgentRestClient() {
       attachments: req.attachments,
       draft: req.draft && { content: req.draft.content },
       current_tab_unbound: req.currentTabUnbound,
-      client_message_id: req.clientMessageId
+      client_message_id: req.clientMessageId,
+      // Not `client_message_id`'s sibling: this is THIS TAB's ComfyUI socket
+      // id, which local agent runs are submitted under so their execution
+      // events reach this canvas (PM-1875). Read ambiently rather than taken
+      // from `req` because it belongs to the socket, not to the message.
+      client_id: api.clientId
     })
     return request(
       'post_thread_message',
