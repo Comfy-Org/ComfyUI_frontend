@@ -12,6 +12,7 @@
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
     "downloadAudio": "Download audio",
+    "downloadImages": "Download images",
     "editOrMaskImage": "Edit or mask image",
     "editImage": "Edit image",
     "openLayerEditor": "Open layer editor",
@@ -29,6 +30,7 @@
     "chartLowercase": "chart",
     "file": "file",
     "selectedFile": "Selected file",
+    "selected": "Selected",
     "none": "None",
     "markdown": "markdown",
     "content": "content",
@@ -686,6 +688,7 @@
     "Copy Image": "Copy Image",
     "Paste Image": "Paste Image",
     "Save Image": "Save Image",
+    "Download Images": "Download Images",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
     "FavoriteWidget": "Favorite Widget",
@@ -2550,6 +2553,7 @@
     "pleaseSelectNodesToGroup": "Please select the nodes (or other groups) to create a group for",
     "emptyCanvas": "Empty canvas",
     "fileUploadFailed": "File upload failed",
+    "extraResourcesUploadFailed": "Extra resources upload failed",
     "fileTooLarge": "File too large ({size} MB). Maximum supported size is {maxSize} MB",
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
@@ -2630,6 +2634,7 @@
       "appTypeNative": "Native app",
       "appTypeWeb": "Web app",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
+      "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
       "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
       "sessionError": "Failed to establish session. Please try again.",
@@ -3430,8 +3435,14 @@
     "planCredits": {
       "tabs": {
         "activity": "Activity",
-        "overview": "Credits"
+        "overview": "Credits",
+        "invoices": "Invoices"
       }
+    },
+    "invoices": {
+      "nextInvoice": "Next invoice",
+      "usd": "USD",
+      "fullHistory": "Full invoice history"
     },
     "tabs": {
       "dashboard": "Dashboard"
@@ -4133,7 +4144,13 @@
       "complete": "Download complete",
       "failed": "Download failed",
       "inProgress": "Downloading {assetName}..."
-    }
+    },
+    "downloadFailed": "Failed to download {name}"
+  },
+  "nodeOutputsExport": {
+    "title": "Download Assets",
+    "downloadAll": "Download all",
+    "download": "Download ({count})"
   },
   "mediaAsset": {
     "assetDelete": {

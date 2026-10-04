@@ -131,15 +131,13 @@ const { linearMode } = storeToRefs(useCanvasStore())
 const templateInputDownloadStore = useTemplateInputDownloadStore()
 const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   getReferencedInputNames: () =>
-    new Set(
-      scanAllMediaCandidates(app.rootGraph, isCloud).map(({ name }) => name)
-    ),
+    new Set(scanAllMediaCandidates(app.rootGraph).map(({ name }) => name)),
   refreshGraphBindings: async (completedInputNames) => {
     try {
       await app.reloadNodeDefs()
       refreshDownloadedTemplateInputBindings(
         app.rootGraph,
-        scanAllMediaCandidates(app.rootGraph, isCloud),
+        scanAllMediaCandidates(app.rootGraph),
         new Set(completedInputNames)
       )
       await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })

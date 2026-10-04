@@ -24,12 +24,5 @@ describe('mediaCacheService', () => {
       // Should not throw error
       expect(() => releaseUrl('non-existent.jpg')).not.toThrow()
     })
-
-    it('should provide acquireUrl and releaseUrl methods', () => {
-      const cache = useMediaCache()
-
-      expect(typeof cache.acquireUrl).toBe('function')
-      expect(typeof cache.releaseUrl).toBe('function')
-    })
   })
 })

@@ -965,6 +965,119 @@ describe('buildSummaryLedger server-reported fields', () => {
   })
 })
 
+describe('buildSummaryLedger itemized proration', () => {
+  const ITEMIZED_UPGRADE: Partial<SubscriptionPreview> = {
+    transition_type: 'upgrade',
+    proration_at: PRICED_AT,
+    amount_due_cents: 3250,
+    cost_today_cents: 3250,
+    proration_remaining_cents: 5000,
+    proration_unused_cents: 1750,
+    renewal_at: JULY_28,
+    credits_next_period_cents: 10_000,
+    current_plan: planOf('CREATOR', 'MONTHLY', 3500),
+    new_plan: planOf('PRO', 'MONTHLY', 10_000)
+  }
+  const REMAINING = {
+    label: 'Remaining time on Pro Plan',
+    amount: '$50.00',
+    sublines: ['Credits refill to 21,100 each month']
+  }
+  const UNUSED = {
+    label: 'Unused time on Creator Plan',
+    amount: '−$17.50',
+    sublines: [],
+    credit: true
+  }
+  type Rows = Pick<
+    SummaryLedger,
+    'items' | 'subtotal' | 'discounts' | 'balance' | 'total'
+  >
+
+  it.for<{ name: string; quote: Partial<SubscriptionPreview>; rows: Rows }>([
+    {
+      name: 'both amounts reported: a remaining-time charge and an unused-time credit that add up to the total',
+      quote: {},
+      rows: { items: [REMAINING, UNUSED], discounts: [], total: '$32.50' }
+    },
+    {
+      name: 'a code on top: the Subtotal the server reported, then the discount',
+      quote: {
+        amount_due_cents: 2250,
+        subtotal_cents: 3250,
+        promotion_code: 'COMFY10',
+        discounts: [entered('COMFY10', 1000)]
+      },
+      rows: {
+        items: [REMAINING, UNUSED],
+        subtotal: '$32.50',
+        discounts: [{ label: 'Promo code', amount: '−$10.00' }],
+        total: '$22.50'
+      }
+    },
+    {
+      name: 'an account balance on top: the balance row, no Subtotal',
+      quote: {
+        amount_due_cents: 2750,
+        subtotal_cents: 3250,
+        balance_applied_cents: 500
+      },
+      rows: {
+        items: [REMAINING, UNUSED],
+        discounts: [],
+        balance: {
+          label: 'Account balance',
+          amount: '−$5.00',
+          subline: 'Credit already on your account'
+        },
+        total: '$27.50'
+      }
+    },
+    {
+      name: 'a gap to the total nothing explains: neither row',
+      quote: { amount_due_cents: 0 },
+      rows: { items: [], discounts: [], total: '$0.00' }
+    },
+    {
+      name: 'only the remaining amount reported: the single net row',
+      quote: { proration_unused_cents: undefined },
+      rows: {
+        items: [
+          {
+            label: 'Pro Plan - Prorated',
+            amount: '$32.50',
+            sublines: [
+              'Remaining time for Pro plan, less unused time from Creator plan',
+              'Credits refill to 21,100 each month'
+            ]
+          }
+        ],
+        discounts: [],
+        total: '$32.50'
+      }
+    }
+  ])('$name', ({ quote, rows }) => {
+    const { items, subtotal, discounts, balance, total } = ledgerOf({
+      ...ITEMIZED_UPGRADE,
+      ...quote
+    })
+
+    expect({ items, subtotal, discounts, balance, total }).toEqual(rows)
+  })
+
+  it('names the cadence of both plans when the change crosses cadences', () => {
+    const { items } = ledgerOf({
+      ...ITEMIZED_UPGRADE,
+      new_plan: planOf('PRO', 'ANNUAL', 100_000)
+    })
+
+    expect(items.map(({ label }) => label)).toEqual([
+      'Remaining time on Pro Yearly',
+      'Unused time on Creator Monthly'
+    ])
+  })
+})
+
 describe('formatHeadlineMoney', () => {
   it.for([
     { cents: 70_000, text: '$700' },

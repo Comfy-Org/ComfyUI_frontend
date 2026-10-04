@@ -51,7 +51,9 @@ describe('useSubscriptionActions', () => {
     it('should call showTopUpCreditsDialog', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
-      expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(
+        useDialogService().showTopUpCreditsDialog
+      ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
       expect(
         useTelemetry()?.trackAddApiCreditButtonClicked
       ).toHaveBeenCalledWith({ source: 'settings_billing_panel' })

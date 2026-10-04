@@ -1,10 +1,13 @@
 import type {
+  CheckoutEndingKind,
   CheckoutEntryFlow,
   CheckoutEntrySource,
   CheckoutJourneyPhaseEvent,
   PreviewSubscribeResult,
+  SubscriptionCommandFailure,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
+import { matchesServerCode } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
 
 import type { CheckoutPageEvent } from '@/checkout/checkoutPage'
@@ -110,6 +113,16 @@ export function previewFailureOfResult(
   }
 }
 
+/** The full-page ending the embedded checkout's quote failure screen stands for. */
+export function quoteFailureEndingOf(
+  failure: SubscriptionCommandFailure
+): CheckoutEndingKind {
+  if (failure.code === 'ACCESS_DENIED') return 'refused'
+  return 'serverCode' in failure && matchesServerCode(failure, 'INVALID_PLAN')
+    ? 'plan_unavailable'
+    : 'load_failed'
+}
+
 type MethodSelectedPhase = Extract<
   CheckoutJourneyPhaseEvent,
   { phase: 'method_selected' }
@@ -119,7 +132,7 @@ type PromoPhase = Extract<CheckoutJourneyPhaseEvent, { phase: 'promo' }>
 export type PaymentRail = MethodSelectedPhase['rail']
 export type PromoResult = PromoPhase['result']
 
-function methodKindOf(
+export function methodKindOf(
   methodType: string | undefined
 ): MethodSelectedPhase['method_kind'] {
   if (methodType === undefined || methodType === '') return undefined

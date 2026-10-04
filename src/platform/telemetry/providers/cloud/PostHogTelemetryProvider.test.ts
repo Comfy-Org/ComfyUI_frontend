@@ -1191,6 +1191,38 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it.for([
+      {
+        exit: 'page_exit',
+        options: [{ transport: 'sendBeacon', send_instantly: true }]
+      },
+      { exit: 'dialog_close', options: [] }
+    ] as const)(
+      'captures a checkout abandoned at $exit with the matching transport',
+      async ({ exit, options }) => {
+        const provider = createProvider()
+        const event = {
+          checkout_journey_id: 'journey-1',
+          checkout_entered_at: '2026-10-01T00:00:00.000Z',
+          assignment_status: 'unavailable',
+          entry_flow: 'topup',
+          entry_source: 'settings_billing',
+          phase: 'abandoned',
+          last_phase: 'entered',
+          exit
+        } satisfies CheckoutJourneyTelemetryEvent
+        await vi.dynamicImportSettled()
+
+        provider.trackCheckoutJourneyEvent(event)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(
+          'billing.checkout.abandoned',
+          { ...event, schema_version: 1, billing_surface: 'cloud_app' },
+          ...options
+        )
+      }
+    )
+
     it('captures widget favorite toggled events with their metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

@@ -662,7 +662,9 @@ describe('CreditsTile', () => {
     expect(
       useTelemetry()?.trackAddApiCreditButtonClicked
     ).toHaveBeenCalledOnce()
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(
+      useDialogService().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
   })
 
   it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
