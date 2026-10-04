@@ -5049,6 +5049,7 @@
     "failed": "Failed",
     "finished": "Finished",
     "pending": "Pending",
+    "taskUnavailable": "The download task is no longer available.",
     "progressCount": "{completed} of {total}",
     "filter": {
       "all": "All",
@@ -5068,6 +5069,7 @@
     "exportFailedSingle": "Failed to create ZIP export",
     "downloadExport": "Download export",
     "downloadFailed": "Failed to download \"{name}\"",
+    "unsupportedDownloadUrl": "Unsupported export download URL",
     "retryDownload": "Retry download"
   },
   "workspace": {

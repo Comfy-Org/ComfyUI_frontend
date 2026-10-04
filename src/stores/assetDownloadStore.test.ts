@@ -10,7 +10,10 @@ import {
   taskService
 } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import {
+  isDownloadCancelled,
+  useAssetDownloadStore
+} from '@/stores/assetDownloadStore'
 
 type DownloadEventHandler = (e: CustomEvent<AssetDownloadWsMessage>) => void
 
@@ -171,6 +174,63 @@ describe('useAssetDownloadStore', () => {
         taskId: 'task-123',
         modelType: 'checkpoints'
       })
+    })
+
+    it('does not resurrect a dismissed unconfirmed cancellation on late events', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({ status: 'running', result: undefined })
+      })
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(store.downloadList[0].status).toBe('cancellation_unconfirmed')
+
+      store.clearDismissibleDownloads()
+      dispatch(createDownloadMessage({ status: 'running', progress: 0.75 }))
+      expect(store.downloadList).toHaveLength(0)
+
+      dispatch(createDownloadMessage({ status: 'completed', progress: 1 }))
+      expect(store.downloadList).toHaveLength(0)
+      expect(store.lastCompletedDownload).toMatchObject({
+        taskId: 'task-123',
+        modelType: 'checkpoints'
+      })
+    })
+
+    it('allows explicit tracking to reuse a dismissed task id', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      store.trackDownload('task-123', 'checkpoints', 'first.safetensors')
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await store.cancelDownload('task-123')
+      store.clearDismissibleDownloads()
+
+      store.trackDownload('task-123', 'loras', 'second.safetensors')
+      dispatch(
+        createDownloadMessage({
+          status: 'running',
+          asset_name: 'second.safetensors'
+        })
+      )
+
+      expect(store.downloadList).toEqual([
+        expect.objectContaining({
+          taskId: 'task-123',
+          modelType: 'loras',
+          assetName: 'second.safetensors'
+        })
+      ])
     })
 
     // REGRESSION COVERAGE PM-1302 / PM-1309: cloud's HandleDownloadFile
@@ -434,6 +494,24 @@ describe('useAssetDownloadStore', () => {
       expect(taskService.getTask).toHaveBeenCalledWith('task-123')
     })
 
+    it('shows pending cancellation when a DELETE 404 reread is still running', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'missing'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({ status: 'running', result: undefined })
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+
+      expect(store.downloadList[0].status).toBe('cancellation_pending')
+      expect(store.hasPendingCancellation).toBe(true)
+    })
+
     it('allows an authoritative completion to replace confirmed cancellation', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockResolvedValue({
@@ -551,7 +629,7 @@ describe('useAssetDownloadStore', () => {
       expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
     })
 
-    it('reconciles an authoritative failure after local cancellation and keeps polling', async () => {
+    it('stops polling after an authoritative failure during cancellation', async () => {
       const store = useAssetDownloadStore()
       store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
       vi.mocked(taskService.cancelTask).mockResolvedValue({
@@ -580,12 +658,12 @@ describe('useAssetDownloadStore', () => {
         error: 'Cancellation failed'
       })
 
-      await vi.advanceTimersByTimeAsync(10_000)
+      await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(taskService.getTask).toHaveBeenCalledTimes(2)
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
       expect(store.finishedDownloads[0]).toMatchObject({
-        status: 'completed',
-        assetId: 'asset-456'
+        status: 'failed',
+        error: 'Cancellation failed'
       })
     })
 
@@ -679,6 +757,28 @@ describe('useAssetDownloadStore', () => {
         status: 'failed',
         error: 'The download task is no longer available.'
       })
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(2)
+    })
+
+    it('stops polling after reconciliation confirms a failed task', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({
+          status: 'failed',
+          result: undefined,
+          error_message: 'Download failed'
+        })
+      })
+      dispatch(createDownloadMessage({ status: 'failed' }))
+
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(store.finishedDownloads[0].status).toBe('failed')
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
     })
 
     it('settles a pending cancellation the backend never confirms', async () => {
@@ -924,6 +1024,10 @@ describe('useAssetDownloadStore', () => {
 
       expect(store.finishedDownloads).toHaveLength(0)
     })
+  })
+
+  it('classifies an unconfirmed cancellation as cancelled for the UI', () => {
+    expect(isDownloadCancelled('cancellation_unconfirmed')).toBe(true)
   })
 
   describe('session download tracking', () => {
