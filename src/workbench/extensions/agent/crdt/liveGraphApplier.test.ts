@@ -98,6 +98,43 @@ class TestTwoGrowing extends LGraphNode {
   }
 }
 
+class TestNestedGrowing extends LGraphNode {
+  constructor() {
+    super('Test Nested Growing')
+    const mode = this.addWidget('combo', 'mode', 'creative', () => {}, {
+      values: ['creative', 'faithful']
+    })
+    let selected: unknown = 'creative'
+    Object.defineProperty(mode, 'value', {
+      configurable: true,
+      get: () => selected,
+      set: (next: unknown) => {
+        selected = next
+        const mounted = this.widgets?.some(({ name }) => name === 'mode.inner')
+        if (next === 'faithful' && mounted !== true) {
+          const inner = this.addWidget('combo', 'mode.inner', 'off', () => {}, {
+            values: ['off', 'on']
+          })
+          let innerSelected: unknown = 'off'
+          Object.defineProperty(inner, 'value', {
+            configurable: true,
+            get: () => innerSelected,
+            set: (innerNext: unknown) => {
+              innerSelected = innerNext
+              const nested = this.widgets?.some(
+                ({ name }) => name === 'mode.inner.x'
+              )
+              if (innerNext === 'on' && nested !== true)
+                this.addWidget('number', 'mode.inner.x', 1, () => {})
+            }
+          })
+        }
+      }
+    })
+    this.serialize_widgets = true
+  }
+}
+
 /** A live widget whose own name is alias-shaped, at a position that is not its index. */
 class TestAliasNamedWidget extends LGraphNode {
   constructor() {
@@ -146,6 +183,7 @@ const CATALOG: WidgetCatalog = {
     // The catalog names `mode.a` but not `mode.b`, so the host stores the last
     // value under the positional alias `_extra_2`.
     TestTwoGrowing: { widget_order: ['mode', 'mode.a'] },
+    TestNestedGrowing: { widget_order: ['mode', 'mode.inner', 'mode.inner.x'] },
     TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
     TestPrototypeNamedWidget: { widget_order: ['known'] },
     TestSink: { widget_order: [] }
@@ -198,6 +236,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
   LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
+  LiteGraph.registerNodeType('TestNestedGrowing', TestNestedGrowing)
   LiteGraph.registerNodeType('TestAliasNamedWidget', TestAliasNamedWidget)
   LiteGraph.registerNodeType(
     'TestPrototypeNamedWidget',
@@ -590,6 +629,74 @@ describe('LiveGraphApplier', () => {
       { name: 'mode', value: 'faithful' },
       { name: 'mode.a', value: 91 },
       { name: 'mode.b', value: 70 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('restores a nested widget after its selectors mount during configure', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestNestedGrowing',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['faithful', 'on', 5]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'faithful' },
+      { name: 'mode.inner', value: 'on' },
+      { name: 'mode.inner.x', value: 5 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('applies nested widget values regardless of document map order', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestNestedGrowing',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['creative']
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => {
+      const node = nodesMap(doc).get('1')
+      if (!(node instanceof Y.Map)) throw new Error('node storage')
+      node.set(
+        'widgets',
+        new Y.Map<unknown>([
+          ['mode.inner.x', 5],
+          ['mode.inner', 'on'],
+          ['mode', 'faithful']
+        ])
+      )
+    })
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'faithful' },
+      { name: 'mode.inner', value: 'on' },
+      { name: 'mode.inner.x', value: 5 }
     ])
     expect(reportError).not.toHaveBeenCalled()
   })

@@ -376,18 +376,14 @@ function supersededOverflowAlias(
  * `configure`; a name that still matches nothing is dropped without a report.
  */
 function mountedWidgetValues(
-  node: LGraphNode,
   widgets: DocNode['widgets'],
   constructed: readonly IBaseWidget[]
 ): Record<string, unknown> | undefined {
   if (widgets === undefined || Array.isArray(widgets)) return undefined
   const built = new Set(constructed.map((widget) => widget.name))
-  const live = new Set(serializableWidgets(node).map((widget) => widget.name))
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
-    return index === null
-      ? !built.has(name) && live.has(name)
-      : index >= constructed.length
+    return index === null ? !built.has(name) : index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
 }
@@ -645,9 +641,9 @@ export class LiveGraphApplier {
         ...info,
         widgets_values: positionalWidgetValues(node, docNode.widgets)
       })
-      const mounted = mountedWidgetValues(node, docNode.widgets, constructed)
+      const mounted = mountedWidgetValues(docNode.widgets, constructed)
       if (mounted && !node.isSubgraphNode())
-        this.applyWidgets(node, mounted, docNode.widgets)
+        this.applyWidgets(node, mounted, docNode.widgets, false)
     }
     floorSizeToContent(node)
     return node
@@ -722,45 +718,73 @@ export class LiveGraphApplier {
   private applyWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
-    documentWidgets: DocNode['widgets'] = widgets
+    documentWidgets: DocNode['widgets'] = widgets,
+    reportMissing = true
   ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
       this.applyHostWidgets(node, widgets)
       return
     }
-    for (const [name, value] of ordinaryWidgetEntries(node, widgets)) {
-      if (value === undefined || !isWidgetValue(value)) continue
-      const widget = this.targetWidget(node, name, value, documentWidgets)
-      if (widget) this.setWidgetValue(node, widget, value)
+    let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
+    while (pending.length > 0) {
+      const { resolved, unresolved } = this.applyWidgetRound(
+        node,
+        pending,
+        documentWidgets
+      )
+      if (!resolved) {
+        this.reportMissingWidgets(node, unresolved, reportMissing)
+        return
+      }
+      pending = unresolved
     }
   }
 
-  private targetWidget(
+  private applyWidgetRound(
     node: LGraphNode,
-    name: string,
-    value: WidgetValue,
+    pending: readonly [string, WidgetValue][],
     documentWidgets: DocNode['widgets']
-  ): IBaseWidget | undefined {
-    if (supersededOverflowAlias(node, name, documentWidgets)) return undefined
-    if (this.holdsLocalWrite(node, name, value)) return undefined
-    const widget = documentWidget(node, name)
-    if (!widget) {
-      this.reportOnce(
-        `widget:${String(node.id)}:${name}`,
-        `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
-        'agent_graph_widget_missing',
-        { nodeId: node.id, type: node.type, name }
+  ): { resolved: boolean; unresolved: [string, WidgetValue][] } {
+    const unresolved: [string, WidgetValue][] = []
+    let resolved = false
+    for (const [name, value] of pending) {
+      if (supersededOverflowAlias(node, name, documentWidgets)) continue
+      if (this.holdsLocalWrite(node, name, value)) continue
+      const widget = documentWidget(node, name)
+      if (widget === undefined) {
+        unresolved.push([name, value])
+        continue
+      }
+      if (
+        widget.name !== name &&
+        this.holdsLocalWrite(node, widget.name, value)
       )
-      return undefined
+        continue
+      this.setWidgetValue(node, widget, value)
+      resolved = true
     }
-    // `LocalWidgetWrites` keys a pending edit by the name the local
-    // `set_widget` carried, which is the widget's real name — an alias key
-    // never matches it, so the hold has to be re-asked under the resolved
-    // name or a frame rewinds an edit the user is still making.
-    if (widget.name !== name && this.holdsLocalWrite(node, widget.name, value))
-      return undefined
-    return widget
+    return { resolved, unresolved }
+  }
+
+  private reportMissingWidgets(
+    node: LGraphNode,
+    unresolved: readonly [string, WidgetValue][],
+    reportMissing: boolean
+  ): void {
+    for (const [name] of unresolved) {
+      if (reportMissing || overflowWidgetIndex(name) !== null)
+        this.reportMissingWidget(node, name)
+    }
+  }
+
+  private reportMissingWidget(node: LGraphNode, name: string): void {
+    this.reportOnce(
+      `widget:${String(node.id)}:${name}`,
+      `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
+      'agent_graph_widget_missing',
+      { nodeId: node.id, type: node.type, name }
+    )
   }
 
   private applyHostWidgets(
@@ -933,9 +957,8 @@ const MOUNTED_LAST = Number.MAX_SAFE_INTEGER
 
 /**
  * Apply order for a document widget map: live names first, then overflow
- * aliases by position, then names no widget carries yet. Only a setter run by
- * an earlier entry can mount the last group, so a selector is always applied
- * before the entries — aliased or named — that address what it mounts.
+ * aliases by position, then names no widget carries yet. Unresolved entries
+ * are retried after each round, so selectors can mount widgets at any depth.
  */
 function widgetEntryRank(node: LGraphNode, name: string): number {
   const index = overflowWidgetIndex(name)
@@ -943,6 +966,12 @@ function widgetEntryRank(node: LGraphNode, name: string): number {
   return node.widgets?.some((widget) => widget.name === name)
     ? -1
     : MOUNTED_LAST
+}
+
+function isWidgetEntry(
+  entry: [string, unknown]
+): entry is [string, WidgetValue] {
+  return entry[1] !== undefined && isWidgetValue(entry[1])
 }
 
 /**
