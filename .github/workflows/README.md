@@ -28,3 +28,17 @@ Knip jobs. Any file outside that directory selects the full repository jobs; pus
 branches always run the full jobs.
 
 For GitHub Actions documentation, see [Events that trigger workflows](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows).
+
+## Website auto-approval
+
+`pr-website-auto-approve.yaml` removes the human approval wait for explicitly
+allowlisted authors when every changed file is under `apps/website/**`. It runs
+from the protected default branch on `pull_request_target`, never executes PR code,
+rejects other base branches and fork pull requests, rechecks the live head, and verifies that
+`WEBSITE_APPROVAL_TOKEN` belongs to `webreviewer-bot` before approving. The bot is a member of
+`comfy_website_devs`, so its review satisfies the website path reviewer rule.
+
+The initial author allowlist contains only `bertfy`. Expand it by reviewing a
+change to `WEBSITE_AUTO_APPROVE_AUTHORS` in the workflow. A repository
+administrator must provide the bot's classic PAT as the Actions secret
+`WEBSITE_APPROVAL_TOKEN`; missing or mismatched credentials fail closed.
