@@ -1,10 +1,14 @@
+import { effectScope, watch } from 'vue'
+
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
+import { i18n, t } from '@/i18n'
+import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -236,17 +240,40 @@ function dragElement(dragEl: HTMLElement): () => void {
   return restorePos
 }
 
+function setControlLabel(element: Element, label: string) {
+  const textNode = [...element.childNodes].find(
+    (node) => node.nodeType === Node.TEXT_NODE
+  )
+  if (textNode) {
+    textNode.nodeValue = label
+    return
+  }
+  element.prepend(label)
+}
+
+function legacyMenuSectionLabel(section: string): string {
+  switch (section) {
+    case 'Running':
+      return t('legacyMenu.running')
+    case 'Pending':
+      return t('legacyMenu.pending')
+    case 'history':
+      return t('legacyMenu.historySection')
+    default:
+      return section
+  }
+}
+
 class ComfyList {
-  private _type: string
-  private _text: string
-  private _reverse: boolean
+  private readonly list: 'queue' | 'history'
+  private readonly _reverse: boolean
+  private lastSections: Record<string, JobListItem[]> | null = null
   element: HTMLDivElement
   button?: HTMLButtonElement
 
-  constructor(text: string, type?: string, reverse?: boolean) {
-    this._text = text
-    this._type = type || text.toLowerCase()
-    this._reverse = reverse || false
+  constructor(list: 'queue' | 'history', reverse = false) {
+    this.list = list
+    this._reverse = reverse
     this.element = $el('div.comfy-list') as HTMLDivElement
     this.element.style.display = 'none'
 
@@ -258,38 +285,39 @@ class ComfyList {
     )
   }
 
+  private get listLabel() {
+    return this.list === 'queue'
+      ? t('legacyMenu.queue')
+      : t('legacyMenu.history')
+  }
+
   get visible() {
     return this.element.style.display !== 'none'
   }
 
-  async load() {
-    const items =
-      this._type === 'history'
-        ? { history: await api.getHistory() }
-        : await api.getQueue()
+  private render(sections: Record<string, JobListItem[]>) {
     this.element.replaceChildren(
-      ...Object.entries(items).flatMap(([section, sectionItems]) => [
+      ...Object.entries(sections).flatMap(([section, sectionItems]) => [
         $el('h4', {
-          textContent: section
+          textContent: legacyMenuSectionLabel(section)
         }),
         $el(
           'div.comfy-list-items',
-          (this._reverse ? sectionItems.reverse() : sectionItems).map(
+          (this._reverse ? [...sectionItems].reverse() : sectionItems).map(
             (item) => {
-              // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
               const removeAction =
                 section === 'Running'
                   ? {
-                      name: 'Cancel',
+                      name: t('legacyMenu.cancel'),
                       cb: () => api.interrupt(item.id)
                     }
                   : {
-                      name: 'Delete',
-                      cb: () => api.deleteItem(this._type, item.id)
+                      name: t('legacyMenu.delete'),
+                      cb: () => api.deleteItem(this.list, item.id)
                     }
               return $el('div', { textContent: item.priority + ': ' }, [
                 $el('button', {
-                  textContent: 'Load',
+                  textContent: t('legacyMenu.load'),
                   onclick: async () => {
                     const job = await api.getJobDetail(item.id)
                     if (!job) return
@@ -314,15 +342,31 @@ class ComfyList {
       ]),
       $el('div.comfy-list-actions', [
         $el('button', {
-          textContent: 'Clear ' + this._text,
+          textContent: t('legacyMenu.clearList', { name: this.listLabel }),
           onclick: async () => {
-            await api.clearItems(this._type)
+            await api.clearItems(this.list)
             await this.load()
           }
         }),
-        $el('button', { textContent: 'Refresh', onclick: () => this.load() })
+        $el('button', {
+          textContent: t('legacyMenu.refresh'),
+          onclick: () => this.load()
+        })
       ])
     )
+  }
+
+  async load() {
+    const sections: Record<string, JobListItem[]> = {}
+    if (this.list === 'history') {
+      sections.history = await api.getHistory()
+    } else {
+      const queue = await api.getQueue()
+      sections.Running = queue.Running
+      sections.Pending = queue.Pending
+    }
+    this.lastSections = sections
+    this.render(sections)
   }
 
   async update() {
@@ -333,14 +377,27 @@ class ComfyList {
 
   async show() {
     this.element.style.display = 'block'
-    if (this.button) this.button.textContent = 'Close'
+    if (this.button) this.button.textContent = t('legacyMenu.close')
 
     await this.load()
   }
 
   hide() {
     this.element.style.display = 'none'
-    if (this.button) this.button.textContent = 'View ' + this._text
+    if (this.button) {
+      this.button.textContent = t('legacyMenu.viewList', {
+        name: this.listLabel
+      })
+    }
+  }
+
+  applyLocalizedChrome() {
+    if (this.button) {
+      this.button.textContent = this.visible
+        ? t('legacyMenu.close')
+        : t('legacyMenu.viewList', { name: this.listLabel })
+    }
+    if (this.visible && this.lastSections) this.render(this.lastSections)
   }
 
   toggle() {
@@ -367,6 +424,8 @@ export class ComfyUI {
   autoQueueEnabled = false
   menuContainer = document.createElement('div')
   queueSize: Element = document.createElement('span')
+  private displayedQueueRemaining: number | null = null
+  private applyLocalizedText: () => void = () => {}
   restoreMenuPosition = () => {}
   loadFile = () => {}
 
@@ -377,8 +436,8 @@ export class ComfyUI {
 
     this.batchCount = 1
     this.lastQueueSize = 0
-    this.queue = new ComfyList('Queue')
-    this.history = new ComfyList('History', 'history', true)
+    this.queue = new ComfyList('queue')
+    this.history = new ComfyList('history', true)
 
     api.addEventListener('status', () => {
       void this.queue.update()
@@ -416,13 +475,14 @@ export class ComfyUI {
       'autoQueueMode',
       [
         {
-          text: 'instant',
-          tooltip: 'A new prompt will be queued as soon as the queue reaches 0'
+          text: t('legacyMenu.instant'),
+          value: 'instant',
+          tooltip: t('legacyMenu.instantTooltip')
         },
         {
-          text: 'change',
-          tooltip:
-            'A new prompt will be queued when the queue is at 0 and the graph is/has changed'
+          text: t('legacyMenu.change'),
+          value: 'change',
+          tooltip: t('legacyMenu.changeTooltip')
         }
       ],
       {
@@ -445,6 +505,11 @@ export class ComfyUI {
         }
       }
     })
+
+    let extraOptionsLabel: HTMLElement | undefined
+    let batchCountLabel: HTMLElement | undefined
+    let autoQueueLabel: HTMLElement | undefined
+    let autoQueueInput: HTMLElement | undefined
 
     this.menuContainer = $el(
       'div.comfy-menu.no-drag',
@@ -483,7 +548,6 @@ export class ComfyUI {
         ),
         $el('button.comfy-queue-btn', {
           id: 'queue-button',
-          textContent: 'Queue Prompt',
           onclick: () => {
             const workflowQueueIntent = {
               trigger_source: 'legacy_ui'
@@ -496,7 +560,7 @@ export class ComfyUI {
           }
         }),
         $el('div', {}, [
-          $el('label', { innerHTML: 'Extra options' }, [
+          $el('label', { $: (el) => (extraOptionsLabel = el) }, [
             $el('input', {
               type: 'checkbox',
               onchange: (event: Event) => {
@@ -529,7 +593,7 @@ export class ComfyUI {
           { id: 'extraOptions', style: { width: '100%', display: 'none' } },
           [
             $el('div', [
-              $el('label', { innerHTML: 'Batch count' }),
+              $el('label', { $: (el) => (batchCountLabel = el) }),
               $el('input', {
                 id: 'batchCountInputNumber',
                 type: 'number',
@@ -573,13 +637,13 @@ export class ComfyUI {
             $el('div', [
               $el('label', {
                 for: 'autoQueueCheckbox',
-                innerHTML: 'Auto Queue'
+                $: (el) => (autoQueueLabel = el)
               }),
               $el('input', {
                 id: 'autoQueueCheckbox',
                 type: 'checkbox',
                 checked: false,
-                title: 'Automatically queue prompt when the queue size hits 0',
+                $: (el) => (autoQueueInput = el),
                 onchange: (event: Event) => {
                   const input = event.currentTarget
                   if (!(input instanceof HTMLInputElement)) return
@@ -596,7 +660,6 @@ export class ComfyUI {
         $el('div.comfy-menu-btns', [
           $el('button', {
             id: 'queue-front-button',
-            textContent: 'Queue Front',
             onclick: () => {
               const workflowQueueIntent = {
                 trigger_source: 'legacy_ui'
@@ -611,7 +674,6 @@ export class ComfyUI {
           $el('button', {
             $: (b) => (this.queue.button = b as HTMLButtonElement),
             id: 'comfy-view-queue-button',
-            textContent: 'View Queue',
             onclick: () => {
               this.history.hide()
               this.queue.toggle()
@@ -620,7 +682,6 @@ export class ComfyUI {
           $el('button', {
             $: (b) => (this.history.button = b as HTMLButtonElement),
             id: 'comfy-view-history-button',
-            textContent: 'View History',
             onclick: () => {
               this.queue.hide()
               this.history.toggle()
@@ -631,14 +692,12 @@ export class ComfyUI {
         this.history.element,
         $el('button', {
           id: 'comfy-save-button',
-          textContent: 'Save',
           onclick: () => {
             void useCommandStore().execute('Comfy.ExportWorkflow')
           }
         }),
         $el('button', {
           id: 'comfy-dev-save-api-button',
-          textContent: 'Save (API Format)',
           style: { width: '100%', display: 'none' },
           onclick: () => {
             void useCommandStore().execute('Comfy.ExportWorkflowAPI')
@@ -646,28 +705,24 @@ export class ComfyUI {
         }),
         $el('button', {
           id: 'comfy-load-button',
-          textContent: 'Load',
           onclick: () => fileInput.click()
         }),
         $el('button', {
           id: 'comfy-refresh-button',
-          textContent: 'Refresh',
           onclick: () => {
             void app.refreshComboInNodes().catch(() => {})
           }
         }),
         $el('button', {
           id: 'comfy-clipspace-button',
-          textContent: 'Clipspace',
           onclick: () => app.openClipspace()
         }),
         $el('button', {
           id: 'comfy-clear-button',
-          textContent: 'Clear',
           onclick: () => {
             if (
               !useSettingStore().get('Comfy.ConfirmClear') ||
-              confirm('Clear workflow?')
+              confirm(t('legacyMenu.confirmClear'))
             ) {
               app.clean()
               useLitegraphService().resetView()
@@ -677,11 +732,10 @@ export class ComfyUI {
         }),
         $el('button', {
           id: 'comfy-load-default-button',
-          textContent: 'Load Default',
           onclick: async () => {
             if (
               !useSettingStore().get('Comfy.ConfirmClear') ||
-              confirm('Load default workflow?')
+              confirm(t('legacyMenu.confirmLoadDefault'))
             ) {
               useLitegraphService().resetView()
               await app.loadGraphData()
@@ -690,7 +744,6 @@ export class ComfyUI {
         }),
         $el('button', {
           id: 'comfy-reset-view-button',
-          textContent: 'Reset View',
           onclick: async () => {
             useLitegraphService().resetView()
           }
@@ -702,14 +755,87 @@ export class ComfyUI {
 
     this.restoreMenuPosition = dragElement(this.menuContainer)
 
-    this.queueSize.textContent = 'Queue size: X'
+    this.applyLocalizedText = () => {
+      if (extraOptionsLabel) {
+        setControlLabel(extraOptionsLabel, t('legacyMenu.extraOptions'))
+      }
+      if (batchCountLabel) {
+        setControlLabel(batchCountLabel, t('legacyMenu.batchCount'))
+      }
+      if (autoQueueLabel) {
+        setControlLabel(autoQueueLabel, t('legacyMenu.autoQueue'))
+      }
+      if (autoQueueInput) {
+        autoQueueInput.title = t('legacyMenu.autoQueueTooltip')
+      }
+
+      const modeLabels = [...autoQueueModeEl.querySelectorAll('label')]
+      const modes = [
+        {
+          text: t('legacyMenu.instant'),
+          tooltip: t('legacyMenu.instantTooltip')
+        },
+        {
+          text: t('legacyMenu.change'),
+          tooltip: t('legacyMenu.changeTooltip')
+        }
+      ]
+      for (const [index, mode] of modes.entries()) {
+        const label = modeLabels[index]
+        setControlLabel(label, mode.text)
+        label.title = mode.tooltip
+      }
+
+      const controls = [
+        ['#queue-button', t('legacyMenu.queuePrompt')],
+        ['#queue-front-button', t('legacyMenu.queueFront')],
+        ['#comfy-save-button', t('legacyMenu.save')],
+        ['#comfy-dev-save-api-button', t('legacyMenu.saveApiFormat')],
+        ['#comfy-load-button', t('legacyMenu.load')],
+        ['#comfy-refresh-button', t('legacyMenu.refresh')],
+        ['#comfy-clipspace-button', t('legacyMenu.clipspace')],
+        ['#comfy-clear-button', t('legacyMenu.clear')],
+        ['#comfy-load-default-button', t('legacyMenu.loadDefault')],
+        ['#comfy-reset-view-button', t('legacyMenu.resetView')]
+      ] as const
+      for (const [selector, label] of controls) {
+        const element = this.menuContainer.querySelector(selector)
+        if (element) setControlLabel(element, label)
+      }
+
+      this.queueSize.textContent =
+        this.displayedQueueRemaining == null
+          ? t('legacyMenu.queueSizePlaceholder')
+          : t('legacyMenu.queueSize', {
+              count: this.displayedQueueRemaining
+            })
+
+      this.queue.applyLocalizedChrome()
+      this.history.applyLocalizedChrome()
+    }
+    this.applyLocalizedText()
+    this.startLocaleSync()
+  }
+
+  private startLocaleSync() {
+    effectScope().run(() => {
+      watch(
+        () => i18n.global.getLocaleMessage(i18n.global.locale.value),
+        () => {
+          this.applyLocalizedText()
+        }
+      )
+    })
   }
 
   setStatus(status: StatusWsMessageStatus | null) {
     const queueRemaining = status?.exec_info?.queue_remaining
     if (queueRemaining == null) return
 
-    this.queueSize.textContent = 'Queue size: ' + queueRemaining
+    this.displayedQueueRemaining = queueRemaining
+    this.queueSize.textContent = t('legacyMenu.queueSize', {
+      count: queueRemaining
+    })
     if (
       this.lastQueueSize != 0 &&
       queueRemaining == 0 &&

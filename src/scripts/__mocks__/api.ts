@@ -7,6 +7,8 @@ export const api: Pick<
   | 'addEventListener'
   | 'apiURL'
   | 'fetchApi'
+  | 'getHistory'
+  | 'getQueue'
   | 'getServerFeature'
   | 'removeEventListener'
   | 'storeSetting'
@@ -14,6 +16,8 @@ export const api: Pick<
   addEventListener: vi.fn(),
   apiURL: vi.fn((url) => (url.startsWith('/api') ? url : `/api${url}`)),
   fetchApi: vi.fn(),
+  getHistory: vi.fn(async () => []),
+  getQueue: vi.fn(async () => ({ Running: [], Pending: [] })),
   getServerFeature: vi.fn(),
   removeEventListener: vi.fn(),
   storeSetting: vi.fn()
