@@ -48,10 +48,15 @@ describe('useBillingBanner', () => {
     billingContext.isTeamPlan = computed(() => billing.isTeamPlan.value)
     billingContext.billingStatus = computed(() => billing.billingStatus.value)
     billingContext.renewalInvoice = computed(() => billing.renewalInvoice.value)
+    // Mirrors useLegacyBilling: an inactive, tierless status with no renewal
+    // invoice collapses to a null subscription.
     billingContext.subscription = computed(() =>
-      billing.subscription.value
+      billing.subscription.value &&
+      (billing.canAccessSubscriptionFeatures.value ||
+        billing.tier.value ||
+        billing.renewalInvoice.value)
         ? {
-            isActive: true,
+            isActive: billing.canAccessSubscriptionFeatures.value,
             tier: billing.tier.value,
             duration: null,
             planSlug: null,
@@ -169,6 +174,8 @@ describe('useBillingBanner', () => {
     }) {
       const billing = setupBilling()
       billing.isTeamPlan.value = false
+      // The backend pairs a past-due status with is_active=false.
+      billing.canAccessSubscriptionFeatures.value = false
       billing.tier.value = opts.tier
       billing.billingStatus.value = 'payment_failed'
       billing.renewalInvoice.value = opts.withInvoice ? invoice : null
@@ -187,6 +194,19 @@ describe('useBillingBanner', () => {
     it('stays quiet for a FREE tier without a renewal invoice', () => {
       expect(
         setupPastDue({ tier: 'FREE', withInvoice: false }).value
+      ).toBeNull()
+    })
+
+    it('gives a past-due tierless owner without an invoice no banner', () => {
+      expect(setupPastDue({ tier: null, withInvoice: false }).value).toBeNull()
+    })
+
+    it('does not grant the invoice path to an unrecognized tier', () => {
+      expect(
+        setupPastDue({
+          tier: 'FUTURE_TIER' as SubscriptionInfo['tier'],
+          withInvoice: true
+        }).value
       ).toBeNull()
     })
 

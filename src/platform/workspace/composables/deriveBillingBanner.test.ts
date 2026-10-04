@@ -10,6 +10,7 @@ const funded: BillingBannerInputs = {
   isEnterprise: false,
   isKnownPersonalTier: false,
   hasRenewalInvoice: false,
+  isInvoiceRecoverableTier: false,
   isLoaded: true,
   canAccessSubscriptionFeatures: true,
   billingStatus: 'paid',
@@ -76,9 +77,23 @@ describe('deriveBillingBanner', () => {
       derive({
         ...paymentFailed,
         isTeamPlan: false,
-        isKnownPersonalTier: false
+        isKnownPersonalTier: false,
+        hasRenewalInvoice: true,
+        isInvoiceRecoverableTier: false
       })
     ).toBeNull()
+  })
+
+  it('offers payment recovery to a FREE or tierless owner with an invoice', () => {
+    expect(
+      derive({
+        ...paymentFailed,
+        isTeamPlan: false,
+        isKnownPersonalTier: false,
+        hasRenewalInvoice: true,
+        isInvoiceRecoverableTier: true
+      })
+    ).toBe('paymentFailed')
   })
 
   it('hides existing notices when billing control is rolled back', () => {

@@ -32,6 +32,7 @@ export interface BillingBannerInputs {
   isEnterprise: boolean
   isKnownPersonalTier: boolean
   hasRenewalInvoice: boolean
+  isInvoiceRecoverableTier: boolean
   isLoaded: boolean
   canAccessSubscriptionFeatures: boolean
   billingStatus: BillingStatus | null
@@ -68,8 +69,8 @@ function deriveEnterpriseBanner(
 // unrecognized server tier reads as "not team, not Enterprise" and would
 // otherwise borrow the personal claim — the module's unknown-tier policy is
 // fail-closed, so recovery is granted only to tiers on this list. An
-// outstanding renewal invoice also qualifies: past-due legacy subscribers
-// report FREE or no tier, but the invoice is only returned while collectible.
+// outstanding renewal invoice also qualifies for FREE or no tier, which is how
+// past-due legacy subscribers are reported; other unrecognized tiers stay out.
 const PERSONAL_RECOVERY_TIERS: ReadonlySet<SubscriptionTier> = new Set([
   'STANDARD',
   'CREATOR',
@@ -86,7 +87,7 @@ function derivePaymentRecoveryBanner(
   if (
     !inputs.isTeamPlan &&
     !inputs.isKnownPersonalTier &&
-    !inputs.hasRenewalInvoice
+    !(inputs.hasRenewalInvoice && inputs.isInvoiceRecoverableTier)
   ) {
     return null
   }
@@ -150,9 +151,13 @@ export function deriveBillingBanner(
 
 function classifyTier(
   tier: SubscriptionTier | null | undefined
-): Pick<BillingBannerInputs, 'isEnterprise' | 'isKnownPersonalTier'> {
+): Pick<
+  BillingBannerInputs,
+  'isEnterprise' | 'isKnownPersonalTier' | 'isInvoiceRecoverableTier'
+> {
   return {
     isEnterprise: tier === 'ENTERPRISE',
+    isInvoiceRecoverableTier: tier == null || tier === 'FREE',
     isKnownPersonalTier: tier != null && PERSONAL_RECOVERY_TIERS.has(tier)
   }
 }
@@ -163,6 +168,7 @@ function readSubscriptionInputs(
   BillingBannerInputs,
   | 'isEnterprise'
   | 'isKnownPersonalTier'
+  | 'isInvoiceRecoverableTier'
   | 'isLoaded'
   | 'hasFunds'
   | 'isCancelled'
