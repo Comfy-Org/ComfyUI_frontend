@@ -441,7 +441,24 @@ onMounted(() => {
   agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
   syncAgentMinimapLayer(graphActivity.state)
 })
-onBeforeUnmount(() => agentMinimapLayer?.dispose())
+// Teardown must be total. Nothing is re-thrown: an error escaping an unmount
+// hook reaches Vue's logError, which re-throws outside production builds (this
+// app registers no app.config.errorHandler) and aborts both the steps after it
+// and the rest of unmountComponent -- stranding this panel's later releases on
+// singletons that outlive it, such as the PM-1575 canvas-sync gate below.
+function runPanelTeardown(...steps: readonly (() => void)[]): void {
+  for (const step of steps) {
+    try {
+      step()
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_tearing_down_agent_panel'
+      })
+    }
+  }
+}
+onBeforeUnmount(() => runPanelTeardown(() => agentMinimapLayer?.dispose()))
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
@@ -1236,27 +1253,34 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
-  releaseCoachCompletionWaiters()
-  if (
-    (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
-    composerStore.submission?.id === consentHeldSubmissionId
-  )
-    composerStore.invalidateSubmission()
-  docOpMinter.detach()
-  restoreOpMinter.detach()
-  exitNodeSelectionMode()
-  stop()
-  ++activeTabGeneration
-  tabActivity.setEditing(null)
-  tabActivity.setCreating(false)
-  // PM-1575: the store singleton outlives this component. Without resetting
-  // the gate here, a remount's own setCanvasSyncGate() call is the only
-  // thing standing between the old (now torn-down) follower's gate and a
-  // turn resumed in the meantime reading it -- reset to the always-safe
-  // default instead of leaving whatever this instance last set.
-  conversationStore.setCanvasSyncGate(
-    () => false,
-    () => 0
+  runPanelTeardown(
+    () => releaseCoachCompletionWaiters(),
+    () => {
+      if (
+        (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
+        composerStore.submission?.id === consentHeldSubmissionId
+      )
+        composerStore.invalidateSubmission()
+    },
+    () => docOpMinter.detach(),
+    () => restoreOpMinter.detach(),
+    () => exitNodeSelectionMode(),
+    () => stop(),
+    () => {
+      ++activeTabGeneration
+    },
+    () => tabActivity.setEditing(null),
+    () => tabActivity.setCreating(false),
+    // PM-1575: the store singleton outlives this component. Without resetting
+    // the gate here, a remount's own setCanvasSyncGate() call is the only
+    // thing standing between the old (now torn-down) follower's gate and a
+    // turn resumed in the meantime reading it -- reset to the always-safe
+    // default instead of leaving whatever this instance last set.
+    () =>
+      conversationStore.setCanvasSyncGate(
+        () => false,
+        () => 0
+      )
   )
 })
 
@@ -1650,7 +1674,7 @@ const attachment = useAttachment({
   remove: composerStore.removeAttachment
 })
 
-onBeforeUnmount(() => attachment.cancelAllUploads())
+onBeforeUnmount(() => runPanelTeardown(() => attachment.cancelAllUploads()))
 
 function onAttach(): void {
   exitNodeSelectionMode()

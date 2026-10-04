@@ -4510,11 +4510,16 @@ describe('AgentPanelRoot lifecycle', () => {
     })
 
     first.unmount()
-    expect(errorHandler).toHaveBeenCalledWith(
+    // Contained and reported, not escaped: a step that throws must not reach
+    // Vue's error handling, which re-throws out of `invokeArrayFns` and would
+    // abandon the remaining hooks and the rest of `unmountComponent`.
+    expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'teardown failed' }),
-      expect.anything(),
-      'beforeUnmount hook'
+      expect.objectContaining({
+        errorType: 'failure_tearing_down_agent_panel'
+      })
     )
+    expect(errorHandler).not.toHaveBeenCalled()
 
     renderWithSelectedTarget().unmount()
 
@@ -4524,6 +4529,44 @@ describe('AgentPanelRoot lifecycle', () => {
         errorType: 'minimap_decoration_layer_duplicate'
       })
     )
+  })
+
+  it('resets the canvas sync gate when an earlier teardown step throws', () => {
+    const errorHandler = vi.fn()
+    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
+      docOpMinterDeps.current = deps
+      return fromPartial<DocOpMinter>({
+        detach: vi.fn(() => {
+          throw new Error('detach failed')
+        })
+      })
+    })
+    const panel = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+    // Cleared so the only recorded call is the teardown reset, not this
+    // instance's own live gate registered while it was mounted.
+    setCanvasSyncGate.mockClear()
+
+    panel.unmount()
+
+    // PM-1575: the gate is reset to the always-safe default even though a
+    // step three places ahead of it threw.
+    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
+    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe(false)
+    expect(outcomeCount?.()).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'detach failed' }),
+      expect.objectContaining({
+        errorType: 'failure_tearing_down_agent_panel'
+      })
+    )
+    expect(errorHandler).not.toHaveBeenCalled()
   })
 
   it('does not claim the minimap graph-activity layer when setup throws', () => {
