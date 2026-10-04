@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { DUPLICATE_WIDGET_NAME_ERROR_TYPE } from '@/lib/litegraph/src/node/widgetsView'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -82,20 +81,15 @@ describe('unique widget name invariant', () => {
 
     expect(names(node)).toEqual(['seed', 'cfg'])
     expect(node.widgets).not.toContain(second)
+    // The error type is spelled out rather than compared to the exported
+    // constant: an alert query is written against this string, so renaming it
+    // is the breaking change and the literal is the contract.
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: DUPLICATE_WIDGET_NAME_ERROR_TYPE,
+        errorType: 'widget_duplicate_name_refused',
         surface: 'graph'
       })
-    )
-  })
-
-  it('reports an error type that stays stable for dashboards and alerts', () => {
-    // Spelled out rather than compared to the constant: a dashboard query is
-    // written against this string, so renaming it is the breaking change.
-    expect(DUPLICATE_WIDGET_NAME_ERROR_TYPE).toBe(
-      'widget_duplicate_name_refused'
     )
   })
 

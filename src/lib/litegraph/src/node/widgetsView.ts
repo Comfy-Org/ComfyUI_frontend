@@ -14,9 +14,11 @@ import { getWidgetIds } from '../utils/widget'
 /**
  * Stable `errorType` for the one state that breaks widget identity: a node
  * holding two widgets under one name that could not be renamed apart, so the
- * second is refused. See {@link dropUnrenamableDuplicateWidgets}.
+ * second is refused. Alerting is keyed on this string — treat it as a
+ * contract, not an implementation detail.
+ * See {@link dropUnrenamableDuplicateWidgets}.
  */
-export const DUPLICATE_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_refused'
+const DUPLICATE_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_refused'
 
 interface WidgetsViewState {
   target: IBaseWidget[]

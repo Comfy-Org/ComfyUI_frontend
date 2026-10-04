@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WidgetId } from './widgetId'
 import {
@@ -35,12 +35,16 @@ describe('ensureUniqueWidgetNames', () => {
     expect(ensureUniqueWidgetNames(widgets)).toBe(false)
     expect(widgets.map(({ name }) => name)).toEqual(['seed', 'seed'])
     expect(warn).toHaveBeenCalledOnce()
-
-    warn.mockRestore()
   })
 })
 
 describe('dropUnrenamableDuplicateWidgets', () => {
+  beforeEach(() => {
+    // `ensureUniqueWidgetNames` warns whenever it gives up on a rename, which
+    // is the entry condition for every case here rather than the subject.
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
   /** A name that cannot be written, which is how the state is reached. */
   const pinned = (name: string) => {
     const widget = {} as { name: string }
@@ -56,29 +60,22 @@ describe('dropUnrenamableDuplicateWidgets', () => {
   })
 
   it('refuses nothing when the duplicate can be renamed', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const widgets = [{ name: 'seed' }, { name: 'seed' }]
 
     expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([])
     expect(widgets.map(({ name }) => name)).toEqual(['seed', 'seed#1'])
-
-    warn.mockRestore()
   })
 
   it('keeps the first occurrence and refuses the one it cannot rename', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const first = { name: 'seed' }
     const refused = pinned('seed')
     const widgets = [first, refused]
 
     expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([refused])
     expect(widgets).toEqual([first])
-
-    warn.mockRestore()
   })
 
   it('renames the collisions the refusal was masking', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     // `ensureUniqueWidgetNames` is all-or-nothing, so one unrenamable widget
     // leaves every other collision on the node standing too.
     const refused = pinned('seed')
@@ -95,12 +92,9 @@ describe('dropUnrenamableDuplicateWidgets', () => {
       'steps',
       'steps#1'
     ])
-
-    warn.mockRestore()
   })
 
   it('does not hand a generated name to a widget that already holds it', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const refused = pinned('seed')
     const widgets = [{ name: 'seed' }, refused, { name: 'seed' }]
     // `seed#1` is held outright further down the array, so the rename must
@@ -113,12 +107,9 @@ describe('dropUnrenamableDuplicateWidgets', () => {
       'seed#2',
       'seed#1'
     ])
-
-    warn.mockRestore()
   })
 
   it('refuses a widget whose setter silently ignores the rename', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const stubborn = {
       get name() {
         return 'seed'
@@ -131,12 +122,9 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     // will take; only reading the name back afterwards proves it did not.
     expect(dropUnrenamableDuplicateWidgets(widgets)).toContain(stubborn)
     expect(widgets.map(({ name }) => name)).toEqual(['seed'])
-
-    warn.mockRestore()
   })
 
   it('refuses nothing when a name accessor throws', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const hostile = {
       get name(): string {
         throw new Error('name is not readable')
@@ -148,12 +136,9 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     // refuse — and the throw must not escape into a widgets mutation.
     expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([])
     expect(widgets).toHaveLength(2)
-
-    warn.mockRestore()
   })
 
   it('does not refuse one widget object occupying two array slots', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const shared = pinned('seed')
     const other = pinned('seed')
     const widgets = [shared, shared, other]
@@ -161,8 +146,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     // Identity duplicates are one widget mid-reorder, not a name collision.
     expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([other])
     expect(widgets).toEqual([shared, shared])
-
-    warn.mockRestore()
   })
 })
 

@@ -26,7 +26,6 @@ import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowS
  * what the app actually saved.
  */
 
-const workflowName = `unrenamable-duplicate-widget-${Date.now()}`
 const NODE_TYPE = 'DevToolsNodeWithOutputList'
 const DUPLICATE_NAME = 'duplicate'
 const TYPED_VALUE = 'typed by the user'
@@ -69,13 +68,20 @@ test.describe(
   'unrenamable duplicate widget name',
   { tag: ['@canvas', '@widget', '@vue-nodes'] },
   () => {
+    // Per attempt, not per module: a module-scope stamp is shared by every
+    // worker in the process and by a retry, so a retry can reopen the document
+    // its own previous attempt saved.
+    let workflowName = ''
+
     test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.deleteWorkflow(workflowName)
+      if (workflowName) await comfyPage.workflow.deleteWorkflow(workflowName)
     })
 
     test('refuses the widget it cannot name uniquely and keeps the node usable', async ({
       comfyPage
-    }) => {
+    }, testInfo) => {
+      workflowName = `unrenamable-duplicate-widget-${testInfo.parallelIndex}-${testInfo.retry}-${Date.now()}`
+
       await comfyPage.nodeOps.clearGraph()
       await installUnrenameableDuplicate(comfyPage)
 
