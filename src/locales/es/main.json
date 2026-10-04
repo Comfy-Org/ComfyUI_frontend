@@ -963,25 +963,6 @@
     "workflowName": "Nombre del flujo de trabajo",
     "workflowNamePlaceholder": "Consejo: ingresa un nombre descriptivo y fácil de buscar"
   },
-  "commands": {
-    "clear": "Limpiar flujo de trabajo",
-    "clipspace": "Abrir Clipspace",
-    "dark": "Oscuro",
-    "execute": "Ejecutar",
-    "help": "Ayuda",
-    "interrupt": "Cancelar ejecución actual",
-    "light": "Claro",
-    "manageExtensions": "Gestionar extensiones",
-    "queue": "Panel de cola",
-    "refresh": "Actualizar definiciones de nodos",
-    "resetView": "Restablecer vista del lienzo",
-    "run": "Ejecutar",
-    "runWorkflow": "Ejecutar flujo de trabajo",
-    "runWorkflowFront": "Ejecutar flujo de trabajo (Encolar al principio)",
-    "settings": "Configuración",
-    "theme": "Tema",
-    "toggleBottomPanel": "Alternar panel inferior"
-  },
   "compositor": {
     "downloadPsd": "Descargar PSD",
     "empty": "Ejecuta el flujo de trabajo para generar un compuesto",

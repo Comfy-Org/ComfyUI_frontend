@@ -1458,25 +1458,6 @@
     "white": "White",
     "negative": "Negative"
   },
-  "commands": {
-    "runWorkflow": "Run workflow",
-    "runWorkflowFront": "Run workflow (Queue at front)",
-    "run": "Run",
-    "execute": "Execute",
-    "interrupt": "Cancel current run",
-    "refresh": "Refresh node definitions",
-    "clipspace": "Open Clipspace",
-    "resetView": "Reset canvas view",
-    "clear": "Clear workflow",
-    "toggleBottomPanel": "Toggle Bottom Panel",
-    "theme": "Theme",
-    "dark": "Dark",
-    "light": "Light",
-    "manageExtensions": "Extensions",
-    "settings": "Settings",
-    "help": "Help",
-    "queue": "Queue Panel"
-  },
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
