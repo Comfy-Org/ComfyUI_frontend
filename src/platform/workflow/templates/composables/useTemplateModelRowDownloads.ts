@@ -231,7 +231,12 @@ export function useTemplateModelRowDownloads({
     event: TemplateModelDownloadEvent
   ): void {
     const identity = getTemplateModelDownloadIdentity(model)
-    let current = initializeState(model)
+    const row = rows.get(identity)
+    // A host result can settle after the row moved to a different URL, and
+    // reporting it then would resurrect the row it replaced.
+    if (row?.model.url !== model.url) return
+
+    let current = row.state
     if (
       current.status === 'queued' &&
       event.type !== 'started' &&
@@ -243,13 +248,10 @@ export function useTemplateModelRowDownloads({
         attempt: current.attempt
       })
     }
-    const row = rows.get(identity)
-    if (row) {
-      rows.set(identity, {
-        ...row,
-        state: reduceTemplateModelDownloadState(current, event)
-      })
-    }
+    rows.set(identity, {
+      ...row,
+      state: reduceTemplateModelDownloadState(current, event)
+    })
   }
 
   function applyNativeEvent(
@@ -275,12 +277,6 @@ export function useTemplateModelRowDownloads({
     applyEvent(model, event)
   }
 
-  /**
-   * Decides whether an identified job may speak for this row's attempt.
-   * Non-terminal activity claims the attempt if nothing else holds it;
-   * a terminal event is only honoured from the job that made that claim.
-   */
-  /** The job holding this attempt, if one does. */
   function claimantOf(row: TrackedRow, attempt: number): string | undefined {
     return row.job?.attempt === attempt ? row.job.jobId : undefined
   }
@@ -366,14 +362,7 @@ export function useTemplateModelRowDownloads({
     })
   }
 
-  /**
-   * A host result can settle after the row moved to a different URL. Reporting
-   * it then would resurrect the old row through `initializeState`, so only the
-   * row that is still this model's current attempt may be failed.
-   */
   function fail(model: ModelWithUrl, attempt: number): void {
-    const row = rows.get(getTemplateModelDownloadIdentity(model))
-    if (row?.model.url !== model.url || row.state.attempt !== attempt) return
     applyEvent(model, { type: 'error', attempt })
   }
 
