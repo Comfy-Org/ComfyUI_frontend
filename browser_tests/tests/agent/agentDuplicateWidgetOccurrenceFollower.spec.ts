@@ -16,6 +16,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -47,25 +48,54 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
  * to the widget it kept, and refuse the other rather than misaddress it onto
  * the widget it has.
  *
- * `@comfyorg/comfy-multi-player` 0.3.8 (schema v5) is what makes that
- * answerable, and the two assertions below are the discriminator. Under the
- * previous pin (0.3.6, schema v4) a repeated name has ONE register: the
- * second position's value overwrites the first at mint, and `widget_occurrence`
- * on an op is accepted and silently ignored. Both halves of this case
- * therefore fail on the parent pin — the kept widget shows the OTHER
- * occurrence's value, and a write aimed at occurrence 1 lands on it — and
- * neither failure is reported anywhere. That is why this file is the proof
- * obligation of the pin bump rather than of a source change: nothing in
- * `src/` moves.
+ * Schema v5 is what makes that answerable. It arrived in
+ * `@comfyorg/comfy-multi-player` 0.3.8 and this diff pins **0.3.10**, which is
+ * the version every assertion below actually runs against. Under the previous
+ * pin (0.3.6, schema v4) a repeated name has ONE register: the second
+ * position's value overwrites the first at mint, and `widget_occurrence` on an
+ * op is accepted and silently ignored. Both halves of this case therefore fail
+ * on the parent pin — the kept widget shows the OTHER occurrence's value, and
+ * a write aimed at occurrence 1 lands on it — and neither failure is reported
+ * anywhere. That is why this file is the proof obligation of the pin bump
+ * rather than of a source change: nothing in `src/` moves.
  *
  * Black-box throughout. Canvas outcomes are read from the rendered node;
  * document outcomes are read from the host's own projection — the workflow
  * the shared document would hand back — never from frontend internals.
+ *
+ * Every step that asserts a canvas field DID NOT change rides a marker node
+ * added in the SAME host batch and waits for it to render first. `host.apply()`
+ * mutates the in-process document synchronously, before the frame is sent, so
+ * polling the host's own projection proves nothing about the frame reaching the
+ * follower: a bare "still the old value" assertion would pass on the first tick
+ * and a misaddressed write landing afterwards would go unnoticed. Frames arrive
+ * in order on one channel, so the marker rendering is the client-visible proof
+ * that the write ahead of it was processed — the same device
+ * `agentClearedWorkflowStaysCleared.spec.ts` uses on its catch-up.
+ *
+ * NOT covered here, deliberately: what the frontend's own `serialize()` writes
+ * for this node. `node.serialize()` emits one value per serializable widget, so
+ * a user SAVE of a node whose class has two catalog slots writes a one-entry
+ * `widgets_values` and the unaddressable register is dropped on the save leg.
+ * That is a consequence of the refusal plus per-widget serialization, identical
+ * at both pins, and it is FE-3036's to resolve — not this pin's. Asserting it
+ * here would pin current lossy behaviour as if it were the contract.
  */
 
 const NODE_TYPE = 'TestRepeatedWidgetNameNode'
 const NODE_ID = 701
 const WIDGET_NAME = 'dup'
+
+/**
+ * A widgetless class used only as a delivery marker. It carries no widget of
+ * its own, so its arrival cannot disturb anything this case asserts about the
+ * node under test.
+ */
+const MARKER_TYPE = 'TestDeliveryMarkerNode'
+/** Rides the occurrence-1 write in step 3. */
+const MARKER_WRITE_NODE_ID = 702
+/** Rides the deliberately-unbroadcast write in the final step. */
+const MARKER_MISSED_NODE_ID = 703
 
 /** The value the document holds for the widget the frontend keeps. */
 const FIRST_OCCURRENCE_VALUE = 'first occurrence'
@@ -106,6 +136,21 @@ const nodeDef: ComfyNodeDef = {
   input_order: { required: [WIDGET_NAME] }
 }
 
+/** No widgets, so a marker can never be mistaken for the node under test. */
+const markerDef: ComfyNodeDef = {
+  name: MARKER_TYPE,
+  display_name: 'Test Delivery Marker Node',
+  description: '',
+  category: 'test',
+  python_module: 'test',
+  output_node: false,
+  output: ['STRING'],
+  output_is_list: [false],
+  output_name: ['STRING'],
+  input: {},
+  input_order: {}
+}
+
 /**
  * The catalog names the widget TWICE, which is the whole premise: the doc
  * host decomposes `widgets_values` against this order, so the document holds
@@ -114,7 +159,45 @@ const nodeDef: ComfyNodeDef = {
  * repeated name here is a property of the class, not of this fixture.
  */
 const catalog: WidgetCatalog = {
-  types: { [NODE_TYPE]: { widget_order: [WIDGET_NAME, WIDGET_NAME] } }
+  types: {
+    [NODE_TYPE]: { widget_order: [WIDGET_NAME, WIDGET_NAME] },
+    [MARKER_TYPE]: { widget_order: [] }
+  }
+}
+
+/**
+ * A host add that rides a batch whose real payload is a write the canvas must
+ * NOT show. Frames reach the follower in order on one channel, so once this
+ * renders, the write ahead of it in the same batch has been processed — which
+ * is what turns "the field still holds the old value" from a statement about an
+ * unprocessed frame into a statement about the applier's addressing.
+ */
+function markerAdd(nodeId: number): RecordedGraphOperation {
+  return {
+    op: 'add_node',
+    node_id: nodeId,
+    class_type: MARKER_TYPE,
+    pos: [400, 0],
+    node: {
+      id: nodeId,
+      type: MARKER_TYPE,
+      pos: [400, 0],
+      size: [200, 60],
+      mode: 0,
+      flags: {},
+      order: 1,
+      inputs: [],
+      outputs: [{ name: 'STRING', type: 'STRING', links: [] }],
+      properties: {},
+      widgets_values: []
+    }
+  }
+}
+
+/** The node under test, found by id rather than by projection position. */
+function widgetsUnderTest(host: HostDoc): unknown[] | undefined {
+  return host.projection().nodes.find((node) => node.id === NODE_ID)
+    ?.widgets_values as unknown[] | undefined
 }
 
 const seed: WorkflowJSON = {
@@ -154,6 +237,20 @@ const seed: WorkflowJSON = {
 async function pinASecondWidgetUnderTheSameName(
   page: Parameters<typeof bootAgentApp>[0]
 ): Promise<void> {
+  // `bootAgentApp` resolves on `window.app?.extensionManager`, which App.vue
+  // sets during setup — well before `app.setup()` has fetched `/api/object_info`
+  // and registered any type. Patching through the race throws an opaque
+  // "Cannot read properties of undefined" on `.prototype` from inside the page
+  // instead of failing where the cause is readable, so wait for the class to
+  // exist first. (The identical patch in `unrenamableDuplicateWidgetRefused`
+  // needs no wait only because `comfyPage` hands it a fully set-up app.)
+  await page.waitForFunction(
+    (nodeTypeName) =>
+      window.LiteGraph?.registered_node_types[nodeTypeName]?.prototype !==
+      undefined,
+    NODE_TYPE,
+    { timeout: 15_000 }
+  )
   await page.evaluate(
     ({ nodeTypeName, widgetName }) => {
       const nodeType = window.LiteGraph!.registered_node_types[nodeTypeName]
@@ -188,7 +285,9 @@ test.describe(
       test.setTimeout(90_000)
 
       await page.route('**/api/object_info', (route) =>
-        route.fulfill(jsonRoute({ [NODE_TYPE]: nodeDef }))
+        route.fulfill(
+          jsonRoute({ [NODE_TYPE]: nodeDef, [MARKER_TYPE]: markerDef })
+        )
       )
 
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
@@ -352,16 +451,25 @@ test.describe(
               widget: WIDGET_NAME,
               widget_occurrence: 1,
               value: SECOND_OCCURRENCE_REWRITE
-            }
+            },
+            markerAdd(MARKER_WRITE_NODE_ID)
           ])
         )
 
         // The register moved in the document...
         await expect
-          .poll(() => host.projection().nodes[0]?.widgets_values)
+          .poll(() => widgetsUnderTest(host))
           .toEqual([FIRST_OCCURRENCE_VALUE, SECOND_OCCURRENCE_REWRITE])
 
-        // ...and the widget the frontend kept did not. At schema v4
+        // ...the follower has PROCESSED the batch that moved it — the marker
+        // behind the write in the same batch is on the canvas, so the
+        // assertion below is about where the write landed rather than about a
+        // frame still in flight...
+        await expect(
+          vueNodes.getNodeLocator(String(MARKER_WRITE_NODE_ID))
+        ).toBeVisible()
+
+        // ...and the widget the frontend kept did not change. At schema v4
         // `widget_occurrence` is accepted and ignored, so the same op writes
         // the one register this widget reads and the field changes.
         await expect(duplicateInputs).toHaveValue(FIRST_OCCURRENCE_VALUE)
@@ -376,12 +484,14 @@ test.describe(
           .poll(() => hostSocket.humanOpOutcomes(), { timeout: 15_000 })
           .toEqual([expect.objectContaining({ outcome: 'applied' })])
 
-        // Lossless on both registers: the typed value claims occurrence 0 and
-        // the occurrence the frontend cannot address is left intact rather
-        // than clobbered. At schema v4 this projection is a ONE-element
-        // array — the other value does not exist to be preserved.
+        // Lossless on both of the DOCUMENT's registers: the typed value claims
+        // occurrence 0 and the occurrence the frontend cannot address is left
+        // intact rather than clobbered. At schema v4 this projection is a
+        // ONE-element array — the other value does not exist to be preserved.
+        // (The frontend's own save leg is lossy here at both pins; see the
+        // header. That is FE-3036's, not this pin's.)
         await expect
-          .poll(() => host.projection().nodes[0]?.widgets_values)
+          .poll(() => widgetsUnderTest(host))
           .toEqual([TYPED_VALUE, SECOND_OCCURRENCE_REWRITE])
       })
 
@@ -400,19 +510,35 @@ test.describe(
             widget: WIDGET_NAME,
             widget_occurrence: 1,
             value: SECOND_OCCURRENCE_MISSED
-          }
+          },
+          markerAdd(MARKER_MISSED_NODE_ID)
         ])
 
+        // Counted before the disconnect rather than against a literal:
+        // `answerSubscribe` raises this counter in the same synchronous block
+        // that sends `doc_subscribed` and the catch-up, so the count alone
+        // says the host ANSWERED, never that the page applied the delta. It is
+        // the cheap precondition; the marker below is the real gate.
+        const subscribesBefore = hostSocket.subscribeCount()
         await hostSocket.disconnect()
         await expect
           .poll(() => hostSocket.subscribeCount(), { timeout: 30_000 })
-          .toBeGreaterThan(1)
+          .toBeGreaterThan(subscribesBefore)
 
         // The document the follower caught up to carries the new value on the
         // occurrence it cannot address...
         await expect
-          .poll(() => host.projection().nodes[0]?.widgets_values)
+          .poll(() => widgetsUnderTest(host))
           .toEqual([TYPED_VALUE, SECOND_OCCURRENCE_MISSED])
+
+        // ...the catch-up really landed in the page — the marker added behind
+        // that write in the same unbroadcast batch is now on the canvas, and
+        // it can only have arrived through the resubscribe delta, since it was
+        // never broadcast. Without this, "still what the user typed" would
+        // hold just as well on a follower that received nothing at all...
+        await expect(
+          vueNodes.getNodeLocator(String(MARKER_MISSED_NODE_ID))
+        ).toBeVisible()
 
         // ...and what the user typed is still on the widget they typed into.
         await expect(duplicateInputs).toHaveCount(1)
