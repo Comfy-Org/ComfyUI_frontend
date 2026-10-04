@@ -493,6 +493,33 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
+  it('ignores an old URL whose host result settles after a replacement', async () => {
+    const firstResult = deferred<boolean>()
+    const initial = model('swapped.safetensors', 'https://example.com/first')
+    const replacement = { ...initial, url: 'https://example.com/second' }
+    const dispatchDownload = vi
+      .fn<DispatchDownload>()
+      .mockReturnValueOnce({
+        status: 'host-requested',
+        host: 'desktop2',
+        hostResult: firstResult.promise
+      })
+      .mockReturnValue(pendingHostRequest())
+    const { downloads } = createDownloadHarness({ dispatchDownload })
+
+    downloads.request(initial)
+    downloads.request(replacement)
+    firstResult.reject(new Error('late'))
+    await vi.waitFor(() => expect(dispatchDownload).toHaveBeenCalledTimes(2))
+
+    // Reporting the old failure would resurrect the old row through
+    // `initializeState`, leaving the replacement idle.
+    expect(downloads.stateFor(replacement)).toEqual({
+      status: 'starting',
+      attempt: 1
+    })
+  })
+
   it('lets a replacement URL report through its own job', () => {
     const initial = model('swapped.safetensors', 'https://example.com/first')
     const replacement = { ...initial, url: 'https://example.com/second' }
