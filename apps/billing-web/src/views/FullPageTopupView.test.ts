@@ -12,7 +12,10 @@ import { parseBillingEntry } from '@comfyorg/billing-contract'
 
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
-import type { FakeBillingClientOptions } from '@/test/fakeBillingClient'
+import type {
+  FakeBillingClient,
+  FakeBillingClientOptions
+} from '@/test/fakeBillingClient'
 import {
   createFakeBillingClient,
   failedOperation,
@@ -81,7 +84,8 @@ const QUOTED: TopupQuoteResult = {
 
 function renderTopup(
   options: FakeBillingClientOptions = {},
-  path = TOPUP_PATH
+  path = TOPUP_PATH,
+  arrange: (fake: FakeBillingClient) => void = () => {}
 ) {
   recordBillingEntry(parseBillingEntry(path))
   const fake = createFakeBillingClient({
@@ -89,6 +93,7 @@ function renderTopup(
     topupQuote: QUOTED,
     ...options
   })
+  arrange(fake)
   render(FullPageTopupView, {
     global: {
       plugins: [createBillingI18n()],
@@ -156,6 +161,81 @@ describe('FullPageTopupView', () => {
     ).not.toBeInTheDocument()
     expect(fake.quoteTopup).toHaveBeenCalledWith({ amountCents: 2500 })
     expect(payButton()).toBeEnabled()
+  })
+
+  it('names the default card the top-up charges, with no card form or picker', async () => {
+    const fake = renderTopup({
+      paymentMethods: {
+        status: 'ok',
+        value: [
+          {
+            id: 'pm_visa',
+            type: 'card',
+            brand: 'visa',
+            last4: '3184',
+            is_default: true
+          },
+          {
+            id: 'pm_mc',
+            type: 'card',
+            brand: 'mastercard',
+            last4: '4402',
+            is_default: false
+          }
+        ]
+      }
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    expect(
+      screen.getByRole('heading', { name: 'Payment method' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('visa')).toBeInTheDocument()
+    expect(screen.getByText('·· 3184')).toBeInTheDocument()
+    expect(screen.queryByText('·· 4402')).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+
+    await userEvent.click(payButton())
+
+    expect(fake.createTopupCheckout).toHaveBeenCalledOnce()
+  })
+
+  it('opens a payable top-up while the saved-methods read is still out, and names no card yet', async () => {
+    const fake = renderTopup({}, TOPUP_PATH, (fake) =>
+      fake.readPaymentMethods.mockImplementation(() => new Promise(() => {}))
+    )
+    await screen.findByText('Add credits · Acme Team')
+
+    expect(payButton()).toBeEnabled()
+    expect(
+      screen.queryByRole('heading', { name: 'Payment method' })
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(payButton())
+
+    expect(fake.createTopupCheckout).toHaveBeenCalledOnce()
+  })
+
+  it('names no card after a failed read, even one an earlier read cached', async () => {
+    renderTopup({
+      paymentMethods: { status: 'error', code: 'REQUEST_FAILED' },
+      cachedPaymentMethods: [
+        {
+          id: 'pm_visa',
+          type: 'card',
+          brand: 'visa',
+          last4: '3184',
+          is_default: true
+        }
+      ]
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    expect(payButton()).toBeEnabled()
+    expect(screen.queryByText('·· 3184')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Payment method' })
+    ).not.toBeInTheDocument()
   })
 
   it('77-3783: a Pay that goes through counts the credits the server added', async () => {

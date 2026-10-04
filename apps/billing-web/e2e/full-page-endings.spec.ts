@@ -282,7 +282,7 @@ test('a one-time code on a monthly plan change reads This payment only on the su
   await signIn(CHECKOUT)
   await expect(page.getByText('This payment only')).toBeVisible()
   await expect(page.getByText('First month')).toHaveCount(0)
-  await payButton(page).click()
+  await page.getByRole('button', { name: 'Confirm upgrade' }).click()
 
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(paidToday(page)).toHaveText(
@@ -319,7 +319,7 @@ test('765-15713: a prorated upgrade reads Paid today and why, without itemizing 
     }
   }
   await signIn(CHECKOUT)
-  await payButton(page).click()
+  await page.getByRole('button', { name: 'Confirm upgrade' }).click()
 
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(paidToday(page)).toHaveText(

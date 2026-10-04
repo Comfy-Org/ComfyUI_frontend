@@ -12,7 +12,8 @@ import type {
   PendingBillingOperation,
   PreviewSubscribeResult,
   SavedPaymentMethod,
-  SubscriptionCommandResult
+  SubscriptionCommandResult,
+  SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
@@ -220,6 +221,8 @@ async function renderCheckout(
 
 const payButton = () =>
   screen.getByRole('button', { name: 'Pay and subscribe' })
+const confirmButton = (name: 'Confirm upgrade' | 'Confirm change') =>
+  screen.getByRole('button', { name })
 
 /** A 400 the server coded, the way the preview route refuses a link. */
 const refusedQuote = (
@@ -291,22 +294,101 @@ describe('FullPageCheckoutView', () => {
     )
   })
 
-  it('charges a plan change to the method on file without mounting the card form', async () => {
-    const fake = await renderCheckout({
+  it.for<{
+    name: string
+    preview: Partial<SubscriptionPreview>
+    eyebrow: string
+    cta: string
+  }>([
+    {
+      name: 'an upgrade charged today',
+      preview: { transition_type: 'upgrade' },
+      eyebrow: 'Upgrade to Creator Plan · Acme Team',
+      cta: 'Confirm upgrade'
+    },
+    {
+      name: 'a switch to yearly charged today',
+      preview: { transition_type: 'duration_change' },
+      eyebrow: 'Switch to Creator Plan · Acme Team',
+      cta: 'Confirm change'
+    },
+    {
+      name: 'a downgrade scheduled for period end',
+      preview: {
+        transition_type: 'downgrade',
+        is_immediate: false,
+        cost_today_cents: 0
+      },
+      eyebrow: 'Switch to Creator Plan · Acme Team',
+      cta: 'Confirm change'
+    }
+  ])(
+    'charges $name to the default card it names, with no card form, behind $cta',
+    async ({ preview, eyebrow, cta }) => {
+      const fake = await renderCheckout({
+        preview: { status: 'ok', value: previewOf(preview) },
+        paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+      })
+      await screen.findByText(eyebrow)
+
+      expect(
+        screen.getByRole('heading', { name: 'Payment method' })
+      ).toBeInTheDocument()
+      expect(screen.getByText('mastercard')).toBeInTheDocument()
+      expect(screen.getByText('·· 4402')).toBeInTheDocument()
+      expect(screen.queryByText('·· 4242')).not.toBeInTheDocument()
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Pay and subscribe' })
+      ).not.toBeInTheDocument()
+      expect(form.mounts).toBe(0)
+
+      await userEvent.click(screen.getByRole('button', { name: cta }))
+
+      await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+      const request = fake.subscribe.mock.calls[0][0]
+      expect(request).not.toHaveProperty('confirmation_token')
+      expect(request).not.toHaveProperty('saved_payment_method_id')
+    }
+  )
+
+  it('names no card for a plan change after a failed read, even one an earlier read cached', async () => {
+    await renderCheckout({
       preview: {
         status: 'ok',
         value: previewOf({ transition_type: 'upgrade' })
-      }
+      },
+      paymentMethods: { status: 'error', code: 'REQUEST_FAILED' },
+      cachedPaymentMethods: [MASTERCARD]
     })
     await screen.findByText('Upgrade to Creator Plan · Acme Team')
 
-    expect(form.mounts).toBe(0)
-    await userEvent.click(payButton())
+    expect(screen.queryByText('·· 4402')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Payment method' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    ).toBeEnabled()
+  })
 
-    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
-    expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
-      'confirmation_token'
-    )
+  it('names no card for a plan change when the server marks none as the default', async () => {
+    await renderCheckout({
+      preview: {
+        status: 'ok',
+        value: previewOf({ transition_type: 'upgrade' })
+      },
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
+
+    expect(
+      screen.queryByRole('heading', { name: 'Payment method' })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('·· 4242')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    ).toBeEnabled()
   })
 
   describe('with no Stripe key', () => {
@@ -346,7 +428,7 @@ describe('FullPageCheckoutView', () => {
       })
       await screen.findByText('Upgrade to Creator Plan · Acme Team')
 
-      await userEvent.click(payButton())
+      await userEvent.click(confirmButton('Confirm upgrade'))
 
       await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
       expect(
@@ -421,7 +503,7 @@ describe('FullPageCheckoutView', () => {
       }
     })
     await screen.findByText('Upgrade to Creator Plan · Acme Team')
-    expect(payButton()).toBeEnabled()
+    expect(confirmButton('Confirm upgrade')).toBeEnabled()
 
     fake.publishOperation(processingOperation())
 
@@ -429,7 +511,7 @@ describe('FullPageCheckoutView', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       "This payment is already processing and can't be canceled."
     )
-    expect(payButton()).toBeDisabled()
+    expect(confirmButton('Confirm upgrade')).toBeDisabled()
     expect(
       screen.getByText('Upgrade to Creator Plan · Acme Team')
     ).toBeInTheDocument()
@@ -1290,9 +1372,9 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       subscribe: { status: 'ok', value: { phase: 'succeeded' } }
     })
     await screen.findByText('Upgrade to Creator Plan · Acme Team')
-    await waitFor(() => expect(payButton()).toBeEnabled())
+    await waitFor(() => expect(confirmButton('Confirm upgrade')).toBeEnabled())
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmButton('Confirm upgrade'))
 
     expect(
       await screen.findByRole('heading', { name: "You're all set" })
@@ -1364,9 +1446,9 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     const box = screen.getByRole('checkbox', {
       name: 'Keep my subscription and renew it'
     })
-    expect(payButton()).toBeEnabled()
+    expect(confirmButton('Confirm upgrade')).toBeEnabled()
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmButton('Confirm upgrade'))
 
     expect(fake.subscribe).not.toHaveBeenCalled()
     expect(box).toHaveAttribute('aria-invalid', 'true')
@@ -1374,14 +1456,14 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(box).toHaveAccessibleDescription(
       'Check the box to keep your subscription, then pay.'
     )
-    expect(payButton()).toBeEnabled()
+    expect(confirmButton('Confirm upgrade')).toBeEnabled()
 
     await userEvent.click(box)
 
     expect(box).toHaveAttribute('aria-invalid', 'false')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmButton('Confirm upgrade'))
 
     await waitFor(() =>
       expect(fake.subscribe).toHaveBeenCalledWith(
@@ -3016,9 +3098,9 @@ describe('FullPageCheckoutView promo codes', () => {
       `${CHECKOUT_PATH}&promo=LAUNCH20`
     )
     await screen.findByText(/Switch to Creator Plan/)
-    await waitFor(() => expect(payButton()).toBeEnabled())
+    await waitFor(() => expect(confirmButton('Confirm change')).toBeEnabled())
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmButton('Confirm change'))
 
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
     expect(fake.previewSubscribe).toHaveBeenCalledExactlyOnceWith(
@@ -3125,7 +3207,7 @@ describe('FullPageCheckoutView promo codes', () => {
           })
         ).not.toBeChecked()
       )
-      await userEvent.click(payButton())
+      await userEvent.click(confirmButton('Confirm upgrade'))
       expect(fake.subscribe).not.toHaveBeenCalled()
     }
   )

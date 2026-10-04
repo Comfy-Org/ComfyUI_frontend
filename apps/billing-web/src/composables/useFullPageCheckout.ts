@@ -947,7 +947,9 @@ export function useFullPageCheckout() {
     abandon: journey.abandoned,
     retryLoad,
     onPaymentPhase,
-    savedMethods: saved.methods,
+    savedMethods: computed(() =>
+      saved.failure.value === undefined ? saved.methods.value : undefined
+    ),
     reconcile,
     retryElement: () => dispatch({ type: 'elementRetried' }),
     retrySaved: () => void retrySaved(),
