@@ -1,8 +1,15 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 
@@ -113,12 +120,13 @@ const sidebarTabTemplateStub = {
 
 const assetsGridStub = {
   props: ['assets'],
-  emits: ['output-count-click'],
+  emits: ['output-count-click', 'context-menu'],
   template: `
     <div data-testid="assets-grid">
       <button
         aria-label="Enter output folder"
         @click="$emit('output-count-click', assets[0])"
+        @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
     </div>
   `
@@ -137,8 +145,7 @@ function renderTab({ realTemplate = false } = {}) {
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
-        MediaLightbox: true,
-        MediaAssetContextMenu: true
+        MediaLightbox: true
       }
     }
   })
@@ -194,6 +201,66 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
   renderTab({ realTemplate: true })
 
   expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeVisible()
+})
+
+describe('AssetsSidebarTab context menu', () => {
+  it.for([
+    { name: 'image.png', insertCount: 1 },
+    { name: 'result.txt', insertCount: 0 }
+  ])(
+    'offers insertion only for loadable files: $name',
+    async ({ name, insertCount }) => {
+      useAssetsStore().outputAssets.items = [{ ...folderAsset, name }]
+      renderTab()
+
+      await fireEvent.contextMenu(
+        screen.getByRole('button', { name: 'Enter output folder' })
+      )
+      await screen.findByRole('menu')
+
+      expect(
+        screen.queryAllByRole('menuitem', {
+          name: 'mediaAsset.actions.insertAsNodeInWorkflow'
+        })
+      ).toHaveLength(insertCount)
+    }
+  )
+
+  it('downloads grouped outputs through the multi-asset download action', async () => {
+    renderTab()
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.download'
+      })
+    )
+
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([
+      folderAsset
+    ])
+  })
+
+  it.for(['pointerDown', 'scroll'] as const)(
+    'dismisses on outside %s',
+    async (event) => {
+      renderTab()
+      await fireEvent.contextMenu(
+        screen.getByRole('button', { name: 'Enter output folder' })
+      )
+      await screen.findByRole('menu')
+
+      await fireEvent[event](
+        screen.getByRole('heading', { name: 'Media Assets' })
+      )
+
+      await waitFor(() =>
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+      )
+    }
+  )
 })
 
 describe('AssetsSidebarTab tab panel', () => {

@@ -120,6 +120,23 @@ export class ContextMenu {
     return this
   }
 
+  async dispatchFor(locator: Locator): Promise<{ defaultPrevented: boolean }> {
+    const defaultPrevented = await locator.evaluate((element) => {
+      const { x, y, width, height } = element.getBoundingClientRect()
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        button: 2,
+        clientX: x + width / 2,
+        clientY: y + height / 2
+      })
+      element.dispatchEvent(event)
+      return event.defaultPrevented
+    })
+    await expect(this.anyMenu).toBeVisible()
+    return { defaultPrevented }
+  }
+
   async openForDisabledElement(locator: Locator): Promise<this> {
     await locator.dispatchEvent('contextmenu', {
       bubbles: true,
