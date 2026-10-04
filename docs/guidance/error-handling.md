@@ -71,7 +71,9 @@ Some calls can throw and you cannot change them: `JSON.parse`, `JSON.stringify`
 over user data, `fetch`, `localStorage`, DOM APIs, `Response.json()`, third
 party libraries, and anything an extension or custom node supplies (`toJSON`,
 callbacks, widget serializers). Wrap exactly that call in `try/catch` and turn
-the result into a value before it leaves the function.
+the result into a value before it leaves the function. When the call returns
+a promise, `await` it inside the `try`; a rejection from an un-awaited
+promise skips the `catch`.
 
 ```ts
 function stringifyOp(op: Op): { json: string } | { cause: unknown } {
@@ -92,8 +94,8 @@ that the author used an exception as a return channel.
 
 Check inputs, dependencies, permissions, and resources first. Then change
 state. A function that adds a node, then fails the node-type check, then
-throws has already corrupted the graph, and the catch site has no record of
-what to undo.
+throws leaves the graph mutated. Nothing rolls it back, and the next
+change-tracker capture records the half-applied state as a checkpoint.
 
 - Preflight the whole operation (every node in a paste, every file in an
   upload, every member in a downgrade) before applying any part of it. If it
@@ -110,8 +112,8 @@ leaves the old value in place.
 ## 4. Propagate the outcome through callers
 
 When a step is refused, skip every effect that depends on it. Run history
-capture, downloads, selection changes, cache invalidation, and the "saved"
-toast only after the step they depend on has succeeded.
+capture, downloads, selection changes, and the "saved" toast only after the
+step they depend on has succeeded.
 
 ```ts
 // ✗ the effect runs whether or not the save happened
