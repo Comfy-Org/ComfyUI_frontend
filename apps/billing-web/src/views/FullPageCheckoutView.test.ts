@@ -3109,6 +3109,49 @@ describe('FullPageCheckoutView promo codes', () => {
     )
   })
 
+  it('a scheduled change that settles before its Pay comes back stale ends on the change it paid for, not the fresh quote', async () => {
+    const scheduled = previewOf({
+      quote_id: 'q_scheduled',
+      transition_type: 'downgrade',
+      is_immediate: false,
+      effective_at: '2026-11-04T00:00:00.000Z',
+      current_plan: {
+        ...previewOf().new_plan,
+        slug: 'pro_monthly',
+        tier: 'PRO'
+      }
+    })
+    const fake = await renderCheckout({
+      preview: { status: 'ok', value: scheduled }
+    })
+    fake.subscribe.mockImplementationOnce(async () => {
+      fake.previewSubscribe.mockResolvedValue({
+        status: 'ok',
+        value: previewOf({ quote_id: 'q_fresh' })
+      })
+      fake.publishOperation(pendingOperation('op_mine'))
+      await nextTick()
+      fake.publishOperation(succeededOperation('op_mine'))
+      await nextTick()
+      return { status: 'error', code: 'QUOTE_STALE' }
+    })
+    await waitFor(() => expect(confirmButton('Confirm change')).toBeEnabled())
+
+    await userEvent.click(confirmButton('Confirm change'))
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Your plan change is scheduled'
+      })
+    ).toBeInTheDocument()
+    await waitFor(() => expect(fake.previewSubscribe).toHaveBeenCalledTimes(2))
+    expect(
+      screen.getByText(
+        "Your plan for Acme Team changes to Creator on November 4, 2026. You'll keep Pro until then."
+      )
+    ).toBeInTheDocument()
+  })
+
   it('a Pay over a code it could not check tries Apply again, then waits for a second Pay', async () => {
     const fake = await renderCheckout({}, (scripted) =>
       quotesByCode(scripted, { status: 'error', code: 'REQUEST_FAILED' })

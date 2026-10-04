@@ -90,6 +90,49 @@ function settleOnServer(cloud: MockCloud) {
   cloud.scenario.preview = { ...cloud.scenario.preview, allowed: false }
 }
 
+test('a scheduled change ends on the plan that starts, its date, and the plan kept until then, not on an updated plan', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const preview = cloud.scenario.preview
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'duration_change',
+    is_immediate: false,
+    effective_at: '2026-11-04T00:00:00.000Z',
+    amount_due_cents: 0,
+    cost_today_cents: 0,
+    current_plan: {
+      ...preview.new_plan,
+      slug: 'pro_yearly',
+      duration: 'ANNUAL'
+    }
+  }
+  chargedWith(cloud, {
+    amount_charged_cents: 0,
+    currency: 'usd',
+    prorated: false,
+    reasons: []
+  })
+  await signIn(CHECKOUT)
+  await page.getByRole('button', { name: 'Confirm change' }).click()
+
+  await expect(heading(page, 'Your plan change is scheduled')).toBeVisible()
+  await expect(
+    page.getByText(
+      "Your plan for Personal changes to Pro on November 4, 2026. You'll keep Pro Yearly until then."
+    )
+  ).toBeVisible()
+  await expect(page.getByText(/successfully updated/)).toBeHidden()
+  const card = page.getByTestId('checkout-ending-plan')
+  await expect(card.getByText('Pro', { exact: true })).toBeVisible()
+  await expect(card).toContainText('$50.00 USD / mo')
+  await expect(page.getByText(/credits added/)).toBeHidden()
+  await expect(page.getByTestId('checkout-ending-paid-today')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Close' })).toBeVisible()
+})
+
 test('a reload after its own Pay went through renders Already completed on every load, never a form', async ({
   page,
   cloud,

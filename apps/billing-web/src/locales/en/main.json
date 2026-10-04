@@ -299,6 +299,10 @@
           "title": "You're all set",
           "body": "Your plan for {workspace} has been successfully updated."
         },
+        "scheduled": {
+          "title": "Your plan change is scheduled",
+          "body": "Your plan for {workspace} changes to {plan} on {date}. You'll keep {kept} until then."
+        },
         "success_credits": {
           "title": "You're all set",
           "titleCounted": "{count} credits added",

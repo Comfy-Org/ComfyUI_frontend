@@ -669,7 +669,10 @@ export function useFullPageCheckout() {
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
 
   watch(
-    () => endingOf(page.value)?.kind,
+    () => {
+      const kind = endingOf(page.value)?.kind
+      return kind === 'scheduled' ? 'success' : kind
+    },
     (kind) => {
       if (kind === undefined) {
         journey.resumed()
@@ -919,6 +922,7 @@ export function useFullPageCheckout() {
     const press = journey.submitted()
     dispatch({
       type: 'paySubmitted',
+      quote: quoted,
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
     await releasing

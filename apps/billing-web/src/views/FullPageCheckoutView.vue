@@ -119,7 +119,9 @@ const keepSubscription = computed(() => {
 const ending = computed(() => endingOf(page.value))
 
 const breakdown = computed(() =>
-  successBreakdown(page.value, ledgerContext.value)
+  ending.value?.kind === 'success'
+    ? successBreakdown(page.value, ledgerContext.value)
+    : undefined
 )
 
 const locked = computed(() => isLocked(page.value))
@@ -132,7 +134,8 @@ const boughtPlan = computed(() => {
   const current = page.value
   if (current.kind === 'terminal' && current.attribution !== 'started')
     return current.plan && { ...current.plan, currency: 'usd' }
-  const quoted = preview.value
+  const quoted =
+    (current.kind === 'terminal' ? current.quote : undefined) ?? preview.value
   return quoted && { ...quoted.new_plan, currency: quoted.currency ?? 'usd' }
 })
 
