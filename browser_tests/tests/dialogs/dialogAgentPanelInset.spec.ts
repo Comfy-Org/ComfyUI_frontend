@@ -2,7 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { expectDialogKeepsSizeWithDockedPanel } from '@e2e/fixtures/utils/workspaceInset'
+import { expectDialogBoundsWithDockedPanel } from '@e2e/fixtures/utils/workspaceInset'
 
 test.describe('Dialog layout with a docked Agent panel', () => {
   for (const { viewportWidth, x, outcome } of [
@@ -18,7 +18,7 @@ test.describe('Dialog layout with a docked Agent panel', () => {
         await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
         await expect(comfyPage.templates.content).toBeVisible()
 
-        await expectDialogKeepsSizeWithDockedPanel(
+        await expectDialogBoundsWithDockedPanel(
           comfyPage.page,
           comfyPage.templatesDialog.root,
           { panelWidth: 420, x }
@@ -30,7 +30,9 @@ test.describe('Dialog layout with a docked Agent panel', () => {
   test.describe('at the sm breakpoint', () => {
     test.use({ viewport: { width: 640, height: 800 } })
 
-    test('a size-variant dialog keeps its width', async ({ comfyPage }) => {
+    test('a size-variant dialog keeps its width and stops at the gutter', async ({
+      comfyPage
+    }) => {
       await comfyPage.page.evaluate(() => {
         window
           .app!.extensionManager.dialog.confirm({
@@ -42,7 +44,7 @@ test.describe('Dialog layout with a docked Agent panel', () => {
       })
       await expect(comfyPage.confirmDialog.root).toBeVisible()
 
-      await expectDialogKeepsSizeWithDockedPanel(
+      await expectDialogBoundsWithDockedPanel(
         comfyPage.page,
         comfyPage.confirmDialog.root,
         { panelWidth: 420, x: 8 }
