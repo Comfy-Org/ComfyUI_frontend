@@ -75,6 +75,15 @@ describe('useLitegraphService().addNodeOnGraph', () => {
 
     expect(useLitegraphService().addNodeOnGraph(nodeDef)).toBeNull()
   })
+
+  it('does not construct a node it cannot add, since the constructor fires nodeCreated', () => {
+    const createNode = vi.spyOn(LiteGraph, 'createNode')
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
+
+    useLitegraphService().addNodeOnGraph(nodeDef)
+
+    expect(createNode).not.toHaveBeenCalled()
+  })
 })
 
 describe('useLitegraphService().registerNodeDef slot text', () => {
