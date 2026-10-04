@@ -10,7 +10,7 @@ import {
   targetsDefaultBranch
 } from './website-auto-approve.mjs'
 
-test('parses and normalizes the explicit author allowlist', () => {
+void test('parses and normalizes the explicit author allowlist', () => {
   assert.deepEqual(
     parseApprovedAuthors('["bertfy", "BERTFY", ""]'),
     new Set(['bertfy'])
@@ -22,7 +22,7 @@ test('parses and normalizes the explicit author allowlist', () => {
   )
 })
 
-test('requires a non-empty website-only path set', () => {
+void test('requires a non-empty website-only path set', () => {
   assert.equal(isWebsiteOnly(['apps/website/src/pages/index.astro']), true)
   assert.equal(
     isWebsiteOnly([
@@ -39,7 +39,7 @@ test('requires a non-empty website-only path set', () => {
   assert.equal(isWebsiteOnly(['apps/website-evil/file.ts']), false)
 })
 
-test('a rename must stay inside the website on both sides', () => {
+void test('a rename must stay inside the website on both sides', () => {
   assert.deepEqual(
     changedPaths([
       {
@@ -64,7 +64,7 @@ test('a rename must stay inside the website on both sides', () => {
   )
 })
 
-test('fork pull requests are not eligible', () => {
+void test('fork pull requests are not eligible', () => {
   assert.equal(
     isSameRepository(
       { head: { repo: { full_name: 'Comfy-Org/ComfyUI_frontend' } } },
@@ -85,7 +85,7 @@ test('fork pull requests are not eligible', () => {
   )
 })
 
-test('only pull requests targeting the default branch are eligible', () => {
+void test('only pull requests targeting the default branch are eligible', () => {
   assert.equal(
     targetsDefaultBranch(
       {
@@ -114,7 +114,7 @@ test('only pull requests targeting the default branch are eligible', () => {
   )
 })
 
-test('idempotency is scoped to the bot and exact head commit', () => {
+void test('idempotency is scoped to the bot and exact head commit', () => {
   const reviews = [
     { state: 'APPROVED', commit_id: 'old', user: { login: 'webreviewer-bot' } },
     { state: 'APPROVED', commit_id: 'head', user: { login: 'someone-else' } },

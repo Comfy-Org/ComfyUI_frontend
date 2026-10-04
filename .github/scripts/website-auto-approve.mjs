@@ -11,7 +11,8 @@ export function parseApprovedAuthors(raw) {
     authors = JSON.parse(raw)
   } catch (error) {
     throw new Error(
-      `WEBSITE_AUTO_APPROVE_AUTHORS must be JSON: ${error.message}`
+      `WEBSITE_AUTO_APPROVE_AUTHORS must be JSON: ${error.message}`,
+      { cause: error }
     )
   }
 
@@ -37,16 +38,16 @@ export function isWebsiteOnly(paths) {
 }
 
 export function changedPaths(files) {
-  const paths = []
-  for (const file of files) {
-    if (typeof file?.filename !== 'string') return null
-    paths.push(file.filename)
-    if (file.status === 'renamed') {
-      if (typeof file.previous_filename !== 'string') return null
-      paths.push(file.previous_filename)
-    }
-  }
-  return paths
+  const pathGroups = files.map(changedPathGroup)
+  if (pathGroups.includes(null)) return null
+  return pathGroups.flat()
+}
+
+function changedPathGroup(file) {
+  if (typeof file?.filename !== 'string') return null
+  if (file.status !== 'renamed') return [file.filename]
+  if (typeof file.previous_filename !== 'string') return null
+  return [file.filename, file.previous_filename]
 }
 
 export function isSameRepository(pull, repository) {
@@ -62,12 +63,15 @@ export function targetsDefaultBranch(pull, repository, defaultBranch) {
 
 export function alreadyApprovedCurrentHead(reviews, approverLogin, headSha) {
   const expectedLogin = approverLogin.toLowerCase()
-  return reviews.some(
-    (review) =>
-      review?.state === 'APPROVED' &&
-      review?.commit_id === headSha &&
-      review?.user?.login?.toLowerCase() === expectedLogin
+  return reviews.some((review) =>
+    isApprovalForHead(review, expectedLogin, headSha)
   )
+}
+
+function isApprovalForHead(review, expectedLogin, headSha) {
+  if (review?.state !== 'APPROVED') return false
+  if (review.commit_id !== headSha) return false
+  return review.user?.login?.toLowerCase() === expectedLogin
 }
 
 function requiredEnv(name) {
@@ -86,38 +90,51 @@ function githubClient(token, repository) {
   }
 
   async function request(requestPath, options = {}) {
-    const url = requestPath.startsWith('https://')
-      ? requestPath
-      : `${root}${requestPath}`
-    const response = await fetch(url, {
+    const response = await fetch(apiUrl(root, requestPath), {
       ...options,
       headers: { ...headers, ...options.headers }
     })
-    if (!response.ok) {
-      const body = (await response.text()).slice(0, 500)
-      throw new Error(
-        `GitHub API ${options.method ?? 'GET'} ${requestPath} failed: ${response.status} ${body}`
-      )
-    }
-    if (response.status === 204) return null
-    return response.json()
+    return responseBody(response, options.method, requestPath)
   }
 
   async function paginate(requestPath) {
     const rows = []
     for (let page = 1; ; page += 1) {
-      const separator = requestPath.includes('?') ? '&' : '?'
-      const body = await request(
-        `${requestPath}${separator}per_page=${PAGE_SIZE}&page=${page}`
-      )
-      if (!Array.isArray(body))
-        throw new Error(`GitHub API ${requestPath} did not return an array`)
+      const body = await request(pagePath(requestPath, page))
+      assertArrayResponse(body, requestPath)
       rows.push(...body)
       if (body.length < PAGE_SIZE) return rows
     }
   }
 
   return { paginate, request }
+}
+
+function apiUrl(root, requestPath) {
+  if (requestPath.startsWith('https://')) return requestPath
+  return `${root}${requestPath}`
+}
+
+async function responseBody(response, method, requestPath) {
+  if (!response.ok) {
+    const body = (await response.text()).slice(0, 500)
+    throw new Error(
+      `GitHub API ${method ?? 'GET'} ${requestPath} failed: ${response.status} ${body}`
+    )
+  }
+  if (response.status === 204) return null
+  return response.json()
+}
+
+function pagePath(requestPath, page) {
+  const separator = requestPath.includes('?') ? '&' : '?'
+  return `${requestPath}${separator}per_page=${PAGE_SIZE}&page=${page}`
+}
+
+function assertArrayResponse(body, requestPath) {
+  if (!Array.isArray(body)) {
+    throw new Error(`GitHub API ${requestPath} did not return an array`)
+  }
 }
 
 function summary(message) {
@@ -127,79 +144,115 @@ function summary(message) {
   }
 }
 
-async function main() {
-  const token = requiredEnv('WEBSITE_APPROVAL_TOKEN')
-  const repository = requiredEnv('GITHUB_REPOSITORY')
-  const prNumber = Number(requiredEnv('PR_NUMBER'))
-  const eventHeadSha = requiredEnv('PR_HEAD_SHA')
-  const defaultBranch = requiredEnv('WEBSITE_APPROVAL_BASE_REF')
-  const expectedApprover = requiredEnv('WEBSITE_APPROVER_LOGIN')
-  const approvedAuthors = parseApprovedAuthors(
-    requiredEnv('WEBSITE_AUTO_APPROVE_AUTHORS')
-  )
-  if (!Number.isSafeInteger(prNumber) || prNumber <= 0)
+function configuration() {
+  const config = {
+    token: requiredEnv('WEBSITE_APPROVAL_TOKEN'),
+    repository: requiredEnv('GITHUB_REPOSITORY'),
+    prNumber: Number(requiredEnv('PR_NUMBER')),
+    eventHeadSha: requiredEnv('PR_HEAD_SHA'),
+    defaultBranch: requiredEnv('WEBSITE_APPROVAL_BASE_REF'),
+    expectedApprover: requiredEnv('WEBSITE_APPROVER_LOGIN'),
+    approvedAuthors: parseApprovedAuthors(
+      requiredEnv('WEBSITE_AUTO_APPROVE_AUTHORS')
+    )
+  }
+  if (!Number.isSafeInteger(config.prNumber) || config.prNumber <= 0) {
     throw new Error('PR_NUMBER must be positive')
+  }
+  return config
+}
 
-  const github = githubClient(token, repository)
+function readinessFailure({ pull }) {
+  if (pull?.state !== 'open') {
+    return 'Skipped: the pull request is not open and ready for review.'
+  }
+  if (pull.draft) {
+    return 'Skipped: the pull request is not open and ready for review.'
+  }
+}
+
+function baseFailure({ pull, config }) {
+  if (targetsDefaultBranch(pull, config.repository, config.defaultBranch))
+    return
+  return `Skipped: website fast-lane approvals apply only to ${config.defaultBranch}.`
+}
+
+function repositoryFailure({ pull, config }) {
+  if (isSameRepository(pull, config.repository)) return
+  return 'Skipped: website fast-lane approvals do not apply to fork pull requests.'
+}
+
+function headFailure({ pull, config }) {
+  if (pull?.head?.sha === config.eventHeadSha) return
+  return 'Skipped: the pull request head advanced after this workflow started.'
+}
+
+function authorFailure({ pull, config }) {
+  const author = pull?.user?.login?.toLowerCase()
+  if (author && config.approvedAuthors.has(author)) return
+  return `Skipped: @${author ?? 'unknown'} is not in the website fast-lane author allowlist.`
+}
+
+const ELIGIBILITY_CHECKS = [
+  readinessFailure,
+  baseFailure,
+  repositoryFailure,
+  headFailure,
+  authorFailure
+]
+
+function eligibilityFailure(context) {
+  return ELIGIBILITY_CHECKS.map((check) => check(context)).find(Boolean)
+}
+
+async function assertApproverIdentity(github, expectedApprover) {
   const actor = await github.request('https://api.github.com/user')
   if (actor?.login?.toLowerCase() !== expectedApprover.toLowerCase()) {
     throw new Error(
       `WEBSITE_APPROVAL_TOKEN belongs to ${actor?.login ?? 'an unknown account'}, expected ${expectedApprover}`
     )
   }
+}
 
-  const pull = await github.request(`/pulls/${prNumber}`)
-  const author = pull?.user?.login?.toLowerCase()
-  const liveHeadSha = pull?.head?.sha
-
-  if (pull?.state !== 'open' || pull?.draft) {
-    summary('Skipped: the pull request is not open and ready for review.')
-    return
-  }
-  if (!targetsDefaultBranch(pull, repository, defaultBranch)) {
-    summary(
-      `Skipped: website fast-lane approvals apply only to ${defaultBranch}.`
-    )
-    return
-  }
-  if (!isSameRepository(pull, repository)) {
-    summary(
-      'Skipped: website fast-lane approvals do not apply to fork pull requests.'
-    )
-    return
-  }
-  if (liveHeadSha !== eventHeadSha) {
-    summary(
-      'Skipped: the pull request head advanced after this workflow started.'
-    )
-    return
-  }
-  if (!author || !approvedAuthors.has(author)) {
-    summary(
-      `Skipped: @${author ?? 'unknown'} is not in the website fast-lane author allowlist.`
-    )
-    return
-  }
-  if (author === expectedApprover.toLowerCase()) {
+function assertNotSelfApproval(pull, expectedApprover) {
+  if (pull.user.login.toLowerCase() === expectedApprover.toLowerCase()) {
     throw new Error('the approval bot cannot approve its own pull request')
   }
+}
 
-  const files = await github.paginate(`/pulls/${prNumber}/files`)
+async function main() {
+  const config = configuration()
+  const github = githubClient(config.token, config.repository)
+  await assertApproverIdentity(github, config.expectedApprover)
+
+  const pull = await github.request(`/pulls/${config.prNumber}`)
+  const failure = eligibilityFailure({ pull, config })
+  if (failure) {
+    summary(failure)
+    return
+  }
+  assertNotSelfApproval(pull, config.expectedApprover)
+
+  const liveHeadSha = pull.head.sha
+
+  const files = await github.paginate(`/pulls/${config.prNumber}/files`)
   const paths = changedPaths(files)
   if (paths === null || !isWebsiteOnly(paths)) {
     summary('Skipped: at least one changed file is outside apps/website/**.')
     return
   }
 
-  const reviews = await github.paginate(`/pulls/${prNumber}/reviews`)
-  if (alreadyApprovedCurrentHead(reviews, expectedApprover, liveHeadSha)) {
+  const reviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
+  if (
+    alreadyApprovedCurrentHead(reviews, config.expectedApprover, liveHeadSha)
+  ) {
     summary(
-      `Already approved ${liveHeadSha.slice(0, 12)} as @${expectedApprover}.`
+      `Already approved ${liveHeadSha.slice(0, 12)} as @${config.expectedApprover}.`
     )
     return
   }
 
-  await github.request(`/pulls/${prNumber}/reviews`, {
+  await github.request(`/pulls/${config.prNumber}/reviews`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -208,7 +261,9 @@ async function main() {
       body: 'Automatically approved: trusted website fast-lane author; all changed files are under `apps/website/**`.'
     })
   })
-  summary(`Approved ${liveHeadSha.slice(0, 12)} as @${expectedApprover}.`)
+  summary(
+    `Approved ${liveHeadSha.slice(0, 12)} as @${config.expectedApprover}.`
+  )
 }
 
 if (
