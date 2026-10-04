@@ -1,6 +1,8 @@
 import { useEventListener } from '@vueuse/core'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -42,19 +44,34 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
 
 function pasteClipboardItems(data: DataTransfer): boolean {
   const rawData = data.getData('text/html')
-  const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+  const match = rawData.match(
+    /^<meta charset="utf-8"><div><span data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
+  )?.[1]
   if (!match) return false
+
+  let parsed: unknown
   try {
-    // Decode UTF-8 safe base64
     const binaryString = atob(match)
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
     const decodedData = new TextDecoder().decode(bytes)
-    useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
-    return true
+    parsed = JSON.parse(decodedData)
   } catch (err) {
-    console.error(err)
+    useErrorHandling().toastErrorHandler(err)
+    return true
   }
-  return false
+
+  const clipboardItems = zClipboardItems.safeParse(parsed)
+  if (!clipboardItems.success) {
+    useErrorHandling().toastErrorHandler(clipboardItems.error)
+    return true
+  }
+
+  try {
+    useCanvasStore().getCanvas()._deserializeItems(clipboardItems.data, {})
+  } catch (err) {
+    useErrorHandling().toastErrorHandler(err)
+  }
+  return true
 }
 
 function isWorkflow(
