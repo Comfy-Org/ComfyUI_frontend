@@ -418,7 +418,8 @@ export class PromptExecutionError extends Error {
     )) {
       message += '\n' + nodeError.class_type + ':'
       for (const errorReason of nodeError.errors) {
-        message += '\n    - ' + errorReason.message + ': ' + errorReason.details
+        message += '\n    - ' + errorReason.message
+        if (errorReason.details) message += ': ' + errorReason.details
       }
     }
 
