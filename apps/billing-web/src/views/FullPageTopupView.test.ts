@@ -26,8 +26,12 @@ vi.mock<unknown>(import('@/config/env'), () => ({
   CLOUD_BASE_URL: 'https://testcloud.comfy.org'
 }))
 
+const stripeKey = vi.hoisted(() => ({
+  read: (): Promise<string | undefined> => Promise.resolve('pk_test_example')
+}))
+
 vi.mock(import('@/config/stripeKey'), () => ({
-  awaitBillingWebStripeKey: () => Promise.resolve('pk_test_example')
+  awaitBillingWebStripeKey: () => stripeKey.read()
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
@@ -109,6 +113,7 @@ const payButton = () => screen.getByRole('button', { name: 'Pay' })
 
 afterEach(() => {
   sessionStorage.clear()
+  stripeKey.read = () => Promise.resolve('pk_test_example')
 })
 
 describe('FullPageTopupView', () => {
@@ -172,6 +177,30 @@ describe('FullPageTopupView', () => {
       'Added+5,275Amount paid$25.00'
     )
     expect(fake.createTopupCheckout).toHaveBeenCalledOnce()
+  })
+
+  it('charges only once the Stripe key is known, so the bank check can run on this page', async () => {
+    let releaseKey: (key: string) => void = () => {}
+    stripeKey.read = () =>
+      new Promise((resolve) => {
+        releaseKey = resolve
+      })
+    const fake = renderTopup({
+      topup: {
+        status: 'ok',
+        operation: settledTopup({ amountChargedCents: 2500 }),
+        creditsReconciled: true
+      }
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(payButton())
+
+    expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+    releaseKey('pk_test_example')
+    await vi.waitFor(() =>
+      expect(fake.createTopupCheckout).toHaveBeenCalledOnce()
+    )
   })
 
   it('keeps the form with the decline card when the bank refuses the charge', async () => {
