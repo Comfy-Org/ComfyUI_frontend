@@ -180,9 +180,9 @@ export function dynamicGroupWidget(
     next: string
   ) {
     const graph = node.graph
+    if (!graph || !isSubgraph(graph)) return
     const link = node.getInputLink(slot)
-    if (!graph || !isSubgraph(graph) || link?.origin_id !== SUBGRAPH_INPUT_ID)
-      return
+    if (link?.origin_id !== SUBGRAPH_INPUT_ID) return
     const promoted = graph.inputs[link.origin_slot]
     if (promoted.label === previous) graph.renameInput(promoted, next)
   }

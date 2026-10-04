@@ -21,6 +21,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
+import { multiClone } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import {
   createTestSubgraph,
@@ -145,6 +146,55 @@ describe('DynamicGroup widgets', () => {
     } finally {
       LiteGraph.unregisterNodeType(name)
     }
+  })
+
+  it.for([
+    {
+      name: 'clipboard cloning',
+      clone: (node: LGraphNode) => node.clone()?.serialize()
+    },
+    {
+      name: 'subgraph conversion cloning',
+      clone: (node: LGraphNode) => multiClone([node])[0]
+    }
+  ])('clones populated rows through $name', async ({ clone }) => {
+    LiteGraph.namedValuesRestore = false
+    const name = 'RegisteredDynamicGroupClone'
+    await useLitegraphService().registerNodeDef(name, {
+      name,
+      display_name: name,
+      category: 'testing',
+      python_module: 'nodes',
+      description: '',
+      output_node: false,
+      output: [],
+      input: {
+        required: {
+          rows: [
+            'COMFY_DYNAMICGROUP_V3',
+            {
+              template: {
+                required: {
+                  weight: ['FLOAT', { default: 1 }],
+                  strength: ['FLOAT', { default: 1 }]
+                }
+              }
+            }
+          ]
+        }
+      }
+    })
+    const graph = new LGraph()
+    const source = LiteGraph.createNode(name)
+    assert.exists(source)
+    graph.add(source)
+    const values = [2, 0.25, 0.8, 0.5, 0.6]
+    source.configure({ ...source.serialize(), widgets_values: values })
+
+    const copied = clone(source)
+
+    expect(copied?.widgets_values).toEqual(values)
+    expect(source.serialize().widgets_values).toEqual(values)
   })
 
   it.for([
