@@ -1,6 +1,8 @@
-# ADR-CRDT-RECONCILE-0035: Local-Only State Survives Authoritative Reconcile
+# ADR-CRDT-RECONCILE-0035: Local-Only State Survives Remote Apply
 
 Date: 2026-09-19
+
+Revised after the graph-API apply path landed (#18700).
 
 ## Status
 
@@ -8,634 +10,370 @@ Proposed
 
 ## Relationship to existing ADRs
 
-Reconnect, replay and queued human ops already have a design; this record is
-the follow-up [CRDT-WRITE-0035](CRDT-WRITE-0035-hold-pending-human-ops-across-tab-suspension.md)
-itself names as future work ("immediate catch-up and lost-write feedback
-remain follow-up work"). It decides only what those records leave open.
+This record owns two things: the four behavior requirements that any remote
+apply of the agent document must keep satisfying, and the gaps where main
+does not satisfy them yet. The mechanism itself is decided elsewhere.
 
-- **[CRDT-WRITE-0035](CRDT-WRITE-0035-hold-pending-human-ops-across-tab-suspension.md)**
-  decides that a tab-inactive suspension parks `opSender` instead of dropping
-  it, and that a full reconcile after return must skip a document node with a
-  pending human `delete_node`. It explicitly defers immediate catch-up and
-  lost-write feedback, and the ledger wiring behind `pendingHumanDeletes()`.
-  This ADR supplies both: the pending-op ledger as the sole source of that
-  intent, and the settlement rules (per-kind document presence, an explicit
-  host rejection, or a bounded ledger terminal path) that resolve what
-  suspension left unresolved.
-- **[CRDT-FOLLOWER-0035](CRDT-FOLLOWER-0035-bounded-ack-timeout-retry-for-unacknowledged-doc-subscribe.md)**
-  decides bounded resubscribe retry on an unacknowledged `doc_subscribe`,
-  same-lineage and same state vector, and that a successful acknowledgement
-  disarms that retry timer entirely. This ADR adds the settlement rules for a
-  parked `delivery_unknown` entry — per-kind document presence, explicit host
-  rejection, and a separate bounded terminal path the pending ledger owns for
-  itself, since a `doc_subscribed` acknowledgement never settles an entry on
-  its own — and the reactivation-continuity check that runs once a
-  resubscribe's document state is available.
-- **[GRAPH-DOCUMENT-0024](GRAPH-DOCUMENT-0024-graph-activation-and-document-objects-for-in-app-agent-targets.md)**
-  decides that ordinary recovery is same-lineage state-vector replay and that
-  only a host `doc_reset` may replace the follower doc. This ADR treats a
-  repeat delivery of the same reset as a no-op and decides what happens to
-  local-only state and pending intent across that lineage boundary.
-- **CRDT-PENDING-0030** is stacked work open on
-  [#16309](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16309), not yet
-  landed on `main`, so it has no file under `docs/adr/` on this branch to
-  link to; see that PR for the ADR text. It decides that a
-  host-rejected `add_node` is reverted off the canvas and that `unconfirmed`
-  (delivery unknown) does not itself trigger a revert. This ADR decides what
-  happens to an entry `unconfirmed` leaves open: it parks as
-  `delivery_unknown` and settles from per-kind document presence, an
-  explicit host rejection, or a bounded ledger terminal path — never from a
-  `doc_subscribed` acknowledgement alone — by a type-correlated rule that
-  never reverts on absence: an id-matched entry that reads as absent stays
-  parked until an explicit host rejection or the ledger's own bounded
-  terminal path resolves it. See
-  "Dependency contract" below for the revert, terminal-state and
-  ledger-ownership semantics this record relies on, summarized so this ADR is
-  reviewable while #16309 is still open.
 - **[CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)**
-  decides the one-way follower boundary (raw updates flow host to follower
-  only) and that the optimistic overlay clears on effect, not on ack. This
-  ADR fills in the "echo-attribution" and "optimistic overlay" gaps that
-  record leaves open: how an echo of the page's own accepted add is told
-  apart from a genuine id collision.
+  owns the apply path: the document is applied through the graph API, nothing
+  sweeps the live graph against the document, a frame written by this tab is
+  dropped on entry, a rejected op is reverted register by register, and
+  in-flight widget writes are held. This record does not restate those
+  decisions; it states which guarantees follow from them.
+- **[CRDT-WRITE-0035](CRDT-WRITE-0035-hold-pending-human-ops-across-tab-suspension.md)**
+  decides that a tab-inactive suspension parks the sender instead of dropping
+  it. The rebind reconcile it guarded no longer exists, so its reconcile text
+  is historical.
+- **[CRDT-REPLAY-0039](CRDT-REPLAY-0039-retain-exhausted-operations-for-same-page-replay.md)**
+  owns retention and replay of operations the sender gave up on. It is the
+  live residue of the earlier idea that pending intent should outlive the
+  panel, and this record defers to it for that.
 - **[CRDT-AUTHORITY-0035](CRDT-AUTHORITY-0035-human-canvas-authority-and-draft-reconciliation.md)**
-  decides that a human-authored draft can reset the shared document
-  server-side, and that a resulting `doc_reset` settles the sender's queued
-  and in-flight batches. This ADR's reactivation-continuity handling (a
-  mismatched `seq` keeps parked entries parked, resolved by document check
-  rather than reverted) is the client-side complement.
-
-### Dependency contract (from CRDT-PENDING-0030, open in #16309)
-
-Summarized from the linked ADR text above, since it is not yet on `main`:
-
-- **Revert scope.** Only a host-rejected `add_node` is reverted; `connect`,
-  `set_widget`, `delete_node` and `clear` are explicitly out of scope for
-  `pendingOpRevert.ts` and stay that way ("do not grow ... into an
-  inverse-operation framework").
-- **Terminal state.** `unconfirmed` (delivery unknown) is not terminal and
-  never itself triggers a revert; only an explicit host rejection does. The
-  tracker keeps the pending entry and the sender keeps enough correlation to
-  process a late result.
-- **Identity, not a second ledger.** `createPendingRevertNodeRegistry`
-  records the live `LGraphNode` at mint time; a rejection removes that exact
-  object only. If the id has since been reused by another node, the handler
-  leaves it alone — it never removes by node id.
-- **Ledger ownership.** The pending-op ledger is kept, under the mechanism
-  this ADR records, for operation identity, retries, acknowledgements, late
-  results and authoritative-effect correlation. What must survive any future
-  mechanism change is the requirement, not this artifact: see "Durable
-  guarantee vs. interim mechanism" below for the mechanism-independent
-  statement and the exact deletion list if the proposed semantic-apply
-  direction is adopted — which deletes the ledger itself, not only the
-  revert handler. The revert _handler_ (`pendingOpRevert.ts`) is
-  narrowly-scoped canvas-compensation code, separate from the ledger either
-  way.
-
-This ADR's (a) builds directly on the terminal-state and identity rules
-above: `delivery_unknown` is this record's extension of "`unconfirmed` does
-not itself trigger a revert" to the parked-and-later-resolved case, and (a)'s
-own never-revert-on-absence rule is the same protective shape as
-CRDT-PENDING-0030's "leaves it alone" rule for a reused id — both act only on
-positive evidence (an explicit rejection, or an identity match), never on
-absence.
+  decides that a `doc_reset` settles every queued and in-flight human op and
+  that the human-authored draft is the reconciliation primitive. It records
+  that `unconfirmed` and `undeliverable` outcomes reach only the dev panel;
+  surfacing them is a follow-up owned here.
+- **[CRDT-FOLLOWER-0035](CRDT-FOLLOWER-0035-bounded-ack-timeout-retry-for-unacknowledged-doc-subscribe.md)**
+  decides the bounded resubscribe retry on an unacknowledged `doc_subscribe`.
+  That retry never touches the sender, so it neither settles nor re-sends
+  human ops.
+- **[GRAPH-DOCUMENT-0024](GRAPH-DOCUMENT-0024-graph-activation-and-document-objects-for-in-app-agent-targets.md)**
+  decides same-lineage state-vector replay and that `doc_reset` is the only
+  event that replaces a document lineage.
 
 ## Context
 
-Human canvas edits reach the shared semantic document optimistically: the
-LiteGraph mutation lands locally first, the mint ports turn it into a wire op,
-and `opSender.ts` carries it to the doc host, which the follower then treats
-as authoritative. Two gaps in that loop are not covered by the ADRs above and
-motivate this record, confirmed by reading current `main` and the repros in
-[#18078](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18078) and
-[#18063](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18063):
+The in-app agent and the human edit one workflow through a shared document.
+The human's edits travel as ops over a write leg that can lose them: the tab
+goes inactive, the socket drops, the host refuses or never answers. At the
+same time the host streams the document back, including echoes of the
+human's own accepted ops. Whatever applies those frames to the live canvas
+must not destroy an edit the human made that the document has not yet
+accepted, must not hide a refusal, and must not leave a lost edit looking
+like a successful one.
 
-1. **The echo of the page's own accepted add arms a full reconcile.** The
-   host fans the accepted batch back as a `doc_update`; the incremental path
-   calls `batch.addNode` for the `add` action and `prepare()` rejects it with
-   `node id N is already registered`. The failed batch sets
-   `reconcileNextFrame = true`, so the frame after every accepted human add is
-   a full reconcile during ordinary editing. The relay's `doc_update` carries
-   `actor` and `seq` but no op ids, so the follower cannot recognise its own
-   echo by op identity today.
-2. **A human-inserted subgraph blueprint carries no definition into the
-   document.** The consumed `@comfyorg/comfy-multi-player` package already
-   exports `DefineSubgraphOp` and its applier already handles
-   `define_subgraph`; the gap is frontend-only. `layoutMintPort.ts`
-   mints `add_node`, `delete_node` and `clear`, and nothing else: it has no
-   `define_subgraph` mint path. The human insert path
-   (`LGraphCanvas._deserializeItems` to the layout mint port) therefore mints
-   only an `add_node` typed by a definition id the document has never seen.
-   The host survives (#18078), but the agent cannot see inside it.
-
-The remaining gap the earlier draft of this ADR covered — a host-rejected op
-being swallowed, and the first frame after a follower rebind deleting local
-nodes the document lacks — is CRDT-WRITE-0035's and CRDT-PENDING-0030's
-decision, not this one's; see Relationship above for what each already
-settles and what this record adds on top.
-
-#18078 removes the trigger for the reported node classes by keeping positional
-`widgets_values` for `isVirtualNode` classes in `serializeForMint`. It does not
-touch either gap above. This ADR decides how the layer behaves so that
-local-only state is never again deleted silently, and how the work is cut so
-it does not collide with the open PRs already editing the same files.
+This record was first written against an architecture that diffed the whole
+document against the live graph on rebind and so needed machinery to protect
+local-only state from that diff. #18700 replaced that architecture with an
+apply path that is driven by the change delta of each frame. The protection
+is now mostly structural rather than predicate-based. The four requirements
+survive the change, and they are worth keeping as an explicit contract
+because the structure that satisfies them is easy to break by accident (for
+example by adding a sweep or a full re-projection), and because two of them
+are not satisfied at all.
 
 ## Decision
 
-The document stays authoritative for what it has seen. It is not authoritative
-for what it has never been told about. Concretely:
+The document is authoritative for what it has told the live graph, not for
+what it has never seen. A remote apply may change only what the document
+changed. Four requirements follow, and they are the regression contract for
+any change to the apply path.
 
-### (a) Rejected and unresolved human ops: the ledger, longer-lived, plus bounded settlement
+1. **Pending local intent is never silently discarded by a remote apply.** A
+   node, link or widget value the human changed locally, and that the
+   document has not yet accepted, is not removed, recreated or overwritten by
+   a frame that does not name it. This holds whatever state the op that
+   carried the edit is in, including after it timed out.
+2. **A host rejection is reported.** When the host explicitly refuses a human
+   op, the user is told and the refused registers are put back to the
+   document's value.
+3. **An edit whose delivery is unknown reaches a visible terminal outcome
+   within a bounded time.** Absence from the document never reverts an edit,
+   and an acknowledgement alone never settles one: only an explicit host
+   rejection reverts.
+4. **A collision the available provenance can identify is reported, and the
+   document wins.**
 
-The pending-op tracker (CRDT-PENDING-0030) is the ledger of record; this ADR
-does not re-decide its revert-and-toast mechanics. It adds `delivery_unknown`
-for parked entries, plus two settlement outcomes for the cases an explicit
-host rejection never resolves: `unresolved` (the ledger's own bounded
-terminal path, non-destructive) and `abandoned` (target-session/document
-destruction, also non-destructive). It decides the following deltas as a
-proposed revision for the implementation carrier (PR A, and where noted PR
-A1) to adopt — not yet reflected in that implementation:
+How well main holds each one:
 
-- **The ledger is owned per bound workflow/document, not per follower
-  mount.** #16309's ledger resets on tab deactivation, which is not enough on
-  its own: `useAgentCrdtFollower` constructs the tracker's seam
-  (`createOpSender`) inside an effect scope owned by `AgentPanelRoot`, and an
-  ordinary panel close or mode change tears the tracker down with it — that
-  is not a lineage break. After a remount on the same workflow, a pending
-  `delete_node` has no ledger entry, so catch-up can silently restore the
-  node the user deleted. The ledger instead lives in a registry keyed by the
-  bound workflow/document's lineage id: created on first bind, independent of
-  any one follower mount, and cleared only on an actual lineage break (reset
-  or replace) or on the target session/document's own destruction — never on
-  panel close, a mode change, or a workflow close alone.
-  GRAPH-DOCUMENT-0024 permits a target session, its lineage and its bounded
-  queue to remain detached after a document closes, so "workflow close" is
-  not a safe clearing boundary: pending entries and their identities survive
-  a detached session so a late result can still correlate against them. Only
-  the document object's destroy clears the registry entry. Destruction proves
-  only that the client is abandoning correlation for that lineage, not that
-  the host rejected anything still parked — so any entry still parked at
-  that point settles as an explicit `abandoned` outcome: no revert, no
-  rejected-operation notification, consistent with the dependency contract
-  above, where only an explicit host rejection triggers revert-and-notify
-  compensation. No later frame can arrive to settle these entries any other
-  way, which is exactly why destruction, not an inferred rejection, is the
-  correct terminal outcome for them. This lands
-  in two steps: PR A keeps the ledger inside the follower and closes only the
-  tab-deactivation gap; PR A1 hoists its ownership to workflow/document scope
-  and to the destruction boundary, and this ADR's guarantee does not hold
-  for panel close/reopen until A1 lands. `createOpSender`'s `detach()` drops
-  in-flight batches without settling them, so PR A also makes the follower
-  call `abortAll()` before `detach()`: queued and open batches settle
-  `undeliverable` and an in-flight one settles `unconfirmed` (parked,
-  resolved per the settlement rules below). The registry drops a lineage
-  only on destruction, so it cannot grow across ordinary workflow closes and
-  reopens of the same document.
-- **The ledger is the only source of pending-delete intent.**
-  `pendingHumanDeletes()` becomes a read over the ledger: a `delete_node` in
-  any reconcile-protected state (defined below: every non-terminal state,
-  including `applied` until its effect frame lands, plus `unresolved`) is a
-  pending delete. This is the wiring CRDT-WRITE-0035 defers, and it
-  replaces the two-sources-that-can-disagree shape #18078 left behind.
-- **`unconfirmed` joins `unacknowledged` in the parked set as
-  `delivery_unknown`, and a `doc_subscribed` acknowledgement never settles a
-  parked entry by itself.** Both `unconfirmed` and `unacknowledged` mean the
-  host may have applied the batch. The wire carries no echoed subscribe or
-  request identity — `doc_subscribed` has only the workflow id, status and
-  `seq` — so a duplicate acknowledgement is indistinguishable from a fresh
-  one: with `subscribe1, ack1, dup ack1` nothing marks the second ack as a
-  repeat, and with `subscribe1, subscribe2, ack1, dup ack1, ack2` nothing
-  says which subscribe the duplicate answers. Both are undecided from the
-  wire alone, so no acknowledgement-based rule — a local counter, a
-  generation id, or treating the ack itself as a settlement barrier — can
-  safely resolve a parked entry, and this ADR defines none. A parked entry
-  settles only from one of three sources: (i) per-kind effect presence
-  checked against a same-lineage authoritative document, evaluated on the
-  local document immediately after reactivation (including when the
-  resubscribe finds the state vector already current and no further frame
-  follows) and again on every subsequent same-lineage frame, until resolved;
-  (ii) an explicit host rejection; (iii) the bounded ledger terminal path
-  below, for an entry that outlives both of the above within its own
-  lifetime.
+- **Hold structurally.** Requirement 2 holds for every op kind. Requirement 1
+  holds by construction in merge mode, which is every apply except the first
+  one after a `doc_reset`.
+- **Hold only partially.** A `doc_reset` replace removes local-only nodes and
+  links without a report. A widget hold lifts when its op settles, including
+  when the op timed out, not when the document confirms the value. Time is
+  bounded for requirement 3 only while the tab is active.
+- **Do not hold.** No visible outcome exists for an edit that ends
+  `unacknowledged`, `unconfirmed` or `undeliverable`. A rejection that
+  arrives after the sender gave up is swallowed. A same-id collision with
+  another writer is not reported.
 
-  Absence never _reverts_ an entry — not on an ordinary frame, not on a
-  continuity-unknown reactivation (see below), and not at the terminal
-  path's expiry. Absence _settles_ an entry only when absence is that
-  entry's own success condition: `delete_node` settles `applied` when the id
-  is absent. `add_node`, `connect` and `set_widget` settle only on presence
-  (`set_widget` on value equality); when one of those instead reads as
-  absent (or unequal), the entry simply stays parked as `delivery_unknown` —
-  it is never reverted on that basis. The only source that reverts an entry
-  is an explicit host rejection, per the dependency contract above; the
-  bounded ledger terminal path below settles a parked entry that outlives
-  everything else, but to a non-destructive outcome, never a revert. Once the backend echoes subscribe
-  identity on `doc_subscribed` (named as a dependency in Sequencing below),
-  an acknowledgement identified as belonging to the current subscribe may be
-  used as a catch-up barrier in its own right; that wire change has not
-  landed, so this ADR does not rely on one.
+A per-op protected set of the kind this record once proposed is not
+reintroduced. Pending intent is protected by construction, because a frame
+can change only what the document changed. A set of that shape comes back
+only if one of the gaps below cannot be closed without it, and then as a
+small registry in the sender keyed by op id, not as a second source of op
+identity (see the follow-ups).
 
-- **Per-kind resolution**, evaluated against the document per source (i)
-  above: `add_node`, the node id is present and the document node's type
-  equals the ledger entry's minted type; `delete_node`, the id is absent;
-  `connect`, the specific link id is present; `set_widget`, the target
-  widget's current value equals the op's value — never an unconditional
-  clear, since last-writer-wins does not make an arbitrary document value
-  proof that this op landed; `clear` is not parked. A present-and-matching
-  check (or absence, for `delete_node`) settles the entry as `applied`. An
-  `add_node`, `connect` or `set_widget` entry that instead reads as absent
-  (or unequal, for `set_widget`) is left parked as `delivery_unknown` — it is
-  never reverted on that basis, on this frame or any later one; the only
-  thing that reverts a minted node, link or widget change is an explicit
-  host rejection (see the dependency contract above), and that holds for
-  every kind alike. Present-but-different-type is an id collision, handled
-  as (c) handles it. Nothing is re-enqueued.
-- **The pending ledger's own bounded terminal path settles a parked entry to
-  a non-destructive `unresolved` outcome once its lifetime elapses — it
-  never reverts.** CRDT-FOLLOWER-0035's ack-timeout retry times an
-  _unanswered_ `doc_subscribe`; a successful `doc_subscribed` disarms that
-  timer entirely, and even the terminal give-up state on that timer only
-  reports and latches `connected: false` with no pending-ledger settlement
-  hook — it was never a path that can expire a `delivery_unknown` entry, and
-  citing it as one was wrong. The pending ledger instead owns its own bounded
-  terminal path: each parked entry carries an absolute per-entry lifetime,
-  `LEDGER_SETTLE_TIMEOUT_MS`, counted from the moment the entry is parked;
-  its exact value is an implementation detail, not decided here. That
-  lifetime is never extended by traffic: an idle-timeout shape, where an
-  unrelated same-lineage frame resets the deadline, would let frequent
-  unrelated activity keep a lost op ambiguous forever, so the deadline is
-  scheduled once, at park time, against a fixed clock, and no later frame
-  moves it.
+## Mechanism on main
 
-  There is no other precondition on the deadline firing. An earlier draft of
-  this rule also required a max-acknowledged-`seq` precondition and a
-  quiescence (no-frame-arrived-within-the-bound) requirement before the
-  deadline could fire; both are removed. The `seq` precondition treated an
-  unidentified `doc_subscribed` acknowledgement's `seq` as proof the local
-  document had caught up to a specific subscribe, but the wire carries no
-  echoed subscribe or request identity (see above): a duplicate old
-  acknowledgement can repeat a lower `seq` while the newer, real catch-up
-  frame that would have resolved the entry safely is lost in transit,
-  leaving the stale `seq` as false proof of causality and destructively
-  reverting an operation the host had, in fact, applied. Quiescence has the
-  same defect from the other direction: nothing on the wire establishes that
-  a quiet document is _this_ lineage's settled state rather than a gap in
-  delivery. Until the backend echoes subscribe identity or a lineage/
-  generation token (both named as dependencies in Sequencing below), no
-  signal available today can prove a parked entry is truly gone, so the only
-  safe outcome the deadline may produce is a non-destructive one.
+All of this lives under `src/workbench/extensions/agent/crdt/`.
 
-  When the lifetime elapses, the entry settles to a terminal outcome,
-  `unresolved`: the local optimistic projection is retained exactly as it
-  stands — no revert, and no rejected-operation notification. Instead, a
-  distinct unconfirmed-edit notification tells the user this edit could not
-  be confirmed as synced. The entry's identity stays registered after
-  settling `unresolved`: a late echo or an explicit host response arriving
-  afterward can still move it to `applied`, or to `reverted` on an explicit
-  host rejection, until a lineage break (`doc_reset`) or the document's own
-  destruction clears the registry entry per the ledger-lifetime rule above.
-  Presence observed on any frame before the lifetime elapses still settles
-  the entry first, per the per-kind rule above; the lifetime only governs
-  what happens when nothing has. Unknown delivery is therefore bounded in
-  **time** — it always becomes a visible terminal outcome within
-  `LEDGER_SETTLE_TIMEOUT_MS` of being parked — but it is not resolved in
-  **truth**: the backend lineage/generation token and the echoed subscribe
-  identity, both named as dependencies in Sequencing below, are what would
-  let this terminal outcome become a truthful revert instead of a standing
-  `unresolved` state.
+### Apply modes
 
-  A ledger entry is **reconcile-protected** in every non-terminal state and
-  in `unresolved`. An entry is protected for exactly as long as its identity
-  stays registered and its optimistic projection is still standing, and
-  `unresolved` keeps both (see above). Protection ends only when the entry
-  settles `applied` or `reverted` (an `applied` entry stays protected until
-  its effect frame lands), or when a lineage break or the document's
-  destruction clears the registry. `pendingHumanDeletes()` above and the
-  retention rules in (b) below both read this set, so settling `unresolved`
-  does not remove an entry from the reconcile-protection predicates in (b).
+`LiveGraphApplier` (`liveGraphApplier.ts`) has two modes. In merge mode it
+applies only what the frame's collected change delta names, as recorded by
+`DocChangeCollector` (`docChangeCollector.ts`) per node, widget and link. It
+never removes a live node or link the document merely lacks. A node the
+human deleted locally is not brought back by a later frame, because field
+and widget syncs need a live node, and only an `add` delta creates one. A
+node whose op is queued, parked or timed out is therefore left alone.
 
-- **On a reactivation, a changed `seq` keeps parked entries parked; it is
-  ordinary same-lineage progress, not proof of anything about them.** A
-  resubscribe that follows a paused (tab-inactive) subscription checks
-  continuity: the resume's `seq` equal to what this client last projected
-  means the document did not change while away, so the per-kind resolution
-  above runs unchanged. A different `seq` is ordinary same-lineage progress —
-  another actor's edit, or one of this session's own parked entries taking
-  effect while the tab was inactive. The per-kind document check above still
-  runs in that case (presence, and matching type for `add_node`, still
-  resolves the entry as `applied`, regardless of continuity); since absence
-  never reverts on any frame (see above), a mismatched `seq` raises no
-  separate destructive question of its own — an entry the check cannot yet
-  resolve as `applied` simply stays parked as `delivery_unknown`, resolved by
-  whichever of the three settlement sources above comes first: the next
-  same-lineage `doc_update`, an explicit host rejection, or the ledger's own
-  non-destructive `unresolved` outcome once its bounded lifetime elapses.
-  Outside a reactivation, a `seq` mismatch is handled the same way: the
-  natural catch-up frame resolves things through the per-kind presence rules
-  above, with no revert-on-absence to gate. This is accepted as incomplete
-  only in timing, not in safety: without the backend lineage/generation
-  token named above, some entries may sit parked longer than a resolved
-  reactivation would need — tracked as a followup, not resolved here.
-- **Per-frame order is fixed: resolve, apply, clear.** For each
-  authoritative frame the follower (1) resolves parked entries against the
-  document state the frame produces and marks them terminal, (2) applies the
-  frame's projection with the ledger as it stands after step 1, so (b)'s
-  pending-delete filter no longer hides a node whose delete just reverted
-  and (c)'s echo gate still sees the `add_node` entry the frame echoes, then
-  (3) clears the entries whose ack seq the frame's `seq` covers. Clearing
-  before applying would strip the echo gate's entry in the very frame that
-  echoes it and misreport every accepted human add as a collision.
-- **Every host rejection is reported**, additionally, with a stable
-  `errorType` (`agent_crdt_human_op_rejected`) and the host's failure code, op
-  kind and node id in context, never the payload.
-- **Clearing without op ids is seq-based.** Every `doc_update` and
-  `doc_ops_result` carries the workflow's monotonic `seq`; an applied entry
-  clears when the follower projects a seq at or after its ack seq. The hole:
-  the host's `applied` list includes `lww-dropped` and delete-wins `no-op`
-  outcomes, so an op that never took effect clears as applied and stays
-  divergent, unreported. Closing that needs a per-op-outcome host frame
-  upgrade, named in `opSender.ts`'s header comment and not owned here.
+Replace mode runs only for the first applied frame after a `doc_reset`. The
+follower arms it through `AgentCrdtProjection.replaceOnNextFrame`
+(`agentCrdtProjection.ts`), and the only caller is the reset handler in
+`useAgentCrdtFollower.ts`. In replace mode the applier first removes every
+live node and link the new lineage lacks, with no report. Tab return,
+reconnect, rebind and collected-delta application all use merge. While a tab
+is inactive the projection stays bound and the collector keeps accumulating,
+and the accumulated delta is applied on reactivation.
 
-For #18063's shape (a `delete_node` still queued when the tab switches) this
-means: the delete is parked, (b) keeps the node out of the reconcile upsert
-while it is parked (and after it settles `unresolved`, which stays
-reconcile-protected), and it settles `applied` once the per-kind document
-check finds the node absent. If the host still holds the node — the delete
-never took effect — the entry stays parked as `delivery_unknown`: it clears
-only on an explicit host rejection, which reverts the local delete and fires
-the standard rejected-operation toast, or, failing that, on the ledger's own
-bounded terminal path, which settles it `unresolved` with the
-unconfirmed-edit notification instead and keeps the local optimistic delete
-in place.
+Pins: `agentCrdtProjection.integration.test.ts` (replace removes a local-only
+node only once the new lineage's first frame arrives),
+`agentCrdtProjection.localEdits.test.ts` (an unminted add and a node the
+document never took survive tab return),
+`useAgentCrdtFollower.humanAddTabSwitch.test.ts`,
+`agentDeleteTabSwitchRace.test.ts`, and the Playwright specs
+`agentHumanAddTabSwitch.spec.ts`, `agentHumanDeleteTabSwitch.spec.ts`,
+`agentHumanAddReload.spec.ts` and `agentFirstMintResetSweepsTemplate.spec.ts`
+(a reset alone sweeps nothing).
 
-### Durable guarantee vs. interim mechanism
+### Human write leg
 
-Four behavior requirements are durable and should outlive any one mechanism
-below: an unresolved human intent, including an entry that has settled
-`unresolved`, is never silently discarded by a reconcile; a host rejection is
-reported; an outcome whose delivery is unknown becomes a visible terminal
-outcome within a bounded time — `applied` or `reverted` when
-per-kind document presence or an explicit host rejection resolves it,
-otherwise a non-destructive `unresolved` outcome once the ledger's own
-bounded terminal path elapses — never settled by an acknowledgement alone,
-and never ambiguous indefinitely _in time_, though truthful resolution (a
-real revert instead of a standing `unresolved`) still depends on
-backend-supplied identity that has not landed; and any collision the
-available provenance can identify is reported, with the document winning.
-Provenance today is op-identity-based
-(the ledger's `add_node` entry for a node id, in a state the host can have
-echoed): a same-type, same-id replacement under an add that never reached the
-ledger converges silently, without a report — the negative consequence
-recorded below.
+Human edits become graph intents, `docOpMinter.ts` mints them into wire ops
+(add node, remove node, connect, disconnect, clear, set widget, set node
+field), and `opSender.ts` sends them one batch at a time, in order. Only the
+bound document's root graph is mintable; an op for another graph, or for the
+interior of a subgraph, is not minted and is reported once. A batch ends in
+exactly one of four outcomes:
 
-| Requirement                                                                                                                                                                                                                                                                                                                                                  | A                     | A1                    | B                                                  | C                                   |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- | --------------------- | -------------------------------------------------- | ----------------------------------- |
-| Unresolved intent survives a reconcile (queued, in-flight, delivery-unknown and timed-out `unresolved` entries are never discarded until a late echo or explicit rejection settles them, or a lineage break or destruction clears them)                                                                                                                      | tab-deactivation only | + panel close/reopen  | + lineage-aware `removeMissing`/orphan sweep       | —                                   |
-| A host rejection is reported                                                                                                                                                                                                                                                                                                                                 | yes                   | yes                   | yes                                                | —                                   |
-| Delivery-unknown becomes a visible terminal outcome within a bounded time: `applied` via per-kind document presence, `reverted` only via an explicit host rejection, or the ledger's own non-destructive `unresolved` outcome once its bounded lifetime elapses (never via an acknowledgement alone; absence never reverts, on any frame or at reactivation) | yes                   | yes                   | yes                                                | —                                   |
-| An identifiable collision is reported, not resolved silently                                                                                                                                                                                                                                                                                                 | incremental path only | incremental path only | + full-reconcile path, once the known-id set lands | —                                   |
-| Blueprint definitions reach the document                                                                                                                                                                                                                                                                                                                     | —                     | —                     | —                                                  | pending (PR C; no external blocker) |
+| Outcome          | Produced when                                                                                                                           | Time bound                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `acknowledged`   | a result arrives for the batch's op ids (an anonymous failure also counts when a send happened)                                         | none, the result decides                         |
+| `unacknowledged` | no result within the result timeout, after one silent resend of the same ops                                                            | about 20 seconds from the first send, tab active |
+| `unconfirmed`    | the batch was sent, then the sender was unbound, aborted by a `doc_reset`, detached, or its subscribe was refused                       | immediate on the event                           |
+| `undeliverable`  | the batch was never sent (queued or detached), or the transport refused it for the whole retry budget (five tries, half a second apart) | about 2.5 seconds of retry, or immediate         |
 
-A blank cell means that slice does not change the requirement's status from
-the slice before it; "—" means the slice does not touch that requirement.
+A suspension parks the batch instead of sending or settling it. A resume
+sends it again, unless the sender is now bound to a different workflow, in
+which case it settles `unconfirmed` or `undeliverable`. A `doc_reset` aborts
+everything the sender holds before the reset is announced, and unmounting the
+panel detaches the sender, which settles whatever is still outstanding.
+After a batch settles without an answer, the sender keeps one credit per
+outstanding send so that a late result drains a credit instead of being
+mistaken for the result of a later batch.
 
-That whole mechanism is interim. A proposed semantic-apply direction (store-
-first projection replaced by semantic `LGraph`/`LGraphNode` apply with
-call-carried provenance), if adopted, deletes the parallel pending ledger
-itself: a command-minted operation already carries its own identity, so
-satisfying the same four requirements would use command-carried provenance
-plus ingress echo filtering instead of a separate ledger lookup. Adopting
-that direction is out of scope here and not decided by this ADR. If adopted,
-`removeMissing`'s ledger- and lineage-awareness, `reconcileNode`,
-`reconcileNextFrame`, the materializer's repair pass, the ledger-gated echo
-check in (c), and `pendingOpLedger.ts` itself are deleted or replaced, not
-amended; the four requirements above are what must keep holding across that
-change.
+Pins: `opSender.test.ts` (resend then `unacknowledged`, late results,
+suspension, retarget, `abortAll` ordering) and `crossWorkflowPending.test.ts`
+(a result for another workflow is never re-addressed).
 
-### (b) `removeMissing` and the orphan sweep are ledger-aware and lineage-aware
+### Rejection path
 
-Both scopes apply; neither alone covers the two repros.
+For an `acknowledged` outcome with `ok: false`, the follower
+(`useAgentCrdtFollower.ts`) reports the rejection through `reportError` when
+the host names a failure, and asks the projection to revert the ops. Ops
+count as rejected when the host did not list them as applied.
+`AgentCrdtProjection.revertRejected` reads
+each refused op's node, widget or link register back from the document
+(`rejectedOpChanges.ts`) and applies it under its own revert actor: a refused
+add is removed, a refused delete or clear is restored together with its
+links, a refused widget write resyncs the widget, and a refused connect or
+disconnect resyncs the link. Edits inside a subgraph interior are skipped.
+Nothing else in the live graph is touched, so a rejection never widens into a
+reconcile.
 
-- **Ledger-aware.** A node with an `add_node` in any reconcile-protected
-  ledger state (every non-terminal state, plus `unresolved`; see (a) above)
-  is retained by `removeMissing` and by the materializer's orphan sweep; a
-  node with a `delete_node` in a reconcile-protected state is not re-created
-  by a reconcile upsert. This is the "lineage-aware retention of pending
-  intent through a full reconcile" requirement: it keeps #18063's deleted
-  node deleted and #18078's never-landed node alive until the ledger
-  resolves. A widget with a `set_widget` in a reconcile-protected state
-  keeps its local value through a full reconcile the same way. The first full
-  reconcile after an entry's lifetime elapses therefore neither deletes an
-  unresolved add, re-creates an unresolved delete, nor overwrites an
-  unresolved widget value; a late echo then settles the entry `applied` with
-  no visible change, and only an explicit host rejection settles it
-  `reverted` and reverts the projection.
-- **Lineage-aware, deferred to PR B.** The session will keep a lineage-scoped
-  **known-id set** in the same registry as the ledger: the node and link ids
-  the document holds now, plus ids it held whose removal `removeMissing` has
-  not yet applied locally. An id will leave the set only when a local sweep
-  has removed it, never merely because the document dropped it, so
-  `removeMissing` will remove exactly the ids in the set the document no
-  longer holds. An id the document never held will be retained and reported
-  once per session (`reportError`, `agent_crdt_local_only_node_retained`).
-  **Not landed yet**: PR A's `ecsFullReconcile.ts` still reads its node list
-  live off the document's own map on every reconcile (see (c) below), and
-  the composable's own `knownDocNodeIds` is only a dev-panel event tap, not
-  this set. Per Sequencing below, PR B (which introduces this set) comes
-  after A1, so the set is introduced already at the ledger's post-A1
-  workflow/document lifetime — there is no separate per-follower phase for
-  it to outgrow.
+The user sees a toast from `rejectedOpNotice.ts`. Copy is chosen from four
+keys under `agent.editRejected` (widget write or generic, complete or
+partial), and a toast with identical rendered text is throttled for ten
+seconds. Telemetry records each distinct rejection code once per follower.
 
-The genuine "stale local canvas" case is a lineage break: `doc_reset` and
-`follower_replaced` already run `clearForReset` plus the sweep, unchanged by
-this ADR, and remain the only path that may delete state the document never
-held.
+Pins: `useAgentCrdtFollower.test.ts` (only host-rejected ops revert),
+`useAgentCrdtFollower.rejectedWidgetWrite.test.ts` and
+`useAgentCrdtFollower.rejectedHumanAdd.test.ts` (toast, throttle, telemetry),
+and `agentCrdtProjection.localEdits.test.ts` (revert per op kind).
 
-### (c) An echo of an own add is a reconcile; any other collision is reported
+### Echo and collision
 
-The adapter treats an `add` action whose node id is already registered in the
-store as the echo of an own add (`reconcileNode`, not `addNode`) only when the
-ledger holds an `add_node` for that node id, **of the same type**, in a state
-the host can have seen: `inflight`, `applied`, `delivery_unknown` or
-`unresolved` — a late echo against an `unresolved` entry is exactly the case
-the terminal path's own registry retention (see (a) above) exists to still
-resolve correctly, as `applied` rather than a fresh collision. A
-`queued` or `unprocessed` entry has never reached the host and cannot have
-produced an echo, so an incoming add under its id is a collision
-(`agent_crdt_node_id_collision`). **This classification is not yet run in the
-full-reconcile path** — `applyFullReconcile` reads its node list live off the
-document's own map on every reconcile, so "already registered locally" is
-true for every ordinarily-synced node, not only a colliding local-only one,
-and telling those apart needs (b)'s known-id set. **This collision
-classification is therefore deferred to PR B**, alongside the known-id set it
-depends on; (b)'s ledger-aware retention still holds on the rebind path, but
-a same-id collision there converges silently until PR B lands (see
-Consequences/Negative). The ledger survives deactivation per (a), so the echo
-case on the incremental path is always covered. A collision is a retained
-local-only node and a document node minted under the same graph-local
-integer. The adapter reports it and shows the same toast a revert gets. The
-document wins by an explicit replace, `deleteNode` then `addNode` under
-`layoutStore.withActor` with mint ports suppressed, whatever the types:
-`prepare()`'s `reconcileNode` picks `replaceNode` only when the types differ
-and merges same-type nodes, which would leave the retained local node's links
-and widget identity in place.
+A frame whose actor is this tab and that is not a catch-up replay is dropped
+on entry: it takes the pending delta, settles widget holds against the
+document, and applies nothing. The graph already holds that edit because the
+intent was minted from it. Catch-up frames are exempt because they can carry
+this actor as last writer while replaying state the graph never saw.
 
-### (d) Blueprint definitions: mint `define_subgraph` on the human insert path
+Any other frame that names an id the graph already holds wins without a
+report. A live node of the same type is updated from the document, and a live
+node of a different type is removed and recreated with its links, so the
+document wins either way. The one related report is for a created node whose
+live id differs from the document's.
 
-No package dependency blocks this: the consumed
-`@comfyorg/comfy-multi-player` package already exports `DefineSubgraphOp` and
-its applier already handles `define_subgraph`. The remaining gap is entirely
-frontend-side —
-`layoutMintPort.ts` has no mint path for it. When the human insert path
-(`_deserializeItems`, subgraph blueprint drop or paste) creates a definition
-the bound document lacks, the layout mint port must emit `define_subgraph`
-for that definition (nested definitions first) ahead of the host's
-`add_node`, in mint order, so the applier registers the type before the node
-that uses it. This is PR C's entire scope now; nothing in PR A, A1 or B
-depends on it, and no package-integration PR blocks it. Until PR C lands, the
-host lands as an opaque positional node (#18078) and the port reports once
-per definition id (`agent_crdt_blueprint_definition_not_in_doc`).
+Collisions are mostly avoided rather than detected. A graph bound to a
+document mints node ids from a range disjoint from the ids the agent mints
+(`idAllocation.ts`, the `crdt-disjoint` mode), so ids minted while bound
+cannot collide. Ids that were minted sequentially before binding are the
+residue. `agentNodeIdCollision.spec.ts` pins the remaining failure as an
+expected failure.
+
+### Widget in-flight hold
+
+`LocalWidgetWrites` (`localWidgetWrites.ts`) remembers the latest local value
+of each widget register whose op has not been confirmed. A remote frame that
+writes such a register is held back, because the host built it before the
+local write arrived and applying it would rewind what the user typed. The
+hold lifts when the document catches up (an own-actor echo), when a settled
+op carries the register's latest value, or on a `doc_reset`. The follower
+settles holds for every outcome state, so a timed-out write stops being held
+and the next remote value overwrites the local one. This is the one place
+where the first requirement is bounded by sender settlement instead of by
+confirmation.
+
+### Blueprint definitions
+
+A blueprint insert creates a node whose type depends on a subgraph
+definition. The human path mints it as an ordinary add-node op with the node
+snapshot; it does not mint a `define_subgraph` op, though the wire package
+carries one, and the minter has no path for it. The document therefore never
+learns the definition from a human insert. The applier reads definitions out
+of the document but nothing writes the human's. Edits inside a subgraph
+interior are not representable and are reported once per kind
+(`agent_crdt_unrepresentable_subgraph_*`), so a bound document can diverge
+from the local graph there.
+
+## Requirements
+
+| Requirement                  | Holds today        | How                                                                         | Remaining                                                                        |
+| ---------------------------- | ------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Pending intent is kept       | Mostly             | Merge mode applies only the delta; replace is armed only by `doc_reset`     | Replace sweeps silently; widget hold lifts on any settlement                     |
+| A rejection is reported      | Yes                | Register-wise revert plus a throttled toast, for every op kind              | A rejection that arrives after the sender gave up is not seen                    |
+| Delivery-unknown is visible  | Bounded, not shown | Four sender outcomes; about 20 seconds when active, immediate on unbind     | No user-visible outcome; no late correlation; no bound while the tab is inactive |
+| A collision is reported      | No                 | Own-actor echo drop and disjoint id minting avoid most; the document wins   | Same-id merge or recreate is silent                                              |
+| Blueprint definitions arrive | No                 | Interior edits are reported; the host node is minted without its definition | Mint `define_subgraph` from the human path                                       |
+
+## Remaining gaps and follow-ups
+
+Ordered by how much of a requirement each closes. Of the slices in the
+earlier plan, A0 (refuse to mint for a graph that is not the bound root) is
+done (`isMintableRootScope`), A, A1 and B are moot, and C (the blueprint mint)
+is still open.
+
+1. **Surface and correlate terminal non-ack outcomes.** The follower records
+   `unacknowledged`, `unconfirmed` and `undeliverable` only in the dev panel
+   (and only with debug on). They need a user-visible notice under its own key
+   (distinct from `agent.editRejected`), throttled the same way, and
+   telemetry. Today a node whose add timed out stays in the graph, and a
+   delete that never arrived stays deleted locally while the document keeps
+   the node; the notice makes that divergence visible. The sender must also
+   keep a settled op's identity long enough that a late result is processed
+   instead of swallowed: a late rejection should revert and report, a late
+   acknowledgement should clear the notice. If that needs per-op state, the
+   smallest form is a bounded registry of settled ops keyed by op id inside
+   the sender, with no second owner of op identity.
+2. **Retention across the panel lifetime.** Held batches have no deadline
+   while the tab is inactive and die with the panel. This is
+   CRDT-REPLAY-0039; do not duplicate it here.
+3. **Report collisions.** The smallest option is a one-per-session report from
+   the merge path when it replaces or updates a live node of the same id from
+   a frame that is not this tab's own. It pairs with the expected-failure spec
+   above and must stay inside the follower boundary (no sweep).
+4. **Decide the replace-mode behavior.** Either report how many local-only
+   nodes and links a replace removed, or exempt local adds made after the
+   draft was posted. The rationale for the current behavior is that the draft
+   already carries the human's effect, which does not cover edits made between
+   the draft and the new lineage's first frame.
+5. **Suspected, unverified.** Each needs a repro before any claim is asserted.
+   - A `doc_reset` that reaches a bound but inactive follower appears to arm
+     neither the replace nor the sender abort, so a parked batch minted for the
+     old lineage could resume against the new one.
+   - The replace flag is consumed only by an applied non-echo frame, so a
+     post-reset catch-up that never produces one could leave the next live
+     frame to run the replace.
+   - A rejection result that arrives while the bound tab is inactive appears
+     to revert against whatever graph is current instead of the bound
+     workflow's.
+6. **Blueprint definitions.** Mint `define_subgraph` from the human insert
+   path, scheduled with the node's add. This is frontend-only.
+7. **Backend dependencies, still open.** Per-op outcomes so that a dropped
+   last-writer or delete-wins op stops counting as applied, op ids on
+   `doc_update` so that echoes could be matched instead of filtered by actor,
+   a lineage token, and an echoed subscribe identity so that an
+   acknowledgement can be tied to a subscribe.
 
 ## Alternatives considered
 
-- **Re-enqueue held ops when the same workflow rebinds.** Rejected. Nothing
-  discriminates a tab-switch `undeliverable` from a retry-budget or no-doc
-  one; a re-applied `add_node` is not idempotent against a changed document;
-  no per-kind precondition was defined. The parked-then-verified path in (a)
-  surfaces the same divergence without those risks.
-- **Ledger-aware `removeMissing` only.** Misses an add whose batch was never
-  minted and a node restored from `activeState` after a lineage reset emptied
-  the ledger.
-- **Lineage-aware `removeMissing` only.** Re-creates #18063's deleted node
-  until the delete lands; the ledger is what says "local intent is deletion".
-- **Treat every "already registered" add as a reconcile.** Would let a
-  document node silently replace a retained local-only node with the same id
-  once (b) starts retaining; hence the ledger gate in (c).
-- **Re-mint the local node's id on collision (ADR-ECS-IDENTITY-0016).**
-  Deferred: the pinned applier does not remap ids; revisit when it does.
-- **Filter own echoes by `actor`.** A single frame folds agent and human
-  effects; a per-frame skip drops agent effects.
+- **Re-enqueue held ops when the same workflow rebinds.** Rejected here. A
+  re-sent add is not idempotent against a changed document, and nothing
+  distinguishes a tab-switch loss from a retry-budget one. Retention and
+  replay with the original op id is CRDT-REPLAY-0039's territory.
+- **Re-mint the local node's id on collision (ADR-ECS-IDENTITY-0016).** Not
+  needed: disjoint id minting removes the collision for ids minted while
+  bound.
+- **Filter echoes by op id.** Blocked: op ids are not on `doc_update`.
+  Dropping on the actor string is what main does.
+- **Drop frames from this tab's actor wholesale.** Adopted, with a known risk
+  carried over from CRDT-FOLLOWER-0025: if the relay folds an agent op into a
+  frame written by the human actor, the agent's effect is dropped with it.
+- **Keep a second per-op registry beside the graph intents.** Rejected. It
+  would be a second source of op identity that has to stay in step with the
+  sender. The follow-up above keeps any state inside the sender, keyed by the
+  op id the intent already carries.
 - **Host-side definition registration on first sight of an unknown type.**
-  Moves frontend definition data into the host through a side channel and
-  bypasses the op log; rejected in favour of the `define_subgraph` op the
+  Rejected. It moves frontend definition data into the host through a side
+  channel and bypasses the op log, in favor of the `define_subgraph` op the
   package already carries.
 
-## Sequencing
+## Superseded design
 
-Five dependency-ordered slices, each landing its failing test first. No new
-feature flag: the whole layer sits behind `agentPanelStore.enabled`, and is
-not generally available; (b) and (c) fail safe by retaining more and
-reconciling less. (a)'s revert applier is destructive when its resolution is
-wrong and gets no kill-switch for the same reason; add a settings switch if
-the layer reaches general availability before the revert path has soaked.
-
-- **PR A0**, independent: closes the window in which a workflow load's first
-  nodes mint into the previous document, by dropping and reporting a
-  `createNode` whose graph is not the bound document's root graph. Dropped
-  if its entry-condition test cannot be made to fail first.
-- **PR A**, after #18071 and #16309: the (a) deltas and (c), with the ledger
-  still owned inside the follower (survives tab deactivation, not yet panel
-  unmount). Acceptance: a rejected human add is reverted and reported, an
-  echo of the page's own accepted add reconciles instead of forcing a full
-  resync, and queued and open batches settle before the sender detaches. For
-  each of `add_node`, `delete_node` and `set_widget`: the entry is parked,
-  its lifetime elapses and it settles `unresolved` with the unconfirmed-edit
-  notification, a full reconcile then runs and the optimistic projection is
-  retained unchanged, and then either a late echo settles it `applied` with
-  no visible change or an explicit host rejection settles it `reverted` with
-  the standard rejected-operation notification. PR A covers the timeout and
-  late-settlement steps for all three kinds and the reconcile step for
-  `delete_node` through `pendingHumanDeletes()`; the reconcile step for
-  `add_node` and `set_widget` lands with PR B's rules.
-- **PR A1**, after A: hoists the ledger's ownership from the follower to the
-  bound workflow/document. Acceptance: closing the panel with a pending human
-  delete and reopening on the same workflow does not restore the deleted
-  node. This ADR's guarantee does not fully hold until A1 lands.
-- **PR B**, after A1 and after the retry-accounting decision on #16358: (b),
-  ledger-aware and lineage-aware `removeMissing` and orphan sweep, plus the
-  full-reconcile collision classification (c) defers. Acceptance: a node the
-  user added whose `add_node` never reached the doc survives a tab-return
-  reconcile, and a node the user deleted stays deleted across a tab switch
-  even when the delete was still in flight, and an `unresolved` add or widget
-  value likewise survives a full reconcile.
-- **PR C**, independent of A, A1 and B: implements the (d) mint path in
-  `layoutMintPort.ts`. No package-integration PR blocks it — the consumed
-  comfy-multi-player package already carries `DefineSubgraphOp` and its
-  applier.
-
-The file/test-level rollout checklist for this stack (exact files touched,
-test names, fixture wiring) is tracked outside this ADR. Server dependencies
-named, not owned here: per-op outcomes on `doc_ops_result` or op ids on
-`doc_update` (for effect-correlated clearing); a per-lineage generation or
-reset counter on the subscribe acknowledgement (for the reactivation-
-continuity gap in (a) above); and echoed request/generation identity on
-`doc_subscribe`/`doc_subscribed` (so an acknowledgement identified as
-belonging to a specific subscribe may be used as a catch-up barrier in its
-own right — this frontend-only PR does not rely on one today). See "Rollout
-status" below for dependency order; current PR/branch/status facts are
-tracked outside this ADR.
+The earlier version of this record proposed a per-lineage pending-op ledger,
+protected-state predicates that a reconcile consulted, a bounded `unresolved`
+outcome for ops that timed out, and a ledger-aware sweep and echo gate. That
+design was overtaken when #18700 deleted the reconcile layer, so none of it
+exists on main. Readers of older review threads can map the four requirements
+above onto what those threads called the ledger's guarantees.
 
 ## Rollout status
 
-Architectural dependency order lives in Sequencing above. This section
-deliberately does not carry PR numbers, branch names, head SHAs, package
-versions, or other in-flight status — those live in the implementation
-stack's own tracking issue, since they drift independently of the decisions
-recorded here.
+Architectural dependency order lives in Remaining gaps and follow-ups above.
+This section deliberately does not carry PR numbers, branch names, head SHAs,
+package versions, or other in-flight status, since they drift independently of
+the decisions recorded here.
 
 ## Consequences
 
 ### Positive
 
-- A rebind or catch-up barrier removes only state the document once held;
-  local-only state is retained and reported. The one exception, an id
-  collision under (c), is reported too.
-- Ordinary editing stops arming a full reconcile on every accepted add, which
-  also shrinks the blast radius of the sibling reconcile-overwrite bugs.
-- The pending-op ledger becomes the single source of pending human-op intent
-  that CRDT-WRITE-0035 and CRDT-PENDING-0030 left as two separate reads.
+- The protection of pending local state no longer depends on a registry that
+  must be kept in step with the sender. A frame cannot remove or recreate what
+  it does not name.
+- A rejection reverts exactly the refused registers, for every op kind, from
+  the document, so a refusal cannot widen into a reconcile.
+- A failed delete no longer resurrects the node on a later frame; the failure
+  mode is divergence, which the first follow-up makes visible.
+- The four requirements are written down as a contract, so a future change to
+  the apply path is judged against them.
 
 ### Negative
 
-- Retained local-only nodes are a visible divergence until the ledger
-  resolves or the user acts; the report is the mitigation, not a fix.
-- Edits made before the first `bind()` are never minted (the mint gate is
-  closed until the tab is active and bound), so under (b) they are retained
-  and reported forever instead of deleted on the first snapshot; never-minted
-  deletes during a teardown window are re-added by the reconcile and seen by
-  neither half of (b). The follow-up is an initial-sync mint of local-only
-  state at first bind, or an explicit prompt.
-- The known-id set and the longer-lived ledger add state that must reset on
-  every lineage break; a missed reset retains stale state.
-- Parking `delivery_unknown` entries delays the rejected-operation toast for
-  a batch the host actually rejected while the tab was away, until the
-  explicit rejection itself arrives or, failing that, until the ledger's own
-  bounded terminal path elapses and shows the milder unconfirmed-edit
-  notification instead — a deliberate trade of a slower, sometimes
-  wrong-shaped notification against ever reverting an effect the document
-  actually holds. An entry that settles `unresolved` and is only later
-  confirmed rejected surfaces the standard rejected-operation notification at
-  that point, so the same edit can present two different notifications in
-  sequence; an entry that settles `unresolved` and is never confirmed either
-  way stays a standing, user-visible unconfirmed edit until a lineage break
-  or destruction clears it.
-- Seq-based clearing, like effect clearing, trusts an `applied` list that
-  counts `lww-dropped` and `no-op`; until the host frame carries per-op
-  outcomes some divergence stays unreported.
-- The human-path `define_subgraph` mint keeps its interim behaviour until PR
-  C lands; the gap is frontend-only now (`layoutMintPort.ts` has no mint path
-  for it), not blocked on any package-integration chain.
-- The same-type, same-id collision under a never-landed add clears as an
-  echo until `doc_update` carries op ids, on the full-reconcile path until PR
-  B lands; the projection converges but the user's node has been replaced by
-  the document's without a report.
+- Three outcomes (`unacknowledged`, `unconfirmed`, `undeliverable`) are
+  invisible to the user, and a late rejection after one of them is swallowed.
+  The local graph can stay different from the document with no signal.
+- A `doc_reset` replace removes local-only nodes and links silently.
+- A widget value stops being held when its op settles, so after a timeout the
+  next remote value overwrites what the user typed.
+- Same-id collisions with another writer are resolved silently in the
+  document's favor. Ids from before binding remain exposed.
+- An op the host drops as last-writer-loses or delete-wins is counted as
+  applied until the host reports per-op outcomes.
+- The human path still mints no `define_subgraph`, and subgraph interior edits
+  are not representable.
+- Dropping the own actor wholesale loses an agent effect folded into such a
+  frame (accepted in CRDT-FOLLOWER-0025).
+- Bounded time holds only while the tab is active.
 
 ## Notes
 
-- ADR-ECS-0008: the ledger and the known-id set are plain data in
-  adapter-owned modules; no methods are added to `LGraph`, `LGraphNode` or
-  `LGraphCanvas`.
+- This record does not add a sweep or a reconciliation pass; the follower
+  boundary check rejects both, and any gap fix above must stay within it.
 - ADR-CRDT-LAYOUT-0003: layout deletions still go through the layout store's
   command boundary.
 - See Relationship to existing ADRs above for how this record composes with
-  CRDT-WRITE-0035, CRDT-FOLLOWER-0035, GRAPH-DOCUMENT-0024,
-  CRDT-PENDING-0030, CRDT-FOLLOWER-0025 and CRDT-AUTHORITY-0035.
+  CRDT-FOLLOWER-0025, CRDT-WRITE-0035, CRDT-REPLAY-0039, CRDT-AUTHORITY-0035,
+  CRDT-FOLLOWER-0035 and GRAPH-DOCUMENT-0024.
