@@ -24,6 +24,7 @@ test.describe(
 
       await agentPanel.open()
       await agentPanel.selectWorkflow()
+      await agentPanel.composer.fill('Use these images')
 
       await agentPanel.fileInput.setInputFiles(
         Array.from({ length: 36 }, (_, index) => ({
@@ -34,8 +35,8 @@ test.describe(
       )
       await expect(agentPanel.attachmentChips).toHaveCount(36)
       await expect(agentPanel.sendButton).toBeInViewport({ ratio: 1 })
+      await expect(agentPanel.sendButton).toBeEnabled()
 
-      await agentPanel.composer.fill('Use these images')
       await agentPanel.composer.press('Enter')
 
       await expect.poll(() => postedMessages).toHaveLength(1)
