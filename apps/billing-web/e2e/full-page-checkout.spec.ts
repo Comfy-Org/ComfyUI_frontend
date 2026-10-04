@@ -395,6 +395,7 @@ test('553-9297: a plan change on a plan set to end needs the keep-subscription t
     cost_next_period_cents: 10_000
   }
   await signIn(CHECKOUT)
+  const confirmUpgrade = page.getByRole('button', { name: 'Confirm upgrade' })
 
   const notice = page.getByTestId('keep-subscription-notice')
   await expect(notice).toContainText(
@@ -406,14 +407,14 @@ test('553-9297: a plan change on a plan set to end needs the keep-subscription t
   const box = page.getByRole('checkbox', {
     name: 'Keep my subscription and renew it'
   })
-  await expect(payButton(page)).toBeEnabled()
+  await expect(confirmUpgrade).toBeEnabled()
   const noticeBox = await notice.boundingBox()
-  const payBox = await payButton(page).boundingBox()
+  const payBox = await confirmUpgrade.boundingBox()
   expect(
     payBox && noticeBox && payBox.y - (noticeBox.y + noticeBox.height)
   ).toBe(24)
 
-  await payButton(page).click()
+  await confirmUpgrade.click()
 
   await expect(box).toHaveAttribute('aria-invalid', 'true')
   await expect(box).toBeFocused()
@@ -433,14 +434,14 @@ test('553-9297: a plan change on a plan set to end needs the keep-subscription t
     INVALID_RED
   )
   await expect(error).toHaveCSS('color', INVALID_RED)
-  await expect(payButton(page)).toBeEnabled()
+  await expect(confirmUpgrade).toBeEnabled()
   expect(
     cloud.requests.some((request) => request.path === '/billing/subscribe')
   ).toBe(false)
 
   await notice.getByText('Keep my subscription and renew it').click()
   await expect(box).toHaveAttribute('aria-invalid', 'false')
-  await payButton(page).click()
+  await confirmUpgrade.click()
 
   await expect
     .poll(() =>

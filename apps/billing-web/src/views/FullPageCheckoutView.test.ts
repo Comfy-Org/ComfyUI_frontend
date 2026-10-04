@@ -221,6 +221,8 @@ async function renderCheckout(
 
 const payButton = () =>
   screen.getByRole('button', { name: 'Pay and subscribe' })
+const confirmButton = (name: 'Confirm upgrade' | 'Confirm change') =>
+  screen.getByRole('button', { name })
 
 afterEach(() => {
   sessionStorage.clear()
@@ -393,7 +395,7 @@ describe('FullPageCheckoutView', () => {
       })
       await screen.findByText('Upgrade to Creator Plan · Acme Team')
 
-      await userEvent.click(payButton())
+      await userEvent.click(confirmButton('Confirm upgrade'))
 
       await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
       expect(
@@ -468,7 +470,7 @@ describe('FullPageCheckoutView', () => {
       }
     })
     await screen.findByText('Upgrade to Creator Plan · Acme Team')
-    expect(payButton()).toBeEnabled()
+    expect(confirmButton('Confirm upgrade')).toBeEnabled()
 
     fake.publishOperation(processingOperation())
 
@@ -476,7 +478,7 @@ describe('FullPageCheckoutView', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       "This payment is already processing and can't be canceled."
     )
-    expect(payButton()).toBeDisabled()
+    expect(confirmButton('Confirm upgrade')).toBeDisabled()
     expect(
       screen.getByText('Upgrade to Creator Plan · Acme Team')
     ).toBeInTheDocument()
@@ -1285,9 +1287,9 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       subscribe: { status: 'ok', value: { phase: 'succeeded' } }
     })
     await screen.findByText('Upgrade to Creator Plan · Acme Team')
-    await waitFor(() => expect(payButton()).toBeEnabled())
+    await waitFor(() => expect(confirmButton('Confirm upgrade')).toBeEnabled())
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmButton('Confirm upgrade'))
 
     expect(
       await screen.findByRole('heading', { name: "You're all set" })
@@ -1359,9 +1361,9 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     const box = screen.getByRole('checkbox', {
       name: 'Keep my subscription and renew it'
     })
-    expect(payButton()).toBeEnabled()
+    expect(confirmButton('Confirm upgrade')).toBeEnabled()
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmButton('Confirm upgrade'))
 
     expect(fake.subscribe).not.toHaveBeenCalled()
     expect(box).toHaveAttribute('aria-invalid', 'true')
@@ -1369,14 +1371,14 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(box).toHaveAccessibleDescription(
       'Check the box to keep your subscription, then pay.'
     )
-    expect(payButton()).toBeEnabled()
+    expect(confirmButton('Confirm upgrade')).toBeEnabled()
 
     await userEvent.click(box)
 
     expect(box).toHaveAttribute('aria-invalid', 'false')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmButton('Confirm upgrade'))
 
     await waitFor(() =>
       expect(fake.subscribe).toHaveBeenCalledWith(
@@ -2984,9 +2986,9 @@ describe('FullPageCheckoutView promo codes', () => {
       `${CHECKOUT_PATH}&promo=LAUNCH20`
     )
     await screen.findByText(/Switch to Creator Plan/)
-    await waitFor(() => expect(payButton()).toBeEnabled())
+    await waitFor(() => expect(confirmButton('Confirm change')).toBeEnabled())
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmButton('Confirm change'))
 
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
     expect(fake.previewSubscribe).toHaveBeenCalledExactlyOnceWith(
@@ -3093,7 +3095,7 @@ describe('FullPageCheckoutView promo codes', () => {
           })
         ).not.toBeChecked()
       )
-      await userEvent.click(payButton())
+      await userEvent.click(confirmButton('Confirm upgrade'))
       expect(fake.subscribe).not.toHaveBeenCalled()
     }
   )

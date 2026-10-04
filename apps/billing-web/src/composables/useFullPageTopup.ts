@@ -1,7 +1,11 @@
 import { useIntervalFn } from '@vueuse/core'
 import { computed, shallowReadonly, shallowRef, watch } from 'vue'
 
-import { useBillingClient, useTopUp } from '@comfyorg/account-ui/billing'
+import {
+  useBillingClient,
+  usePaymentMethods,
+  useTopUp
+} from '@comfyorg/account-ui/billing'
 import type {
   BillingResult,
   CapabilitiesSnapshot,
@@ -76,6 +80,8 @@ export function useFullPageTopup() {
     'capabilities' | 'lifecycle' | 'topup'
   >(undefined)
 
+  const saved = usePaymentMethods({ immediate: false })
+
   const amountCents = entry.value?.amountCents
   const page = shallowRef<CheckoutPage>(arrivalPage())
 
@@ -130,7 +136,8 @@ export function useFullPageTopup() {
     if (amountCents === undefined) return
     const [allowed, quoted] = await Promise.all([
       capabilities.read(),
-      topup.quoteTopup({ amountCents })
+      topup.quoteTopup({ amountCents }),
+      saved.refresh()
     ])
     if (quoted.status === 'ok') quote.value = quoted.value
     const event = capabilityStop(allowed) ?? quoteEvent(quoted)
@@ -220,6 +227,7 @@ export function useFullPageTopup() {
   return {
     page: shallowReadonly(page),
     quote: shallowReadonly(quote),
+    savedMethods: saved.methods,
     canPay,
     returnLink,
     settingsLink,

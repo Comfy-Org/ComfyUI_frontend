@@ -519,6 +519,19 @@ function familyLedger(r: QuoteReading): FamilyLedger {
   return chargeNowLedger(r)
 }
 
+/**
+ * What Pay commits a plan quote to, which names the button: a new
+ * subscription, an upgrade charged today, or any other change to the plan.
+ */
+export type PlanPurchase = 'subscribe' | 'upgrade' | 'change'
+
+export function planPurchaseOf(quote: SubscriptionPreview): PlanPurchase {
+  if (quote.transition_type === 'new_subscription') return 'subscribe'
+  return quote.is_immediate && quote.transition_type === 'upgrade'
+    ? 'upgrade'
+    : 'change'
+}
+
 /** The server refuses a code on a change that charges nothing today. */
 export function acceptsPromoCode(quote: SubscriptionPreview): boolean {
   return quote.is_immediate

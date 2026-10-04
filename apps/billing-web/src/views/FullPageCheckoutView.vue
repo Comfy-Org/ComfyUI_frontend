@@ -16,7 +16,7 @@ import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn
 import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import { successBreakdown } from '@/checkout/successBreakdown'
 import type { LedgerContext } from '@/checkout/summaryLedger'
-import { buildSummaryLedger } from '@/checkout/summaryLedger'
+import { buildSummaryLedger, planPurchaseOf } from '@/checkout/summaryLedger'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { keepSubscriptionCopy } from '@/checkout/keepSubscription'
 import PromoCodeEntry from '@/components/fullPage/summary/PromoCodeEntry.vue'
@@ -103,6 +103,8 @@ const charge = computed<CheckoutCharge | undefined>(() => {
     paymentMethodConfigurationId: quoted.payment_method_configuration_id ?? ''
   }
 })
+
+const purchase = computed(() => quote.value && planPurchaseOf(quote.value))
 
 const keepSubscription = computed(() => {
   const quoted = quote.value
@@ -214,6 +216,7 @@ function viewPlans() {
         :publishable-key="stripeKey ?? ''"
         :can-pay="canPay"
         :reopening
+        :purchase
         :keep-subscription="keepSubscription"
         :saved-methods="savedMethods"
         @phase="onPaymentPhase"
