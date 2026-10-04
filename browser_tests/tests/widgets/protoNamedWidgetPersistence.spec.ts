@@ -4,24 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 
-/**
- * A widget named `__proto__` lost its value on every reload.
- *
- * `serialiseWidgetValues` filled `widgets_values_named` by assignment, and for
- * that one name the assignment runs the inherited `Object.prototype.__proto__`
- * setter instead of creating an own key. The restore checks `Object.hasOwn`,
- * finds nothing, and hands the widget its default back — without falling
- * through to the positional register, because a present named register means
- * "no value under this name".
- *
- * An odd name, but it is reachable from any node definition, and the same
- * assignment is what would have made the register's prototype a user value.
- *
- * The named-restore path is the experimental `Comfy.Workflow.NamedValuesRestore`
- * setting, off by default, so this is a defect in that path rather than one
- * every user is hitting today. The setting is what the case turns on.
- */
-
 const WIDGET_NAME = '__proto__'
 const TYPED_VALUE = 'survives the reload'
 
