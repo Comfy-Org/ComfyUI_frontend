@@ -1,4 +1,5 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
+import { reportError } from '@/platform/telemetry/reportError'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -186,20 +187,22 @@ export function downloadModel(
   const outcome = dispatchModelDownload(model, paths)
 
   if (outcome.status === 'dispatch-failed') {
-    console.error(
-      `Failed to start ${outcome.host === 'desktop2' ? 'Desktop2' : 'Electron'} model download:`,
-      outcome.error
-    )
+    reportError(outcome.error, {
+      surface: 'platform',
+      errorType: 'error_starting_model_download',
+      tags: { host: outcome.host }
+    })
     return
   }
 
   if (outcome.status !== 'host-requested') return
 
   void outcome.hostResult.catch((error: unknown) => {
-    console.error(
-      `Failed to start ${outcome.host === 'desktop2' ? 'Desktop2' : 'Electron'} model download:`,
-      error
-    )
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'error_starting_model_download',
+      tags: { host: outcome.host }
+    })
   })
 }
 

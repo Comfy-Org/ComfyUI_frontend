@@ -203,12 +203,8 @@ export function useTemplateModelRowDownloads({
    */
   const nativeJobs = new Map<string, { attempt: number; jobId: string }>()
 
-  function identityFor(model: ModelWithUrl): string {
-    return getTemplateModelDownloadIdentity(model)
-  }
-
   function initializeState(model: ModelWithUrl): TemplateModelDownloadState {
-    const identity = identityFor(model)
+    const identity = getTemplateModelDownloadIdentity(model)
     const previousModel = models.get(identity)
     if (previousModel && previousModel.url !== model.url) {
       const initial = createTemplateModelDownloadState()
@@ -229,7 +225,7 @@ export function useTemplateModelRowDownloads({
   }
 
   function stateFor(model: ModelWithUrl): TemplateModelDownloadState {
-    const identity = identityFor(model)
+    const identity = getTemplateModelDownloadIdentity(model)
     const state = states.get(identity)
     if (models.get(identity)?.url !== model.url) {
       return createTemplateModelDownloadState()
@@ -241,7 +237,7 @@ export function useTemplateModelRowDownloads({
     model: ModelWithUrl,
     event: TemplateModelDownloadEvent
   ): void {
-    const identity = identityFor(model)
+    const identity = getTemplateModelDownloadIdentity(model)
     let current = initializeState(model)
     if (
       current.status === 'queued' &&
@@ -262,7 +258,7 @@ export function useTemplateModelRowDownloads({
     event: TemplateModelDownloadHostEvent,
     jobId?: string
   ): void {
-    const identity = identityFor(model)
+    const identity = getTemplateModelDownloadIdentity(model)
     if (jobId !== undefined && !acceptsJob(identity, event, jobId)) return
     if (event.type === 'started' || event.type === 'progress') {
       nativeActivityAttempts.set(identity, event.attempt)
@@ -389,7 +385,7 @@ export function useTemplateModelRowDownloads({
   }
 
   function request(model: ModelWithUrl): void {
-    const identity = identityFor(model)
+    const identity = getTemplateModelDownloadIdentity(model)
     const current = initializeState(model)
     const queued = reduceTemplateModelDownloadState(current, {
       type: 'request'

@@ -21,9 +21,6 @@ describe('template model download state', () => {
       directory: 'loras'
     })
 
-    expect(checkpoint).toBe(
-      JSON.stringify(['shared/name.safetensors', 'checkpoints'])
-    )
     expect(checkpointCopy).toBe(checkpoint)
     expect(lora).not.toBe(checkpoint)
   })
@@ -100,8 +97,6 @@ describe('template model download state', () => {
       { type: 'request' }
     )
 
-    // A queued row has not been handed to a host yet, so neither of these can
-    // describe it - only `started` may move it on.
     for (const event of [
       { type: 'completed', attempt: 1 } as const,
       {

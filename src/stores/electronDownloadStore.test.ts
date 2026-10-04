@@ -55,13 +55,12 @@ describe('useElectronDownloadStore progress observation', () => {
   let emitProgress: (download: ElectronDownload) => void
 
   beforeEach(() => {
-    emitProgress = vi.fn()
-    downloadManager.getAllDownloads.mockReset().mockResolvedValue([])
-    downloadManager.onDownloadProgress
-      .mockReset()
-      .mockImplementation((listener: (download: ElectronDownload) => void) => {
+    emitProgress = vi.fn().mockResolvedValue([])
+    downloadManager.onDownloadProgress.mockImplementation(
+      (listener: (download: ElectronDownload) => void) => {
         emitProgress = listener
-      })
+      }
+    )
   })
 
   it('restores status, bytes, and a valid byte fraction', async () => {

@@ -1,3 +1,4 @@
+import { reportError } from '@/platform/telemetry/reportError'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,6 +20,8 @@ const { fetchMock, mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
   mockIsDesktop: { value: false },
   mockStartDownload: vi.fn()
 }))
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(
   import('@/platform/distribution/types'),
@@ -867,7 +870,6 @@ describe('downloadModel', () => {
     const anchorClick = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => {})
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const bridgeError = new Error('bridge failed')
     const desktopDownloadModel = vi
       .fn<
@@ -889,10 +891,11 @@ describe('downloadModel', () => {
     )
 
     await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to start Desktop2 model download:',
-        bridgeError
-      )
+      expect(reportError).toHaveBeenCalledWith(bridgeError, {
+        surface: 'platform',
+        errorType: 'error_starting_model_download',
+        tags: { host: 'desktop2' }
+      })
     })
     expect(anchorClick).not.toHaveBeenCalled()
     expect(mockStartDownload).not.toHaveBeenCalled()
@@ -902,7 +905,6 @@ describe('downloadModel', () => {
     const anchorClick = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => {})
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const bridgeError = new Error('bridge failed before returning a promise')
     const desktopDownloadModel = vi
       .fn<
@@ -926,10 +928,11 @@ describe('downloadModel', () => {
     )
 
     await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to start Desktop2 model download:',
-        bridgeError
-      )
+      expect(reportError).toHaveBeenCalledWith(bridgeError, {
+        surface: 'platform',
+        errorType: 'error_starting_model_download',
+        tags: { host: 'desktop2' }
+      })
     })
     expect(anchorClick).not.toHaveBeenCalled()
     expect(mockStartDownload).not.toHaveBeenCalled()
@@ -985,7 +988,6 @@ describe('downloadModel', () => {
   it('handles rejected legacy Electron downloads without surfacing the rejection', async () => {
     mockIsDesktop.value = true
     const rejection = new Error('Electron download rejected')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     mockStartDownload.mockRejectedValueOnce(rejection)
 
     const result = downloadModel(downloadableModel(), {
@@ -994,17 +996,17 @@ describe('downloadModel', () => {
 
     expect(result).toBeUndefined()
     await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to start Electron model download:',
-        rejection
-      )
+      expect(reportError).toHaveBeenCalledWith(rejection, {
+        surface: 'platform',
+        errorType: 'error_starting_model_download',
+        tags: { host: 'electron' }
+      })
     })
   })
 
   it('handles synchronous legacy Electron dispatch failures', () => {
     mockIsDesktop.value = true
     const failure = new Error('Electron dispatch failed')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     mockStartDownload.mockImplementationOnce(() => {
       throw failure
     })
@@ -1014,9 +1016,10 @@ describe('downloadModel', () => {
         checkpoints: ['/models/checkpoints']
       })
     ).not.toThrow()
-    expect(consoleError).toHaveBeenCalledWith(
-      'Failed to start Electron model download:',
-      failure
-    )
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      surface: 'platform',
+      errorType: 'error_starting_model_download',
+      tags: { host: 'electron' }
+    })
   })
 })
