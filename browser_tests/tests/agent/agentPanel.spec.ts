@@ -182,9 +182,13 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   // Regression: https://linear.app/comfyorg/issue/PM-1895/fix-video-outputs-in-the-agent-tab-play-only-on-hover-with-no-video
   test('identifies a generated video before hover', async ({
     agentPanel,
+    comfyPage,
     getWebSocket,
     postedMessages
   }) => {
+    // Park the pointer in the corner so "before hover" is a precondition this
+    // test establishes rather than an accident of where the last click landed.
+    await comfyPage.page.mouse.move(0, 0)
     await agentPanel.open()
     await agentPanel.selectWorkflow()
 
@@ -209,10 +213,21 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     const videoTile = agentPanel.root.getByRole('button', {
-      name: 'Open video: generated_clip.mp4'
+      name: enMessages.agent.openVideo.replace('{name}', 'generated_clip.mp4'),
+      exact: true
     })
     await expect(videoTile).toBeVisible()
-    await expect(videoTile.getByTestId('reply-video-affordance')).toBeVisible()
+
+    // `toBeVisible` passes on `opacity: 0`, so it cannot tell a persistent
+    // badge from the repo's usual `opacity-0 group-hover:opacity-100` reveal —
+    // which is the regression PM-1895 is about. Pin the computed opacity, both
+    // with the pointer parked away from the tile and while hovering it.
+    const affordance = videoTile.getByTestId('reply-video-affordance')
+    await expect(affordance).toBeVisible()
+    await expect(affordance).toHaveCSS('opacity', '1')
+
+    await videoTile.hover()
+    await expect(affordance).toHaveCSS('opacity', '1')
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({

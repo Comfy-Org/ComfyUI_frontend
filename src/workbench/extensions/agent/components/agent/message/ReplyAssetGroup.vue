@@ -155,9 +155,14 @@ function stopPreview(event: Event): void {
         type="button"
         :aria-label="
           asset.kind === 'video'
-            ? t('agent.openVideo', {
-                name: asset.label ?? asset.filename
-              })
+            ? t(
+                'agent.openVideo',
+                { name: asset.label ?? asset.filename },
+                // Plain-text attribute, never parsed as HTML: the app-wide
+                // `escapeParameter: true` would otherwise announce a clip
+                // named `a&b.mp4` as `a&amp;b.mp4`.
+                { escapeParameter: false }
+              )
             : (asset.label ?? asset.filename)
         "
         :class="

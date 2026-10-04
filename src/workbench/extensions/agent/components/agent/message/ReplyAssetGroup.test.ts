@@ -111,6 +111,20 @@ describe('ReplyAssetGroup', () => {
     ).toBeNull()
   })
 
+  it('PM-1895 announces a video name containing markup characters literally', () => {
+    renderGroup([
+      { ...video, url: 'https://x/a&b.mp4', filename: "a&b <Tom's>.mp4" },
+      { ...image(1), url: 'https://x/a&b.png', filename: "a&b <Tom's>.png" }
+    ])
+
+    expect(
+      screen.getByRole('button', { name: "Open video: a&b <Tom's>.mp4" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: "a&b <Tom's>.png" })
+    ).toBeInTheDocument()
+  })
+
   it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
     renderGroup([image(1), video])
 
