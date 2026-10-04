@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import {
+  markErrorReported,
+  reportError
+} from '@/platform/telemetry/reportError'
 import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
@@ -45,6 +48,7 @@ function lastCall(): { route: string; init: RequestInit } {
 
 /** The tag set of the most recent `reportError` call. */
 function reportedTags(): Record<string, unknown> | undefined {
+  expect(reportError).toHaveBeenCalledOnce()
   return vi.mocked(reportError).mock.calls.at(-1)?.[1].tags
 }
 
@@ -589,6 +593,20 @@ describe('error mapping', () => {
     })
   })
 
+  it('reports unreported rather than guessing when fetchApi drops the callback (PM-1802)', async () => {
+    respond(jsonResponse(401, { error: 'unauthorized' }))
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'get_thread_messages',
+      status: 401,
+      authScheme: 'unreported'
+    })
+  })
+
   it('never reports a thread, message or ask id from the failing path (PM-1802)', async () => {
     const identifiers = ['t-secret', 'm-secret', 'ask-secret']
     respondWithAuthScheme(
@@ -666,6 +684,7 @@ describe('error mapping', () => {
     expect((error as AgentApiError).message).toBe(
       'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
     )
+    expect(markErrorReported).toHaveBeenCalledExactlyOnceWith(error)
   })
 
   it('does not report auth telemetry for a non-auth error status', async () => {

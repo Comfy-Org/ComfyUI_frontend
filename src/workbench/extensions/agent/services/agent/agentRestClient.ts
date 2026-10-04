@@ -5,7 +5,10 @@ import type {
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import {
+  markErrorReported,
+  reportError
+} from '@/platform/telemetry/reportError'
 import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
@@ -67,6 +70,8 @@ type AgentApiOperation =
   | 'post_thread_message'
   | 'put_run_mode'
   | 'upload_image'
+
+type ReportedAuthScheme = AuthScheme | 'unreported'
 
 /**
  * The reported message for an auth rejection, constant by construction.
@@ -416,7 +421,7 @@ export function createAgentRestClient() {
   async function toApiError(
     response: Response,
     operation: AgentApiOperation,
-    authScheme: AuthScheme
+    authScheme: ReportedAuthScheme
   ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
     const message = getErrorMessage(body, response.statusText)
@@ -427,6 +432,12 @@ export function createAgentRestClient() {
     // method not allowed) arrived with no failing endpoint and no record of
     // which auth path was taken, so it couldn't be diagnosed. Reporting both
     // here means the next occurrence can be.
+    const apiError = new AgentApiError(
+      message,
+      response.status,
+      body,
+      retryAfterSeconds
+    )
     if (response.status === 401 || response.status === 403) {
       reportError(new Error(AUTH_REJECTED_MESSAGE), {
         surface: 'agent',
@@ -434,8 +445,12 @@ export function createAgentRestClient() {
         tags: { operation, status: response.status, authScheme },
         level: 'warning'
       })
+      // Callers still receive the backend text for the UI, but their generic
+      // catch boundaries must not emit it as a second, separately-grouped
+      // report after the complete bounded diagnostic above.
+      markErrorReported(apiError)
     }
-    return new AgentApiError(message, response.status, body, retryAfterSeconds)
+    return apiError
   }
 
   async function request<T>(
@@ -444,7 +459,7 @@ export function createAgentRestClient() {
     init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
   ): Promise<T> {
-    let authScheme: AuthScheme = 'none'
+    let authScheme: ReportedAuthScheme = 'unreported'
     const response = await api.fetchApi(route, {
       ...init,
       onAuthScheme: (scheme) => {
