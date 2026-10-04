@@ -259,14 +259,6 @@ describe('toAskPart delete_approval', () => {
 })
 
 describe('RENDERED_ASK_KINDS', () => {
-  it('is exactly the kinds the panel renders', () => {
-    expect(RENDERED_ASK_KINDS).toEqual([
-      'run_approval',
-      'ask_user',
-      'delete_approval'
-    ])
-  })
-
   it.for(RENDERED_ASK_KINDS)('renders a card for %s', (kind) => {
     expect(isRenderedAskKind(kind)).toBe(true)
     expect(toAskPart(askUser({ kind }))).toBeDefined()

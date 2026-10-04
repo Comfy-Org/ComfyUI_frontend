@@ -1,6 +1,7 @@
 import { i18n } from '@/i18n'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import { zAgentAskNodeRef } from '../../schemas/agentApiSchema'
 
 export type PartState = 'streaming' | 'done'
 
@@ -231,15 +232,13 @@ function toAskUserPart(ask: AskInput): AskUserPart | undefined {
 }
 
 function toAskNodeRef(value: unknown): AskNodeRef | undefined {
-  if (typeof value !== 'object' || value === null) return undefined
-  const { id, type, title } = value as Record<string, unknown>
-  if (typeof id !== 'string' && typeof id !== 'number') return undefined
-  const label = [title, type].find(
-    (text): text is string => typeof text === 'string' && text.trim() !== ''
-  )
+  const parsed = zAgentAskNodeRef.safeParse(value)
+  if (!parsed.success) return undefined
+  const { id, title, type } = parsed.data
+  const name = title?.trim() || type?.trim()
   return {
     id: clip(String(id), ASK_USER_LIMITS.label),
-    name: label ? clip(label.trim(), ASK_USER_LIMITS.label) : undefined
+    name: name ? clip(name, ASK_USER_LIMITS.label) : undefined
   }
 }
 
@@ -267,13 +266,20 @@ function toDeleteApprovalPart(ask: AskInput): AskUserPart | undefined {
   return part && { ...part, ...toAskNodeRefs(ask.context) }
 }
 
-/**
- * The card builder for each ask kind this panel renders. It is the one list
- * of renderable kinds: `toAskPart` dispatches through it and the turn request
- * advertises its keys as `ask_kinds`, so the two cannot drift.
- */
-const ASK_PART_BUILDERS = {
-  run_approval: (ask: AskInput): AskPart => ({
+/** The ask kinds this panel can render, sent as `ask_kinds` on each turn. */
+export const RENDERED_ASK_KINDS = [
+  'run_approval',
+  'ask_user',
+  'delete_approval'
+] as const
+
+type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
+
+const ASK_PART_BUILDERS: Record<
+  RenderedAskKind,
+  (ask: AskInput) => AskPart | undefined
+> = {
+  run_approval: (ask) => ({
     type: 'runApproval',
     askId: ask.ask_id,
     workflowId: ask.context?.workflow_id || undefined,
@@ -281,17 +287,10 @@ const ASK_PART_BUILDERS = {
   }),
   ask_user: toAskUserPart,
   delete_approval: toDeleteApprovalPart
-} satisfies Record<string, (ask: AskInput) => AskPart | undefined>
-
-export type RenderedAskKind = keyof typeof ASK_PART_BUILDERS
-
-/** The ask kinds this panel can render, sent as `ask_kinds` on each turn. */
-export const RENDERED_ASK_KINDS = Object.freeze(
-  Object.keys(ASK_PART_BUILDERS) as RenderedAskKind[]
-)
+}
 
 export function isRenderedAskKind(kind: unknown): kind is RenderedAskKind {
-  return (RENDERED_ASK_KINDS as readonly unknown[]).includes(kind)
+  return RENDERED_ASK_KINDS.some((rendered) => rendered === kind)
 }
 
 /**
