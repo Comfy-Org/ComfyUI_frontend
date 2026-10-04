@@ -1151,12 +1151,19 @@ export class ComfyApi extends EventTarget {
               // The public `executing` event keeps its bare NodeId detail —
               // extensions depend on that shape — so the ids travel here
               // instead, for consumers that must know which run the frame
-              // belongs to.
+              // belongs to. Dispatch is synchronous, so clearing it straight
+              // after keeps the window to this frame's own handlers: an
+              // `executing` dispatched later by an extension must not be read
+              // as belonging to whichever run happened to arrive last.
               this.lastExecutingMessage = msg.data
-              this.dispatchCustomEvent(
-                'executing',
-                msg.data.display_node || msg.data.node
-              )
+              try {
+                this.dispatchCustomEvent(
+                  'executing',
+                  msg.data.display_node || msg.data.node
+                )
+              } finally {
+                this.lastExecutingMessage = null
+              }
               break
             case 'execution_start':
             case 'execution_error':

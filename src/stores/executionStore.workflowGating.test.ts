@@ -679,6 +679,24 @@ describe('executionStore workflow gating', () => {
       expect(store._executingNodeProgress?.value).toBe(5)
     })
 
+    // api clears the raw message straight after dispatch, so an `executing`
+    // dispatched later by an extension is not read as belonging to whichever
+    // run arrived last. Without that, a foreign frame would silently gate out
+    // every extension-driven executing event that followed it.
+    it('is not gated by a stale raw message from an earlier frame', () => {
+      fireExecuting(null, {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID
+      })
+      expect(store.activeJobId).toBe('job-a')
+
+      api.lastExecutingMessage = null
+      const handler = apiEventHandlers.get('executing')!
+      handler(new CustomEvent('executing', { detail: null }))
+
+      expect(store.activeJobId).toBeNull()
+    })
+
     it('still works when the raw message was never recorded', () => {
       // Defensive: an `executing` dispatched by an extension or a test rather
       // than by the socket has no raw message, and must behave as before.
