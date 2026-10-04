@@ -8,6 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { parseNodeId } from '@/types/nodeId'
 import type {
@@ -53,12 +54,20 @@ export type GroupNodeLink = [
   targetNodeIndex: number,
   targetSlot: number,
   sourceNodeId: SerializedNodeId,
-  type: ISlotType
+  type?: unknown
 ]
 type SlotLinks = Partial<Record<number, GroupNodeLink>>
 type LinksFromMap = Partial<
   Record<number, Partial<Record<number, GroupNodeLink[]>>>
 >
+
+function isSlotType(value: unknown): value is ISlotType {
+  return (
+    typeof value === 'number' ||
+    typeof value === 'string' ||
+    (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+  )
+}
 type LinksToMap = Partial<Record<number, SlotLinks>>
 type ExternalFromMap = Partial<
   Record<number, Partial<Record<number, string | number>>>
@@ -229,7 +238,14 @@ export class GroupNodeConfig {
       if (!linksFrom) return
 
       const firstLink = linksFrom[0]?.at(0)
-      let type: string | number | null = firstLink?.[5] ?? null
+      const linkedType: unknown = firstLink?.at(5)
+      let type: string | number | null = firstLink
+        ? linkedType == null
+          ? null
+          : isSlotType(linkedType)
+            ? slotTypeKey(linkedType)
+            : null
+        : null
       if (type === 'COMBO') {
         // Use the array items
         const output = node.outputs?.[0]
@@ -311,7 +327,7 @@ export class GroupNodeConfig {
       } else {
         // Reroute used as a pipe
         for (const l of this.nodeData.links) {
-          if (l[2] === node.index) {
+          if (l[2] === node.index && isSlotType(l[5])) {
             rerouteType = l[5]
             break
           }
@@ -326,13 +342,14 @@ export class GroupNodeConfig {
       }
 
       config.forceInput = true
+      const rerouteTypeKey = slotTypeKey(rerouteType)
       return {
         input: {
           required: {
-            [rerouteType]: [rerouteType, config]
+            [rerouteTypeKey]: [rerouteTypeKey, config]
           }
         },
-        output: [rerouteType],
+        output: [rerouteTypeKey],
         output_name: [],
         output_is_list: []
       }

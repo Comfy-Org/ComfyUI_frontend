@@ -13,12 +13,14 @@ describe(useEntityIdStore, () => {
   it('keeps allocation state when a root graph is rekeyed', () => {
     const store = useEntityIdStore()
     const state = store.get(first)
-    mintNodeId(state)
+    mintNodeId(state, 'sequential', new Set())
 
     store.rekey(first, second)
 
     expect(store.get(second)).toBe(state)
-    expect(Number(mintNodeId(store.get(second)))).toBe(2)
+    expect(Number(mintNodeId(store.get(second), 'sequential', new Set()))).toBe(
+      2
+    )
   })
 
   it('replaces compatibility state without sharing the caller object', () => {

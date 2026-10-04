@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, test, vi } from 'vitest'
 
 import { t } from '@/i18n'
 
@@ -134,6 +134,27 @@ describe('GroupNodeConfig.getLinks', () => {
     const config = configFrom([], [[0, 1, 'IMAGE']])
     expect(config.externalFrom).toEqual({ 0: { 1: 'IMAGE' } })
   })
+
+  it('normalizes a missing primitive link type to null', () => {
+    const linkWithoutType = [0, 0, 1, 0, 1] satisfies GroupNodeLink
+    const config = configFrom([linkWithoutType])
+
+    expect(
+      config.getNodeDef({ index: 0, type: 'PrimitiveNode' })?.output
+    ).toEqual([null])
+  })
+
+  test.for([{ unexpected: true }, ['IMAGE', 42]])(
+    'normalizes an invalid primitive link type to null',
+    (invalidType) => {
+      const link = [0, 0, 1, 0, 1, invalidType] satisfies GroupNodeLink
+      const config = configFrom([link])
+
+      expect(
+        config.getNodeDef({ index: 0, type: 'PrimitiveNode' })?.output
+      ).toEqual([null])
+    }
+  )
 })
 
 describe('findUnconsumedWidgetIndex', () => {
