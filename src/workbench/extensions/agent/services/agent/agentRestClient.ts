@@ -118,8 +118,9 @@ export interface PostMessageInput {
  * The turn POST body, plus `client_message_id` and `client_id`.
  *
  * Widened here rather than in `agentApiSchema.ts` because the generated types are
- * published from the cloud repo's `openapi.yaml`, so the fields are only typed
- * locally until the next package release carries them. Two lines to delete then.
+ * published from the cloud repo's `openapi.yaml`. `client_id` is in that spec, so
+ * it is typed locally only until the next package release carries it;
+ * `client_message_id` is not in the spec at all and stays local.
  */
 type TurnPostBody = AgentPostMessageRequest & {
   client_message_id?: string
