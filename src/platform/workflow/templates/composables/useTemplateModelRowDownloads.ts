@@ -89,9 +89,12 @@ function validByteCount(value: number | undefined): number | null {
  * percentage, so that is the reading used here. Only in range, and only as a
  * fallback: byte counters are exact where they exist.
  */
-function reportedFraction(progress: number): number | null {
-  return Number.isFinite(progress) && progress >= 0 && progress <= 1
-    ? progress
+function validFraction(value: number | undefined): number | null {
+  return value !== undefined &&
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= 1
+    ? value
     : null
 }
 
@@ -102,16 +105,6 @@ function downloadFraction(
   if (receivedBytes === null || totalBytes === null) return null
   if (totalBytes <= 0 || receivedBytes > totalBytes) return null
   return receivedBytes / totalBytes
-}
-
-function terminalDesktopEvent(
-  status: 'completed' | 'error' | 'cancelled',
-  attempt: number
-): TemplateModelDownloadHostEvent {
-  return {
-    type: status === 'completed' ? 'completed' : status,
-    attempt
-  }
 }
 
 function desktopProgressEvent(
@@ -133,25 +126,16 @@ function desktopProgressEvent(
         totalBytes,
         fraction:
           downloadFraction(receivedBytes, totalBytes) ??
-          reportedFraction(progress.progress)
+          validFraction(progress.progress)
       }
     }
     case 'completed':
     case 'error':
     case 'cancelled':
-      return terminalDesktopEvent(progress.status, attempt)
+      return { type: progress.status, attempt }
     default:
       return progress.status satisfies never
   }
-}
-
-function validLegacyFraction(value: number | undefined): number | null {
-  return value !== undefined &&
-    Number.isFinite(value) &&
-    value >= 0 &&
-    value <= 1
-    ? value
-    : null
 }
 
 function legacyProgressEvent(
@@ -170,7 +154,7 @@ function legacyProgressEvent(
           download.status === DownloadStatus.PAUSED ? 'paused' : 'active',
         receivedBytes: validByteCount(download.receivedBytes),
         totalBytes: validByteCount(download.totalBytes),
-        fraction: validLegacyFraction(download.progress)
+        fraction: validFraction(download.progress)
       }
     case DownloadStatus.COMPLETED:
       return { type: 'completed', attempt }
@@ -185,6 +169,21 @@ function legacyProgressEvent(
   }
 }
 
+/**
+ * One record per row identity. A URL change replaces the record outright;
+ * a retry keeps only what outlives an attempt, which is the ended-job set.
+ */
+type TrackedRow = {
+  model: ModelWithUrl
+  state: TemplateModelDownloadState
+  /** Attempt whose stream has reported non-terminal activity. */
+  activeAttempt?: number
+  /** Job holding the current attempt, where the host sends an id. */
+  job?: { attempt: number; jobId: string }
+  /** Jobs that delivered a terminal event, so they cannot claim again. */
+  endedJobs?: ReadonlySet<string>
+}
+
 export function useTemplateModelRowDownloads({
   folderPaths,
   dispatchDownload = dispatchModelDownload,
@@ -192,20 +191,6 @@ export function useTemplateModelRowDownloads({
   subscribeLegacyProgress = subscribeToLegacyProgress
 }: TemplateModelRowDownloadDependencies) {
   let disposed = false
-  /**
-   * One record per row identity. A URL change or a retry resets the whole
-   * record, so the native bookkeeping cannot outlive the state it describes.
-   */
-  type TrackedRow = {
-    model: ModelWithUrl
-    state: TemplateModelDownloadState
-    /** Attempt whose stream has reported non-terminal activity. */
-    activeAttempt?: number
-    /** Job holding the current attempt, where the host sends an id. */
-    job?: { attempt: number; jobId: string }
-    /** Jobs that delivered a terminal event, so they cannot claim again. */
-    endedJobs?: ReadonlySet<string>
-  }
   const rows = shallowReactive(new Map<string, TrackedRow>())
 
   function initializeState(model: ModelWithUrl): TemplateModelDownloadState {
@@ -234,7 +219,7 @@ export function useTemplateModelRowDownloads({
     const identity = getTemplateModelDownloadIdentity(model)
     const row = rows.get(identity)
     // A host result can settle after the row moved to a different URL, and
-    // reporting it then would resurrect the row it replaced.
+    // applying it then would fail the replacement row.
     if (row?.model.url !== model.url) return
 
     let current = row.state

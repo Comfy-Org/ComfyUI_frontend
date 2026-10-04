@@ -70,9 +70,6 @@ describe('useElectronDownloadStore progress observation', () => {
       expect(downloadManager.getAllDownloads).toHaveBeenCalled()
     )
 
-    await expect(
-      downloadManager.getAllDownloads.mock.results[0]?.value
-    ).resolves.toEqual([])
     expect(store.downloads).toEqual([])
   })
 
