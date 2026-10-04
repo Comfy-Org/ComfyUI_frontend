@@ -258,8 +258,8 @@ function renameApart(
  * the very nodes this walk repairs, so {@link nameIsWritable} decides removal
  * and the unresolved pair is reported instead of paid for.
  */
-function resolveCollision<T extends { name: string }>(
-  widget: T,
+function resolveCollision(
+  widget: { name: string },
   key: string,
   used: Set<string>,
   reserved: Set<string>

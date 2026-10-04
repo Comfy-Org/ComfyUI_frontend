@@ -22,7 +22,7 @@ vi.mock(import('@/platform/telemetry/reportError'))
 function reportedTypes(): (string | undefined)[] {
   return vi
     .mocked(reportError)
-    .mock.calls.map((call) => call[1]?.errorType as string | undefined)
+    .mock.calls.map((call) => call[1].errorType as string | undefined)
 }
 
 describe('unique-name refusal criterion', () => {
