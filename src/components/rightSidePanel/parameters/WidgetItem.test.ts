@@ -29,7 +29,7 @@ const { StubWidgetComponent } = vi.hoisted(() => ({
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
     template:
-      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" />'
+      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" :data-widget-has-callback="String(!!widget?.callback)" />'
   }
 }))
 
@@ -109,7 +109,8 @@ function getStubWidget(container: Element) {
     options: JSON.parse(el.getAttribute('data-widget-options') ?? 'null'),
     type: el.getAttribute('data-widget-type'),
     name: el.getAttribute('data-widget-name'),
-    value: el.getAttribute('data-widget-value')
+    value: el.getAttribute('data-widget-value'),
+    hasCallback: el.getAttribute('data-widget-has-callback') === 'true'
   }
 }
 
@@ -212,6 +213,22 @@ describe('WidgetItem', () => {
       const stub = getStubWidget(container)
 
       expect(stub.type).toBe('combo')
+    })
+
+    // A third-party widget object pushed onto `node.widgets` without a `type` is
+    // wrapped as a LegacyWidget that keeps `type: undefined`, so the panel must
+    // treat it as "not a button" rather than throwing while it renders.
+    // Regression: Sentry CLOUD-FRONTEND-PROD-22D on release 1.55.16, raised by
+    // adding a custom node from the node search modal with the panel open.
+    it('renders a widget with no type instead of throwing', () => {
+      const widget = createMockWidget({ type: undefined, callback: vi.fn() })
+
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
+
+      expect(stub.name).toBe('test_widget')
+      expect(stub.type).toBeNull()
+      expect(stub.hasCallback).toBe(false)
     })
 
     it('passes name from widget state to the widget component', () => {
