@@ -11,6 +11,7 @@ import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { isCloud } from '@/platform/distribution/types'
+import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -269,6 +270,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const collapseState = reactive<Record<string, boolean>>({})
 
   const errorClassification = useErrorClassification()
+  const deploymentLabel = isCloud ? useBootDeploymentLabel() : undefined
 
   const selectedNodeInfo = computed(() => {
     const rootGraph = app.rootGraphOrUndefined
@@ -743,7 +745,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           kind: 'missing_node',
           nodeTypes: error.nodeTypes,
           count: packCount,
-          isCloud
+          isCloud,
+          deploymentLabel: deploymentLabel?.value
         })
       })
     }

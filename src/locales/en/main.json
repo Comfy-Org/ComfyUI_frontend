@@ -4760,7 +4760,12 @@
         "toastMessageOneCloud": "This node isn't supported on Cloud.",
         "toastMessageOneOss": "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node.",
         "toastMessageManyCloud": "This workflow uses nodes that aren't supported on Cloud.",
-        "toastMessageManyOss": "{count} nodes require missing node packs."
+        "toastMessageManyOss": "{count} nodes require missing node packs.",
+        "displayMessageDeployment": "These nodes aren't on {deployment}. Replace them, or pick a deployment that has them.",
+        "toastTitleOneDeployment": "{nodeType} isn't on {deployment}",
+        "toastTitleManyDeployment": "Nodes aren't on {deployment}",
+        "toastMessageOneDeployment": "Replace this node, or pick a deployment that has it.",
+        "toastMessageManyDeployment": "Replace these nodes, or pick a deployment that has them."
       },
       "swap_nodes": {
         "displayMessage": "Some nodes can be replaced with alternatives",
