@@ -20,10 +20,10 @@ export class SidebarTab {
     this.selectedTabButton = this.tabButton.and(
       page.locator('.side-bar-button-selected')
     )
-    const panel = page.locator('.sidebar-content-container')
+    const sidebarContent = page.locator('.sidebar-content-container')
     this.panel = page.getByRole('complementary')
-    this.panelHeader = panel.locator('.comfy-vue-side-bar-header')
-    this.closeButton = panel.getByTestId(TestIds.sidebar.closeButton)
+    this.panelHeader = sidebarContent.locator('.comfy-vue-side-bar-header')
+    this.closeButton = sidebarContent.getByTestId(TestIds.sidebar.closeButton)
   }
 
   async open() {
