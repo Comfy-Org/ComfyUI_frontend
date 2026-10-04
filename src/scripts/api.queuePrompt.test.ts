@@ -5,6 +5,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
+import { zeroUuid } from '@/utils/uuid'
 
 // Tests for the workflow_metadata field api.queuePrompt sends; fetchApi is stubbed.
 const WORKFLOW_ID = '0199e3a3-6c01-7000-8000-c1a1f7a8d9b2'
@@ -62,6 +63,20 @@ describe('api.queuePrompt workflow_metadata', () => {
     await api.queuePrompt(0, {
       output: EMPTY_PROMPT,
       workflow: workflow(undefined)
+    })
+
+    expect(sentBody(fetchApiSpy)).not.toHaveProperty('workflow_metadata')
+  })
+
+  it('omits the field for the all-zero id sentinel', async () => {
+    // `LGraph._id` defaults to `zeroUuid` and `LGraph.serialize()` returns it
+    // unfiltered, so a bare truthiness check shipped the sentinel as a real
+    // routing key — and every workflow still carrying it would have shared one,
+    // which is how a WS frame gets attributed to the wrong workflow. The rest of
+    // the codebase already treats it as "no id yet" (`ensureNonZeroUuid`).
+    await api.queuePrompt(0, {
+      output: EMPTY_PROMPT,
+      workflow: workflow(zeroUuid)
     })
 
     expect(sentBody(fetchApiSpy)).not.toHaveProperty('workflow_metadata')

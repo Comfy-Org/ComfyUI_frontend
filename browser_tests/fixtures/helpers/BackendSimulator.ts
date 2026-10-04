@@ -20,19 +20,34 @@ export interface Frame {
 /**
  * Which frames a fault applies to. A bare string keeps the workflow-wide
  * selection every script already uses; add `jobId` to reach one prompt when
- * several share a workflow id.
+ * several share a workflow id, and `occurrence` to reach one frame when a
+ * single prompt sends the same event more than once.
+ *
+ * `occurrence` is 1-based and counts within whatever `label` (+ `jobId`) already
+ * matched, so `{ label: 'wf-a:progress', occurrence: 2 }` is "the second
+ * progress frame" — the shape behind *progress stuck after a run*, which needs
+ * one of several identical events to go missing. Without it `label` + `jobId`
+ * cannot tell two `progress` frames of one prompt apart, and one prompt sends
+ * two of them as soon as a script uses both `progress()` and `nodeRunning()`.
  */
-export type FrameSelector = string | { label: string; jobId?: string }
+export type FrameSelector =
+  | string
+  | { label: string; jobId?: string; occurrence?: number }
 
 function describeSelector(selector: FrameSelector): string {
-  return typeof selector === 'string'
-    ? selector
-    : selector.jobId === undefined
-      ? selector.label
-      : `${selector.label} (job ${selector.jobId})`
+  if (typeof selector === 'string') return selector
+  const qualifiers = [
+    selector.jobId === undefined ? undefined : `job ${selector.jobId}`,
+    selector.occurrence === undefined
+      ? undefined
+      : `occurrence ${selector.occurrence}`
+  ].filter((part) => part !== undefined)
+  return qualifiers.length === 0
+    ? selector.label
+    : `${selector.label} (${qualifiers.join(', ')})`
 }
 
-function matches(frame: Frame, selector: FrameSelector): boolean {
+function matchesLabelAndJob(frame: Frame, selector: FrameSelector): boolean {
   if (typeof selector === 'string') return frame.label === selector
   if (frame.label !== selector.label) return false
   return selector.jobId === undefined || frame.jobId === selector.jobId
@@ -41,9 +56,21 @@ function matches(frame: Frame, selector: FrameSelector): boolean {
 function indicesOf(frames: Frame[], selector: FrameSelector): number[] {
   const found: number[] = []
   frames.forEach((frame, index) => {
-    if (matches(frame, selector)) found.push(index)
+    if (matchesLabelAndJob(frame, selector)) found.push(index)
   })
-  return found
+  if (typeof selector === 'string' || selector.occurrence === undefined) {
+    return found
+  }
+  if (selector.occurrence < 1 || !Number.isInteger(selector.occurrence)) {
+    throw new Error(
+      `occurrence must be a positive integer, got ${selector.occurrence}`
+    )
+  }
+  // `.at` rather than an index, so an occurrence past the end is `undefined`
+  // and falls through to `requireMatches` instead of being a hole in the array.
+  // The positive-integer check above is what keeps this from wrapping.
+  const picked = found.at(selector.occurrence - 1)
+  return picked === undefined ? [] : [picked]
 }
 
 /**
@@ -155,8 +182,14 @@ export class SimulatedPrompt {
     )
   }
 
+  /**
+   * The binary preview frame. Labelled `b_preview_with_metadata`, which is the
+   * event `api.ts` dispatches for the type-4 message this sends; the `b_preview`
+   * it also dispatches is a back-compat alias, and labelling the frame with the
+   * alias made the primary event name unselectable.
+   */
   latentPreview(nodeId: string): Frame {
-    return this.frame('b_preview', () =>
+    return this.frame('b_preview_with_metadata', () =>
       this.execution.latentPreview(this.jobId, nodeId)
     )
   }
@@ -204,12 +237,18 @@ export function dropFrames(frames: Frame[], selector: FrameSelector): Frame[] {
   return frames.filter((_, index) => !drop.has(index))
 }
 
-/** Send selected frames twice, as a retrying or reconnecting backend does. */
-export function duplicateFrame(
+/**
+ * Send selected frames twice, as a retrying or reconnecting backend does.
+ *
+ * Plural like {@link dropFrames}: every match is duplicated, so a bare label
+ * matching two prompts injects a wider fault than a test naming one frame
+ * probably means. Narrow it with `jobId`/`occurrence` when that matters.
+ */
+export function duplicateFrames(
   frames: Frame[],
   selector: FrameSelector
 ): Frame[] {
-  const duplicate = new Set(requireMatches(frames, selector, 'duplicateFrame'))
+  const duplicate = new Set(requireMatches(frames, selector, 'duplicateFrames'))
   return frames.flatMap((frame, index) =>
     duplicate.has(index) ? [frame, frame] : [frame]
   )
@@ -221,9 +260,9 @@ export function duplicateFrame(
  * Each selector must identify exactly one frame, and the two must not be the
  * same frame. A swap is a pair operation, so quietly taking the first of several
  * matches is how a two-prompt script ends up reordering the wrong prompt's
- * frame; add a `jobId` to disambiguate. Swapping a frame with itself is the same
- * silent no-fault that {@link requireMatches} exists to rule out, so it throws
- * rather than returning the script unchanged.
+ * frame; add a `jobId` or an `occurrence` to disambiguate. Swapping a frame with
+ * itself is the same silent no-fault that {@link requireMatches} exists to rule
+ * out, so it throws rather than returning the script unchanged.
  */
 export function swapFrames(
   frames: Frame[],
@@ -239,7 +278,8 @@ export function swapFrames(
     if (found.length > 1) {
       throw new Error(
         `swapFrames: ${describeSelector(selector)} matches ${found.length} frames; ` +
-          'add a jobId to select one'
+          'add a jobId (different prompts) or an occurrence (same prompt, ' +
+          'repeated event) to select one'
       )
     }
   }
@@ -266,8 +306,19 @@ export function swapFrames(
  * that guarantee a schedule can come out sequential and a concurrency spec
  * passes without ever having two prompts in flight. (A one-frame-each pair
  * cannot overlap; everything larger does.)
+ *
+ * An empty input throws. Both forcing rules below are gated on the other side
+ * being non-empty, so an empty side would return the other script verbatim with
+ * no overlap at all — the same silent degradation to no-fault that
+ * {@link requireMatches} refuses, and with the same consequence: a concurrency
+ * spec passing having never been concurrent.
  */
 export function interleave(a: Frame[], b: Frame[], seed: number): Frame[] {
+  if (a.length === 0 || b.length === 0) {
+    throw new Error(
+      `interleave: needs frames on both sides to overlap, got ${a.length} and ${b.length}`
+    )
+  }
   const out: Frame[] = []
   let state = seed | 0
   let i = 0

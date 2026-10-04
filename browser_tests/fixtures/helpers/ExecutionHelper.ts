@@ -54,7 +54,7 @@ export function buildKSamplerError(
 export class ExecutionHelper {
   private jobCounter = 0
   private metadata: Record<string, unknown> | undefined
-  private asyncScopeOpen = false
+  private scopeOpen = false
   private readonly completedJobs: RawJobListItem[] = []
   private readonly page: ComfyPage['page']
   private readonly command: ComfyPage['command']
@@ -103,26 +103,42 @@ export class ExecutionHelper {
    * previous scope immediately, silently unstamping (or mis-stamping) every
    * frame after the first suspension point.
    *
-   * Opening a second scope while an async one is still in flight throws rather
-   * than guessing: without ambient async context two overlapping scopes cannot
-   * be attributed to their prompts, and the wrong `workflow_id` on a frame is
-   * precisely the bug this harness exists to catch. Await the first scope, or
-   * script the prompts as separate synchronous frames via `BackendSimulator`.
+   * The scope is ambient for as long as it is open, not lexical to `fn`: a frame
+   * emitted from anywhere while an async scope is pending is stamped with it.
+   * That is the point — it models core holding a prompt's `workflow_metadata`
+   * for the duration of the run — but it means an un-awaited scope keeps
+   * stamping, so always await the returned promise.
+   *
+   * **Exactly one scope may be open at a time, and a second one throws** —
+   * whether it overlaps an async scope or is nested inside `fn`. Without
+   * ambient async context two live scopes cannot be attributed to their
+   * prompts, and the wrong `workflow_id` on a frame is precisely the bug this
+   * harness exists to catch. Nesting used to slip past this guard and was
+   * worse than ambiguous: the inner scope's `finally` restored *its* saved
+   * value, so an outer scope that had already closed came back to life and
+   * stamped every later frame for the rest of the test. Await the first scope,
+   * or script the prompts as separate synchronous frames via
+   * `BackendSimulator`.
    */
   withMetadata<T>(
     metadata: Record<string, unknown> | undefined,
     fn: () => T
   ): T {
-    if (this.asyncScopeOpen) {
+    if (this.scopeOpen) {
       throw new Error(
-        'ExecutionHelper: an async metadata scope is still in flight. ' +
-          'Await it before opening another one.'
+        'ExecutionHelper: a metadata scope is already in flight. ' +
+          'Await it before opening another one, and do not nest them.'
       )
     }
 
     const previous = this.metadata
     this.metadata = metadata
+    // Set before `fn` runs, so a scope opened synchronously inside it is
+    // rejected too. Setting it afterwards only caught the overlapping-async
+    // case and left nesting — the strictly worse one — unguarded.
+    this.scopeOpen = true
     const restore = () => {
+      this.scopeOpen = false
       this.metadata = previous
     }
 
@@ -139,13 +155,9 @@ export class ExecutionHelper {
       return result
     }
 
-    this.asyncScopeOpen = true
     // Cast: `T` is promise-like here, and the returned promise settles with the
     // same value or rejection, only after the scope has been restored.
-    return Promise.resolve(result).finally(() => {
-      this.asyncScopeOpen = false
-      restore()
-    }) as T
+    return Promise.resolve(result).finally(restore) as T
   }
 
   /**
