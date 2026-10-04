@@ -86,7 +86,13 @@ export function useUploadModelWizard(
   const uploadTypeMismatch = ref<UploadModelTypeMismatch | null>(null)
   let stopAsyncWatch: (() => void) | undefined
   let activeAsyncTaskId: string | undefined
-  onScopeDispose(() => stopAsyncWatch?.())
+  let uploadGeneration = 0
+  let disposed = false
+  onScopeDispose(() => {
+    disposed = true
+    uploadGeneration++
+    stopAsyncWatch?.()
+  })
 
   const wizardData = ref<WizardData>({
     url: '',
@@ -323,9 +329,7 @@ export function useUploadModelWizard(
     }
 
     isUploading.value = true
-    stopAsyncWatch?.()
-    stopAsyncWatch = undefined
-    activeAsyncTaskId = undefined
+    const generation = ++uploadGeneration
     uploadTypeMismatch.value = null
     let uploadSuccess: UploadModelSuccess | null = null
 
@@ -355,7 +359,12 @@ export function useUploadModelWizard(
         preview_id: previewId
       })
 
+      if (disposed || generation !== uploadGeneration) return null
+
       if (result.type === 'async' && result.task.status !== 'completed') {
+        stopAsyncWatch?.()
+        stopAsyncWatch = undefined
+        activeAsyncTaskId = undefined
         if (modelType) {
           assetDownloadStore.trackDownload(
             result.task.task_id,
@@ -470,6 +479,7 @@ export function useUploadModelWizard(
   }
 
   function resetWizard() {
+    uploadGeneration++
     stopAsyncWatch?.()
     stopAsyncWatch = undefined
     activeAsyncTaskId = undefined

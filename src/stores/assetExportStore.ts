@@ -31,6 +31,7 @@ export interface AssetExport {
 
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
+const MAX_TASK_NOT_FOUND_ATTEMPTS = 2
 
 /**
  * `DELETE /tasks/{id}` is task-type agnostic, so an export can be cancelled
@@ -60,6 +61,7 @@ function numberValue(value: unknown, fallback: number): number {
 export const useAssetExportStore = defineStore('assetExport', () => {
   const exports = ref<Map<TaskId, AssetExport>>(new Map())
   const pollingTaskIds = new Set<TaskId>()
+  const taskNotFoundAttempts = new Map<TaskId, number>()
 
   const exportList = computed(() => Array.from(exports.value.values()))
   const activeExports = computed(() =>
@@ -98,8 +100,23 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     try {
       exp.downloadError = undefined
       const { url } = await assetService.getExportDownloadUrl(exp.exportName)
+      const resolvedUrl =
+        url.startsWith('/') && !url.startsWith('//') ? api.apiURL(url) : url
+      const parsedUrl = new URL(resolvedUrl, window.location.origin)
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        exp.downloadError = 'Unsupported export download URL'
+        exp.downloadTriggered = false
+        useToastStore().add({
+          severity: 'error',
+          summary: t('exportToast.downloadFailed', {
+            name: exp.exportName
+          }),
+          detail: exp.downloadError
+        })
+        return
+      }
       const link = document.createElement('a')
-      link.href = url.startsWith('/') ? api.apiURL(url) : url
+      link.href = parsedUrl.href
       link.download = exp.exportName
       link.style.display = 'none'
       link.target = '_blank'
@@ -128,7 +145,11 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     // Completion is authoritative even when fetching the signed URL failed;
     // late progress/cancellation frames must not revive polling or erase the
     // retryable download error.
-    if (existing?.status === 'completed') return
+    if (
+      existing?.status === 'completed' &&
+      !(data.status === 'completed' && !existing.exportName && data.export_name)
+    )
+      return
     if (existing?.status === 'failed' && existing.downloadTriggered) return
 
     // A cancelled export is only superseded by an authoritative completion;
@@ -185,6 +206,13 @@ export const useAssetExportStore = defineStore('assetExport', () => {
         if (exports.value.get(exp.taskId) !== exp) return
         if (!result.ok) {
           if (result.error instanceof TaskNotFoundError) {
+            const attempts = (taskNotFoundAttempts.get(exp.taskId) ?? 0) + 1
+            taskNotFoundAttempts.set(exp.taskId, attempts)
+            if (attempts < MAX_TASK_NOT_FOUND_ATTEMPTS) {
+              exp.lastUpdate = Date.now()
+              return
+            }
+            taskNotFoundAttempts.delete(exp.taskId)
             handleAssetExport({
               task_id: exp.taskId,
               export_name: exp.exportName,
@@ -195,11 +223,12 @@ export const useAssetExportStore = defineStore('assetExport', () => {
               bytes_processed: exp.bytesProcessed,
               progress: exp.progress,
               status: 'failed',
-              error: result.error.message
+              error: t('progressToast.failed')
             })
           }
           return
         }
+        taskNotFoundAttempts.delete(exp.taskId)
 
         const task = result.value
         if (finishedExportStatuses.has(task.status)) {
@@ -250,6 +279,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
 
   function clearFinishedExports() {
     for (const exp of finishedExports.value) {
+      taskNotFoundAttempts.delete(exp.taskId)
       exports.value.delete(exp.taskId)
     }
   }

@@ -196,9 +196,12 @@ describe('useAssetExportStore polling', () => {
 
     await vi.advanceTimersByTimeAsync(10_000)
 
+    expect(store.activeExports).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(10_000)
+
     expect(store.finishedExports[0]).toMatchObject({
       status: 'failed',
-      error: expect.stringContaining('Task not found')
+      error: 'progressToast.failed'
     })
   })
 
@@ -288,6 +291,11 @@ describe('assetExportStore triggerDownload', () => {
       name: 'an absolute signed URL unchanged',
       url: 'https://storage.example.com/exports/e.zip?signature=abc',
       expected: 'https://storage.example.com/exports/e.zip?signature=abc'
+    },
+    {
+      name: 'a protocol-relative signed URL unchanged',
+      url: '//storage.example.com/exports/e.zip?signature=abc',
+      expected: 'http://storage.example.com/exports/e.zip?signature=abc'
     }
   ])('downloads $name', async ({ url, expected }) => {
     const originalBase = api.api_base
@@ -310,5 +318,22 @@ describe('assetExportStore triggerDownload', () => {
     await store.triggerDownload(exportJob)
 
     expect(clickedHrefs).toEqual([expected])
+  })
+
+  it('rejects non-HTTP download URLs', async () => {
+    vi.mocked(assetService.getExportDownloadUrl).mockResolvedValue({
+      url: 'javascript:alert(1)'
+    })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const store = useAssetExportStore()
+    store.trackExport('task-1')
+    store.exportList[0].exportName = 'e.zip'
+
+    await store.triggerDownload(store.exportList[0])
+
+    expect(click).not.toHaveBeenCalled()
+    expect(store.exportList[0].downloadError).toBe(
+      'Unsupported export download URL'
+    )
   })
 })
