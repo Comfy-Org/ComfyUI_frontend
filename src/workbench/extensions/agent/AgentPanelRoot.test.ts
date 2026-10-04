@@ -29,6 +29,7 @@ vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
@@ -3107,6 +3108,37 @@ describe('AgentPanelRoot lifecycle', () => {
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
+  })
+
+  it('resets the canvas sync gate when an earlier teardown step throws', () => {
+    vi.mocked(attachMintPortWiring).mockImplementationOnce((deps) => {
+      mintPortWiringDeps.current = deps
+      return fromPartial<MintPortWiring>({
+        detach: vi.fn(() => {
+          throw new Error('detach failed')
+        })
+      })
+    })
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+    setCanvasSyncGate.mockClear()
+
+    panel.unmount()
+
+    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
+    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe(false)
+    expect(outcomeCount?.()).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'detach failed' }),
+      expect.objectContaining({
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step: 'detachMintPortWiring' }
+      })
+    )
   })
 
   it('clears workflow activity when the panel unmounts', () => {
