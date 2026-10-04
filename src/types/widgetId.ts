@@ -101,6 +101,29 @@ function tryRename(widget: { name: string }, name: string): boolean {
   }
 }
 
+/** Every name the array already holds outright, skipping unreadable ones. */
+function readableNames(widgets: readonly { name: string }[]): Set<string> {
+  const names = new Set<string>()
+  for (const widget of widgets) {
+    const name = readName(widget)
+    if (name !== undefined) names.add(name)
+  }
+  return names
+}
+
+/**
+ * The first `name#n` no set in {@link taken} claims — so a generated name never
+ * collides with one a widget further down the array holds outright.
+ */
+function freeSuffixedName(
+  name: string,
+  taken: readonly ReadonlySet<string>[]
+): string {
+  let index = 1
+  while (taken.some((names) => names.has(`${name}#${index}`))) index++
+  return `${name}#${index}`
+}
+
 /**
  * Removes the widgets that cannot be given a unique name, mutating
  * {@link widgets} in place, and renames the duplicates that can — keeping the
@@ -131,36 +154,21 @@ export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
   const refused: T[] = []
   const used = new Set<string>()
   const seen = new Set<T>()
-  // Names already spoken for further down the array, so a generated `name#1`
-  // never collides with one a later widget holds outright.
-  const reserved = new Set(
-    widgets.flatMap((widget) => {
-      const name = readName(widget)
-      return name === undefined ? [] : [name]
-    })
-  )
+  const reserved = readableNames(widgets)
 
   for (const widget of widgets) {
-    // The same widget object may occupy two slots mid-reorder. That is one
-    // widget, not a name collision — never refuse it.
-    if (seen.has(widget)) {
-      kept.push(widget)
-      continue
-    }
+    // Nothing new to collide with: either the same widget object occupying a
+    // second slot mid-reorder, or a name that cannot be read at all.
+    const name = seen.has(widget) ? undefined : readName(widget)
     seen.add(widget)
 
-    const name = readName(widget)
     if (name === undefined || !used.has(name)) {
       if (name !== undefined) used.add(name)
       kept.push(widget)
       continue
     }
 
-    let index = 1
-    while (used.has(`${name}#${index}`) || reserved.has(`${name}#${index}`)) {
-      index++
-    }
-    const unique = `${name}#${index}`
+    const unique = freeSuffixedName(name, [used, reserved])
     if (!tryRename(widget, unique)) {
       refused.push(widget)
       continue
