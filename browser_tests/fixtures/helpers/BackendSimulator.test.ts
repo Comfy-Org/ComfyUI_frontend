@@ -6,7 +6,7 @@ import type { Frame } from '@e2e/fixtures/helpers/BackendSimulator'
 import {
   BackendSimulator,
   dropFrames,
-  duplicateFrame,
+  duplicateFrames,
   interleave,
   swapFrames
 } from '@e2e/fixtures/helpers/BackendSimulator'
@@ -148,6 +148,43 @@ describe('BackendSimulator frame scripting', () => {
     expect(() => execution.withWorkflowId('wf-b', () => {})).not.toThrow()
   })
 
+  it('refuses a scope nested inside another scope', () => {
+    const { execution } = harness()
+
+    // Nesting slipped past the in-flight guard entirely, because the flag was
+    // only raised *after* `fn()` returned. Two live scopes cannot be attributed
+    // to their prompts, so the second one throws wherever it is opened from.
+    expect(() =>
+      execution.withWorkflowId('wf-a', () =>
+        execution.withWorkflowId('wf-b', () => {})
+      )
+    ).toThrow(/already in flight/)
+  })
+
+  it('does not resurrect a closed scope when a nested async one settles', async () => {
+    const { sent, execution } = harness()
+    let release!: () => void
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve
+    })
+
+    // The shape the nesting hole produced: the inner scope's `finally` restored
+    // its own saved value, bringing the already-closed outer scope back to life
+    // and stamping every later frame `wf-a` for the rest of the test. Before the
+    // guard this emitted `[undefined, 'wf-a']`.
+    expect(() =>
+      execution.withWorkflowId('wf-a', () => {
+        void execution.withWorkflowId('wf-b', () => blocked)
+      })
+    ).toThrow(/already in flight/)
+
+    release()
+    await blocked
+    execution.executionStart('job-after')
+
+    expect(sent.map((frame) => frame.data.workflow_id)).toEqual([undefined])
+  })
+
   it('drops a frame the backend never sent', () => {
     const { sent, simulator } = harness()
     const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
@@ -195,7 +232,7 @@ describe('BackendSimulator frame scripting', () => {
     const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
 
     simulator.play(
-      duplicateFrame(
+      duplicateFrames(
         [prompt.start(), prompt.success()],
         'wf-a:execution_success'
       )
@@ -214,7 +251,7 @@ describe('BackendSimulator frame scripting', () => {
     const second = simulator.prompt('job-b', { workflowId: 'wf-a' })
 
     simulator.play(
-      duplicateFrame([first.success(), second.success()], {
+      duplicateFrames([first.success(), second.success()], {
         label: 'wf-a:execution_success',
         jobId: 'job-b'
       })
@@ -271,6 +308,96 @@ describe('BackendSimulator frame scripting', () => {
     ])
   })
 
+  it('drops one of a prompt’s two frames of the same event', () => {
+    const { sent, simulator } = harness()
+    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    // One prompt, two `progress` frames — what any script using both
+    // `progress()` and `nodeRunning()` produces. `label` + `jobId` cannot tell
+    // them apart, so "the backend dropped the second progress frame" (the shape
+    // behind progress stuck after a run) needs the occurrence selector.
+    const script = [
+      prompt.start(),
+      prompt.progress('1', 1, 4),
+      ...prompt.nodeRunning('1', 2, 4),
+      prompt.success()
+    ]
+
+    simulator.play(
+      dropFrames(script, { label: 'wf-a:progress', occurrence: 2 })
+    )
+
+    expect(sent.map((frame) => [frame.type, frame.data.value])).toEqual([
+      ['execution_start', undefined],
+      ['progress', 1],
+      ['progress_state', undefined],
+      ['execution_success', undefined]
+    ])
+  })
+
+  it('duplicates one of a prompt’s two frames of the same event', () => {
+    const { sent, simulator } = harness()
+    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    const script = [prompt.progress('1', 1, 4), prompt.progress('1', 2, 4)]
+
+    simulator.play(
+      duplicateFrames(script, { label: 'wf-a:progress', occurrence: 1 })
+    )
+
+    expect(sent.map((frame) => frame.data.value)).toEqual([1, 1, 2])
+  })
+
+  it('swaps one of a prompt’s two frames of the same event', () => {
+    const { sent, simulator } = harness()
+    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    const script = [
+      prompt.progress('1', 1, 4),
+      prompt.progress('1', 2, 4),
+      prompt.success()
+    ]
+
+    simulator.play(
+      swapFrames(
+        script,
+        { label: 'wf-a:progress', occurrence: 2 },
+        'wf-a:execution_success'
+      )
+    )
+
+    expect(sent.map((frame) => [frame.type, frame.data.value])).toEqual([
+      ['progress', 1],
+      ['execution_success', undefined],
+      ['progress', 2]
+    ])
+  })
+
+  it('points an ambiguous swap at the selector that can resolve it', () => {
+    const { simulator } = harness()
+    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    const script = [
+      prompt.progress('1', 1, 4),
+      ...prompt.nodeRunning('1', 2, 4)
+    ]
+
+    // The old message only offered `jobId`, which cannot disambiguate two
+    // frames of the *same* job — advice a test author could not act on.
+    expect(() =>
+      swapFrames(script, 'wf-a:progress', 'wf-a:progress_state')
+    ).toThrow(/occurrence/)
+  })
+
+  it('throws rather than silently applying no fault for a missing occurrence', () => {
+    const { simulator } = harness()
+    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    const script = [prompt.progress('1', 1, 4)]
+
+    expect(() =>
+      dropFrames(script, { label: 'wf-a:progress', occurrence: 2 })
+    ).toThrow(/not in the script/)
+    expect(() =>
+      dropFrames(script, { label: 'wf-a:progress', occurrence: 0 })
+    ).toThrow(/positive integer/)
+  })
+
   it('throws rather than silently skipping an unknown swap target', () => {
     const { simulator } = harness()
     const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
@@ -315,7 +442,7 @@ describe('BackendSimulator frame scripting', () => {
       /not in the script/
     )
     expect(() =>
-      duplicateFrame(script, {
+      duplicateFrames(script, {
         label: 'wf-a:execution_start',
         jobId: 'job-zzz'
       })
@@ -371,6 +498,21 @@ describe('BackendSimulator frame granularity', () => {
     expect(sent.map((frame) => frame.type)).toEqual(
       script.slice(0, -1).map((frame) => frame.label.split(':')[1])
     )
+  })
+
+  it('labels the binary frame with the event it dispatches', () => {
+    const { simulator } = harness()
+    const script = everyFrame(simulator)
+
+    // The carve-out above excludes exactly one builder from the label contract,
+    // so this is the only thing that holds it to it. `latentPreview` sends a
+    // type-4 message, which `api.ts` dispatches as `b_preview_with_metadata`
+    // (plus a legacy `b_preview` alias); labelling the frame with the alias made
+    // the primary event name throw `not in the script`.
+    expect(script.at(-1)?.label).toBe('wf-a:b_preview_with_metadata')
+    expect(() =>
+      dropFrames(script, 'wf-a:b_preview_with_metadata')
+    ).not.toThrow()
   })
 
   it('scripts the two halves of a running node independently', () => {
@@ -476,6 +618,19 @@ describe('BackendSimulator interleaving', () => {
     // multiply is pinned separately by the seed 7 order above; this assertion
     // is about the coin, not the arithmetic.
     expect(schedules.size).toBeGreaterThanOrEqual(5)
+  })
+
+  it('throws rather than returning a schedule that cannot overlap', () => {
+    const { simulator } = harness()
+    const a = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    const script = [a.start(), a.success()]
+
+    // Both forcing rules are gated on the other side being non-empty, so an
+    // empty side used to return the other script verbatim: a schedule with no
+    // overlap at all, passing every concurrency assertion vacuously because
+    // there is only one prompt to assert about.
+    expect(() => interleave(script, [], 7)).toThrow(/both sides/)
+    expect(() => interleave([], script, 7)).toThrow(/both sides/)
   })
 
   it('keeps every frame exactly once when interleaving', () => {

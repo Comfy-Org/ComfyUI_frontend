@@ -25,6 +25,7 @@ import {
 } from '@/platform/auth/unified/remintRetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
+import { zeroUuid } from '@/utils/uuid'
 import type {
   ModelFile,
   ModelFolderInfo
@@ -1328,7 +1329,18 @@ export class ComfyApi extends EventTarget {
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
       }),
-      ...(workflow.id && { workflow_metadata: { workflow_id: workflow.id } }),
+      // `LGraph.serialize()` returns `id` unfiltered and `LGraph._id` defaults
+      // to the all-zero sentinel, which the codebase treats as "no id yet" and
+      // replaces on load (`adoptRootGraphId`) and on clear. A bare truthiness
+      // check ships that sentinel as a real routing key, so every workflow
+      // still carrying it would share one and WS frames could be attributed to
+      // the wrong workflow. Shape is already constrained upstream — the loaded
+      // schema is `z.string().uuid()` and the only other producer is
+      // `createUuidv4()` — so the sentinel is the one value to exclude here.
+      ...(workflow.id &&
+        workflow.id !== zeroUuid && {
+          workflow_metadata: { workflow_id: workflow.id }
+        }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
