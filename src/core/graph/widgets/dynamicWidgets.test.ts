@@ -255,62 +255,55 @@ describe('Dynamic Combos', () => {
     expect(node.widgets[2].value).toBe(7)
   })
   describe('An option holding only sockets (#20068)', () => {
-    // A combo mounts its selected option from the `value` setter installed
-    // during construction, and `addInputSocket` adds nothing for a
-    // widget-backed type, so the combo's own socket only reaches
-    // `node.inputs` once `addInputWidget` returns from that constructor. An
-    // option contributing sockets and no widgets thus mounts while the combo
-    // owning it has no socket to anchor against, and `updateWidgets` reads
-    // the absent anchor as a failure rather than deferring placement to the
-    // outer pass. Mounting the same option later is fine -- see 'Can add
-    // input' above.
-    //
-    // These pin the defect, not the intent. A fix has to drop the throw and
-    // decide where the option's sockets and the combo's own socket sit
-    // relative to each other, so it will turn these red; rewrite them then
-    // against the layout it settles on.
     type MockInputs = Parameters<typeof addDynamicCombo>[1]
     const socketOnlyOpens: {
       combo: string
-      ownSocket: string
+      sockets: string[]
       spec: MockInputs
     }[] = [
-      { combo: 'top-level', ownSocket: '0', spec: [['IMAGE']] },
-      { combo: 'nested', ownSocket: '0.0.0.0', spec: [[[['IMAGE']]]] }
+      {
+        combo: 'top-level',
+        sockets: ['0.0.0.0', '0'],
+        spec: [['IMAGE']]
+      },
+      {
+        combo: 'nested',
+        sockets: ['0.0.0.0.0.1.0', '0.0.0.0', '0'],
+        spec: [[[['IMAGE']]]]
+      }
     ]
     test.for(socketOnlyOpens)(
-      'aborts a $combo combo that opens on it',
-      ({ ownSocket, spec }) => {
-        expect(() => addDynamicCombo(testNode(), spec)).toThrowError(
-          new Error(`Failed to find input socket for ${ownSocket}`)
-        )
+      'creates every socket when a $combo combo opens on it',
+      ({ sockets, spec }) => {
+        const node = testNode()
+
+        addDynamicCombo(node, spec)
+
+        expect(node.inputs.map((input) => input.name)).toEqual(sockets)
       }
     )
     test.for([
       { restore: 'positional', namedValuesRestore: false },
       { restore: 'named', namedValuesRestore: true }
     ])(
-      'aborts a reload restoring such a selection from $restore values',
+      'restores every socket from $restore values',
       ({ namedValuesRestore }) => {
         LiteGraph.namedValuesRestore = namedValuesRestore
         const saved = testNode()
         saved.serialize_widgets = true
         addDynamicCombo(saved, [['INT'], [[['IMAGE']]]])
-        // The setter stores the value before mounting the option that
-        // throws, so the doomed selection still serialises -- which is how
-        // the reporter came to have a workflow holding it.
-        const aborts = new Error('Failed to find input socket for 0.0.0.0')
-        expect(() => {
-          saved.widgets[0].value = '1'
-        }).toThrowError(aborts)
+        saved.widgets[0].value = '1'
 
         const reloaded = testNode()
         addDynamicCombo(reloaded, [['INT'], [[['IMAGE']]]])
 
-        expect(() => reloaded.configure(saved.serialize())).toThrowError(aborts)
-        expect(reloaded.inputs.map((input) => input.name)).not.toContain(
-          '0.0.0.0'
-        )
+        reloaded.configure(saved.serialize())
+
+        expect(reloaded.inputs.map((input) => input.name)).toEqual([
+          '0',
+          '0.0.0.0',
+          '0.0.0.0.0.1.0'
+        ])
       }
     )
   })
