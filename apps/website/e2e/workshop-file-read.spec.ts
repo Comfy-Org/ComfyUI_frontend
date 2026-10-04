@@ -1,8 +1,10 @@
+import { join } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { appendFile, copyFile, mkdir } from 'node:fs/promises'
 
 import { expect } from '@playwright/test'
 
+import { websiteRoot } from '@website/paths'
 import { workshopModelAvailabilitySchema } from '@/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
 import { hubModelHref } from '@/config/hub-models'
@@ -44,7 +46,7 @@ const scenarios = [
 const availability = workshopModelAvailabilitySchema.parse(
   JSON.parse(
     readFileSync(
-      new URL('../src/data/workshop-model-availability.json', import.meta.url),
+      join(websiteRoot, 'src/data/workshop-model-availability.json'),
       'utf8'
     )
   )

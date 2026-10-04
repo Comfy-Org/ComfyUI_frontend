@@ -1,16 +1,12 @@
 import { readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
 import { z } from 'zod'
 
+import { websiteRoot } from '@website/paths'
 import { siteRedirects, toVercelRedirects } from '@/config/redirects'
 
-const vercelJsonPath = join(
-  dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'vercel.json'
-)
+const vercelJsonPath = join(websiteRoot, 'vercel.json')
 
 const config = z
   .record(z.string(), z.unknown())

@@ -6,6 +6,8 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { workflowPreviewSvg } from './prepare-workflow-previews'
 
+import { websiteRoot } from '@website/paths'
+
 const source = {
   nodes: [
     {
@@ -86,7 +88,7 @@ describe('offline workflow previews', () => {
   it.for(['remove-background', 'change-material', 'product-mockup'])(
     'provides the original UI graph and nested preview for %s',
     (name) => {
-      const directory = join(import.meta.dirname, '../public/workflow-graphs')
+      const directory = join(websiteRoot, 'public/workflow-graphs')
       const raw: unknown = JSON.parse(
         readFileSync(join(directory, `${name}.json`), 'utf8')
       )

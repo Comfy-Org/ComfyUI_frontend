@@ -1,8 +1,10 @@
+import { join } from 'node:path'
 import { copyFile, mkdir, readFile } from 'node:fs/promises'
 
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
+import { repoRoot } from '@website/paths'
 import { modelCases } from '@website/acceptance/cases'
 import { useAdvancedInputs, useOwnInputs } from '@website/acceptance/fixtures'
 import { signIn } from './fixtures/buyCredits'
@@ -16,15 +18,15 @@ test.beforeEach(async ({ context, page, modelsAccount }, testInfo) => {
   )
   await mkdir(testInfo.outputDir, { recursive: true })
   await copyFile(
-    '../../browser_tests/assets/test_upload_image.png',
+    join(repoRoot, 'browser_tests/assets/test_upload_image.png'),
     testInfo.outputPath('reference.png')
   )
   await copyFile(
-    '../../browser_tests/assets/test_upload_image.png',
+    join(repoRoot, 'browser_tests/assets/test_upload_image.png'),
     testInfo.outputPath('last-frame.png')
   )
   await copyFile(
-    '../../browser_tests/assets/plain_video.mp4',
+    join(repoRoot, 'browser_tests/assets/plain_video.mp4'),
     testInfo.outputPath('reference.mp4')
   )
   await context.route('**/customers/storage', (route) => {

@@ -6,11 +6,10 @@ import { describe, expect, it } from 'vitest'
 
 import LogoContextMenu from './LogoContextMenu.vue'
 
+import { websiteRoot } from '@website/paths'
+
 function servedIcon(file: string) {
-  return readFileSync(
-    join(import.meta.dirname, '../../../../public/icons', file),
-    'utf8'
-  )
+  return readFileSync(join(websiteRoot, 'public/icons', file), 'utf8')
 }
 
 async function openMenu(locale?: 'en' | 'zh-CN') {

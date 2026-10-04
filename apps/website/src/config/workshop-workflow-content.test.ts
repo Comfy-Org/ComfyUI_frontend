@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import { assert, describe, expect, it } from 'vitest'
 
+import { websiteRoot } from '@website/paths'
 import displayJson from '@/content/workshop-display.json'
 import categories from '@/content/workshop-workflow-categories.json'
 import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
@@ -28,7 +29,7 @@ const source = pages.find((page) => page.slug === 'workflows/change-material')
 if (!source) throw new Error('Missing curated workflow page')
 const page = source
 const workflows = workshopPages.filter((model) => model.routerId === undefined)
-const publicDirectory = join(import.meta.dirname, '../../public')
+const publicDirectory = join(websiteRoot, 'public')
 
 describe('curated workflow pages', () => {
   it.for(workflows)(

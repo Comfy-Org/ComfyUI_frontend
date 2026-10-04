@@ -1,8 +1,10 @@
+import { join } from 'node:path'
 import { chromium } from '@playwright/test'
 import type { Browser } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
+import { websiteRoot } from '@website/paths'
 import type { WorkshopSvgRasterizer } from '@/config/workshop-svg-output'
 
 export function openRouterSvgRasterizer(): {
@@ -12,7 +14,7 @@ export function openRouterSvgRasterizer(): {
   let browser: Promise<Browser> | undefined
   function loadModule() {
     return readFile(
-      new URL('../src/config/workshop-svg-rasterizer.ts', import.meta.url),
+      join(websiteRoot, 'src/config/workshop-svg-rasterizer.ts'),
       'utf8'
     ).then((source) => {
       const compiled = transpileModule(source, {

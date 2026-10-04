@@ -1,12 +1,14 @@
+import { join } from 'node:path'
 import { expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
+import { websiteRoot } from '@website/paths'
 import { openRouterSvgRasterizer } from '@website/scripts/router-model-svg'
 import { test } from './fixtures/blockExternalMedia'
 
 const source = readFileSync(
-  new URL('../src/config/workshop-svg-rasterizer.ts', import.meta.url),
+  join(websiteRoot, 'src/config/workshop-svg-rasterizer.ts'),
   'utf8'
 )
 const compiled = transpileModule(source, {

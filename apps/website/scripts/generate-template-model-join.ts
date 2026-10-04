@@ -17,13 +17,14 @@ import {
   authoredRouterModelSlugAliases,
   authoredWorkshopModels
 } from '@/config/workshop-browse-content'
+import { websiteRoot } from '@website/paths'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import { hubTemplatesSchema } from '@/lib/hub/types'
 import { modelNamedBy, partnerModelFor } from '@/lib/hub/template-use-case'
 import { API_PROVIDER_MAP } from './generate-models'
 import { isDirectExecution } from './script-entry-point'
 
-const DATA = join(import.meta.dirname, '..', 'src', 'data')
+const DATA = join(websiteRoot, 'src/data')
 
 // These template names identify an exact operation. Keep this small and
 // explicit: a provider/family prefix alone is not evidence of version parity.

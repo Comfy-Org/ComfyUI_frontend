@@ -1,6 +1,7 @@
+import { join } from 'node:path'
 import { readFileSync } from 'node:fs'
-import { URL } from 'node:url'
 
+import { websiteRoot } from '@website/paths'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
 import { parseWorkflowCatalog } from '@/config/workshop-workflow-catalog-schema'
@@ -17,13 +18,13 @@ function loadDefinitions() {
   if (!definitions) {
     const pages: unknown = JSON.parse(
       readFileSync(
-        new URL('../src/content/workshop-display.json', import.meta.url),
+        join(websiteRoot, 'src/content/workshop-display.json'),
         'utf8'
       )
     )
     const catalog = parseWorkflowCatalog(
       readFileSync(
-        new URL('../src/content/workshop-workflows.jsonl', import.meta.url),
+        join(websiteRoot, 'src/content/workshop-workflows.jsonl'),
         'utf8'
       )
     )

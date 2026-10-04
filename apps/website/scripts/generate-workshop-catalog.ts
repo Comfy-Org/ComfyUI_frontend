@@ -1,8 +1,9 @@
 import { realpathSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { websiteRoot } from '@website/paths'
 import { workshopModelSchema } from '@/content/workshop-models.schema'
 import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
 
@@ -20,16 +21,10 @@ import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
  * collapses in review, and excluded in `.oxfmtrc.json` so the formatter does
  * not unpack it back to one field per line.
  */
-const CATALOG = resolve(
-  import.meta.dirname,
-  '../src/content/workshop-models.json'
-)
+const CATALOG = join(websiteRoot, 'src/content/workshop-models.json')
 
 /** Everything about the snapshot that is not about one model. */
-const MANIFEST = resolve(
-  import.meta.dirname,
-  '../src/config/workshop-catalog.manifest.json'
-)
+const MANIFEST = join(websiteRoot, 'src/config/workshop-catalog.manifest.json')
 
 function slugFor(id: string): string {
   return id.replaceAll('/', '--')

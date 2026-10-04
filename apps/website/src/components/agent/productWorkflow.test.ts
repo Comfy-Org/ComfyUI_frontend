@@ -5,6 +5,8 @@ import { assert, describe, expect, it } from 'vitest'
 import { productWorkflow } from './productWorkflow'
 import { createWorkflowMotion } from './workflowMotion'
 
+import { websiteRoot } from '@website/paths'
+
 function animationFrames(
   motion: ReturnType<typeof createWorkflowMotion>,
   name: string
@@ -32,7 +34,7 @@ describe('conditioner workflow', () => {
 
   it('ships only the two authored cursor overrides alongside generated CSS', () => {
     const overrides = readFileSync(
-      join(import.meta.dirname, '../../styles/product-workflow-keyframes.css'),
+      join(websiteRoot, 'src/styles/product-workflow-keyframes.css'),
       'utf8'
     )
     const names = Array.from(

@@ -21,6 +21,7 @@
     "acceptance/**/*",
     "scripts/**/*",
     "astro.config.ts",
+    "paths.ts",
     "playwright.config.ts",
     "playwright.acceptance.config.ts",
     "vitest.config.ts"

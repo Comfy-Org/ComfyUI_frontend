@@ -6,6 +6,7 @@ import { afterAll, describe, it } from 'vitest'
 
 import {
   noRelativePackages,
+  noRelativeParentPaths,
   noRestrictedPaths,
   noUselessPathSegments
 } from './importPaths'
@@ -178,6 +179,49 @@ ruleTester.run('no-relative-packages', noRelativePackages, {
       filename: file('packages/shared/src/index.ts'),
       code: `import { util } from '../../../src/base/util'`,
       errors: [{ message: /Use `root\/src\/base\/util` instead/ }]
+    }
+  ]
+})
+
+ruleTester.run('no-relative-parent-paths', noRelativeParentPaths, {
+  valid: [
+    {
+      name: 'a path joined from a named root',
+      code: `join(websiteRoot, 'src/data')`
+    },
+    {
+      name: 'a same-directory URL',
+      code: `new URL('./fixture.json', import.meta.url)`
+    },
+    {
+      name: 'traversal text that is test data, not a path',
+      code: `parseRunId('../other')`
+    },
+    {
+      name: 'a parent segment after a computed prefix',
+      code: 'join(root, `${name}/../x`)'
+    }
+  ],
+  invalid: [
+    {
+      name: 'a parent-relative URL',
+      code: `new URL('../src/data/x.json', import.meta.url)`,
+      errors: [{ message: /Parent-relative path "\.\.\/src\/data\/x\.json"/ }]
+    },
+    {
+      name: 'a parent-relative template URL',
+      code: 'new URL(`../routes/${name}`, import.meta.url)',
+      errors: [{ message: /Parent-relative path "\.\.\/routes\/"/ }]
+    },
+    {
+      name: 'a bare parent segment passed to join',
+      code: `join(import.meta.dirname, '..', 'src')`,
+      errors: [{ message: /Parent-relative path "\.\."/ }]
+    },
+    {
+      name: 'a parent-relative segment passed to path.resolve',
+      code: `path.resolve(import.meta.dirname, '../public')`,
+      errors: [{ message: /Parent-relative path "\.\.\/public"/ }]
     }
   ]
 })

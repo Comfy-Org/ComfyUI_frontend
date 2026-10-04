@@ -1,6 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -12,11 +11,11 @@ import {
 } from '@/lib/llms-txt'
 import { isExcludedFromSitemap } from './indexing'
 import { getRoutes } from './routes'
+import { websiteRoot } from '@website/paths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { appPagePaths } from './workshop-app-content'
 import { workshopPagePaths } from './workshop-page-content'
 
-const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
 const pagesDir = join(websiteRoot, 'src', 'pages')
 const vercelRedirectSources = new Set<string>(

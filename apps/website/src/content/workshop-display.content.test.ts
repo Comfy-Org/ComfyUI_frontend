@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+import { websiteRoot } from '@website/paths'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import { workshopContract } from '@/config/workshop-contract-catalog'
 import { schemaForModel } from '@/config/workshop-playground'
@@ -269,7 +270,7 @@ describe('the display overlay against the catalog', () => {
   })
 
   it('finds every site-relative asset in public/', () => {
-    const publicDir = join(here, '..', '..', 'public')
+    const publicDir = join(websiteRoot, 'public')
     const missing = display.flatMap((entry) =>
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
         .filter((asset) => asset?.url.startsWith('/'))

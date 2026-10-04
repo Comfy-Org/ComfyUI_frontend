@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
+import { websiteRoot } from '@website/paths'
 import type { RouterWorkshopModel, UseCase } from '@/config/models-catalogue'
 import { USE_CASES } from '@/config/models-catalogue'
 import { modelPageUrls } from '@/config/model-urls'
@@ -245,9 +245,8 @@ export function renderModelUrlTable(
   ].join('\n')
 }
 
-const appDir = join(dirname(fileURLToPath(import.meta.url)), '..')
-export const MODEL_URLS_MODULE = join(appDir, 'src/config/model-urls.ts')
-export const MODEL_URL_TABLE = join(appDir, 'MODEL_URL_MAP.md')
+export const MODEL_URLS_MODULE = join(websiteRoot, 'src/config/model-urls.ts')
+export const MODEL_URL_TABLE = join(websiteRoot, 'MODEL_URL_MAP.md')
 
 if (isDirectExecution(process.argv[1], import.meta.filename)) {
   const map = compileModelUrlMap(

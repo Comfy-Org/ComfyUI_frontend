@@ -1,9 +1,9 @@
 import { readdirSync } from 'node:fs'
-import { dirname, join, relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, relative, sep } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
+import { websiteRoot } from '@website/paths'
 import { isNoindexPathname } from '@/config/indexing'
 import type { Locale } from '@/config/locales'
 import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '@/config/locales'
@@ -201,7 +201,7 @@ describe('ogLocaleAlternates', () => {
 
 /** Static routes only; dynamic `getStaticPaths` output needs the built-site audit. */
 describe('the emitter agrees with the page tree', () => {
-  const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
+  const pagesDir = join(websiteRoot, 'src/pages')
 
   const astroFiles = (dir: string): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

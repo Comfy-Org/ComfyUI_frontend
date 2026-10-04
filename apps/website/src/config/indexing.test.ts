@@ -1,8 +1,8 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join, relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, relative, sep } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
+import { websiteRoot } from '@website/paths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { routeOf } from '@/utils/hreflangRoutes'
 import {
@@ -285,7 +285,7 @@ describe('model page launch', () => {
   })
 })
 
-const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
+const pagesDir = join(websiteRoot, 'src/pages')
 
 const astroFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

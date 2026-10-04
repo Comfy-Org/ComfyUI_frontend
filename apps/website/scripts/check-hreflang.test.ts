@@ -6,8 +6,10 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { expect, it, onTestFinished } from 'vitest'
 
+import { websiteRoot } from '@website/paths'
+
 const script = join(import.meta.dirname, 'check-hreflang.ts')
-const tsconfig = join(import.meta.dirname, '..', 'tsconfig.json')
+const tsconfig = join(websiteRoot, 'tsconfig.json')
 const loader = pathToFileURL(createRequire(import.meta.url).resolve('tsx')).href
 
 it.for([

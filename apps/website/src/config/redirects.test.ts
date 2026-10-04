@@ -1,10 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs'
-import { dirname, join, relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, relative, sep } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import { websiteRoot } from '@website/paths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { routeOf } from '@/utils/hreflangRoutes'
 import { hubAppSlugs, hubModelAliases, hubModelSlugs } from './hub-models'
@@ -19,8 +19,7 @@ import {
 } from './redirects'
 import { getRoutes } from './routes'
 
-const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const pagesDir = join(appDir, 'src', 'pages')
+const pagesDir = join(websiteRoot, 'src', 'pages')
 
 const astroFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -52,7 +51,7 @@ const VercelConfigSchema = z.object({
 })
 
 const vercelConfig = VercelConfigSchema.parse(
-  JSON.parse(readFileSync(join(appDir, 'vercel.json'), 'utf8'))
+  JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8'))
 )
 
 const VERCEL_ROUTE_LIMIT = 2048

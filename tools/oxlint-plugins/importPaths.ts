@@ -288,3 +288,41 @@ export const noRelativePackages: Rule = {
     })
   }
 }
+
+const PATH_BUILDERS = new Set(['join', 'resolve'])
+
+function leadingText(node: Node): string | undefined {
+  if (node.type === 'Literal' && typeof node.value === 'string')
+    return node.value
+  if (node.type === 'TemplateLiteral')
+    return node.quasis[0]?.value.cooked ?? undefined
+}
+
+function calleeName(node: Node): string | undefined {
+  if (node.type === 'Identifier') return node.name
+  if (node.type === 'MemberExpression' && node.property.type === 'Identifier')
+    return node.property.name
+}
+
+export const noRelativeParentPaths: Rule = {
+  create(context) {
+    function check(node: Node) {
+      const text = leadingText(node)
+      if (text !== '..' && !text?.startsWith('../')) return
+      context.report({
+        node,
+        message: `Parent-relative path "${text}". Join from a named root directory instead, or use dirname() for the parent of a computed path.`
+      })
+    }
+    return {
+      NewExpression(node) {
+        const first = node.arguments.at(0)
+        if (calleeName(node.callee) === 'URL' && first) check(first)
+      },
+      CallExpression(node) {
+        if (PATH_BUILDERS.has(calleeName(node.callee) ?? ''))
+          node.arguments.forEach(check)
+      }
+    }
+  }
+}

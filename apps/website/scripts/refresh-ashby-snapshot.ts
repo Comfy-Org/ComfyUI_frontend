@@ -1,11 +1,10 @@
+import { join } from 'node:path'
 import { renameSync, writeFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
+import { websiteRoot } from '@website/paths'
 import { fetchRolesForBuild } from '@/utils/ashby'
 
-const snapshotPath = fileURLToPath(
-  new URL('../src/data/ashby-roles.snapshot.json', import.meta.url)
-)
+const snapshotPath = join(websiteRoot, 'src/data/ashby-roles.snapshot.json')
 const tempPath = `${snapshotPath}.tmp`
 
 const outcome = await fetchRolesForBuild()

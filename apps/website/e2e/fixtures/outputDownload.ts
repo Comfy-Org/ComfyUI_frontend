@@ -1,12 +1,14 @@
+import { join } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
+import { websiteRoot } from '@website/paths'
 import type * as OutputDownloadModule from '@/config/workshop-output-download'
 import { test as base } from './blockExternalMedia'
 
 const compiled = transpileModule(
   readFileSync(
-    new URL('../../src/config/workshop-output-download.ts', import.meta.url),
+    join(websiteRoot, 'src/config/workshop-output-download.ts'),
     'utf8'
   ),
   {
