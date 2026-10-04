@@ -507,6 +507,30 @@ describe('useWorkspaceUI', () => {
     })
   })
 
+  describe('delete lock', () => {
+    beforeEach(() => {
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
+    })
+
+    it.for([
+      { isActive: true, isCancelled: false, disabled: true },
+      { isActive: true, isCancelled: true, disabled: true },
+      { isActive: false, isCancelled: true, disabled: false },
+      { isActive: false, isCancelled: false, disabled: false }
+    ])(
+      'active=$isActive cancelled=$isCancelled → disabled=$disabled',
+      async ({ isActive, isCancelled, disabled }) => {
+        mockIsActiveSubscription.value = isActive
+        mockIsCancelled.value = isCancelled
+        const ui = await loadComposable()
+
+        expect(ui.isDeleteDisabled.value).toBe(disabled)
+      }
+    )
+  })
+
   describe('shared instance', () => {
     it('returns the same composable state for multiple callers within a test', async () => {
       Object.assign(useTeamWorkspaceStore(), {
