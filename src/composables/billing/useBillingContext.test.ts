@@ -694,6 +694,41 @@ describe('useBillingContext', () => {
       expect(workspaceApi.createTopup).not.toHaveBeenCalled()
     })
 
+    it.for([
+      {
+        name: 'cancelSubscription',
+        run: (context: ReturnType<typeof useBillingContext>) =>
+          context.cancelSubscription()
+      },
+      {
+        name: 'resubscribe',
+        run: (context: ReturnType<typeof useBillingContext>) =>
+          context.resubscribe()
+      }
+    ])(
+      'rejects $name for its caller to show if the workspace never loads',
+      async ({ run }) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        holdWorkspaceUnloaded('team')
+        const context = useBillingContext()
+        vi.clearAllMocks()
+
+        const outcome = run(context).then(
+          () => 'resolved',
+          (error: unknown) => error
+        )
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        expect(await outcome).toMatchObject({
+          message: "We couldn't reach your account. Try again in a moment."
+        })
+        expect(useErrorHandling().toastErrorHandler).not.toHaveBeenCalled()
+      }
+    )
+
     it('drops an action silently when the workspace changed during the wait', async () => {
       const current = ref<{ id: string; type?: 'team' }>({ id: 'ws-a' })
       const workspaceStore = useTeamWorkspaceStore()
@@ -715,6 +750,46 @@ describe('useBillingContext', () => {
       expect(workspaceApi.createTopup).not.toHaveBeenCalled()
       expect(useErrorHandling().toastErrorHandler).not.toHaveBeenCalled()
     })
+
+    it.for([
+      {
+        name: 'cancelSubscription',
+        run: (context: ReturnType<typeof useBillingContext>) =>
+          context.cancelSubscription()
+      },
+      {
+        name: 'resubscribe',
+        run: (context: ReturnType<typeof useBillingContext>) =>
+          context.resubscribe()
+      }
+    ])(
+      'rejects $name for its caller to show if the workspace changed during the wait',
+      async ({ run }) => {
+        const current = ref<{ id: string; type?: 'team' }>({ id: 'ws-a' })
+        const workspaceStore = useTeamWorkspaceStore()
+        Object.assign(workspaceStore, {
+          activeWorkspace: computed(() =>
+            fromPartial<NonNullable<typeof workspaceStore.activeWorkspace>>(
+              current.value
+            )
+          )
+        })
+        const context = useBillingContext()
+        vi.clearAllMocks()
+
+        const outcome = run(context).then(
+          () => 'resolved',
+          (error: unknown) => error
+        )
+        await nextTick()
+        current.value = { id: 'ws-b', type: 'team' }
+
+        expect(await outcome).toMatchObject({
+          message: 'Your active workspace changed. Switch back and try again.'
+        })
+        expect(useErrorHandling().toastErrorHandler).not.toHaveBeenCalled()
+      }
+    )
 
     it('holds previewSubscribe and requireActiveSubscription until the workspace loads', async () => {
       const loaded = holdWorkspaceUnloaded('team')

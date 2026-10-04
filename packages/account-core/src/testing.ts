@@ -122,14 +122,14 @@ function routesFor(
     [
       'POST /api/auth/sessions/revoke-all',
       (endpoint, headers) => {
-        if (!headers.get('authorization')?.startsWith('Bearer ')) {
-          return errorResponse(401, 'no_session')
-        }
         if (endpoint.state.kind === 'dead') {
           return errorResponse(401, endpoint.state.code)
         }
         if (headers.get('x-csrf-token') !== FAKE_CSRF_TOKEN) {
           return errorResponse(403, 'csrf_invalid')
+        }
+        if (!headers.has('x-comfy-client')) {
+          return errorResponse(403, 'origin_not_allowed')
         }
         revoke(endpoint)
         return jsonResponse(200, { revoked: 1 })
@@ -141,7 +141,8 @@ function routesFor(
 /**
  * A `fetch` serving ingest's session routes under `/api/auth`. POST with a
  * bearer proof signs `signInUser` in; DELETE and revoke-all leave the cookie
- * revoked, as the real endpoint does.
+ * revoked, as the real endpoint does. Revoke-all serves only the cookie path,
+ * which needs the CSRF token and `X-Comfy-Client`.
  */
 export function createFakeWebSessionEndpoint({
   state,

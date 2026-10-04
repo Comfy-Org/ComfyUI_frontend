@@ -327,17 +327,10 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
 
   async function revokeAllSessions(): Promise<WebSessionCommandResult> {
     const session = currentSession()
-    const user = firebaseIdentity.currentUser()
-    if (!session || !user) {
+    if (!session) {
       return { status: 'error', code: 'NO_SESSION', retryable: false }
     }
-    return revokeAllWebSessions(sessionOptions(), session.csrfToken, () =>
-      user.getIdToken()
-    ).catch(() => ({
-      status: 'error',
-      code: 'SESSION_UNAVAILABLE',
-      retryable: true
-    }))
+    return revokeAllWebSessions(sessionOptions(), session.csrfToken)
   }
 
   function currentSession(): WebSession | undefined {

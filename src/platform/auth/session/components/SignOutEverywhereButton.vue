@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-if="webSession.signedInUser && !needsFirebaseSignIn"
+    v-if="webSession.signedInUser"
     variant="destructive-textonly"
     :loading="signingOut"
     @click="signOutEverywhere"
@@ -15,7 +15,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   useCloudWebSessionStore,
   webSessionFailureMessage
@@ -23,7 +22,6 @@ import {
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const { t } = useI18n()
-const { needsFirebaseSignIn } = useCurrentUser()
 const { logout } = useAuthActions()
 const webSession = useCloudWebSessionStore()
 const toastStore = useToastStore()

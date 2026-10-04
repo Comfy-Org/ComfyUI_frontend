@@ -140,8 +140,13 @@ type CheckoutJourneyProgressEvent =
   | CheckoutJourneySubmitted
   | CheckoutJourneyOperationLinked
 
-/** How the customer left: the page went away, or a control of this page led out. */
-export type CheckoutExit = 'page_exit' | 'back' | 'close' | 'host_link'
+/** How the customer left: the page went away, a control of this page led out, or the cloud app's checkout dialog closed. */
+export type CheckoutExit =
+  | 'page_exit'
+  | 'back'
+  | 'close'
+  | 'host_link'
+  | 'dialog_close'
 /** The ending screens of the full-page checkout. */
 export type CheckoutEndingKind =
   | 'success'

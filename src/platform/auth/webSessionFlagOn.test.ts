@@ -155,6 +155,12 @@ const { default: router } = await import('@/router')
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 
+const cookieRevokeAll = {
+  authorization: null,
+  client: COMFY_CLIENT,
+  csrf: 'csrf-user-a'
+}
+
 const USER_A = fromPartial<User>({
   uid: 'user-a',
   getIdToken: async () => 'firebase-id-token'
@@ -221,6 +227,7 @@ function installServer(
     revokeAllStatus: 200,
     revokeAllRequests: [] as {
       authorization: string | null
+      client: string | null
       csrf: string | null
     }[],
     featureReads: [] as {
@@ -262,6 +269,7 @@ function installServer(
     const headers = new Headers(init?.headers)
     server.revokeAllRequests.push({
       authorization: headers.get('authorization'),
+      client: headers.get('x-comfy-client'),
       csrf: headers.get('x-csrf-token')
     })
     if (server.revokeAllStatus !== 200) {
@@ -467,23 +475,18 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     const webSession = useCloudWebSessionStore()
 
     expect(await webSession.revokeAllSessions()).toMatchObject(result)
-    expect(server.revokeAllRequests).toEqual([
-      { authorization: 'Bearer firebase-id-token', csrf: 'csrf-user-a' }
-    ])
+    expect(server.revokeAllRequests).toEqual([cookieRevokeAll])
   })
 
-  it('revoke-all sends nothing without a Firebase login to prove identity', async () => {
+  it('revoke-all works on a session-only tab with no Firebase login', async () => {
     const server = installServer({ userId: 'user-a' })
     await refreshRemoteConfig({ useAuth: false })
     await useSessionCookie().ensureSessionCookie()
     const webSession = useCloudWebSessionStore()
     expect(webSession.state.phase).toBe('signed_in')
 
-    expect(await webSession.revokeAllSessions()).toMatchObject({
-      status: 'error',
-      code: 'NO_SESSION'
-    })
-    expect(server.revokeAllRequests).toEqual([])
+    expect(await webSession.revokeAllSessions()).toEqual({ status: 'ok' })
+    expect(server.revokeAllRequests).toEqual([cookieRevokeAll])
   })
 
   it('resets the tab and tells the user when another account takes the session', async () => {

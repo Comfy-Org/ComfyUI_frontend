@@ -3,8 +3,11 @@ import { computed, onScopeDispose, reactive, ref, shallowRef, watch } from 'vue'
 
 import { refreshWorkshopCredits } from '../config/workshop-credits'
 import { useWorkshopSession } from '../config/workshop-session-state'
+import type { RunFailure } from '../config/workshop-run'
+import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import type { Locale } from '../i18n/translations'
 import { translationsFor } from '../i18n/translations'
+import { RESHOOT_APP_SLUG } from '../lib/workshop/cinematic-studio/analytics'
 import { studioGate } from '../lib/workshop/cinematic-studio/gate'
 import type {
   CameraKey,
@@ -58,7 +61,8 @@ import {
   generateSeconds,
   generateWorkflow
 } from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
-import { useWorkshopAuthFlag } from '../scripts/posthog'
+import { captureWorkshopEvent, useWorkshopAuthFlag } from '../scripts/posthog'
+import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
 
 /** Waits before asking for the price again after a failed quote. */
 const QUOTE_RETRY_MS = [5_000, 15_000, 30_000, 60_000]
@@ -71,6 +75,24 @@ const MAX_READ_SCENES = 4
 /** The node's frame rate, and the longest clip it takes. */
 const FPS = 24
 const MAX_SECONDS = 15
+
+/** A run failure's app-proxy code, mapped to the shared analytics reasons. */
+const RESHOOT_FAILURE_REASONS: Readonly<Record<string, RunFailure>> = {
+  insufficient_credits: 'noCredits',
+  unauthorized: 'unavailable',
+  not_found: 'unavailable',
+  app_unavailable: 'unavailable',
+  deployment_not_ready: 'unavailable',
+  rate_limited: 'rateLimit',
+  queue_full: 'concurrency',
+  concurrent_run_limit: 'concurrency'
+}
+
+function reshootRunFailure(error: unknown): RunFailure {
+  if (error instanceof ReshootError)
+    return RESHOOT_FAILURE_REASONS[error.code] ?? 'provider'
+  return 'client'
+}
 
 export type DepthState = 'none' | 'analyzing' | 'ready' | 'failed'
 
@@ -493,7 +515,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
 
   async function generate() {
     const read = scene.value
-    if (!canGenerate.value || !transport || read.phase !== 'ready') return
+    const startedFor = session.value
+    if (
+      !canGenerate.value ||
+      !transport ||
+      read.phase !== 'ready' ||
+      !startedFor
+    )
+      return
     const n = takes.value.length
     const id = `take-${n}`
     const still = stillCamera()
@@ -513,6 +542,20 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     runs.set(id, controller)
     const { signal } = controller
     const { geometry } = read
+    const analytics: WorkshopRunAnalytics = {
+      model_slug: RESHOOT_APP_SLUG,
+      page_type: 'app',
+      app_slug: RESHOOT_APP_SLUG,
+      user_id: startedFor.uid,
+      workspace_id: startedFor.workspace.id,
+      attempt_id: workshopIdempotencyKey()
+    }
+    const startedAt = Date.now()
+    const finished = () => ({
+      ...analytics,
+      duration_ms: Date.now() - startedAt
+    })
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
     try {
       const job = await runJob(
         transport,
@@ -537,16 +580,40 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         optional('warp'),
         optional('original-audio')
       ])
-      if (signal.aborted) return
+      if (signal.aborted) {
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
+        return
+      }
       updateTake(id, {
         status: 'done',
         url: objectUrl(video),
         warpUrl: objectUrl(warp),
         originalUrl: objectUrl(original)
       })
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: { ...finished(), status: 'succeeded', output_count: 1 }
+      })
     } catch (error) {
-      if (!signal.aborted)
-        updateTake(id, { status: 'failed', note: noteFor(error) })
+      if (signal.aborted) {
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
+        return
+      }
+      updateTake(id, { status: 'failed', note: noteFor(error) })
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'failed',
+          reason: reshootRunFailure(error)
+        }
+      })
     } finally {
       runs.delete(id)
       void refreshQuote()

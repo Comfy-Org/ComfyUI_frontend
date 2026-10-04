@@ -526,10 +526,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
-    this.trackEvent(
-      getCheckoutJourneyTelemetryEventName(event),
-      getCloudAppCheckoutJourneyTelemetryEventPayload(event)
-    )
+    const name = getCheckoutJourneyTelemetryEventName(event)
+    const payload = getCloudAppCheckoutJourneyTelemetryEventPayload(event)
+    if (event.phase === 'abandoned' && event.exit === 'page_exit') {
+      this.captureOnTeardown(name, payload)
+      return
+    }
+    this.trackEvent(name, payload)
   }
 
   trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {

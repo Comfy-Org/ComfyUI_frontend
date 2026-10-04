@@ -54,27 +54,59 @@ describe('useLegacyBilling', () => {
       expect(useSubscription().subscribeDirect).toHaveBeenCalledOnce()
       expect(useSubscription().subscribe).not.toHaveBeenCalled()
     })
+  })
 
-    it('reports a failed subscribe once and resolves', async () => {
-      const failure = new Error('checkout rejected')
-      vi.mocked(useSubscription().subscribeDirect).mockRejectedValue(failure)
+  describe('actions whose caller does not show a result', () => {
+    it.for([
+      {
+        name: 'subscribe',
+        rejecting: () => vi.mocked(useSubscription().subscribeDirect),
+        run: (billing: ReturnType<typeof useLegacyBilling>) =>
+          billing.subscribe('plan-slug')
+      },
+      {
+        name: 'manageSubscription',
+        rejecting: () => vi.mocked(useSubscription().manageSubscription),
+        run: (billing: ReturnType<typeof useLegacyBilling>) =>
+          billing.manageSubscription()
+      }
+    ])(
+      'reports a failed $name once and resolves',
+      async ({ rejecting, run }) => {
+        const failure = new Error('request rejected')
+        rejecting().mockRejectedValue(failure)
 
-      await expect(
-        useLegacyBilling().subscribe('plan-slug')
-      ).resolves.toBeUndefined()
-      expect(useAuthActions().reportError).toHaveBeenCalledExactlyOnceWith(
+        await expect(run(useLegacyBilling())).resolves.toBeUndefined()
+        expect(useAuthActions().reportError).toHaveBeenCalledExactlyOnceWith(
+          failure
+        )
+      }
+    )
+  })
+
+  describe('cancelSubscription', () => {
+    it('rejects a failed billing portal request without reporting it', async () => {
+      const failure = new Error('portal down')
+      vi.mocked(useSubscription().manageSubscription).mockRejectedValue(failure)
+
+      await expect(useLegacyBilling().cancelSubscription()).rejects.toBe(
         failure
       )
+      expect(useAuthActions().reportError).not.toHaveBeenCalled()
     })
   })
 
   describe('workspace billing required refusal', () => {
     type Billing = ReturnType<typeof useLegacyBilling>
-    const cases: {
+    type RefusalCase = {
       name: string
       rejecting: () => Mock
       run: (billing: Billing) => Promise<unknown>
-    }[] = [
+    }
+    const retryMessage =
+      "We couldn't update your subscription. Please try again."
+
+    it.for<RefusalCase>([
       {
         name: 'topup',
         rejecting: () => vi.mocked(useAuthActions().purchaseCreditsDirect),
@@ -89,15 +121,8 @@ describe('useLegacyBilling', () => {
         name: 'manageSubscription',
         rejecting: () => vi.mocked(useSubscription().manageSubscription),
         run: (billing) => billing.manageSubscription()
-      },
-      {
-        name: 'resubscribe',
-        rejecting: () => vi.mocked(useSubscription().subscribeDirect),
-        run: (billing) => billing.resubscribe()
       }
-    ]
-
-    it.for(cases)(
+    ])(
       'refreshes the status and reports once without retrying $name',
       async ({ rejecting, run }) => {
         rejecting().mockRejectedValue(refusal())
@@ -107,10 +132,32 @@ describe('useLegacyBilling', () => {
         expect(rejecting()).toHaveBeenCalledOnce()
         expect(useSubscription().fetchStatusDirect).toHaveBeenCalledOnce()
         expect(useAuthActions().reportError).toHaveBeenCalledExactlyOnceWith(
-          expect.objectContaining({
-            message: "We couldn't update your subscription. Please try again."
-          })
+          expect.objectContaining({ message: retryMessage })
         )
+      }
+    )
+
+    it.for<RefusalCase>([
+      {
+        name: 'cancelSubscription',
+        rejecting: () => vi.mocked(useSubscription().manageSubscription),
+        run: (billing) => billing.cancelSubscription()
+      },
+      {
+        name: 'resubscribe',
+        rejecting: () => vi.mocked(useSubscription().subscribeDirect),
+        run: (billing) => billing.resubscribe()
+      }
+    ])(
+      'refreshes the status and rejects $name for its caller to show, without retrying',
+      async ({ rejecting, run }) => {
+        rejecting().mockRejectedValue(refusal())
+
+        await expect(run(useLegacyBilling())).rejects.toThrow(retryMessage)
+
+        expect(rejecting()).toHaveBeenCalledOnce()
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledOnce()
+        expect(useAuthActions().reportError).not.toHaveBeenCalled()
       }
     )
   })

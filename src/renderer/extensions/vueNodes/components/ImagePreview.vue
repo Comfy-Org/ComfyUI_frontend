@@ -42,6 +42,19 @@
           <span class="text-xs">{{ $t('hdrViewer.hdrImage') }}</span>
         </div>
       </Button>
+      <div
+        v-if="canExportOutputs"
+        class="invisible absolute top-2 right-2 group-focus-within:visible group-hover:visible"
+      >
+        <button
+          :class="actionButtonClass"
+          :title="$t('g.downloadImages')"
+          :aria-label="$t('g.downloadImages')"
+          @click="handleExportOutputs"
+        >
+          <i class="icon-[lucide--folder-down] size-4" />
+        </button>
+      </div>
     </div>
 
     <!-- Gallery View (Image Wrapper) -->
@@ -215,6 +228,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useTelemetry } from '@/platform/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -240,6 +254,7 @@ const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
+const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toastStore = useToastStore()
 
 const actionButtonClass =
@@ -276,6 +291,10 @@ const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
 const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
 const hasMultipleImages = computed(() => imageUrls.length > 1)
+const canExportOutputs = computed(() => {
+  const node = nodeId ? resolveNode(nodeId) : undefined
+  return !!node && hasMultipleOutputs(node)
+})
 const imageAltText = computed(() =>
   t('g.viewImageOfTotal', {
     index: currentIndex.value + 1,
@@ -376,6 +395,13 @@ function handleDownload() {
       detail: t('g.failedToDownloadImage')
     })
   }
+}
+
+function handleExportOutputs() {
+  if (!nodeId) return
+  const node = resolveNode(nodeId)
+  if (!node) return
+  showOutputsExportDialog(node)
 }
 
 function setCurrentIndex(index: number) {

@@ -25,6 +25,8 @@ export function useResubscribe() {
     if (!canReactivatePlan.value) return
 
     const source = 'settings_billing_panel' as const
+    const startedAt = Date.now()
+    const isWorkspaceResubscribe = shouldUseWorkspaceBilling.value
 
     useTelemetry()?.trackResubscribeClicked({ source })
     // Emitted before the awaited call so a failure always has a preceding
@@ -44,12 +46,13 @@ export function useResubscribe() {
       // tab, which isn't terminal — its `succeeded` is emitted later, from
       // useSubscription.ts's pending-checkout recovery, once a status poll
       // confirms the payment actually went through.
-      if (shouldUseWorkspaceBilling.value) {
+      if (isWorkspaceResubscribe) {
         useTelemetry()?.trackBillingEvent({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
-          source
+          source,
+          duration_ms: Date.now() - startedAt
         })
       }
       toast.add({
@@ -67,7 +70,10 @@ export function useResubscribe() {
         stage: 'failed',
         outcome: 'failure',
         source,
-        failure_category: categorizeBillingApiError(error)
+        failure_category: categorizeBillingApiError(error),
+        ...(isWorkspaceResubscribe && {
+          duration_ms: Date.now() - startedAt
+        })
       })
       toast.add({
         severity: 'error',

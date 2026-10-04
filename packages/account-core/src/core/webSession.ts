@@ -11,6 +11,7 @@ import {
   zRevokeAllSessionsResponse
 } from '@comfyorg/ingest-types/zod'
 
+import { COMFY_CLIENT } from './requestAuth.js'
 import { timedSignal } from './requestTimeout.js'
 import type {
   WebSessionCommandResult,
@@ -186,18 +187,17 @@ export async function deleteWebSession(
 }
 
 /**
- * Signs the user out of every device. Only a body the contract recognises is
- * ok: the caller tells the user every device is signed out on that answer.
+ * Signs the user out of every device with the session cookie alone. Only a
+ * body the contract recognises is ok: the caller tells the user every device
+ * is signed out on that answer.
  */
 export async function revokeAllWebSessions(
   options: WebSessionOptions,
-  csrfToken: string,
-  getIdentityProof: () => Promise<string>
+  csrfToken: string
 ): Promise<WebSessionCommandResult> {
-  const proof = await getIdentityProof()
   const sent = await send(options, '/auth/sessions/revoke-all', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${proof}`, 'X-CSRF-Token': csrfToken }
+    headers: { 'X-Comfy-Client': COMFY_CLIENT, 'X-CSRF-Token': csrfToken }
   })
   if ('code' in sent) return sent
 

@@ -11,7 +11,8 @@ import type {
   CancelOperationResult,
   PendingBillingOperation,
   PreviewSubscribeResult,
-  SavedPaymentMethod
+  SavedPaymentMethod,
+  SubscriptionCommandResult
 } from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
@@ -2141,6 +2142,33 @@ describe('FullPageCheckoutView payment authentication', () => {
     ).toBeEnabled()
     expect(fake.cancelOperation).toHaveBeenCalledExactlyOnceWith('op_3ds')
     expect(footnote()).toHaveTextContent(PHASE_A)
+  })
+
+  it('offers Cancel payment again after a cancel that threw, and still lands the Pay', async () => {
+    let settlePay: (result: SubscriptionCommandResult) => void = () => {}
+    const fake = await payReady()
+    fake.subscribe.mockImplementation(
+      () => new Promise((resolve) => (settlePay = resolve))
+    )
+    fake.cancelOperation.mockRejectedValue(new Error('wake failed'))
+    form.emit('confirm', 'ctoken_1')
+    fake.publishOperation(challengedOperation('op_3ds', 'required'))
+    const reads = fake.recover.mock.calls.length
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Cancel payment' })
+    ).toBeEnabled()
+    expect(fake.recover.mock.calls.length).toBeGreaterThan(reads)
+
+    settlePay({ status: 'ok', value: { phase: 'succeeded' } })
+
+    expect(
+      await screen.findByRole('heading', { name: "You're all set" })
+    ).toBeInTheDocument()
   })
 
   it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {

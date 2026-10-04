@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { FakeWebSessionState } from '../testing.js'
 import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '../testing.js'
+import { COMFY_CLIENT } from './requestAuth.js'
 import type { WebSessionOptions } from './webSession.js'
 import {
   createWebSession,
@@ -40,7 +41,7 @@ function heldUntilAborted(answered: Promise<Response>): typeof fetch {
 const errorBody = (code: string) => JSON.stringify({ code, message: code })
 
 const revokeAll = (o: WebSessionOptions, csrfToken = 'fake-csrf-token') =>
-  revokeAllWebSessions(o, csrfToken, async () => 'id-token')
+  revokeAllWebSessions(o, csrfToken)
 
 const ENDPOINTS = [
   { name: 'read', call: (o: WebSessionOptions) => readWebSession(o) },
@@ -480,19 +481,24 @@ describe('revoke-all', () => {
     })
   })
 
-  it('sends the identity proof and CSRF token to the revoke-all route', async () => {
+  it('revokes with the session cookie alone: client header and CSRF token, no bearer', async () => {
     const endpoint = fakeEndpoint({ kind: 'live', user: fakeWebSessionUser() })
 
-    await revokeAll(optionsFor(endpoint.fetch))
+    const result = await revokeAll(optionsFor(endpoint.fetch))
 
-    expect(endpoint.requests[0]).toMatchObject({
-      method: 'POST',
-      path: '/api/auth/sessions/revoke-all',
-      headers: {
-        authorization: 'Bearer id-token',
-        'x-csrf-token': 'fake-csrf-token'
+    expect(result).toEqual({ status: 'ok' })
+    expect(endpoint.requests).toEqual([
+      {
+        method: 'POST',
+        path: '/api/auth/sessions/revoke-all',
+        credentials: 'include',
+        cache: undefined,
+        headers: {
+          'x-comfy-client': COMFY_CLIENT,
+          'x-csrf-token': 'fake-csrf-token'
+        }
       }
-    })
+    ])
   })
 
   it('ends the session, so the next read is SESSION_REVOKED', async () => {

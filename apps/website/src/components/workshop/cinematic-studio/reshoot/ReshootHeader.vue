@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { translationsFor } from '../../../../i18n/translations'
 import { workshopAppRepo } from '../../../../lib/workshop/apps'
+import { RESHOOT_APP_SLUG } from '../../../../lib/workshop/cinematic-studio/analytics'
 import type { Locale } from '../../../../i18n/translations'
 import AppRepoLink from '../AppRepoLink.vue'
 
@@ -18,6 +19,7 @@ const { t } = translationsFor(locale)
       </h1>
       <AppRepoLink
         :repo="workshopAppRepo('reshoot')"
+        :app-slug="RESHOOT_APP_SLUG"
         :locale
         class="sm:ml-auto"
       />

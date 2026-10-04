@@ -557,6 +557,7 @@ the hosted script once, and renders the documented embed container.
 - `pnpm build:e2e` — indexable build to `dist/`, the one e2e and screenshots run against
 - `pnpm typecheck` — `astro check`
 - `pnpm test:unit` — Vitest unit tests
+- `pnpm check:router-provider-drift` — compare Router coverage with published sources (requires network access)
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot

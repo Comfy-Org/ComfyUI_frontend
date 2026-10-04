@@ -9,7 +9,7 @@ import type {
 export type PromptError = {
   type: string
   message: string
-  details: string
+  details?: string
 }
 
 export type NodeError = {

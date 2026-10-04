@@ -254,10 +254,10 @@ function monthKey(startDateTime: string): string {
   return inEventOffset(startDateTime).toISOString().slice(0, 7)
 }
 
-/** Group the agenda by calendar month: upcoming months ascending, then past
- * months descending, mirroring the list's upcoming-first rule. A month counts
- * as upcoming when any event in it still lies ahead, so the current month sits
- * with the upcoming ones even once some of its events have passed.
+/** Group the agenda by calendar month, latest month first, with the latest
+ * event first inside each month. Upcoming and past months sit in one
+ * descending sequence rather than being split into two. A month counts as
+ * upcoming when any event in it still lies ahead.
  *
  * Takes rows rather than events and a clock: `DirectoryRow.upcoming` already
  * carries the one classification, so the agenda cannot disagree with the list
@@ -277,24 +277,13 @@ export function groupRowsByMonth(
     }
   }
 
-  const byStart = (a: DirectoryRow, b: DirectoryRow) =>
-    Date.parse(a.event.startDateTime) - Date.parse(b.event.startDateTime)
+  const latestFirst = (a: DirectoryRow, b: DirectoryRow) =>
+    Date.parse(b.event.startDateTime) - Date.parse(a.event.startDateTime)
 
   const ordered = [...months.values()]
-  for (const month of ordered) {
-    // An agenda counts forward through what is coming and backward through
-    // what already happened.
-    month.rows.sort(month.upcoming ? byStart : (a, b) => byStart(b, a))
-  }
+  for (const month of ordered) month.rows.sort(latestFirst)
 
-  const upcoming = ordered
-    .filter((month) => month.upcoming)
-    .sort((a, b) => a.key.localeCompare(b.key))
-  const past = ordered
-    .filter((month) => !month.upcoming)
-    .sort((a, b) => b.key.localeCompare(a.key))
-
-  return [...upcoming, ...past]
+  return ordered.sort((a, b) => b.key.localeCompare(a.key))
 }
 
 /** Month headings come from `Intl`, so no month names enter the i18n table. */

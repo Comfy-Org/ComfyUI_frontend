@@ -148,6 +148,13 @@ describe('useResubscribe', () => {
       outcome: 'pending',
       source: 'settings_billing_panel'
     })
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'succeeded',
+      outcome: 'success',
+      source: 'settings_billing_panel',
+      duration_ms: expect.any(Number)
+    })
   })
 
   it('does not report checkout launch as terminal legacy success', async () => {
@@ -199,7 +206,8 @@ describe('useResubscribe', () => {
       stage: 'failed',
       outcome: 'failure',
       source: 'settings_billing_panel',
-      failure_category: 'unknown'
+      failure_category: 'unknown',
+      duration_ms: expect.any(Number)
     })
     expect(isResubscribing.value).toBe(false)
   })

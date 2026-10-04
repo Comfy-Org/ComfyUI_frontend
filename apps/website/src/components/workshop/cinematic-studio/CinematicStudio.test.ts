@@ -1139,6 +1139,37 @@ describe('CinematicStudio', () => {
     }
   )
 
+  it('reports switching to Video as a tab_switched event', async () => {
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'tab_switched',
+      properties: {
+        model_slug: CINEMATIC_STUDIO_APP_SLUG,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        tab: 'video'
+      }
+    })
+  })
+
+  it('does not report a tab switch when the URL alone sets the mode', () => {
+    window.history.replaceState(
+      null,
+      '',
+      `/cinematic-studio?model=${videoModels[0].slug}`
+    )
+    renderStudio([...models, ...videoModels])
+
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.some(([event]) => event.name === 'tab_switched')
+    ).toBe(false)
+  })
+
   it('shoots a clip on the first video model in video mode', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio([...models, ...videoModels])

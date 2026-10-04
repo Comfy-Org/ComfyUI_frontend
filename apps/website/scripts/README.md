@@ -1,5 +1,15 @@
 # Website Scripts
 
+## `router-provider-drift.ts`
+
+Compares the checked-in Router provider coverage with the published schemas and
+documentation. The command requires network access and is also run by the
+scheduled Router Provider Drift workflow:
+
+```sh
+pnpm --filter @comfyorg/website check:router-provider-drift
+```
+
 ## `generate-workshop-display.ts`
 
 Imports the content team's `workshop-display.json`, keyed by catalogue model ID,
