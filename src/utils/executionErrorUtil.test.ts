@@ -140,6 +140,27 @@ describe('executionErrorUtil', () => {
       }
     })
 
+    it('preserves node errors when optional details are omitted', () => {
+      const nodeErrors = {
+        '11:1': {
+          errors: [
+            {
+              type: 'unknown_node_class',
+              message: 'This deployment does not contain SomeCustomNode'
+            }
+          ],
+          dependent_outputs: [],
+          class_type: 'SomeCustomNode'
+        }
+      }
+
+      expect(
+        classifyCloudValidationError(
+          `Failed: ${JSON.stringify({ node_errors: nodeErrors })}`
+        )
+      ).toEqual({ kind: 'nodeErrors', nodeErrors })
+    })
+
     it('should classify prompt error when error is an object and no node_errors', () => {
       const embedded = JSON.stringify({
         error: {

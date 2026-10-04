@@ -214,6 +214,24 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('renders validation copy when optional details are omitted', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: {
+          type: 'required_input_missing',
+          message: 'Required input is missing',
+          extra_info: { input_name: 'source' }
+        },
+        nodeDisplayName: 'PreviewAny'
+      })
+    ).toMatchObject({
+      displayTitle: 'Missing connection',
+      displayDetails: 'PreviewAny is missing a required input: source',
+      displayItemLabel: 'PreviewAny - source'
+    })
+  })
+
   it('resolves unknown validation errors to fallback catalog copy', () => {
     expect(
       resolveRunErrorMessage({

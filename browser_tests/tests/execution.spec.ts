@@ -168,4 +168,53 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
       .toBe(VALIDATION_ERROR_MESSAGE)
     await expect(errorOverlay).toBeVisible()
   })
+
+  test(
+    'renders cloud node errors when optional details are omitted',
+    { tag: '@cloud' },
+    async ({ comfyPage, getWebSocket }) => {
+      await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+      const ws = await getWebSocket()
+      const execution = new ExecutionHelper(comfyPage, ws)
+      const jobId = await execution.run()
+      execution.executionStart(jobId)
+      ws.send(
+        JSON.stringify({
+          type: 'execution_error',
+          data: {
+            prompt_id: jobId,
+            timestamp: Date.now(),
+            node_id: VALIDATION_ERROR_NODE_ID,
+            node_type: 'PreviewAny',
+            executed: [],
+            exception_type: 'prompt_outputs_failed_validation',
+            exception_message: JSON.stringify({
+              node_errors: {
+                [VALIDATION_ERROR_NODE_ID]: {
+                  class_type: 'PreviewAny',
+                  dependent_outputs: [VALIDATION_ERROR_NODE_ID],
+                  errors: [
+                    {
+                      type: 'required_input_missing',
+                      message: VALIDATION_ERROR_MESSAGE,
+                      extra_info: { input_name: 'source' }
+                    }
+                  ]
+                }
+              }
+            }),
+            traceback: []
+          }
+        })
+      )
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await expect(errorOverlay).toContainText(VALIDATION_ERROR_MESSAGE)
+      expect(await comfyPage.page.pageErrors()).toEqual([])
+    }
+  )
 })
