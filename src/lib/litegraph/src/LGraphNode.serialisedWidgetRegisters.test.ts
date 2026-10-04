@@ -5,7 +5,7 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 function serialisedNode(
-  widgets: readonly { name: string; value: WidgetValue }[]
+  widgets: readonly { name: string; value: TWidgetValue }[]
 ): ISerialisedNode {
   const graph = new LGraph()
   const node = new LGraphNode('test')
