@@ -13,13 +13,9 @@ import {
 } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import {
-  getInputSpecType,
-  zDynamicGroupInputSpec
-} from '@/schemas/nodeDefSchema'
+import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -36,13 +32,6 @@ export function dynamicGroupWidget(
     group_name = inputName
   } = zDynamicGroupInputSpec.parse(inputData)[1]
   const fields = { ...template.required, ...template.optional }
-  const widgetStore = useWidgetStore()
-  for (const [field, spec] of Object.entries(fields)) {
-    if (!widgetStore.widgets.has(spec[1]?.widgetType ?? getInputSpecType(spec)))
-      throw new TypeError(
-        `DynamicGroup field '${inputName}.${field}' requires a registered widget`
-      )
-  }
   const store = useWidgetValueStore()
   const { addNodeInput } = useLitegraphService()
   const controller: IBaseWidget = node.addCustomWidget({
@@ -177,8 +166,11 @@ export function dynamicGroupWidget(
     return true
   }
 
-  function fieldLabel(index: number, field: string) {
-    const row = t('dynamicGroup.row', { group: group_name, index: index + 1 })
+  function fieldLabel(
+    index: number,
+    field: string,
+    row = t('dynamicGroup.row', { group: group_name, index: index + 1 })
+  ) {
     return `${row} ${fields[field][1]?.display_name ?? field}`
   }
 
@@ -195,22 +187,29 @@ export function dynamicGroupWidget(
     if (promoted.label === previous) graph.renameInput(promoted, next)
   }
 
-  function renameRowLabels(oldIndex: number, newIndex: number) {
+  function renameRowLabels(
+    oldIndex: number,
+    newIndex: number,
+    rowLabel?: string
+  ) {
     for (const field of Object.keys(fields)) {
       const name = `${inputName}.${newIndex}.${field}`
-      const previous = fieldLabel(oldIndex, field)
+      const slot = node.findInputSlot(name)
+      const input = slot === -1 ? undefined : node.inputs[slot]
+      const previous =
+        input?.localized_name ?? fieldLabel(oldIndex, field, rowLabel)
       const next = fieldLabel(newIndex, field)
       const widget = node.widgets?.find((widget) => widget.name === name)
       if (widget?.label === previous) widget.label = next
-      const slot = node.findInputSlot(name)
-      if (slot === -1) continue
-      const input = node.inputs[slot]
+      if (!input) continue
       if (input.label === previous) input.label = next
+      input.localized_name = next
       renamePromotedInputLabel(slot, previous, next)
     }
   }
 
   function renameRow(oldPrefix: string, newPrefix: string) {
+    const rowLabel = rows().find((row) => row.name === oldPrefix)?.label
     for (const widget of node.widgets ?? []) {
       if (widget.name === oldPrefix || widget.name.startsWith(`${oldPrefix}.`))
         widget.name = newPrefix + widget.name.slice(oldPrefix.length)
@@ -222,7 +221,8 @@ export function dynamicGroupWidget(
     }
     renameRowLabels(
       Number(oldPrefix.slice(inputName.length + 1)),
-      Number(newPrefix.slice(inputName.length + 1))
+      Number(newPrefix.slice(inputName.length + 1)),
+      rowLabel
     )
   }
 
@@ -277,6 +277,17 @@ export function dynamicGroupWidget(
     return true
   }
 
+  function updateInputLabel(name: string, label: string) {
+    const slot = node.findInputSlot(name)
+    if (slot === -1) return
+    const input = node.inputs[slot]
+    const previous = input.localized_name
+    if (!input.label || input.label === previous) input.label = label
+    input.localized_name = label
+    if (previous) renamePromotedInputLabel(slot, previous, label)
+    return input
+  }
+
   function addRowFields(index: number) {
     for (const [fields, isOptional] of [
       [template.required, false],
@@ -291,8 +302,7 @@ export function dynamicGroupWidget(
             transformInputSpecV1ToV2(spec, { name, isOptional })),
           display_name: fieldLabel(index, field)
         })
-        const input = node.inputs.find((input) => input.name === name)
-        if (input) input.label ??= fieldLabel(index, field)
+        const input = updateInputLabel(name, fieldLabel(index, field))
         let auxiliaryIndex = 0
         node.widgets?.slice(fieldStart).forEach((widget) => {
           const options = widget.options
@@ -326,40 +336,11 @@ export function dynamicGroupWidget(
       position
     )
     if (restored?.value !== value) return
-    const firstRowPrefix = `${inputName}.0.`
-    const rowFields = widgets
-      .filter(
-        (widget) =>
-          widget.serialize !== false && widget.name.startsWith(firstRowPrefix)
+    const savedValueCount = store.getRestoredWidgetValueCount(graphId, node.id)
+    if (requested > Math.max(max, savedValueCount ?? 0))
+      throw new RangeError(
+        `Invalid saved row count for DynamicGroup '${inputName}'`
       )
-      .map((widget) => widget.name.slice(firstRowPrefix.length))
-    const fieldNames = rowFields.length ? rowFields : Object.keys(fields)
-    const following = widgets.slice(widgets.indexOf(add) + 1)
-    const followingRows = following.filter(
-      (widget) => widget.type === 'dynamic_group_row'
-    )
-    const reserved = following.filter(
-      (widget) =>
-        widget.serialize !== false &&
-        !followingRows.some((row) => widget.name.startsWith(`${row.name}.`))
-    ).length
-    // Reserve trailing widgets in positional saves; named saves check the row keys.
-    let positionToCheck = position + 1 + reserved
-    for (let index = 0; index < requested; index++) {
-      for (const field of fieldNames) {
-        if (
-          !store.getRestoredWidgetValue(
-            graphId,
-            node.id,
-            `${inputName}.${index}.${field}`,
-            positionToCheck++
-          )
-        )
-          throw new RangeError(
-            `Invalid saved row count for DynamicGroup '${inputName}'`
-          )
-      }
-    }
   }
 
   Object.defineProperty(controller, 'value', {
@@ -374,15 +355,6 @@ export function dynamicGroupWidget(
       }
       while (rows().length < count) {
         if (!addRow(rows().length)) break
-        if (rows().length === 1) {
-          try {
-            validateSavedRowCount(value, requested)
-          } catch (error) {
-            removeRow(0)
-            publish()
-            throw error
-          }
-        }
       }
       publish()
     }

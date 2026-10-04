@@ -149,6 +149,22 @@ const renderedRows = computed(() =>
   })
 )
 
+function withShortFieldLabel(
+  widget: WidgetGridItem,
+  groupName: string,
+  groupLabel?: string
+) {
+  const field =
+    widget.simplified.spec?.display_name ??
+    widget.simplified.name.slice(groupName.length + 1)
+  return widget.simplified.label === `${groupLabel} ${field}`
+    ? {
+        ...widget,
+        simplified: { ...widget.simplified, displayLabel: field }
+      }
+    : widget
+}
+
 const sections = computed(() => {
   const result: {
     key: string
@@ -167,12 +183,17 @@ const sections = computed(() => {
         role: label ? 'group' : undefined,
         rows: [row]
       })
-    } else {
-      const section = result.at(-1)
-      if (section?.name && name.startsWith(`${section.name}.`))
-        section.rows.push(row)
-      else result.push({ key: row.widget.renderKey, rows: [row] })
+      continue
     }
+    const section = result.at(-1)
+    if (!section?.name || !name.startsWith(`${section.name}.`)) {
+      result.push({ key: row.widget.renderKey, rows: [row] })
+      continue
+    }
+    section.rows.push({
+      ...row,
+      widget: withShortFieldLabel(row.widget, section.name, section.label)
+    })
   }
   return result
 })

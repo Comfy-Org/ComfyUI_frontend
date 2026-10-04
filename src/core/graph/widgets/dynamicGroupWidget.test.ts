@@ -1,9 +1,20 @@
 import axios, { AxiosHeaders } from 'axios'
 import type { AxiosResponse } from 'axios'
+import { cloneDeep } from 'es-toolkit'
 import { useLinkStore } from '@/stores/linkStore'
 import { api } from '@/scripts/api'
 
-import { afterEach, assert, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+
+import { i18n } from '@/i18n'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -137,23 +148,57 @@ describe('DynamicGroup widgets', () => {
   })
 
   it.for([
-    { name: 'truncated field', values: ['first', 1, 'A', 0.1, 'tail'] },
-    { name: 'inflated row count', values: ['first', 3, 'A', 0.1, true, 'tail'] }
-  ])(
-    'rejects $name before consuming the following static widget',
-    ({ values }) => {
-      LiteGraph.namedValuesRestore = false
-      const { node, widget } = setup()
-      const saved = node.serialize()
-      saved.widgets_values = values
-
-      expect(() => node.configure(saved)).toThrow('Invalid saved row count')
-      expect(widget('loras').value).toBe(0)
-      expect(widget('after').value).toBe('last')
+    {
+      name: 'a newly appended trailing widget',
+      values: ['first', 1, 'B', 0.4, false],
+      expected: ['first', 1, 'B', 0.4, false, 'last']
+    },
+    {
+      name: 'a removed template field across two rows',
+      values: ['first', 2, 'A', 0.8, true, 'removed', 'B', 0.5, false, 'tail'],
+      expected: ['first', 2, 'A', 0.8, true, 'removed', 'B', 0.5, false]
+    },
+    {
+      name: 'an appended template field across two rows',
+      values: ['first', 2, 'A', 0.8, 'B', 0.5, 'tail'],
+      expected: ['first', 2, 'A', 0.8, 'B', 0.5, 'tail', true, 'last']
+    },
+    {
+      name: 'reordered template fields',
+      values: ['first', 1, 0.8, 'B', false, 'tail'],
+      expected: ['first', 1, 0.8, 'B', false, 'tail']
+    },
+    {
+      name: 'missing values in the remaining rows',
+      values: ['first', 3, 'B', 0.4, false],
+      expected: [
+        'first',
+        3,
+        'B',
+        0.4,
+        false,
+        'A',
+        1,
+        true,
+        'A',
+        1,
+        true,
+        'last'
+      ]
     }
-  )
+  ])('restores positional values with $name', ({ values, expected }) => {
+    LiteGraph.namedValuesRestore = false
+    const { node } = setup()
+    const saved = node.serialize()
+    saved.widgets_values = values
 
-  it('includes auxiliary controls when checking saved row data', () => {
+    node.configure(saved)
+
+    expect(node.serialize().widgets_values).toEqual(expected)
+    expect(saved.widgets_values).toEqual(values)
+  })
+
+  it('restores auxiliary controls when a trailing widget has no saved value', () => {
     LiteGraph.namedValuesRestore = false
     const { node, widget } = setup()
     useLitegraphService().addNodeInput(node, {
@@ -171,44 +216,14 @@ describe('DynamicGroup widgets', () => {
       default: 'untouched'
     })
     const saved = node.serialize()
-    saved.widgets_values = ['first', 0, 'last', 2, 12, 'fixed', 'tail']
+    saved.widgets_values = ['first', 0, 'last', 1, 12, 'fixed']
 
-    expect(() => node.configure(saved)).toThrow('Invalid saved row count')
-    expect(widget('seeds').value).toBe(0)
-    expect(widget('tail').value).toBe('untouched')
-  })
-
-  it('publishes the remaining row when validation rollback is rejected', () => {
-    LiteGraph.namedValuesRestore = false
-    const { node, widget } = setup()
-    useLitegraphService().addNodeInput(node, {
-      name: 'seeds',
-      type: 'COMFY_DYNAMICGROUP_V3',
-      isOptional: false,
-      template: {
-        required: { seed: ['INT', { control_after_generate: true }] }
-      }
-    })
-    const saved = node.serialize()
-    saved.widgets_values = ['first', 0, 'last', 2, 12, 'fixed']
-    const store = useLinkStore()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.spyOn(store, 'updateEndpoints')
-      .mockReturnValueOnce({ ok: true, value: [] })
-      .mockReturnValueOnce({
-        ok: false,
-        error: { code: 'unowned-topology', message: 'Rejected rollback' }
-      })
-
-    expect(() => node.configure(saved)).toThrow('Invalid saved row count')
+    node.configure(saved)
 
     expect(widget('seeds').value).toBe(1)
-    expect(widget('seeds.0').label).toBe('seeds #1')
-    const id = widget('seeds').widgetId
-    assert.exists(id)
-    expect(useWidgetValueStore().getWidget(id)?.value).toBe(1)
-    widget('seeds.0').callback?.(undefined)
-    expect(widget('seeds').value).toBe(0)
+    expect(widget('seeds.0.seed').value).toBe(12)
+    expect(widget('seeds.0.seed.0').value).toBe('fixed')
+    expect(widget('tail').value).toBe('untouched')
   })
 
   it('creates and serializes registered rich and custom template widgets', async () => {
@@ -286,6 +301,37 @@ describe('DynamicGroup widgets', () => {
       expect(strength.name).toBe('loras.0.strength')
       expect(strength.label).toBe('LoRA #1 strength')
       expect(promotedInputWidget(input)?.label).toBe(expected)
+    }
+  )
+
+  it.for([
+    { label: 'LoRA #2 strength', expected: 'LoRA 1행 strength' },
+    { label: 'My strength', expected: 'My strength' }
+  ])(
+    'renumbers $label after restoring in another language',
+    ({ label, expected }) => {
+      const { node, widget } = setup()
+      widget('loras').value = 2
+      widget('loras.1.strength').label = label
+      node.inputs[node.findInputSlot('loras.1.strength')].label = label
+      const saved = node.serialize()
+      const locale = i18n.global.locale.value
+      const messages = cloneDeep(i18n.global.getLocaleMessage('ko'))
+      onTestFinished(() => {
+        i18n.global.locale.value = locale
+        i18n.global.setLocaleMessage('ko', messages)
+      })
+      i18n.global.mergeLocaleMessage('ko', {
+        dynamicGroup: { row: '{group} {index}행' }
+      })
+      i18n.global.locale.value = 'ko'
+      const restored = setup()
+      restored.node.configure(saved)
+
+      restored.widget('loras.0').callback?.(undefined)
+
+      expect(restored.widget('loras.0.strength').label).toBe(expected)
+      expect(restored.widget('loras.0').label).toBe('LoRA 1행')
     }
   )
 
