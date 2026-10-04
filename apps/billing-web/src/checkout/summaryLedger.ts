@@ -138,6 +138,15 @@ export function formatHeadlineMoney(
   }).format(cents / 100)
 }
 
+/**
+ * The server's credit count. The cents fallback serves a server without
+ * cloud PR 11905 and misses the receipt by a credit; delete it once every
+ * preview carries the count.
+ */
+function grantedCredits(count: number | undefined, cents: number): number {
+  return count ?? centsToCredits(cents)
+}
+
 function verbOf(quote: SubscriptionPreview, commitChange: boolean) {
   if (quote.transition_type === 'new_subscription') return 'subscribe'
   if (quote.transition_type !== 'upgrade') return 'switch'
@@ -174,6 +183,15 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
   const plan = planLabel(next, cadenceChanges)
   const action = t(`${S}.verb.${verbOf(quote, commitChange)}`, { plan })
   const dueCents = quote.amount_due_cents ?? quote.cost_today_cents
+  const formatCount = new Intl.NumberFormat(locale).format
+  const todayCount = grantedCredits(
+    quote.credits_today,
+    quote.credits_today_cents
+  )
+  const nextPeriodCount = grantedCredits(
+    quote.credits_next_period,
+    quote.credits_next_period_cents
+  )
 
   return {
     quote,
@@ -192,8 +210,10 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
     monthDay: (iso: string) => monthDay(iso, locale),
     headlineMoney: (cents: number) =>
       formatHeadlineMoney(cents, currency, locale),
-    credits: (cents: number) =>
-      new Intl.NumberFormat(locale).format(centsToCredits(cents)),
+    todayCount,
+    nextPeriodCount,
+    creditsToday: formatCount(todayCount),
+    creditsNextPeriod: formatCount(nextPeriodCount),
     currency: currency.toUpperCase(),
     dueCents,
     recurringCents: quote.renewal_amount_cents ?? quote.cost_next_period_cents,
@@ -226,7 +246,7 @@ function renewalLine(r: QuoteReading): string {
 
 function refillsToLine(r: QuoteReading): string {
   return r.t(r.byNew.refillsTo, {
-    credits: r.credits(r.quote.credits_next_period_cents)
+    credits: r.creditsNextPeriod
   })
 }
 
@@ -259,7 +279,7 @@ function scheduledLedger(r: QuoteReading): FamilyLedger {
       rate: r.t(r.byNew.rate, {})
     },
     credits: {
-      count: r.credits(r.quote.credits_next_period_cents),
+      count: r.creditsNextPeriod,
       qualifier: r.t(r.byNew.refillAfter, { date: startsAt })
     },
     items: [
@@ -309,7 +329,7 @@ function keptPlanLine(r: QuoteReading, current: Plan, until: string): string {
 function grantedToday(r: QuoteReading): SummaryLedger['credits'] {
   const expiresAt = r.quote.renewal_at
   return {
-    count: r.credits(r.quote.credits_today_cents),
+    count: r.creditsToday,
     qualifier:
       expiresAt === undefined
         ? r.t(`${S}.credits.addedToday`, {})
@@ -382,7 +402,7 @@ function proratedLedger(r: QuoteReading): FamilyLedger {
 function chargeNowCredits(r: QuoteReading): SummaryLedger['credits'] {
   if (!grantIsAllowance(r)) return grantedToday(r)
   return {
-    count: r.credits(r.quote.credits_today_cents),
+    count: r.creditsToday,
     qualifier: r.t(
       r.cadenceChanges ? `${S}.credits.bare` : r.byNew.perPeriod,
       {}
@@ -391,7 +411,13 @@ function chargeNowCredits(r: QuoteReading): SummaryLedger['credits'] {
 }
 
 function grantIsAllowance(r: QuoteReading): boolean {
-  return r.quote.credits_today_cents === r.quote.credits_next_period_cents
+  const { quote } = r
+  if (
+    quote.credits_today === undefined &&
+    quote.credits_next_period === undefined
+  )
+    return quote.credits_today_cents === quote.credits_next_period_cents
+  return r.todayCount === r.nextPeriodCount
 }
 
 function chargeNowTrailing(r: QuoteReading): string[] {

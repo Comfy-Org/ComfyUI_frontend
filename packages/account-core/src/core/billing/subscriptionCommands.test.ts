@@ -658,6 +658,48 @@ describe('createBillingCommands', () => {
       expect(h.posts()[0]?.idempotencyKey).toBeUndefined()
     })
 
+    it("keeps the server's credit counts, which converting the cents can miss by one", async () => {
+      const granted = http(200, {
+        ...QUOTE_BODY,
+        credits_today_cents: 1991,
+        credits_next_period_cents: 1991,
+        credits_today: 4200,
+        credits_next_period: 4200
+      })
+      const h = harness({ status: FREE, script: { [POST_PREVIEW]: [granted] } })
+
+      const result = await h.commands.previewSubscribe({
+        planSlug: 'pro-monthly'
+      })
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { credits_today: 4200, credits_next_period: 4200 }
+      })
+    })
+
+    it.for([
+      ['a fraction of a credit', 'credits_today', 4200.5],
+      ['a fraction of a credit', 'credits_next_period', 4200.5],
+      ['a negative count', 'credits_today', -1],
+      ['a negative count', 'credits_next_period', -1]
+    ] as const)('refuses %s at %s', async ([, field, count]) => {
+      const h = harness({
+        status: FREE,
+        script: {
+          [POST_PREVIEW]: [http(200, { ...QUOTE_BODY, [field]: count })]
+        }
+      })
+
+      await expect(
+        h.commands.previewSubscribe({ planSlug: 'pro-monthly' })
+      ).resolves.toEqual({
+        status: 'error',
+        code: 'MALFORMED_RESPONSE',
+        httpStatus: 200
+      })
+    })
+
     it('hands the applied discounts back, echoing the promotion code it sent', async () => {
       const discounted = http(200, {
         ...QUOTE_BODY,

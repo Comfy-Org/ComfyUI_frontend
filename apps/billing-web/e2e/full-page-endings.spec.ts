@@ -222,6 +222,37 @@ test('77-4068: a Pay that goes through counts the credits the server says it add
   )
 })
 
+test('the summary counts the same credits the receipt reports after Pay', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const grant = { credits_today: 4200, credits_next_period: 4200 }
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    credits_today_cents: 1991,
+    credits_next_period_cents: 1991,
+    ...grant
+  }
+  cloud.scenario.operations.op_subscribe = {
+    ...succeededOperation('op_subscribe'),
+    amount_charged_cents: 5000,
+    credits_added: 4200,
+    plan: RECEIPT_PLAN
+  }
+  await signIn(CHECKOUT)
+
+  await expect(
+    page.getByRole('region', { name: 'Order summary' })
+  ).toContainText('4,200 credits per month')
+  await payButton(page).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(page.getByTestId('checkout-ending-plan')).toContainText(
+    '4,200 credits added'
+  )
+})
+
 const paidToday = (page: Page) => page.getByTestId('checkout-ending-paid-today')
 
 function chargedWith(cloud: MockCloud, breakdown: BillingOpChargeBreakdown) {
