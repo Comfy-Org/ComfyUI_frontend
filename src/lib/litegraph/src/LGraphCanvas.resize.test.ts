@@ -107,6 +107,37 @@ describe('LGraphCanvas.resize', () => {
     ]).toEqual(['1000px', '700px', 2000, 1400])
   })
 
+  it('keeps ownership of an explicit pin across a repeated size', () => {
+    const { canvas } = createParentSizedCanvas()
+    setIntrinsicCanvasLayout(canvas.canvas)
+
+    canvas.resize(800, 600)
+    canvas.resize(800, 600)
+    canvas.resize(1000, 700)
+
+    expect([
+      canvas.canvas.style.width,
+      canvas.canvas.style.height,
+      canvas.canvas.width,
+      canvas.canvas.height
+    ]).toEqual(['1000px', '700px', 2000, 1400])
+  })
+
+  it('does not re-probe an unchanged parent-sized canvas at DPR 1', () => {
+    vi.stubGlobal('devicePixelRatio', 1)
+    const { canvas } = createParentSizedCanvas()
+    setIntrinsicCanvasLayout(canvas.canvas)
+    canvas.resize()
+    const widthWrites = vi.spyOn(canvas.canvas, 'width', 'set')
+    canvas.dirty_canvas = false
+    canvas.dirty_bgcanvas = false
+
+    canvas.resize()
+
+    expect(widthWrites).not.toHaveBeenCalled()
+    expect([canvas.dirty_canvas, canvas.dirty_bgcanvas]).toEqual([false, false])
+  })
+
   it('repaints when the sizing probe discarded the bitmap but nothing resized', () => {
     vi.stubGlobal('devicePixelRatio', 1)
     const { canvas } = createParentSizedCanvas()

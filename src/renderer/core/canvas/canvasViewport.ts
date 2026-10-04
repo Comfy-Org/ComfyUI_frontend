@@ -197,7 +197,7 @@ function applyLogicalCanvasStyle(
   )
   const { style } = canvas
   const previousStyle = autoSizedStyleByCanvas.get(canvas) ?? {}
-  const nextStyle: { width?: string; height?: string } = {}
+  const nextStyle: { width?: string; height?: string } = { ...previousStyle }
   if (
     !independentWidth &&
     (!style.width || style.width === previousStyle.width)
@@ -216,9 +216,14 @@ function applyLogicalCanvasStyle(
   return probed
 }
 
-function releaseLogicalCanvasStyle(canvas: HTMLCanvasElement): void {
+function releaseLogicalCanvasStyle(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number
+): void {
   const applied = autoSizedStyleByCanvas.get(canvas)
   if (!applied) return
+  if (applied.width === `${width}px` && applied.height === `${height}px`) return
   if (canvas.style.width === applied.width) canvas.style.width = ''
   if (canvas.style.height === applied.height) canvas.style.height = ''
   autoSizedStyleByCanvas.delete(canvas)

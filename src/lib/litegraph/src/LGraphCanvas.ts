@@ -6701,7 +6701,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         )
       width = parent.offsetWidth
       height = parent.offsetHeight
-      releaseLogicalCanvasStyle(this.canvas)
+      releaseLogicalCanvasStyle(this.canvas, width, height)
     }
 
     const bitmapDiscarded = applyLogicalCanvasStyle(
