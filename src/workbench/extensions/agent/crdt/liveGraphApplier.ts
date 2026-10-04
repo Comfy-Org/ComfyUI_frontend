@@ -650,7 +650,19 @@ export class LiveGraphApplier {
     } else {
       node.configure({
         ...info,
-        widgets_values: positionalWidgetValues(node, docNode.widgets)
+        widgets_values: positionalWidgetValues(node, docNode.widgets),
+        ...(docNode.widgets !== undefined && !Array.isArray(docNode.widgets)
+          ? {
+              widgets_values_named: Object.fromEntries(
+                Object.entries(docNode.widgets).map(
+                  ([name, value]): [string, WidgetValue] => [
+                    name,
+                    isWidgetValue(value) ? value : undefined
+                  ]
+                )
+              )
+            }
+          : {})
       })
     }
     floorSizeToContent(node)
