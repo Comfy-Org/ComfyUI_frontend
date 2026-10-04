@@ -436,14 +436,10 @@ describe('LGraphCanvas selection', () => {
       expect(canvas.selected_nodes).toEqual({})
     })
 
-    it('select() reports the change', () => {
+    it('select() and deselect() each report the change', () => {
       canvas.select(a)
 
       expect(onSelectionChange).toHaveBeenCalledTimes(1)
-    })
-
-    it('deselect() reports the change', () => {
-      canvas.select(a)
       canvas.deselect(a)
 
       expect(onSelectionChange).toHaveBeenCalledTimes(2)
