@@ -4,6 +4,11 @@ import RadioGroupItem from '@/components/ui/radio-group/RadioGroupItem.vue'
 
 import type { AskUserOption } from '../../../services/agent/agentMessageParts'
 import AskUserOptionLabel from './AskUserOptionLabel.vue'
+import {
+  askUserOptionDescribedBy,
+  askUserOptionId,
+  askUserOptionRowClass
+} from './askUserOptions'
 
 /** A required single choice: one radio per option, labelled by the prompt. */
 const {
@@ -19,10 +24,6 @@ const {
 }>()
 
 const modelValue = defineModel<string | undefined>()
-
-const optionId = (index: number) => `${idPrefix}-option-${index}`
-const describedBy = (option: AskUserOption, index: number) =>
-  option.description ? `${optionId(index)}-description` : undefined
 
 function choose(value: unknown): void {
   if (typeof value === 'string') modelValue.value = value
@@ -40,16 +41,20 @@ function choose(value: unknown): void {
     <div
       v-for="(option, index) in options"
       :key="option.id"
-      class="flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-secondary-background-hover"
+      :class="askUserOptionRowClass"
     >
       <RadioGroupItem
-        :id="optionId(index)"
+        :id="askUserOptionId(idPrefix, index)"
         :value="option.id"
-        :aria-labelledby="`${optionId(index)}-label`"
-        :aria-describedby="describedBy(option, index)"
+        :aria-labelledby="`${askUserOptionId(idPrefix, index)}-label`"
+        :aria-describedby="askUserOptionDescribedBy(idPrefix, option, index)"
         class="mt-0.5"
       />
-      <AskUserOptionLabel :option-id="optionId(index)" :option />
+      <AskUserOptionLabel
+        :option-id="askUserOptionId(idPrefix, index)"
+        :option
+        :disabled
+      />
     </div>
   </RadioGroup>
 </template>

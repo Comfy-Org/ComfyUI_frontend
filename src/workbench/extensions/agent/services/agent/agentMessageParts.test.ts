@@ -1,10 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it } from 'vitest'
 
+import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
 import type { MessagePart } from './agentMessageParts'
 import {
   ASK_USER_LIMITS,
-  RENDERED_ASK_KINDS,
+  askIdOf,
   isAskPart,
   isRenderedAskKind,
   retireAskParts,
@@ -177,94 +178,13 @@ describe('toAskPart ask_user', () => {
   })
 })
 
-describe('toAskPart delete_approval', () => {
-  const deleteApproval = (ask: Partial<AskInput> = {}): AskInput =>
-    askUser({
-      kind: 'delete_approval',
-      prompt: 'Delete 2 nodes?',
-      options: [
-        { id: 'delete', label: 'Delete' },
-        { id: 'keep', label: 'Keep' }
-      ],
-      context: {
-        action: 'delete_nodes',
-        nodes: [
-          { id: '12', type: 'KSampler', title: 'Hero sampler' },
-          { id: 13, type: 'VAEDecode' }
-        ]
-      },
-      ...ask
-    })
-
-  it('renders as a question card that lists the nodes, title before type', () => {
-    expect(toAskPart(deleteApproval())).toEqual({
-      type: 'askUser',
-      askId: 'turn-1:call-1',
-      prompt: 'Delete 2 nodes?',
-      options: [
-        { id: 'delete', label: 'Delete' },
-        { id: 'keep', label: 'Keep' }
-      ],
-      minSelections: 1,
-      maxSelections: 1,
-      allowOther: false,
-      nodes: [
-        { id: '12', name: 'Hero sampler' },
-        { id: '13', name: 'VAEDecode' }
-      ]
-    })
-  })
-
-  it.for([
-    { name: 'no context', context: undefined, hidden: undefined },
-    {
-      name: 'no nodes',
-      context: { action: 'delete_nodes' },
-      hidden: undefined
-    },
-    {
-      name: 'nodes not an array',
-      context: { action: 'delete_nodes', nodes: 'oops' },
-      hidden: undefined
-    },
-    {
-      name: 'unreadable entries',
-      context: { action: 'delete_nodes', nodes: [null, 7, { type: 'NoId' }] },
-      hidden: 3
-    }
-  ])(
-    'keeps the prompt and options with $name in context',
-    ({ context, hidden }) => {
-      const part = toAskPart(deleteApproval({ context }))
-      assert(part?.type === 'askUser')
-      expect(part.options.map(({ id }) => id)).toEqual(['delete', 'keep'])
-      expect(part.nodes).toBeUndefined()
-      expect(part.hiddenNodeCount).toBe(hidden)
-    }
-  )
-
-  it('bounds an untrusted node list and counts what it does not list', () => {
-    const nodes = Array.from({ length: ASK_USER_LIMITS.nodes + 5 }, (_, i) => ({
-      id: i,
-      title: 'x'.repeat(ASK_USER_LIMITS.label + 10)
-    }))
-    const part = toAskPart(
-      deleteApproval({ context: { action: 'delete_nodes', nodes } })
-    )
-    assert(part?.type === 'askUser')
-    expect(part.nodes).toHaveLength(ASK_USER_LIMITS.nodes)
-    expect(part.nodes?.[0].name).toHaveLength(ASK_USER_LIMITS.label)
-    expect(part.hiddenNodeCount).toBe(5)
-  })
-})
-
 describe('RENDERED_ASK_KINDS', () => {
   it.for(RENDERED_ASK_KINDS)('renders a card for %s', (kind) => {
     expect(isRenderedAskKind(kind)).toBe(true)
     expect(toAskPart(askUser({ kind }))).toBeDefined()
   })
 
-  it.for(['paused', 'permission', 'toString', undefined])(
+  it.for(['paused', 'delete_approval', 'permission', 'toString', undefined])(
     'does not claim %s',
     (kind) => {
       expect(isRenderedAskKind(kind)).toBe(false)
@@ -290,13 +210,24 @@ describe('toAskOrNoticePart', () => {
     expect(toAskOrNoticePart(askUser()).type).toBe('askUser')
   })
 
-  it('surfaces a warning notice for an ask it cannot render', () => {
+  it('stands a notice in for an ask it cannot render', () => {
     expect(toAskOrNoticePart(askUser({ kind: undefined }))).toEqual({
-      type: 'notice',
-      level: 'warning',
-      text: 'The agent asked a question this panel cannot show. Stop the turn to continue.',
+      type: 'askUnavailable',
       askId: 'turn-1:call-1'
     })
+  })
+})
+
+describe('askIdOf', () => {
+  it('names the ask of every ask card and stand-in, and nothing else', () => {
+    const samples: MessagePart[] = [
+      { type: 'runApproval', askId: 'a' },
+      fromPartial<MessagePart>({ type: 'askUser', askId: 'b' }),
+      { type: 'askUnavailable', askId: 'c' },
+      { type: 'notice', level: 'warning', text: 'plain notice' },
+      { type: 'text', text: '', state: 'done' }
+    ]
+    expect(samples.map(askIdOf)).toEqual(['a', 'b', 'c', undefined, undefined])
   })
 })
 
@@ -306,7 +237,7 @@ describe('retireAskParts', () => {
   const parts: MessagePart[] = [
     { type: 'text', text: 'before', state: 'done' },
     { type: 'runApproval', askId: 'run' },
-    { type: 'notice', level: 'warning', text: 'cannot show', askId: 'odd' },
+    { type: 'askUnavailable', askId: 'odd' },
     question
   ]
 

@@ -632,11 +632,7 @@ describe('normalizeAgentTranscript', () => {
     {
       name: 'a notice for an unknown kind',
       ask: pendingAsk('something_new'),
-      part: expect.objectContaining({
-        type: 'notice',
-        level: 'warning',
-        askId: 'ask-1'
-      })
+      part: { type: 'askUnavailable', askId: 'ask-1' }
     }
   ])('restores $name and keeps the turn live', ({ ask, part }) => {
     const message = row(1, 'assistant', 'turn-a', '', 'row-1')

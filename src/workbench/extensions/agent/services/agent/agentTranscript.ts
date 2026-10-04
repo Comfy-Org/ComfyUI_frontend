@@ -8,7 +8,7 @@ import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type {
   AskPart,
   AssistantMessage,
-  NoticePart,
+  AskUnavailablePart,
   ToolPart
 } from './agentMessageParts'
 import {
@@ -320,7 +320,7 @@ function appendAssistantContent(
  */
 function pendingAskPart(
   row: AgentMessages[number]
-): AskPart | NoticePart | undefined {
+): AskPart | AskUnavailablePart | undefined {
   return row.pending_ask ? toAskOrNoticePart(row.pending_ask) : undefined
 }
 
@@ -328,8 +328,9 @@ function pendingAskPart(
  * Applies one persisted assistant row onto its running message: appends any
  * parsed tool-call parts and text part, then, for a row the server still
  * reports as `streaming`, attaches its ask card (or the notice standing in for
- * one) when that row is also mid-ask. Returns the `pending` entry for a live row, or `undefined` for a
- * terminal one; `normalizeAgentTranscript` owns `message.streaming` itself.
+ * one) when that row is also mid-ask. Returns the `pending` entry for a live
+ * row, or `undefined` for a terminal one; `normalizeAgentTranscript` owns
+ * `message.streaming` itself.
  *
  * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
  * still running. Reading a live row as finished unless it carried a
@@ -434,9 +435,7 @@ function recordAssistantRow(
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
   message.parts = message.parts.filter(
-    (part) =>
-      !isPendingAskPart(part) &&
-      (part.type !== 'notice' || part.askId === undefined)
+    (part) => !isPendingAskPart(part) && part.type !== 'askUnavailable'
   )
   for (const part of message.parts) {
     if (part.type !== 'tool' || part.state !== 'streaming') continue

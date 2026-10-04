@@ -1,5 +1,6 @@
 import type {
   ActivityPart,
+  AskUnavailablePart,
   AskUserPart,
   MessagePart,
   NoticePart,
@@ -11,7 +12,7 @@ import type {
 
 export type AgentMessageGroup =
   | { kind: 'text'; parts: TextPart[] }
-  | { kind: 'notice'; part: NoticePart }
+  | { kind: 'notice'; part: NoticePart | AskUnavailablePart }
   | { kind: 'paywall'; part: PaywallPart }
   | { kind: 'trace' }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
@@ -88,6 +89,7 @@ function pushInterruptingGroup(
       out.push({ kind: 'paywall', part })
       return
     case 'notice':
+    case 'askUnavailable':
       out.push({ kind: 'notice', part })
       return
   }

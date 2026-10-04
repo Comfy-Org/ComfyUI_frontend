@@ -1,19 +1,14 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import Input from '@/components/ui/input/Input.vue'
 
-import type {
-  AgentAskAnswer,
-  AskUserOption,
-  AskUserPart
-} from '../../../services/agent/agentMessageParts'
-import AskNodeList from './AskNodeList.vue'
+import type { AgentAnswerRequest } from '../../../schemas/agentApiSchema'
+import type { AskUserPart } from '../../../services/agent/agentMessageParts'
 import AskUserAnswer from './AskUserAnswer.vue'
-import AskUserOptionLabel from './AskUserOptionLabel.vue'
+import AskUserCheckboxOptions from './AskUserCheckboxOptions.vue'
 import AskUserRadioOptions from './AskUserRadioOptions.vue'
 
 const { part, answering = false } = defineProps<{
@@ -21,7 +16,7 @@ const { part, answering = false } = defineProps<{
   answering?: boolean
 }>()
 const emit = defineEmits<{
-  answer: [askId: string, answer: AgentAskAnswer]
+  answer: [askId: string, answer: AgentAnswerRequest]
 }>()
 
 const { t } = useI18n()
@@ -29,16 +24,6 @@ const baseId = useId()
 
 const selected = ref<string[]>([])
 const otherText = ref('')
-
-// The card is keyed by ask id upstream, but a reused instance must never carry
-// one ask's half-typed answer over to another.
-watch(
-  () => part.askId,
-  () => {
-    selected.value = []
-    otherText.value = ''
-  }
-)
 
 // One choice at a time: picking an option replaces the last one. A required
 // single choice renders as radios; an optional one as checkboxes, so it can be
@@ -73,9 +58,6 @@ const hint = computed(() => {
   return t('agent.askUser.chooseUpTo', { max })
 })
 
-const optionId = (index: number) => `${baseId}-option-${index}`
-const describedBy = (option: AskUserOption, index: number) =>
-  option.description ? `${optionId(index)}-description` : undefined
 const promptId = `${baseId}-prompt`
 const hintId = `${baseId}-hint`
 const otherId = `${baseId}-other`
@@ -85,7 +67,7 @@ const otherDescribedBy = computed(() =>
   hint.value ? `${promptId} ${hintId}` : promptId
 )
 
-const singleValue = computed(() => selected.value[0] ?? undefined)
+const singleValue = computed(() => selected.value[0])
 
 function chooseSingle(value: unknown): void {
   if (typeof value !== 'string') return
@@ -93,14 +75,14 @@ function chooseSingle(value: unknown): void {
   otherText.value = ''
 }
 
-function toggle(id: string, checked: boolean): void {
-  const others = selected.value.filter((value) => value !== id)
-  if (!checked) {
-    selected.value = others
+function chooseMany(next: string[]): void {
+  if (!exclusive.value) {
+    selected.value = next
     return
   }
-  selected.value = exclusive.value ? [id] : [...others, id]
-  if (exclusive.value) otherText.value = ''
+  const added = next.filter((id) => !selected.value.includes(id))
+  selected.value = added
+  if (added.length > 0) otherText.value = ''
 }
 
 const otherModel = computed({
@@ -110,13 +92,6 @@ const otherModel = computed({
     if (exclusive.value && otherText.value.trim()) selected.value = []
   }
 })
-
-function optionDisabled(id: string): boolean {
-  return (
-    answering ||
-    (!exclusive.value && atMax.value && !selected.value.includes(id))
-  )
-}
 
 const otherDisabled = computed(
   () => answering || (!exclusive.value && atMax.value && !trimmedOther.value)
@@ -140,13 +115,10 @@ function submit(): void {
     'answer',
     part.askId,
     trimmedOther.value
-      ? { selected: chosen, otherText: trimmedOther.value }
+      ? { selected: chosen, other_text: trimmedOther.value }
       : { selected: chosen }
   )
 }
-
-const rowClass =
-  'flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-secondary-background-hover'
 </script>
 
 <template>
@@ -165,8 +137,6 @@ const rowClass =
       </p>
     </div>
 
-    <AskNodeList :nodes="part.nodes" :hidden-count="part.hiddenNodeCount" />
-
     <AskUserAnswer
       v-if="part.resolution"
       :resolution="part.resolution"
@@ -184,36 +154,17 @@ const rowClass =
         @update:model-value="chooseSingle"
       />
 
-      <div
+      <AskUserCheckboxOptions
         v-else
-        role="group"
-        :aria-labelledby="promptId"
-        :aria-describedby="hint ? hintId : undefined"
-        class="flex flex-col gap-0.5 text-sm/5"
-      >
-        <div
-          v-for="(option, index) in part.options"
-          :key="option.id"
-          :class="rowClass"
-        >
-          <Checkbox
-            :id="optionId(index)"
-            :model-value="selected.includes(option.id)"
-            :disabled="optionDisabled(option.id)"
-            :aria-labelledby="`${optionId(index)}-label`"
-            :aria-describedby="describedBy(option, index)"
-            class="mt-0.5"
-            @update:model-value="
-              (checked) => toggle(option.id, checked === true)
-            "
-          />
-          <AskUserOptionLabel
-            :option-id="optionId(index)"
-            :option
-            :disabled="optionDisabled(option.id)"
-          />
-        </div>
-      </div>
+        :model-value="selected"
+        :options="part.options"
+        :id-prefix="baseId"
+        :labelled-by="promptId"
+        :described-by="hint ? hintId : undefined"
+        :disabled="answering"
+        :full="!exclusive && atMax"
+        @update:model-value="chooseMany"
+      />
 
       <div v-if="part.allowOther" class="flex flex-col gap-1 px-2 text-sm/5">
         <label :for="otherId" class="text-base-foreground">
@@ -239,7 +190,7 @@ const rowClass =
           :aria-busy="answering || undefined"
           @click="submit"
         >
-          {{ t('agent.askUser.submit') }}
+          {{ t('g.submit') }}
         </Button>
       </div>
     </template>

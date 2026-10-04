@@ -8,6 +8,7 @@ import type { z } from 'zod'
 import { api } from '@/scripts/api'
 
 import {
+  RENDERED_ASK_KINDS,
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
   zAgentError,
@@ -19,15 +20,15 @@ import {
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerAccepted,
+  AgentAnswerRequest,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
+  RenderedAskKind,
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry
 } from '../../schemas/agentApiSchema'
-import type { AgentAskAnswer } from './agentMessageParts'
-import { RENDERED_ASK_KINDS } from './agentMessageParts'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
@@ -117,18 +118,16 @@ export interface PostMessageInput {
 }
 
 /**
- * The turn POST body, plus `client_message_id` and `ask_kinds`. `ask_kinds`
- * lists the ask kinds this panel renders: the server parks a turn on an ask
- * only when its kind is listed, so a client that cannot show a card never
- * leaves a turn waiting on it.
+ * The turn POST body, plus `client_message_id`.
  *
  * Widened here rather than in `agentApiSchema.ts` because the generated types are
- * published from the cloud repo's `openapi.yaml`, so the fields are only typed
- * locally until the next package release carries them.
+ * published from the cloud repo's `openapi.yaml`, so the field is only typed
+ * locally until the next package release carries it. One line to delete then.
  */
 type TurnPostBody = AgentPostMessageRequest & {
   client_message_id?: string
-  ask_kinds?: string[]
+  // Lands in the generated types when the backend spec ships `ask_kinds`.
+  ask_kinds?: RenderedAskKind[]
 }
 
 /**
@@ -516,14 +515,13 @@ export function createAgentRestClient() {
   async function answerAsk(
     threadId: string,
     askId: string,
-    { selected, otherText }: AgentAskAnswer
+    answer: AgentAnswerRequest
   ): Promise<AgentAnswerAccepted> {
     // The ask id in the path is what binds this answer: free text only ever
     // travels with the ask whose card collected it.
-    const body = otherText ? { selected, other_text: otherText } : { selected }
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      { ...jsonInit('POST', body), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
+      { ...jsonInit('POST', answer), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
       zAgentAnswerAccepted
     )
   }

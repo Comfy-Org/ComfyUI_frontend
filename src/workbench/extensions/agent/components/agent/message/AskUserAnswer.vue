@@ -32,7 +32,7 @@ const answers = computed(() => {
 
 <template>
   <div role="status" class="flex min-w-0 flex-col gap-1 text-sm/5">
-    <template v-if="resolution.answered">
+    <template v-if="resolution.answered && answers.length > 0">
       <p class="m-0 text-xs/5 text-muted-foreground">
         {{ t('agent.askUser.answered') }}
       </p>
@@ -50,7 +50,13 @@ const answers = computed(() => {
       </ul>
     </template>
     <p v-else class="m-0 text-muted-foreground">
-      {{ t('agent.askUser.closed') }}
+      {{
+        t(
+          resolution.answered
+            ? 'agent.askUser.answeredElsewhere'
+            : 'agent.askUser.closed'
+        )
+      }}
     </p>
   </div>
 </template>

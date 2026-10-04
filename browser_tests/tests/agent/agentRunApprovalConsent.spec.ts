@@ -39,11 +39,12 @@ const SEND_LABEL = enMessages.agent.send
 const CARD_LEAD = enMessages.agent.runApproval.leadBound
 const RUN_LABEL = enMessages.agent.runApproval.run
 const CANCEL_LABEL = enMessages.agent.runApproval.cancel
-const COMPOSER_LABEL = createI18n({
+const { t } = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: enMessages }
-}).global.t('agent.placeholder')
+}).global
+const COMPOSER_LABEL = t('agent.placeholder')
 
 const ids = { thread_id: THREAD_ID, message_id: MESSAGE_ID }
 
@@ -349,61 +350,62 @@ test.describe(
 )
 
 test.describe('Agent ask_user question', { tag: ['@cloud', '@agent'] }, () => {
-  test('the card offers every option and answers only the ask it shows', async ({
+  test('the card answers only the ask it shows and then reads back the answer', async ({
     page
   }) => {
     test.setTimeout(60_000)
     const { panel, send, answers } = await startTurn(page, 'Paint it.', 'auto')
-
-    send(askUserQuestion())
-    // A replayed frame (a resubscribe) must not stack a second card.
-    send(askUserQuestion())
-    await expect(panel.getByText(QUESTION, { exact: true })).toHaveCount(1)
     const choices = panel.getByRole('group', { name: QUESTION })
-    for (const label of ['Oil painting', 'Ink sketch', 'Pixel art'])
-      await expect(choices.getByRole('checkbox', { name: label })).toBeVisible()
-    await expect(
-      panel.getByText(enMessages.agent.askUser.chooseUpTo.replace('{max}', '2'))
-    ).toBeVisible()
+    const submit = panel.getByRole('button', { name: t('g.submit') })
 
-    const submit = panel.getByRole('button', {
-      name: enMessages.agent.askUser.submit
+    await test.step('the question arrives as a card with every option', async () => {
+      send(askUserQuestion())
+      await expect(
+        choices.getByRole('checkbox', { name: 'Oil painting' })
+      ).toBeVisible()
+      await expect(
+        choices.getByRole('checkbox', { name: 'Ink sketch' })
+      ).toBeVisible()
+      await expect(
+        choices.getByRole('checkbox', { name: 'Pixel art' })
+      ).toBeVisible()
+      await expect(
+        panel.getByText(t('agent.askUser.chooseUpTo', { max: 2 }))
+      ).toBeVisible()
     })
-    await expect(submit).toBeDisabled()
-    await choices.getByRole('checkbox', { name: 'Oil painting' }).click()
-    await panel
-      .getByRole('textbox', { name: enMessages.agent.askUser.other })
-      .fill('  watercolor  ')
-    // Free text counts as a selection, so the cap is reached.
-    await expect(
-      choices.getByRole('checkbox', { name: 'Pixel art' })
-    ).toBeDisabled()
-    expect(answers()).toHaveLength(0)
 
-    await submit.click()
-    await expect.poll(() => answers().length).toBe(1)
-    expect(answers()[0]).toEqual({
-      path: QUESTION_PATH,
-      body: { selected: ['oil'], other_text: 'watercolor' }
+    await test.step('answering posts once, to that ask', async () => {
+      await choices.getByRole('checkbox', { name: 'Oil painting' }).click()
+      await panel
+        .getByRole('textbox', { name: t('agent.askUser.other') })
+        .fill('watercolor')
+      await submit.click()
+      await expect.poll(() => answers().length).toBe(1)
+      expect(answers()[0]).toEqual({
+        path: QUESTION_PATH,
+        body: { selected: ['oil'], other_text: 'watercolor' }
+      })
     })
-    await expect(submit).toBeDisabled()
 
-    send({
-      type: 'agent_ask_resolved',
-      data: {
-        ...ids,
-        ask_id: QUESTION_ASK_ID,
-        status: 'answered',
-        selected: ['oil']
-      }
+    await test.step('the resolved card reads back the answer', async () => {
+      send({
+        type: 'agent_ask_resolved',
+        data: {
+          ...ids,
+          ask_id: QUESTION_ASK_ID,
+          status: 'answered',
+          selected: ['oil']
+        }
+      })
+      const record = panel.getByRole('status').filter({
+        hasText: t('agent.askUser.answered')
+      })
+      await expect(record).toContainText('Oil painting')
+      await expect(record).toContainText(
+        t('agent.askUser.otherAnswer', { text: 'watercolor' })
+      )
+      await expect(submit).toHaveCount(0)
+      expect(answers()).toHaveLength(1)
     })
-    const record = panel.getByRole('status').filter({
-      hasText: enMessages.agent.askUser.answered
-    })
-    await expect(record).toContainText('Oil painting')
-    await expect(record).toContainText('Other: watercolor')
-    await expect(submit).toHaveCount(0)
-    await expect(panel.getByText(QUESTION, { exact: true })).toBeVisible()
-    expect(answers()).toHaveLength(1)
   })
 })

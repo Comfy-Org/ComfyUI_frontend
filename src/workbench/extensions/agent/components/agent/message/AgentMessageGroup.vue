@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import type {
-  ActivityPart,
-  AgentAskAnswer
-} from '../../../services/agent/agentMessageParts'
+import type { AgentAnswerRequest } from '../../../schemas/agentApiSchema'
+import type { ActivityPart } from '../../../services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
@@ -26,7 +24,7 @@ const { group } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  answer: [askId: string, answer: AgentAskAnswer]
+  answer: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
-import { RENDERED_ASK_KINDS } from './agentMessageParts'
+import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 
@@ -182,7 +182,7 @@ describe('agentRestClient route + method', () => {
     respond(jsonResponse(202, { status: 'answered' }))
     await makeClient().answerAsk('t7', 'ask-1', {
       selected: ['a'],
-      otherText: 'something else'
+      other_text: 'something else'
     })
 
     expect(JSON.parse(lastCall().init.body as string)).toEqual({
@@ -316,11 +316,7 @@ describe('postMessage wire body', () => {
       ask_kinds: unknown
     }
     expect(parsed.ask_kinds).toEqual([...RENDERED_ASK_KINDS])
-    expect(parsed.ask_kinds).toEqual([
-      'run_approval',
-      'ask_user',
-      'delete_approval'
-    ])
+    expect(parsed.ask_kinds).toEqual(['run_approval', 'ask_user'])
   })
 
   // The id this send already reports on app:agent_message_sent has to reach the
