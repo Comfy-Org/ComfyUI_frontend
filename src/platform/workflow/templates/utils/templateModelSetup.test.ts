@@ -100,7 +100,7 @@ describe('deriveTemplateModelSetup', () => {
       model: manual,
       usedBy: ['Manual Loader'],
       fileSize: 10,
-      modelType: { kind: 'known', key: 'checkpoint' },
+      modelDirectory: 'checkpoints',
       status: 'manual',
       href: manualHref
     })
@@ -133,7 +133,7 @@ describe('deriveTemplateModelSetup', () => {
         model: missing,
         usedBy: [],
         fileSize: null,
-        modelType: { kind: 'known', key: 'checkpoint' },
+        modelDirectory: 'checkpoints',
         status: 'unknown'
       }
     ])
@@ -250,7 +250,7 @@ describe('deriveTemplateModelSetup', () => {
     expect(result.declarationTotal).toEqual({ bytes: 0, isComplete: false })
   })
 
-  it('derives known model types and preserves a raw directory fallback', () => {
+  it('carries each declared directory through, trimmed', () => {
     const models = [
       model('checkpoint.safetensors', 'checkpoints'),
       model('diffusion.safetensors', 'diffusion_models'),
@@ -268,14 +268,14 @@ describe('deriveTemplateModelSetup', () => {
       { isDownloadable: () => false }
     )
 
-    expect(result.rows.map((row) => row.modelType)).toEqual([
-      { kind: 'known', key: 'checkpoint' },
-      { kind: 'known', key: 'diffusionModel' },
-      { kind: 'known', key: 'textEncoder' },
-      { kind: 'known', key: 'vae' },
-      { kind: 'known', key: 'lora' },
-      { kind: 'directory', raw: 'Custom_API_models' },
-      { kind: 'known', key: 'model' }
+    expect(result.rows.map((row) => row.modelDirectory)).toEqual([
+      'checkpoints',
+      'diffusion_models',
+      'text_encoders',
+      'vae',
+      'loras',
+      'Custom_API_models',
+      ''
     ])
   })
 })
