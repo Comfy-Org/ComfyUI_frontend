@@ -12,7 +12,8 @@ import type {
   PendingBillingOperation,
   PreviewSubscribeResult,
   SavedPaymentMethod,
-  SubscriptionCommandResult
+  SubscriptionCommandResult,
+  SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
@@ -278,22 +279,81 @@ describe('FullPageCheckoutView', () => {
     )
   })
 
-  it('charges a plan change to the method on file without mounting the card form', async () => {
-    const fake = await renderCheckout({
+  it.for<{
+    name: string
+    preview: Partial<SubscriptionPreview>
+    eyebrow: string
+    cta: string
+  }>([
+    {
+      name: 'an upgrade charged today',
+      preview: { transition_type: 'upgrade' },
+      eyebrow: 'Upgrade to Creator Plan · Acme Team',
+      cta: 'Confirm upgrade'
+    },
+    {
+      name: 'a switch to yearly charged today',
+      preview: { transition_type: 'duration_change' },
+      eyebrow: 'Switch to Creator Plan · Acme Team',
+      cta: 'Confirm change'
+    },
+    {
+      name: 'a downgrade scheduled for period end',
+      preview: {
+        transition_type: 'downgrade',
+        is_immediate: false,
+        cost_today_cents: 0
+      },
+      eyebrow: 'Switch to Creator Plan · Acme Team',
+      cta: 'Confirm change'
+    }
+  ])(
+    'charges $name to the default card it names, with no card form, behind $cta',
+    async ({ preview, eyebrow, cta }) => {
+      const fake = await renderCheckout({
+        preview: { status: 'ok', value: previewOf(preview) },
+        paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+      })
+      await screen.findByText(eyebrow)
+
+      expect(
+        screen.getByRole('heading', { name: 'Payment method' })
+      ).toBeInTheDocument()
+      expect(screen.getByText('mastercard')).toBeInTheDocument()
+      expect(screen.getByText('·· 4402')).toBeInTheDocument()
+      expect(screen.queryByText('·· 4242')).not.toBeInTheDocument()
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Pay and subscribe' })
+      ).not.toBeInTheDocument()
+      expect(form.mounts).toBe(0)
+
+      await userEvent.click(screen.getByRole('button', { name: cta }))
+
+      await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+      const request = fake.subscribe.mock.calls[0][0]
+      expect(request).not.toHaveProperty('confirmation_token')
+      expect(request).not.toHaveProperty('saved_payment_method_id')
+    }
+  )
+
+  it('names no card for a plan change when the server marks none as the default', async () => {
+    await renderCheckout({
       preview: {
         status: 'ok',
         value: previewOf({ transition_type: 'upgrade' })
-      }
+      },
+      paymentMethods: { status: 'ok', value: [VISA] }
     })
     await screen.findByText('Upgrade to Creator Plan · Acme Team')
 
-    expect(form.mounts).toBe(0)
-    await userEvent.click(payButton())
-
-    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
-    expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
-      'confirmation_token'
-    )
+    expect(
+      screen.queryByRole('heading', { name: 'Payment method' })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('·· 4242')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    ).toBeEnabled()
   })
 
   describe('with no Stripe key', () => {

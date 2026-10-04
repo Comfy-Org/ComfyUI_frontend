@@ -47,6 +47,38 @@ test('265-4362: the summary leads with the credits the server quotes and dates t
   expect(quote?.body).toEqual({ amount_cents: 2500 })
 })
 
+test('names the default card the top-up charges, read-only', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = [
+    {
+      id: 'pm_e2e_mastercard',
+      type: 'card',
+      brand: 'mastercard',
+      last4: '4402',
+      is_default: false
+    },
+    {
+      id: 'pm_e2e_visa',
+      type: 'card',
+      brand: 'visa',
+      last4: '3184',
+      is_default: true
+    }
+  ]
+  await signIn(TOPUP)
+
+  await expect(
+    page.getByRole('heading', { name: 'Payment method' })
+  ).toBeVisible()
+  await expect(page.getByText('·· 3184')).toBeVisible()
+  await expect(page.getByText('·· 4402')).toBeHidden()
+  await expect(page.getByRole('combobox')).toBeHidden()
+  await expect(payButton(page)).toBeEnabled()
+})
+
 test('180-6679: Pay reads just Pay, over terms that authorize one charge and link Terms and Privacy Policy', async ({
   page,
   signIn

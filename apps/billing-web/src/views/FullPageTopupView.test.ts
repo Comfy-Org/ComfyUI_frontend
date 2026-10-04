@@ -153,6 +153,43 @@ describe('FullPageTopupView', () => {
     expect(payButton()).toBeEnabled()
   })
 
+  it('names the default card the top-up charges, with no card form or picker', async () => {
+    const fake = renderTopup({
+      paymentMethods: {
+        status: 'ok',
+        value: [
+          {
+            id: 'pm_visa',
+            type: 'card',
+            brand: 'visa',
+            last4: '3184',
+            is_default: true
+          },
+          {
+            id: 'pm_mc',
+            type: 'card',
+            brand: 'mastercard',
+            last4: '4402',
+            is_default: false
+          }
+        ]
+      }
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    expect(
+      screen.getByRole('heading', { name: 'Payment method' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('visa')).toBeInTheDocument()
+    expect(screen.getByText('·· 3184')).toBeInTheDocument()
+    expect(screen.queryByText('·· 4402')).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+
+    await userEvent.click(payButton())
+
+    expect(fake.createTopupCheckout).toHaveBeenCalledOnce()
+  })
+
   it('77-3783: a Pay that goes through counts the credits the server added', async () => {
     const settled = settledTopup({
       amountChargedCents: 2500,

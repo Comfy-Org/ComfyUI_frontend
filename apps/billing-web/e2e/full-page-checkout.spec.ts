@@ -317,6 +317,68 @@ test('314-10612: a Pay the server refuses is the processing error card with its 
   ).toHaveAttribute('href', /Error%20code%3A%20REQUEST_FAILED/)
 })
 
+const VISA_3184 = {
+  id: 'pm_e2e_visa',
+  type: 'card',
+  brand: 'visa',
+  last4: '3184',
+  is_default: true
+} as const
+const MASTERCARD_4402 = {
+  id: 'pm_e2e_mastercard',
+  type: 'card',
+  brand: 'mastercard',
+  last4: '4402',
+  is_default: false
+} as const
+
+for (const { name, preview, cta } of [
+  {
+    name: 'an upgrade charged today',
+    preview: { transition_type: 'upgrade', is_immediate: true },
+    cta: 'Confirm upgrade'
+  },
+  {
+    name: 'a downgrade scheduled with $0 due today',
+    preview: {
+      transition_type: 'downgrade',
+      is_immediate: false,
+      cost_today_cents: 0,
+      amount_due_cents: 0
+    },
+    cta: 'Confirm change'
+  }
+] as const) {
+  test(`${name} names the default card it charges and confirms with ${cta}, not Pay and subscribe`, async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    cloud.scenario.paymentMethods = [MASTERCARD_4402, VISA_3184]
+    cloud.scenario.preview = { ...cloud.scenario.preview, ...preview }
+    await signIn(CHECKOUT)
+
+    const column = page.getByRole('heading', { name: 'Payment method' })
+    await expect(column).toBeVisible()
+    await expect(page.getByText('·· 3184')).toBeVisible()
+    await expect(page.getByText('·· 4402')).toBeHidden()
+    await expect(savedPicker(page)).toBeHidden()
+    await expect(payButton(page)).toBeHidden()
+    await page.getByRole('button', { name: cta }).click()
+
+    await expect
+      .poll(() =>
+        cloud.requests.find((request) => request.path === '/billing/subscribe')
+      )
+      .toBeDefined()
+    const subscribe = cloud.requests.find(
+      (request) => request.path === '/billing/subscribe'
+    )
+    expect(subscribe?.body).not.toHaveProperty('saved_payment_method_id')
+    expect(subscribe?.body).not.toHaveProperty('confirmation_token')
+  })
+}
+
 test('553-9297: a plan change on a plan set to end needs the keep-subscription tick: Pay without it sends nothing, with it sends the consent', async ({
   page,
   cloud,
