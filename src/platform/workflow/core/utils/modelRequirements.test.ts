@@ -124,7 +124,7 @@ describe('modelRequirements', () => {
       expect(getSelectedModelsMetadata(node)).toBeUndefined()
     })
 
-    it('keeps the valid entries and discards the malformed ones', () => {
+    it('keeps every named entry and discards the rest', () => {
       const node = {
         type: 'SomeNode',
         widgets_values: ['model_a.safetensors', 'model_b.safetensors'],
@@ -141,10 +141,50 @@ describe('modelRequirements', () => {
         }
       }
 
-      const result = getSelectedModelsMetadata(node)
+      // A partial entry is the whole point of this path: workflows that
+      // failed strict validation still load, and enrichment fills each field
+      // where present. Requiring the strict shape here discarded the
+      // directory and hash those entries do carry.
+      expect(getSelectedModelsMetadata(node)).toEqual([
+        {
+          name: 'model_a.safetensors',
+          url: 'https://example.com/model_a.safetensors',
+          directory: 'checkpoints'
+        },
+        { name: 'model_b.safetensors' }
+      ])
+    })
 
-      expect(result).toHaveLength(1)
-      expect(result![0].name).toBe('model_a.safetensors')
+    it.for([
+      {
+        name: 'a directory but no url',
+        model: { name: 'model_a.safetensors', directory: 'loras' }
+      },
+      {
+        name: 'a hash but no url',
+        model: {
+          name: 'model_a.safetensors',
+          directory: 'loras',
+          hash: 'abc',
+          hash_type: 'sha256'
+        }
+      },
+      {
+        name: 'a relative url',
+        model: {
+          name: 'model_a.safetensors',
+          directory: 'loras',
+          url: '/models/loras/model_a.safetensors'
+        }
+      }
+    ])('keeps an entry carrying $name', ({ model }) => {
+      expect(
+        getSelectedModelsMetadata({
+          type: 'SomeNode',
+          widgets_values: ['model_a.safetensors'],
+          properties: { models: [model] }
+        })
+      ).toEqual([model])
     })
 
     it('should ignore empty strings', () => {
