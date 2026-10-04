@@ -2,6 +2,7 @@ import type { WebSocketRoute } from '@playwright/test'
 import { describe, expect, it } from 'vitest'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Frame } from '@e2e/fixtures/helpers/BackendSimulator'
 import {
   BackendSimulator,
   dropFrames,
@@ -293,6 +294,18 @@ describe('BackendSimulator frame scripting', () => {
     ).toThrow(/matches 2 frames/)
   })
 
+  it('throws rather than swapping a frame with itself', () => {
+    const { simulator } = harness()
+    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    const script = [prompt.start(), prompt.success()]
+
+    // Both selectors resolve, each unambiguously, and the swap is still a
+    // no-op — the same silent no-fault `requireMatches` rules out.
+    expect(() =>
+      swapFrames(script, 'wf-a:execution_start', 'wf-a:execution_start')
+    ).toThrow(/same frame/)
+  })
+
   it('throws rather than silently applying no fault at all', () => {
     const { simulator } = harness()
     const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
@@ -307,6 +320,73 @@ describe('BackendSimulator frame scripting', () => {
         jobId: 'job-zzz'
       })
     ).toThrow(/not in the script/)
+  })
+})
+
+describe('BackendSimulator frame granularity', () => {
+  /** Every frame builder on `SimulatedPrompt`, scripted once. */
+  function everyFrame(simulator: BackendSimulator): Frame[] {
+    const p = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    return [
+      p.start(),
+      p.executing('1'),
+      p.progress('1', 1, 4),
+      ...p.nodeRunning('1', 1, 4),
+      p.executed('1', {}),
+      p.success(),
+      p.error('1', 'boom'),
+      p.interrupted('1'),
+      p.latentPreview('1')
+    ]
+  }
+
+  it('sends exactly one WebSocket frame per scheduled Frame', () => {
+    // The contract `Frame` documents, and the one a fault helper depends on: a
+    // Frame that sent two messages would leave the second unreachable to every
+    // selector and would make `interleave` schedule fewer units than it emits.
+    // Counts raw sends, so the binary `latentPreview` is included.
+    let sends = 0
+    const ws = {
+      send: () => {
+        sends++
+      }
+    } as unknown as WebSocketRoute
+    const execution = new ExecutionHelper({} as unknown as ComfyPage, ws)
+    const simulator = new BackendSimulator(execution)
+    const script = everyFrame(simulator)
+
+    simulator.play(script)
+
+    expect(sends).toBe(script.length)
+  })
+
+  it('gives a frame builder a label matching the event it sends', () => {
+    const { sent, simulator } = harness()
+    const script = everyFrame(simulator)
+
+    simulator.play(script)
+
+    // `latentPreview` is binary and never reaches the JSON stub, so compare the
+    // JSON frames against the labels of the Frames that produce them.
+    expect(sent.map((frame) => frame.type)).toEqual(
+      script.slice(0, -1).map((frame) => frame.label.split(':')[1])
+    )
+  })
+
+  it('scripts the two halves of a running node independently', () => {
+    const { sent, simulator } = harness()
+    const prompt = simulator.prompt('job-a', { workflowId: 'wf-a' })
+    const script = [prompt.start(), ...prompt.nodeRunning('1', 1, 4)]
+
+    // A backend that reported the state change but never the step count is one
+    // of the shapes behind progress stuck after a run; it needs the `progress`
+    // half to be individually droppable.
+    simulator.play(dropFrames(script, 'wf-a:progress'))
+
+    expect(sent.map((frame) => frame.type)).toEqual([
+      'execution_start',
+      'progress_state'
+    ])
   })
 })
 

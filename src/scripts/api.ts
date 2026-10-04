@@ -98,10 +98,25 @@ interface QueuePromptRequestBody {
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
   /**
-   * Opaque key/values the server echoes on every JSON WebSocket message sent
-   * while this prompt runs. `workflow_id` is the only key the frontend relies
-   * on; the server never interprets the contents. Omitted when the workflow
-   * has no id, and capped by the server at 256 bytes.
+   * Opaque key/values the server echoes back on the WebSocket while this
+   * prompt runs. `workflow_id` is the only key the frontend relies on; the
+   * server never interprets the contents. Omitted when the workflow has no id.
+   *
+   * Three limits of the echo, so a reader does not assume more than the server
+   * gives (verified against ComfyUI#16763 at `52463316ca`, which adds this
+   * field and is **not yet merged** — a server without it ignores the field
+   * rather than rejecting the prompt):
+   *
+   * - Only JSON frames whose `data` object carries a `prompt_id` are stamped.
+   *   `status` and `logs` have none, and binary preview frames are not objects,
+   *   so none of those arrive stamped. A consumer still needs the
+   *   `prompt_id`-to-workflow mapping for those.
+   * - A frame's own fields win on collision (`{**workflow_metadata, **data}`),
+   *   so these values cannot override a frame's routing fields.
+   * - The cap is 256 characters of the server's JSON serialisation of this
+   *   object, not 256 bytes of content: the `{"...": "..."}` punctuation counts,
+   *   and non-ASCII characters are escaped to `\\uXXXX` before measuring, so
+   *   they cost six characters each.
    */
   workflow_metadata?: Record<string, string>
 

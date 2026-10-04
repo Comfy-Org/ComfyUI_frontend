@@ -343,20 +343,37 @@ export class ExecutionHelper {
   }
 
   /**
+   * The `progress_state` payload for a single node in the `running` state.
+   *
+   * Exposed separately from {@link nodeRunning} so a caller that needs the two
+   * events as individually schedulable frames can send them itself without
+   * rebuilding this payload — see `SimulatedPrompt.nodeRunning`.
+   */
+  runningNodeState(
+    jobId: string,
+    nodeId: string,
+    value: number,
+    max: number
+  ): Record<string, NodeProgressState> {
+    return {
+      [nodeId]: {
+        node_id: nodeId,
+        display_node_id: nodeId,
+        real_node_id: nodeId,
+        prompt_id: jobId,
+        state: 'running',
+        value,
+        max
+      }
+    }
+  }
+
+  /**
    * Put a single node into the `running` state at the given step progress,
    * emitting both the `progress_state` and `progress` events the backend sends.
    */
   nodeRunning(jobId: string, nodeId: string, value: number, max: number): void {
-    const state: NodeProgressState = {
-      node_id: nodeId,
-      display_node_id: nodeId,
-      real_node_id: nodeId,
-      prompt_id: jobId,
-      state: 'running',
-      value,
-      max
-    }
-    this.progressState(jobId, { [nodeId]: state })
+    this.progressState(jobId, this.runningNodeState(jobId, nodeId, value, max))
     this.progress(jobId, nodeId, value, max)
   }
 
