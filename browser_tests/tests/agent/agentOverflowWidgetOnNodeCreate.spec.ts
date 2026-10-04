@@ -195,11 +195,14 @@ test.describe(
         node.getByRole('spinbutton', { name: 'mode.b' })
       ).toHaveValue('71')
 
-      // FE-3036 may restore the named value (91); this regression only requires
-      // the preceding position not to be blanked while applying the alias.
+      // `mode.a` is catalogued, so the document addresses it by name — and the
+      // constructor builds it no sooner than `mode.b`, so the named entry needs
+      // the same post-`configure` apply the alias gets. Pinned to 91 rather
+      // than /^(80|91)$/: the node-def default is 80, so the loose form passed
+      // while the document's value was being dropped.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.a' })
-      ).toHaveValue(/^(80|91)$/)
+      ).toHaveValue('91')
     })
   }
 )

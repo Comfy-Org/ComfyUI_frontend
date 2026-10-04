@@ -365,8 +365,82 @@ describe('LiveGraphApplier', () => {
     applyCollected()
 
     const widgets = graph.getNodeById(toNodeId(1))?.widgets
-    expect(widgets?.find(({ name }) => name === 'mode.a')?.value).toBeDefined()
+    // Pinned to the document's value, not merely `toBeDefined()`: the
+    // regression this guards blanked the position, but the node-def default
+    // also satisfies "defined", so the weaker assertion passed while the
+    // document's 91 was being dropped.
+    expect(widgets?.find(({ name }) => name === 'mode.a')?.value).toBe(91)
     expect(widgets?.find(({ name }) => name === 'mode.b')?.value).toBe(71)
+  })
+
+  it('carries a named value to a widget the node mounts during configure', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestTwoGrowing',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['faithful', 91, 71]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    // `mode.a` is catalogued, so the document addresses it by name while
+    // `mode.b` overflows to `_extra_2` — but the constructor builds neither, so
+    // both are past the array `configure` restores and both have to be applied
+    // after the setter mounts them. Carrying only the alias leaves the named
+    // sibling on its node-def default, which is the same lost-value bug.
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'faithful' },
+      { name: 'mode.a', value: 91 },
+      { name: 'mode.b', value: 71 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('ignores a creation-path name that matches no widget, without reporting', () => {
+    const { graph, doc, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestOverflowWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 42]
+        }
+      ],
+      links: []
+    })
+    doc.transact(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('nonesuch', 7)
+    })
+
+    applyCollected()
+
+    // Deferring named entries past the constructed list must not widen
+    // creation-path telemetry: a name no widget carries even after `configure`
+    // is still dropped silently, as it was before. Routing it through the
+    // missing-widget report is FE-3036 territory, not this seam.
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'known', value: 11 },
+      { name: 'transient', value: 20 },
+      { name: 'overflow', value: 42 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('reports an out-of-range overflow key on the creation path too', () => {

@@ -370,18 +370,33 @@ function supersededOverflowAlias(
 }
 
 /**
- * Overflow aliases for positions past the constructed widget list. A dynamic
- * combo's setter mounts those widgets during `configure`, so `createNode`
- * applies these values afterward.
+ * Document entries for widgets the constructor had not built, which a dynamic
+ * combo's setter mounts during `configure`; `createNode` applies them
+ * afterward. `positionalWidgetValues` is sized by the constructed list, so
+ * neither an alias past its end nor a named entry for a widget missing from it
+ * reaches `configure` at all — the alias and the name are the same gap wearing
+ * different clothes, so both are deferred here.
+ *
+ * `constructed` is the serializable widget list as it was before `configure`.
+ * Call this after it: a named entry is kept only when the node now serializes a
+ * widget of that name, which keeps two things out deliberately — a name that
+ * matches nothing, so the creation path still drops it silently instead of
+ * newly reporting it missing, and a `serialize: false` widget, which the
+ * document has no position for and could not have been restored before either.
  */
-function mountedOverflowValues(
+function mountedWidgetValues(
+  node: LGraphNode,
   widgets: DocNode['widgets'],
-  constructedCount: number
+  constructed: readonly IBaseWidget[]
 ): Record<string, unknown> | undefined {
   if (widgets === undefined || Array.isArray(widgets)) return undefined
+  const built = new Set(constructed.map((widget) => widget.name))
+  const live = new Set(serializableWidgets(node).map((widget) => widget.name))
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
-    return index !== null && index >= constructedCount
+    return index === null
+      ? !built.has(name) && live.has(name)
+      : index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
 }
@@ -637,14 +652,12 @@ export class LiveGraphApplier {
       node.last_serialization = info
       node.configure(info)
     } else {
-      const mounted = mountedOverflowValues(
-        docNode.widgets,
-        serializableWidgets(node).length
-      )
+      const constructed = serializableWidgets(node)
       node.configure({
         ...info,
         widgets_values: positionalWidgetValues(node, docNode.widgets)
       })
+      const mounted = mountedWidgetValues(node, docNode.widgets, constructed)
       if (mounted && !node.isSubgraphNode())
         this.applyWidgets(node, mounted, docNode.widgets)
     }
