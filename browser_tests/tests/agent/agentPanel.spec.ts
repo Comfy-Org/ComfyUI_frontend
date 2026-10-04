@@ -11,6 +11,7 @@ import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
@@ -412,13 +413,12 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     )
   })
 
-  test('shows an admission paywall without losing the rejected prompt', async ({
+  test('localizes an admission paywall without losing the rejected prompt', async ({
     agentPanel,
     comfyPage
   }) => {
     const page = comfyPage.page
     const panel = agentPanel.root
-    const composer = agentPanel.composer
     const prompt = 'Build a product photo workflow'
 
     await test.step('reject the next turn with a no-funds admission error', async () => {
@@ -436,24 +436,41 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await test.step('open the agent panel on a workflow', async () => {
       await agentPanel.open()
+      await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
     })
 
     await test.step('send a prompt the server will reject', async () => {
+      const composer = panel.getByRole('textbox', {
+        name: /^Décrivez vos idées/
+      })
       await composer.fill(prompt)
-      await panel.getByRole('button', { name: 'Send' }).click()
+      await panel.getByRole('button', { name: frMessages.agent.send }).click()
     })
 
-    await test.step('keep the failed message in the chat and surface the paywall', async () => {
+    await test.step('keep the failed message in the chat and surface the localized paywall', async () => {
+      const composer = panel.getByRole('textbox', {
+        name: /^Décrivez vos idées/
+      })
       await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
       await expect(composer).toHaveText('')
-      await expect(agentPanel.inlinePaywallCard).toContainText(
-        enMessages.agent.paywall.title
+      const paywall = agentPanel.conversation.getByRole('alert').filter({
+        hasText: frMessages.agent.paywall.title
+      })
+      await expect(paywall).toContainText(frMessages.agent.paywall.title)
+      await expect(paywall).toContainText(
+        frMessages.agent.paywall.body.subscribed
       )
-      await expect(agentPanel.inlinePaywallCard).toContainText(
-        'Add credits to continue.'
-      )
-      await expect(agentPanel.retryPendingButton).toBeEnabled()
-      await expect(agentPanel.deletePendingButton).toBeEnabled()
+      await expect(paywall).not.toContainText('Add credits to continue.')
+      const retryButton = agentPanel.conversation.getByRole('button', {
+        name: frMessages.g.retry,
+        exact: true
+      })
+      const deleteButton = agentPanel.conversation.getByRole('button', {
+        name: frMessages.g.delete,
+        exact: true
+      })
+      await expect(retryButton).toBeEnabled()
+      await expect(deleteButton).toBeEnabled()
     })
   })
 

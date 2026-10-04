@@ -63,7 +63,11 @@ const showAddCredits = computed(() => remediation.value === 'addCredits')
           {{ $t('agent.paywall.title') }}
         </p>
         <p class="m-0 text-muted-foreground">
-          {{ message || $t(bodyKey) }}
+          {{
+            presentation.kind === 'unavailable' && message
+              ? message
+              : $t(bodyKey)
+          }}
         </p>
         <AgentPaywallPlanNote :presentation />
       </div>

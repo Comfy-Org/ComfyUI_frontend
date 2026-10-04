@@ -13,7 +13,10 @@ describe('AgentPaywallCard visual contract', () => {
     const user = userEvent.setup()
     const onPaywallAction = vi.fn()
     render(AgentPaywallCard, {
-      props: { presentation: { kind: 'subscribed', showUpgrade: true } },
+      props: {
+        presentation: { kind: 'subscribed', showUpgrade: true },
+        message: 'Add credits to continue.'
+      },
       attrs: {
         'aria-label': 'Out of credits card',
         onPaywallAction
@@ -28,6 +31,9 @@ describe('AgentPaywallCard visual contract', () => {
         'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
       )
     ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Add credits to continue.')
+    ).not.toBeInTheDocument()
 
     const upgrade = screen.getByRole('button', { name: 'Upgrade plan' })
     const addCredits = screen.getByRole('button', { name: 'Add credits' })
