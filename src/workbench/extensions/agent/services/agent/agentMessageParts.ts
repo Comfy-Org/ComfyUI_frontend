@@ -1,9 +1,14 @@
+import { uniqBy } from 'es-toolkit'
+
 import type {
   AgentMessages,
   RenderedAskKind,
   TurnId
 } from '../../schemas/agentApiSchema'
-import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
+import {
+  RENDERED_ASK_KINDS,
+  zAgentAskNodeRef
+} from '../../schemas/agentApiSchema'
 
 export type PartState = 'streaming' | 'done'
 
@@ -98,17 +103,46 @@ export interface AskUserPart {
   resolution?: AskUserResolution
 }
 
-export type AskPart = RunApprovalPart | AskUserPart
-
-export function isAskPart(part: MessagePart): part is AskPart {
-  return part.type === 'runApproval' || part.type === 'askUser'
+/**
+ * A canvas node a `delete_approval` would remove, as the host listed it.
+ * `name` is the node's title, falling back to its type.
+ */
+export interface AskNodeRef {
+  id: string
+  name?: string
 }
 
-/** An ask card still waiting on the user (a resolved `ask_user` card is not). */
+/** The agent asking before it deletes nodes the user added. */
+export interface DeleteApprovalPart {
+  type: 'deleteApproval'
+  askId: string
+  prompt: string
+  nodes: AskNodeRef[]
+  /**
+   * Delete targets the card does not list (past the display cap, or
+   * unreadable), so a Delete answer never covers nodes the user was not told
+   * about.
+   */
+  hiddenNodeCount: number
+  /** Set once the ask is resolved; the card then reads back the decision. */
+  resolution?: AskUserResolution
+}
+
+export type AskPart = RunApprovalPart | AskUserPart | DeleteApprovalPart
+
+export function isAskPart(part: MessagePart): part is AskPart {
+  return (
+    part.type === 'runApproval' ||
+    part.type === 'askUser' ||
+    part.type === 'deleteApproval'
+  )
+}
+
+/** An ask card still waiting on the user (a resolved card is not). */
 export function isPendingAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
-    (part.type === 'askUser' && part.resolution === undefined)
+    (isAskPart(part) && part.resolution === undefined)
   )
 }
 
@@ -121,8 +155,8 @@ export function askIdOf(part: MessagePart): string | undefined {
 
 /**
  * The parts with ask `askId` retired: a run-approval card or the notice
- * standing in for an unrenderable ask is dropped, and an `ask_user` card
- * stays on screen read-only with its resolution. Returns the same array when
+ * standing in for an unrenderable ask is dropped, and an `ask_user` or
+ * delete-approval card stays on screen read-only with its resolution. Returns the same array when
  * nothing changed, so callers can skip a republish.
  */
 export function retireAskParts(
@@ -133,7 +167,7 @@ export function retireAskParts(
   if (!parts.some((part) => askIdOf(part) === askId)) return parts
   return parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
-    if (part.type !== 'askUser') return []
+    if (part.type !== 'askUser' && part.type !== 'deleteApproval') return []
     // A real answer outranks an earlier retirement that could not name one
     // (a 409, a lost frame), so the card ends up showing what was chosen.
     const keep =
@@ -164,7 +198,8 @@ export const ASK_USER_LIMITS = {
   options: 50,
   prompt: 2000,
   label: 200,
-  description: 500
+  description: 500,
+  nodes: 50
 } as const
 
 function clip(text: string, max: number): string {
@@ -207,6 +242,57 @@ function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   }
 }
 
+function toAskNodeRef(value: unknown): AskNodeRef | undefined {
+  const parsed = zAgentAskNodeRef.safeParse(value)
+  if (!parsed.success) return undefined
+  const { id, title, type } = parsed.data
+  const name = title?.trim() || type?.trim()
+  return {
+    id: clip(String(id), ASK_USER_LIMITS.label),
+    name: name ? clip(name, ASK_USER_LIMITS.label) : undefined
+  }
+}
+
+/**
+ * The host's `context.nodes`: unique by id (first wins, as with options),
+ * capped, and anything not listed counted as hidden. A list that is not an
+ * array lists nothing.
+ */
+function toAskNodeRefs(
+  context: AskInput['context']
+): Pick<DeleteApprovalPart, 'nodes' | 'hiddenNodeCount'> {
+  const raw: unknown = context?.nodes
+  if (!Array.isArray(raw)) return { nodes: [], hiddenNodeCount: 0 }
+  const readable = raw.flatMap((node) => toAskNodeRef(node) ?? [])
+  const unique = uniqBy(readable, (node) => node.id)
+  const nodes = unique.slice(0, ASK_USER_LIMITS.nodes)
+  const duplicates = readable.length - unique.length
+  return { nodes, hiddenNodeCount: raw.length - duplicates - nodes.length }
+}
+
+const DELETE_APPROVAL_OPTIONS = ['delete', 'keep']
+
+/**
+ * The delete decision card. It renders its own Delete and Keep buttons, so it
+ * needs the host to offer exactly those two options as one required choice.
+ */
+function toDeleteApprovalPart(ask: AskInput): DeleteApprovalPart | undefined {
+  const optionIds = ask.options.map(({ id }) => id)
+  const offersDeleteOrKeep =
+    optionIds.length === DELETE_APPROVAL_OPTIONS.length &&
+    DELETE_APPROVAL_OPTIONS.every((id) => optionIds.includes(id)) &&
+    ask.min_selections === 1 &&
+    ask.max_selections === 1 &&
+    !ask.allow_other
+  if (!offersDeleteOrKeep) return undefined
+  return {
+    type: 'deleteApproval',
+    askId: ask.ask_id,
+    prompt: clip(ask.prompt, ASK_USER_LIMITS.prompt),
+    ...toAskNodeRefs(ask.context)
+  }
+}
+
 const ASK_PART_BUILDERS: Record<
   RenderedAskKind,
   (ask: AskInput) => AskPart | undefined
@@ -217,7 +303,8 @@ const ASK_PART_BUILDERS: Record<
     workflowId: ask.context?.workflow_id || undefined,
     workflowName: ask.context?.workflow_name || undefined
   }),
-  ask_user: toAskUserPart
+  ask_user: toAskUserPart,
+  delete_approval: toDeleteApprovalPart
 }
 
 export function isRenderedAskKind(kind: unknown): kind is RenderedAskKind {
@@ -259,6 +346,7 @@ export type MessagePart =
   | TabLinkPart
   | RunApprovalPart
   | AskUserPart
+  | DeleteApprovalPart
   | PaywallPart
 
 export interface AssistantMessage {

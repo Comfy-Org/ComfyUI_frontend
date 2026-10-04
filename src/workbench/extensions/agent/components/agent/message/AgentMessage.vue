@@ -56,7 +56,9 @@ const groups = computed<Group[]>(() => groupMessageParts(message.parts))
 // An ask card holds the user's in-progress answer, so it keeps its identity
 // when an earlier group in the message comes or goes.
 function groupKey(group: Group, index: number): string {
-  return group.kind === 'runApproval' || group.kind === 'askUser'
+  return group.kind === 'runApproval' ||
+    group.kind === 'askUser' ||
+    group.kind === 'deleteApproval'
     ? `ask:${group.part.askId}`
     : `group:${index}`
 }
