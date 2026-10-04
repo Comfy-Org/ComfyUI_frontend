@@ -22,7 +22,6 @@ import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
  * every user is hitting today. The setting is what the case turns on.
  */
 
-const workflowName = `proto-named-widget-${Date.now()}`
 const WIDGET_NAME = '__proto__'
 const TYPED_VALUE = 'survives the reload'
 
@@ -34,13 +33,19 @@ test.describe(
       initialSettings: { 'Comfy.Workflow.NamedValuesRestore': true }
     })
 
+    // Per attempt, not per module: a module-scope stamp is shared by every
+    // worker in the process and by a retry.
+    let workflowName = ''
+
     test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.deleteWorkflow(workflowName)
+      if (workflowName) await comfyPage.workflow.deleteWorkflow(workflowName)
     })
 
     test('keeps its value after saving, closing and reopening', async ({
       comfyPage
-    }) => {
+    }, testInfo) => {
+      workflowName = `proto-named-widget-${testInfo.parallelIndex}-${testInfo.retry}-${Date.now()}`
+
       await comfyPage.nodeOps.clearGraph()
       await comfyPage.page.evaluate((widgetName) => {
         const nodeType =
@@ -65,15 +70,15 @@ test.describe(
             .and(comfyPage.page.getByText(WIDGET_NAME, { exact: true }))
         })
 
-      await widgetRow().locator('input').fill(TYPED_VALUE)
-      await widgetRow().locator('input').blur()
+      await widgetRow().getByRole('textbox').fill(TYPED_VALUE)
+      await widgetRow().getByRole('textbox').blur()
       await comfyPage.menu.topbar.saveWorkflowAs(workflowName)
 
       await comfyPage.workflow.newBlankWorkflow()
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       await openWorkflowFromSidebar(comfyPage, workflowName)
 
-      await expect(widgetRow().locator('input')).toHaveValue(TYPED_VALUE)
+      await expect(widgetRow().getByRole('textbox')).toHaveValue(TYPED_VALUE)
     })
   }
 )

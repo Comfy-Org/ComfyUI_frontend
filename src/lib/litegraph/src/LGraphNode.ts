@@ -191,10 +191,26 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
-function cloneWidgetValue(value: TWidgetValue): TWidgetValue {
-  return value != null && typeof value === 'object'
-    ? JSON.parse(JSON.stringify(value))
-    : (value ?? null)
+/**
+ * Two independent copies of one snapshot of {@link value}, for the two
+ * registers.
+ *
+ * Serialized exactly once on purpose. Cloning twice would read the widget's
+ * value twice and run a getter or a `toJSON()` twice with it, so a stateful
+ * one could hand the registers *different* values — and the two have always
+ * been equal by construction, which `diffNamedValuesShadow` relies on. It also
+ * doubles the stringify on a path every autosave, change-tracker snapshot and
+ * prompt build runs.
+ */
+function cloneWidgetValueTwice(
+  value: TWidgetValue
+): [TWidgetValue, TWidgetValue] {
+  if (value == null || typeof value !== 'object') {
+    const primitive = value ?? null
+    return [primitive, primitive]
+  }
+  const json = JSON.stringify(value)
+  return [JSON.parse(json), JSON.parse(json)]
 }
 
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
@@ -202,16 +218,16 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
-    // Each register gets its own clone. They used to share one object, so a
+    // Each register gets its own copy. They used to share one object, so a
     // consumer rewriting a value in place through one reached the other.
-    positional.push(cloneWidgetValue(value))
+    const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
+    positional.push(positionalValue)
     // Not `named[widget.name] = …`: for a widget named `__proto__` that runs
     // the inherited setter instead of creating an own key, so the value never
     // reaches the file and the restore — which checks `Object.hasOwn` — hands
     // the widget its default back.
     Object.defineProperty(named, widget.name, {
-      value: cloneWidgetValue(value),
+      value: namedValue,
       writable: true,
       enumerable: true,
       configurable: true

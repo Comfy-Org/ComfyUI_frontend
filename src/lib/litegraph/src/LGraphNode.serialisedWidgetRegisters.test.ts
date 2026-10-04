@@ -99,6 +99,28 @@ describe('serialised widget registers', () => {
       expect(named['config'].nested.depth).toBe(1)
     })
 
+    it('reads the widget value once, so a stateful getter cannot split the registers', () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('test')
+      node.serialize_widgets = true
+      graph.add(node)
+      let reads = 0
+      node.addWidget('custom', 'counter', { nth: 0 }, () => undefined, {})
+      Object.defineProperty(node.widgets![0], 'value', {
+        get: () => ({ nth: ++reads }),
+        configurable: true
+      })
+
+      const serialised = node.serialize()
+
+      // Two reads would give the registers different values, and they have
+      // always been equal by construction.
+      expect(serialised.widgets_values_named!['counter']).toEqual(
+        serialised.widgets_values![0]
+      )
+      expect(reads).toBe(1)
+    })
+
     it('leaves the live widget value untouched by either register', () => {
       const graph = new LGraph()
       const node = new LGraphNode('test')
