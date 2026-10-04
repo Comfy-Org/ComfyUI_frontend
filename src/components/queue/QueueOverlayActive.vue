@@ -28,7 +28,9 @@
             currentNodeName
           }}</span>
           <span class="flex items-center gap-1">
-            <span>{{ currentNodePercentFormatted }}</span>
+            <span data-testid="queue-progress-current-node-percent">{{
+              currentNodePercentFormatted
+            }}</span>
           </span>
         </div>
       </div>

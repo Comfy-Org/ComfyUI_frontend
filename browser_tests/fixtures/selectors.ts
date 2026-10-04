@@ -290,6 +290,7 @@ export const TestIds = {
     jobHistorySidebar: 'job-history-sidebar',
     progressOverlay: 'queue-progress-overlay',
     progressNodeFill: 'queue-progress-node-fill',
+    progressCurrentNodePercent: 'queue-progress-current-node-percent',
     overlayToggle: 'queue-overlay-toggle',
     dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',

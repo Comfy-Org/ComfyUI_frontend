@@ -7,6 +7,12 @@ export class QueuePanel {
   readonly overlayToggle: Locator
   readonly overlay: Locator
   readonly progressNodeFill: Locator
+  /**
+   * The percentage the overlay prints for the node currently executing. Scoped
+   * to that one element because the overlay also prints a whole-run total, so a
+   * text match on the overlay as a whole cannot tell the two figures apart.
+   */
+  readonly progressCurrentNodePercent: Locator
   readonly moreOptionsButton: Locator
   readonly jobAssetsList: Locator
 
@@ -15,6 +21,9 @@ export class QueuePanel {
     this.overlay = page.getByTestId(TestIds.queue.progressOverlay)
     this.progressNodeFill = this.overlay.getByTestId(
       TestIds.queue.progressNodeFill
+    )
+    this.progressCurrentNodePercent = this.overlay.getByTestId(
+      TestIds.queue.progressCurrentNodePercent
     )
     this.moreOptionsButton = this.overlay.getByLabel(/More options/i)
     this.jobAssetsList = page.getByTestId(TestIds.queue.jobAssetsList)
