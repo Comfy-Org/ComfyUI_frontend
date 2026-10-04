@@ -13,6 +13,7 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -664,5 +665,101 @@ describe('useAuthActions.sendPasswordReset', () => {
     const { sendPasswordReset } = useAuthActions()
 
     await expect(sendPasswordReset('user@example.com')).resolves.toBeUndefined()
+  })
+})
+
+/**
+ * Reauthentication is not a sign-out, and the two must not share cleanup.
+ *
+ * `createReauthenticationRecovery` drops the Firebase credential so the user
+ * can re-prove the same identity, in the same page session, with the same
+ * canvas open; the dialog comes back and the password update retries. Running
+ * the sign-out pair here would call `clearAllWorkspaceStorage()`, which removes
+ * draft indexes, draft payloads, tab pointers and agent keys by prefix for
+ * *every* workspace — so a password change would delete every draft in the
+ * browser. That is the data loss this PR exists to stop, and before it the
+ * deleted `onUserLogout` observer did exactly that on this path, because
+ * `authStore.logout()` drops `resolvedUserInfo` to null like any other
+ * credential change.
+ *
+ * Signing in as a *different* identity from that dialog is covered elsewhere
+ * and is not this path's concern: `workspaceAuthStore.endWorkspaceSession`
+ * runs `prepareWorkflowWorkspaceTransition()` on the identity change.
+ */
+describe('useAuthActions.updatePassword reauthentication', () => {
+  beforeEach(() => {
+    mockDistributionState.isCloud = true
+    // The file-wide stub above drops `wrapWithErrorHandlingAsync`'s fourth
+    // argument, so the recovery strategy is unreachable through it and this
+    // path would silently not run. Restore just that dispatch - the subject
+    // here is `createReauthenticationRecovery.recover`, not the wrapper.
+    useErrorHandling().wrapWithErrorHandlingAsync =
+      <TArgs extends unknown[], TReturn>(
+        action: (...args: TArgs) => Promise<TReturn> | TReturn,
+        errorHandler?: (error: unknown) => void,
+        _finallyHandler?: () => void,
+        recoveryStrategies?: ErrorRecoveryStrategy<TArgs, TReturn>[]
+      ) =>
+      async (...args: TArgs) => {
+        try {
+          return await action(...args)
+        } catch (error) {
+          for (const strategy of recoveryStrategies ?? []) {
+            if (strategy.shouldHandle(error)) {
+              await strategy.recover(error, action, args)
+              return undefined
+            }
+          }
+          ;(errorHandler ?? mockToastErrorHandler)(error)
+          return undefined
+        }
+      }
+  })
+
+  const credentialTooOld = () =>
+    new FirebaseError(
+      AuthErrorCodes.CREDENTIAL_TOO_OLD_LOGIN_AGAIN,
+      'requires recent login'
+    )
+
+  it('does not fence or clear workflow storage when a confirmed reauthentication logs out', async () => {
+    vi.mocked(mockAuthStore.updatePassword)
+      .mockRejectedValueOnce(credentialTooOld())
+      .mockResolvedValueOnce(undefined)
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+    vi.mocked(useDialogService().showSignInDialog).mockResolvedValueOnce(true)
+    const { updatePassword } = useAuthActions()
+
+    await updatePassword('new-password')
+
+    expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
+    expect(useDialogService().showSignInDialog).toHaveBeenCalledTimes(1)
+    expect(
+      vi.mocked(mockAuthStore.updatePassword),
+      'the operation must retry after the user re-proves the same identity'
+    ).toHaveBeenCalledTimes(2)
+    expect(
+      mockClearAllWorkspaceStorage,
+      'a password reauthentication must not delete the drafts of the user who is still here'
+    ).not.toHaveBeenCalled()
+    expect(
+      mockPrepareWorkflowLogoutTransition,
+      'fencing writes here blocks persistence for a session that never left'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('does not log out or touch workflow storage when reauthentication is declined', async () => {
+    vi.mocked(mockAuthStore.updatePassword).mockRejectedValueOnce(
+      credentialTooOld()
+    )
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
+    const { updatePassword } = useAuthActions()
+
+    await updatePassword('new-password')
+
+    expect(mockAuthStore.logout).not.toHaveBeenCalled()
+    expect(useDialogService().showSignInDialog).not.toHaveBeenCalled()
+    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
   })
 })
