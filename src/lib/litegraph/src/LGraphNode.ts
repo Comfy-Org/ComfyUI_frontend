@@ -234,27 +234,10 @@ function configureCanonicalField(
 }
 
 /**
- * The widget names {@link deriveNamedFromFallbackNames} checks a derived
- * register against. Only membership is used, never the order or the index — a
- * name that no serializable widget bears cannot restore anything.
- */
-function serializableWidgetNames(
-  widgets: readonly IBaseWidget[] | undefined
-): string[] | undefined {
-  if (!widgets) return
-  const names: string[] = []
-  for (const widget of widgets) {
-    if (widget.serialize === false) continue
-    names.push(widget.name)
-  }
-  return names
-}
-
-/**
  * A `fallbackWidgetsValuesNames` entry names a legacy slot only if it is a
  * non-empty string. The list is read off unvalidated `/object_info`, so its
- * `readonly string[]` type is not a runtime guarantee and a non-string entry
- * says nothing about its slot; an empty string is likewise a hole rather than a
+ * declared element type is not a runtime guarantee and a non-string entry says
+ * nothing about its slot; an empty string is likewise a hole rather than a
  * name, which is why this is not a truthiness test (`0` would be a hole too,
  * and that is the intended reading).
  */
@@ -271,32 +254,45 @@ function attributableSlotName(entry: unknown): string | undefined {
  * register holds one value per name, so a repeated name would drop one of the
  * two slots without a trace.
  *
- * Returns `undefined`, leaving the node on the positional path it loaded by
- * before it shipped the list, when **no attributed name belongs to a live
- * serializable widget**. Such a register can restore nothing, and because an
- * object is truthy it would still switch the node into named restoration and
- * reset every widget to its default. That is the whole defect: an empty list,
- * an all-holes list, a list of duplicates, and a list whose names were renamed
- * upstream all derive a register with no live reader and discard the saved
- * workflow. A `widgetNames` of `undefined` means the caller does not know the
- * live widgets, so the test falls back to "did anything attribute at all".
+ * Returns `undefined` when **nothing was attributed at all**, which is the one
+ * correction this makes to the previous behaviour. An empty list, a list that
+ * is all holes, and a list whose every name is a duplicate each used to derive
+ * an empty register — and because an object is truthy, that register still
+ * switched the node into named restoration, where
+ * `widgetValueStore.getRestoredWidgetValue` finds no widget in it and every
+ * widget falls to its constructor default. The whole saved workflow is
+ * discarded by a list that said nothing. Such a list makes no claim about the
+ * legacy order, so reading `widgets_values` positionally is exactly what the
+ * node did before it shipped the list, and is safe for the same reason.
  *
- * **What this deliberately does not do is guess at the slots the list leaves
- * unnamed.** Those widgets keep their defaults. Two mechanisms for filling them
- * were measured and both corrupt: restoring the whole node positionally instead
- * swaps the values of any widget that was reordered, and filling each unnamed
- * widget from the slot at its own index hands one widget another's value as soon
- * as an earlier slot is attributed elsewhere. The list exists *because* the
- * current widget order may differ from the legacy order, so for a slot the list
- * does not name there is no index that is known to be its legacy index. A
- * visible default is the honest answer; a plausible wrong value is not. An
- * incompletely named list is a node-definition bug, and naming every slot is
- * what fixes it.
+ * **Nothing else about an incomplete list is corrected here, deliberately.** A
+ * list that attributes some slots and not others still restores only the slots
+ * it names; the rest keep their defaults. Three mechanisms for filling them
+ * were measured and all three hand some widget another widget's value:
+ *
+ * - restoring the whole node positionally whenever coverage is incomplete swaps
+ *   the values of any widget the list repositioned;
+ * - giving each unnamed widget the slot at its own index assigns a legacy slot
+ *   to a current index as soon as an earlier slot is attributed elsewhere;
+ * - pairing the unattributed widgets with the unattributed slots in order
+ *   assumes the relative order of the unnamed ones was preserved, which nothing
+ *   recorded.
+ *
+ * The list exists *because* the current widget order may differ from the legacy
+ * order, which is the same statement as "for a slot the list does not name,
+ * there is no index known to be its legacy index". A visible default is wrong in
+ * a way a user can see; a plausible value in the wrong widget is not. An
+ * incompletely named list is a node-definition bug and naming every slot is what
+ * fixes it.
+ *
+ * For the same reason, a name that no live widget bears is **not** treated as a
+ * reason to decline: those names are how a widget created later in `configure` —
+ * by a value setter, `onConfigure`, or `addCustomWidget` — finds its value, and
+ * a liveness test can only be taken before any of that runs.
  */
 function deriveNamedFromFallbackNames(
   positional: readonly TWidgetValue[],
-  fallbackNames: readonly string[],
-  widgetNames: readonly string[] | undefined
+  fallbackNames: readonly unknown[]
 ): Record<string, TWidgetValue> | undefined {
   const slotNameUses = new Map<string, number>()
   for (const index of positional.keys()) {
@@ -305,53 +301,40 @@ function deriveNamedFromFallbackNames(
     slotNameUses.set(name, (slotNameUses.get(name) ?? 0) + 1)
   }
 
-  const liveNames = widgetNames ? new Set(widgetNames) : undefined
-  let hasLiveReader = false
-  // Built by `fromEntries`, not by assignment: a widget may legitimately be
-  // named `__proto__`, and assigning that key hits the prototype setter
-  // instead of creating the own property `Object.hasOwn` later looks for.
   const entries: [string, TWidgetValue][] = []
-
   for (const [index, value] of positional.entries()) {
     const name = attributableSlotName(fallbackNames[index])
     if (name === undefined || slotNameUses.get(name) !== 1) continue
     entries.push([name, value])
-    if (!liveNames || liveNames.has(name)) hasLiveReader = true
   }
 
-  // Entries whose name matches nothing live are kept rather than filtered: a
-  // widget created later in `configure` — by a value setter, `onConfigure`, or
-  // `addCustomWidget` — reads this register by name, and it is not in
-  // `widgetNames`, which is snapshotted before any of that runs.
-  return hasLiveReader ? Object.fromEntries(entries) : undefined
+  if (entries.length === 0) return
+  // Built by `fromEntries`, not by assignment: a widget may legitimately be
+  // named `__proto__`, and assigning that key hits the prototype setter
+  // instead of creating the own property `Object.hasOwn` later looks for.
+  return Object.fromEntries(entries)
 }
 
 export function createWidgetRestorationState(
   info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
-  fallbackNames?: readonly string[],
-  widgetNames?: readonly string[]
+  fallbackNames?: readonly unknown[]
 ) {
-  // `widgets_values` is validated as array-or-record on the workflow-load path
-  // and only the clipboard schemas normalize it, so a name-keyed record arrives
-  // here as-is. `Array.from` would trust its `length` — which that schema does
-  // not bound, so `{ length: 1e9 }` materialises a billion-element array — and
-  // yields `[]` for the far likelier record that has no `length` at all.
-  // Neither is a positional register, so a non-array supplies none.
-  const positional = Array.isArray(info.widgets_values)
-    ? Array.from(info.widgets_values)
-    : []
+  const positional = Array.from(info.widgets_values ?? [])
+  // `nodeData` is built from unvalidated `/object_info` and then mutated in
+  // place by `beforeRegisterNodeDef` extensions, so this may be any value. A
+  // bare string is indexable, which would otherwise attribute one slot per
+  // character and opt the node in on a register of single letters.
+  const list = Array.isArray(fallbackNames) ? fallbackNames : undefined
   const named =
     info.widgets_values_named ??
-    (info.widgets_values && fallbackNames
-      ? deriveNamedFromFallbackNames(positional, fallbackNames, widgetNames)
+    (info.widgets_values && list
+      ? deriveNamedFromFallbackNames(positional, list)
       : undefined)
 
   return {
     positional,
     named: named ? { ...named } : undefined,
-    restoreNamed: Boolean(
-      named && (LiteGraph.namedValuesRestore || fallbackNames)
-    )
+    restoreNamed: Boolean(named && (LiteGraph.namedValuesRestore || list))
   }
 }
 
@@ -1314,8 +1297,7 @@ export class LGraphNode
 
     const restoration = createWidgetRestorationState(
       info,
-      this.constructor.nodeData?.fallbackWidgetsValuesNames,
-      serializableWidgetNames(this.widgets)
+      this.constructor.nodeData?.fallbackWidgetsValuesNames
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid

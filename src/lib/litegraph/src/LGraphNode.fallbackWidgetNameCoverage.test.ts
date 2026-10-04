@@ -12,20 +12,17 @@ import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
  * restored by name. Presence of the list also opts the node into named
  * restoration while the user setting is off.
  *
- * Named restoration never consults `positional` per widget, so a derived
- * register that no live widget can read does not leave the node alone — it
- * switches the node into named mode and resets every widget to its default,
- * discarding the saved workflow. These cases draw the line in both directions:
+ * Named restoration never consults `positional` per widget, so a register that
+ * names nothing does not leave the node alone: it is truthy, so it switches the
+ * node into named mode and every widget falls to its constructor default. A
+ * list that said nothing therefore discards the whole saved workflow. That is
+ * the one case corrected here.
  *
- * - a register with **no live reader** must not be derived at all, and
- * - a register with one must still place the slots it names **by name**, because
- *   the list is only useful when the current widget order differs from the
- *   legacy order.
- *
- * The slots the list leaves unnamed are deliberately *not* filled. The last
- * group pins that as a known limitation rather than leaving it undocumented:
- * every mechanism for filling them was measured to hand some widget another
- * widget's value.
+ * A list that names *some* slots is not corrected — those slots restore by
+ * name, and the rest keep their defaults. The last group pins that as a known
+ * limitation rather than leaving it undocumented, because every mechanism for
+ * filling the unnamed slots was measured to hand some widget another widget's
+ * value.
  */
 const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 
@@ -46,7 +43,7 @@ function mockNode(
   }
 }
 
-function withFallbackNames(node: LGraphNode, names: unknown[]): void {
+function withFallbackNames(node: LGraphNode, names: unknown): void {
   const nodeData = fromPartial({ fallbackWidgetsValuesNames: names })
   node.constructor = Object.assign({}, node.constructor, { nodeData })
 }
@@ -67,7 +64,7 @@ describe('fallback widget-name coverage', () => {
     LiteGraph.namedValuesRestore = originalNamedValuesRestore
   })
 
-  describe('a register with no live reader is not derived at all', () => {
+  describe('a list that names nothing does not become a register', () => {
     it('keeps every legacy value when the fallback list is empty', () => {
       node.addWidget('number', 'seed', 0, null, {})
       node.addWidget('number', 'steps', 20, null, {})
@@ -88,24 +85,21 @@ describe('fallback widget-name coverage', () => {
       expect(widgetValues(node)).toStrictEqual([12345, 37])
     })
 
-    it('keeps every legacy value when no name in the list matches a live widget', () => {
-      // The upstream definition renamed its widgets without updating the list,
-      // so every derived key is a dead name. This is a total-loss case on the
-      // unmodified code: the register is non-empty, so named mode engages and
-      // no widget finds itself in it.
-      node.addWidget('number', 'steps', 20, null, {})
+    it('keeps every legacy value when the list is all non-strings', () => {
+      // `/object_info` is unvalidated, so the entries may not be strings at
+      // all. A number names no slot.
       node.addWidget('number', 'seed', 0, null, {})
-      withFallbackNames(node, ['n_steps', 'noise_seed'])
+      node.addWidget('number', 'steps', 20, null, {})
+      withFallbackNames(node, [0, 1])
 
-      node.configure(mockNode([37, 12345]))
+      node.configure(mockNode([12345, 37]))
 
-      expect(widgetValues(node)).toStrictEqual([37, 12345])
+      expect(widgetValues(node)).toStrictEqual([12345, 37])
     })
 
     it('keeps both legacy values when the list names one widget twice', () => {
       // The register holds one value per name, so attributing either slot to
-      // `seed` would drop the other. Neither is attributed, which leaves no
-      // live reader and no derivation.
+      // `seed` would drop the other. Neither is attributed, so nothing is.
       node.addWidget('number', 'seed', 0, null, {})
       node.addWidget('number', 'steps', 20, null, {})
       withFallbackNames(node, ['seed', 'seed'])
@@ -115,11 +109,22 @@ describe('fallback widget-name coverage', () => {
       expect(widgetValues(node)).toStrictEqual([12345, 37])
     })
 
+    it('keeps every legacy value when the list is not an array at all', () => {
+      // A bare string is indexable, so without the array check each character
+      // would name a slot and the node would opt in on a register of letters.
+      node.addWidget('number', 's', 0, null, {})
+      node.addWidget('number', 'steps', 20, null, {})
+      withFallbackNames(node, 'steps')
+
+      node.configure(mockNode([12345, 37]))
+
+      expect(widgetValues(node)).toStrictEqual([12345, 37])
+    })
+
     it('reports an empty list as declaring no derivable register', () => {
       const restoration = createWidgetRestorationState(
         { widgets_values: [12345, 37] },
-        [],
-        ['seed', 'steps']
+        []
       )
 
       expect(restoration).toStrictEqual({
@@ -129,13 +134,12 @@ describe('fallback widget-name coverage', () => {
       })
     })
 
-    it('does not let the user setting force a register with no live reader', () => {
+    it('does not let the user setting turn a register of nothing on', () => {
       LiteGraph.namedValuesRestore = true
 
       const restoration = createWidgetRestorationState(
         { widgets_values: [37, 12345] },
-        ['n_steps', 'noise_seed'],
-        ['steps', 'seed']
+        ['', '']
       )
 
       expect(restoration).toStrictEqual({
@@ -163,7 +167,6 @@ describe('fallback widget-name coverage', () => {
     })
 
     it('derives a full register and restores across a reorder', () => {
-      // Green before the change as well as after.
       node.addWidget('number', 'steps', 0, null, {})
       node.addWidget('number', 'seed', 0, null, {})
       withFallbackNames(node, ['seed', 'steps'])
@@ -176,7 +179,6 @@ describe('fallback widget-name coverage', () => {
     it('still derives when the list names more slots than the register carries', () => {
       const restoration = createWidgetRestorationState(
         { widgets_values: [12345, 37] },
-        ['seed', 'steps', 'cfg'],
         ['seed', 'steps', 'cfg']
       )
 
@@ -187,14 +189,14 @@ describe('fallback widget-name coverage', () => {
       })
     })
 
-    it('derives on one live name and keeps the dead ones in the register', () => {
-      // A name matching nothing live is not filtered out: a widget created
-      // later in `configure` reads this register by name, and it is not in the
-      // snapshot `widgetNames` was taken from.
+    it('keeps a name no widget bears yet, for a widget created later', () => {
+      // Liveness is not a derivation condition: these names are how a widget
+      // added during `configure` — by a value setter, `onConfigure`, or
+      // `addCustomWidget` — finds its value, and any liveness test could only
+      // be taken before those run.
       const restoration = createWidgetRestorationState(
         { widgets_values: [37, 12345] },
-        ['steps', 'added_later'],
-        ['steps']
+        ['steps', 'added_later']
       )
 
       expect(restoration).toStrictEqual({
@@ -204,32 +206,13 @@ describe('fallback widget-name coverage', () => {
       })
     })
 
-    it('runs attribution alone when the live widget names are unknown', () => {
-      // `widgetInputs` restores a single value before any widget exists, so it
-      // has no name list to offer.
-      const restoration = createWidgetRestorationState(
-        { widgets_values: [12345, 37, 6] },
-        ['seed', 'steps']
-      )
-
-      expect(restoration).toStrictEqual({
-        positional: [12345, 37, 6],
-        named: { seed: 12345, steps: 37 },
-        restoreNamed: true
-      })
-    })
-  })
-
-  describe('unvalidated `/object_info` input', () => {
     it('treats a non-string entry as a hole rather than coercing it to a key', () => {
-      // `readonly string[]` is not a runtime guarantee. `1` and `'1'` both
-      // become the key `'1'` under `Object.fromEntries`, so counting uses on
-      // the raw values would see two distinct names and silently collapse them
-      // onto one entry.
+      // `1` and `'1'` both become the key `'1'` under `Object.fromEntries`, so
+      // counting uses on the raw entries would see two distinct names and
+      // silently collapse them onto one.
       const restoration = createWidgetRestorationState(
         { widgets_values: [37, 12345] },
-        [1, '1'] as unknown as readonly string[],
-        ['1', 'seed']
+        [1, '1']
       )
 
       expect(restoration).toStrictEqual({
@@ -247,38 +230,6 @@ describe('fallback widget-name coverage', () => {
 
       expect(Object.hasOwn(restoration.named!, '__proto__')).toBe(true)
       expect(restoration.named!['__proto__']).toBe(5)
-    })
-
-    it('takes no positional values from a name-keyed `widgets_values` record', () => {
-      // Only the clipboard schemas normalize the record form, so it reaches
-      // here as-is. Reading its `length` is both wrong and unbounded, and an
-      // empty register derived from it would still switch the node into named
-      // mode.
-      const restoration = createWidgetRestorationState(
-        { widgets_values: { seed: 12345, steps: 37 } } as unknown as {
-          widgets_values?: TWidgetValue[]
-        },
-        ['seed', 'steps'],
-        ['seed', 'steps']
-      )
-
-      expect(restoration).toStrictEqual({
-        positional: [],
-        named: undefined,
-        restoreNamed: false
-      })
-    })
-
-    it('does not materialise an array from an unbounded array-like `length`', () => {
-      const restoration = createWidgetRestorationState(
-        { widgets_values: { length: 1_000_000_000 } } as unknown as {
-          widgets_values?: TWidgetValue[]
-        },
-        ['seed'],
-        ['seed']
-      )
-
-      expect(restoration.positional).toStrictEqual([])
     })
   })
 
@@ -326,14 +277,27 @@ describe('fallback widget-name coverage', () => {
         restoreNamed: false
       })
     })
+
+    it('gives a supplied named register no positional fallback', () => {
+      // A widget the workflow's own `widgets_values_named` omits did not exist
+      // when the workflow was saved, so the slot at its index belongs to some
+      // other widget.
+      node.addWidget('number', 'seed', 0, null, {})
+      node.addWidget('number', 'steps', 20, null, {})
+      withFallbackNames(node, ['seed', 'steps'])
+
+      node.configure(mockNode([12345, 37], { seed: 987654321 }))
+
+      expect(widgetValues(node)).toStrictEqual([987654321, 20])
+    })
   })
 
-  describe('known limitation: an unnamed slot is not guessed at', () => {
+  describe('known limitation: a slot the list does not name is not guessed at', () => {
     it('leaves the unnamed tail of a short list on node defaults', () => {
-      // Not a desirable outcome, and deliberately not fixed here. Filling these
-      // widgets from the slot at their own index assumes the current index is
-      // the legacy index, which is the one thing the list's existence denies.
-      // The fix is a node definition that names every slot.
+      // Not a desirable outcome, and deliberately not fixed here. Every way of
+      // filling these widgets assumes a current index is a legacy index, which
+      // is the one thing the list's existence denies. The fix is a node
+      // definition that names every slot.
       node.addWidget('number', 'steps', 0, null, {})
       node.addWidget('number', 'seed', 0, null, {})
       node.addWidget('number', 'cfg', 8, null, {})
@@ -356,22 +320,34 @@ describe('fallback widget-name coverage', () => {
       expect(widgetValues(node)).toStrictEqual([37, 0, 6])
     })
 
-    it('never hands one legacy slot to two widgets', () => {
-      // Slot 0 belongs to `b` by name. `a` sits at index 0 and has no
-      // attributed slot; handing it slot 0 as well would deliver 9 twice and
-      // still lose 8.
-      node.addWidget('number', 'a', 1, null, {})
-      node.addWidget('number', 'b', 2, null, {})
-      withFallbackNames(node, ['b'])
+    it('leaves a widget on its default when one duplicate pair still names a third slot', () => {
+      // The duplicated `seed` is unattributable, but `steps` is not, so the
+      // node does derive and `seed` keeps its default. Asserted because the
+      // "all duplicates" case above reads as if duplicates were always safe.
+      node.addWidget('number', 'seed', 0, null, {})
+      node.addWidget('number', 'steps', 20, null, {})
+      withFallbackNames(node, ['seed', 'seed', 'steps'])
 
-      node.configure(mockNode([9, 8]))
+      node.configure(mockNode([12345, 999, 37]))
 
-      expect(widgetValues(node)).toStrictEqual([1, 9])
+      expect(widgetValues(node)).toStrictEqual([0, 37])
+    })
+
+    it('leaves every static widget on its default when the list names only a later-created one', () => {
+      // The register is kept for the widget that does not exist yet, so the
+      // static widgets get nothing. Restoring them positionally instead would
+      // read the legacy order the list was written to repair.
+      node.addWidget('number', 'steps', 20, null, {})
+      withFallbackNames(node, ['added_later'])
+
+      node.configure(mockNode([12345]))
+
+      expect(widgetValues(node)).toStrictEqual([20])
     })
 
     it('leaves two widgets sharing a name on the positional path', () => {
-      // A named register cannot address them separately, so nothing attributes
-      // and the positional path — which can — is what restores them.
+      // Nothing is attributable, so the positional path — which can address
+      // them separately, as a single register key cannot — is what restores.
       node.addWidget('number', 'scale', 0, null, {})
       node.addWidget('number', 'scale', 0, null, {})
       withFallbackNames(node, ['', ''])
