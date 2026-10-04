@@ -141,10 +141,6 @@ describe('modelRequirements', () => {
         }
       }
 
-      // A partial entry is the whole point of this path: workflows that
-      // failed strict validation still load, and enrichment fills each field
-      // where present. Requiring the strict shape here discarded the
-      // directory and hash those entries do carry.
       expect(getSelectedModelsMetadata(node)).toEqual([
         {
           name: 'model_a.safetensors',

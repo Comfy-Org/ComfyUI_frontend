@@ -1251,14 +1251,6 @@
       "retryDownload": "Retry",
       "retryDownloadNamed": "Retry download for {model}",
       "getItManually": "Get it manually",
-      "modelTypes": {
-        "model": "Model",
-        "checkpoint": "Checkpoint",
-        "diffusionModel": "Diffusion model",
-        "textEncoder": "Text encoder",
-        "vae": "VAE",
-        "lora": "LoRA"
-      },
       "usedBy": "Used by {nodes}",
       "openTemplate": "Open template",
       "backToTemplates": "Back to {category}",
