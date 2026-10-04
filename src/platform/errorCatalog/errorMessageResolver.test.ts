@@ -235,32 +235,53 @@ describe('errorMessageResolver', () => {
   })
 
   it.for([
-    { type: 'unknown_node_class', catalogId: 'unknown_validation_error' },
+    {
+      type: 'unknown_node_class',
+      catalogId: 'unknown_validation_error',
+      displayTitle: 'Validation failed',
+      toastMessage: 'KSampler returned an unrecognized validation error.'
+    },
     {
       type: 'exception_during_validation',
-      catalogId: 'exception_during_validation'
+      catalogId: 'exception_during_validation',
+      displayTitle: 'Validation failed',
+      toastMessage: 'KSampler failed during validation.'
     },
     {
       type: 'custom_validation_failed',
-      catalogId: 'custom_validation_failed'
+      catalogId: 'custom_validation_failed',
+      displayTitle: 'Invalid input',
+      toastMessage: 'KSampler rejected the value for unknown input.'
     },
-    { type: 'dependency_cycle', catalogId: 'dependency_cycle' },
-    { type: 'value_not_in_list', catalogId: 'value_not_in_list' }
+    {
+      type: 'dependency_cycle',
+      catalogId: 'dependency_cycle',
+      displayTitle: 'Invalid workflow',
+      toastMessage: 'KSampler is part of a circular connection.'
+    },
+    {
+      type: 'value_not_in_list',
+      catalogId: 'value_not_in_list',
+      displayTitle: 'Invalid input',
+      toastMessage: 'KSampler has an unsupported value for unknown input.'
+    },
+    {
+      type: 'PARTNER_NODE_DISABLED',
+      catalogId: 'PARTNER_NODE_DISABLED',
+      displayTitle: 'Disabled node',
+      toastMessage: 'This node has been disabled by your workspace policy.'
+    }
   ])(
     'resolves $type when the backend omits details, as the cloud contract allows',
-    ({ type, catalogId }) => {
+    ({ type, catalogId, displayTitle, toastMessage }) => {
       const resolved = resolveRunErrorMessage({
         kind: 'node_validation',
         error: { type, message: 'Validation failed' },
         nodeDisplayName: 'KSampler'
       })
 
-      expect(resolved.catalogId).toBe(catalogId)
-      expect(resolved.displayTitle).toBeTruthy()
-      expect(resolved.toastMessage).toBeTruthy()
-      for (const copy of Object.values(resolved)) {
-        expect(copy).not.toContain('undefined')
-      }
+      expect(resolved).toMatchObject({ catalogId, displayTitle, toastMessage })
+      expect(Object.values(resolved).join('\n')).not.toContain('undefined')
     }
   )
 
