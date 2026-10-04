@@ -411,8 +411,13 @@ function chargeNowCredits(r: QuoteReading): SummaryLedger['credits'] {
   }
 }
 
-function grantIsAllowance(r: QuoteReading): boolean {
-  return r.quote.credits_today_cents === r.quote.credits_next_period_cents
+function grantIsAllowance({ quote }: QuoteReading): boolean {
+  if (
+    quote.credits_today !== undefined &&
+    quote.credits_next_period !== undefined
+  )
+    return quote.credits_today === quote.credits_next_period
+  return quote.credits_today_cents === quote.credits_next_period_cents
 }
 
 function chargeNowTrailing(r: QuoteReading): string[] {
