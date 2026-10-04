@@ -2171,7 +2171,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     ).toBeInTheDocument()
   })
 
-  it('locks its own Pay through a challenge, then processing, then lands on the success', async () => {
+  it("locks its own Pay through a challenge, offering no Cancel payment under Stripe's window, then processing, then lands on the success", async () => {
     const fake = await payReady()
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
     fake.subscribe.mockImplementation(() => new Promise(() => {}))
@@ -2186,14 +2186,16 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(
       screen.queryByRole('button', { name: 'Back' })
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cancel payment' })).toBeEnabled()
+    expect(
+      screen.queryByRole('button', { name: 'Cancel payment' })
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Continue verification' })
     ).not.toBeInTheDocument()
 
     fake.publishOperation({
-      ...pendingOperation('op_3ds'),
-      authenticationState: 'processing'
+      ...processingOperation('op_3ds'),
+      customerActionSeen: true
     })
 
     await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
@@ -2276,7 +2278,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     await waitFor(() => expect(footnote().textContent.trim()).toBe(challenged))
   })
 
-  it('claims no phase for an operation the bank has not answered for, then Phase B once it is processing', async () => {
+  it('claims no phase while the server is still confirming a card Pay, then Phase B once the bank asked for a challenge', async () => {
     const fake = await payHeld()
     fake.publishOperation(pendingOperation('op_card'))
     await nextTick()
@@ -2285,6 +2287,14 @@ describe('FullPageCheckoutView payment authentication', () => {
     expect(payButton()).toHaveAttribute('aria-busy', 'true')
 
     fake.publishOperation(processingOperation('op_card'))
+    await nextTick()
+
+    expect(footnote()).toBeEmptyDOMElement()
+
+    fake.publishOperation({
+      ...processingOperation('op_card'),
+      customerActionSeen: true
+    })
 
     await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_B))
   })
