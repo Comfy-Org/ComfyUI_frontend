@@ -4,9 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import MoreButton from '@/components/button/MoreButton.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const i18n = createI18n({
@@ -20,21 +21,21 @@ const i18n = createI18n({
 })
 
 const onItemClick = vi.fn()
+const items: MenuItem[] = [{ label: 'Delete', command: onItemClick }]
 
-const DialogBodyWithMoreButton = defineComponent({
-  name: 'DialogBodyWithMoreButton',
+const DialogBodyWithMenu = defineComponent({
+  name: 'DialogBodyWithMenu',
   setup: () => () =>
-    h(MoreButton, null, {
-      default: () =>
-        h(
-          Button,
-          { 'data-testid': 'menu-item', onClick: onItemClick },
-          () => 'Delete'
-        )
-    })
+    h(
+      Menu,
+      { items },
+      {
+        trigger: () => h(Button, null, () => 'Open menu')
+      }
+    )
 })
 
-describe('MoreButton inside a modal Reka dialog', () => {
+describe('Menu inside a modal Reka dialog', () => {
   beforeEach(() => {
     document.body.style.pointerEvents = ''
     onItemClick.mockClear()
@@ -51,9 +52,9 @@ describe('MoreButton inside a modal Reka dialog', () => {
     const dialogStore = useDialogStore()
 
     dialogStore.showDialog({
-      key: 'more-button-host',
+      key: 'menu-host',
       title: 'Host dialog',
-      component: DialogBodyWithMoreButton,
+      component: DialogBodyWithMenu,
       dialogComponentProps: {
         renderer: 'reka',
         headless: true,
@@ -62,11 +63,8 @@ describe('MoreButton inside a modal Reka dialog', () => {
       }
     })
 
-    const trigger = await screen.findByRole('button')
-    await user.click(trigger)
-
-    const menuItem = await screen.findByTestId('menu-item')
-    await user.click(menuItem)
+    await user.click(await screen.findByRole('button', { name: 'Open menu' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete' }))
 
     expect(onItemClick).toHaveBeenCalledTimes(1)
   })

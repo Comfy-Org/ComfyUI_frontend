@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import {
-  DropdownMenuArrow,
-  DropdownMenuContent,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
+import { DropdownMenuArrow } from 'reka-ui'
 import { computed, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import MenuItems from '@/components/ui/menu/MenuItems.vue'
 import {
   menuContentClass,
   menuItemClass
 } from '@/components/ui/menu/menuStyles'
 import type { MenuItem } from '@/components/ui/menu/types'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 
@@ -50,60 +44,58 @@ const contentClass = computed(() =>
 )
 
 const open = ref(false)
-const contentStyle = useModalLiftedZIndex(open)
 const { t } = useI18n()
 </script>
 
 <template>
-  <DropdownMenuRoot v-model:open="open" :modal>
-    <DropdownMenuTrigger as-child>
+  <Menu
+    v-model:open="open"
+    :modal
+    :to
+    side="bottom"
+    align="center"
+    :side-offset="5"
+    :collision-padding="10"
+    v-bind="$attrs"
+    :class="contentClass"
+  >
+    <template #trigger>
       <slot name="button">
         <Button :size="buttonSize ?? 'icon'" :class="buttonClass">
           <i :class="icon ?? 'icon-[lucide--menu]'" />
         </Button>
       </slot>
-    </DropdownMenuTrigger>
+    </template>
 
-    <DropdownMenuPortal :to>
-      <DropdownMenuContent
-        side="bottom"
-        :side-offset="5"
-        :collision-padding="10"
-        v-bind="$attrs"
-        :class="contentClass"
-        :style="contentStyle"
-      >
-        <slot :item-class>
-          <MenuItems
-            :items="entries ?? []"
-            :item-class
-            :content-class
-            :content-style
-            disable-commandless
-            legacy-checked-role
-          >
-            <template #item="{ item, hasSubmenu }">
-              <i v-if="item.icon" :class="item.icon" class="size-4 shrink-0" />
-              <div class="mr-auto truncate">{{ toValue(item.label) }}</div>
-              <i
-                v-if="hasSubmenu"
-                class="ml-auto icon-[lucide--chevron-right]"
-              />
-              <i
-                v-else-if="toValue(item.checked)"
-                class="icon-[lucide--check] shrink-0"
-              />
-              <div
-                v-else-if="item.new"
-                class="flex shrink-0 items-center rounded-full bg-primary-background px-1 text-2xs leading-none font-bold"
-              >
-                {{ t('contextMenu.new') }}
-              </div>
-            </template>
-          </MenuItems>
-        </slot>
-        <DropdownMenuArrow class="fill-base-background stroke-border-default" />
-      </DropdownMenuContent>
-    </DropdownMenuPortal>
-  </DropdownMenuRoot>
+    <template #default="{ contentStyle }">
+      <slot :item-class>
+        <MenuItems
+          :items="entries ?? []"
+          :item-class
+          :content-class
+          :content-style
+          disable-commandless
+          legacy-checked-role
+          @select="open = false"
+        >
+          <template #item="{ item, hasSubmenu }">
+            <i v-if="item.icon" :class="item.icon" class="size-4 shrink-0" />
+            <div class="mr-auto truncate">{{ toValue(item.label) }}</div>
+            <i v-if="hasSubmenu" class="ml-auto icon-[lucide--chevron-right]" />
+            <i
+              v-else-if="toValue(item.checked)"
+              class="icon-[lucide--check] shrink-0"
+            />
+            <div
+              v-else-if="item.new"
+              class="flex shrink-0 items-center rounded-full bg-primary-background px-1 text-2xs leading-none font-bold"
+            >
+              {{ t('contextMenu.new') }}
+            </div>
+          </template>
+        </MenuItems>
+      </slot>
+      <DropdownMenuArrow class="fill-base-background stroke-border-default" />
+    </template>
+  </Menu>
 </template>

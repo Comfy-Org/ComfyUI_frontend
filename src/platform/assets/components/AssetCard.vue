@@ -35,7 +35,7 @@
         :class="
           cn(
             'invisible absolute top-2 right-2 group-hover:visible',
-            dropdownMenuButton?.isOpen && 'visible'
+            assetMenuOpen && 'visible'
           )
         "
       >
@@ -48,22 +48,18 @@
         >
           <i class="icon-[lucide--info]" />
         </Button>
-        <MoreButton
+        <Menu
           v-if="showAssetOptions"
-          ref="dropdown-menu-button"
-          size="sm"
+          v-model:open="assetMenuOpen"
+          :items="assetMenuItems"
+          align="end"
         >
-          <template #default>
-            <button
-              type="button"
-              :class="menuButtonClass"
-              @click="confirmDeletion"
-            >
-              <i class="icon-[lucide--trash-2]" />
-              <span>{{ $t('g.delete') }}</span>
-            </button>
+          <template #trigger>
+            <Button size="sm" variant="secondary">
+              <i class="icon-[lucide--ellipsis] size-4" />
+            </Button>
           </template>
-        </MoreButton>
+        </Menu>
       </IconGroup>
     </div>
     <div class="flex max-h-32 flex-auto flex-col justify-between gap-2">
@@ -128,16 +124,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
+import { computed, ref, toValue, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
 import IconGroup from '@/components/button/IconGroup.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
-import { menuButtonClass } from '@/components/ui/menu/menuStyles'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -165,9 +161,7 @@ const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
 
-const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
-  'dropdown-menu-button'
-)
+const assetMenuOpen = ref(false)
 
 const titleId = useId()
 const descId = useId()
@@ -202,7 +196,7 @@ function handleSelect() {
 }
 
 function confirmDeletion() {
-  dropdownMenuButton.value?.hide()
+  assetMenuOpen.value = false
   const assetName = toValue(displayName)
   const promptText = ref<string>(t('assetBrowser.deletion.body'))
   const optionsDisabled = ref(false)
@@ -250,4 +244,12 @@ function confirmDeletion() {
     }
   })
 }
+
+const assetMenuItems = computed<MenuItem[]>(() => [
+  {
+    label: () => t('g.delete'),
+    icon: 'icon-[lucide--trash-2]',
+    command: confirmDeletion
+  }
+])
 </script>

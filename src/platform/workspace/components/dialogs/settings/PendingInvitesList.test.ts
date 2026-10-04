@@ -1,8 +1,6 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Slots } from 'vue'
-import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -10,13 +8,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import PendingInvitesList from './PendingInvitesList.vue'
 
 import type { WorkspacePendingInvite } from '../../../stores/teamWorkspaceStore'
-
-const mockMenuClose = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
-  default: (_: unknown, { slots }: { slots: Slots }) =>
-    h('div', slots.default?.({ close: mockMenuClose }))
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -95,22 +86,26 @@ describe('PendingInvitesList', () => {
     const invite = createInvite({ id: 'inv-7' })
     const { emitted } = renderComponent([invite])
 
+    await userEvent.click(screen.getByRole('button', { name: 'g.moreOptions' }))
     await userEvent.click(
-      screen.getByRole('button', {
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.resendInvite'
       })
     )
 
     expect(emitted('resend')).toEqual([[invite]])
-    expect(mockMenuClose).toHaveBeenCalled()
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
   })
 
   it('emits revoke with the invite from the cancel item', async () => {
     const invite = createInvite({ id: 'inv-8' })
     const { emitted } = renderComponent([invite])
 
+    await userEvent.click(screen.getByRole('button', { name: 'g.moreOptions' }))
     await userEvent.click(
-      screen.getByRole('button', {
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.cancelInvite'
       })
     )
@@ -127,8 +122,9 @@ describe('PendingInvitesList', () => {
     })
     renderComponent([createInvite({ token: 'tok-9' })])
 
+    await userEvent.click(screen.getByRole('button', { name: 'g.moreOptions' }))
     await userEvent.click(
-      screen.getByRole('button', {
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
     )
@@ -136,20 +132,24 @@ describe('PendingInvitesList', () => {
     expect(writeText).toHaveBeenCalledWith(
       `${window.location.origin}/?invite=tok-9`
     )
-    expect(mockMenuClose).toHaveBeenCalled()
     expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'success',
         summary: 'workspacePanel.inviteLinks.copiedToast'
       })
     )
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
   })
 
-  it('hides the copy item for expired invites without a token', () => {
+  it('hides the copy item for expired invites without a token', async () => {
     renderComponent([createInvite()])
 
+    await userEvent.click(screen.getByRole('button', { name: 'g.moreOptions' }))
+    await screen.findByRole('menu')
     expect(
-      screen.queryByRole('button', {
+      screen.queryByRole('menuitem', {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
     ).not.toBeInTheDocument()
@@ -190,8 +190,10 @@ describe('PendingInvitesList', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     renderComponent([createInvite({ token: 'tok-9' })])
 
+    const trigger = screen.getByRole('button', { name: 'g.moreOptions' })
+    await userEvent.click(trigger)
     await userEvent.click(
-      screen.getByRole('button', {
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
     )
@@ -205,10 +207,13 @@ describe('PendingInvitesList', () => {
         summary: 'workspacePanel.inviteLinks.copyFailedToast'
       })
     )
-    expect(
-      screen.getByRole('button', {
+
+    await userEvent.click(trigger)
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
         name: 'workspacePanel.members.actions.copyInviteLink'
       })
-    ).toBeInTheDocument()
+    )
+    expect(writeText).toHaveBeenCalledTimes(2)
   })
 })

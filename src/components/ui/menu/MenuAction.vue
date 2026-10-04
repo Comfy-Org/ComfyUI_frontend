@@ -47,13 +47,7 @@ function select(event: Event) {
     v-tooltip="{ value: item.tooltip, showDelay: 0 }"
     :aria-label="toValue(item.label)"
     :disabled="toValue(item.disabled) ?? (disableCommandless && !item.command)"
-    :class="
-      cn(
-        itemClass,
-        toValue(item.class),
-        item.tooltip && toValue(item.disabled) && 'pointer-events-auto'
-      )
-    "
+    :class="cn(itemClass, toValue(item.class))"
     v-bind="
       legacyCheckedRole && item.checked !== undefined
         ? {

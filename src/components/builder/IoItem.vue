@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -38,7 +38,7 @@ const entries = computed(() => {
   if (canRename)
     items.push({
       label: t('g.rename'),
-      command: () => setTimeout(() => (isEditing.value = true)),
+      command: () => (isEditing.value = true),
       icon: 'icon-[lucide--pencil]'
     })
   if (remove)
@@ -84,12 +84,15 @@ const entries = computed(() => {
         v-text="subTitle"
       />
     </div>
-    <Popover :entries>
-      <template #button>
+    <Menu
+      :items="entries"
+      @close-auto-focus="isEditing && $event.preventDefault()"
+    >
+      <template #trigger>
         <Button variant="muted-textonly" data-testid="widget-actions-menu">
           <i class="icon-[lucide--ellipsis]" />
         </Button>
       </template>
-    </Popover>
+    </Menu>
   </div>
 </template>

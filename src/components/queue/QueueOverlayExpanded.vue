@@ -30,30 +30,26 @@
       />
     </div>
 
-    <JobContextMenu
-      ref="jobContextMenuRef"
-      :entries="jobMenuEntries"
-      @action="onJobMenuAction"
-    />
+    <ContextMenu ref="jobContextMenuRef" :model="handledJobMenuEntries" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import type {
   JobGroup,
   JobListItem,
   JobSortMode,
   JobTab
 } from '@/composables/queue/useJobList'
-import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
-import JobContextMenu from './job/JobContextMenu.vue'
 import JobAssetsList from './job/JobAssetsList.vue'
 import JobFiltersBar from './job/JobFiltersBar.vue'
 
@@ -80,7 +76,7 @@ const emit = defineEmits<{
 }>()
 
 const currentMenuItem = ref<JobListItem | null>(null)
-const jobContextMenuRef = ref<InstanceType<typeof JobContextMenu> | null>(null)
+const jobContextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null)
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
@@ -88,6 +84,14 @@ const { jobMenuEntries } = useJobMenu(
   () => currentMenuItem.value,
   (item) => emit('viewItem', item)
 )
+const handledJobMenuEntries = computed(() =>
+  jobMenuEntries.value.map(withErrorHandling)
+)
+
+function withErrorHandling(item: MenuItem): MenuItem {
+  if (!item.command) return item
+  return { ...item, command: wrapWithErrorHandlingAsync(item.command) }
+}
 
 const onCancelItemEvent = (item: JobListItem) => {
   emit('cancelItem', item)
@@ -103,13 +107,10 @@ const onUpdateSelectedJobTab = (value: JobTab) => {
 }
 
 const onMenuItem = (item: JobListItem, event: Event) => {
+  const isSameClickTarget =
+    event.type === 'click' && currentMenuItem.value?.id === item.id
   currentMenuItem.value = item
-  jobContextMenuRef.value?.open(event)
+  if (isSameClickTarget) jobContextMenuRef.value?.toggle(event)
+  else jobContextMenuRef.value?.show(event)
 }
-
-const onJobMenuAction = wrapWithErrorHandlingAsync(async (entry: MenuEntry) => {
-  if (entry.kind === 'divider') return
-  if (entry.onClick) await entry.onClick()
-  jobContextMenuRef.value?.hide()
-})
 </script>

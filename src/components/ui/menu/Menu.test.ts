@@ -1,12 +1,44 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { DropdownMenuItem } from 'reka-ui'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 
 import Menu from './Menu.vue'
 import ContextMenu from './ContextMenu.vue'
 
 describe('Menu', () => {
+  it('gives custom menu content keyboard selection and dismissal', async () => {
+    const command = vi.fn()
+    render(Menu, {
+      slots: {
+        trigger: '<button>Open</button>',
+        default: () =>
+          h(DropdownMenuItem, { onSelect: command }, () => 'Rename')
+      }
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const trigger = screen.getByRole('button', { name: 'Open' })
+    await user.click(trigger)
+    const item = await screen.findByRole('menuitem', { name: 'Rename' })
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() => expect(item).toHaveFocus())
+    await user.keyboard('{Enter}')
+    expect(command).toHaveBeenCalledOnce()
+    await waitFor(() => expect(trigger).toHaveFocus())
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('keeps the page interactive for a non-modal menu', async () => {
+    render(Menu, {
+      props: { items: [{ label: 'Run' }], modal: false },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+    await screen.findByRole('menu')
+    expect(document.body.style.pointerEvents).not.toBe('none')
+  })
+
   it.for([
     { kind: 'string', label: 'Run' },
     { kind: 'getter', label: () => 'Run' }

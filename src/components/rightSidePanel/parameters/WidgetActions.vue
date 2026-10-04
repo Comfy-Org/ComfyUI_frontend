@@ -3,8 +3,9 @@ import { isEqual } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MoreButton from '@/components/button/MoreButton.vue'
-import { menuButtonClass } from '@/components/ui/menu/menuStyles'
+import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -86,79 +87,50 @@ function handleResetToDefault() {
   if (!hasDefault.value) return
   emit('resetToDefault', defaultValue.value)
 }
+
+const menuItems = computed<MenuItem[]>(() => [
+  {
+    label: () => t('g.rename'),
+    icon: 'icon-[lucide--edit]',
+    command: handleRename
+  },
+  {
+    label: () => t('rightSidePanel.showInput'),
+    icon: 'icon-[lucide--eye]',
+    visible: () => canShowInput.value,
+    command: handleShowInput
+  },
+  {
+    label: () =>
+      t(
+        isFavorited.value
+          ? 'rightSidePanel.removeFavorite'
+          : 'rightSidePanel.addFavorite'
+      ),
+    icon: 'icon-[lucide--star]',
+    command: handleToggleFavorite
+  },
+  {
+    label: () => t('rightSidePanel.resetToDefault'),
+    icon: 'icon-[lucide--rotate-ccw]',
+    visible: () => hasDefault.value,
+    disabled: () => isCurrentValueDefault.value,
+    command: handleResetToDefault
+  }
+])
 </script>
 
 <template>
-  <MoreButton
-    is-vertical
-    data-testid="widget-actions-menu-button"
-    class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
-  >
-    <template #default="{ close }">
-      <button
-        type="button"
-        :class="menuButtonClass"
-        @click="
-          () => {
-            handleRename()
-            close()
-          }
-        "
+  <Menu :items="menuItems" align="end">
+    <template #trigger>
+      <Button
+        size="icon"
+        variant="secondary"
+        data-testid="widget-actions-menu-button"
+        class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
       >
-        <i class="icon-[lucide--edit] size-4" />
-        <span>{{ t('g.rename') }}</span>
-      </button>
-
-      <button
-        v-if="canShowInput"
-        type="button"
-        :class="menuButtonClass"
-        @click="
-          () => {
-            handleShowInput()
-            close()
-          }
-        "
-      >
-        <i class="icon-[lucide--eye] size-4" />
-        <span>{{ t('rightSidePanel.showInput') }}</span>
-      </button>
-
-      <button
-        type="button"
-        :class="menuButtonClass"
-        @click="
-          () => {
-            handleToggleFavorite()
-            close()
-          }
-        "
-      >
-        <template v-if="isFavorited">
-          <i class="icon-[lucide--star] size-4" />
-          <span>{{ t('rightSidePanel.removeFavorite') }}</span>
-        </template>
-        <template v-else>
-          <i class="icon-[lucide--star] size-4" />
-          <span>{{ t('rightSidePanel.addFavorite') }}</span>
-        </template>
-      </button>
-
-      <button
-        v-if="hasDefault"
-        type="button"
-        :class="menuButtonClass"
-        :disabled="isCurrentValueDefault"
-        @click="
-          () => {
-            handleResetToDefault()
-            close()
-          }
-        "
-      >
-        <i class="icon-[lucide--rotate-ccw] size-4" />
-        <span>{{ t('rightSidePanel.resetToDefault') }}</span>
-      </button>
+        <i class="icon-[lucide--more-vertical] size-4" />
+      </Button>
     </template>
-  </MoreButton>
+  </Menu>
 </template>

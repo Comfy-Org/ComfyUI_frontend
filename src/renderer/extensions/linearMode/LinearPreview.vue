@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -139,13 +139,13 @@ async function rerun(e: Event) {
       <i class="icon-[lucide--x]" />
       {{ t('linearMode.cancelThisRun') }}
     </Button>
-    <Popover v-if="selectedItem" :entries="selectedItemMenuEntries">
-      <template #button>
+    <Menu v-if="selectedItem" :items="selectedItemMenuEntries">
+      <template #trigger>
         <Button size="icon" :aria-label="t('g.moreOptions')">
           <i class="icon-[lucide--ellipsis]" />
         </Button>
       </template>
-    </Popover>
+    </Menu>
   </section>
   <ImagePreview
     v-if="canShowPreview && latentPreview"

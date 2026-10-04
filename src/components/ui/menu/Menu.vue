@@ -16,8 +16,10 @@ import type { MenuItem } from './types'
 
 defineOptions({ inheritAttrs: false })
 
-defineProps<{
-  items: MenuItem[]
+const { items = [], modal = true } = defineProps<{
+  items?: MenuItem[]
+  modal?: boolean
+  to?: string | HTMLElement
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
@@ -25,12 +27,14 @@ const contentStyle = useModalLiftedZIndex(open)
 </script>
 
 <template>
-  <DropdownMenuRoot v-model:open="open">
+  <DropdownMenuRoot v-model:open="open" :modal>
     <DropdownMenuTrigger as-child>
       <slot name="trigger" :open />
     </DropdownMenuTrigger>
-    <DropdownMenuPortal>
+    <DropdownMenuPortal :to>
       <DropdownMenuContent
+        :side-offset="2"
+        align="start"
         v-bind="$attrs"
         :class="
           cn(
@@ -40,14 +44,14 @@ const contentStyle = useModalLiftedZIndex(open)
           )
         "
         :style="contentStyle"
-        :side-offset="2"
-        align="start"
       >
-        <MenuItems :items @select="open = false">
-          <template v-if="$slots.item" #item="slotProps">
-            <slot name="item" v-bind="slotProps" />
-          </template>
-        </MenuItems>
+        <slot :content-style>
+          <MenuItems :items :content-style @select="open = false">
+            <template v-if="$slots.item" #item="slotProps">
+              <slot name="item" v-bind="slotProps" />
+            </template>
+          </MenuItems>
+        </slot>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
