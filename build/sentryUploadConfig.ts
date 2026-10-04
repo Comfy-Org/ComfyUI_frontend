@@ -9,17 +9,7 @@ export function hasCompleteSentryUploadConfig(env: NodeJS.ProcessEnv) {
   return REQUIRED_KEYS.every((key) => Boolean(env[key]))
 }
 
-export function resolveSentryUploadConfig({
-  distribution,
-  isDev,
-  env
-}: {
-  distribution: 'desktop' | 'localhost' | 'cloud'
-  isDev: boolean
-  env: NodeJS.ProcessEnv
-}) {
-  if (distribution !== 'cloud' || isDev) return
-
+export function resolveSentryUploadConfig(env: NodeJS.ProcessEnv) {
   const missingKeys = REQUIRED_KEYS.filter((key) => !env[key])
   if (missingKeys.length === REQUIRED_KEYS.length) return
 
