@@ -306,6 +306,55 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     expect(flaky.name).toBe('seed')
   })
 
+  it('removes a duplicate whose `name` is a getter-only accessor on its prototype', () => {
+    const first = { name: 'seed' }
+    // No *own* `name` descriptor, and the inherited one has no setter — so
+    // every write throws and is swallowed, exactly like the non-writable own
+    // property above. A predicate that inspects only the own object finds
+    // nothing and falls through to `Object.isExtensible`, which answers whether
+    // properties can be *added*, not whether `name` can be written. That makes
+    // this widget look renamable and keeps it forever as an unresolved
+    // duplicate, silently sharing `first`'s identity — the precise case
+    // removal exists for.
+    const inherited = Object.create({
+      get name() {
+        return 'seed'
+      }
+    }) as { name: string }
+
+    const refused = dropUnrenamableDuplicateWidgets([first, inherited])
+
+    expect(refused.map(({ cause }) => cause)).toEqual(['duplicate-name'])
+    expect(refused.map(({ removed }) => removed)).toEqual([true])
+  })
+
+  it('refuses a widget whose descriptor trap throws instead of aborting the walk', () => {
+    const first = { name: 'seed' }
+    const target = {}
+    Object.defineProperty(target, 'name', {
+      value: 'seed',
+      writable: false,
+      configurable: true
+    })
+    // `nameIsWritable` is reached from `resolveCollision`, which — unlike the
+    // `name` reads in the same walk — is not inside a guard, and
+    // `getOwnPropertyDescriptor`/`isExtensible` both invoke proxy traps. A
+    // throwing trap used to escape the whole walk, which runs inside
+    // `LGraph.add` after node state is partly attached.
+    const hostile = new Proxy(target, {
+      getOwnPropertyDescriptor() {
+        throw new Error('hostile descriptor trap')
+      }
+    }) as { name: string }
+
+    const widgets = [first, hostile]
+    expect(() => dropUnrenamableDuplicateWidgets(widgets)).not.toThrow()
+
+    // Unaddressable, so refused — and the widget holding the name legitimately
+    // is still there, which a mid-walk throw would have left undecided.
+    expect(widgets).toEqual([first])
+  })
+
   it('collides names that differ as values but coincide as id strings', () => {
     // `widgetId` keys on `encodeURIComponent(String(name))`, so these two mint
     // the same id. Comparing the raw values lets both through and the clash

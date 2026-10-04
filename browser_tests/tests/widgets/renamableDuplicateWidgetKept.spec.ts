@@ -27,12 +27,14 @@ import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowS
  * is what positional widget addressing reads, so a dropped slot shifts every
  * later widget. With the invariant's criterion corrected it saves both.
  *
- * Not asserted, and deliberately: the two slots do not hold the two *values*.
- * Re-registering an ambiguous pair routes the second widget's `name` setter
- * through `renameWidget` on a stale `_state.nodeId`, which hands it the first
- * widget's store entry, so both read the first widget's value. That is a
- * separate pre-existing defect in `BaseWidget.set name`, unchanged either way
- * here, and asserting the values would pin it as if it were correct.
+ * The two *values* are asserted too, and that is the stronger half. Arity alone
+ * went green over a save this change set used to corrupt: re-registering an
+ * ambiguous pair routed the second widget's `name` setter through
+ * `renameWidget` on an id the *first* widget had registered, which handed it
+ * that widget's store entry — so the two widgets shared one `WidgetState`, both
+ * read the first value, and the second value was gone from a two-slot save. A
+ * widget's own entry is now the only entry its rename may move
+ * (`BaseWidget.set name`), so both values survive and this asserts it.
  */
 
 const NODE_TYPE = 'DevToolsNodeWithOutputList'
@@ -135,6 +137,15 @@ test.describe(
         // One entry here is a widget the user lost. Two is the invariant being
         // enforced without charging them for it.
         expect(savedNode?.widgets_values).toHaveLength(2)
+
+        // And two *distinct* values, because arity alone cannot tell a
+        // preserved widget from one welded onto its duplicate's store entry.
+        // `['first default', 'first default']` is the second value destroyed
+        // while the slot count still looks right.
+        expect(savedNode?.widgets_values).toEqual([
+          'first default',
+          'second default'
+        ])
       })
     })
   }
