@@ -2596,11 +2596,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             if (e.altKey) {
               pointer.onClick = (upEvent) => {
                 if (upEvent.altKey) {
-                  // Ensure deselected
-                  if (reroute.selected) {
-                    this.deselect(reroute)
-                    this.onSelectionChange?.(this.selected_nodes)
-                  }
+                  // Ensure deselected - deselect() reports the change itself.
+                  if (reroute.selected) this.deselect(reroute)
                   reroute.remove()
                 }
               }
@@ -3951,7 +3948,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodeId: node.id
     })
 
-    this.deselectAll()
+    // One notification for the whole placement: suppress the clear so
+    // listeners only see the completed selection.
+    this.deselectAll(undefined, false)
     this.select(node)
     this.isDragging = true
 
@@ -4864,18 +4863,24 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Snapshot to prevent mutation during iteration (e.g. group deselect cascade)
     const toDelete = [...this.selectedItems]
-    for (const item of toDelete) {
-      if (item instanceof LGraphNode) {
-        const node = item
-        if (node.block_delete) continue
-        node.connectInputToOutput()
-        graph.remove(node)
-        this.onNodeDeselected?.(node)
-      } else if (item instanceof LGraphGroup) {
-        graph.remove(item)
-      } else if (item instanceof Reroute) {
-        graph.removeReroute(item.id)
+    // Removal deselects each item in turn; report the deletion once, below.
+    this.selectionNotificationDepth++
+    try {
+      for (const item of toDelete) {
+        if (item instanceof LGraphNode) {
+          const node = item
+          if (node.block_delete) continue
+          node.connectInputToOutput()
+          graph.remove(node)
+          this.onNodeDeselected?.(node)
+        } else if (item instanceof LGraphGroup) {
+          graph.remove(item)
+        } else if (item instanceof Reroute) {
+          graph.removeReroute(item.id)
+        }
       }
+    } finally {
+      this.selectionNotificationDepth--
     }
 
     applyCanvasSelection(this, { type: 'selection.clear' })
