@@ -37,9 +37,35 @@ export function widgetId(
  * copies of one rule.
  */
 function nameIsWritable(widget: { name: string }): boolean {
-  const descriptor = Object.getOwnPropertyDescriptor(widget, 'name')
-  if (!descriptor) return Object.isExtensible(widget)
-  return 'writable' in descriptor ? !!descriptor.writable : !!descriptor.set
+  try {
+    // The whole prototype chain, not just the own object. `BaseWidget` declares
+    // `name` as a class accessor, so an instance has no *own* descriptor and
+    // every concrete widget would otherwise fall through to the
+    // `Object.isExtensible` branch below — which answers whether properties can
+    // be *added*, not whether `name` can be written. That branch happens to say
+    // "writable" for `BaseWidget`, so the bug hides; it says the same for a
+    // widget whose inherited `name` is a getter with no setter, and that one is
+    // genuinely unaddressable and must still be refused.
+    for (
+      let target: object | null = widget;
+      target;
+      target = Reflect.getPrototypeOf(target)
+    ) {
+      const descriptor = Object.getOwnPropertyDescriptor(target, 'name')
+      if (!descriptor) continue
+      return 'writable' in descriptor ? !!descriptor.writable : !!descriptor.set
+    }
+    // No descriptor anywhere on the chain: `name` is not defined yet, so a
+    // write would create it, and that is what extensibility decides.
+    return Object.isExtensible(widget)
+  } catch {
+    // `getOwnPropertyDescriptor`, `getPrototypeOf` and `isExtensible` all
+    // invoke proxy traps, and this runs mid-walk inside `LGraph.add`. A widget
+    // whose traps throw cannot be addressed at all, which is precisely the case
+    // removal exists for — so answer "not writable" instead of letting the
+    // throw abort the walk with the node half-attached.
+    return false
+  }
 }
 
 export function ensureUniqueWidgetNames(
@@ -79,8 +105,29 @@ export function ensureUniqueWidgetNames(
       return false
     }
 
-    for (const { widget, name } of renames) widget.name = name
-    return true
+    // The write is read back, and a write that did not land makes this `false`.
+    //
+    // This is the gate `BaseWidget.setNodeId` and `BaseWidget.widgetId` bail
+    // on, so returning `true` over a node that still carries two widgets under
+    // one name is what lets a colliding `WidgetId` be minted and registered.
+    // `BaseWidget`'s own `name` setter declines the write whenever the store
+    // declines the move — which is exactly the state
+    // `dropUnrenamableDuplicateWidgets` leaves behind when it keeps an
+    // unresolved duplicate rather than deleting the user's widget — so the
+    // unconditional `true` reported success precisely where it was wrong.
+    //
+    // Every rename is still attempted before answering: one declined write
+    // must not strand the collisions that would have resolved cleanly.
+    let unique = true
+    for (const { widget, name } of renames) {
+      try {
+        widget.name = name
+        if (widget.name !== name) unique = false
+      } catch {
+        unique = false
+      }
+    }
+    return unique
   } catch (error) {
     console.warn('Failed to rename duplicate widgets', error)
     return false
