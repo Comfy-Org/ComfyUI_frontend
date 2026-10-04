@@ -455,13 +455,29 @@ describe('LGraphCanvas selection', () => {
 
       canvas.startGhostPlacement(b)
 
-      expect(
-        vi
-          .mocked(onSelectionChange)
-          .mock.calls.map(([selected]) => Object.keys(selected))
-      ).toEqual([[String(b.id)]])
+      try {
+        expect(
+          vi
+            .mocked(onSelectionChange)
+            .mock.calls.map(([selected]) => Object.keys(selected))
+        ).toEqual([[String(b.id)]])
+      } finally {
+        // Leaves document listeners behind otherwise, failing later tests.
+        canvas.finalizeGhostPlacement(true)
+      }
+    })
 
-      canvas.finalizeGhostPlacement(true)
+    it('a nested deselectAll() inside a deselection hook adds no change', () => {
+      canvas.selectItems([a, b])
+      a.onDeselected = () => {
+        canvas.select(b)
+        canvas.deselectAll()
+      }
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.deselectAll()
+
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
     })
 
     it('alt aux-clicking a selected reroute reports one change', () => {
