@@ -1082,6 +1082,8 @@ describe('buildSummaryLedger credit counts', () => {
   const STANDARD_GRANT = { credits_today: 4200, credits_next_period: 4200 }
   const TEAM_STOP_GRANT = { credits_today: 0, credits_next_period: 16_899 }
   const PRORATED_GRANT = { credits_today: 2531, credits_next_period: 16_899 }
+  const TODAY_COUNT_ONLY = { credits_today: 4200 }
+  const NEXT_PERIOD_COUNT_ONLY = { credits_next_period: 4200 }
   const UNEQUAL_GRANT_SAME_CENTS = {
     credits_today: 4201,
     credits_next_period: 4200
@@ -1161,6 +1163,40 @@ describe('buildSummaryLedger credit counts', () => {
         credits_next_period_cents: 1991,
         new_plan: planOf('STANDARD', 'MONTHLY', 2000),
         ...UNEQUAL_GRANT_SAME_CENTS
+      },
+      expected: {
+        credits: { count: '4,201', qualifier: 'credits added today' },
+        sublines: [
+          '$20 /mo, billed monthly',
+          'Credits refill to 4,200 each month'
+        ]
+      }
+    },
+    {
+      name: "only today's count: it stays dated against the refill the cents convert to",
+      quote: {
+        transition_type: 'new_subscription',
+        credits_today_cents: 1991,
+        credits_next_period_cents: 1991,
+        new_plan: planOf('STANDARD', 'MONTHLY', 2000),
+        ...TODAY_COUNT_ONLY
+      },
+      expected: {
+        credits: { count: '4,200', qualifier: 'credits added today' },
+        sublines: [
+          '$20 /mo, billed monthly',
+          'Credits refill to 4,201 each month'
+        ]
+      }
+    },
+    {
+      name: "only the refill's count: today's converted grant stays dated against it",
+      quote: {
+        transition_type: 'new_subscription',
+        credits_today_cents: 1991,
+        credits_next_period_cents: 1991,
+        new_plan: planOf('STANDARD', 'MONTHLY', 2000),
+        ...NEXT_PERIOD_COUNT_ONLY
       },
       expected: {
         credits: { count: '4,201', qualifier: 'credits added today' },
