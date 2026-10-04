@@ -145,6 +145,18 @@ describe('executionStore workflow gating', () => {
   })
 
   /** Queue a job from `wf` so the id mapping exists, as storeJob does. */
+  function queueLegacyJobFrom(jobId: string, wf: LoadedComfyWorkflow) {
+    store.storeJob({
+      nodes: ['1'],
+      id: jobId,
+      promptOutput: { '1': { inputs: {}, class_type: 'TestNode' } },
+      startTime: 42,
+      submissionAcceptedAt: 62,
+      workflow: wf,
+      mode: 'graph'
+    })
+  }
+
   function queueJobFrom(jobId: string, wf: LoadedComfyWorkflow) {
     const graphId = wf.activeState.id ?? wf.initialState.id
     if (!graphId) throw new Error('workflow graph id missing')
@@ -870,6 +882,24 @@ describe('executionStore workflow gating', () => {
 
       expect(store.nodeProgressStates['1']?.value).toBe(7)
       expect(store.nodeProgressStates['1']?.prompt_id).toBe('job-b')
+    })
+    // A legacy server sends no workflow_id at all, so ownership resolves
+    // through the session path the client recorded at queue time. The QA pass
+    // against core f1072eb0 saw foreign progress here; it must clear on switch
+    // on that backend too, not only on one that stamps the frames.
+    it('clears the mirror on a backend that sends no workflow id', async () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueLegacyJobFrom('job-a', workflowA)
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        nodes: { '1': nodeState('job-a', '1', 'running', 3) }
+      })
+      expect(store.nodeProgressStates['1']?.value).toBe(3)
+
+      useWorkflowStore().activeWorkflow = workflowB
+      await nextTick()
+
+      expect(store.nodeProgressStates['1']).toBeUndefined()
     })
   })
 })
