@@ -390,8 +390,10 @@ export class PromptExecutionError extends Error {
     if (typeof this.response.error === 'string') {
       message += this.response.error
     } else if (this.response.error) {
-      message +=
-        this.response.error.message + ': ' + this.response.error.details
+      message += this.response.error.message
+      if (typeof this.response.error.details === 'string') {
+        message += ': ' + this.response.error.details
+      }
     }
 
     for (const [_, nodeError] of Object.entries(
@@ -399,7 +401,8 @@ export class PromptExecutionError extends Error {
     )) {
       message += '\n' + nodeError.class_type + ':'
       for (const errorReason of nodeError.errors) {
-        message += '\n    - ' + errorReason.message + ': ' + errorReason.details
+        message += '\n    - ' + errorReason.message
+        if (errorReason.details) message += ': ' + errorReason.details
       }
     }
 
