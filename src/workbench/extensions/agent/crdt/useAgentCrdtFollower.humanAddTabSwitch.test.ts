@@ -14,10 +14,13 @@ import * as Y from 'yjs'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { api } from '@/scripts/api'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import { attachDocOpMinter } from './docOpMinter'
 import { encodeBase64 } from './docFrameClient'
+import { attachDocOpMinter } from './docOpMinter'
+import { mintWireOps } from './opEnvelope'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const WORKFLOW_ID = 'wf-human-add'
@@ -65,6 +68,17 @@ function frames(sent: string[], type: string) {
     .filter((frame) => frame.type === type)
 }
 
+function nodeIds(graph: LGraph) {
+  const scope = graphScopeOf(graph)
+  return {
+    live: graph._nodes.map((node) => String(node.id)),
+    records: useNodeDataStore()
+      .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+      .map((state) => String(state.id)),
+    serialized: graph.serialize().nodes.map((node) => String(node.id))
+  }
+}
+
 function createRegisteredNode(type: string): LGraphNode {
   const node = LiteGraph.createNode(type)
   if (!node) throw new Error(`${type} not registered`)
@@ -93,7 +107,7 @@ describe('a human-added node across a tab switch', () => {
     api.socket = null
   })
 
-  function mountBoundFollower(graph: LGraph, withMinter: boolean) {
+  function mountBoundFollower(graph: LGraph) {
     const host = mint(toWorkflowJson(graph.serialize()), CATALOG)
     const isTargetActive = ref(true)
     let followerApi!: ReturnType<typeof useAgentCrdtFollower>
@@ -111,18 +125,16 @@ describe('a human-added node across a tab switch', () => {
       }),
       { global: { plugins: [getActivePinia()!] } }
     )
-    const minter = withMinter
-      ? attachDocOpMinter({
-          isEnabled: () => true,
-          isDocBound: () => isTargetActive.value,
-          enqueue: followerApi.enqueueHumanOperations,
-          getGraph: () => graph,
-          boundRootGraphId: () => null,
-          docInputNames: followerApi.docInputNames
-        })
-      : null
+    const minter = attachDocOpMinter({
+      isEnabled: () => true,
+      isDocBound: () => isTargetActive.value,
+      enqueue: followerApi.enqueueHumanOperations,
+      getGraph: () => graph,
+      boundRootGraphId: () => null,
+      docInputNames: followerApi.docInputNames
+    })
     const cleanup = () => {
-      minter?.detach()
+      minter.detach()
       view.unmount()
       host.destroy()
     }
@@ -140,15 +152,45 @@ describe('a human-added node across a tab switch', () => {
     })
   }
 
+  function acknowledge(ops: Op[]): void {
+    deliver('doc_ops_result', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      applied: ops.map((op) => op.op_id),
+      skipped: []
+    })
+  }
+
+  function echo(host: Y.Doc, seq: number, ops: Op[]): void {
+    deliver('doc_update', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      seq,
+      actor: ops[0].actor,
+      op_ids: ops.map((op) => op.op_id),
+      update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
+    })
+  }
+
   it.for([
-    { name: 'a catalogued node', type: 'TestSource' },
-    { name: 'a frontend-only (virtual) node', type: 'TestVirtual' }
+    {
+      name: 'a catalogued node',
+      type: 'TestSource',
+      widgetsValues: { steps: 20 }
+    },
+    {
+      name: 'a frontend-only (virtual) node',
+      type: 'TestVirtual',
+      widgetsValues: ['x']
+    }
   ])(
-    'keeps $name whose add is in flight when the tab deactivates and a snapshot without it arrives on return',
-    async ({ type }) => {
+    'keeps $name and delivers a batch queued behind its in-flight add across a tab switch with an advancing host',
+    async ({ type, widgetsValues }) => {
       const graph = new LGraph()
-      graph.add(createRegisteredNode('TestSource'))
-      const { host, isTargetActive, cleanup } = mountBoundFollower(graph, true)
+      const source = createRegisteredNode('TestSource')
+      graph.add(source)
+      const { host, isTargetActive, cleanup } = mountBoundFollower(graph)
       try {
         deliverCatchUp(host, 1)
 
@@ -157,71 +199,92 @@ describe('a human-added node across a tab switch', () => {
         await Promise.resolve()
         await Promise.resolve()
 
-        const addFrames = frames(sent, 'doc_ops')
-        expect(addFrames).toHaveLength(1)
-        const ops = addFrames[0].data.ops ?? []
-        expect(ops.map((op) => op.op)).toEqual(['add_node'])
+        expect(frames(sent, 'doc_ops')).toHaveLength(1)
+        const addOps = frames(sent, 'doc_ops')[0].data.ops ?? []
+        expect(addOps.map((op) => op.op)).toEqual(['add_node'])
+        expect(addOps[0]).toMatchObject({
+          node: { widgets_values: widgetsValues }
+        })
+
+        source.title = 'Renamed'
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(frames(sent, 'doc_ops')).toHaveLength(1)
 
         isTargetActive.value = false
         await nextTick()
         expect(frames(sent, 'doc_unsubscribe')).toHaveLength(1)
+        await vi.advanceTimersByTimeAsync(5_000)
+        expect(frames(sent, 'doc_ops')).toHaveLength(1)
+
+        const agentOps = mintWireOps(
+          [
+            {
+              op: 'set_widget',
+              node_id: source.id,
+              widget: 'steps',
+              value: 55
+            }
+          ],
+          { actor: 'agent:comfy:host', baseVersion: 1 }
+        )
+        expect(
+          applyOps(host, agentOps, CATALOG).outcomes.map(
+            (outcome) => outcome.outcome
+          )
+        ).toEqual(['applied'])
 
         isTargetActive.value = true
         await nextTick()
         expect(frames(sent, 'doc_subscribe')).toHaveLength(2)
-        deliverCatchUp(host, 1)
+        expect(source.widgets![0].value).toBe(20)
+        deliverCatchUp(host, 2)
         await nextTick()
 
-        expect(graph.getNodeById(added.id)).toBe(added)
-
-        const { outcomes } = applyOps(host, ops, CATALOG)
-        expect(outcomes.map((outcome) => outcome.outcome)).toEqual(['applied'])
-        deliver('doc_ops_result', {
-          v: 1,
-          workflow_id: WORKFLOW_ID,
-          ok: true,
-          applied: ops.map((op) => op.op_id),
-          skipped: []
+        expect(source.widgets![0].value).toBe(55)
+        const retained = [String(source.id), String(added.id)]
+        expect(nodeIds(graph)).toEqual({
+          live: retained,
+          records: retained,
+          serialized: retained
         })
-        deliver('doc_update', {
-          v: 1,
-          workflow_id: WORKFLOW_ID,
-          seq: 2,
-          actor: ops[0].actor,
-          op_ids: ops.map((op) => op.op_id),
-          update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-        })
-        await nextTick()
-
-        expect(graph.getNodeById(added.id)).toBe(added)
-        await vi.advanceTimersByTimeAsync(30_000)
         expect(frames(sent, 'doc_ops')).toHaveLength(1)
+
+        expect(
+          applyOps(host, addOps, CATALOG).outcomes.map(
+            (outcome) => outcome.outcome
+          )
+        ).toEqual(['applied'])
+        acknowledge(addOps)
+        echo(host, 3, addOps)
+        await nextTick()
+
+        const renameFrames = frames(sent, 'doc_ops')
+        expect(renameFrames).toHaveLength(2)
+        const renameOps = renameFrames[1].data.ops ?? []
+        expect(renameOps).toMatchObject([
+          { op: 'set_node_field', node_id: source.id, field: 'title' }
+        ])
+        expect(
+          applyOps(host, renameOps, CATALOG).outcomes.map(
+            (outcome) => outcome.outcome
+          )
+        ).toEqual(['applied'])
+        acknowledge(renameOps)
+        echo(host, 4, renameOps)
+        await nextTick()
+
+        expect(nodeIds(graph)).toEqual({
+          live: retained,
+          records: retained,
+          serialized: retained
+        })
+        expect(source.widgets![0].value).toBe(55)
+        await vi.advanceTimersByTimeAsync(30_000)
+        expect(frames(sent, 'doc_ops')).toHaveLength(2)
       } finally {
         cleanup()
       }
     }
   )
-
-  it('keeps a node that was never minted when the tab returns to a snapshot without it', async () => {
-    const graph = new LGraph()
-    graph.add(createRegisteredNode('TestSource'))
-    const { host, isTargetActive, cleanup } = mountBoundFollower(graph, false)
-    try {
-      deliverCatchUp(host, 1)
-      const added = createRegisteredNode('TestVirtual')
-      graph.add(added)
-
-      isTargetActive.value = false
-      await nextTick()
-      isTargetActive.value = true
-      await nextTick()
-      deliverCatchUp(host, 1)
-      await nextTick()
-
-      expect(frames(sent, 'doc_ops')).toHaveLength(0)
-      expect(graph.getNodeById(added.id)).toBe(added)
-    } finally {
-      cleanup()
-    }
-  })
 })
