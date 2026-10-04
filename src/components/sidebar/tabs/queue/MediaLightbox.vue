@@ -52,6 +52,7 @@
               v-else-if="isVideoResult(activeItem)"
               :key="resultItemUrl(activeItem)"
               :result="activeItem"
+              :autoplay="autoplayVideo"
             />
             <ResultAudio
               v-else-if="isAudioResult(activeItem)"
@@ -105,6 +106,12 @@ const emit = defineEmits<{
 const props = defineProps<{
   allGalleryItems: AugmentedResultItem[]
   activeIndex: number
+  /**
+   * Start video playback as soon as a video becomes the active item. Opt-in:
+   * only callers whose own thumbnail advertised playback should pass it, so
+   * the queue sidebar and asset browser keep opening to a paused player.
+   */
+  autoplayVideo?: boolean
 }>()
 
 /* Keeps the active video plus its neighbors buffered across gallery moves. */

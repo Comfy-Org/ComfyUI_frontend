@@ -180,7 +180,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   // Regression: https://linear.app/comfyorg/issue/PM-1895/fix-video-outputs-in-the-agent-tab-play-only-on-hover-with-no-video
-  test('identifies a generated video before hover', async ({
+  test('identifies a generated video and honors its play affordance', async ({
     agentPanel,
     comfyPage,
     getWebSocket,
@@ -220,14 +220,37 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     // `toBeVisible` passes on `opacity: 0`, so it cannot tell a persistent
     // badge from the repo's usual `opacity-0 group-hover:opacity-100` reveal —
-    // which is the regression PM-1895 is about. Pin the computed opacity, both
-    // with the pointer parked away from the tile and while hovering it.
+    // which is the regression PM-1895 is about. Pin the computed opacity with
+    // the pointer parked away from the tile.
     const affordance = videoTile.getByTestId('reply-video-affordance')
     await expect(affordance).toBeVisible()
     await expect(affordance).toHaveCSS('opacity', '1')
 
-    await videoTile.hover()
-    await expect(affordance).toHaveCSS('opacity', '1')
+    // Hovering starts the muted preview, and the badge then gets out of the way
+    // of the frame it was otherwise sitting on top of for the whole clip.
+    // Hover the video rather than the tile: a single small clip leaves the
+    // button wider than the frame, so the button's center can land beside it.
+    const preview = videoTile.getByTestId('reply-video-preview')
+    await preview.hover()
+    await expect
+      .poll(() =>
+        preview.evaluate((video: HTMLVideoElement) => video.currentTime)
+      )
+      .toBeGreaterThan(0)
+    await expect(affordance).toHaveCount(0)
+
+    // The badge promises playback, so the click it invites has to deliver a
+    // playing video — not a second, paused play button.
+    await preview.click()
+    const player = comfyPage.page
+      .getByRole('dialog', { name: enMessages.g.gallery })
+      .locator('video')
+    await expect(player).toBeVisible()
+    await expect
+      .poll(() =>
+        player.evaluate((video: HTMLVideoElement) => video.currentTime)
+      )
+      .toBeGreaterThan(0)
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({

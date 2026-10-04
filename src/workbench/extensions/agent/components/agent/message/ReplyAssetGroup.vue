@@ -135,6 +135,12 @@ function inspect(asset: ReplyAsset): void {
   galleryIndex.value = galleryAssets.value.indexOf(asset)
 }
 
+/* URL of the tile whose hover preview is currently playing, so the play badge
+   can step out of the way instead of sitting on top of the moving frame. Driven
+   by the element's own `playing`/`pause` events rather than by the hover
+   handlers: a `play()` the browser refuses must leave the badge in place. */
+const previewing = ref<string | null>(null)
+
 function playPreview(event: Event): void {
   const video = event.target
   if (video instanceof HTMLVideoElement) void video.play().catch(() => {})
@@ -193,6 +199,8 @@ function stopPreview(event: Event): void {
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
           @mouseenter="playPreview"
           @mouseleave="stopPreview"
+          @playing="previewing = asset.url"
+          @pause="previewing = null"
         />
         <img
           v-else-if="modelThumbnails[asset.url]"
@@ -215,7 +223,7 @@ function stopPreview(event: Event): void {
           <span class="icon-[lucide--box] size-6 text-muted-foreground" />
         </span>
         <span
-          v-if="asset.kind === 'video'"
+          v-if="asset.kind === 'video' && previewing !== asset.url"
           data-testid="reply-video-affordance"
           aria-hidden="true"
           class="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -272,10 +280,13 @@ function stopPreview(event: Event): void {
       </Button>
     </div>
 
+    <!-- `autoplay-video`: the tile these open from carries a play badge, so a
+         click has to produce playback rather than a second paused player. -->
     <MediaLightbox
       v-if="galleryIndex !== -1"
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
+      autoplay-video
       @update:active-index="galleryIndex = $event"
     />
   </div>

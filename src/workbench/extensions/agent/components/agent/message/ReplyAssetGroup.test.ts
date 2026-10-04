@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -56,9 +62,15 @@ function renderGroup(assets: ReplyAsset[]) {
       plugins: [i18n],
       stubs: {
         MediaLightbox: {
-          props: ['allGalleryItems', 'activeIndex'],
+          // Typed, not an array: `autoplayVideo` has to cast the valueless
+          // attribute the way the real boolean prop does.
+          props: {
+            allGalleryItems: Array,
+            activeIndex: Number,
+            autoplayVideo: Boolean
+          },
           template:
-            '<div data-testid="lightbox" :data-active="activeIndex" :data-count="allGalleryItems.length" />'
+            '<div data-testid="lightbox" :data-active="activeIndex" :data-count="allGalleryItems.length" :data-autoplay-video="String(autoplayVideo)" />'
         },
         ReplyAudioCard: {
           props: ['asset', 'title'],
@@ -135,6 +147,53 @@ describe('ReplyAssetGroup', () => {
     const lightbox = screen.getByTestId('lightbox')
     expect(lightbox.dataset.active).toBe('1')
     expect(lightbox.dataset.count).toBe('2')
+  })
+
+  it('PM-1895 opens the lightbox already playing when the tile was a video', async () => {
+    renderGroup([image(1), video])
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open video: clip.mp4' })
+    )
+
+    expect(screen.getByTestId('lightbox').dataset.autoplayVideo).toBe('true')
+  })
+
+  it('PM-1895 clears the play badge while the hover preview is playing', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue()
+    const pause = vi
+      .spyOn(HTMLMediaElement.prototype, 'pause')
+      .mockImplementation(() => {})
+    renderGroup([video, image(1)])
+    const element = screen.getByTestId('reply-video-preview')
+    expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
+
+    await userEvent.hover(element)
+    await fireEvent(element, new Event('playing'))
+    expect(screen.queryByTestId('reply-video-affordance')).toBeNull()
+
+    await userEvent.unhover(element)
+    await fireEvent(element, new Event('pause'))
+    expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
+
+    play.mockRestore()
+    pause.mockRestore()
+  })
+
+  it('PM-1895 keeps the play badge when the browser refuses the preview', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockRejectedValue(new Error('NotAllowedError'))
+    renderGroup([video])
+
+    // No `playing` event follows a refused `play()`, so the badge is still the
+    // only thing telling the user this tile is a video.
+    await userEvent.hover(screen.getByTestId('reply-video-preview'))
+    expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
+
+    play.mockRestore()
   })
 
   it('plays a video preview on hover and pauses on leave', async () => {
