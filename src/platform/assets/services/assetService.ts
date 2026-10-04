@@ -489,9 +489,13 @@ function createAssetService() {
    * @returns The list of model filenames within the specified folder
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
     const buckets = await loadModelBuckets()
     const legacyFolder = folder.split('/')[0]
-    const assets = buckets.get(folder) ?? buckets.get(legacyFolder) ?? []
+    const assets =
+      buckets.get(folder) ??
+      (!modelTypeMode ? buckets.get(legacyFolder) : undefined) ??
+      []
     return assets.map((asset) => ({
       // `loader_path` is the category-relative path the loader widget expects
       // and the source for the sidebar tree. Backends that predate it (bare-tag

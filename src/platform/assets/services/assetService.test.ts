@@ -768,6 +768,22 @@ describe(assetService.getAssetModels, () => {
 
     expect(models).not.toEqual([])
   })
+
+  it('does not use legacy parent folders for model-type categories', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'checkpoint',
+          name: 'checkpoint.safetensors',
+          tags: ['models', 'model_type:LLM']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('LLM/checkpoints')
+
+    expect(models).toEqual([])
+  })
 })
 
 describe(assetService.onModelsScanned, () => {
