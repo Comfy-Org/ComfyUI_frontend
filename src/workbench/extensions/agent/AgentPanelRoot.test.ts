@@ -38,7 +38,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -260,6 +260,7 @@ import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegistry'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -4544,6 +4545,28 @@ describe('AgentPanelRoot lifecycle', () => {
         errorType: 'minimap_decoration_layer_duplicate'
       })
     )
+  })
+
+  it('still paints graph activity when a replacement panel sets up before the old one unmounts', async () => {
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    const outgoing = renderWithSelectedTarget()
+    // The handover order the fix above cannot cover: a replacement host builds
+    // its panel while the outgoing one is still mounted and holding the id.
+    renderWithSelectedTarget()
+    outgoing.unmount()
+
+    useAgentGraphActivityStore().recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(301)]
+    )
+    await nextTick()
+
+    expect(
+      getMinimapDecorations({
+        rootGraphId: toRootGraphId('graph-1'),
+        owningGraphId: toOwningGraphId('graph-1')
+      }).map(({ target }) => target.nodeId)
+    ).toEqual(['301'])
   })
 
   it('clears workflow activity when the panel unmounts', () => {
