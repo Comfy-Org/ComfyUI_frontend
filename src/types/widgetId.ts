@@ -53,9 +53,15 @@ function nameIsWritable(widget: { name: string }): boolean {
 }
 
 /**
- * Whether {@link widget} may mint an id for the name it currently holds on a
- * node whose widgets are {@link widgets} — true unless an *earlier* widget in
- * the array already holds that name.
+ * The name key {@link widget} may mint a {@link WidgetId} from on a node whose
+ * widgets are {@link widgets}, or `undefined` when it may not — which is when
+ * an *earlier* widget in the array already holds that name.
+ *
+ * Returning the key rather than a boolean is deliberate. The caller mints the
+ * id from the value this answer was computed on, so a `name` accessor that
+ * answers differently on a second read cannot pass the check under one name and
+ * mint under another. It also cannot throw at the mint: an accessor that throws
+ * answers `undefined` here instead of escaping the `widgetId` getter.
  *
  * This is deliberately a per-widget question, and
  * {@link ensureUniqueWidgetNames} answers a different, whole-node one. A node
@@ -88,28 +94,51 @@ function nameIsWritable(widget: { name: string }): boolean {
  * must not decide whether this one has an identity, which is why the read is
  * guarded per candidate rather than around the loop.
  */
-export function widgetOwnsItsName(
+/**
+ * The key {@link widget}'s current `name` would build an id from, or
+ * `undefined` when no id can be derived from it at all.
+ *
+ * Asks nothing about ownership — {@link ownedWidgetNameKey} is that question.
+ * This exists for the one caller that can answer ownership better than an array
+ * position can: a widget already bound to the store entry at an id owns that id
+ * wherever it sits, including off the node entirely.
+ */
+export function widgetNameKey(widget: { name: string }): string | undefined {
+  const key = readName(widget)
+  return key === UNREADABLE_NAME ? undefined : key
+}
+
+export function ownedWidgetNameKey(
   widgets: readonly { name: string }[],
   widget: { name: string }
-): boolean {
+): string | undefined {
   const key = readName(widget)
-  if (key === UNREADABLE_NAME) return false
+  if (key === UNREADABLE_NAME) return undefined
 
   for (const candidate of widgets) {
     // Reached this widget without an earlier holder, so the name is its own.
     // Identity, not position: the same object may transiently occupy two
     // slots during an index-assignment reorder, and that is one widget.
-    if (candidate === widget) return true
+    if (candidate === widget) return key
     // An unreadable candidate answers `UNREADABLE_NAME`, which is never equal
     // to a key, so it is skipped rather than blocking this widget.
-    if (readName(candidate) === key) return false
+    if (readName(candidate) === key) return undefined
   }
 
-  // Not on the array at all, and no widget on it holds this name. A widget the
-  // refusal walk removed falls out of the loop above instead: it shares its
-  // name with whichever widget kept it, so it has no identity of its own to
-  // read or write through, and that is the point.
-  return true
+  // Not on the array at all, and no widget on it holds this name — which is a
+  // widget the node has just removed, and it keeps its id on purpose.
+  // `dynamicWidgets.ts` splices a group's widgets off `node.widgets` and *then*
+  // reads `widget.widgetId` to delete each store entry (`updateWidgets`, and
+  // again when an input is removed). Answering `undefined` there would leak
+  // every one of those entries, and a later widget of the same name and type
+  // silently inherits the stale value — the #13073 family.
+  //
+  // This is not the fail-open it looks like. A widget the *refusal walk*
+  // removed shares its name with the widget that kept it, so it exits through
+  // the loop above with no key and cannot reach that entry at all. Before this
+  // gate existed it could, which made `deleteWidget(widget.widgetId)` on a
+  // refused duplicate destroy the keeper's value.
+  return key
 }
 
 export function ensureUniqueWidgetNames(
@@ -160,7 +189,7 @@ export function ensureUniqueWidgetNames(
     // that act on it (`litegraphUtil`'s widget-value sync) acted on that.
     //
     // It is no longer what decides whether a widget may be registered: that is
-    // per widget, and {@link widgetOwnsItsName} answers it.
+    // per widget, and {@link ownedWidgetNameKey} answers it.
     //
     // Every rename is still attempted before answering: one declined write
     // must not strand the collisions that would have resolved cleanly.

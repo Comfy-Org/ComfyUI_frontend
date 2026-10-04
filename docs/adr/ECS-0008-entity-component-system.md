@@ -218,8 +218,8 @@ legitimate re-mint rather than an identity collision — which is why
 > A Vue node draws from the registered order (`getNodeWidgetIds`), so the node
 > rendered no widgets at all: strictly worse than the removal this criterion
 > replaced, which cost one widget and left the rest drawn. Registration is
-> therefore gated on `widgetOwnsItsName` — true unless an _earlier_ widget in
-> the array already holds that name. First occurrence wins, as above, so one
+> therefore gated on `ownedWidgetNameKey`, which answers with the key a widget
+> may mint from unless an _earlier_ widget in the array already holds that name. First occurrence wins, as above, so one
 > name still resolves to one `WidgetId` held by one widget and a later duplicate
 > is still never registered; it is only the collateral loss that goes away.
 >

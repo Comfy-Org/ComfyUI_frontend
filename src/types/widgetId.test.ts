@@ -5,9 +5,9 @@ import {
   dropUnrenamableDuplicateWidgets,
   ensureUniqueWidgetNames,
   isWidgetId,
+  ownedWidgetNameKey,
   parseWidgetId,
-  widgetId,
-  widgetOwnsItsName
+  widgetId
 } from './widgetId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -350,25 +350,25 @@ describe('dropUnrenamableDuplicateWidgets', () => {
  * other widgets, or the node's whole widget order empties and a Vue node draws
  * nothing.
  */
-describe('widgetOwnsItsName', () => {
+describe('ownedWidgetNameKey', () => {
   it('gives the name to the first widget holding it, and to no later one', () => {
     const first = { name: 'seed' }
     const later = { name: 'seed' }
     const unrelated = { name: 'cfg' }
     const widgets = [first, later, unrelated]
 
-    expect(widgetOwnsItsName(widgets, first)).toBe(true)
-    expect(widgetOwnsItsName(widgets, later)).toBe(false)
+    expect(ownedWidgetNameKey(widgets, first)).toBe('seed')
+    expect(ownedWidgetNameKey(widgets, later)).toBeUndefined()
     // The whole point: a widget that collides with nothing keeps its identity
     // even while the node is ambiguous.
-    expect(widgetOwnsItsName(widgets, unrelated)).toBe(true)
+    expect(ownedWidgetNameKey(widgets, unrelated)).toBe('cfg')
   })
 
   it('treats one widget in two array slots as one widget, not a collision', () => {
     // An index-assignment reorder transiently repeats the same object.
     const shared = { name: 'seed' }
 
-    expect(widgetOwnsItsName([shared, shared], shared)).toBe(true)
+    expect(ownedWidgetNameKey([shared, shared], shared)).toBe('seed')
   })
 
   it('collides names that differ as values but coincide as id strings', () => {
@@ -380,8 +380,9 @@ describe('widgetOwnsItsName', () => {
     const textual = { name: '1' }
     const widgets = [numeric, textual]
 
-    expect(widgetOwnsItsName(widgets, numeric)).toBe(true)
-    expect(widgetOwnsItsName(widgets, textual)).toBe(false)
+    // And the key is the coerced one, which is what the id is built from.
+    expect(ownedWidgetNameKey(widgets, numeric)).toBe('1')
+    expect(ownedWidgetNameKey(widgets, textual)).toBeUndefined()
   })
 
   it('refuses a widget whose own name cannot be read', () => {
@@ -391,7 +392,7 @@ describe('widgetOwnsItsName', () => {
       }
     }
 
-    expect(widgetOwnsItsName([hostile], hostile)).toBe(false)
+    expect(ownedWidgetNameKey([hostile], hostile)).toBeUndefined()
   })
 
   it('does not let an unreadable name on another widget decide this one', () => {
@@ -405,7 +406,7 @@ describe('widgetOwnsItsName', () => {
     }
     const ordinary = { name: 'seed' }
 
-    expect(widgetOwnsItsName([hostile, ordinary], ordinary)).toBe(true)
+    expect(ownedWidgetNameKey([hostile, ordinary], ordinary)).toBe('seed')
   })
 })
 
