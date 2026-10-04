@@ -206,6 +206,24 @@ describe('unique widget name invariant', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('refuses a raw pushed widget that normalization cannot make renamable', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    const concrete = node.addWidget('number', 'steps', 2, () => undefined, {})
+    node.widgets!.splice(node.widgets!.indexOf(concrete), 1)
+    pinName(concrete, 'seed')
+
+    // The other half of the case above. A widget that is *already* concrete
+    // keeps the pinned descriptor through `toConcreteWidget`, so deferring the
+    // verdict until after normalization does not rescue this one — it is the
+    // push that has to be refused, not the raw shape.
+    node.widgets!.push(concrete)
+
+    expect(names(node)).toEqual(['seed'])
+    expect(storedNames(node)).toEqual(['seed'])
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
   it('refuses the later of a pinned pair carried in by a whole-array assignment', () => {
     const node = createNode()
     const kept = node.addWidget('number', 'seed', 1, () => undefined, {})

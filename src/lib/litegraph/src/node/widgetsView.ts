@@ -225,6 +225,10 @@ function refuseAmbiguousWidgets(
     )
   }
 
+  // Only the widgets the walk actually took off the array. The caller uses this
+  // set to skip `setNodeId`, and an `unresolved-duplicate` is a finding the node
+  // **kept** — leaving it in here would hold a live widget out of the store
+  // forever, which is the exact harm the kept outcome exists to avoid.
   return new Set(
     refused.filter(({ removed }) => removed).map(({ widget }) => widget)
   )
