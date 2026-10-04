@@ -1437,6 +1437,36 @@ describe('useAgentCrdtFollower', () => {
       }
     )
 
+    it('terminates a pending frame as discarded before rebinding', async () => {
+      const { unmount, workflowId } = mountFollower('wf-1')
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        opIds: ['op-a']
+      })
+      telemetryState.trackAgentGraphProjection.mockClear()
+
+      workflowId.value = 'wf-2'
+      await nextTick()
+
+      expect(
+        telemetryState.trackAgentGraphProjection
+      ).toHaveBeenCalledExactlyOnceWith({
+        op_id: 'op-a',
+        op_count: 1,
+        sequence: 9,
+        stage: 'discarded',
+        added_count: 0,
+        removed_count: 0,
+        apply_failure_count: 0
+      })
+      unmount()
+    })
+
     it('terminates a pending frame as discarded when an own echo drops the collected changes', async () => {
       const graph = shallowRef<LGraph | null>(null)
       const { unmount, enqueue } = mountFollower(

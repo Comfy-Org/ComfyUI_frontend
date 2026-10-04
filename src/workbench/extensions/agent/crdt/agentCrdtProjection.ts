@@ -236,11 +236,6 @@ export class AgentCrdtProjection {
     this.localWrites.clear()
   }
 
-  /**
-   * The one place an applied outcome is built. Every public entry point ends
-   * in `return this.apply(...)`, so a new field on the `applied: true` arm is
-   * added here once instead of in three places that must agree.
-   */
   private apply(
     workflowId: string,
     target: BoundTarget,

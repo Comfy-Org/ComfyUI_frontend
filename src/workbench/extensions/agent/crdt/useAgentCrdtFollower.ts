@@ -435,8 +435,6 @@ function startAgentCrdtFollower(
     const projectionOutcome = projection.revertRejected(workflowId, rejected)
     if (!projectionOutcome.applied) return
     reportMaterialized(workflowId, projectionOutcome.createdNodeIds)
-    // `reverted` and not `applied`: these op ids are the rejected HUMAN ops,
-    // not an agent frame's, so the two must stay distinguishable downstream.
     reportAgentProjection(
       {
         opIds: rejected.map((op) => op.op_id),
