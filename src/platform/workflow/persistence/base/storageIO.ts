@@ -33,6 +33,7 @@ let workflowStorageState: WorkflowStorageState = {
 }
 const pendingPersistenceFlushes = new Set<() => void>()
 const pendingPersistenceCancels = new Set<() => void>()
+const WORKFLOW_SIGN_OUT_INTENT_KEY = 'Comfy.Workflow.SignOutIntent'
 
 export function registerWorkflowPersistenceFlush(
   flush: () => void
@@ -568,7 +569,7 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
   }
 }
 
-export function prepareWorkflowLogoutTransition(): void {
+function enterWorkflowLogoutTransition(): void {
   // Cancel before fencing, not after. The fence alone is not enough: it is
   // released when workspace initialization concludes, and a readiness watcher
   // installed before the sign-out is still live and can conclude afterwards.
@@ -583,6 +584,31 @@ export function prepareWorkflowLogoutTransition(): void {
         ? workflowStorageState.resumeAvailability
         : workflowStorageState.availability
   }
+}
+
+export function prepareWorkflowLogoutTransition(): void {
+  enterWorkflowLogoutTransition()
+  try {
+    localStorage.setItem(WORKFLOW_SIGN_OUT_INTENT_KEY, crypto.randomUUID())
+    localStorage.removeItem(WORKFLOW_SIGN_OUT_INTENT_KEY)
+  } catch {
+    // This window remains fenced even when cross-window signaling is blocked.
+  }
+}
+
+export function registerWorkflowLogoutIntentListener(): () => void {
+  const handleStorage = (event: StorageEvent) => {
+    if (
+      event.storageArea === localStorage &&
+      event.key === WORKFLOW_SIGN_OUT_INTENT_KEY &&
+      event.newValue !== null
+    ) {
+      enterWorkflowLogoutTransition()
+    }
+  }
+
+  window.addEventListener('storage', handleStorage)
+  return () => window.removeEventListener('storage', handleStorage)
 }
 
 export function completeWorkflowLogoutTransition(): void {

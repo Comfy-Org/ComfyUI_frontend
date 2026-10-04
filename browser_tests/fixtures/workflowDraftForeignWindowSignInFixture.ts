@@ -120,6 +120,20 @@ class WorkflowDraftForeignWindowSignInHelper {
     })
   }
 
+  async triggerForeignWindowSignOut(): Promise<void> {
+    const secondWindow = await this.page.context().newPage()
+    await this.bootWindow(secondWindow)
+    await secondWindow.evaluate(async () => {
+      await window.app!.extensionManager.command.execute('Comfy.User.SignOut')
+    })
+  }
+
+  async firePageHide(): Promise<void> {
+    await this.page.evaluate(() => {
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+    })
+  }
+
   private async bootWindow(page: Page): Promise<void> {
     await mockCloudBoot(page, {
       features: BOOT_FEATURES,

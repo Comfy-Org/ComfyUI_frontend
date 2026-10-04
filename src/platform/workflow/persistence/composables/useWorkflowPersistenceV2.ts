@@ -32,6 +32,7 @@ import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
   completeWorkflowLogoutTransition,
+  registerWorkflowLogoutIntentListener,
   registerWorkflowPersistenceCancel,
   registerWorkflowPersistenceFlush
 } from '../base/storageIO'
@@ -162,6 +163,7 @@ export function useWorkflowPersistenceV2() {
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
   })
+  const unregisterLogoutIntentListener = registerWorkflowLogoutIntentListener()
 
   onUserResolved(() => {
     if (!isCloud) return
@@ -326,6 +328,7 @@ export function useWorkflowPersistenceV2() {
     window.removeEventListener('pagehide', flushPendingPersistence)
     unregisterPersistenceFlush()
     unregisterPersistenceCancel()
+    unregisterLogoutIntentListener()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
   })

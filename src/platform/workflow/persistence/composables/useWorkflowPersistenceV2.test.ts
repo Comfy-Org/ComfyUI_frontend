@@ -870,6 +870,43 @@ describe('useWorkflowPersistenceV2', () => {
     expect(mockToastAdd).not.toHaveBeenCalled()
   })
 
+  it('abandons persistence when another window broadcasts deliberate sign-out', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('CrossWindowSignOut.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'before-sign-out' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    localStorage.clear()
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'Comfy.Workflow.SignOutIntent',
+        newValue: crypto.randomUUID(),
+        storageArea: localStorage
+      })
+    )
+    sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+
+    mocks.state.currentGraph = { marker: 'after-sign-out' }
+    mocks.state.graphChangedHandler?.()
+    window.dispatchEvent(new Event('pagehide'))
+    await vi.runAllTimersAsync()
+
+    expect(
+      localStorage.getItem(StorageKeys.draftPayload(workflow.path, 'personal'))
+    ).toBeNull()
+  })
+
   it('abandons the queued write and the stale readiness watcher when this window signs out', async () => {
     distributionMocks.isCloud = true
     sessionStorage.setItem(
