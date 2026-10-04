@@ -49,9 +49,11 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type {
+  Subgraph,
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
