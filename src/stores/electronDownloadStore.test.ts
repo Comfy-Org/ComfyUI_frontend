@@ -70,8 +70,6 @@ describe('useElectronDownloadStore progress observation', () => {
       expect(downloadManager.getAllDownloads).toHaveBeenCalled()
     )
 
-    // An unconfigured snapshot used to resolve undefined, so `initialize()`
-    // caught the iteration error and every case ran through that branch.
     await expect(
       downloadManager.getAllDownloads.mock.results[0]?.value
     ).resolves.toEqual([])
