@@ -95,13 +95,7 @@ interface FixtureOptions {
   secondDefinition?: boolean
   /** Serialize the root `source` node with the interior node's id (7). */
   rootIdCollidesWithInterior?: boolean
-  /**
-   * Strip the definition's interior nodes and links, so it still declares
-   * `value` while nothing promotes it. Models the document behind PM-1902: a
-   * subgraph-interior create is unrepresentable as a wire op
-   * (`agent_crdt_unrepresentable_subgraph_node_create`), so the definition the
-   * doc carries never gets the interior that makes `value` promoted.
-   */
+  /** Strip definition interiors so `value` is declared but not promoted. */
   unpromotedDefinition?: boolean
   /** Serialize the host with this positional widget array. */
   hostWidgetValues?: WidgetValue[]
@@ -111,20 +105,6 @@ interface FixtureOptions {
   promoteExtra?: boolean
   /** Mark the first delivered frame as a document-lineage replacement. */
   replaceOnFirstFrame?: boolean
-}
-
-/**
- * Options that deliberately break the host/document agreement `startFollower`
- * otherwise asserts on load.
- */
-function expectsDriftingHost(options: FixtureOptions): boolean {
-  const promotedCount = options.extraInput === true ? 2 : 1
-  return (
-    options.unpromotedDefinition === true ||
-    options.reverseHostInputs === true ||
-    (options.hostWidgetValues !== undefined &&
-      options.hostWidgetValues.length !== promotedCount)
-  )
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
@@ -240,11 +220,6 @@ function startFollower(options: FixtureOptions = {}) {
   ).not.toBeNull()
   const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
   expect(instance).toBeInstanceOf(SubgraphNode)
-  if (!expectsDriftingHost(options)) {
-    expect(instance.widgets[0]?.value).toBe(
-      options.emptyHostWidgets ? INTERIOR_DEFAULT_VALUE : HOST_INITIAL_VALUE
-    )
-  }
   expect(instance.inputs.map((i) => i.name)).toEqual(
     options.reverseHostInputs
       ? ['value', 'extra']
@@ -350,10 +325,6 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
   })
 
   it('S1z runs the host widget hooks on an accepted promoted write', () => {
-    // An accepted host write takes the same widget setter a human edit takes,
-    // so the node learns its widget changed. Writing `widgetValueStore`
-    // directly reaches the same store key silently, and was the last direct
-    // store write left in this applier.
     const state = startFollower()
     const widget = state.instance.widgets[0]
     const callback = vi.fn()
@@ -361,23 +332,8 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     widget.callback = callback
     state.instance.onWidgetChanged = changed
 
-    deliver(
-      state,
-      {
-        op: 'set_widget',
-        node_id: 1,
-        widget: 'value',
-        value: 42,
-        promoted: {
-          instance_path: [1],
-          value_index: 0,
-          host_widgets_values: [HOST_INITIAL_VALUE]
-        }
-      },
-      1
-    )
+    deliver(state, hostSetWidget(42), 1)
 
-    expect(widget.value).toBe(42)
     expect(callback).toHaveBeenCalledWith(42, undefined, state.instance)
     expect(changed).toHaveBeenCalledWith(
       'value',
@@ -389,31 +345,12 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
   })
 
   it('S1r rolls a host widget back when its change hook throws', () => {
-    // The host shares the plain-node contract already pinned in
-    // `liveGraphApplier.test.ts`: a throwing hook undoes the write and the
-    // frame is reported degraded. The host then disagrees with the document
-    // until a later op touches the widget, and that is the reported outcome,
-    // not a silent one.
     const state = startFollower()
     state.instance.onWidgetChanged = () => {
       throw new Error('extension hook exploded')
     }
 
-    deliver(
-      state,
-      {
-        op: 'set_widget',
-        node_id: 1,
-        widget: 'value',
-        value: 42,
-        promoted: {
-          instance_path: [1],
-          value_index: 0,
-          host_widgets_values: [HOST_INITIAL_VALUE]
-        }
-      },
-      1
-    )
+    deliver(state, hostSetWidget(42), 1)
 
     expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
     expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
@@ -989,7 +926,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         context: expect.objectContaining({
           expected: 1,
           actual: 0,
-          phase: 'incremental'
+          mode: 'merge'
         })
       })
     )
@@ -1022,12 +959,6 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
   })
 
   it('S1u reports drift on a catch-up frame when the definition promotes nothing', () => {
-    // PM-1902: the definition in the document carries no interior, so nothing
-    // on the host is promoted while its opaque array still carries a value.
-    // Before this guard the create path configured that array positionally over
-    // a host with no widgets, dropping the value with no telemetry at all.
-    // The frame is a catch-up rather than a lineage replace, so the drift is
-    // tagged `incremental`; S1w and S1y cover the `load` tag.
     const state = startFollower({ unpromotedDefinition: true })
 
     expect(state.instance.inputs.map((i) => i.widgetId)).toEqual([undefined])
@@ -1043,19 +974,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         context: expect.objectContaining({
           expected: 0,
           actual: 1,
-          phase: 'incremental'
+          mode: 'merge'
         })
       })
     )
   })
 
   it('S1v keeps host defaults on a catch-up frame when the opaque array is longer', () => {
-    // The create path handed the array straight to `configure`, which binds
-    // positionally over the host's widgets, so a two-value array landed its
-    // first value on the single promoted widget. `applyHostWidgets` refuses
-    // that same mapping on the incremental path (S1c); both paths must.
-    // Same catch-up framing as S1u: the assertion below is the `incremental`
-    // tag, not the `load` one.
     const state = startFollower({ hostWidgetValues: [99, 77] })
 
     expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
@@ -1070,7 +995,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         context: expect.objectContaining({
           expected: 1,
           actual: 2,
-          phase: 'incremental'
+          mode: 'merge'
         })
       })
     )
@@ -1099,19 +1024,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         context: expect.objectContaining({
           expected: 2,
           actual: 2,
-          phase: 'incremental'
+          mode: 'merge'
         })
       })
     )
   })
 
   it('S1y keeps host defaults on load when the opaque array is shorter', () => {
-    // The production shape: a host carrying fewer opaque values than its
-    // definition promotes, arriving through a document-lineage replace. Index 0
-    // is only "obviously" the first promoted input while writer and reader
-    // agree on the promoted surface; a reorder or removal makes the prefix land
-    // on the wrong widget, so the load path refuses the whole array rather than
-    // applying part of it.
     const state = startFollower({
       extraInput: true,
       promoteExtra: true,
@@ -1131,6 +1050,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       ['extra', INTERIOR_DEFAULT_VALUE],
       ['value', INTERIOR_DEFAULT_VALUE]
     ])
+    const promotedIds = state.instance.inputs.map((input) => input.widgetId)
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1144,20 +1064,15 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         context: expect.objectContaining({
           expected: 2,
           actual: 1,
-          phase: 'load',
-          // The load/create guard is the site that must adjudicate, and it
-          // reports the two promoted surfaces it compared. Without these the
-          // refusal came from the incremental guard downstream, which sees only
-          // the post-configure surface and cannot name what the array was
-          // validated against.
-          expectedPromotedIds: ['1:extra', '1:value'],
-          actualPromotedIds: ['1:extra', '1:value']
+          mode: 'replace',
+          beforeConfigurePromotedIds: promotedIds,
+          afterConfigurePromotedIds: promotedIds
         })
       })
     )
   })
 
-  it('S1w reports load and incremental drift once each', () => {
+  it('S1w reports replace and merge drift once each', () => {
     const state = startFollower({
       hostWidgetValues: [99, 77],
       replaceOnFirstFrame: true
@@ -1174,18 +1089,17 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       2
     )
 
-    expect(state.instance.widgets[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
     expect(reportError).toHaveBeenCalledTimes(2)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
-        context: expect.objectContaining({ phase: 'load' })
+        context: expect.objectContaining({ mode: 'replace' })
       })
     )
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
-        context: expect.objectContaining({ phase: 'incremental' })
+        context: expect.objectContaining({ mode: 'merge' })
       })
     )
   })

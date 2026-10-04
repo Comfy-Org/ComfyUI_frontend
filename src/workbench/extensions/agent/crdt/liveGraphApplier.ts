@@ -6,6 +6,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 import { z } from 'zod'
+import { isEqual } from 'es-toolkit'
 
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeFlags, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -31,7 +32,6 @@ import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 
 import {
   allSubgraphDefinitions,
@@ -497,7 +497,7 @@ export class LiveGraphApplier {
 
       for (const [id, names] of changes.widgets) {
         if (touchedNodes.has(id)) continue
-        this.try(context, () => this.syncWidgets(graph, doc, id, names))
+        this.try(context, () => this.syncWidgets(graph, doc, id, names, mode))
       }
 
       this.applyLinks(graph, doc, [...changes.links], context)
@@ -612,7 +612,7 @@ export class LiveGraphApplier {
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.applyFields(live, docNode)
-      this.applyWidgets(live, docNode.widgets)
+      this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
     if (live) graph.remove(live)
@@ -653,22 +653,20 @@ export class LiveGraphApplier {
       node.last_serialization = info
       node.configure(info)
     } else {
-      const expectedPromotedIds = promotedWidgetIds(node.inputs)
-      node.configure(
-        node.isSubgraphNode()
-          ? info
-          : {
-              ...info,
-              widgets_values: positionalWidgetValues(node, docNode.widgets)
-            }
-      )
       if (node.isSubgraphNode()) {
+        const beforeConfigurePromotedIds = promotedWidgetIds(node)
+        node.configure(info)
         this.applyConfiguredHostWidgets(
           node,
           docNode.widgets,
-          expectedPromotedIds,
-          mode === 'replace' ? 'load' : 'incremental'
+          beforeConfigurePromotedIds,
+          mode
         )
+      } else {
+        node.configure({
+          ...info,
+          widgets_values: positionalWidgetValues(node, docNode.widgets)
+        })
       }
     }
     floorSizeToContent(node)
@@ -718,14 +716,15 @@ export class LiveGraphApplier {
     graph: LGraph,
     doc: Y.Doc,
     id: string,
-    names: ReadonlySet<string> | 'all'
+    names: ReadonlySet<string> | 'all',
+    mode: ApplyMode
   ): void {
     const docNode = this.readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
     const widgets = docNode.widgets
     if (names === 'all' || Array.isArray(widgets)) {
-      this.applyWidgets(node, widgets)
+      this.applyWidgets(node, widgets, mode)
       return
     }
     if (!widgets) return
@@ -733,14 +732,19 @@ export class LiveGraphApplier {
       node,
       Object.fromEntries(
         Object.entries(widgets).filter(([name]) => names.has(name))
-      )
+      ),
+      mode
     )
   }
 
-  private applyWidgets(node: LGraphNode, widgets: DocNode['widgets']): void {
+  private applyWidgets(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    mode: ApplyMode
+  ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
-      this.applyHostWidgets(node, widgets)
+      this.applyHostWidgets(node, widgets, mode)
       return
     }
     const entries = Array.isArray(widgets)
@@ -769,50 +773,53 @@ export class LiveGraphApplier {
   private applyConfiguredHostWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
-    expectedPromotedIds: readonly string[],
-    phase: 'load' | 'incremental'
+    beforeConfigurePromotedIds: readonly string[],
+    mode: ApplyMode
   ): void {
-    const actualPromotedIds = promotedWidgetIds(node.inputs)
+    const afterConfigurePromotedIds = promotedWidgetIds(node)
     if (
       Array.isArray(widgets) &&
-      (widgets.length !== actualPromotedIds.length ||
-        !sameSequence(expectedPromotedIds, actualPromotedIds))
+      (widgets.length !== afterConfigurePromotedIds.length ||
+        !isEqual(beforeConfigurePromotedIds, afterConfigurePromotedIds))
     ) {
       this.reportHostWidgetDrift(
         node,
         widgets.length,
-        actualPromotedIds.length,
-        phase,
-        { expectedPromotedIds, actualPromotedIds }
+        afterConfigurePromotedIds.length,
+        mode,
+        { beforeConfigurePromotedIds, afterConfigurePromotedIds }
       )
       return
     }
-    this.applyHostWidgets(node, widgets, phase)
+    this.applyHostWidgets(node, widgets, mode)
   }
 
   private reportHostWidgetDrift(
     node: LGraphNode,
     actual: number,
     expected: number,
-    phase: 'load' | 'incremental',
-    identity?: Record<string, unknown>
+    mode: ApplyMode,
+    identity?: {
+      beforeConfigurePromotedIds: readonly string[]
+      afterConfigurePromotedIds: readonly string[]
+    }
   ): void {
     this.reportOnce(
-      `host-widgets:${phase}:${String(node.id)}`,
+      `host-widgets:${mode}:${String(node.id)}`,
       `Subgraph host ${String(node.id)} (${node.type}) carries ${actual} opaque widget values for ${expected} promoted widgets`,
       'agent_graph_host_widgets_mismatch',
-      { nodeId: node.id, type: node.type, expected, actual, phase, ...identity }
+      { nodeId: node.id, type: node.type, expected, actual, mode, ...identity }
     )
   }
 
   private applyHostWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
-    phase: 'load' | 'incremental' = 'incremental'
+    mode: ApplyMode
   ): void {
     const promoted = promotedInputs(node)
     if (Array.isArray(widgets) && widgets.length !== promoted.length) {
-      this.reportHostWidgetDrift(node, widgets.length, promoted.length, phase)
+      this.reportHostWidgetDrift(node, widgets.length, promoted.length, mode)
       return
     }
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
@@ -964,26 +971,13 @@ function isLinkPresent(
   )
 }
 
-/** The host inputs that surface a promoted widget, in host slot order. */
 function promotedInputs(node: LGraphNode): INodeInputSlot[] {
   return node.inputs.filter((input) => input.widgetId)
 }
 
-function promotedWidgetIds(inputs: readonly INodeInputSlot[]): string[] {
-  return inputs.flatMap((input) => {
-    if (!isWidgetId(input.widgetId)) return []
-    const { nodeId, name } = parseWidgetId(input.widgetId)
-    return [`${String(nodeId)}:${name}`]
-  })
-}
-
-function sameSequence(
-  expected: readonly string[],
-  actual: readonly string[]
-): boolean {
-  return (
-    expected.length === actual.length &&
-    expected.every((value, index) => value === actual[index])
+function promotedWidgetIds(node: LGraphNode): string[] {
+  return promotedInputs(node).flatMap((input) =>
+    input.widgetId ? [input.widgetId] : []
   )
 }
 
