@@ -8,6 +8,10 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import {
+  HUG_CONTENT_CLASS,
+  SELF_STYLED_PANEL_CONTENT_CLASS
+} from '@/components/ui/dialog/dialog.variants'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -46,20 +50,6 @@ const lazyCloudNotificationContent = () =>
   import('@/platform/cloud/notification/components/CloudNotificationContent.vue')
 const lazyPublishDialog = () =>
   import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
-
-/**
- * Shrink-wrap the Reka DialogContent around the content's intrinsic width,
- * like the auto-sized PrimeVue root it replaces.
- */
-const HUG_CONTENT_CLASS =
-  'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
-
-/**
- * Reka chrome for headless dialogs whose content draws its own panel
- * (background/border/rounding) — neutralize the DialogContent box and
- * shrink-wrap it around the content.
- */
-const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
 
 // A type alias, not an interface: `showDialog`'s props are index-signature
 // typed, and only object literal types get an implicit index signature.
@@ -617,8 +607,6 @@ export const useDialogService = () => {
       dialogComponentProps: {
         renderer: 'reka',
         closable: true,
-        // Contents bring their own width and separators — shrink-wrap the
-        // chrome and zero the section padding.
         contentClass: `${HUG_CONTENT_CLASS} border-border-default`,
         headerClass: 'p-0',
         bodyClass: 'p-0 overflow-y-hidden',
@@ -1043,7 +1031,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           closable: false,
           contentClass:
-            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[min(42.5rem,calc(100vw-1rem))] rounded-2xl overflow-hidden',
+            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] rounded-2xl overflow-hidden',
           onRemoved: () => resolve()
         }
       })

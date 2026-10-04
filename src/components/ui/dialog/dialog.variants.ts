@@ -36,3 +36,8 @@ const sizes = [
 ] as const satisfies Array<DialogContentSize>
 
 export const FOR_STORIES = { sizes } as const
+
+export const HUG_CONTENT_CLASS =
+  'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
+
+export const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
