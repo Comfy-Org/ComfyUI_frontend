@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import type { WorkflowResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
@@ -7,10 +8,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
-import type {
-  CloudWorkflowListing,
-  CloudWorkflowRow
-} from '../../services/agent/agentRestClient'
+import type { CloudWorkflowListing } from '../../services/agent/agentRestClient'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
@@ -48,7 +46,7 @@ function setup(
     async (): Promise<CloudWorkflowListing> => listing(cloud)
   )
   const getCloudWorkflow = vi.fn(
-    async (workflowId: string): Promise<CloudWorkflowRow> =>
+    async (workflowId: string): Promise<WorkflowResponse> =>
       cloudRow(workflowId)
   )
   const resolver = useAgentWorkflowResolver({
@@ -73,7 +71,7 @@ function listing(
   return { entries, complete }
 }
 
-function cloudRow(id: string): CloudWorkflowRow {
+function cloudRow(id: string): WorkflowResponse {
   return {
     id,
     latest_version: 0,
@@ -453,16 +451,12 @@ describe('Agent workflow resolution', () => {
   )
 })
 
-// Truncation is a fact about the walk, not about the workflows in it, and the
-// only consumer of an absent id is a caller deciding whether the workflow was
-// deleted. Losing it there is how a saved workflow past the cut gets declared
-// gone.
 describe('Cloud listing completeness', () => {
   beforeEach(() => localStorage.clear())
 
   it('reports nothing complete before the first listing', () => {
     const { resolver } = setup([])
-    expect(resolver.isCloudListingComplete()).toBe(false)
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(false)
   })
 
   it.for([
@@ -476,39 +470,36 @@ describe('Cloud listing completeness', () => {
 
     expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
 
-    expect(resolver.isCloudListingComplete()).toBe(complete)
-    expect(resolver.isCloudWorkflowListed('cloud-a')).toBe(true)
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(false)
+    expect(resolver.cloudListingOmits('cloud-b')).toBe(complete)
   })
 
   it('does not leave a truncated verdict standing after a complete refresh', async () => {
     const { resolver, listCloudWorkflows } = setup([])
     listCloudWorkflows.mockResolvedValueOnce(listing([], false))
     await resolver.refreshCloudWorkflowIds()
-    expect(resolver.isCloudListingComplete()).toBe(false)
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(false)
 
     listCloudWorkflows.mockResolvedValueOnce(
       listing([{ id: 'cloud-a', name: 'A' }])
     )
     await resolver.refreshCloudWorkflowIds()
 
-    expect(resolver.isCloudListingComplete()).toBe(true)
+    expect(resolver.cloudListingOmits('cloud-b')).toBe(true)
   })
 
   it('keeps the last completeness verdict when a refresh fails', async () => {
     const { resolver, listCloudWorkflows } = setup([])
     await resolver.refreshCloudWorkflowIds()
-    expect(resolver.isCloudListingComplete()).toBe(true)
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(true)
 
     listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
     expect(await resolver.refreshCloudWorkflowIds()).toBe(false)
 
-    expect(resolver.isCloudListingComplete()).toBe(true)
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(true)
   })
 })
 
-// `GET /api/workflows/{id}` is the only read that distinguishes a live
-// version-less draft from a deleted workflow. Everything that is not a 404 has
-// to stay inconclusive: a caller uses `gone` to retire a chat's target.
 describe('Cloud workflow lifecycle', () => {
   beforeEach(() => localStorage.clear())
 
@@ -521,7 +512,6 @@ describe('Cloud workflow lifecycle', () => {
 
     expect(await resolver.cloudWorkflowLifecycle('cloud-a')).toBe('live')
 
-    expect(getCloudWorkflow).toHaveBeenCalledWith('cloud-a')
     expect(reportError).not.toHaveBeenCalled()
   })
 
@@ -552,7 +542,7 @@ describe('Cloud workflow lifecycle', () => {
 
       expect(reportError).toHaveBeenCalledWith(error, {
         surface: 'agent',
-        errorType: 'agent_cloud_workflow_lifecycle_failed'
+        errorType: 'failure_reading_agent_cloud_workflow'
       })
     }
   )

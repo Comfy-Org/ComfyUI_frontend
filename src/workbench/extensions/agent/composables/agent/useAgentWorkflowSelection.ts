@@ -17,16 +17,23 @@ import type {
 } from '../../types/workflowReference'
 import type { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 
-/**
- * What a restoration attempt resolved to: a tab to reopen (`target: null`
- * leaves `openRestoredWorkflow` to look one up after a catalog sync), a target
- * the server says is gone, or a restoration another selection has already
- * overtaken.
- */
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow | null }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
+
+function restorationOutcomeFor(
+  lifecycle: 'live' | 'gone' | 'unknown',
+  target: ComfyWorkflow | null
+): RestorationOutcome {
+  switch (lifecycle) {
+    case 'gone':
+      return { outcome: 'deleted' }
+    case 'live':
+    case 'unknown':
+      return { outcome: 'open', target }
+  }
+}
 
 interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
@@ -65,8 +72,7 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    isCloudWorkflowListed,
-    isCloudListingComplete,
+    cloudListingOmits,
     cloudWorkflowLifecycle
   } = resolver
   const editableWorkflowId = computed(() =>
@@ -228,44 +234,9 @@ export function useAgentWorkflowSelection({
   }
 
   /**
-   * Whether a successful listing that came back without `workflowId` is
-   * evidence about it at all. It is not when the walk gave up early: a partial
-   * index explains nothing about the pages it never read.
-   */
-  function completeListingOmits(listed: boolean, workflowId: string): boolean {
-    return (
-      listed && isCloudListingComplete() && !isCloudWorkflowListed(workflowId)
-    )
-  }
-
-  /**
-   * Resolves the tab a restored chat should reopen, or decides that its target
-   * is gone. A failed listing stays a retryable restoration failure rather than
-   * a verdict.
-   *
-   * `GET /api/workflows` cannot answer this on its own. It excludes
-   * version-less rows on purpose — those are the agent's own working copies,
-   * hidden from the user's list until a save or run promotes them (cloud
-   * `common/workflow/repository.go`, whose `List` filters on
-   * `LatestVersionIDNotNil`) — and it is a snapshot a concurrent save can
-   * outrun. So when something local still answers for the id, the omission is
-   * taken to the one read that *is* authoritative: `GET /api/workflows/{id}`,
-   * which excludes soft-deleted rows but not version-less ones, so a live draft
-   * answers 200 and a deleted workflow 404.
-   *
-   * That is deliberately not a test of the local tab's own `isTemporary` flag.
-   * A flag on local userdata cannot distinguish "never promoted" from
-   * "promoted by a run, then deleted" — a run promotes the cloud row while the
-   * tab stays temporary — and reading it after the listing resolves also loses
-   * a save that landed while the listing was in flight. Both of those are
-   * answered by asking about the id instead of inferring from the tab.
-   *
-   * With no local owner the omission still ends the chase: there is nothing to
-   * focus, so the target is unavailable whether the row was deleted or merely
-   * unlisted, and the saved-workflow stale-binding policy is unchanged.
-   * `matchesWorkflow` admits a temporary tab only as the id's verified owner,
-   * so none of this can hand a chat someone else's unsaved tab that merely
-   * occupies the same default path.
+   * A complete listing that omits the id is conclusive only when nothing local
+   * owns it. With a local owner, `GET /api/workflows/{id}` decides, because the
+   * listing hides version-less drafts.
    */
   async function resolveRestorationTarget(
     workflowId: string,
@@ -275,14 +246,15 @@ export function useAgentWorkflowSelection({
     if (!isCurrent()) return { outcome: 'superseded' }
     const target =
       boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-    if (!completeListingOmits(listed, workflowId))
+    if (!listed || !cloudListingOmits(workflowId))
       return { outcome: 'open', target }
     if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
-    return lifecycle === 'gone'
-      ? { outcome: 'deleted' }
-      : { outcome: 'open', target }
+    return restorationOutcomeFor(
+      lifecycle,
+      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    )
   }
 
   async function onWorkflowRestored(

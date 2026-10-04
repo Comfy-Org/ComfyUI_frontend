@@ -28,12 +28,6 @@ type WorkflowResolverDeps = {
   getCloudWorkflow: AgentRestClient['getCloudWorkflow']
 }
 
-/**
- * What the server says about one workflow id. `unknown` is not a synonym for
- * `gone`: a refused or unreachable read tells us nothing, and callers that
- * would otherwise declare a workflow deleted must keep treating it as
- * retryable.
- */
 type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 
 export function useAgentWorkflowResolver({
@@ -167,33 +161,13 @@ export function useAgentWorkflowResolver({
       : null
   }
 
-  /** Whether the last successful Cloud listing included `workflowId`. */
-  function isCloudWorkflowListed(workflowId: string): boolean {
-    return listedCloudIds.value.has(workflowId)
+  function cloudListingOmits(workflowId: string): boolean {
+    return listingComplete.value && !listedCloudIds.value.has(workflowId)
   }
 
   /**
-   * Whether the last successful listing walked every page. False before the
-   * first one, and false again whenever pagination gave up early, so an id
-   * absent from a partial index is unexplained rather than missing.
-   */
-  function isCloudListingComplete(): boolean {
-    return listingComplete.value
-  }
-
-  /**
-   * Asks the server about one id directly, for the cases the user's listing
-   * structurally cannot answer: it hides version-less drafts, and it is a
-   * snapshot that a save can outrun.
-   *
-   * Only a 404 is read as deletion. A 403 stays `unknown` even though the
-   * route's own refusal is an ownership check, because the auth middleware
-   * answers 403 for things that say nothing about the workflow — a
-   * soft-deleted account, an auth method the route does not take, an API-key
-   * policy failure — and only the body distinguishes them. Reading those as
-   * deletion would retire a live workflow on an auth hiccup; reading them as
-   * inconclusive only leaves the local tab focused, which is already what a
-   * failed listing does.
+   * Only a 404 proves deletion. A 403 can come from auth middleware for reasons
+   * unrelated to the workflow, so it stays `unknown` like every other failure.
    */
   async function cloudWorkflowLifecycle(
     workflowId: string
@@ -205,7 +179,7 @@ export function useAgentWorkflowResolver({
       if (error instanceof AgentApiError && error.status === 404) return 'gone'
       reportError(error, {
         surface: 'agent',
-        errorType: 'agent_cloud_workflow_lifecycle_failed'
+        errorType: 'failure_reading_agent_cloud_workflow'
       })
       return 'unknown'
     }
@@ -284,8 +258,7 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    isCloudWorkflowListed,
-    isCloudListingComplete,
+    cloudListingOmits,
     cloudWorkflowLifecycle,
     openWorkflowFor,
     availableWorkflowReferences,

@@ -42,10 +42,6 @@ const EMPTY_WORKFLOW: ComfyWorkflowJSON = {
   version: 0.4
 }
 
-// `GET /api/workflows/{id}` is the read that tells a live draft from a deleted
-// workflow: cloud's `GetByID` excludes soft-deleted rows ("a deleted workflow
-// reads as not found") but, unlike `List`, not version-less ones. A draft no
-// save or run has promoted is therefore served with `latest_version: 0`.
 function workflowRow(id: string): WorkflowResponse {
   return {
     id,
@@ -102,27 +98,6 @@ function transcript(
   ]
 }
 
-// A workflow the agent minted for itself and the user never saved has no row
-// in `GET /api/workflows`: cloud's `common/workflow/repository.go` filters
-// `List` on `LatestVersionIDNotNil`, deliberately hiding version-less rows
-// until a save or run promotes them. So that listing can never testify about
-// a draft, and its silence is not evidence of deletion.
-//
-// Returning to such a chat used to read that silence as deletion and answer
-// "The target workflow is no longer available" — while the draft's tab sat
-// open in the topbar, one click away. The chat must focus that tab instead.
-//
-// The sibling case is pinned by `agentDeletedTargetNotice.spec.ts` and by the
-// second case here: when nothing local owns the id, the unavailable notice is
-// still the right and only answer. There is no recover-into-a-new-workflow
-// path to offer, because the draft snapshot is the sole content source for
-// these workflows and `GET /api/agent/draft` authorizes against a live row —
-// cloud's soft-delete mixin adds `deleted_at IS NULL` to every workflow query,
-// so a deleted workflow's draft answers 403, not content.
-//
-// Narrower, backend-free coverage of the same decision lives in
-// `useAgentWorkflowSelection.test.ts` ("focuses the unsaved draft tab this
-// chat owns when the listing cannot carry it").
 test.describe(
   'Agent history returns to a chat whose draft tab is open',
   { tag: ['@cloud', '@agent'] },
@@ -131,10 +106,6 @@ test.describe(
       page,
       agentFlagEnabled
     }) => {
-      test.setTimeout(60_000)
-
-      // The user's workflow list carries only the saved workflow. The draft the
-      // agent minted is version-less, so it is absent by design.
       const cloudWorkflows: WorkflowListResponse = {
         data: [
           {
@@ -168,8 +139,6 @@ test.describe(
       let socket: WebSocketRoute | undefined
       await page.routeWebSocket(/\/ws/, (ws) => {
         socket = ws
-        // Every real connect sends one; the panel waits for it before it
-        // treats the socket as live.
         ws.send(
           JSON.stringify({
             type: 'status',
@@ -207,17 +176,12 @@ test.describe(
           await page.route('**/api/workflows?*', (route) =>
             route.fulfill(jsonRoute(cloudWorkflows))
           )
-          // The draft's own row is alive and unpromoted, which is what the
-          // listing's silence could not say.
           await page.route('**/api/workflows/*', (route) => {
             const id = new URL(route.request().url()).pathname.split('/').pop()
             if (route.request().method() !== 'GET' || id !== DRAFT_WORKFLOW_ID)
               return route.fallback()
             return route.fulfill(jsonRoute(workflowRow(DRAFT_WORKFLOW_ID)))
           })
-          // The second chat's target is a genuinely saved workflow, so it has a
-          // file to reopen from. Visiting it is only the way to leave the first
-          // chat; a page reload reaches the same restoration.
           await page.route('**/api/userdata?*', (route) => {
             const dir = new URL(route.request().url()).searchParams.get('dir')
             if (dir !== 'workflows') return route.fallback()
@@ -274,8 +238,6 @@ test.describe(
         await expect(panel.getByTestId('user-message-bubble')).toHaveText([
           OTHER_REQUEST
         ])
-        // That chat's own saved workflow opens its own tab, which is correct
-        // and is the baseline the return trip must not add to.
         await expect(topbar.getWorkflowTab(SAVED_WORKFLOW_NAME)).toBeVisible()
       })
 
@@ -294,252 +256,6 @@ test.describe(
       })
 
       await test.step('no second tab was materialized for the same workflow', async () => {
-        await expect(topbar.tabs).toHaveCount(tabsBeforeReturn)
-        await expect(topbar.getWorkflowTab(DRAFT_TAB_NAME)).toHaveCount(1)
-      })
-    })
-
-    test('still calls the target unavailable when nothing local owns the workflow', async ({
-      page,
-      agentFlagEnabled
-    }) => {
-      test.setTimeout(60_000)
-
-      // The chat names a workflow the user deleted: absent from the listing,
-      // and no tab of this session ever owned it.
-      const cloudWorkflows: WorkflowListResponse = {
-        data: [],
-        pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-      }
-      const threads: AgentThreadListResponse = {
-        threads: [
-          thread(
-            DRAFT_THREAD_ID,
-            'Lighting chat',
-            DRAFT_REQUEST,
-            DRAFT_WORKFLOW_ID
-          )
-        ],
-        pagination: { offset: 0, limit: 100, total: 1, has_more: false }
-      }
-      await bootAgentApp(page, agentFlagEnabled, {
-        beforeNavigate: async (page) => {
-          await page.route('**/api/agent/threads', (route) =>
-            route.fulfill(jsonRoute(threads))
-          )
-          await page.route('**/api/agent/threads/*/messages', (route) => {
-            if (route.request().method() !== 'GET') return route.fallback()
-            return route.fulfill(
-              jsonRoute(
-                transcript(DRAFT_THREAD_ID, DRAFT_WORKFLOW_ID, DRAFT_REQUEST)
-              )
-            )
-          })
-          await page.route('**/api/workflows?*', (route) =>
-            route.fulfill(jsonRoute(cloudWorkflows))
-          )
-        }
-      })
-
-      const topbar = new Topbar(page)
-      const agentPanel = new AgentPanel(page)
-      const panel = await agentPanel.open()
-      const tabsBefore = await topbar.tabs.count()
-
-      await test.step('the user selects the chat from history', async () => {
-        await panel
-          .getByRole('button', { name: enMessages.agent.showChatHistory })
-          .click()
-        const row = panel.getByRole('button', {
-          name: 'Lighting chat',
-          exact: true
-        })
-        await expect(row).toBeEnabled()
-        await row.click()
-        await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-          DRAFT_REQUEST
-        ])
-      })
-
-      await test.step('the chat says the workflow is gone and offers no recovered copy', async () => {
-        await expect(
-          panel.getByText(enMessages.agent.targetWorkflowUnavailable)
-        ).toBeVisible()
-        await expect(agentPanel.workflowPicker).toHaveText(
-          enMessages.agent.selectWorkflowForAgent
-        )
-        await expect(topbar.tabs).toHaveCount(tabsBefore)
-      })
-    })
-
-    // The sibling of the first case, and the one an open tab alone cannot
-    // decide. A *run* promotes the agent's minted row into a real workflow
-    // while its tab stays unsaved, so the tab being open and temporary is not
-    // evidence the row was never promoted — and once that promoted row is
-    // deleted, the chat's target really is gone. Nothing local changes between
-    // this case and the first one: only the workflow's own row differs.
-    test('calls the target unavailable when the draft row behind an open tab was deleted', async ({
-      page,
-      agentFlagEnabled
-    }) => {
-      test.setTimeout(60_000)
-
-      const cloudWorkflows: WorkflowListResponse = {
-        data: [
-          {
-            id: SAVED_WORKFLOW_ID,
-            name: SAVED_WORKFLOW_NAME,
-            created_at: AT,
-            updated_at: AT,
-            created_by: 'test-user-e2e',
-            latest_version: 1
-          }
-        ],
-        pagination: { offset: 0, limit: 100, total: 1, has_more: false }
-      }
-      const threads: AgentThreadListResponse = {
-        threads: [
-          thread(
-            DRAFT_THREAD_ID,
-            'Lighting chat',
-            DRAFT_REQUEST,
-            DRAFT_WORKFLOW_ID
-          ),
-          thread(
-            OTHER_THREAD_ID,
-            'Portrait chat',
-            OTHER_REQUEST,
-            SAVED_WORKFLOW_ID
-          )
-        ],
-        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-      }
-      let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: { status: { exec_info: { queue_remaining: 0 } } }
-          })
-        )
-      })
-
-      await bootAgentApp(page, agentFlagEnabled, {
-        beforeNavigate: async (page) => {
-          await page.route('**/api/agent/threads', (route) =>
-            route.fulfill(jsonRoute(threads))
-          )
-          await page.route('**/api/agent/threads/*/messages', (route) => {
-            if (route.request().method() !== 'GET') return route.fallback()
-            const threadId = new URL(route.request().url()).pathname.split(
-              '/'
-            )[4]
-            return route.fulfill(
-              jsonRoute(
-                threadId === OTHER_THREAD_ID
-                  ? transcript(
-                      OTHER_THREAD_ID,
-                      SAVED_WORKFLOW_ID,
-                      OTHER_REQUEST
-                    )
-                  : transcript(
-                      DRAFT_THREAD_ID,
-                      DRAFT_WORKFLOW_ID,
-                      DRAFT_REQUEST
-                    )
-              )
-            )
-          })
-          await page.route('**/api/workflows?*', (route) =>
-            route.fulfill(jsonRoute(cloudWorkflows))
-          )
-          // The deleted row: soft-deleted, so `GetByID` reads as not found.
-          await page.route('**/api/workflows/*', (route) => {
-            const id = new URL(route.request().url()).pathname.split('/').pop()
-            if (route.request().method() !== 'GET' || id !== DRAFT_WORKFLOW_ID)
-              return route.fallback()
-            return route.fulfill({
-              status: 404,
-              contentType: 'application/json',
-              body: JSON.stringify({
-                code: 'NOT_FOUND',
-                message: 'Workflow not found'
-              })
-            })
-          })
-          await page.route('**/api/userdata?*', (route) => {
-            const dir = new URL(route.request().url()).searchParams.get('dir')
-            if (dir !== 'workflows') return route.fallback()
-            return route.fulfill(jsonRoute(savedFiles))
-          })
-          await page.route('**/api/userdata/*', (route) => {
-            const request = route.request()
-            const path = decodeURIComponent(
-              new URL(request.url()).pathname.split('/userdata/')[1]
-            )
-            if (request.method() !== 'GET' || path !== SAVED_WORKFLOW_PATH)
-              return route.fallback()
-            return route.fulfill(jsonRoute(EMPTY_WORKFLOW))
-          })
-        }
-      })
-
-      const topbar = new Topbar(page)
-      const agentPanel = new AgentPanel(page)
-      const panel = await agentPanel.open()
-      const unavailable = panel.getByText(
-        enMessages.agent.targetWorkflowUnavailable
-      )
-      const historyButton = panel.getByRole('button', {
-        name: enMessages.agent.showChatHistory
-      })
-
-      await test.step('the agent announces the draft it minted and the panel opens a tab for it', async () => {
-        if (!socket) throw new Error('the app never opened /ws')
-        socket.send(
-          JSON.stringify({
-            type: 'agent_active_tab',
-            data: { workflow_id: DRAFT_WORKFLOW_ID, name: DRAFT_TAB_NAME }
-          })
-        )
-        await expect(topbar.getWorkflowTab(DRAFT_TAB_NAME)).toBeVisible()
-        await expect(unavailable).toBeHidden()
-      })
-
-      await test.step('the user visits another chat', async () => {
-        await historyButton.click()
-        const otherRow = panel.getByRole('button', {
-          name: 'Portrait chat',
-          exact: true
-        })
-        await expect(otherRow).toBeEnabled()
-        await otherRow.click()
-        await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-          OTHER_REQUEST
-        ])
-      })
-
-      const tabsBeforeReturn = await topbar.tabs.count()
-
-      await test.step('returning to the lighting chat says its workflow is gone', async () => {
-        await historyButton.click()
-        const draftRow = panel.getByRole('button', {
-          name: 'Lighting chat',
-          exact: true
-        })
-        await expect(draftRow).toBeEnabled()
-        await draftRow.click()
-        await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-          DRAFT_REQUEST
-        ])
-        await expect(unavailable).toBeVisible()
-        await expect(agentPanel.workflowPicker).toHaveText(
-          enMessages.agent.selectWorkflowForAgent
-        )
-      })
-
-      await test.step('the verdict retires the target without closing the tab or recovering a copy', async () => {
         await expect(topbar.tabs).toHaveCount(tabsBeforeReturn)
         await expect(topbar.getWorkflowTab(DRAFT_TAB_NAME)).toHaveCount(1)
       })

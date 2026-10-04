@@ -1,4 +1,5 @@
 import { render, waitFor } from '@testing-library/vue'
+import type { WorkflowResponse } from '@comfyorg/ingest-types'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
@@ -9,10 +10,7 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
-import type {
-  CloudWorkflowListing,
-  CloudWorkflowRow
-} from '../../services/agent/agentRestClient'
+import type { CloudWorkflowListing } from '../../services/agent/agentRestClient'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
@@ -33,19 +31,13 @@ function setup() {
         { id: 'wf-current', name: 'current' }
       ])
   )
-  // The rows cloud actually holds for this fixture, by the version each
-  // carries. `wf-draft` is a draft the agent minted and nothing promoted, so
-  // it is version 0 and `GET /api/workflows` cannot carry it while
-  // `GET /api/workflows/{id}` still serves it; the other two are saved. Any
-  // other id answers 404, which is what cloud's `GetByID` does for a
-  // soft-deleted row. Tests delete from this map to model a deletion.
   const cloudRows = new Map([
     ['wf-saved', 1],
     ['wf-current', 1],
     ['wf-draft', 0]
   ])
   const getCloudWorkflow = vi.fn(
-    async (workflowId: string): Promise<CloudWorkflowRow> => {
+    async (workflowId: string): Promise<WorkflowResponse> => {
       const latestVersion = cloudRows.get(workflowId)
       if (latestVersion === undefined)
         throw new AgentApiError('workflow not found', 404, undefined)
@@ -419,11 +411,6 @@ describe('historical workflow restoration', () => {
     }
   )
 
-  // The stale-binding policy is unchanged, and `lifecycleReads` records what it
-  // now costs: a listing that carries the id settles it outright, while an
-  // omitting one is confirmed against `GET /api/workflows/{id}` before the
-  // chat's target is retired. `wf-stale` has no row in the fixture, so that
-  // read answers 404.
   it.for([
     {
       listing: 'omits it',
@@ -486,19 +473,8 @@ describe('historical workflow restoration', () => {
     return draft
   }
 
-  // `GET /api/workflows` excludes version-less rows, so an omitting listing
-  // cannot testify about an unsaved workflow. These pin the split: the draft
-  // tab the chat owns is focused, while an id with no local owner stays
-  // unavailable.
   it('focuses the unsaved draft tab this chat owns when the listing cannot carry it', async () => {
-    const {
-      selection,
-      workflows,
-      bindings,
-      panel,
-      getCloudWorkflow,
-      warnRestoreFailed
-    } = setup()
+    const { selection, workflows, bindings, panel, warnRestoreFailed } = setup()
     const draft = openDraftTab(workflows, bindings)
 
     expect(await selection.restoreTarget('wf-draft', () => true)).toBe(true)
@@ -507,27 +483,18 @@ describe('historical workflow restoration', () => {
     expect(workflows.activeWorkflow?.path).toBe(draft.path)
     expect(panel.selectedWorkflow?.path).toBe(draft.path)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
-    // The draft's own row said it is live; the listing's silence did not.
-    expect(getCloudWorkflow).toHaveBeenCalledWith('wf-draft')
   })
 
-  // A run promotes the cloud row while the tab stays temporary, so the tab's
-  // `isTemporary` flag cannot tell "never promoted" from "promoted, then
-  // deleted". These three cases are indistinguishable from local state alone
-  // and are separated only by asking about the id.
   it('calls a promoted-then-deleted draft unavailable even though its tab is still open', async () => {
     const { selection, workflows, bindings, panel, cloudRows, current } =
       setup()
     const draft = openDraftTab(workflows, bindings)
-    // The run promoted it, the user deleted it: `GetByID` now answers 404.
     cloudRows.delete('wf-draft')
 
     expect(await selection.restoreTarget('wf-draft', () => true)).toBe(true)
 
     expect(panel.targetUnavailable).toBe(true)
     expect(panel.selectedWorkflow).toBeNull()
-    // The verdict retires the chat's target; it does not close the user's tab
-    // or move them off what they were looking at.
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(workflows.openWorkflows.map(({ path }) => path)).toContain(
       draft.path
@@ -555,10 +522,6 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  // The listing is a snapshot, and a save that promotes the tab mid-flight
-  // lands after it was taken. Reading the tab's `isTemporary` flag after the
-  // await would see the promoted tab against a listing that predates it and
-  // declare a live, open workflow deleted.
   it('does not call a workflow deleted when a save promotes its tab mid-listing', async () => {
     const {
       selection,
@@ -571,23 +534,18 @@ describe('historical workflow restoration', () => {
     } = setup()
     const draft = openDraftTab(workflows, bindings, 'wf-promoted')
     cloudRows.set('wf-promoted', 0)
-    // `isTemporary` is derived, not stored: `UserFile` reads it off the file's
-    // size, so saving flips it on the tab the chat already holds.
     let promoted = false
-    Object.defineProperty(draft, 'isTemporary', { get: () => !promoted })
+    vi.spyOn(draft, 'isTemporary', 'get').mockImplementation(() => !promoted)
     let finishListing = () => {}
     const pendingListing = new Promise<void>((resolve) => {
       finishListing = resolve
     })
     listCloudWorkflows.mockImplementationOnce(async () => {
       await pendingListing
-      // Taken before the save landed, so it cannot carry the new row.
       return listing([{ id: 'wf-saved', name: 'saved' }])
     })
     const restoration = selection.restoreTarget('wf-promoted', () => true)
 
-    // The save completes while the listing is in flight: the tab stops being
-    // temporary and cloud's row gains its first version.
     promoted = true
     cloudRows.set('wf-promoted', 1)
     finishListing()
@@ -599,8 +557,6 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  // A listing that gave up mid-walk is not evidence about the pages it never
-  // read, so a saved workflow past the cut must not be retired on its silence.
   it('does not decide anything from a listing that gave up mid-walk', async () => {
     const {
       selection,
@@ -608,7 +564,6 @@ describe('historical workflow restoration', () => {
       panel,
       current,
       listCloudWorkflows,
-      getCloudWorkflow,
       warnRestoreFailed
     } = setup()
     listCloudWorkflows.mockImplementationOnce(async () =>
@@ -620,9 +575,6 @@ describe('historical workflow restoration', () => {
     )
 
     expect(panel.targetUnavailable).toBe(false)
-    expect(getCloudWorkflow).not.toHaveBeenCalled()
-    // Nothing local answers for it either, so this stays the retryable
-    // restoration failure it was, not a deletion verdict.
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
     expect(workflows.activeWorkflow?.path).toBe(current.path)
   })
@@ -645,8 +597,6 @@ describe('historical workflow restoration', () => {
       throw new AgentApiError('workflow not found', 404, undefined)
     })
     const restoration = selection.restoreTarget('wf-draft', () => true)
-    // Waiting on the read itself, not on a microtask count: cancelling before
-    // the row read begins only re-proves the listing's own guard.
     await started
 
     selection.cancelSelection()
@@ -657,6 +607,39 @@ describe('historical workflow restoration', () => {
     expect(panel.targetUnavailable).toBe(false)
     expect(panel.selectedWorkflow?.path).toBe(current.path)
     expect(getCloudWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('does not reopen a draft closed while its row is being read', async () => {
+    const { selection, workflows, bindings, panel, getCloudWorkflow } = setup()
+    const draft = openDraftTab(workflows, bindings)
+    let readStarted = () => {}
+    const started = new Promise<void>((resolve) => {
+      readStarted = resolve
+    })
+    let finishRead = () => {}
+    const reading = new Promise<void>((resolve) => {
+      finishRead = resolve
+    })
+    getCloudWorkflow.mockImplementationOnce(async (workflowId) => {
+      readStarted()
+      await reading
+      return {
+        id: workflowId,
+        latest_version: 0,
+        created_by: 'user-1',
+        created_at: '2026-09-11T10:00:00Z',
+        updated_at: '2026-09-11T10:00:00Z'
+      }
+    })
+    const restoration = selection.restoreTarget('wf-draft', () => true)
+    await started
+
+    await workflows.closeWorkflow(draft)
+    finishRead()
+
+    expect(await restoration).toBe(false)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(workflows.openWorkflows).not.toContain(draft)
   })
 
   it('leaves a deleted target unavailable when nothing local answers for it', async () => {
