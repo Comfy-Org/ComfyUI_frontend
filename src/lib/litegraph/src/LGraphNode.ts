@@ -191,11 +191,33 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
-/** Deep-copies one widget value for one serialized register. */
-function cloneWidgetValue(value: TWidgetValue): TWidgetValue {
-  return value != null && typeof value === 'object'
-    ? (JSON.parse(JSON.stringify(value)) as TWidgetValue)
-    : (value ?? null)
+/**
+ * Deep-copies one widget value once for each of the two serialized registers,
+ * from a single read and a single encode of the live value.
+ *
+ * Reading twice would not be equivalent. `widget.value` is a public extension
+ * surface — `BaseDOMWidgetImpl` forwards it to a custom node's
+ * `options.getValue()` — and `JSON.stringify` invokes any `toJSON` the value
+ * carries, so two reads or two encodes can yield two different snapshots. The
+ * registers would then disagree about one widget: which value the user gets
+ * back on reload depends on `LiteGraph.namedValuesRestore`, and
+ * `reportNamedValuesShadowDiff` reports a mismatch that nothing caused.
+ *
+ * Decoding twice is deliberate and is what keeps the registers independent: a
+ * consumer that rewrites one in place cannot reach the other.
+ */
+function cloneWidgetValuePerRegister(
+  value: TWidgetValue
+): [TWidgetValue, TWidgetValue] {
+  if (value == null || typeof value !== 'object') {
+    const primitive = value ?? null
+    return [primitive, primitive]
+  }
+  const encoded = JSON.stringify(value)
+  return [
+    JSON.parse(encoded) as TWidgetValue,
+    JSON.parse(encoded) as TWidgetValue
+  ]
 }
 
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
@@ -214,10 +236,10 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
 
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    // One clone per register. The two are independent snapshots, so a consumer
-    // that rewrites one in place cannot reach the other.
-    positional.push(cloneWidgetValue(widget.value))
-    named[widget.name] = cloneWidgetValue(widget.value)
+    // One snapshot of the live value, one independent copy per register.
+    const [forPositional, forNamed] = cloneWidgetValuePerRegister(widget.value)
+    positional.push(forPositional)
+    named[widget.name] = forNamed
   }
   return { widgets_values: positional, widgets_values_named: { ...named } }
 }

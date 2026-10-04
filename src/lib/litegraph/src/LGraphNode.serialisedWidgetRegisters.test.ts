@@ -10,8 +10,9 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
  *
  * - every widget name reaches `widgets_values_named` as an **own** key,
  *   including a widget legitimately named `__proto__`;
- * - the two registers are independent snapshots, so rewriting one in place
- *   cannot reach the other.
+ * - the two registers are independent copies of **one** snapshot of the live
+ *   value, so rewriting one in place cannot reach the other, and the two can
+ *   never disagree about what the widget held.
  *
  * Object values use the `custom` widget type because the text and number
  * widgets coerce their value — a `text` widget holding an object serializes as
@@ -198,6 +199,44 @@ describe('serialised widget registers', () => {
 
       expect(serialised.widgets_values).toEqual(['yes'])
       expect(serialised.widgets_values_named).toEqual({ kept: 'yes' })
+    })
+
+    it('reads the live widget value once, not once per register', () => {
+      const widget = node.addWidget('text', 'prompt', 'typed', null, {})
+      let reads = 0
+      // An own `value` accessor is the real shape, not a contrivance: every DOM
+      // widget gets one installed on the instance (`domWidget.ts`), and it
+      // forwards to a custom node's `options.getValue()`.
+      Object.defineProperty(widget, 'value', {
+        configurable: true,
+        get() {
+          reads++
+          return 'typed'
+        }
+      })
+
+      node.serialize()
+
+      expect(reads).toBe(1)
+    })
+
+    it('puts one snapshot in both registers when the value re-encodes differently', () => {
+      // `JSON.stringify` calls `toJSON`, so a value that answers differently
+      // each time lands differently in each register if each register encodes
+      // its own read.
+      let encodes = 0
+      const value = {
+        toJSON: () => ({ encode: ++encodes })
+      }
+      node.addWidget('custom' as never, 'settings', value as never, null, {})
+
+      const serialised = node.serialize()
+
+      expect(serialised.widgets_values![0]).toEqual({ encode: 1 })
+      expect(serialised.widgets_values_named!['settings']).toEqual({
+        encode: 1
+      })
+      expect(encodes).toBe(1)
     })
 
     it('writes null for a widget whose value is undefined', () => {
