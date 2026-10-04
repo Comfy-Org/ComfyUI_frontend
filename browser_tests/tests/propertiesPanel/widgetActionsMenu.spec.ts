@@ -11,7 +11,10 @@ test.describe('Properties panel - Widget actions menu', { tag: '@ui' }, () => {
     panel = new PropertiesPanelHelper(comfyPage.page)
     await comfyPage.actionbar.propertiesButton.click()
     await expect(panel.root).toBeVisible()
-    await comfyPage.nodeOps.selectNodes(['KSampler'])
+    const node = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
+    await node.centerOnNode()
+    await node.click('title')
+    await expect(panel.panelTitle).toHaveText('KSampler')
   })
 
   test('menu opens when clicking the more button', async ({ comfyPage }) => {

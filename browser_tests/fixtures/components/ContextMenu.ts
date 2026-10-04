@@ -63,6 +63,37 @@ export class ContextMenu {
     })
   }
 
+  async focusItemWithKeyboard(name: string): Promise<void> {
+    await this.page.mouse.move(0, 0)
+    await this.page.keyboard.press('ArrowDown')
+    await expect(this.menuItem(name)).toBeFocused()
+  }
+
+  async getItemStyle(name: string) {
+    return this.menuItem(name).evaluate((item) => {
+      const style = getComputedStyle(item)
+      return {
+        backgroundColor: style.backgroundColor,
+        borderRadius: style.borderRadius,
+        paddingBottom: style.paddingBottom,
+        paddingLeft: style.paddingLeft,
+        paddingRight: style.paddingRight,
+        paddingTop: style.paddingTop
+      }
+    })
+  }
+
+  async resolveBackgroundToken(token: string): Promise<string> {
+    return this.page.evaluate((token) => {
+      const probe = document.createElement('div')
+      probe.style.backgroundColor = `var(${token})`
+      document.body.append(probe)
+      const backgroundColor = getComputedStyle(probe).backgroundColor
+      probe.remove()
+      return backgroundColor
+    }, token)
+  }
+
   async openColorSubmenu(): Promise<Locator> {
     await this.menuItem('Color').click()
     const submenu = this.page.getByRole('menu').filter({

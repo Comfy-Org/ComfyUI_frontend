@@ -145,7 +145,11 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   }
 
   getNode(nodeName: string) {
-    return this.sidebarContent.getByRole('treeitem', { name: nodeName }).first()
+    return this.getNodes(nodeName).first()
+  }
+
+  getNodes(nodeName: string) {
+    return this.sidebarContent.getByRole('treeitem', { name: nodeName })
   }
 
   async expandFolder(folderName: string) {
