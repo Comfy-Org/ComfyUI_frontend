@@ -17,7 +17,7 @@ does not satisfy them yet. The mechanism itself is decided elsewhere.
 - **[CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)**
   owns the apply path: the document is applied through the graph API, nothing
   sweeps the live graph against the document, a frame written by this tab is
-  dropped on entry, a rejected op is reverted register by register, and
+  dropped on entry, a rejected op is reverted from the document, and
   in-flight widget writes are held. This record does not restate those
   decisions; it states which guarantees follow from them.
 - **[CRDT-WRITE-0035](CRDT-WRITE-0035-hold-pending-human-ops-across-tab-suspension.md)**
@@ -73,7 +73,8 @@ any change to the apply path.
    node, link or widget value the human changed locally, and that the
    document has not yet accepted, is not removed, recreated or overwritten by
    a frame that does not name it. The requirement covers every state the
-   carrying op can be in, including after it has timed out.
+   carrying op can be in, including after it has timed out. The one named
+   exception is the `doc_reset` replace below.
 2. **A host rejection is reported.** When the host explicitly refuses a human
    op, the user is told and the refused registers are put back to the
    document's value.
@@ -84,19 +85,28 @@ any change to the apply path.
 4. **A collision the available provenance can identify is reported, and the
    document wins.**
 
+Exception to requirement 1: the first applied frame after a `doc_reset`
+replaces the live graph with the new lineage. The host is starting the draft
+over, so local adds made against the previous draft are not kept. The
+follow-up is to report what that replace removed, not to protect it.
+
 How well main holds each one:
 
-- **Hold.** Requirement 2 holds for every op kind. Requirement 1
-  holds by construction in merge mode, which is every apply except the first
-  one after a `doc_reset`.
-- **Hold only partially.** A `doc_reset` replace removes local-only nodes and
-  links without a report. A widget hold lifts when its op settles, including
-  when the op timed out, not when the document confirms the value. Time is
-  bounded for requirement 3 only while the tab is active.
-- **Do not hold.** No visible outcome exists for an edit that ends
-  `unacknowledged`, `unconfirmed` or `undeliverable`. A rejection that
-  arrives after the sender gave up is swallowed. A same-id collision with
-  another writer is not reported.
+- **Hold.** Requirement 1 holds by construction in merge mode, which is every
+  apply except the first one after a `doc_reset` (the named exception).
+  Requirement 2 holds for reporting and for reverting add, delete, clear,
+  widget and link ops.
+- **Hold only partially.** A rejected `set_node_field` resyncs the whole node
+  from the document, so it also rewinds any other unconfirmed field edit on
+  that node, which is a requirement 1 gap. A `doc_reset` replace removes
+  local-only nodes and links without a report. A widget hold lifts when its op
+  settles, including when the op timed out, not when the document confirms the
+  value.
+- **Do not hold.** Requirement 3 does not hold. No visible outcome exists for
+  an edit that ends `unacknowledged`, `unconfirmed` or `undeliverable`, and
+  the time bound exists only while the tab is active. A rejection that
+  arrives after the sender gave up is swallowed. Requirement 4 does not hold
+  either: a same-id collision with another writer is not reported.
 
 A per-op protected set of the kind this record once proposed is not
 reintroduced. Pending intent is protected by construction, because a frame
@@ -144,15 +154,15 @@ Human edits become graph intents, `docOpMinter.ts` mints them into wire ops
 (add node, remove node, connect, disconnect, clear, set widget, set node
 field), and `opSender.ts` sends them one batch at a time, in order. Only the
 bound document's root graph is mintable; an op for another graph, or for the
-interior of a subgraph, is not minted and is reported once. A batch ends in
+interior of a subgraph, is not minted and is reported once per flush. A batch ends in
 exactly one of four outcomes:
 
-| Outcome          | Produced when                                                                                                                           | Time bound                                       |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `acknowledged`   | a result arrives for the batch's op ids (an anonymous failure also counts when a send happened)                                         | none, the result decides                         |
-| `unacknowledged` | no result within the result timeout, after one silent resend of the same ops                                                            | about 20 seconds from the first send, tab active |
-| `unconfirmed`    | the batch was sent, then the sender was unbound, aborted by a `doc_reset`, detached, or its subscribe was refused                       | immediate on the event                           |
-| `undeliverable`  | the batch was never sent (queued or detached), or the transport refused it for the whole retry budget (five tries, half a second apart) | about 2.5 seconds of retry, or immediate         |
+| Outcome          | Produced when                                                                                                                                               | Time bound                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `acknowledged`   | a result arrives for the batch's op ids (an anonymous failure also counts when a send happened)                                                             | none, the result decides                         |
+| `unacknowledged` | no result within the result timeout, after one silent resend of the same ops                                                                                | about 20 seconds from the first send, tab active |
+| `unconfirmed`    | the batch was sent, then the sender was unbound, aborted by a `doc_reset`, detached, or its subscribe was refused                                           | immediate on the event                           |
+| `undeliverable`  | the batch was never sent (queued or detached), or the transport refused it for the whole retry budget (five retries, six tries in all, half a second apart) | about 2.5 seconds of retry, or immediate         |
 
 A suspension parks the batch instead of sending or settling it. A resume
 sends it again, unless the sender is now bound to a different workflow, in
@@ -177,10 +187,12 @@ count as rejected when the host did not list them as applied.
 each refused op's node, widget or link register back from the document
 (`rejectedOpChanges.ts`) and applies it under its own revert actor: a refused
 add is removed, a refused delete or clear is restored together with its
-links, a refused widget write resyncs the widget, and a refused connect or
-disconnect resyncs the link. Edits inside a subgraph interior are skipped.
-Nothing else in the live graph is touched, so a rejection never widens into a
-reconcile.
+links, a refused widget write resyncs the widget, a refused connect or
+disconnect resyncs the link, and a refused node field write resyncs the whole
+node's fields (title, mode, flags, properties and appearance) from the
+document, not only the field named. Edits inside a subgraph interior are
+skipped. Nothing else in the live graph is touched, so a rejection never
+widens into a reconcile.
 
 The user sees a toast from `rejectedOpNotice.ts`. Copy is chosen from four
 keys under `agent.editRejected` (widget write or generic, complete or
@@ -234,26 +246,28 @@ snapshot; it does not mint a `define_subgraph` op, though the wire package
 carries one, and the minter has no path for it. The document therefore never
 learns the definition from a human insert. The applier reads definitions out
 of the document but nothing writes the human's. Edits inside a subgraph
-interior are not representable and are reported once per kind
+interior are not representable and are reported once per kind per flush
 (`agent_crdt_unrepresentable_subgraph_*`), so a bound document can diverge
 from the local graph there.
 
 ## Requirements
 
-| Requirement                  | Holds today        | How                                                                         | Remaining                                                                        |
-| ---------------------------- | ------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Pending intent is kept       | Mostly             | Merge mode applies only the delta; replace is armed only by `doc_reset`     | Replace sweeps silently; widget hold lifts on any settlement                     |
-| A rejection is reported      | Yes                | Register-wise revert plus a throttled toast, for every op kind              | A rejection that arrives after the sender gave up is not seen                    |
-| Delivery-unknown is visible  | Bounded, not shown | Four sender outcomes; about 20 seconds when active, immediate on unbind     | No user-visible outcome; no late correlation; no bound while the tab is inactive |
-| A collision is reported      | No                 | Own-actor echo drop and disjoint id minting avoid most; the document wins   | Same-id merge or recreate is silent                                              |
-| Blueprint definitions arrive | No                 | Interior edits are reported; the host node is minted without its definition | Mint `define_subgraph` from the human path                                       |
+| Requirement                 | Holds today | How                                                                       | Remaining                                                                                                                     |
+| --------------------------- | ----------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Pending intent is kept      | Mostly      | Merge mode applies only the delta; replace is armed only by `doc_reset`   | Replace sweeps silently (named exception); a rejected field write rewinds sibling fields; widget hold lifts on any settlement |
+| A rejection is reported     | Yes         | Revert from the document plus a throttled toast, for every op kind        | A rejection that arrives after the sender gave up is not seen; a rejected field write resyncs the whole node                  |
+| Delivery-unknown is visible | No          | Four sender outcomes; about 20 seconds when active, immediate on unbind   | No user-visible outcome; no late correlation; no bound while the tab is inactive                                              |
+| A collision is reported     | No          | Own-actor echo drop and disjoint id minting avoid most; the document wins | Same-id merge or recreate is silent                                                                                           |
+
+Known gap outside the four requirements: blueprint definitions never reach the
+document, because the human path mints the node without its `define_subgraph`
+(see Blueprint definitions and the follow-up below).
 
 ## Remaining gaps and follow-ups
 
-Ordered by how much of a requirement each closes. Of the slices in the
-earlier plan, A0 (refuse to mint for a graph that is not the bound root) is
-done (`isMintableRootScope`), A, A1 and B are moot, and C (the blueprint mint)
-is still open.
+Ordered by how much of a requirement each closes. Refusing to mint for a
+graph that is not the bound root is done (`isMintableRootScope`); the
+blueprint mint is still open.
 
 1. **Surface and correlate terminal non-ack outcomes.** The follower records
    `unacknowledged`, `unconfirmed` and `undeliverable` only in the dev panel
@@ -271,15 +285,23 @@ is still open.
    while the tab is inactive and die with the panel. This is
    CRDT-REPLAY-0039; do not duplicate it here.
 3. **Report collisions.** The smallest option is a one-per-session report from
-   the merge path when it replaces or updates a live node of the same id from
-   a frame that is not this tab's own. It pairs with the expected-failure spec
-   above and must stay inside the follower boundary (no sweep).
-4. **Decide the replace-mode behavior.** Either report how many local-only
-   nodes and links a replace removed, or exempt local adds made after the
-   draft was posted. The rationale for the current behavior is that the draft
-   already carries the human's effect, which does not cover edits made between
-   the draft and the new lineage's first frame.
-5. **Suspected, unverified.** Each needs a repro before any claim is asserted.
+   the merge path when it updates or replaces a live node of the same id whose
+   local add the document never accepted (an add still unacknowledged or
+   rejected). An update or replace from a non-own frame is not a signal on its
+   own, because it is also what every ordinary agent edit and catch-up replay
+   looks like. If the applier cannot learn that provenance without a second
+   registry of op identity, detection is blocked on that signal. It pairs with
+   the expected-failure spec above and must stay inside the follower boundary
+   (no sweep).
+4. **Report what the replace exception removes.** The `doc_reset` replace is
+   the named exception to requirement 1; the follow-up is to report how many
+   local-only nodes and links it removed. The rationale for the current
+   behavior is that the draft already carries the human's effect, which does
+   not cover edits made between the draft and the new lineage's first frame.
+5. **Narrow the field-rejection revert.** A rejected `set_node_field` should
+   restore only the field it named instead of resyncing the whole node, so it
+   cannot rewind another unconfirmed field edit (a requirement 1 gap).
+6. **Suspected, unverified.** Each needs a repro before any claim is asserted.
    - A `doc_reset` that reaches a bound but inactive follower appears to arm
      neither the replace nor the sender abort, so a parked batch minted for the
      old lineage could resume against the new one.
@@ -289,9 +311,9 @@ is still open.
    - A rejection result that arrives while the bound tab is inactive appears
      to revert against whatever graph is current instead of the bound
      workflow's.
-6. **Blueprint definitions.** Mint `define_subgraph` from the human insert
+7. **Blueprint definitions.** Mint `define_subgraph` from the human insert
    path, scheduled with the node's add. This is frontend-only.
-7. **Backend dependencies, still open.** Per-op outcomes so that a dropped
+8. **Backend dependencies, still open.** Per-op outcomes so that a dropped
    last-writer or delete-wins op stops counting as applied, op ids on
    `doc_update` so that echoes could be matched instead of filtered by actor,
    a lineage token, and an echoed subscribe identity so that an
@@ -332,9 +354,10 @@ above onto what those threads called the ledger's guarantees.
 ## Rollout status
 
 Architectural dependency order lives in Remaining gaps and follow-ups above.
-This section deliberately does not carry PR numbers, branch names, head SHAs,
-package versions, or other in-flight status, since they drift independently of
-the decisions recorded here.
+This section deliberately does not carry in-flight PR numbers, branch names,
+head SHAs, package versions, slice labels, or other in-flight status, since
+they drift independently of the decisions recorded here. Landed changes may be
+cited as pointers.
 
 ## Consequences
 
@@ -343,8 +366,8 @@ the decisions recorded here.
 - The protection of pending local state no longer depends on a registry that
   must be kept in step with the sender. A frame cannot remove or recreate what
   it does not name.
-- A rejection reverts exactly the refused registers, for every op kind, from
-  the document, so a refusal cannot widen into a reconcile.
+- A rejection reverts from the document, for every op kind, and never widens
+  beyond the refused ops' nodes, widgets and links into a reconcile.
 - A failed delete no longer resurrects the node on a later frame; the failure
   mode is divergence, which the first follow-up makes visible.
 - The four requirements are written down as a contract, so a future change to
@@ -355,7 +378,10 @@ the decisions recorded here.
 - Three outcomes (`unacknowledged`, `unconfirmed`, `undeliverable`) are
   invisible to the user, and a late rejection after one of them is swallowed.
   The local graph can stay different from the document with no signal.
-- A `doc_reset` replace removes local-only nodes and links silently.
+- A `doc_reset` replace, the named exception to requirement 1, removes
+  local-only nodes and links silently.
+- A rejected node field write resyncs the whole node, so it can rewind another
+  unconfirmed field edit on that node.
 - A widget value stops being held when its op settles, so after a timeout the
   next remote value overwrites what the user typed.
 - Same-id collisions with another writer are resolved silently in the
