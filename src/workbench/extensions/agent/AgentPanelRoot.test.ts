@@ -10,7 +10,15 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
+import {
+  computed,
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+  reactive,
+  ref
+} from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
@@ -30,7 +38,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -252,6 +260,7 @@ import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegistry'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -4486,6 +4495,78 @@ describe('AgentPanelRoot lifecycle', () => {
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
+  })
+
+  it('releases the minimap graph-activity layer even when another teardown step throws', () => {
+    const errorHandler = vi.fn()
+    const first = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    vi.spyOn(
+      useWorkflowTabActivityStore(),
+      'setCreating'
+    ).mockImplementationOnce(() => {
+      throw new Error('teardown failed')
+    })
+
+    first.unmount()
+    expect(errorHandler).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'teardown failed' }),
+      expect.anything(),
+      'beforeUnmount hook'
+    )
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
+      })
+    )
+  })
+
+  it('does not claim the minimap graph-activity layer when setup throws', () => {
+    vi.mocked(useFreeUsePlacement).mockImplementationOnce(() => {
+      throw new Error('setup failed')
+    })
+    // Mounted without Testing Library, whose error handler lets a failed
+    // setup finish mounting; Vue itself aborts the mount.
+    const app = createApp(AgentPanelRoot).use(i18n)
+    expect(() => app.mount(document.createElement('div'))).toThrow(
+      'setup failed'
+    )
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
+      })
+    )
+  })
+
+  it('still paints graph activity when a replacement panel sets up before the old one unmounts', async () => {
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    const outgoing = renderWithSelectedTarget()
+    // The handover order the fix above cannot cover: a replacement host builds
+    // its panel while the outgoing one is still mounted and holding the id.
+    renderWithSelectedTarget()
+    outgoing.unmount()
+
+    useAgentGraphActivityStore().recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(301)]
+    )
+    await nextTick()
+
+    expect(
+      getMinimapDecorations({
+        rootGraphId: toRootGraphId('graph-1'),
+        owningGraphId: toOwningGraphId('graph-1')
+      }).map(({ target }) => target.nodeId)
+    ).toEqual(['301'])
   })
 
   it('clears workflow activity when the panel unmounts', () => {
