@@ -195,11 +195,7 @@ test.describe(
         node.getByRole('spinbutton', { name: 'mode.b' })
       ).toHaveValue('71')
 
-      // `mode.a` is catalogued, so the document addresses it by name — and the
-      // constructor builds it no sooner than `mode.b`, so the named entry needs
-      // the same post-`configure` apply the alias gets. Pinned to 91 rather
-      // than /^(80|91)$/: the node-def default is 80, so the loose form passed
-      // while the document's value was being dropped.
+      // `mode.a` is catalogued, so its named value is applied after `configure`.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.a' })
       ).toHaveValue('91')

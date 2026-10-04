@@ -348,31 +348,6 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('applies a mounted overflow value without blanking the widget before it', () => {
-    const { graph, applyCollected } = setup({
-      nodes: [
-        {
-          id: 1,
-          type: 'TestTwoGrowing',
-          pos: [0, 0],
-          size: [210, 100],
-          widgets_values: ['faithful', 91, 71]
-        }
-      ],
-      links: []
-    })
-
-    applyCollected()
-
-    const widgets = graph.getNodeById(toNodeId(1))?.widgets
-    // Pinned to the document's value, not merely `toBeDefined()`: the
-    // regression this guards blanked the position, but the node-def default
-    // also satisfies "defined", so the weaker assertion passed while the
-    // document's 91 was being dropped.
-    expect(widgets?.find(({ name }) => name === 'mode.a')?.value).toBe(91)
-    expect(widgets?.find(({ name }) => name === 'mode.b')?.value).toBe(71)
-  })
-
   it('carries a named value to a widget the node mounts during configure', () => {
     const { graph, applyCollected } = setup({
       nodes: [
@@ -389,11 +364,6 @@ describe('LiveGraphApplier', () => {
 
     applyCollected()
 
-    // `mode.a` is catalogued, so the document addresses it by name while
-    // `mode.b` overflows to `_extra_2` — but the constructor builds neither, so
-    // both are past the array `configure` restores and both have to be applied
-    // after the setter mounts them. Carrying only the alias leaves the named
-    // sibling on its node-def default, which is the same lost-value bug.
     expect(
       graph
         .getNodeById(toNodeId(1))
@@ -402,6 +372,41 @@ describe('LiveGraphApplier', () => {
       { name: 'mode', value: 'faithful' },
       { name: 'mode.a', value: 91 },
       { name: 'mode.b', value: 71 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('keeps a named entry authoritative over its alias past that list', () => {
+    const { graph, doc, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestTwoGrowing',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['faithful', 91, 71]
+        }
+      ],
+      links: []
+    })
+    doc.transact(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('mode.b', 55)
+    })
+
+    applyCollected()
+
+    // Both `mode.b` and its `_extra_2` alias are deferred past `configure`, so
+    // precedence now has to hold inside that deferred set too.
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'faithful' },
+      { name: 'mode.a', value: 91 },
+      { name: 'mode.b', value: 55 }
     ])
     expect(reportError).not.toHaveBeenCalled()
   })
@@ -427,10 +432,8 @@ describe('LiveGraphApplier', () => {
 
     applyCollected()
 
-    // Deferring named entries past the constructed list must not widen
-    // creation-path telemetry: a name no widget carries even after `configure`
-    // is still dropped silently, as it was before. Routing it through the
-    // missing-widget report is FE-3036 territory, not this seam.
+    // The silence matches base; making every unmatched creation-path key
+    // report is FE-3036 territory, not this seam.
     expect(
       graph
         .getNodeById(toNodeId(1))

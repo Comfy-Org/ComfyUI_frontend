@@ -370,19 +370,10 @@ function supersededOverflowAlias(
 }
 
 /**
- * Document entries for widgets the constructor had not built, which a dynamic
- * combo's setter mounts during `configure`; `createNode` applies them
- * afterward. `positionalWidgetValues` is sized by the constructed list, so
- * neither an alias past its end nor a named entry for a widget missing from it
- * reaches `configure` at all — the alias and the name are the same gap wearing
- * different clothes, so both are deferred here.
- *
- * `constructed` is the serializable widget list as it was before `configure`.
- * Call this after it: a named entry is kept only when the node now serializes a
- * widget of that name, which keeps two things out deliberately — a name that
- * matches nothing, so the creation path still drops it silently instead of
- * newly reporting it missing, and a `serialize: false` widget, which the
- * document has no position for and could not have been restored before either.
+ * Document entries for widgets that only exist after `configure`: aliases past
+ * the constructed list, and names the constructor did not build but the node
+ * now serializes. `constructed` is the serializable list from before
+ * `configure`; a name that still matches nothing is dropped without a report.
  */
 function mountedWidgetValues(
   node: LGraphNode,
