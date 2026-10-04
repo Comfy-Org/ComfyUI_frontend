@@ -180,6 +180,31 @@ derived, re-registering an existing `WidgetId` with a different `type` is a
 legitimate re-mint rather than an identity collision — which is why
 `widgetValueStore.registerWidget` overwrites where the minted-id stores reject.
 
+> **Amended (2026-10-04):** "two widgets on one node cannot share a name" is an
+> **invariant**, not a limitation to work around. A second widget under a name
+> another widget already holds is not a second identity; it is the same
+> identity twice, and nothing downstream can tell the two apart.
+>
+> `ensureUniqueWidgetNames` keeps it true by renaming the repeat to `name#1`
+> before any id is derived. Where it cannot — a `name` that is not writable, or
+> an accessor that throws (`src/types/widgetId.ts`) — the widget is **refused**:
+> `node.widgets` is a mutation view, so every add commits through
+> `syncWidgetOrder`, which drops what it cannot name uniquely and reports it
+> under the stable `errorType` `widget_duplicate_name_refused`. First
+> occurrence wins; renamable collisions elsewhere on the node are still
+> renamed.
+>
+> A serialized `(name, occurrence)` identity was proposed instead, so that both
+> widgets could be persisted ([#19717](https://github.com/Comfy-Org/ComfyUI_frontend/pull/19717)).
+> It was rejected: it adds a second widget-identity format, read by one
+> register and by nothing else, to preserve a state that should not occur. The
+> fix belongs where the state is created.
+>
+> Refusing is also a repair, not only a restriction. Before it, a node carrying
+> an ambiguous pair registered **no** widget in the store — `BaseWidget.setNodeId`
+> bails for every widget on the node — so nothing the user typed on that node
+> survived a reload.
+
 #### Future work
 
 The current slot/widget identity split remains the contract. A future proposal

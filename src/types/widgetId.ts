@@ -78,6 +78,102 @@ export function ensureUniqueWidgetNames(
   }
 }
 
+/**
+ * Reads `name` without letting a throwing accessor escape. A widget whose
+ * `name` cannot be read has no identity to collide with, so it is left alone.
+ */
+function readName(widget: { name: string }): string | undefined {
+  try {
+    return widget.name
+  } catch {
+    return undefined
+  }
+}
+
+/** @returns whether {@link widget} now answers to {@link name}. */
+function tryRename(widget: { name: string }, name: string): boolean {
+  try {
+    widget.name = name
+    // A setter is free to ignore the write, and only a read proves it did not.
+    return widget.name === name
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Removes the widgets that cannot be given a unique name, mutating
+ * {@link widgets} in place, and renames the duplicates that can — keeping the
+ * first occurrence of each name either way.
+ *
+ * `WidgetId` is `graphId:nodeId:name`, so a second widget under a name another
+ * widget already holds is not a second identity — it is the same identity
+ * twice. ADR-ECS-0008's "Widget identity keys on `name`" records that as an
+ * invariant rather than a limitation to work around:
+ * **two widgets on one node cannot share a name.**
+ *
+ * {@link ensureUniqueWidgetNames} normally keeps that true by renaming the
+ * later occurrence to `name#1`. It cannot when that widget's `name` is not
+ * writable, or when an accessor throws — and because it is all-or-nothing, one
+ * such widget also leaves every *renamable* collision on the node standing.
+ * This walk renames those and refuses only what is genuinely unaddressable: a
+ * widget the store cannot tell apart silently shares another widget's value.
+ *
+ * @returns the removed widgets, in array order. Empty when the node was
+ * already unambiguous, which is the overwhelmingly common case.
+ */
+export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
+  widgets: T[]
+): T[] {
+  if (ensureUniqueWidgetNames(widgets)) return []
+
+  const kept: T[] = []
+  const refused: T[] = []
+  const used = new Set<string>()
+  const seen = new Set<T>()
+  // Names already spoken for further down the array, so a generated `name#1`
+  // never collides with one a later widget holds outright.
+  const reserved = new Set(
+    widgets.flatMap((widget) => {
+      const name = readName(widget)
+      return name === undefined ? [] : [name]
+    })
+  )
+
+  for (const widget of widgets) {
+    // The same widget object may occupy two slots mid-reorder. That is one
+    // widget, not a name collision — never refuse it.
+    if (seen.has(widget)) {
+      kept.push(widget)
+      continue
+    }
+    seen.add(widget)
+
+    const name = readName(widget)
+    if (name === undefined || !used.has(name)) {
+      if (name !== undefined) used.add(name)
+      kept.push(widget)
+      continue
+    }
+
+    let index = 1
+    while (used.has(`${name}#${index}`) || reserved.has(`${name}#${index}`)) {
+      index++
+    }
+    const unique = `${name}#${index}`
+    if (!tryRename(widget, unique)) {
+      refused.push(widget)
+      continue
+    }
+    used.add(unique)
+    reserved.add(unique)
+    kept.push(widget)
+  }
+
+  if (refused.length) widgets.splice(0, widgets.length, ...kept)
+  return refused
+}
+
 function decodeWidgetIdSegment(segment: string): string {
   try {
     return decodeURIComponent(segment)

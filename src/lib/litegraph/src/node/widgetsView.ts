@@ -5,8 +5,18 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
+import { reportError } from '@/platform/telemetry/reportError'
+import { dropUnrenamableDuplicateWidgets } from '@/types/widgetId'
+
 import { createArrayMutationView } from '../infrastructure/createMutationView'
 import { getWidgetIds } from '../utils/widget'
+
+/**
+ * Stable `errorType` for the one state that breaks widget identity: a node
+ * holding two widgets under one name that could not be renamed apart, so the
+ * second is refused. See {@link dropUnrenamableDuplicateWidgets}.
+ */
+export const DUPLICATE_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_refused'
 
 interface WidgetsViewState {
   target: IBaseWidget[]
@@ -18,9 +28,45 @@ interface WidgetsViewState {
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
 const widgetsViewGetters = new WeakSet<() => IBaseWidget[] | undefined>()
 
+/**
+ * Enforces the unique-name invariant at the one place every widget reaches the
+ * node: `node.widgets` is a mutation view, so `addWidget`, a raw
+ * `widgets.push`, a splice and a whole-array assignment all commit through
+ * here. A widget refused here is never registered with the store and never
+ * rendered, because it is off the node before either happens.
+ */
+function refuseAmbiguousWidgets(
+  node: LGraphNode,
+  widgets: IBaseWidget[]
+): void {
+  const refused = dropUnrenamableDuplicateWidgets(widgets)
+  if (!refused.length) return
+
+  for (const widget of refused) {
+    reportError(
+      new Error(
+        `Refused a widget named "${widget.name}": node ${node.id} already has a widget of that name and the duplicate cannot be renamed`
+      ),
+      {
+        errorType: DUPLICATE_WIDGET_NAME_ERROR_TYPE,
+        surface: 'graph',
+        level: 'warning',
+        tags: { node_type: node.type },
+        context: {
+          nodeId: String(node.id),
+          widgetName: widget.name,
+          widgetType: widget.type
+        }
+      }
+    )
+  }
+}
+
 function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   node._widgetSlotsDirty = true
   const graphId = node.graph?.rootGraph.id
+
+  refuseAmbiguousWidgets(node, widgets)
 
   for (const [index, widget] of widgets.entries()) {
     const concreteWidget = toConcreteWidget(widget, node)
