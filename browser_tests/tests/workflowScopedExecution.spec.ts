@@ -178,7 +178,7 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(1)
   })
 
-  test('an output that arrives after the terminal frame still renders', async ({
+  test('an output that arrives after the terminal frame is ignored', async ({
     comfyPage,
     getWebSocket
   }) => {
@@ -200,7 +200,13 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
       swapFrames(script, `${label}:executed`, `${label}:execution_success`)
     )
 
-    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(1)
+    // A single WebSocket delivers in send order, so this ordering only happens
+    // on a reconnect replay. The terminal frame has already torn down the run,
+    // so the late output is dropped rather than applied to a finished job —
+    // outputs for a completed job come back through history instead. Pinned
+    // here so a future change to the teardown is a deliberate decision.
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(0)
+    await expect(comfyPage.appMode.outputHistory.skeletons).toHaveCount(0)
   })
 
   test('a repeated terminal frame does not duplicate the output', async ({

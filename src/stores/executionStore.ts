@@ -548,7 +548,9 @@ export const useExecutionStore = defineStore('execution', () => {
     const jobId = e.detail.prompt_id
     pendingExecutionErrorsByJobId.delete(jobId)
     clearInitializationByJobId(jobId)
-    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
+    // Per-workflow status is keyed by this job's own workflow, so it is set
+    // for every job — a background tab must still show Completed. Only the
+    // shared execution state below is gated.
     setWorkflowStatus(jobId, {
       status: 'completed',
       endTime: performance.now()
@@ -568,6 +570,7 @@ export const useExecutionStore = defineStore('execution', () => {
         })
       }
     }
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
     resetExecutionState(jobId)
   }
 

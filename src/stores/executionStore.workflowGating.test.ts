@@ -274,6 +274,28 @@ describe('executionStore workflow gating', () => {
       expect(store.activeJobId).toBe('job-a')
     })
 
+    // Regression: gating the whole handler hid the completed badge on a
+    // background tab, which workflowTabStatus.spec.ts caught on CI. Per-workflow
+    // status is keyed by the job's own workflow and is never shared state.
+    it('still marks another workflow completed on its own tab', () => {
+      queueJobFrom('job-b', workflowB)
+      fire('execution_start', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        timestamp: 1
+      })
+      expect(store.getWorkflowStatus(workflowB)).toBe('running')
+
+      fire('execution_success', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        timestamp: 2
+      })
+
+      expect(store.getWorkflowStatus(workflowB)).toBe('completed')
+      expect(store.activeJobId).toBe('job-a')
+    })
+
     it('execution_success from the active workflow clears it', () => {
       fire('execution_success', {
         prompt_id: 'job-a',
