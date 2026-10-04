@@ -4,6 +4,10 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
 import { Load3DViewerHelper } from '@e2e/tests/load3d/Load3DViewerHelper'
 
+// The 0.5rem gutter the dialog clamp leaves at the viewport edge, and half of
+// the 1rem the viewer's own width cap reserves inside the visible workspace.
+const VIEWPORT_GUTTER = 8
+
 test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
@@ -67,6 +71,36 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
       await load3dAgent.viewer.waitForModelLoaded()
       await load3dAgent.viewer.openViewerButton.click()
       await viewer.waitForOpen()
+    })
+
+    await test.step('centre the viewer beside the panel above the sm breakpoint', async () => {
+      // The viewer keeps its own inset-aware width cap while every other dialog
+      // now resolves against the raw viewport, and that cap is what holds it on
+      // the centring branch of the dialog clamp instead of the gutter floor.
+      // The cap is declared twice — unprefixed and `sm:`-prefixed — because
+      // tailwind-merge treats those as separate groups, so only the prefixed one
+      // is live here. The narrow-viewport steps below run under `sm:` and cannot
+      // see it: drop it and they still pass while the viewer covers the panel.
+      for (const width of [1280, 1920]) {
+        await page.setViewportSize({ width, height: 800 })
+
+        await expect(async () => {
+          const dialogBox = await viewer.dialog.boundingBox()
+          const panelBox = await panel.boundingBox()
+          expect(dialogBox).not.toBeNull()
+          expect(panelBox).not.toBeNull()
+          if (!dialogBox || !panelBox) return
+
+          // The panel is docked against the right edge, so its left edge is the
+          // boundary of the visible workspace.
+          expect(panelBox.x + panelBox.width).toBeCloseTo(width, 1)
+          expect(dialogBox.x).toBeCloseTo(VIEWPORT_GUTTER, 1)
+          expect(dialogBox.x + dialogBox.width).toBeCloseTo(
+            panelBox.x - VIEWPORT_GUTTER,
+            1
+          )
+        }).toPass({ timeout: 5000 })
+      }
     })
 
     await test.step('keep the viewer outside the docked Agent panel', async () => {
