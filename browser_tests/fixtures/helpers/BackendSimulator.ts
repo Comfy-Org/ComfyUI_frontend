@@ -8,7 +8,60 @@ import type { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 export interface Frame {
   /** `<workflow or job label>:<event type>` — used by the fault helpers. */
   label: string
+  /**
+   * The prompt that sent this frame. Two concurrent prompts of the *same*
+   * workflow share a label, so a fault that must hit one of them selects on
+   * this as well — see {@link FrameSelector}.
+   */
+  jobId: string
   send: () => void
+}
+
+/**
+ * Which frames a fault applies to. A bare string keeps the workflow-wide
+ * selection every script already uses; add `jobId` to reach one prompt when
+ * several share a workflow id.
+ */
+export type FrameSelector = string | { label: string; jobId?: string }
+
+function describeSelector(selector: FrameSelector): string {
+  return typeof selector === 'string'
+    ? selector
+    : selector.jobId === undefined
+      ? selector.label
+      : `${selector.label} (job ${selector.jobId})`
+}
+
+function matches(frame: Frame, selector: FrameSelector): boolean {
+  if (typeof selector === 'string') return frame.label === selector
+  if (frame.label !== selector.label) return false
+  return selector.jobId === undefined || frame.jobId === selector.jobId
+}
+
+function indicesOf(frames: Frame[], selector: FrameSelector): number[] {
+  const found: number[] = []
+  frames.forEach((frame, index) => {
+    if (matches(frame, selector)) found.push(index)
+  })
+  return found
+}
+
+/**
+ * A fault that silently matches nothing is a test that silently stops
+ * exercising its fault, so every helper fails loudly instead.
+ */
+function requireMatches(
+  frames: Frame[],
+  selector: FrameSelector,
+  helper: string
+): number[] {
+  const found = indicesOf(frames, selector)
+  if (found.length === 0) {
+    throw new Error(
+      `${helper}: ${describeSelector(selector)} is not in the script`
+    )
+  }
+  return found
 }
 
 /**
@@ -26,6 +79,7 @@ export class SimulatedPrompt {
   private frame(type: string, send: () => void): Frame {
     return {
       label: `${this.workflowId ?? this.jobId}:${type}`,
+      jobId: this.jobId,
       send: () => this.execution.withWorkflowId(this.workflowId, send)
     }
   }
@@ -120,46 +174,89 @@ export class BackendSimulator {
   }
 }
 
-/** Remove every frame with this label — a backend that never sent it. */
-export function dropFrames(frames: Frame[], label: string): Frame[] {
-  return frames.filter((frame) => frame.label !== label)
+/**
+ * Remove every selected frame — a backend that never sent it. Pass a `jobId` to
+ * drop one prompt's frame while a concurrent prompt of the same workflow keeps
+ * its own.
+ */
+export function dropFrames(frames: Frame[], selector: FrameSelector): Frame[] {
+  const drop = new Set(requireMatches(frames, selector, 'dropFrames'))
+  return frames.filter((_, index) => !drop.has(index))
 }
 
-/** Send a frame twice, as a retrying or reconnecting backend does. */
-export function duplicateFrame(frames: Frame[], label: string): Frame[] {
-  return frames.flatMap((frame) =>
-    frame.label === label ? [frame, frame] : [frame]
+/** Send selected frames twice, as a retrying or reconnecting backend does. */
+export function duplicateFrame(
+  frames: Frame[],
+  selector: FrameSelector
+): Frame[] {
+  const duplicate = new Set(requireMatches(frames, selector, 'duplicateFrame'))
+  return frames.flatMap((frame, index) =>
+    duplicate.has(index) ? [frame, frame] : [frame]
   )
 }
 
-/** Swap two frames, producing out-of-order arrival. */
+/**
+ * Swap two frames, producing out-of-order arrival.
+ *
+ * Each selector must identify exactly one frame. A swap is a pair operation, so
+ * quietly taking the first of several matches is how a two-prompt script ends up
+ * reordering the wrong prompt's frame; add a `jobId` to disambiguate.
+ */
 export function swapFrames(
   frames: Frame[],
-  first: string,
-  second: string
+  first: FrameSelector,
+  second: FrameSelector
 ): Frame[] {
-  const a = frames.findIndex((frame) => frame.label === first)
-  const b = frames.findIndex((frame) => frame.label === second)
-  if (a === -1 || b === -1) {
-    throw new Error(`swapFrames: ${first} or ${second} is not in the script`)
+  const a = requireMatches(frames, first, 'swapFrames')
+  const b = requireMatches(frames, second, 'swapFrames')
+  for (const [selector, found] of [
+    [first, a],
+    [second, b]
+  ] as const) {
+    if (found.length > 1) {
+      throw new Error(
+        `swapFrames: ${describeSelector(selector)} matches ${found.length} frames; ` +
+          'add a jobId to select one'
+      )
+    }
   }
   const swapped = [...frames]
-  ;[swapped[a], swapped[b]] = [swapped[b], swapped[a]]
+  ;[swapped[a[0]], swapped[b[0]]] = [swapped[b[0]], swapped[a[0]]]
   return swapped
 }
 
 /**
  * Deterministic interleave of two prompts' frames. `seed` selects the order, so
  * a failure is reproducible from the seed printed in the test name.
+ *
+ * Each input's own order is preserved — frames of one prompt never arrive out of
+ * dependency order relative to each other, only relative to the other prompt's.
+ *
+ * The result is guaranteed to **overlap**: neither prompt's script finishes
+ * before the other's starts, so the two runs are genuinely concurrent. Without
+ * that guarantee a schedule can come out sequential and a concurrency spec
+ * passes without ever having two prompts in flight. (A one-frame-each pair
+ * cannot overlap; everything larger does.)
  */
 export function interleave(a: Frame[], b: Frame[], seed: number): Frame[] {
   const out: Frame[] = []
-  let state = seed
+  let state = seed | 0
   let i = 0
   let j = 0
   while (i < a.length || j < b.length) {
-    state = (state * 1103515245 + 12345) & 0x7fffffff
-    const takeA = j >= b.length || (i < a.length && state % 2 === 0)
+    // Exact 32-bit arithmetic. `state * 1103515245` exceeds 2^53 as a double,
+    // so a plain multiply rounds the low bits away: every seed then produced
+    // the same constant coin and the helper emitted all of `a` before any of
+    // `b`. `Math.imul` is the multiply that does not lose them.
+    state = (Math.imul(state, 1103515245) + 12345) | 0
+    // Bit 0 of a power-of-two-modulus LCG flips on every step whatever the
+    // seed, which would make the schedule a fixed A/B/A/B. Take a high bit.
+    let takeA = j >= b.length || (i < a.length && ((state >>> 16) & 1) === 0)
+    // Overlap guarantee, in two symmetric rules: do not emit one prompt's last
+    // frame while the other has not started.
+    if (takeA && b.length > 0 && j === 0 && i === a.length - 1) takeA = false
+    else if (!takeA && a.length > 0 && i === 0 && j === b.length - 1)
+      takeA = true
     out.push(takeA ? a[i++] : b[j++])
   }
   return out
