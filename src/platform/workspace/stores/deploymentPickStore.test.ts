@@ -115,6 +115,59 @@ describe('useDeploymentPickStore', () => {
     expect(store.bootDeployment).toBeNull()
   })
 
+  it.for([
+    { now: 'the same deployment and Release', next: listing, change: null },
+    {
+      now: 'its deployment on another Release',
+      next: {
+        ...listing,
+        items: [{ ...listing.items[0], release_id: 'r-3' }, listing.items[1]]
+      },
+      change: 'release'
+    },
+    {
+      now: 'another deployment with another Release',
+      next: { ...listing, picked_deployment_id: 'dep-1' },
+      change: 'deployment'
+    },
+    {
+      now: 'another deployment of the same Release',
+      next: {
+        ...listing,
+        picked_deployment_id: 'dep-1',
+        items: [listing.items[0], { ...listing.items[1], release_id: 'r-2' }]
+      },
+      change: null
+    },
+    {
+      now: 'Comfy Cloud',
+      next: {
+        ...listing,
+        picked_deployment_id: undefined,
+        pick_source: undefined
+      },
+      change: 'deployment'
+    }
+  ] satisfies {
+    now: string
+    next: WorkspaceDeploymentList
+    change: 'release' | 'deployment' | null
+  }[])(
+    'says what changed when a later listing runs on $now',
+    async ({ next, change }) => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(listing)
+        .mockResolvedValue(next)
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+      expect(store.changeSinceBoot).toBeNull()
+
+      await store.load()
+
+      expect(store.changeSinceBoot).toBe(change)
+    }
+  )
+
   it('follows the workspace default when the browser has no pick of its own', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,

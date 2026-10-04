@@ -195,6 +195,57 @@ describe('DeploymentSwitcher', () => {
     }
   )
 
+  it.for([
+    {
+      change: 'its deployment now runs another Release',
+      boot: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
+      next: {
+        ...listing,
+        picked_deployment_id: D2,
+        pick_source: 'browser',
+        items: [
+          { ...listing.items[0], release_id: 'r-3', release_version: 3 },
+          ...listing.items.slice(1)
+        ]
+      },
+      text: 'This deployment now runs a different Release. Reload to get its nodes.'
+    },
+    {
+      change: 'the workspace default it follows was cleared',
+      boot: {
+        ...listing,
+        picked_deployment_id: D2,
+        pick_source: 'workspace_default',
+        default_deployment_id: D2
+      },
+      next: listing,
+      text: 'This browser now runs on Comfy Cloud. Reload to get its nodes.'
+    }
+  ] satisfies {
+    change: string
+    boot: WorkspaceDeploymentList
+    next: WorkspaceDeploymentList
+    text: string
+  }[])(
+    'offers a reload when $change since the page loaded',
+    async ({ boot, next, text }) => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(boot)
+        .mockResolvedValue(next)
+      renderSwitcher()
+      await screen.findByTestId('deployment-switcher-trigger')
+      expect(screen.queryByTestId('deployment-switcher-changed')).toBeNull()
+
+      await useDeploymentPickStore().load()
+
+      expect(
+        await screen.findByTestId('deployment-switcher-changed')
+      ).toHaveTextContent(text)
+      await userEvent.click(screen.getByTestId('deployment-switcher-reload'))
+      expect(reload).toHaveBeenCalledOnce()
+    }
+  )
+
   it('picks a deployment, which reloads the editor', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
