@@ -215,7 +215,7 @@ export function useTemplateModelRowDownloads({
     return state
   }
 
-  function stateFor(model: ModelWithUrl): TemplateModelDownloadState {
+  function stateFor(model: ModelWithUrl): Readonly<TemplateModelDownloadState> {
     const identity = getTemplateModelDownloadIdentity(model)
     const row = rows.get(identity)
     if (row?.model.url !== model.url) {
