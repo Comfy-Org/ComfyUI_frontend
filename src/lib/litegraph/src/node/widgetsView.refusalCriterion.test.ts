@@ -71,7 +71,9 @@ describe('unique-name refusal criterion', () => {
     // It is still reported, so the pair is observable rather than tolerated in
     // silence — under its own `errorType`, because nothing was lost.
     expect(reportedTypes()).toEqual(['failure_resolving_widget_duplicate_name'])
-    expect(reportedTypes()).not.toContain('failure_renaming_widget_duplicate_name')
+    expect(reportedTypes()).not.toContain(
+      'failure_renaming_widget_duplicate_name'
+    )
 
     // Keeping the pair must not be paid for with a *value* either, which the
     // widget array's length cannot show. An ambiguous pair registers neither
