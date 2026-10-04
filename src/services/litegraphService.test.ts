@@ -9,6 +9,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
@@ -57,8 +58,21 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     output_node: false
   }
 
+  /**
+   * Titles of the nodes announced to an installed extension via `nodeCreated`.
+   * Recorded as titles rather than nodes so a failure prints the announcement
+   * rather than a serialised node graph. `node.type` is not usable here:
+   * `nodeCreated` fires from the constructor, before litegraph assigns it.
+   */
+  let announced: string[]
+
   beforeEach(async () => {
     await useLitegraphService().registerNodeDef(nodeName, nodeDef)
+    announced = []
+    useExtensionStore().registerExtension({
+      name: 'Test.AddNodeOnGraph',
+      nodeCreated: (node) => void announced.push(node.title)
+    })
   })
 
   it('adds the node to the root graph once it is assigned', () => {
@@ -76,13 +90,21 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     expect(useLitegraphService().addNodeOnGraph(nodeDef)).toBeNull()
   })
 
-  it('does not construct a node it cannot add, since the constructor fires nodeCreated', () => {
-    const createNode = vi.spyOn(LiteGraph, 'createNode')
+  // The registered node constructor fires `nodeCreated`, so a node that is
+  // created and then discarded is still announced to every installed
+  // extension. The graph has to be resolved before construction, not after.
+  it('announces nodeCreated for the node it adds', () => {
+    expect(useLitegraphService().addNodeOnGraph(nodeDef)).not.toBeNull()
+
+    expect(announced).toEqual([nodeDef.display_name])
+  })
+
+  it('announces nothing when there is no graph to add the node to', () => {
     Reflect.set(app, 'rootGraphOrUndefined', undefined)
 
     useLitegraphService().addNodeOnGraph(nodeDef)
 
-    expect(createNode).not.toHaveBeenCalled()
+    expect(announced).toEqual([])
   })
 })
 
