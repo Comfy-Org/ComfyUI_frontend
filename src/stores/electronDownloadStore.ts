@@ -98,7 +98,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     })
   }
 
-  const initialize = async () => {
+  async function initialize() {
     if (!isDesktop || !DownloadManager) return
 
     // Listen immediately so no live event is missed, but hold them back until
