@@ -79,6 +79,37 @@ test('names the default card the top-up charges, read-only', async ({
   await expect(payButton(page)).toBeEnabled()
 })
 
+test('a saved-methods read that never answers still opens a payable top-up, naming no card', async ({
+  page,
+  signIn
+}) => {
+  await page.route('**/billing/payment-methods', () => {})
+  await signIn(TOPUP)
+
+  await expect(payButton(page)).toBeEnabled()
+  await expect(
+    page.getByRole('heading', { name: 'Payment method' })
+  ).toBeHidden()
+})
+
+test('a failed saved-methods read names no card, and Pay stays live', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.reply('GET', '/billing/payment-methods', () => ({
+    status: 500,
+    body: { code: 'INTERNAL', message: 'boom' }
+  }))
+  await signIn(TOPUP)
+
+  await expect(payButton(page)).toBeEnabled()
+  await expect(page.getByText('·· 4242')).toBeHidden()
+  await expect(
+    page.getByRole('heading', { name: 'Payment method' })
+  ).toBeHidden()
+})
+
 test('180-6679: Pay reads just Pay, over terms that authorize one charge and link Terms and Privacy Policy', async ({
   page,
   signIn

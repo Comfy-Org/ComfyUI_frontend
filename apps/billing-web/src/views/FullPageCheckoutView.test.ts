@@ -339,6 +339,26 @@ describe('FullPageCheckoutView', () => {
     }
   )
 
+  it('names no card for a plan change after a failed read, even one an earlier read cached', async () => {
+    await renderCheckout({
+      preview: {
+        status: 'ok',
+        value: previewOf({ transition_type: 'upgrade' })
+      },
+      paymentMethods: { status: 'error', code: 'REQUEST_FAILED' },
+      cachedPaymentMethods: [MASTERCARD]
+    })
+    await screen.findByText('Upgrade to Creator Plan · Acme Team')
+
+    expect(screen.queryByText('·· 4402')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Payment method' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Confirm upgrade' })
+    ).toBeEnabled()
+  })
+
   it('names no card for a plan change when the server marks none as the default', async () => {
     await renderCheckout({
       preview: {
