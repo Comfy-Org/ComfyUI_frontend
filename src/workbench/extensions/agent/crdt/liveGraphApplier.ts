@@ -928,10 +928,27 @@ function isLinkPresent(
   )
 }
 
+/** Rank of a not-yet-mounted document name; past every overflow position. */
+const MOUNTED_LAST = Number.MAX_SAFE_INTEGER
+
 /**
- * Ordinary node widget values by document name, overflow aliases last in
- * position order so a setter that mounts widgets runs before the aliases
- * that address them; a positional list is read in serializable-widget order.
+ * Apply order for a document widget map: live names first, then overflow
+ * aliases by position, then names no widget carries yet. Only a setter run by
+ * an earlier entry can mount the last group, so a selector is always applied
+ * before the entries — aliased or named — that address what it mounts.
+ */
+function widgetEntryRank(node: LGraphNode, name: string): number {
+  const index = overflowWidgetIndex(name)
+  if (index !== null) return index
+  return node.widgets?.some((widget) => widget.name === name)
+    ? -1
+    : MOUNTED_LAST
+}
+
+/**
+ * Ordinary node widget values by document name, ordered so Y.Map insertion
+ * order cannot decide the outcome (`widgetEntryRank`); a positional list is
+ * read in serializable-widget order.
  */
 function ordinaryWidgetEntries(
   node: LGraphNode,
@@ -939,8 +956,7 @@ function ordinaryWidgetEntries(
 ): [string, unknown][] {
   if (!Array.isArray(widgets)) {
     return Object.entries(widgets).sort(
-      ([a], [b]) =>
-        (overflowWidgetIndex(a) ?? -1) - (overflowWidgetIndex(b) ?? -1)
+      ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
     )
   }
   return serializableWidgets(node).map((widget, index) => [

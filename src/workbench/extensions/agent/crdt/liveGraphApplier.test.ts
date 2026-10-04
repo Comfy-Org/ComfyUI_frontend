@@ -552,6 +552,48 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('applies a named sub-widget after the selector that mounts it', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestTwoGrowing',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['creative']
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+
+    // `mode.a` is catalogued, so the host stores 91 under that name — but the
+    // widget does not exist until `mode`'s setter mounts it. Its key precedes
+    // the selector's here, which is the only thing this pins.
+    applyEdit(() => {
+      const node = nodesMap(doc).get('1')
+      if (!(node instanceof Y.Map)) throw new Error('node storage')
+      node.set(
+        'widgets',
+        new Y.Map<unknown>([
+          ['mode.a', 91],
+          ['mode', 'faithful']
+        ])
+      )
+    })
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'mode', value: 'faithful' },
+      { name: 'mode.a', value: 91 },
+      { name: 'mode.b', value: 70 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('holds an alias frame against a pending local write to its widget', () => {
     const { graph, doc, applyCollected, applyEdit } = setup(
       {
