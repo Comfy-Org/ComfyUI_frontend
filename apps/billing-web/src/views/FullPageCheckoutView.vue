@@ -114,10 +114,12 @@ const keepSubscription = computed(() => {
   })
 })
 
-const ending = computed(() => endingOf(page.value))
+const ending = computed(() => endingOf(page.value, preview.value))
 
 const breakdown = computed(() =>
-  successBreakdown(page.value, ledgerContext.value)
+  ending.value?.kind === 'success'
+    ? successBreakdown(page.value, ledgerContext.value)
+    : undefined
 )
 
 const locked = computed(() => isLocked(page.value))

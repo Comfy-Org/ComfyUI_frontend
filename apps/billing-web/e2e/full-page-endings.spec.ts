@@ -109,6 +109,12 @@ test('a scheduled change ends on the plan that starts, its date, and the plan ke
       duration: 'ANNUAL'
     }
   }
+  chargedWith(cloud, {
+    amount_charged_cents: 0,
+    currency: 'usd',
+    prorated: false,
+    reasons: []
+  })
   await signIn(CHECKOUT)
   await payButton(page).click()
 
