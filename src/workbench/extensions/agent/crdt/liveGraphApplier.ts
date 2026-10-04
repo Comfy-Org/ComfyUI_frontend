@@ -594,9 +594,7 @@ export class LiveGraphApplier {
 
         for (const [id, names] of changes.widgets) {
           if (touchedNodes.has(id)) continue
-          this.try(context, () =>
-            this.syncWidgets(graph, doc, id, names, mode)
-          )
+          this.try(context, () => this.syncWidgets(graph, doc, id, names, mode))
         }
 
         this.applyLinks(graph, doc, [...changes.links], context)
