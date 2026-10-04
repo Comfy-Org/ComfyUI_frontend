@@ -9,6 +9,7 @@ const funded: BillingBannerInputs = {
   isTeamPlan: true,
   isEnterprise: false,
   isKnownPersonalTier: false,
+  hasRenewalInvoice: false,
   isLoaded: true,
   canAccessSubscriptionFeatures: true,
   billingStatus: 'paid',

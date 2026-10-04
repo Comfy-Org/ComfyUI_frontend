@@ -31,6 +31,7 @@ export interface BillingBannerInputs {
   isTeamPlan: boolean
   isEnterprise: boolean
   isKnownPersonalTier: boolean
+  hasRenewalInvoice: boolean
   isLoaded: boolean
   canAccessSubscriptionFeatures: boolean
   billingStatus: BillingStatus | null
@@ -66,7 +67,9 @@ function deriveEnterpriseBanner(
 // The personal tiers whose payment-recovery claim is known-good. An
 // unrecognized server tier reads as "not team, not Enterprise" and would
 // otherwise borrow the personal claim — the module's unknown-tier policy is
-// fail-closed, so recovery is granted only to tiers on this list.
+// fail-closed, so recovery is granted only to tiers on this list. An
+// outstanding renewal invoice also qualifies: past-due legacy subscribers
+// report FREE or no tier, but the invoice is only returned while collectible.
 const PERSONAL_RECOVERY_TIERS: ReadonlySet<SubscriptionTier> = new Set([
   'STANDARD',
   'CREATOR',
@@ -80,7 +83,13 @@ function derivePaymentRecoveryBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
   if (!inputs.v1PaymentRecovery) return null
-  if (!inputs.isTeamPlan && !inputs.isKnownPersonalTier) return null
+  if (
+    !inputs.isTeamPlan &&
+    !inputs.isKnownPersonalTier &&
+    !inputs.hasRenewalInvoice
+  ) {
+    return null
+  }
   if (inputs.billingStatus === 'paused') return 'paused'
   if (inputs.billingStatus === 'payment_failed') return 'paymentFailed'
   return null
@@ -176,6 +185,7 @@ function useBillingBannerInternal() {
     billingStatus,
     subscription,
     isTeamPlan,
+    renewalInvoice,
     fetchStatus,
     fetchBalance
   } = useBillingContext()
@@ -195,6 +205,7 @@ function useBillingBannerInternal() {
     billingControlEnabled: flags.billingControlEnabled,
     v1PaymentRecovery: flags.v1PaymentRecovery,
     isTeamPlan: isTeamPlan.value,
+    hasRenewalInvoice: renewalInvoice.value != null,
     canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
     billingStatus: billingStatus.value,
     canManage: permissions.value.canManageSubscription,

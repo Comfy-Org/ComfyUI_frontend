@@ -5,7 +5,10 @@ import type { EffectScope } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingStatus,
+  RenewalInvoice
+} from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
@@ -32,6 +35,8 @@ describe('useBillingBanner', () => {
       canAccessSubscriptionFeatures: ref(true),
       isTeamPlan: ref(true),
       billingStatus: ref<BillingStatus | null>('paid'),
+      renewalInvoice: ref<RenewalInvoice | null>(null),
+      tier: ref<SubscriptionInfo['tier']>(null),
       subscription: ref<Pick<SubscriptionInfo, 'hasFunds'> | null>({
         hasFunds: true
       })
@@ -42,11 +47,12 @@ describe('useBillingBanner', () => {
     )
     billingContext.isTeamPlan = computed(() => billing.isTeamPlan.value)
     billingContext.billingStatus = computed(() => billing.billingStatus.value)
+    billingContext.renewalInvoice = computed(() => billing.renewalInvoice.value)
     billingContext.subscription = computed(() =>
       billing.subscription.value
         ? {
             isActive: true,
-            tier: null,
+            tier: billing.tier.value,
             duration: null,
             planSlug: null,
             scheduledChange: null,
@@ -148,5 +154,51 @@ describe('useBillingBanner', () => {
 
     expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
     expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
+  })
+
+  describe('payment recovery for past-due legacy subscribers', () => {
+    const invoice: RenewalInvoice = {
+      hosted_invoice_url: 'https://invoice.stripe.com/i/acct_1/test_123',
+      amount_due: 5000,
+      currency: 'usd'
+    }
+
+    function setupPastDue(opts: {
+      tier: SubscriptionInfo['tier']
+      withInvoice: boolean
+    }) {
+      const billing = setupBilling()
+      billing.isTeamPlan.value = false
+      billing.tier.value = opts.tier
+      billing.billingStatus.value = 'payment_failed'
+      billing.renewalInvoice.value = opts.withInvoice ? invoice : null
+      return useBillingBanner().kind
+    }
+
+    it.for(['FREE', null] as const)(
+      'offers recovery for tier %s when a renewal invoice is outstanding',
+      (tier) => {
+        expect(setupPastDue({ tier, withInvoice: true }).value).toBe(
+          'paymentFailed'
+        )
+      }
+    )
+
+    it('stays quiet for a FREE tier without a renewal invoice', () => {
+      expect(
+        setupPastDue({ tier: 'FREE', withInvoice: false }).value
+      ).toBeNull()
+    })
+
+    it('never offers recovery to Enterprise, even with an invoice', () => {
+      expect(
+        setupPastDue({ tier: 'ENTERPRISE', withInvoice: true }).value
+      ).not.toBe('paymentFailed')
+    })
+
+    it('stays quiet with an invoice when the recovery flag is off', () => {
+      vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
+      expect(setupPastDue({ tier: 'FREE', withInvoice: true }).value).toBeNull()
+    })
   })
 })
