@@ -248,9 +248,7 @@ function hasSupportedClipboardWidgetValuesLength(
   if (!values || Array.isArray(values)) return true
   return (
     typeof values.length !== 'number' ||
-    (Number.isSafeInteger(values.length) &&
-      values.length >= 0 &&
-      values.length <= MAX_CLIPBOARD_WIDGET_VALUES)
+    values.length <= MAX_CLIPBOARD_WIDGET_VALUES
   )
 }
 
@@ -274,20 +272,11 @@ function normalizeClipboardWidgetValues(
   return normalized
 }
 
-function isArrayLikeWidgetValues(
-  values: Record<string, TWidgetValue>
-): boolean {
-  return (
-    isArrayLikeLength(values.length) &&
-    Object.keys(values).some((key) => Number.isInteger(Number(key)))
-  )
-}
-
 function normalizeClipboardNodeWidgets<
   T extends { widgets_values?: z.output<typeof zWidgetValues> }
 >(node: T) {
   const values = node.widgets_values
-  if (values && !Array.isArray(values) && !isArrayLikeWidgetValues(values)) {
+  if (values && !Array.isArray(values) && typeof values.length !== 'number') {
     return {
       ...node,
       widgets_values: undefined,
