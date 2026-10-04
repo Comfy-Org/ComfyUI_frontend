@@ -143,12 +143,8 @@ export function formatHeadlineMoney(
  * cloud PR 11905 and misses the receipt by a credit; delete it once every
  * preview carries the count.
  */
-function formatCredits(
-  count: number | undefined,
-  cents: number,
-  locale: string
-): string {
-  return new Intl.NumberFormat(locale).format(count ?? centsToCredits(cents))
+function grantedCredits(count: number | undefined, cents: number): number {
+  return count ?? centsToCredits(cents)
 }
 
 function verbOf(quote: SubscriptionPreview, commitChange: boolean) {
@@ -187,6 +183,15 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
   const plan = planLabel(next, cadenceChanges)
   const action = t(`${S}.verb.${verbOf(quote, commitChange)}`, { plan })
   const dueCents = quote.amount_due_cents ?? quote.cost_today_cents
+  const formatCount = new Intl.NumberFormat(locale).format
+  const todayCount = grantedCredits(
+    quote.credits_today,
+    quote.credits_today_cents
+  )
+  const nextPeriodCount = grantedCredits(
+    quote.credits_next_period,
+    quote.credits_next_period_cents
+  )
 
   return {
     quote,
@@ -205,16 +210,10 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
     monthDay: (iso: string) => monthDay(iso, locale),
     headlineMoney: (cents: number) =>
       formatHeadlineMoney(cents, currency, locale),
-    creditsToday: formatCredits(
-      quote.credits_today,
-      quote.credits_today_cents,
-      locale
-    ),
-    creditsNextPeriod: formatCredits(
-      quote.credits_next_period,
-      quote.credits_next_period_cents,
-      locale
-    ),
+    todayCount,
+    nextPeriodCount,
+    creditsToday: formatCount(todayCount),
+    creditsNextPeriod: formatCount(nextPeriodCount),
     currency: currency.toUpperCase(),
     dueCents,
     recurringCents: quote.renewal_amount_cents ?? quote.cost_next_period_cents,
@@ -411,13 +410,14 @@ function chargeNowCredits(r: QuoteReading): SummaryLedger['credits'] {
   }
 }
 
-function grantIsAllowance({ quote }: QuoteReading): boolean {
+function grantIsAllowance(r: QuoteReading): boolean {
+  const { quote } = r
   if (
-    quote.credits_today !== undefined &&
-    quote.credits_next_period !== undefined
+    quote.credits_today === undefined &&
+    quote.credits_next_period === undefined
   )
-    return quote.credits_today === quote.credits_next_period
-  return quote.credits_today_cents === quote.credits_next_period_cents
+    return quote.credits_today_cents === quote.credits_next_period_cents
+  return r.todayCount === r.nextPeriodCount
 }
 
 function chargeNowTrailing(r: QuoteReading): string[] {
