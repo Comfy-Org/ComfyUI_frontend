@@ -84,10 +84,11 @@ function validByteCount(value: number | undefined): number | null {
 }
 
 /**
- * `ComfyDownloadProgress.progress` has no documented scale, but the template
- * input store reads the same field as a 0..1 fraction and renders it as a
- * percentage, so that is the reading used here. Only in range, and only as a
- * fallback: byte counters are exact where they exist.
+ * A progress figure from either host, accepted only as a 0..1 fraction and
+ * only as a fallback: byte counters are exact where they exist.
+ * `ComfyDownloadProgress.progress` has no documented scale, so that reading
+ * comes from the template input store, which renders the same field as a
+ * percentage.
  */
 function validFraction(value: number | undefined): number | null {
   return value !== undefined &&
