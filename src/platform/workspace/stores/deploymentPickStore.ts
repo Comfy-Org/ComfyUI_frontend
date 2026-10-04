@@ -101,6 +101,21 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   const bootDeployment = shallowRef<WorkspaceDeployment | null | undefined>(
     undefined
   )
+  /**
+   * A change made elsewhere since this page booted that its nodes do not
+   * show, read from the latest listing: `release` when its deployment now
+   * runs another Release, `deployment` when it now runs on another
+   * deployment or Comfy Cloud with other nodes (an owner changed the
+   * default it follows, or its pick is gone). Jobs already run on the new
+   * one; only a reload brings its nodes. Null when nothing changed.
+   */
+  const changeSinceBoot = computed<'release' | 'deployment' | null>(() => {
+    const boot = bootDeployment.value
+    if (boot === undefined || !isVisible.value) return null
+    const now = pickedDeployment.value
+    if ((now?.release_id ?? null) === (boot?.release_id ?? null)) return null
+    return now?.deployment_id === boot?.deployment_id ? 'release' : 'deployment'
+  })
 
   /**
    * Orders the answers. Each `load()` takes the next number (`latestRequest`);
@@ -251,6 +266,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     isVisible,
     isSwitching,
     bootDeployment,
+    changeSinceBoot,
     load,
     loadOnce,
     pick,

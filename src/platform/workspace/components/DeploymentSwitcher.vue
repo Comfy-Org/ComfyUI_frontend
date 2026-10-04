@@ -8,7 +8,9 @@
      Shows the workspace's default deployment when an owner set one (BE-17480):
      a browser with no pick of its own follows it, and an owner sets or
      clears it from the panel's footer. A pick the listing no longer has
-     shows as Comfy Cloud, which is what ingest serves it. -->
+     shows as Comfy Cloud, which is what ingest serves it. When a listing
+     shows this page now runs on other nodes than it booted with (changed
+     elsewhere), a notice under the label offers a reload. -->
 <template>
   <div v-if="isVisible" class="relative" data-testid="deployment-switcher">
     <button
@@ -61,6 +63,23 @@
     </button>
 
     <div
+      v-if="changeSinceBoot"
+      role="status"
+      class="flex items-center gap-2 px-4 pb-2 text-xs text-muted-foreground"
+      data-testid="deployment-switcher-changed"
+    >
+      <span class="min-w-0 flex-1">{{ changeMessage }}</span>
+      <Button
+        variant="secondary"
+        size="sm"
+        data-testid="deployment-switcher-reload"
+        @click="reloadPage"
+      >
+        {{ $t('deploymentSwitcher.reload') }}
+      </Button>
+    </div>
+
+    <div
       v-if="isOpen"
       id="deployment-switcher-panel"
       ref="panel"
@@ -96,6 +115,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import DeploymentSwitcherOwnerFooter from '@/platform/workspace/components/DeploymentSwitcherOwnerFooter.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
@@ -112,7 +132,8 @@ const {
   followsWorkspace,
   canSetDefault,
   isVisible,
-  isSwitching
+  isSwitching,
+  changeSinceBoot
 } = storeToRefs(store)
 
 const isOpen = ref(false)
@@ -138,6 +159,18 @@ const hasDefault = computed(() => defaultDeploymentId.value !== null)
 const showsFollowing = computed(
   () => followsWorkspace.value && hasDefault.value
 )
+const changeMessage = computed(() =>
+  changeSinceBoot.value === 'release'
+    ? t('deploymentSwitcher.releaseChanged')
+    : t('deploymentSwitcher.deploymentChanged', {
+        deployment: currentLabel.value
+      })
+)
+
+function reloadPage() {
+  window.location.reload()
+}
+
 const canSetPicked = computed(
   () =>
     pickedDeployment.value !== null &&
