@@ -12,11 +12,11 @@ interface SidePanelSizingConfig {
 }
 
 export function usePanelSizing(
-  panelConfigs: [SidePanelSizingConfig, SidePanelSizingConfig],
+  panelConfigs: readonly [SidePanelSizingConfig, SidePanelSizingConfig],
   containerWidth: MaybeRefOrGetter<number>,
   reservedWidth: MaybeRefOrGetter<number>
 ) {
-  const storedPanels = panelConfigs.map((config) => {
+  function storePanel(config: SidePanelSizingConfig) {
     const width = useStorage<number | null>(
       config.storageKey,
       null,
@@ -40,20 +40,36 @@ export function usePanelSizing(
       { immediate: true }
     )
     return { ...config, width }
-  })
+  }
+  const storedPanels: readonly [
+    ReturnType<typeof storePanel>,
+    ReturnType<typeof storePanel>
+  ] = [storePanel(panelConfigs[0]), storePanel(panelConfigs[1])]
 
-  const panelPercentages = computed(() => {
+  const panelPercentages = computed<readonly [number, number, number]>(() => {
     const total = toValue(containerWidth)
     if (total <= 0) return [20, 60, 20]
-    const minimums = storedPanels.map((panel) =>
-      toValue(panel.visible) ? toValue(panel.minWidth) : 0
-    )
-    const excesses = storedPanels.map((panel, i) =>
-      toValue(panel.visible)
-        ? Math.max(0, (panel.width.value ?? panel.defaultWidth()) - minimums[i])
+    const minimums: readonly [number, number] = [
+      toValue(storedPanels[0].visible) ? toValue(storedPanels[0].minWidth) : 0,
+      toValue(storedPanels[1].visible) ? toValue(storedPanels[1].minWidth) : 0
+    ]
+    const excesses: readonly [number, number] = [
+      toValue(storedPanels[0].visible)
+        ? Math.max(
+            0,
+            (storedPanels[0].width.value ?? storedPanels[0].defaultWidth()) -
+              minimums[0]
+          )
+        : 0,
+      toValue(storedPanels[1].visible)
+        ? Math.max(
+            0,
+            (storedPanels[1].width.value ?? storedPanels[1].defaultWidth()) -
+              minimums[1]
+          )
         : 0
-    )
-    const excess = excesses.reduce((sum, width) => sum + width, 0)
+    ]
+    const excess = excesses[0] + excesses[1]
     const available = Math.max(
       0,
       total - toValue(reservedWidth) - minimums[0] - minimums[1]
@@ -104,6 +120,7 @@ export function usePanelSizing(
     | undefined
 
   function capturePanel(panelId: string) {
+    if (gesture && !gesture.element.isConnected) gesture = undefined
     if (gesture) return
     const element = document.querySelector(`[data-panel-id="${panelId}"]`)
     if (!(element instanceof HTMLElement)) return
@@ -126,7 +143,7 @@ export function usePanelSizing(
             '[data-panel-resize-handle-id][data-orientation="horizontal"]'
           )
         : null
-    if (!handle || gesture) return
+    if (!handle) return
     const adjacent = [handle.previousElementSibling, handle.nextElementSibling]
     const panel = storedPanels.find(({ id }) =>
       adjacent.some((element) => element?.getAttribute('data-panel-id') === id)

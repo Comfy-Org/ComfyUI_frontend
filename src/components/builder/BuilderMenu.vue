@@ -1,6 +1,6 @@
 <template>
-  <Popover :show-arrow="false" :class="cn(menuContentClass, 'min-w-56')">
-    <template #button>
+  <Menu :items="menuItems" class="min-w-56">
+    <template #trigger>
       <button
         :class="
           cn(
@@ -18,21 +18,7 @@
         <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
       </button>
     </template>
-    <template #default="{ close }">
-      <template v-for="(item, index) in menuItems" :key="item.label">
-        <div v-if="index > 0" class="my-1 border-t border-border-default" />
-        <button
-          type="button"
-          :class="menuButtonClass"
-          :disabled="item.disabled"
-          @click="item.action(close)"
-        >
-          <i :class="cn(item.icon, 'size-4')" />
-          {{ item.label }}
-        </button>
-      </template>
-    </template>
-  </Popover>
+  </Menu>
 </template>
 
 <script setup lang="ts">
@@ -40,11 +26,8 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/Popover.vue'
-import {
-  menuButtonClass,
-  menuContentClass
-} from '@/components/ui/menu/menuStyles'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -60,43 +43,42 @@ const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const { toastErrorHandler } = useErrorHandling()
 
-const menuItems = computed(() => [
+const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('g.save'),
     icon: 'icon-[lucide--save]',
     disabled: !hasOutputs.value,
-    action: onSave
+    command: onSave
   },
+  { separator: true },
   {
     label: t('builderMenu.enterAppMode'),
     icon: 'icon-[lucide--panels-top-left]',
-    action: onEnterAppMode
+    command: onEnterAppMode
   },
+  { separator: true },
   {
     label: t('builderMenu.exitAppBuilder'),
     icon: 'icon-[lucide--x]',
-    action: onExitBuilder
+    command: onExitBuilder
   }
 ])
 
-async function onSave(close: () => void) {
+async function onSave() {
   const workflow = workflowStore.activeWorkflow
   if (!workflow) return
   try {
     await workflowService.saveWorkflow(workflow)
-    close()
   } catch (error) {
     toastErrorHandler(error)
   }
 }
 
-function onEnterAppMode(close: () => void) {
+function onEnterAppMode() {
   setMode('app')
-  close()
 }
 
-function onExitBuilder(close: () => void) {
+function onExitBuilder() {
   appModeStore.exitBuilder()
-  close()
 }
 </script>

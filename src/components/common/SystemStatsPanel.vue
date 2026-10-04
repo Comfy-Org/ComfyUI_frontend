@@ -33,7 +33,7 @@
           v-if="stats.devices.length > 1"
           :default-value="String(stats.devices[0].index)"
         >
-          <TabsList class="mb-4 gap-1 border-b border-interface-stroke">
+          <TabsList variant="bordered" class="mb-4">
             <TabsTrigger
               v-for="device in stats.devices"
               :key="device.index"

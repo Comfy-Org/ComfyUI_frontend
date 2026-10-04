@@ -30,15 +30,14 @@
       />
     </div>
 
-    <ContextMenu ref="jobContextMenuRef" :model="handledJobMenuEntries" />
+    <ContextMenu ref="jobContextMenuRef" :model="jobMenuEntries" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
 import type {
   JobGroup,
   JobListItem,
@@ -46,7 +45,6 @@ import type {
   JobTab
 } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
@@ -77,22 +75,12 @@ const emit = defineEmits<{
 
 const currentMenuItem = ref<JobListItem | null>(null)
 const jobContextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null)
-const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
 const { jobMenuEntries } = useJobMenu(
   () => currentMenuItem.value,
   (item) => emit('viewItem', item)
 )
-const handledJobMenuEntries = computed(() =>
-  jobMenuEntries.value.map(withErrorHandling)
-)
-
-function withErrorHandling(item: MenuItem): MenuItem {
-  if (!item.command) return item
-  return { ...item, command: wrapWithErrorHandlingAsync(item.command) }
-}
-
 const onCancelItemEvent = (item: JobListItem) => {
   emit('cancelItem', item)
 }

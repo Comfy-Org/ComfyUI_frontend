@@ -66,7 +66,7 @@
             @menu="onMenuItem"
           />
         </div>
-        <ContextMenu ref="jobContextMenuRef" :model="handledJobMenuEntries" />
+        <ContextMenu ref="jobContextMenuRef" :model="jobMenuEntries" />
         <MediaLightbox
           v-model:active-index="galleryActiveIndex"
           :all-gallery-items="galleryItems"
@@ -85,7 +85,6 @@ import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { getVisibleJobTabs, jobTabLabelKeys } from '@/composables/queue/jobTabs'
 import type { JobTab } from '@/composables/queue/jobTabs'
@@ -217,15 +216,6 @@ const { jobMenuEntries, cancelJob } = useJobMenu(
   () => currentMenuItem.value,
   onInspectAsset
 )
-const handledJobMenuEntries = computed(() =>
-  jobMenuEntries.value.map(withErrorHandling)
-)
-
-function withErrorHandling(item: MenuItem): MenuItem {
-  if (!item.command) return item
-  return { ...item, command: wrapWithErrorHandlingAsync(item.command) }
-}
-
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   trackFeatureUsed()
   await cancelJob(item)

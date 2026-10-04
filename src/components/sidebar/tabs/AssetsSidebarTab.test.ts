@@ -204,27 +204,40 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 })
 
 describe('AssetsSidebarTab context menu', () => {
-  it.for([
-    { name: 'image.png', insertCount: 1 },
-    { name: 'result.txt', insertCount: 0 }
-  ])(
-    'offers insertion only for loadable files: $name',
-    async ({ name, insertCount }) => {
-      useAssetsStore().outputAssets.items = [{ ...folderAsset, name }]
-      renderTab()
+  it('inserts a loadable image as a node', async () => {
+    const asset = { ...folderAsset, name: 'image.png' }
+    useAssetsStore().outputAssets.items = [asset]
+    renderTab()
 
-      await fireEvent.contextMenu(
-        screen.getByRole('button', { name: 'Enter output folder' })
-      )
-      await screen.findByRole('menu')
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.insertAsNodeInWorkflow'
+      })
+    )
 
-      expect(
-        screen.queryAllByRole('menuitem', {
-          name: 'mediaAsset.actions.insertAsNodeInWorkflow'
-        })
-      ).toHaveLength(insertCount)
-    }
-  )
+    expect(useMediaAssetActions().addWorkflow).toHaveBeenCalledWith(asset)
+  })
+
+  it('does not offer insertion for an unloadable file', async () => {
+    useAssetsStore().outputAssets.items = [
+      { ...folderAsset, name: 'result.txt' }
+    ]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await screen.findByRole('menu')
+
+    expect(
+      screen.queryByRole('menuitem', {
+        name: 'mediaAsset.actions.insertAsNodeInWorkflow'
+      })
+    ).not.toBeInTheDocument()
+  })
 
   it('downloads grouped outputs through the multi-asset download action', async () => {
     renderTab()

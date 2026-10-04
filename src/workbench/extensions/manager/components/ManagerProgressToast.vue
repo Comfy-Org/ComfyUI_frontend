@@ -117,7 +117,8 @@ function resetUserScrolling() {
 }
 
 function handleScroll(e: Event) {
-  const target = e.target as HTMLElement
+  if (!(e.target instanceof HTMLElement)) return
+  const target = e.target
   if (target !== latestLogContainerRef.value) return
   isUserScrolling.value = !isAtBottom(target)
 }
@@ -164,12 +165,12 @@ onBeforeUnmount(() => {
         orientation="horizontal"
       >
         <div class="flex items-center px-4 py-2">
-          <TabsList class="flex w-full gap-0">
+          <TabsList variant="flush" class="flex w-full">
             <TabsTrigger
               v-for="tab in tabs"
               :key="tab.value"
               :value="tab.value"
-              class="h-auto rounded-none px-4 py-2 font-medium data-[state=active]:bg-transparent"
+              variant="flush"
             >
               {{ tab.label }}
             </TabsTrigger>

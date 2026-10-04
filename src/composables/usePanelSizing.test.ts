@@ -9,6 +9,7 @@ beforeEach(() => localStorage.clear())
 async function setupSizing({ left = 400, right = 200, total = 1000 } = {}) {
   const containerWidth = ref(total)
   const rightVisible = ref(true)
+  const leftVisible = ref(true)
   const leftKey = ref('left')
   const state = render({
     setup() {
@@ -32,11 +33,11 @@ async function setupSizing({ left = 400, right = 200, total = 1000 } = {}) {
         containerWidth,
         160
       )
-      return sizing
+      return { ...sizing, leftVisible }
     },
     template: `
-      <div @pointerup="onResizeEnd" @keydown.capture="onResizeStart" @keyup="onResizeEnd">
-        <div data-panel-id="left" data-testid="left" />
+      <div @pointerup="onResizeEnd" @keydown.capture="onResizeStart" @keyup="onResizeEnd" @focusout="onResizeEnd">
+        <div v-if="leftVisible" data-panel-id="left" data-testid="left" />
         <button data-panel-resize-handle-id="left-handle" data-orientation="horizontal">Left handle</button>
         <div />
         <button data-panel-resize-handle-id="right-handle" data-orientation="horizontal" @pointerdown="onResizeDragging(true, 'right')">Right handle</button>
@@ -61,6 +62,7 @@ async function setupSizing({ left = 400, right = 200, total = 1000 } = {}) {
     ...state,
     containerWidth,
     rightVisible,
+    leftVisible,
     leftKey,
     leftWidth,
     rightWidth
@@ -113,6 +115,38 @@ describe('pixel panel sizing', () => {
     await nextTick()
     expect(localStorage.getItem('left')).toBe('800')
     expect(localStorage.getItem('right')).toBe('250')
+  })
+
+  it('persists a resize after the previous keyboard gesture is interrupted by a remount', async () => {
+    const { leftVisible, rightWidth } = await setupSizing()
+    const leftHandle = screen.getByRole('button', { name: 'Left handle' })
+    leftHandle.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
+    )
+
+    leftVisible.value = false
+    await nextTick()
+
+    const rightHandle = screen.getByRole('button', { name: 'Right handle' })
+    rightHandle.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    rightWidth.value = 275
+    rightHandle.dispatchEvent(new Event('pointerup', { bubbles: true }))
+    await nextTick()
+
+    expect(localStorage.getItem('right')).toBe('275')
+  })
+
+  it('finishes keyboard persistence when the resize handle loses focus', async () => {
+    const { leftWidth } = await setupSizing()
+    const handle = screen.getByRole('button', { name: 'Left handle' })
+    handle.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
+    )
+    leftWidth.value = 510
+    handle.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    await nextTick()
+
+    expect(localStorage.getItem('left')).toBe('510')
   })
 
   it.for([

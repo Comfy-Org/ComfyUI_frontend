@@ -1,24 +1,35 @@
 <script setup lang="ts" generic="T extends string">
-import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from 'reka-ui'
+import { DropdownMenuRadioGroup } from 'reka-ui'
 
 import MenuItemContent from './MenuItemContent.vue'
-import { menuItemClass } from './menuStyles'
+import MenuRadioItem from './MenuRadioItem.vue'
 
 defineProps<{
-  options: { value: T; label: string; icon?: string }[]
+  options: {
+    value: T
+    label: string
+    icon?: string
+    tooltip?: string
+    command?: () => unknown
+  }[]
 }>()
 
 const selected = defineModel<T>({ required: true })
+
+function select(option: { value: T; command?: () => unknown }) {
+  selected.value = option.value
+  option.command?.()
+}
 </script>
 
 <template>
   <DropdownMenuRadioGroup :model-value="selected">
-    <DropdownMenuRadioItem
+    <MenuRadioItem
       v-for="option in options"
       :key="option.value"
+      v-tooltip="{ value: option.tooltip, showDelay: 600 }"
       :value="option.value"
-      :class="menuItemClass"
-      @select="selected = option.value"
+      @select="select(option)"
     >
       <MenuItemContent
         :item="{
@@ -28,6 +39,6 @@ const selected = defineModel<T>({ required: true })
         }"
         :has-submenu="false"
       />
-    </DropdownMenuRadioItem>
+    </MenuRadioItem>
   </DropdownMenuRadioGroup>
 </template>

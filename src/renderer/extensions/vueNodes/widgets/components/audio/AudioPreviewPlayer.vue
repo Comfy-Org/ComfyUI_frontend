@@ -253,23 +253,26 @@ const handleVolumeChange = (value: number[] | undefined) => {
 const menuItems = computed(() => [
   {
     label: t('g.playbackSpeed'),
-    items: [
-      {
-        label: t('g.halfSpeed'),
-        command: () => setPlaybackSpeed(0.5),
-        checked: playbackRate.value === 0.5
-      },
-      {
-        label: t('g.1x'),
-        command: () => setPlaybackSpeed(1),
-        checked: playbackRate.value === 1
-      },
-      {
-        label: t('g.2x'),
-        command: () => setPlaybackSpeed(2),
-        checked: playbackRate.value === 2
-      }
-    ]
+    radioGroup: {
+      value: () => String(playbackRate.value),
+      options: [
+        {
+          value: '0.5',
+          label: t('g.halfSpeed'),
+          command: () => setPlaybackSpeed(0.5)
+        },
+        {
+          value: '1',
+          label: t('g.1x'),
+          command: () => setPlaybackSpeed(1)
+        },
+        {
+          value: '2',
+          label: t('g.2x'),
+          command: () => setPlaybackSpeed(2)
+        }
+      ]
+    }
   },
   {
     label: t('g.volume'),

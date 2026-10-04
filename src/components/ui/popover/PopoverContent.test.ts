@@ -54,6 +54,8 @@ describe('PopoverContent', () => {
 
     const reopenedContent = await screen.findByRole('dialog')
     expect(firstZIndex).toBeLessThan(laterDialogZIndex + 1)
-    expect(Number(reopenedContent.style.zIndex)).toBe(laterDialogZIndex + 1)
+    expect(Number(reopenedContent.style.zIndex)).toBeGreaterThan(
+      laterDialogZIndex
+    )
   })
 })

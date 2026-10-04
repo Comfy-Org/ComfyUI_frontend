@@ -7,18 +7,11 @@ let restoreFocusOnMount = false
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import {
-  DropdownMenuContent,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { menuContentClass } from '@/components/ui/menu/menuStyles'
+import Menu from '@/components/ui/menu/Menu.vue'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -168,12 +161,17 @@ const tooltipPt = {
 </script>
 
 <template>
-  <DropdownMenuRoot
-    :open="dropdownOpen"
+  <Menu
+    v-model:open="dropdownOpen"
+    :items="menuItems"
     :modal="false"
+    :align
+    :side-offset="8"
+    :collision-padding="10"
+    class="min-w-56"
     @update:open="onOpenChange"
   >
-    <DropdownMenuTrigger as-child>
+    <template #trigger>
       <div
         ref="toggleRef"
         data-testid="view-mode-toggle"
@@ -251,16 +249,6 @@ const tooltipPt = {
           </Button>
         </TransitionGroup>
       </div>
-    </DropdownMenuTrigger>
-    <DropdownMenuPortal>
-      <DropdownMenuContent
-        :align
-        :side-offset="8"
-        :collision-padding="10"
-        :class="cn(menuContentClass, 'min-w-56')"
-      >
-        <WorkflowActionsList :items="menuItems" />
-      </DropdownMenuContent>
-    </DropdownMenuPortal>
-  </DropdownMenuRoot>
+    </template>
+  </Menu>
 </template>

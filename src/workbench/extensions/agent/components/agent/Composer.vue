@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import {
-  DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRoot,
-  DropdownMenuSeparator,
   DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
 import {
@@ -25,10 +20,11 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
-import {
-  menuContentClass,
-  menuItemClass
-} from '@/components/ui/menu/menuStyles'
+import MenuContent from '@/components/ui/menu/MenuContent.vue'
+import MenuItem from '@/components/ui/menu/MenuItem.vue'
+import MenuSeparator from '@/components/ui/menu/MenuSeparator.vue'
+import MenuSubContent from '@/components/ui/menu/MenuSubContent.vue'
+import MenuSubTrigger from '@/components/ui/menu/MenuSubTrigger.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
@@ -611,11 +607,12 @@ defineExpose({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
-            <DropdownMenuContent
+            <MenuContent
               side="top"
               align="start"
               :side-offset="4"
-              :class="cn(menuContentClass, 'agent-scope w-max min-w-46.5')"
+              width="compact"
+              class="agent-scope"
             >
               <AccessibleTooltip
                 :label="nodeReferenceDisabledReason ?? ''"
@@ -625,51 +622,47 @@ defineExpose({
                 :collision-padding="8"
               >
                 <template #trigger>
-                  <DropdownMenuItem
+                  <MenuItem
                     :disabled="!!nodeReferenceDisabledReason"
                     :aria-description="nodeReferenceDisabledReason"
-                    :class="menuItemClass"
                     @select="onSelectNodes"
                   >
                     <span class="icon-[comfy--node] size-4 shrink-0" />
                     <span class="whitespace-nowrap">
                       {{ t('agent.nodes') }}
                     </span>
-                  </DropdownMenuItem>
+                  </MenuItem>
                 </template>
               </AccessibleTooltip>
               <DropdownMenuSub
                 v-model:open="workflowSubmenuOpen"
                 @update:open="onWorkflowSubmenuOpenChange"
               >
-                <DropdownMenuSubTrigger :class="menuItemClass">
+                <MenuSubTrigger>
                   <span class="icon-[comfy--workflow] size-4 shrink-0" />
                   <span class="flex-1 text-left whitespace-nowrap">
                     {{ t('agent.workflows') }}
                   </span>
                   <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
-                </DropdownMenuSubTrigger>
+                </MenuSubTrigger>
                 <DropdownMenuPortal>
-                  <DropdownMenuSubContent
+                  <MenuSubContent
+                    :open="workflowSubmenuOpen"
                     :side-offset="4"
-                    :class="
-                      cn(menuContentClass, 'agent-scope max-h-64 min-w-46.5')
-                    "
+                    width="compact"
+                    max-height="compact"
+                    class="agent-scope"
                   >
-                    <DropdownMenuItem
-                      :class="menuItemClass"
-                      @select.prevent="workflowSubmenuOpen = false"
-                    >
+                    <MenuItem @select.prevent="workflowSubmenuOpen = false">
                       <span
                         class="icon-[lucide--chevron-left] size-4 shrink-0"
                       />
                       <span>{{ t('g.back') }}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
+                    </MenuItem>
+                    <MenuItem
                       v-for="workflow in eligibleWorkflows"
                       :key="workflow.id ?? workflow.tabPath"
                       :disabled="workflowSelecting"
-                      :class="menuItemClass"
                       @select.prevent="pickWorkflow(workflow)"
                     >
                       <span class="icon-[comfy--workflow] size-4 shrink-0" />
@@ -679,41 +672,33 @@ defineExpose({
                         class="text-xs text-muted-foreground"
                         >{{ t('agent.unsavedWorkflow') }}</span
                       >
-                    </DropdownMenuItem>
+                    </MenuItem>
                     <div
                       v-if="eligibleWorkflows.length === 0"
                       class="px-2 py-1 text-xs text-muted-foreground"
                     >
                       {{ t('agent.noWorkflowsToReference') }}
                     </div>
-                  </DropdownMenuSubContent>
+                  </MenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
-              <DropdownMenuItem
-                v-if="canOpenAssets"
-                :class="menuItemClass"
-                @select="emit('openAssets')"
-              >
+              <MenuItem v-if="canOpenAssets" @select="emit('openAssets')">
                 <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
                 <span class="whitespace-nowrap">
                   {{ t('agent.addFromAssets') }}
                 </span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator
+              </MenuItem>
+              <MenuSeparator
                 v-if="canAttach && canOpenAssets"
                 class="mt-0 mb-px h-px bg-border-subtle"
               />
-              <DropdownMenuItem
-                v-if="canAttach"
-                :class="menuItemClass"
-                @select="emit('attach')"
-              >
+              <MenuItem v-if="canAttach" @select="emit('attach')">
                 <i-lucide:paperclip class="size-4 shrink-0" />
                 <span class="whitespace-nowrap">{{
                   t('agent.attachFiles')
                 }}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+              </MenuItem>
+            </MenuContent>
           </DropdownMenuPortal>
         </DropdownMenuRoot>
 

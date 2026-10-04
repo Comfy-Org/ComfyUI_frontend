@@ -8,6 +8,62 @@ import Menu from './Menu.vue'
 import ContextMenu from './ContextMenu.vue'
 
 describe('Menu', () => {
+  it('does not repeat a disabled press-and-hold command', async () => {
+    const command = vi.fn()
+    render(Menu, {
+      props: {
+        open: true,
+        items: [
+          { label: 'Zoom', command, disabled: true, pressAndHoldInterval: 50 }
+        ]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const item = await screen.findByRole('menuitem', { name: 'Zoom' })
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTime,
+      pointerEventsCheck: 0
+    })
+
+    await user.pointer({ keys: '[MouseLeft>]', target: item })
+    await vi.advanceTimersByTimeAsync(100)
+    await user.pointer({ keys: '[/MouseLeft]', target: item })
+
+    expect(command).not.toHaveBeenCalled()
+  })
+
+  it('accepts keyboard selection after a hold is released outside the row', async () => {
+    const command = vi.fn()
+    render(Menu, {
+      props: {
+        open: true,
+        items: [{ label: 'Zoom', command, pressAndHoldInterval: 50 }]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const item = await screen.findByRole('menuitem', { name: 'Zoom' })
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTime,
+      pointerEventsCheck: 0
+    })
+
+    await user.pointer({ keys: '[MouseLeft>]', target: item })
+    await vi.advanceTimersByTimeAsync(100)
+    await user.pointer({ keys: '[/MouseLeft]', target: document.body })
+    item.focus()
+    await user.keyboard('{Enter}')
+
+    expect(command).toHaveBeenCalledTimes(3)
+  })
+
   it('gives custom menu content keyboard selection and dismissal', async () => {
     const command = vi.fn()
     render(Menu, {
@@ -40,6 +96,19 @@ describe('Menu', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Open' }))
     await screen.findByRole('menu')
     expect(document.body.style.pointerEvents).not.toBe('none')
+  })
+
+  it('disables commandless actions', async () => {
+    render(Menu, {
+      props: { items: [{ label: 'Unavailable' }] },
+      slots: { trigger: '<button>Open</button>' }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'Unavailable' })
+    ).toHaveAttribute('aria-disabled', 'true')
   })
 
   it.for([
@@ -164,6 +233,48 @@ describe('Menu', () => {
     await waitFor(() => expect(item).toBeChecked())
     expect(item).toBeVisible()
     expect(item).toHaveTextContent('Alt+G')
+  })
+
+  it('renders mutually exclusive choices as radio menu items', async () => {
+    const selectCompact = vi.fn()
+    render(Menu, {
+      props: {
+        items: [
+          {
+            label: 'Density',
+            radioGroup: {
+              value: 'comfortable',
+              options: [
+                {
+                  value: 'comfortable',
+                  label: 'Comfortable',
+                  command: vi.fn()
+                },
+                {
+                  value: 'compact',
+                  label: 'Compact',
+                  command: selectCompact
+                }
+              ]
+            }
+          }
+        ]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    await user.keyboard('{ArrowDown}{ArrowRight}')
+    const comfortable = await screen.findByRole('menuitemradio', {
+      name: 'Comfortable'
+    })
+    const compact = screen.getByRole('menuitemradio', { name: 'Compact' })
+
+    expect(comfortable).toBeChecked()
+    expect(compact).not.toBeChecked()
+    await user.click(compact)
+    expect(selectCompact).toHaveBeenCalledOnce()
   })
 
   it('toggles closed and reopens from its trigger', async () => {
@@ -314,5 +425,59 @@ describe('Menu', () => {
     await waitFor(() =>
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     )
+  })
+
+  it('dismisses only the context menu that owns the clicked content', async () => {
+    const first = ref<InstanceType<typeof ContextMenu>>()
+    const second = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ first, second }),
+        template:
+          '<button @contextmenu.prevent="first?.show($event)">First</button><button @contextmenu.prevent="second?.show($event)">Second</button><ContextMenu ref="first" :model="[{ label: \'First action\' }]" /><ContextMenu ref="second" :model="[{ label: \'Second action\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'First' })
+    })
+    await screen.findByRole('menuitem', { name: 'First action' })
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Second' })
+    })
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'Second action' })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('menuitem', { name: 'First action' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps a context menu open when its own submenu is clicked', async () => {
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu }),
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'More\', items: [{ label: \'Child\' }] }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
+    await user.hover(await screen.findByRole('menuitem', { name: 'More' }))
+    const child = await screen.findByRole('menuitem', { name: 'Child' })
+    child.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+
+    expect(child).toBeVisible()
   })
 })

@@ -66,7 +66,7 @@ export class QueuePanel {
     await expect(moreButton).toBeVisible()
     await moreButton.click()
 
-    const addToWorkflowButton = this.page.getByRole('button', {
+    const addToWorkflowButton = this.page.getByRole('menuitem', {
       name: 'Add to current workflow',
       exact: true
     })

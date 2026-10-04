@@ -4,6 +4,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import { GraphCanvasMenu } from '@e2e/fixtures/components/GraphCanvasMenu'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -278,6 +279,10 @@ test.describe('App mode usage', () => {
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
     test('panel navigation', async ({ comfyPage }) => {
       const { mobile } = comfyPage.appMode
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+      const canvasMenu = new GraphCanvasMenu(comfyPage.page)
+      await expect(canvasMenu.root).toBeVisible()
+      await expect(canvasMenu.root).toBeInViewport({ ratio: 1 })
       await comfyPage.appMode.enterAppModeWithInputs([['3', 'steps']])
       await expect(mobile.view).toBeVisible()
       await expect(mobile.navigation).toBeVisible()
@@ -316,8 +321,12 @@ test.describe('App mode usage', () => {
       const widgets = comfyPage.appMode.linearWidgets
       await comfyPage.appMode.mobile.navigateTab('run')
       for (let i = 0; i < widgetNames.length; i++) {
-        await comfyPage.appMode.mobile.switchWorkflow(`(${i + 2})`)
-        await expect(widgets.getByText(widgetNames[i])).toBeVisible()
+        await comfyPage.appMode.mobile.switchWorkflow(
+          `Unsaved Workflow (${i + 2})`
+        )
+        await expect(
+          widgets.getByTestId(TestIds.builder.widgetLabel)
+        ).toHaveText([widgetNames[i]])
       }
     })
   })

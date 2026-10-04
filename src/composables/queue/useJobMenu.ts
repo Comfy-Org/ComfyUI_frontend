@@ -4,6 +4,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import type { MenuItem } from '@/components/ui/menu/types'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
@@ -41,6 +42,7 @@ export function useJobMenu(
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
   const { copyToClipboard } = useCopyToClipboard()
+  const { wrapWithErrorHandlingAsync } = useErrorHandling()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
 
@@ -224,7 +226,7 @@ export function useJobMenu(
     if (!state) return []
     const hasPreviewAsset = !!item.taskRef?.previewOutput
     if (state === 'completed') {
-      return [
+      return handleErrors([
         {
           key: 'inspect-asset',
           label: st('queue.jobMenu.inspectAsset', 'Inspect asset'),
@@ -274,10 +276,10 @@ export function useJobMenu(
           icon: 'icon-[lucide--copy]',
           command: () => copyJobId()
         }
-      ]
+      ])
     }
     if (state === 'failed') {
-      return [
+      return handleErrors([
         {
           key: 'open-workflow',
           label: jobMenuOpenWorkflowFailedLabel.value,
@@ -310,9 +312,9 @@ export function useJobMenu(
           icon: 'icon-[lucide--circle-minus]',
           command: () => removeFailedJob()
         }
-      ]
+      ])
     }
-    return [
+    return handleErrors([
       {
         key: 'open-workflow',
         label: jobMenuOpenWorkflowLabel.value,
@@ -333,8 +335,15 @@ export function useJobMenu(
         icon: 'icon-[lucide--x]',
         command: () => cancelJob()
       }
-    ]
+    ])
   })
+
+  const handleErrors = (items: MenuItem[]): MenuItem[] =>
+    items.map((item) =>
+      item.command
+        ? { ...item, command: wrapWithErrorHandlingAsync(item.command) }
+        : item
+    )
 
   return {
     jobMenuEntries,

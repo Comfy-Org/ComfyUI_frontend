@@ -47,19 +47,19 @@ describe('AudioPreviewPlayer', () => {
     await user.click(screen.getByRole('button', { name: 'g.moreOptions' }))
     await screen.findByRole('menuitem', { name: 'g.playbackSpeed' })
     await user.keyboard('{ArrowDown}{ArrowRight}{End}')
-    const doubleSpeed = await screen.findByRole('menuitemcheckbox', {
+    const doubleSpeed = await screen.findByRole('menuitemradio', {
       name: 'g.2x'
     })
     await waitFor(() => expect(doubleSpeed).toHaveFocus())
     await user.keyboard('{Enter}')
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole('menuitemcheckbox', { name: 'g.2x' })
-      ).toBeChecked()
-    )
+    await user.click(screen.getByRole('button', { name: 'g.moreOptions' }))
+    await user.keyboard('{ArrowDown}{ArrowRight}')
     expect(
-      screen.getByRole('menuitemcheckbox', { name: 'g.1x' })
+      await screen.findByRole('menuitemradio', { name: 'g.2x' })
+    ).toBeChecked()
+    expect(
+      screen.getByRole('menuitemradio', { name: 'g.1x' })
     ).not.toBeChecked()
   })
 
@@ -103,8 +103,6 @@ describe('AudioPreviewPlayer', () => {
           severity: 'error'
         })
       )
-
-      vi.mocked(downloadFile).mockReset()
     })
   })
 })

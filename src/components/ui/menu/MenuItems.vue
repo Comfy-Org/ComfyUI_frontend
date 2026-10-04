@@ -1,20 +1,15 @@
 <script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
-import {
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger
-} from 'reka-ui'
+import { DropdownMenuPortal, DropdownMenuSub } from 'reka-ui'
 import { computed, toValue } from 'vue'
-import type { Slot, StyleValue } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import type { Slot } from 'vue'
 
 import MenuAction from './MenuAction.vue'
 import MenuItemContent from './MenuItemContent.vue'
-import { menuContentClass, menuItemClass } from './menuStyles'
+import MenuRadioGroup from './MenuRadioGroup.vue'
+import MenuSeparator from './MenuSeparator.vue'
+import MenuSubContent from './MenuSubContent.vue'
+import MenuSubTrigger from './MenuSubTrigger.vue'
 import type { MenuItem } from './types'
 
 defineOptions({ name: 'MenuItems' })
@@ -27,19 +22,10 @@ type ItemSlotProps = {
 const [DefineItemContent, ReuseItemContent] =
   createReusableTemplate<ItemSlotProps>()
 
-const {
-  contentClass = menuContentClass,
-  itemClass = menuItemClass,
-  itemContent,
-  items,
-  separatorClass = 'my-1 h-px bg-border-subtle'
-} = defineProps<{
+const { itemContent, items, ownerId } = defineProps<{
   items: MenuItem[]
-  contentClass?: string
-  contentStyle?: StyleValue
-  itemClass?: string
   itemContent?: Slot<ItemSlotProps>
-  separatorClass?: string
+  ownerId?: string
 }>()
 
 const emit = defineEmits<{
@@ -49,6 +35,13 @@ const emit = defineEmits<{
 const visibleItems = computed(() =>
   items.filter((item) => toValue(item.visible) !== false)
 )
+
+function isSubmenuDisabled(item: MenuItem) {
+  return (
+    toValue(item.disabled) ||
+    (item.items ?? item.radioGroup?.options)?.length === 0
+  )
+}
 </script>
 
 <template>
@@ -66,40 +59,46 @@ const visibleItems = computed(() =>
     v-for="(item, index) in visibleItems"
     :key="item.key ?? toValue(item.label) ?? index"
   >
-    <DropdownMenuSeparator v-if="item.separator" :class="separatorClass" />
-    <DropdownMenuSub v-else-if="item.items">
-      <DropdownMenuSubTrigger
+    <MenuSeparator v-if="item.separator" />
+    <DropdownMenuSub
+      v-else-if="item.items || item.radioGroup"
+      v-slot="{ open }"
+    >
+      <MenuSubTrigger
         :aria-label="toValue(item.label)"
-        :disabled="toValue(item.disabled) || item.items.length === 0"
-        :class="cn(itemClass, toValue(item.class))"
+        :disabled="isSubmenuDisabled(item)"
+        :class="toValue(item.class)"
       >
         <ReuseItemContent :item :has-submenu="true" />
-      </DropdownMenuSubTrigger>
+      </MenuSubTrigger>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent
-          :class="
-            cn(
-              contentClass,
-              'max-h-(--reka-dropdown-menu-content-available-height)'
-            )
-          "
-          :style="contentStyle"
+        <MenuSubContent
+          :open
+          :data-menu-owner="ownerId"
           :side-offset="2"
           :align-offset="-5"
         >
           <MenuItems
+            v-if="item.items"
             :items="item.items"
-            :content-class
-            :content-style
-            :item-class
             :item-content="itemContent ?? $slots.item"
-            :separator-class
+            :owner-id
             @select="emit('select')"
           />
-        </DropdownMenuSubContent>
+          <MenuRadioGroup
+            v-else-if="item.radioGroup"
+            :model-value="toValue(item.radioGroup.value)"
+            :options="item.radioGroup.options"
+          />
+        </MenuSubContent>
       </DropdownMenuPortal>
     </DropdownMenuSub>
-    <MenuAction v-else :item :item-class @select="emit('select')">
+    <MenuAction
+      v-else
+      :item
+      :allow-commandless="Boolean(itemContent ?? $slots.item)"
+      @select="emit('select')"
+    >
       <ReuseItemContent :item :has-submenu="false" />
     </MenuAction>
   </template>

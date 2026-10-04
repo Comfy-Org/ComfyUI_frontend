@@ -89,11 +89,7 @@
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
-        <WorkflowActionsList
-          :items="contextMenuItems"
-          :item-component="ContextMenuItem"
-          :separator-component="ContextMenuSeparator"
-        />
+        <MenuItems :items="contextMenuItems" />
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>
@@ -109,17 +105,15 @@
 <script setup lang="ts">
 import {
   ContextMenuContent,
-  ContextMenuItem,
   ContextMenuPortal,
   ContextMenuRoot,
-  ContextMenuSeparator,
   ContextMenuTrigger
 } from 'reka-ui'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import MenuItems from '@/components/ui/menu/MenuItems.vue'
 import { menuContentClass } from '@/components/ui/menu/menuStyles'
 import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import {

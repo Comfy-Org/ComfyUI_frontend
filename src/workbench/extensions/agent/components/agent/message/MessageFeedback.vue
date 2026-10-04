@@ -1,21 +1,12 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
-import {
-  menuContentClass,
-  menuItemClass
-} from '@/components/ui/menu/menuStyles'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
@@ -48,6 +39,12 @@ function copyPlainText(): void {
 }
 
 const downloading = ref(false)
+const copyMenuItems = computed<MenuItem[]>(() => [
+  {
+    label: t('agent.copyMarkdown'),
+    command: () => copy(markdown)
+  }
+])
 
 async function downloadAssets(): Promise<void> {
   if (downloading.value) return
@@ -161,8 +158,13 @@ async function downloadAssets(): Promise<void> {
           </Button>
         </template>
       </AccessibleTooltip>
-      <DropdownMenuRoot>
-        <DropdownMenuTrigger as-child>
+      <Menu
+        :items="copyMenuItems"
+        align="end"
+        :side-offset="4"
+        class="agent-scope"
+      >
+        <template #trigger>
           <Button
             variant="muted-textonly"
             size="icon-sm"
@@ -171,22 +173,8 @@ async function downloadAssets(): Promise<void> {
           >
             <span class="icon-[lucide--chevron-down] size-3" />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuContent
-            align="end"
-            :side-offset="4"
-            :class="cn(menuContentClass, 'agent-scope w-36 min-w-36')"
-          >
-            <DropdownMenuItem
-              :class="cn(menuItemClass, 'w-full whitespace-nowrap')"
-              @select="copy(markdown)"
-            >
-              {{ t('agent.copyMarkdown') }}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenuPortal>
-      </DropdownMenuRoot>
+        </template>
+      </Menu>
     </div>
   </div>
 </template>

@@ -31,60 +31,11 @@
         </div>
       </button>
     </template>
-    <template #item="{ item }">
-      <a
-        v-if="item.key !== 'nodes-2.0-toggle'"
-        class="flex w-full items-center gap-2"
-        :href="item.url"
-        target="_blank"
-        :class="toValue(item.class)"
-        @mousedown="handleZoomMouseDown(item, $event)"
-        @click="handleItemClick(item, $event)"
-      >
-        <i
-          v-if="hasCheckableSiblings(item)"
-          data-testid="menu-item-indicator"
-          class="icon-[lucide--check] size-4"
-          :class="{ invisible: !toValue(item.checked) }"
-        />
-        <span
-          v-else-if="item.icon && !isNewBlankWorkflow(item)"
-          class="size-4"
-          :class="item.icon"
-        />
-        <span class="text-nowrap">{{ item.label }}</span>
-        <i v-if="isNewBlankWorkflow(item)" class="ml-auto" :class="item.icon" />
-        <span
-          v-if="toValue(item.shortcut)"
-          class="ml-auto rounded-sm border border-border-default bg-secondary-background p-1 text-xs text-nowrap text-muted"
-        >
-          {{ toValue(item.shortcut) }}
-        </span>
-        <i
-          v-if="item.items"
-          class="ml-auto icon-[lucide--chevron-right] size-4"
-        />
-      </a>
-      <div
-        v-else
-        class="flex w-full items-center justify-between select-none"
-        data-testid="nodes-2-toggle-item"
-      >
-        <span class="text-nowrap">{{ item.label }}</span>
-        <Switch
-          :model-value="nodes2Enabled"
-          class="pointer-events-none ml-4"
-          aria-hidden="true"
-          readonly
-          tabindex="-1"
-        />
-      </div>
-    </template>
   </Menu>
 </template>
 
 <script setup lang="ts">
-import { computed, toValue } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -92,24 +43,20 @@ import { cn } from '@comfyorg/tailwind-utils'
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import Switch from '@/components/ui/switch/Switch.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingPanelType } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import type { AppMenuItem, CommandMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { whileMouseDown } from '@/utils/mouseDownUtil'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
 const menuItemStore = useMenuItemStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
@@ -160,7 +107,6 @@ const themeMenuItems = computed(() => {
   return colorPaletteStore.palettes.map<CommandMenuItem>((palette) => ({
     key: `theme-${palette.id}`,
     label: palette.name,
-    parentPath: 'theme',
     commandId: `theme-${palette.id}`,
     checked: () => colorPaletteStore.activePaletteId === palette.id,
     command: async () => {
@@ -180,6 +126,8 @@ const extraMenuItems = computed<MenuItem[]>(() => [
     key: 'nodes-2.0-toggle',
     label: 'Nodes 2.0',
     checked: nodes2Enabled.value,
+    presentation: 'switch',
+    class: 'select-none',
     command: () => onNodes2ToggleChange(!nodes2Enabled.value)
   },
   { separator: true },
@@ -237,57 +185,6 @@ const translatedItems = computed<AppMenuItem[]>(() => {
 
   return items
 })
-
-const isCommandMenuItem = (item: MenuItem): item is CommandMenuItem =>
-  'commandId' in item
-
-const isNewBlankWorkflow = (item: MenuItem) =>
-  isCommandMenuItem(item) && item.commandId === 'Comfy.NewBlankWorkflow'
-
-const isZoomCommand = (item: MenuItem) => {
-  return (
-    isCommandMenuItem(item) &&
-    (item.commandId === 'Comfy.Canvas.ZoomIn' ||
-      item.commandId === 'Comfy.Canvas.ZoomOut')
-  )
-}
-
-const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
-  if (!isZoomCommand(item)) return
-  const commandId = isCommandMenuItem(item) ? item.commandId : undefined
-  if (commandId) {
-    whileMouseDown(
-      event,
-      async () => {
-        await commandStore.execute(commandId)
-      },
-      50
-    )
-  }
-}
-
-const handleItemClick = (item: MenuItem, event: MouseEvent) => {
-  if (isZoomCommand(item) || item.checked !== undefined) {
-    event.preventDefault()
-    event.stopPropagation()
-    if (item.checked !== undefined) {
-      item.command?.({
-        item,
-        originalEvent: event
-      })
-    }
-    return false
-  }
-}
-
-const hasCheckableSiblings = (item: MenuItem): boolean => {
-  return Boolean(
-    isCommandMenuItem(item) &&
-    item.parentPath &&
-    (item.parentPath === 'theme' ||
-      menuItemStore.menuGroupHasCheckableItems[item.parentPath])
-  )
-}
 
 const onNodes2ToggleChange = async (value: boolean) => {
   await settingStore.set('Comfy.VueNodes.Enabled', value)

@@ -11,7 +11,6 @@ import { useCommandStore } from './commandStore'
 
 export interface CommandMenuItem extends MenuItemAction {
   commandId: string
-  parentPath?: string
 }
 
 export type AppMenuItem = MenuItem | CommandMenuItem
@@ -20,7 +19,6 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   const canvasStore = useCanvasStore()
   const commandStore = useCommandStore()
   const menuItems = ref<AppMenuItem[]>([])
-  const menuGroupHasCheckableItems = ref<Record<string, boolean>>({})
   const hasSeenLinear = ref(false)
 
   whenever(
@@ -51,7 +49,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       }
 
       if (!found.items) {
-        const { checked, command, separator, ...metadata } = found
+        const { checked, command, radioGroup, separator, ...metadata } = found
         found = { ...metadata, items: [] }
         currentLevel[foundIndex] = found
       }
@@ -67,18 +65,8 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     }
     // Add the new items to the last level
     currentLevel.push(...items)
-
-    const parentPath = path.join('.')
-    if (!menuGroupHasCheckableItems.value[parentPath]) {
-      menuGroupHasCheckableItems.value[parentPath] = items.some(
-        (item) => item.checked !== undefined
-      )
-    }
   }
-  function commandIdToMenuItem(
-    commandId: string,
-    path?: string[]
-  ): CommandMenuItem {
+  function commandIdToMenuItem(commandId: string): CommandMenuItem {
     const command = commandStore.getCommand(commandId)
     return {
       command: () => commandStore.execute(command.id),
@@ -88,12 +76,18 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       commandId: command.id,
       checked: command.active,
       shortcut: () => command.keybinding?.combo.toString(),
-      parentPath: path?.join('.')
+      pressAndHoldInterval:
+        command.id === 'Comfy.Canvas.ZoomIn' ||
+        command.id === 'Comfy.Canvas.ZoomOut'
+          ? 50
+          : undefined,
+      trailingIcon:
+        command.id === 'Comfy.NewBlankWorkflow' ? command.icon : undefined
     }
   }
 
   const registerCommands = (path: string[], commandIds: string[]) => {
-    const items = commandIds.map((id) => commandIdToMenuItem(id, path))
+    const items = commandIds.map(commandIdToMenuItem)
     registerMenuGroup(path, items)
   }
 
@@ -127,7 +121,6 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerCommands,
     loadExtensionMenuCommands,
     registerCoreMenuCommands,
-    menuGroupHasCheckableItems,
     hasSeenLinear,
     commandIdToMenuItem
   }

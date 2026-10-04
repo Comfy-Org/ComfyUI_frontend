@@ -120,75 +120,54 @@ test.describe('Sidebar splitter width independence', () => {
     comfyMouse,
     comfyPage
   }) => {
-    // Open sidebar on the left and resize
     await openSidebarAt(comfyPage, 'left')
     await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, 50)
 
-    // Left-only sidebar should use the legacy key (no location suffix)
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => localStorage.getItem('unified-sidebar'))
-      )
-      .not.toBeNull()
-
-    // Switch to right and resize
-    await comfyPage.menu.nodeLibraryTab.close()
-    await openSidebarAt(comfyPage, 'right')
-    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, -50)
-
-    // Right sidebar should use a different key with location suffix
     await expect
       .poll(() =>
         comfyPage.page.evaluate(() =>
-          localStorage.getItem('unified-sidebar-right')
+          localStorage.getItem('Comfy.Sidebar.LeftWidth')
         )
       )
       .not.toBeNull()
 
-    // Both keys should exist independently
+    await comfyPage.menu.nodeLibraryTab.close()
+    await openSidebarAt(comfyPage, 'right')
+    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, -50)
+
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(() => localStorage.getItem('unified-sidebar'))
+        comfyPage.page.evaluate(() =>
+          localStorage.getItem('Comfy.Sidebar.RightWidth')
+        )
+      )
+      .not.toBeNull()
+
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() =>
+          localStorage.getItem('Comfy.Sidebar.LeftWidth')
+        )
       )
       .not.toBeNull()
   })
 
-  test('normalized panel sizes sum to approximately 100%', async ({
+  test('persists the resized sidebar width in pixels', async ({
     comfyMouse,
     comfyPage
   }) => {
     await openSidebarAt(comfyPage, 'left')
     await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, 80)
-
-    // Check that saved sizes sum to ~100%
-    const getSidebarSizes = () =>
-      comfyPage.page.evaluate(() => {
-        const raw = localStorage.getItem('unified-sidebar')
-        return raw ? (JSON.parse(raw) as number[]) : null
-      })
-
+    const width = await comfyPage.menu.nodeLibraryTab.panel.evaluate(
+      (panel) => panel.getBoundingClientRect().width
+    )
     await expect
-      .poll(async () => {
-        const sizes = await getSidebarSizes()
-        return Array.isArray(sizes)
-      })
-      .toBe(true)
-
-    await expect
-      .poll(async () => {
-        const sizes = await getSidebarSizes()
-        if (!sizes) return 0
-        return sizes.reduce((a, b) => a + b, 0)
-      })
-      .toBeGreaterThan(99)
-
-    await expect
-      .poll(async () => {
-        const sizes = await getSidebarSizes()
-        if (!sizes) return Infinity
-        return sizes.reduce((a, b) => a + b, 0)
-      })
-      .toBeLessThanOrEqual(101)
+      .poll(() =>
+        comfyPage.page.evaluate(() =>
+          Number(localStorage.getItem('Comfy.Sidebar.LeftWidth'))
+        )
+      )
+      .toBeCloseTo(width, 0)
   })
 })
 

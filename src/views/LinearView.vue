@@ -177,6 +177,7 @@ function dragDrop(e: DragEvent) {
           class="h-full flex-1 border-none bg-secondary-background"
           @keydown.capture="onResizeStart"
           @keyup="onResizeEnd"
+          @focusout="onResizeEnd"
         >
           <SplitterPanel
             v-if="leftPanelVisible"

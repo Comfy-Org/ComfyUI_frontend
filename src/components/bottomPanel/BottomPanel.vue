@@ -4,18 +4,16 @@
     v-model="bottomPanelStore.activeBottomPanelTabId"
     class="h-full gap-0"
   >
-    <TabsList
-      class="w-full shrink-0 border-b border-solid border-interface-stroke bg-transparent py-2"
-    >
+    <TabsList variant="panel" class="w-full shrink-0">
       <div class="flex w-full justify-between">
         <div class="tabs-container font-inter">
           <TabsTrigger
             v-for="tab in bottomPanelStore.bottomPanelTabs"
             :key="tab.id"
             :value="tab.id"
+            variant="panel"
             :class="
               cn(
-                'm-1 mx-2 rounded-lg p-3 font-inter text-muted-foreground',
                 bottomPanelStore.bottomPanelTabs.length === 1 &&
                   'pointer-events-none data-[state=active]:bg-transparent data-[state=active]:text-muted-foreground'
               )

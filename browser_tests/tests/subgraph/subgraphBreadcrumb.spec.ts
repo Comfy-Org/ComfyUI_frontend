@@ -121,7 +121,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     })
   })
 
-  test('clicking the root breadcrumb item returns to the root graph', async ({
+  test('activating the root breadcrumb with Enter returns to the root graph', async ({
     comfyPage,
     subgraphBreadcrumb
   }) => {
@@ -139,7 +139,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await subgraphNode.navigateIntoSubgraph()
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-    await subgraphBreadcrumb.clickItem('root')
+    await subgraphBreadcrumb.activateRootWithKeyboard()
 
     await expect
       .poll(() => comfyPage.subgraph.getActiveGraphId())

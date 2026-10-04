@@ -43,11 +43,7 @@ import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import type {
-  MenuItem,
-  MenuItemAction,
-  MenuItemCommandEvent
-} from '@/components/ui/menu/types'
+import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
@@ -186,8 +182,6 @@ const deleteCommand = async (node: RenderedTreeExplorerNode<T>) => {
   emit('nodeDelete', node)
 }
 
-type TreeMenuItem = MenuItem | (MenuItemAction & { isAsync: boolean })
-
 const menuItems = computed<MenuItem[]>(() => {
   const node = menuTargetNode.value
   return [
@@ -210,17 +204,14 @@ const menuItems = computed<MenuItem[]>(() => {
           await deleteCommand(node)
         }
       },
-      visible: node?.handleDelete !== undefined,
-      isAsync: true // The delete command can be async
+      visible: node?.handleDelete !== undefined
     },
     ...extraMenuItems.value
-  ].map((menuItem: TreeMenuItem) =>
+  ].map((menuItem: MenuItem) =>
     menuItem.command
       ? {
           ...menuItem,
-          command: wrapCommandWithErrorHandler(menuItem.command, {
-            isAsync: 'isAsync' in menuItem && menuItem.isAsync
-          })
+          command: wrapCommandWithErrorHandler(menuItem.command)
         }
       : menuItem
   )
@@ -238,13 +229,10 @@ const handleContextMenu = (
 }
 
 const wrapCommandWithErrorHandler = (
-  command: (event: MenuItemCommandEvent) => void,
-  { isAsync = false }: { isAsync: boolean }
+  command: (event: MenuItemCommandEvent) => unknown
 ) => {
   const node = menuTargetNode.value
-  return isAsync
-    ? errorHandling.wrapWithErrorHandlingAsync(command, node?.handleError)
-    : errorHandling.wrapWithErrorHandling(command, node?.handleError)
+  return errorHandling.wrapWithErrorHandlingAsync(command, node?.handleError)
 }
 
 defineExpose({

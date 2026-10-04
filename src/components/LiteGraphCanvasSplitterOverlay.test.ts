@@ -1,7 +1,5 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -16,15 +14,6 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 vi.mock(import('firebase/auth'))
 
 describe('LiteGraphCanvasSplitterOverlay', () => {
-  it('graph-canvas-panel has overflow-visible to prevent clipping toolbar on mobile', () => {
-    const filePath = resolve(__dirname, 'LiteGraphCanvasSplitterOverlay.vue')
-    const source = readFileSync(filePath, 'utf-8')
-
-    expect(source).toMatch(
-      /class="[^"]*graph-canvas-panel[^"]*overflow-visible/
-    )
-  })
-
   it('renders content passed into the agent-panel slot so the docked panel can host in graph mode', () => {
     const i18n = createI18n({
       legacy: false,

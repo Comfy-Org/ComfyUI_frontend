@@ -12,9 +12,11 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
 
+const openWorkflow = vi.hoisted(() => vi.fn())
+
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
-  () => ({ useWorkflowService: () => ({ openWorkflow: vi.fn() }) })
+  () => ({ useWorkflowService: () => ({ openWorkflow }) })
 )
 
 it('marks the agent target separately from the active overflow workflow', async () => {
@@ -60,4 +62,7 @@ it('marks the agent target separately from the active overflow workflow', async 
   expect(
     within(screen.getByRole('menuitem', { name: 'active' })).queryByRole('img')
   ).toBeNull()
+
+  await user.click(targetItem)
+  expect(openWorkflow).toHaveBeenCalledWith(target)
 })

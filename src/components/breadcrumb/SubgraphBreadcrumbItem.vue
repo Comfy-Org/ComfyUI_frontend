@@ -6,12 +6,13 @@
     @update:open="menuOpen = Boolean($event && isActive && !isEditing)"
   >
     <template #trigger>
-      <div
+      <button
         ref="wrapperRef"
         v-tooltip.bottom="{
           value: tooltipText,
           showDelay: 512
         }"
+        type="button"
         :data-testid="`subgraph-breadcrumb-item-${item.key}`"
         :data-active="isActive ? '' : undefined"
         draggable="false"
@@ -24,6 +25,7 @@
           )
         "
         @click="handleClick"
+        @keydown="handleKeydown"
       >
         <i
           v-if="hasMissingNodes && isRoot"
@@ -41,7 +43,7 @@
           {{ t('breadcrumbsMenu.blueprint') }}
         </Badge>
         <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
-      </div>
+      </button>
     </template>
   </Menu>
   <Input
@@ -108,7 +110,7 @@ const workflowService = useWorkflowService()
 const isEditing = ref(false)
 const itemLabel = ref<string>()
 const itemInputRef = ref<InstanceType<typeof Input>>()
-const wrapperRef = ref<HTMLAnchorElement>()
+const wrapperRef = ref<HTMLButtonElement>()
 
 const rename = async (
   newName: string | null | undefined,
@@ -167,6 +169,13 @@ const startRename = async () => {
 }
 
 const { menuItems } = useWorkflowActionsMenu(startRename, { isRoot })
+
+function handleKeydown(event: KeyboardEvent) {
+  if (isActive || isEditing.value || !['Enter', ' '].includes(event.key)) return
+  event.preventDefault()
+  event.stopPropagation()
+  item.command?.({ item, originalEvent: event })
+}
 
 const handleClick = (event: MouseEvent) => {
   if (isEditing.value) {

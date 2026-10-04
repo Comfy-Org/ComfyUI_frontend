@@ -1,23 +1,12 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { computed, nextTick, ref } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
-import {
-  menuContentClass,
-  menuItemClass
-} from '@/components/ui/menu/menuStyles'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 
 import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
@@ -128,6 +117,23 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
     cancelRename()
   }
 }
+
+function getSessionMenuItems(session: ChatSession): MenuItem[] {
+  return [
+    {
+      label: t('g.rename'),
+      icon: 'icon-[lucide--pencil]',
+      command: () => startRename(session)
+    },
+    { separator: true },
+    {
+      label: t('g.delete'),
+      icon: 'icon-[lucide--trash-2]',
+      variant: 'destructive',
+      command: () => emit('delete', session.id)
+    }
+  ]
+}
 </script>
 
 <template>
@@ -220,8 +226,15 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                 </Button>
               </template>
             </AccessibleTooltip>
-            <DropdownMenuRoot>
-              <DropdownMenuTrigger as-child>
+            <Menu
+              :items="getSessionMenuItems(session)"
+              side="bottom"
+              align="end"
+              :side-offset="4"
+              class="agent-scope"
+              @close-auto-focus="onMenuCloseAutoFocus"
+            >
+              <template #trigger>
                 <Button
                   variant="muted-textonly"
                   size="icon-sm"
@@ -231,40 +244,8 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                 >
                   <span class="icon-[lucide--chevron-down] size-3" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuContent
-                  side="bottom"
-                  align="end"
-                  :side-offset="4"
-                  :class="cn(menuContentClass, 'agent-scope w-32 min-w-32')"
-                  @close-auto-focus="onMenuCloseAutoFocus"
-                >
-                  <DropdownMenuItem
-                    :class="menuItemClass"
-                    @select="startRename(session)"
-                  >
-                    <span class="icon-[lucide--pencil] size-4 shrink-0" />
-                    <span class="truncate">{{ t('g.rename') }}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator
-                    class="relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-component-node-border"
-                  />
-                  <DropdownMenuItem
-                    :class="
-                      cn(
-                        menuItemClass,
-                        'data-highlighted:text-destructive-background'
-                      )
-                    "
-                    @select="emit('delete', session.id)"
-                  >
-                    <span class="icon-[lucide--trash-2] size-4 shrink-0" />
-                    <span class="truncate">{{ t('g.delete') }}</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenuPortal>
-            </DropdownMenuRoot>
+              </template>
+            </Menu>
           </template>
         </div>
       </section>

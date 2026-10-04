@@ -114,12 +114,9 @@ describe('PendingInvitesList', () => {
   })
 
   it('copies the invite link from the menu when the invite has a token', async () => {
-    const writeText = vi.fn<(text: string) => Promise<void>>()
-    writeText.mockResolvedValue(undefined)
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText },
-      configurable: true
-    })
+    const writeText = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValue(undefined)
     renderComponent([createInvite({ token: 'tok-9' })])
 
     await userEvent.click(screen.getByRole('button', { name: 'g.moreOptions' }))
@@ -177,12 +174,9 @@ describe('PendingInvitesList', () => {
   })
 
   it('reports a rejected clipboard write with an error toast and keeps the copy item usable', async () => {
-    const writeText = vi.fn<(text: string) => Promise<void>>()
-    writeText.mockRejectedValue(new Error('denied'))
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText },
-      configurable: true
-    })
+    const writeText = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockRejectedValue(new Error('denied'))
     Object.defineProperty(document, 'execCommand', {
       value: vi.fn().mockReturnValue(false),
       configurable: true

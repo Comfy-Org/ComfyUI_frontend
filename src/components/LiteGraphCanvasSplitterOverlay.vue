@@ -26,6 +26,7 @@
             class="pointer-events-none border-none bg-transparent"
             @keydown.capture="onResizeStart"
             @keyup="onResizeEnd"
+            @focusout="onResizeEnd"
             @layout="saveMainSplitterLayout"
           >
             <SplitterPanel
@@ -191,7 +192,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, ref, shallowRef, watchEffect } from 'vue'
+import { computed, ref, shallowRef, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
@@ -245,9 +246,7 @@ const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
 const { isVisible: agentPanelOpen } = storeToRefs(agentPanelStore)
-// The agent docks in its own `agent-panel` slot outside the splitter, so it is
-// not an offside trigger; it only discriminates the saved layout key below.
-const showOffsideSplitter = computed(
+const oppositeSidePanelVisible = computed(
   () => rightSidePanelVisible.value || isSelectMode.value
 )
 
@@ -258,7 +257,7 @@ const agentPanelHasOpaqueNeighbor = computed(
       !agentNodeSelectionActive.value &&
       !focusMode.value) ||
     (sidebarLocation.value === 'left' &&
-      showOffsideSplitter.value &&
+      oppositeSidePanelVisible.value &&
       !agentNodeSelectionActive.value &&
       !focusMode.value)
 )
@@ -288,10 +287,10 @@ watchEffect(() => {
 })
 
 const firstPanelVisible = computed(
-  () => sidebarLocation.value === 'left' || showOffsideSplitter.value
+  () => sidebarLocation.value === 'left' || oppositeSidePanelVisible.value
 )
 const lastPanelVisible = computed(
-  () => sidebarLocation.value === 'right' || showOffsideSplitter.value
+  () => sidebarLocation.value === 'right' || oppositeSidePanelVisible.value
 )
 const firstPanelRendered = computed(
   () =>
@@ -310,7 +309,9 @@ const lastPanelRendered = computed(
 
 const bothSidePanelsVisible = computed(
   () =>
-    !focusMode.value && sidebarPanelVisible.value && showOffsideSplitter.value
+    !focusMode.value &&
+    sidebarPanelVisible.value &&
+    oppositeSidePanelVisible.value
 )
 
 const mainSplitterRef = ref<HTMLElement | null>(null)
@@ -346,10 +347,10 @@ const sidebarTabKey = computed(() =>
 
 const sidebarStateKey = computed(() => {
   const base = sidebarTabKey.value
-  if (sidebarLocation.value === 'left' && !showOffsideSplitter.value) {
+  if (sidebarLocation.value === 'left' && !oppositeSidePanelVisible.value) {
     return base
   }
-  const suffix = showOffsideSplitter.value ? '-with-offside' : ''
+  const suffix = oppositeSidePanelVisible.value ? '-with-offside' : ''
   return `${base}-${sidebarLocation.value}${suffix}`
 })
 
@@ -364,12 +365,13 @@ const mainPanelCount = computed(
   () => 1 + Number(firstPanelRendered.value) + Number(lastPanelRendered.value)
 )
 const savedMainPanelSizes = shallowRef<number[]>()
-watchEffect(() => {
-  savedMainPanelSizes.value = loadSplitterSizes(
-    mainSplitterStateKey.value,
-    mainPanelCount.value
-  )
-})
+watch(
+  [mainSplitterStateKey, mainPanelCount],
+  ([key, count]) => {
+    savedMainPanelSizes.value = loadSplitterSizes(key, count)
+  },
+  { immediate: true }
+)
 const sidebarWidthKey = computed(() => {
   const base =
     sidebarLocation.value === 'left'
@@ -384,7 +386,7 @@ function defaultPanelWidth(isSidebarPanel: boolean) {
       : `${sidebarTabKey.value}-right`
   const offsideStateKey = `${sidebarTabKey.value}-${sidebarLocation.value}-with-offside`
   const stateKeys = isSidebarPanel
-    ? showOffsideSplitter.value
+    ? oppositeSidePanelVisible.value
       ? [offsideStateKey, plainStateKey]
       : [plainStateKey, offsideStateKey]
     : [offsideStateKey]
@@ -456,7 +458,7 @@ const lastPanelDefaultSize = computed(() =>
 )
 
 function saveMainSplitterLayout(sizes: number[]) {
-  if (sizes.length === 1) return
+  if (!isSelectMode.value || sizes.length === 1) return
   if (saveSplitterSizes(mainSplitterStateKey.value, sizes)) {
     savedMainPanelSizes.value = sizes
   }

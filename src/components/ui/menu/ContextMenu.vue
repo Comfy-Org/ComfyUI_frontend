@@ -30,6 +30,9 @@ const content = useTemplateRef<ComponentPublicInstance>('content')
 const trigger = useTemplateRef<HTMLElement>('trigger')
 const visible = ref(false)
 const generatedId = useId()
+const ownerId = `context-menu-${generatedId}`
+const anchor = ref<EventTarget | null>(null)
+const anchorPointerDownWhileOpen = ref(false)
 const anchorPosition = ref({ x: 0, y: 0 })
 const showRequest = ref(0)
 const contentStyle = useModalLiftedZIndex(visible)
@@ -45,6 +48,7 @@ function setOpen(value: boolean) {
 
 function show(event: Event) {
   if (event.type === 'contextmenu') event.preventDefault()
+  anchor.value = event.currentTarget ?? event.target
   anchorPosition.value = getMenuAnchorPosition(event)
   if (!visible.value) {
     setOpen(true)
@@ -67,11 +71,18 @@ useEventListener(
   'pointerdown',
   (event) => {
     const target = event.target
+    anchorPointerDownWhileOpen.value =
+      visible.value &&
+      target instanceof Node &&
+      anchor.value instanceof Node &&
+      anchor.value.contains(target)
+    if (anchorPointerDownWhileOpen.value) return
     if (
       !visible.value ||
       !(target instanceof Element) ||
       trigger.value?.contains(target) ||
-      target.closest('[data-reka-menu-content]')
+      target.closest('[data-menu-owner]')?.getAttribute('data-menu-owner') ===
+        ownerId
     )
       return
     hide()
@@ -80,12 +91,13 @@ useEventListener(
 )
 
 function toggle(event: Event) {
-  const wrapper = content.value?.$el
-  const element =
-    wrapper instanceof HTMLElement
-      ? wrapper.querySelector<HTMLElement>('[data-state="open"]')
-      : null
-  if (element && element.getClientRects().length > 0) {
+  if (
+    visible.value ||
+    (event instanceof MouseEvent &&
+      event.detail > 0 &&
+      anchorPointerDownWhileOpen.value)
+  ) {
+    anchorPointerDownWhileOpen.value = false
     hide()
     return
   }
@@ -104,6 +116,7 @@ defineExpose({ container: content, hide, show, toggle, visible })
     <DropdownMenuTrigger as-child>
       <button
         ref="trigger"
+        :data-menu-owner="ownerId"
         type="button"
         tabindex="-1"
         aria-hidden="true"
@@ -115,6 +128,7 @@ defineExpose({ container: content, hide, show, toggle, visible })
       <DropdownMenuContent
         :id="providedId ?? generatedId"
         ref="content"
+        :data-menu-owner="ownerId"
         :class="
           cn(
             menuContentClass,
@@ -128,7 +142,7 @@ defineExpose({ container: content, hide, show, toggle, visible })
         @close-auto-focus.prevent
         @focus-outside.prevent
       >
-        <MenuItems :items="model" @select="hide">
+        <MenuItems :items="model" :owner-id @select="hide">
           <template v-if="$slots.item" #item="slotProps">
             <slot name="item" v-bind="slotProps" />
           </template>
