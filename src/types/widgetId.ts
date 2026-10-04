@@ -111,13 +111,20 @@ type WidgetRefusalCause =
 
 /**
  * A widget the walk could not name uniquely, with the cause it was recorded
- * under and whether the walk took it off the array.
+ * under, whether the walk took it off the array, and the name key it read.
+ *
+ * The cause and the name both come from here rather than from another read of
+ * the accessor: a hostile one need not answer twice the same way, and by the
+ * time a caller reports the finding the walk may have written to the widget up
+ * to {@link RENAME_ATTEMPTS} times.
  */
 export interface RefusedWidget<T> {
   widget: T
   cause: WidgetRefusalCause
   /** Whether the walk removed {@link widget} from the array it was given. */
   removed: boolean
+  /** The key the walk read, or `undefined` when no key could be derived. */
+  name: string | undefined
 }
 
 /**
@@ -142,8 +149,13 @@ function readName(widget: { name: string }): string | typeof UNREADABLE_NAME {
     // assigned, which is the entire reason the coercion is here.
     const raw: unknown = widget.name
     const key = String(raw)
-    // Mirrors `widgetId`: the key is only usable if the id can be built from it.
-    encodeURIComponent(key)
+    // Mirrors `widgetId`, which encodes the **raw** value rather than the
+    // coerced one — a Symbol survives `String()` and then throws there.
+    const encoded = encodeURIComponent(raw as string)
+    // `widgetId` is `graphId:nodeId:name` and its pattern needs a non-empty
+    // last segment, so an empty name mints an id the store refuses to key on.
+    // That is the unaddressable state this walk exists to catch.
+    if (!encoded) return UNREADABLE_NAME
     return key
   } catch {
     return UNREADABLE_NAME
@@ -323,7 +335,12 @@ export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
       // node makes `ensureUniqueWidgetNames` fail on every later call — which
       // bails registration for every *other* widget on the node too.
       verdicts.set(widget, false)
-      refused.push({ widget, cause: 'unreadable-name', removed: true })
+      refused.push({
+        widget,
+        cause: 'unreadable-name',
+        removed: true,
+        name: undefined
+      })
       continue
     }
 
@@ -340,7 +357,15 @@ export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
     verdicts.set(widget, outcome.keep)
     if (outcome.keep) kept.push(widget)
     if (outcome.cause) {
-      refused.push({ widget, cause: outcome.cause, removed: !outcome.keep })
+      // `key` is the name the walk read before it started offering candidates.
+      // A re-read here can name one no widget holds: a normalising setter
+      // stores a transformed value, and the walk may have written four times.
+      refused.push({
+        widget,
+        cause: outcome.cause,
+        removed: !outcome.keep,
+        name: key
+      })
     }
   }
 

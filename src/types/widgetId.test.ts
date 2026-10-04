@@ -176,7 +176,14 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     const reported = dropUnrenamableDuplicateWidgets(widgets)
 
     expect(reported).toEqual([
-      { widget: declining, cause: 'unresolved-duplicate', removed: false }
+      {
+        widget: declining,
+        cause: 'unresolved-duplicate',
+        removed: false,
+        // The key the walk read, not what the setter left behind — the caller
+        // must never re-read an accessor the walk has already written to.
+        name: 'seed'
+      }
     ])
     // Still on the array: removing it would cost the user a widget to repair a
     // state a later commit can resolve on its own.
@@ -228,6 +235,42 @@ describe('dropUnrenamableDuplicateWidgets', () => {
       unencodable
     ])
     expect(widgets).toEqual([fine])
+  })
+
+  it('refuses a name whose id the store would reject', () => {
+    // `String(Symbol())` succeeds, so coercion alone says this name is fine —
+    // but `widgetId` encodes the raw value and throws on it. And an empty name
+    // encodes to nothing, minting `graphId:nodeId:`, which the store refuses
+    // to key on: the widget lands in exactly the unaddressable state this walk
+    // exists to catch, silently.
+    const symbolNamed = widgetNamed(Symbol('seed'))
+    const empty = widgetNamed('')
+    const fine = widgetNamed('seed')
+    const widgets = [fine, symbolNamed, empty]
+
+    expect(refusedWidgets(widgets)).toEqual([symbolNamed, empty])
+    expect(widgets).toEqual([fine])
+  })
+
+  it('reports the name the walk read, not one the rename attempts left behind', () => {
+    // The walk writes to a colliding widget before giving up, so the value the
+    // accessor holds afterwards can be a candidate no widget on the node owns.
+    const first = widgetNamed('seed')
+    let stored = 'seed'
+    const normalising = {
+      get name(): string {
+        return stored
+      },
+      set name(value: string) {
+        stored = `${value}-normalised`
+      }
+    }
+
+    const refused = dropUnrenamableDuplicateWidgets([first, normalising])
+
+    expect(refused).toHaveLength(1)
+    expect(refused[0].name).toBe('seed')
+    expect(refused[0].widget.name).not.toBe('seed')
   })
 
   it('records why each widget was refused, rather than leaving it to be guessed', () => {
