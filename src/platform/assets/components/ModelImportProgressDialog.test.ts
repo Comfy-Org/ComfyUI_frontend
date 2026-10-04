@@ -75,14 +75,17 @@ describe('ModelImportProgressDialog cancellation', () => {
     })
   })
 
-  it('keeps provisional cancellations open for authoritative reconciliation', async () => {
+  it('allows a provisional cancellation to be dismissed', async () => {
+    const user = userEvent.setup()
     const store = renderDialog()
 
     store.downloadList[0].status = 'cancellation_pending'
     await nextTick()
 
-    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
-    expect(screen.getAllByText('Cancelled')).not.toHaveLength(0)
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await waitFor(() => expect(store.hasDownloads).toBe(false))
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('restores the close control once a cancellation settles', async () => {
@@ -90,7 +93,7 @@ describe('ModelImportProgressDialog cancellation', () => {
 
     store.downloadList[0].status = 'cancellation_pending'
     await nextTick()
-    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
 
     // The store bounds how long a cancellation stays provisional, so the
     // dialog cannot be pinned open without a close control until a reload.
