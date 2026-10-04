@@ -311,11 +311,14 @@ describe('useCoreCommands', () => {
         Record<string, string>
       >
       const original = messages[menuLabels][key]
-      i18n.global.mergeLocaleMessage('en', {
-        [menuLabels]: { [key]: 'Sentinel paste label' }
-      })
+      const previousLocale = i18n.global.locale.value
 
       try {
+        i18n.global.locale.value = 'en'
+        i18n.global.mergeLocaleMessage('en', {
+          [menuLabels]: { [key]: 'Sentinel paste label' }
+        })
+
         const command = useCoreCommands().find(
           (cmd) => cmd.id === 'Comfy.Canvas.PasteFromClipboardWithConnect'
         )!
@@ -328,6 +331,7 @@ describe('useCoreCommands', () => {
         i18n.global.mergeLocaleMessage('en', {
           [menuLabels]: { [key]: original }
         })
+        i18n.global.locale.value = previousLocale
       }
     })
   })

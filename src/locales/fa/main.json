@@ -963,25 +963,6 @@
     "workflowName": "نام جریان‌کار",
     "workflowNamePlaceholder": "نکته: یک نام توصیفی وارد کنید که به راحتی قابل جستجو باشد"
   },
-  "commands": {
-    "clear": "پاک‌سازی workflow",
-    "clipspace": "باز کردن Clipspace",
-    "dark": "تاریک",
-    "execute": "اجرا",
-    "help": "راهنما",
-    "interrupt": "لغو اجرای فعلی",
-    "light": "روشن",
-    "manageExtensions": "مدیریت افزونه‌ها",
-    "queue": "پنل صف",
-    "refresh": "به‌روزرسانی تعاریف node",
-    "resetView": "بازنشانی نمای canvas",
-    "run": "اجرا",
-    "runWorkflow": "اجرای workflow",
-    "runWorkflowFront": "اجرای workflow (صف در ابتدا)",
-    "settings": "تنظیمات",
-    "theme": "پوسته",
-    "toggleBottomPanel": "نمایش/مخفی‌سازی پنل پایین"
-  },
   "compositor": {
     "downloadPsd": "دانلود PSD",
     "empty": "برای ایجاد ترکیب، ورک‌فلو را اجرا کنید",

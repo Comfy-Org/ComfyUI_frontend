@@ -963,25 +963,6 @@
     "workflowName": "工作流名称",
     "workflowNamePlaceholder": "提示：输入一个易于搜索的描述性名称"
   },
-  "commands": {
-    "clear": "清空工作流",
-    "clipspace": "打开 Clipspace",
-    "dark": "深色",
-    "execute": "执行",
-    "help": "帮助",
-    "interrupt": "取消当前运行",
-    "light": "浅色",
-    "manageExtensions": "管理扩展",
-    "queue": "队列面板",
-    "refresh": "刷新节点定义",
-    "resetView": "重置画布视图",
-    "run": "运行",
-    "runWorkflow": "运行工作流",
-    "runWorkflowFront": "运行工作流（队列前端）",
-    "settings": "设置",
-    "theme": "主题",
-    "toggleBottomPanel": "切换底部面板"
-  },
   "compositor": {
     "downloadPsd": "下载 PSD",
     "empty": "运行工作流以生成合成图像",
