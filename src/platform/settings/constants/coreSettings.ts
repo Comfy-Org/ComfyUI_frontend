@@ -1212,6 +1212,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.PartnerNodesEducation.Dismissed',
+    name: 'Partner nodes education card dismissed',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.ModelLibrary.UseAssetBrowser',
     name: 'Use the asset browser for the model library',
     type: 'hidden',

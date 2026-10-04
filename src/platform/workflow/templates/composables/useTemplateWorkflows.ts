@@ -153,7 +153,7 @@ export function useTemplateWorkflows() {
       if (template?.isPartnerNode && typeof loadedWorkflow === 'object') {
         educationStore.requestCard(loadedWorkflow.key)
       } else {
-        educationStore.dismissCard()
+        educationStore.retireCard()
       }
 
       return true

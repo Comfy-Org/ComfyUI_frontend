@@ -430,6 +430,7 @@ const zSettings = z.object({
   'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
+  'Comfy.PartnerNodesEducation.Dismissed': z.boolean(),
   'Comfy.ModelLibrary.UseAssetBrowser': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
   'Comfy.Queue.ShowRunProgressBar': z.boolean(),

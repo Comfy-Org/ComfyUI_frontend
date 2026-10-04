@@ -69,12 +69,13 @@ vi.mock('@/platform/telemetry', () => ({
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
 
-const { mockDistributionIsCloud, mockRequestCard, mockDismissCard } =
-  vi.hoisted(() => ({
+const { mockDistributionIsCloud, mockRequestCard, mockRetireCard } = vi.hoisted(
+  () => ({
     mockDistributionIsCloud: { value: false },
     mockRequestCard: vi.fn(),
-    mockDismissCard: vi.fn()
-  }))
+    mockRetireCard: vi.fn()
+  })
+)
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -87,7 +88,7 @@ vi.mock(
   () => ({
     usePartnerNodesEducationStore: () => ({
       requestCard: mockRequestCard,
-      dismissCard: mockDismissCard
+      retireCard: mockRetireCard
     })
   })
 )
@@ -386,7 +387,7 @@ describe('useTemplateWorkflows', () => {
     await loadWorkflowTemplate('template1', 'default')
 
     expect(mockRequestCard).not.toHaveBeenCalled()
-    expect(mockDismissCard).toHaveBeenCalled()
+    expect(mockRetireCard).toHaveBeenCalled()
   })
 
   it('binds to the workflow this load activated, resolved by loadGraphData', async () => {
@@ -428,7 +429,7 @@ describe('useTemplateWorkflows', () => {
     // The open-source template may still contain partner nodes, so the card
     // would otherwise linger and describe the wrong template.
     await loadWorkflowTemplate('template2', 'default')
-    expect(mockDismissCard).toHaveBeenCalledTimes(1)
+    expect(mockRetireCard).toHaveBeenCalledTimes(1)
   })
 
   it('should handle errors when loading templates', async () => {
