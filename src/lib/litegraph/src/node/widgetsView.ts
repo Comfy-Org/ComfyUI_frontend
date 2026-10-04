@@ -225,7 +225,9 @@ function refuseAmbiguousWidgets(
     )
   }
 
-  return new Set(refused.map(({ widget }) => widget))
+  return new Set(
+    refused.filter(({ removed }) => removed).map(({ widget }) => widget)
+  )
 }
 
 /**
