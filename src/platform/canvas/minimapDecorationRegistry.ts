@@ -57,15 +57,25 @@ function invalidate(): void {
 export function registerMinimapDecorationLayer(
   id: string
 ): MinimapDecorationLayer {
-  if (layers.has(id)) {
+  const stale = layers.get(id)
+  if (stale) {
+    // Still reported: one id held twice at once is a producer bug worth seeing.
+    // But the newest registrant takes the id over, because handing it back a
+    // no-op layer left the *surviving* producer unable to paint anything for
+    // the rest of the session - the outgoing one is the replaced party, so
+    // keeping its layer kept the id claimed and the decoration dead.
     reportError(new Error(`Minimap decoration layer exists: ${id}`), {
       errorType: 'minimap_decoration_layer_duplicate'
     })
-    return { replace() {}, dispose() {} }
+    // Marking it disposed is what makes the takeover safe: the outgoing
+    // producer's own `dispose()` then returns early instead of deleting the
+    // replacement's layer, and its `replace()` calls stop mutating anything.
+    stale.disposed = true
   }
 
   const layer: RegisteredLayer = { rows: new Map(), disposed: false }
   layers.set(id, layer)
+  if (stale) invalidate()
 
   return {
     replace(rows) {
