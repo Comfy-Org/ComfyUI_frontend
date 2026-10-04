@@ -24,6 +24,18 @@ interface DeploymentListing {
   pickSource: DeploymentPickSource | null
   /** The workspace's default deployment an owner set, or null. */
   defaultDeploymentId: string | null
+  /**
+   * This browser's own pick, when ingest found it gone (deleted, or no
+   * longer the workspace's) and cleared it. Only the listing that cleared
+   * it says so; the browser is on Comfy Cloud.
+   */
+  gonePickedDeploymentId: string | null
+  /**
+   * The workspace's default deployment, when it is gone; then
+   * `defaultDeploymentId` is null. Said on every listing until an owner
+   * sets or clears the default.
+   */
+  goneDefaultDeploymentId: string | null
   buildsVisible: boolean
 }
 
@@ -77,6 +89,8 @@ export function loadedEvent(
     pickedDeploymentId: listing.picked_deployment_id ?? null,
     pickSource: listing.pick_source ?? null,
     defaultDeploymentId: listing.default_deployment_id ?? null,
+    gonePickedDeploymentId: listing.gone_picked_deployment_id ?? null,
+    goneDefaultDeploymentId: listing.gone_default_deployment_id ?? null,
     buildsVisible: listing.builds_visible
   }
 }
@@ -88,6 +102,8 @@ function listingOf(source: DeploymentListing): DeploymentListing {
     pickedDeploymentId: source.pickedDeploymentId,
     pickSource: source.pickSource,
     defaultDeploymentId: source.defaultDeploymentId,
+    gonePickedDeploymentId: source.gonePickedDeploymentId,
+    goneDefaultDeploymentId: source.goneDefaultDeploymentId,
     buildsVisible: source.buildsVisible
   }
 }

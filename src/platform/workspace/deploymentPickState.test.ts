@@ -23,6 +23,8 @@ const loaded: DeploymentPickEvent = {
   pickedDeploymentId: 'dep-1',
   pickSource: 'browser',
   defaultDeploymentId: null,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
   buildsVisible: true
 }
 
@@ -32,6 +34,8 @@ const ready: DeploymentPickState = {
   pickedDeploymentId: 'dep-1',
   pickSource: 'browser',
   defaultDeploymentId: null,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
   buildsVisible: true
 }
 
@@ -105,6 +109,8 @@ describe('reduceDeploymentPick', () => {
       pickedDeploymentId: null,
       pickSource: null,
       defaultDeploymentId: 'dep-1',
+      gonePickedDeploymentId: null,
+      goneDefaultDeploymentId: null,
       buildsVisible: true
     })
     // A refused switch then returns to the newer listing, not the old one.
@@ -141,6 +147,22 @@ describe('reduceDeploymentPick', () => {
 })
 
 describe('loadedEvent', () => {
+  it('carries the gone pick and the gone default ingest reports', () => {
+    expect(
+      loadedEvent({
+        items: [deployment],
+        builds_visible: true,
+        gone_picked_deployment_id: 'dep-9',
+        gone_default_deployment_id: 'dep-8'
+      })
+    ).toMatchObject({
+      pickedDeploymentId: null,
+      defaultDeploymentId: null,
+      gonePickedDeploymentId: 'dep-9',
+      goneDefaultDeploymentId: 'dep-8'
+    })
+  })
+
   it('carries the listing, with absent fields as null', () => {
     expect(
       loadedEvent({
@@ -154,6 +176,8 @@ describe('loadedEvent', () => {
       pickedDeploymentId: null,
       pickSource: 'browser',
       defaultDeploymentId: null,
+      gonePickedDeploymentId: null,
+      goneDefaultDeploymentId: null,
       buildsVisible: false
     })
   })

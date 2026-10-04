@@ -111,7 +111,26 @@ describe('useDeploymentPickStore', () => {
     const store = useDeploymentPickStore()
     await store.loadOnce()
 
-    expect(store.pickIsGone).toBe(true)
+    expect(store.goneDeployment).toBe('pick')
+    expect(store.bootDeployment).toBeNull()
+  })
+
+  it('keeps saying the pick is gone after the one listing that reported it', async () => {
+    const onCloud = {
+      ...listing,
+      picked_deployment_id: undefined,
+      pick_source: undefined
+    }
+    mockWorkspaceApi.listDeployments
+      .mockResolvedValueOnce({ ...onCloud, gone_picked_deployment_id: 'dep-x' })
+      .mockResolvedValue(onCloud)
+    const store = useDeploymentPickStore()
+    await store.loadOnce()
+    expect(store.goneDeployment).toBe('pick')
+
+    await store.load()
+
+    expect(store.goneDeployment).toBe('pick')
     expect(store.bootDeployment).toBeNull()
   })
 

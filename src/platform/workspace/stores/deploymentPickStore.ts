@@ -48,18 +48,35 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
         (d) => d.deployment_id === pickedDeploymentId.value
       ) ?? null
   )
-  /**
-   * True when the pick (this browser's own, or the workspace default it
-   * follows) names a deployment the listing no longer has, for example one
-   * deleted since. Ingest serves such a browser Comfy Cloud, so that is what
-   * it runs on.
-   */
-  const pickIsGone = computed(
-    () => pickedDeploymentId.value !== null && pickedDeployment.value === null
-  )
   const pickSource = computed<DeploymentPickSource | null>(() =>
     'pickSource' in state.value ? state.value.pickSource : null
   )
+  /**
+   * Set once a listing says ingest found this browser's own pick gone and
+   * cleared it. Only that one listing says so, so the page keeps it.
+   */
+  const sawPickGone = shallowRef(false)
+  /**
+   * Which deployment this browser would run on is gone (deleted, or no
+   * longer the workspace's), so ingest serves it Comfy Cloud: `pick` for its
+   * own pick, `default` for the workspace default it follows. Ingest names
+   * a gone pick or default in the listing; an older ingest instead names a
+   * picked deployment the listing does not have.
+   */
+  const goneDeployment = computed<'pick' | 'default' | null>(() => {
+    const unlisted =
+      pickedDeploymentId.value !== null && pickedDeployment.value === null
+    if (sawPickGone.value || (unlisted && pickSource.value === 'browser')) {
+      return 'pick'
+    }
+    const defaultGone =
+      'goneDefaultDeploymentId' in state.value &&
+      state.value.goneDefaultDeploymentId !== null
+    if (unlisted || (defaultGone && pickSource.value !== 'browser')) {
+      return 'default'
+    }
+    return null
+  })
   const defaultDeploymentId = computed(() =>
     'defaultDeploymentId' in state.value
       ? state.value.defaultDeploymentId
@@ -149,7 +166,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     }
     lastApplied = request
     dispatch(event)
-    if (event.type === 'loaded' && bootDeployment.value === undefined) {
+    if (event.type !== 'loaded') return
+    if (event.gonePickedDeploymentId !== null) sawPickGone.value = true
+    if (bootDeployment.value === undefined) {
       bootDeployment.value = pickedDeployment.value
     }
   }
@@ -256,7 +275,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     deployments,
     pickedDeploymentId,
     pickedDeployment,
-    pickIsGone,
+    goneDeployment,
     pickSource,
     defaultDeploymentId,
     defaultDeployment,
