@@ -5,6 +5,7 @@ import type {
   CapabilityDenialReason,
   PaymentReasonKey,
   PendingBillingOperation,
+  SubscriptionPreview,
   TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
 import { isGrantLanding } from '@comfyorg/account-core/billing'
@@ -90,13 +91,16 @@ type PaymentCancel = 'canceling' | CancelRefusalCode
  * lifecycle publishes meanwhile is known to be this page's own and is kept
  * here. `redirectMethod` names a method that authenticates on its own site
  * (Alipay and every other non-card type), which the server answers with a
- * hosted step instead of a challenge.
+ * hosted step instead of a challenge. `quote` is the quote the Pay was
+ * priced on, kept because a stale-quote answer re-prices the page after the
+ * money may already have settled.
  */
 export type Attempt =
   | { readonly kind: 'idle' }
   | {
       readonly kind: 'sent'
       readonly redirectMethod?: string
+      readonly quote?: SubscriptionPreview
       readonly operation?: PendingBillingOperation
       readonly cancel?: PaymentCancel
     }
@@ -193,6 +197,8 @@ export type CheckoutPage =
       readonly operation?: TerminalBillingOperation
       readonly attribution: Attribution
       readonly plan?: SettledPlan
+      /** The quote this page's own Pay was priced on, on a `started` terminal. */
+      readonly quote?: SubscriptionPreview
     }
 
 /** A verdict an operation reached on its own, for the card above Pay. */
@@ -255,7 +261,11 @@ export type CheckoutPageEvent =
   /** Pay clicked while the keep-subscription consent was still unticked. */
   | { readonly type: 'consentMissing' }
   /** `redirectMethod` is the chosen method's type when it pays on its own site. */
-  | { readonly type: 'paySubmitted'; readonly redirectMethod?: string }
+  | {
+      readonly type: 'paySubmitted'
+      readonly redirectMethod?: string
+      readonly quote?: SubscriptionPreview
+    }
   | {
       readonly type: 'payFailed'
       readonly outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
@@ -777,7 +787,8 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
           kind: 'sent',
           ...(event.redirectMethod === undefined
             ? {}
-            : { redirectMethod: event.redirectMethod })
+            : { redirectMethod: event.redirectMethod }),
+          ...(event.quote === undefined ? {} : { quote: event.quote })
         }
       }))
     case 'payFailed':
@@ -794,7 +805,7 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
       }))
     case 'paySettled':
       return page.kind === 'capture'
-        ? { kind: 'terminal', attribution: 'started' }
+        ? { kind: 'terminal', attribution: 'started', ...quoteOf(page.attempt) }
         : page
     case 'requoted':
       return withCapture(page, ({ outcome: _replaced, ...capture }) => ({
@@ -1063,6 +1074,12 @@ function attributionOf(
  * that sent it, so this form stays plain, and one parked on a card releases
  * a Pay held for the re-read.
  */
+function quoteOf(attempt: Attempt) {
+  return attempt.kind === 'sent' && attempt.quote !== undefined
+    ? { quote: attempt.quote }
+    : {}
+}
+
 function followedInCapture(
   page: Capture,
   operation: BillingOperationState,
@@ -1070,11 +1087,14 @@ function followedInCapture(
 ): CheckoutPage {
   const started = page.attempt.kind === 'sent'
   if (operation.phase === 'succeeded')
-    return {
-      kind: 'terminal',
-      operation,
-      attribution: started ? 'started' : 'settled'
-    }
+    return started
+      ? {
+          kind: 'terminal',
+          operation,
+          attribution: 'started',
+          ...quoteOf(page.attempt)
+        }
+      : { kind: 'terminal', operation, attribution: 'settled' }
   if (outcomeUnknown(operation))
     return unconfirmed(operation, started ? {} : { sibling: true })
   if (page.attempt.kind === 'sent')

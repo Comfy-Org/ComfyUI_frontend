@@ -106,14 +106,8 @@ export type EndingScreen =
 
 export type EndingKind = EndingScreen['kind']
 
-/**
- * The page's screen when it has ended, or no screen while capture or verifying
- * owns it. `quoted` is the quote this page's own Pay was priced on.
- */
-export function endingOf(
-  page: CheckoutPage,
-  quoted?: SubscriptionPreview
-): EndingScreen | undefined {
+/** The page's screen when it has ended, or no screen while capture or verifying owns it. */
+export function endingOf(page: CheckoutPage): EndingScreen | undefined {
   switch (page.kind) {
     case 'refused':
       return refusedEnding(page)
@@ -132,7 +126,7 @@ export function endingOf(
     case 'waiting':
       return waitingEnding(page)
     case 'terminal':
-      return terminalEnding(page, quoted)
+      return terminalEnding(page)
     default:
       return undefined
   }
@@ -224,14 +218,13 @@ function scheduledEnding(
 }
 
 function terminalEnding(
-  page: Extract<CheckoutPage, { kind: 'terminal' }>,
-  quoted: SubscriptionPreview | undefined
+  page: Extract<CheckoutPage, { kind: 'terminal' }>
 ): EndingScreen {
   const { operation } = page
   if (operation !== undefined && isGrantLanding(operation))
     return { kind: 'received', code: operation.id, ...receiptOf(operation) }
   if (page.attribution === 'started')
-    return scheduledEnding(quoted) ?? successEnding(operation)
+    return scheduledEnding(page.quote) ?? successEnding(operation)
   if (page.attribution === 'returned') return successEnding(operation)
   const kind = TERMINAL_KIND[page.attribution]
   return operation === undefined

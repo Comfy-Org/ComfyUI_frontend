@@ -261,7 +261,7 @@ describe('endingOf with the receipt the server reported', () => {
   })
 })
 
-describe('endingOf with the quote this page priced its Pay on', () => {
+describe('endingOf with the quote its own Pay was priced on', () => {
   const PRO = previewOf().new_plan
   const STANDARD = {
     ...PRO,
@@ -292,7 +292,7 @@ describe('endingOf with the quote this page priced its Pay on', () => {
 
   it.for<{
     name: string
-    page: CheckoutPage
+    page: Extract<CheckoutPage, { kind: 'terminal' }>
     quoted: ReturnType<typeof previewOf>
     screen: EndingScreen
   }>([
@@ -335,6 +335,6 @@ describe('endingOf with the quote this page priced its Pay on', () => {
       screen: SUCCESS
     }
   ])('$name', ({ page, quoted, screen }) => {
-    expect(endingOf(page, quoted)).toEqual(screen)
+    expect(endingOf({ ...page, quote: quoted })).toEqual(screen)
   })
 })

@@ -670,7 +670,7 @@ export function useFullPageCheckout() {
 
   watch(
     () => {
-      const kind = endingOf(page.value, preview.value)?.kind
+      const kind = endingOf(page.value)?.kind
       return kind === 'scheduled' ? 'success' : kind
     },
     (kind) => {
@@ -922,6 +922,7 @@ export function useFullPageCheckout() {
     const press = journey.submitted()
     dispatch({
       type: 'paySubmitted',
+      quote: quoted,
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
     await releasing

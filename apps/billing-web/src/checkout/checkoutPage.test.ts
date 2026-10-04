@@ -35,6 +35,7 @@ import {
   failedOperation,
   hostedPendingOperation,
   pendingOperation,
+  previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
 
@@ -2134,5 +2135,38 @@ describe('reduceCheckoutPage through Cancel payment', () => {
     expect(railAcceptsPay(replay([...challenged, cancel, canceledHere]))).toBe(
       true
     )
+  })
+})
+
+describe('reduceCheckoutPage keeps the quote its own Pay was priced on', () => {
+  const paid = previewOf({ quote_id: 'q_paid', is_immediate: false })
+  const pricedPay: CheckoutPageEvent = { type: 'paySubmitted', quote: paid }
+  const staleAnswer: CheckoutPageEvent = {
+    type: 'requoted',
+    reactivation: false,
+    priceUpdated: true
+  }
+
+  it.for<{ name: string; settles: CheckoutPageEvent[] }>([
+    { name: 'settled on the spot', settles: [settledOnTheSpot] },
+    {
+      name: 'settled through its operation, then answered stale',
+      settles: [changed(succeededOperation('op_mine')), staleAnswer]
+    }
+  ])('$name', ({ settles }) => {
+    const page = replay([quoted(0), pricedPay, ...settles])
+
+    expect(page).toMatchObject({
+      kind: 'terminal',
+      attribution: 'started',
+      quote: paid
+    })
+  })
+
+  it('a success it did not send carries no quote', () => {
+    const page = replay([quoted(0), changed(succeededOperation('op_theirs'))])
+
+    expect(page).toMatchObject({ kind: 'terminal', attribution: 'settled' })
+    expect(page).not.toHaveProperty('quote')
   })
 })
