@@ -10,12 +10,13 @@ import { api } from '@/scripts/api'
 const WORKFLOW_ID = '0199e3a3-6c01-7000-8000-c1a1f7a8d9b2'
 const EMPTY_PROMPT: ComfyApiWorkflow = {}
 
-const promptResponse = () =>
-  ({
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve({ prompt_id: 'p1', number: 1, node_errors: {} })
-  }) as unknown as Response
+// A real `Response`, so the stub cannot drift out of shape with the contract
+// `queuePrompt` reads. A fresh one per test: a Response body reads once.
+const promptResponse = (): Response =>
+  Response.json(
+    { prompt_id: 'p1', number: 1, node_errors: {} },
+    { status: 200 }
+  )
 
 function workflow(id?: string): ComfyWorkflowJSON {
   return {

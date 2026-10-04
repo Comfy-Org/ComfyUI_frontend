@@ -102,10 +102,30 @@ export class SimulatedPrompt {
     )
   }
 
-  nodeRunning(nodeId: string, value: number, max: number): Frame {
-    return this.frame('progress_state', () =>
-      this.execution.nodeRunning(this.jobId, nodeId, value, max)
-    )
+  /**
+   * The two frames a running node produces — `progress_state`, then `progress`.
+   *
+   * Returned as two {@link Frame}s rather than one because a Frame is one
+   * WebSocket frame. A single Frame that sent both would make the `progress`
+   * half unreachable to every fault helper (no Frame carries its label, so
+   * `dropFrames(script, 'wf:progress')` would throw `not in the script` while a
+   * `progress` frame was in fact on the wire), would force a drop or duplicate
+   * of one half to hit both, and would make {@link interleave} schedule fewer
+   * units than it emits. Spread it into a script:
+   * `[p.start(), ...p.nodeRunning('1', 1, 4)]`.
+   */
+  nodeRunning(nodeId: string, value: number, max: number): [Frame, Frame] {
+    return [
+      this.frame('progress_state', () =>
+        this.execution.progressState(
+          this.jobId,
+          this.execution.runningNodeState(this.jobId, nodeId, value, max)
+        )
+      ),
+      this.frame('progress', () =>
+        this.execution.progress(this.jobId, nodeId, value, max)
+      )
+    ]
   }
 
   executed(
@@ -198,9 +218,12 @@ export function duplicateFrame(
 /**
  * Swap two frames, producing out-of-order arrival.
  *
- * Each selector must identify exactly one frame. A swap is a pair operation, so
- * quietly taking the first of several matches is how a two-prompt script ends up
- * reordering the wrong prompt's frame; add a `jobId` to disambiguate.
+ * Each selector must identify exactly one frame, and the two must not be the
+ * same frame. A swap is a pair operation, so quietly taking the first of several
+ * matches is how a two-prompt script ends up reordering the wrong prompt's
+ * frame; add a `jobId` to disambiguate. Swapping a frame with itself is the same
+ * silent no-fault that {@link requireMatches} exists to rule out, so it throws
+ * rather than returning the script unchanged.
  */
 export function swapFrames(
   frames: Frame[],
@@ -219,6 +242,12 @@ export function swapFrames(
           'add a jobId to select one'
       )
     }
+  }
+  if (a[0] === b[0]) {
+    throw new Error(
+      `swapFrames: ${describeSelector(first)} and ${describeSelector(second)} ` +
+        'select the same frame; swapping it with itself applies no fault'
+    )
   }
   const swapped = [...frames]
   ;[swapped[a[0]], swapped[b[0]]] = [swapped[b[0]], swapped[a[0]]]
