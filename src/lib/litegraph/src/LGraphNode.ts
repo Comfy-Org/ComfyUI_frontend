@@ -209,10 +209,6 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
     if (widget.serialize === false) continue
     const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
     positional.push(positionalValue)
-    // Not `named[widget.name] = …`: for a widget named `__proto__` that runs
-    // the inherited setter instead of creating an own key, so the value never
-    // reaches the file and the restore — which checks `Object.hasOwn` — hands
-    // the widget its default back.
     Object.defineProperty(named, widget.name, {
       value: namedValue,
       writable: true,
