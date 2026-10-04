@@ -22,8 +22,8 @@ catalogs:
       specifier: ^7.0.2
       version: 7.0.2
     '@comfyorg/comfy-multi-player':
-      specifier: 0.3.6
-      version: 0.3.6
+      specifier: 0.3.10
+      version: 0.3.10
     '@comfyorg/comfyui-desktop-bridge-types':
       specifier: 0.3.0
       version: 0.3.0
@@ -511,7 +511,7 @@ importers:
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
         specifier: 'catalog:'
-        version: 0.3.6
+        version: 0.3.10
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.3.0
@@ -592,7 +592,7 @@ importers:
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
       '@vueuse/integrations':
         specifier: 'catalog:'
-        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
+        version: 14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       '@vueuse/router':
         specifier: ^14.4.0
         version: 14.4.0(vue-router@5.2.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.1)(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
@@ -1991,8 +1991,8 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@0.3.6':
-    resolution: {integrity: sha512-6mC4E43YH+58gV4I+tmUR4pIYxqUeiY8ShS1WjjDEYxsBKGbzU1rRNGZHKgrzP3cOKGzK/JSP663/SIN50kfeQ==}
+  '@comfyorg/comfy-multi-player@0.3.10':
+    resolution: {integrity: sha512-HPR9Of8qTbt0E5wXiYHCF8+FixXPqvRewUiKOfoSE8mZwm21u4gztoIMRXmsVS2pcWiAh0iW0Vh5bgu8XkylsA==}
 
   '@comfyorg/comfyui-desktop-bridge-types@0.3.0':
     resolution: {integrity: sha512-pdYsrp3rwya5R3cumqPcZYhyoAReO5qBwxeqCQbo0NvRxxQPcrV/NNl4wDn0mmmUuBhlswWjXsrD36YNxv8xMg==}
@@ -10646,7 +10646,7 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@0.3.6':
+  '@comfyorg/comfy-multi-player@0.3.10':
     dependencies:
       yjs: 13.6.32
 
@@ -13741,7 +13741,7 @@ snapshots:
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@6.0.3))
       vue: 3.5.42(typescript@6.0.3)
 
-  '@vueuse/integrations@14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))':
+  '@vueuse/integrations@14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))':
     dependencies:
       '@vueuse/core': 14.4.0(vue@3.5.42(typescript@6.0.3))
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@6.0.3))
