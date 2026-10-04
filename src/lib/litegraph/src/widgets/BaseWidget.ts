@@ -19,7 +19,11 @@ import type {
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
-import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
+import {
+  ensureUniqueWidgetNames,
+  widgetId,
+  widgetOwnsItsName
+} from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
   applyLegacyAdvancedWrite,
@@ -394,7 +398,12 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return undefined
-    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return undefined
+    // Attempted for its effect, not its verdict: this is where a resolvable
+    // collision is settled. The verdict is whole-node, and whether *this*
+    // widget has an identity is not — see {@link widgetOwnsItsName}.
+    const widgets = this.node.widgets ?? [this]
+    ensureUniqueWidgetNames(widgets)
+    if (!widgetOwnsItsName(widgets, this)) return undefined
     return widgetId(graphId, nodeId, this.name)
   }
 
@@ -406,7 +415,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.installTypeVisibilityShim()
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
-    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
+    // Settle what can be settled, then ask only about this widget. A node
+    // carrying one pair nothing can rename apart must not cost every *other*
+    // widget on it its registration — that empties the node's whole widget
+    // order and a Vue node then draws nothing. The later of the pair still
+    // gets no id, so no colliding identity is ever registered.
+    const widgets = this.node.widgets ?? [this]
+    ensureUniqueWidgetNames(widgets)
+    if (!widgetOwnsItsName(widgets, this)) return
 
     const registered = useWidgetValueStore().registerWidget(
       widgetId(graphId, nodeId, this.name),

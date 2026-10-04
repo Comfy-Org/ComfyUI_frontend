@@ -47,8 +47,24 @@ describe('unique-name refusal criterion', () => {
     expect(node.widgets).toContain(steps)
     expect(names(node)).toEqual(['seed', 'seed#1'])
     expect(storedNames(graph, node)).toEqual(['seed', 'seed#1'])
-    expect(reportedTypes()).toEqual([])
+    // It is still reported, so the pair is observable rather than tolerated in
+    // silence — under its own `errorType`, because nothing was lost.
+    expect(reportedTypes()).toEqual([
+      'failure_resolving_widget_duplicate_name'
+    ])
+    expect(reportedTypes()).not.toContain('widget_duplicate_name_refused')
 
+    // Keeping the pair must not be paid for with a *value* either, which the
+    // widget array's length cannot show. One widget holds the name and keeps
+    // the identity; the duplicate gets no id at all, so it cannot be handed
+    // that entry and the two stay independent — rather than both resolving to
+    // one store entry under the shared name.
+    const store = useWidgetValueStore()
+    expect(
+      store.getNodeWidgets(graph.id, node.id).map(({ name }) => name)
+    ).toEqual(['seed'])
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed'))?.value).toBe(1)
+    expect(steps.widgetId).toBeUndefined()
     expect(seed.value).toBe(1)
     expect(steps.value).toBe(2)
 
@@ -56,6 +72,69 @@ describe('unique-name refusal criterion', () => {
     steps.value = 222
     expect(seed.value).toBe(111)
     expect(steps.value).toBe(222)
+  })
+
+  it('does not erase the whole widget order over one pair it cannot resolve', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+    const cfg = node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    graph.add(node)
+
+    // The node's widget order is what a Vue node renders from
+    // (`getNodeWidgetIds` in `LGraphNode.vue`), so a node with no order draws
+    // no widgets. Registration was gated on `ensureUniqueWidgetNames`, whose
+    // verdict is whole-node: one pair that could not be renamed apart made
+    // *every* widget here bail, including `cfg`, which collides with nothing.
+    // Three widgets on the node, an empty order, and nothing drawn — the same
+    // visible loss the keep-rather-remove criterion exists to prevent.
+    const store = useWidgetValueStore()
+    expect(store.getNodeWidgetIds(graph.id, node.id)).toEqual([
+      widgetId(graph.id, node.id, 'seed'),
+      widgetId(graph.id, node.id, 'cfg')
+    ])
+
+    // And the ambiguity is still contained: the duplicate has no identity, so
+    // it cannot be registered under the name the other widget holds, and all
+    // three widgets keep their own value.
+    expect(steps.widgetId).toBeUndefined()
+    expect(node.widgets).toHaveLength(3)
+    expect(seed.value).toBe(1)
+    expect(steps.value).toBe(2)
+    expect(cfg.value).toBe(3)
+  })
+
+  it('does not let a duplicate rename move the entry the other widget registered', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    graph.add(node)
+
+    // `graphId:nodeId:seed` is `seed`'s to hold: it is the widget that holds
+    // the name first, so it is the one that registers. A rename of `steps`
+    // must not move that entry — being handed it is what welded the pair onto
+    // one `WidgetState` and destroyed the second value.
+    const store = useWidgetValueStore()
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed'))?.value).toBe(1)
+
+    // The write is declined rather than silently redirected, so the name the
+    // walk could not resolve is still ambiguous and still reported as such.
+    steps.name = 'seed#1'
+    expect(
+      store.getWidget(widgetId(graph.id, node.id, 'seed#1'))
+    ).toBeUndefined()
+    expect(seed.value).toBe(1)
+    expect(steps.value).toBe(2)
   })
 
   it('does not let a duplicate rename steal the entry of a widget on another node', () => {

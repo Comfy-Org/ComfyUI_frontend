@@ -24,7 +24,18 @@ export function widgetId(
   ].join(SEPARATOR) as WidgetId
 }
 
-function nameIsWritable(widget: object): boolean {
+/**
+ * Whether `name` can be written on {@link widget} at all — a structural
+ * property of the object, not of whether a particular write landed.
+ *
+ * This is the criterion {@link ensureUniqueWidgetNames} uses to decide whether
+ * it may rename at all, and it is deliberately the same one
+ * {@link dropUnrenamableDuplicateWidgets} uses to decide whether a rename that
+ * failed is fatal. The two must agree: one walk removing a widget the other
+ * calls renamable would be destroying widgets over a disagreement between two
+ * copies of one rule.
+ */
+function nameIsWritable(widget: { name: string }): boolean {
   try {
     for (
       let target: object | null = widget;
@@ -39,6 +50,60 @@ function nameIsWritable(widget: object): boolean {
   } catch {
     return false
   }
+}
+
+/**
+ * Whether {@link widget} may mint an id for the name it currently holds on a
+ * node whose widgets are {@link widgets} — true unless an *earlier* widget in
+ * the array already holds that name.
+ *
+ * This is deliberately a per-widget question, and
+ * {@link ensureUniqueWidgetNames} answers a different, whole-node one. A node
+ * that still carries an ambiguous pair after every rename was attempted has
+ * exactly one widget per name that may own the identity: the first to hold it.
+ * Gating registration on the whole-node answer instead withholds an id from
+ * *every* widget on the node, including widgets that share a name with nothing
+ * — so one unresolvable pair erases the node's entire widget order, and a Vue
+ * node renders no widgets at all (`getNodeWidgetIds` is what it draws from).
+ *
+ * The identity invariant is unchanged by answering per widget: one name still
+ * resolves to one {@link WidgetId} held by one widget, so a later duplicate is
+ * never registered and can never be handed the first widget's state. It is the
+ * collateral loss that goes away.
+ *
+ * Every read of another widget's `name` is guarded. A widget whose accessor
+ * throws is refused in its own right by {@link dropUnrenamableDuplicateWidgets}
+ * and must not also decide whether an unrelated widget has an identity.
+ */
+export function widgetOwnsItsName(
+  widgets: readonly { name: string }[],
+  widget: { name: string }
+): boolean {
+  let name: string
+  try {
+    name = widget.name
+  } catch {
+    // No name read, no id. This is the `unreadable-name` refusal's own case.
+    return false
+  }
+
+  for (const candidate of widgets) {
+    // Reached this widget without an earlier holder, so the name is its own.
+    // Identity, not position: the same object may transiently occupy two
+    // slots during an index-assignment reorder, and that is one widget.
+    if (candidate === widget) return true
+    try {
+      if (candidate.name === name) return false
+    } catch {
+      continue
+    }
+  }
+
+  // Not on the array at all, and no widget on it holds this name. A widget the
+  // refusal walk removed falls out of the loop above instead: it shares its
+  // name with whichever widget kept it, so it has no identity of its own to
+  // read or write through, and that is the point.
+  return true
 }
 
 export function ensureUniqueWidgetNames(
@@ -78,6 +143,21 @@ export function ensureUniqueWidgetNames(
       return false
     }
 
+    // The write is read back, and a write that did not land makes this `false`.
+    //
+    // An unconditional `true` reported success over a node that still carries
+    // two widgets under one name. `BaseWidget`'s own `name` setter declines
+    // the write whenever the store declines the move — which is exactly the
+    // state `dropUnrenamableDuplicateWidgets` leaves behind when it keeps an
+    // unresolved duplicate rather than deleting the user's widget — so this
+    // answered "unambiguous" precisely where it was wrong, and the callers
+    // that act on it (`litegraphUtil`'s widget-value sync) acted on that.
+    //
+    // It is no longer what decides whether a widget may be registered: that is
+    // per widget, and {@link widgetOwnsItsName} answers it.
+    //
+    // Every rename is still attempted before answering: one declined write
+    // must not strand the collisions that would have resolved cleanly.
     let unique = true
     for (const { widget, name } of renames) {
       try {
