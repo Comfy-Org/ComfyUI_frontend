@@ -512,8 +512,6 @@ describe('useTemplateModelRowDownloads', () => {
     firstResult.reject(new Error('late'))
     await vi.waitFor(() => expect(dispatchDownload).toHaveBeenCalledTimes(2))
 
-    // Reporting the old failure would resurrect the old row through
-    // `initializeState`, leaving the replacement idle.
     expect(downloads.stateFor(replacement)).toEqual({
       status: 'starting',
       attempt: 1
@@ -592,6 +590,49 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
+  it('lets a retry joined to a running job keep reporting', async () => {
+    const request = model('joined.safetensors')
+    const refused = deferred<boolean>()
+    const dispatchDownload = vi
+      .fn<DispatchDownload>()
+      .mockReturnValueOnce({
+        status: 'host-requested',
+        host: 'desktop2',
+        hostResult: refused.promise
+      })
+      .mockReturnValue(pendingHostRequest())
+    const { downloads, emitDesktop } = createDownloadHarness({
+      dispatchDownload
+    })
+    const tick = (status: 'downloading' | 'completed') => ({
+      id: 'job-1',
+      url: request.url,
+      filename: request.name,
+      directory: request.directory,
+      progress: 0.5,
+      receivedBytes: 1,
+      totalBytes: 2,
+      status
+    })
+
+    downloads.request(request)
+    emitDesktop(tick('downloading'))
+    refused.reject(new Error('ipc failed'))
+    await vi.waitFor(() =>
+      expect(downloads.stateFor(request)).toMatchObject({ status: 'failed' })
+    )
+
+    // The host joins the running transfer, so the retry reuses its job id.
+    downloads.request(request)
+    emitDesktop(tick('downloading'))
+    emitDesktop(tick('completed'))
+
+    expect(downloads.stateFor(request)).toEqual({
+      status: 'done',
+      attempt: 2
+    })
+  })
+
   it('refuses a retry claim from a job that already ran', async () => {
     const request = model('reordered.safetensors')
     const { downloads, emitDesktop } = createDownloadHarness()
@@ -614,8 +655,7 @@ describe('useTemplateModelRowDownloads', () => {
     emitDesktop(tick('job-1', 'error'))
     downloads.request(request)
 
-    // job-1's transfer can outlive the attempt it served and report before
-    // job-2 does, so arrival order cannot decide which job holds attempt 2.
+    // An ended job can still report after a retry starts.
     emitDesktop(tick('job-1', 'downloading'))
     emitDesktop(tick('job-2', 'downloading'))
     emitDesktop(tick('job-1', 'error'))
