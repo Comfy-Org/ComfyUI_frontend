@@ -15,8 +15,6 @@ test.describe(
       initialSettings: { 'Comfy.Workflow.NamedValuesRestore': true }
     })
 
-    // Per attempt, not per module: a module-scope stamp is shared by every
-    // worker in the process and by a retry.
     let workflowName = ''
 
     test.afterEach(async ({ comfyPage }) => {
