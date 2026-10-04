@@ -83,6 +83,9 @@ describe('ComfyUI file input', () => {
 
 describe('legacy menu copy', () => {
   beforeEach(() => {
+    vi.mocked(api.interrupt).mockClear()
+    vi.mocked(api.deleteItem).mockClear()
+    vi.mocked(api.clearItems).mockClear()
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -218,6 +221,85 @@ describe('legacy menu copy', () => {
     expect(ui.history.button?.textContent).toBe('View History')
     ui.queue.hide()
     expect(ui.queue.button?.textContent).toBe('View Queue')
+  })
+
+  async function openQueue() {
+    vi.mocked(api.getQueue).mockResolvedValue({
+      Running: [{ ...queuedJob, id: 'running', status: 'in_progress' }],
+      Pending: [{ ...queuedJob, id: 'pending' }]
+    })
+    const ui = new ComfyUI(app)
+    await ui.queue.show()
+    return ui
+  }
+
+  async function openHistory() {
+    vi.mocked(api.getHistory).mockResolvedValue([
+      { ...queuedJob, id: 'done', status: 'completed' }
+    ])
+    const ui = new ComfyUI(app)
+    await ui.history.show()
+    return ui
+  }
+
+  function clickLabel(root: ParentNode, label: string) {
+    const button = [...root.querySelectorAll('button')].find(
+      (element) => element.textContent === label
+    )
+    if (!(button instanceof HTMLButtonElement)) {
+      throw new Error(`Missing button: ${label}`)
+    }
+    button.click()
+  }
+
+  it('cancels a running queue item', async () => {
+    const ui = await openQueue()
+
+    clickLabel(ui.queue.element, 'Cancel')
+
+    await vi.waitFor(() =>
+      expect(api.interrupt).toHaveBeenCalledWith('running')
+    )
+    expect(api.deleteItem).not.toHaveBeenCalled()
+  })
+
+  it('deletes a pending queue item', async () => {
+    const ui = await openQueue()
+
+    clickLabel(ui.queue.element, 'Delete')
+
+    await vi.waitFor(() =>
+      expect(api.deleteItem).toHaveBeenCalledWith('queue', 'pending')
+    )
+    expect(api.interrupt).not.toHaveBeenCalled()
+  })
+
+  it('deletes a history item', async () => {
+    const ui = await openHistory()
+
+    clickLabel(ui.history.element, 'Delete')
+
+    await vi.waitFor(() =>
+      expect(api.deleteItem).toHaveBeenCalledWith('history', 'done')
+    )
+  })
+
+  it('clears the queue', async () => {
+    const ui = await openQueue()
+
+    clickLabel(ui.queue.element, 'Clear Queue')
+
+    await vi.waitFor(() => expect(api.clearItems).toHaveBeenCalledWith('queue'))
+  })
+
+  it('clears history', async () => {
+    const ui = await openHistory()
+
+    clickLabel(ui.history.element, 'Clear History')
+
+    await vi.waitFor(() =>
+      expect(api.clearItems).toHaveBeenCalledWith('history')
+    )
   })
 
   it('refreshes legacy menu labels when locale messages change', async () => {
