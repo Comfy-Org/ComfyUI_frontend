@@ -731,12 +731,6 @@ describe('attachDocOpMinter', () => {
     ).toEqual(['agent_crdt_unrepresentable_subgraph_set_node_field'])
   })
 
-  // The one interior divergence that is INVISIBLE. `LGraph.clear` emits its
-  // intent only `if (this.isRootGraph)` (`LGraph.ts:839`), so an interior clear
-  // never reaches the minter at all: no wire op AND no `reportError`. The other
-  // five interior actions at least surface a refusal, which is how they were
-  // measured on production; this one would diverge the bound document with
-  // nothing in Sentry to count. Pinned so that stays a deliberate state.
   it('drops a subgraph-interior clear with neither a wire op nor telemetry', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const interior = new TestSource()
