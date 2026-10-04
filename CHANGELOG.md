@@ -7,6 +7,18 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+## 0.3.10 - 2026-10-04
+
+### Fixed
+
+- Refuse legacy widget overflow identities at or above the one-million-slot
+  allocation ceiling on both mint and projection, including occurrence-encoded
+  storage keys. This prevents caller-supplied workflows from allocating
+  unbounded placeholder arrays and prevents mint from accepting a document
+  that projection would then refuse. The ceiling is checked after decoding the
+  storage identity so the two legs interpret every reachable spelling the same
+  way (#272, BE-17528).
+
 ## 0.3.9 - 2026-10-04
 
 ### Added
