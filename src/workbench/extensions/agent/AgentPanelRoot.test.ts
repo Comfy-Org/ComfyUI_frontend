@@ -4046,6 +4046,81 @@ describe('AgentPanelRoot history', () => {
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
+  it('records the status and path of a thread-list failure on both sinks', async () => {
+    // FE-3200: the overlay above was all that existed — 227 events across 213
+    // distinct users in 3.3 days, carrying no status, no endpoint and no
+    // groupable Sentry issue, so the cause could not be read off anything.
+    executionErrors.showErrorOverlay.mockClear()
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(reportError).mockClear()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 401 }))
+    )
+
+    renderWithSelectedTarget()
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'thread_list_load_failed',
+          // A 401 is in `NON_RETRYABLE_REQUEST_STATUSES`, which is the whole
+          // explanation of the near-even retryable split the ticket calls
+          // suspicious — and it is only legible now that the status rides along.
+          retryable: false,
+          request_path: '/agent/threads',
+          request_status: 401,
+          request_error: 'AgentApiError'
+        })
+      )
+    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed',
+      tags: {
+        request_path: '/agent/threads',
+        request_status: 401,
+        request_error: 'AgentApiError'
+      },
+      fingerprint: [
+        'agent-request-failure',
+        'agent_thread_list_load_failed',
+        '/agent/threads',
+        'AgentApiError'
+      ]
+    })
+  })
+
+  it('records a thread-list request that never reached the server', async () => {
+    // No status to record, and the distinction matters: `TypeError` is the
+    // transport leg, which is not the same problem as a server refusal and must
+    // not be reported as status 0.
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(reportError).mockClear()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      })
+    )
+
+    renderWithSelectedTarget()
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'thread_list_load_failed',
+          retryable: true,
+          request_path: '/agent/threads',
+          request_error: 'TypeError'
+        })
+      )
+    )
+    expect(
+      vi.mocked(telemetry.trackAgentError).mock.calls.at(-1)?.[0]
+    ).not.toHaveProperty('request_status')
+  })
+
   it('marks the restored thread as the current session', async () => {
     vi.stubGlobal(
       'fetch',
@@ -6519,10 +6594,22 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() =>
       expect(telemetry.trackAgentError).toHaveBeenCalledWith(
-        expect.objectContaining({ error_class: 'history_load_failed' })
+        expect.objectContaining({
+          error_class: 'history_load_failed',
+          // FE-3200: attributed at the REST boundary, so it names the request
+          // that actually failed rather than the one the `catch` sits under —
+          // `hydrateFromServer` wraps three of them.
+          request_path: '/agent/threads/{threadId}/messages',
+          request_status: 500,
+          request_error: 'AgentApiError'
+        })
       )
     )
     expect(useAgentChatHistoryStore().activeId).toBeNull()
+    // The stored thread id did not ride along into the route it reported.
+    expect(
+      JSON.stringify(vi.mocked(telemetry.trackAgentError).mock.calls)
+    ).not.toContain('th-history')
   })
 
   it('toasts a startup restoration failure that lands while history is open without a selection', async () => {

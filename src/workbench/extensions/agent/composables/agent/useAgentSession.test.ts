@@ -5950,7 +5950,12 @@ describe('app:agent_error telemetry (TEL-8)', () => {
       failure_stage: 'pre_acceptance',
       retryable: true,
       turn_accepted: true,
-      ui_treatment: 'error_overlay'
+      ui_treatment: 'error_overlay',
+      // Unattributed on purpose: `fakeRest` never goes through `request()`, so
+      // no route was recorded, and FE-3200's carrier omits `request_path`
+      // rather than guessing one from the call site. The real-boundary
+      // attribution is proven in `AgentPanelRoot.test.ts`.
+      request_error: 'other'
     })
   })
 
@@ -6111,7 +6116,12 @@ describe('app:agent_error telemetry (TEL-8)', () => {
       failure_stage: 'pre_acceptance',
       retryable: true,
       turn_accepted: false,
-      ui_treatment: 'error_overlay'
+      ui_treatment: 'error_overlay',
+      // Unattributed on purpose: `fakeRest` never goes through `request()`, so
+      // no route was recorded, and FE-3200's carrier omits `request_path`
+      // rather than guessing one from the call site. The real-boundary
+      // attribution is proven in `AgentPanelRoot.test.ts`.
+      request_error: 'other'
     })
   })
 
@@ -6195,13 +6205,50 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     await session.loadThread('th-9')
 
+    // FE-3200: the status that decided `retryable` is now recorded beside it.
+    // 117 retryable against 111 non-retryable on the same `error_class` was
+    // undiagnosable precisely because this number was thrown away.
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'history_load_failed',
       failure_stage: 'pre_acceptance',
       retryable: false,
       turn_accepted: false,
-      ui_treatment: 'error_overlay'
+      ui_treatment: 'error_overlay',
+      request_status: 403,
+      request_error: 'AgentApiError'
     })
+  })
+
+  it('reports the history load failure to Sentry with its own grouping', async () => {
+    // Reported before this carrier, but into `CLOUD-FRONTEND-PROD-1` — a
+    // merged issue holding 49 distinct `error_type` values and ~18M events, so
+    // the failure was unsearchable and unalertable. An explicit fingerprint is
+    // what gives it an issue of its own.
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('bad gateway', 502, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      tags: { request_status: 502, request_error: 'AgentApiError' },
+      fingerprint: [
+        'agent-request-failure',
+        'agent_history_load_failed',
+        'unattributed',
+        'AgentApiError'
+      ]
+    })
+    // The thread id reached neither sink, in any field.
+    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+      'th-9'
+    )
   })
 
   it('does not track a 404 thread-not-found history load as an error', async () => {

@@ -65,6 +65,11 @@ declare global {
       event: string
       properties: Record<string, unknown>
     }) => Promise<void>
+    __captureHostErrorReport?: (captured: {
+      message: string
+      stack?: string
+      properties: Record<string, unknown>
+    }) => Promise<void>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
