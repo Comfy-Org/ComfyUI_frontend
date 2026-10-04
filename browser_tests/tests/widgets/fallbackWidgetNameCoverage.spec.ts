@@ -10,18 +10,22 @@ import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
  * A node opts into named widget restoration by shipping
  * `fallbackWidgetsValuesNames`, which names each slot of the legacy
  * `widgets_values` order. Named restoration does not fall back per widget, so a
- * list that names only part of the register used to reset every unnamed widget
- * to its node default while the saved workflow still held a value for it.
+ * derived register no live widget can read does not leave the node alone — it
+ * switches the node into named mode and resets every widget to its default.
  *
- * Both workflows loaded here are pre-`widgets_values_named` KSamplers whose
- * seven saved values all differ from the node defaults, and in both the node
- * definition is served with a two-name fallback list. Every saved value must
- * survive — and the second case additionally pins *which* widget each value
- * lands on, which is the half a whole-node positional restore gets wrong.
+ * Both workflows here are pre-`widgets_values_named` KSamplers whose seven saved
+ * values all differ from the node defaults. KSampler's serialized widget order
+ * is seed, control_after_generate, steps, cfg, sampler_name, scheduler, denoise,
+ * and its defaults are 0, randomize, 20, 8.0, euler, normal, 1.00 — so every
+ * assertion below is a real discriminator.
  *
- * KSampler's serialized widget order is seed, control_after_generate, steps,
- * cfg, sampler_name, scheduler, denoise. Defaults are 0, randomize, 20, 8.0,
- * euler, normal, 1.00, so every assertion below is a real discriminator.
+ * The two cases pin opposite halves of one contract, and each fails for a
+ * different reason under a different plausible implementation:
+ *
+ * - an empty list must not discard the register (it does on the unmodified
+ *   code), and
+ * - a list that names reordered slots must still place them **by name** (a
+ *   whole-node positional restore swaps them).
  */
 test.describe(
   'partial backend fallback widget-name coverage',
@@ -46,15 +50,14 @@ test.describe(
       })
     }
 
-    test('a fallback list that names only two of seven slots loses no saved value', async ({
+    test('an empty fallback list loses no saved value', async ({
       comfyPage
     }) => {
-      // The legacy order matches the live order here, so only the unnamed tail
-      // is at stake.
-      const unrouteObjectInfo = await routeFallbackNames(comfyPage.page, [
-        'seed',
-        'control_after_generate'
-      ])
+      // The list names nothing, so it declares no legacy order and the saved
+      // register is read positionally, exactly as before the node opted in.
+      // Deriving an empty register instead switches the node into named mode
+      // and all seven widgets fall to their defaults.
+      const unrouteObjectInfo = await routeFallbackNames(comfyPage.page, [])
 
       try {
         await comfyPage.workflow.reloadAndWaitForApp()
@@ -64,15 +67,12 @@ test.describe(
 
         const node = comfyPage.vueNodes.getNodeLocator('1')
 
-        // Named by the fallback list.
         await expect(
           node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
         ).toHaveValue('987654321')
         await expect(
           node.getByRole('button', { name: 'Fixed Value', exact: true })
         ).toBeVisible()
-
-        // Unnamed by it, and therefore the slots that used to be discarded.
         await expect(
           node.getByLabel('steps', { exact: true }).getByRole('spinbutton')
         ).toHaveValue('37')
@@ -97,15 +97,11 @@ test.describe(
       comfyPage
     }) => {
       // This is the case the list exists for: the saved register was written
-      // when control_after_generate came *before* seed. The two names repair
-      // that; the five unnamed slots still line up by index.
-      //
-      // Restoring the whole node positionally instead — which is what refusing
-      // to derive on incomplete coverage does — reads the string "fixed" into
-      // seed and 987654321 into control_after_generate, so the Fixed Value
-      // control disappears. Deriving a partial register without a per-slot
-      // positional fill instead reverts steps, cfg, sampler_name, scheduler and
-      // denoise to their defaults. Both failures are visible here.
+      // when control_after_generate came *before* seed. Restoring the whole
+      // node positionally instead — which is what refusing to derive on
+      // incomplete coverage does — reads the string "fixed" into seed and
+      // 987654321 into control_after_generate, so the Fixed Value control
+      // disappears.
       const unrouteObjectInfo = await routeFallbackNames(comfyPage.page, [
         'control_after_generate',
         'seed'
@@ -119,7 +115,6 @@ test.describe(
 
         const node = comfyPage.vueNodes.getNodeLocator('1')
 
-        // Placed by name, across the reorder.
         await expect(
           node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
         ).toHaveValue('987654321')
@@ -127,22 +122,17 @@ test.describe(
           node.getByRole('button', { name: 'Fixed Value', exact: true })
         ).toBeVisible()
 
-        // Placed by index, from the slots the list leaves free.
+        // The five slots the list does not name are deliberately left on node
+        // defaults rather than guessed at — the list's own premise is that the
+        // current index is not known to be the legacy index. Asserted, not
+        // merely accepted, so that a later change cannot quietly fill them
+        // from the wrong coordinate system without turning this red.
         await expect(
           node.getByLabel('steps', { exact: true }).getByRole('spinbutton')
-        ).toHaveValue('37')
-        await expect(
-          node.getByLabel('cfg', { exact: true }).getByRole('spinbutton')
-        ).toHaveValue('6.0')
+        ).toHaveValue('20')
         await expect(
           node.getByRole('combobox', { name: 'sampler_name', exact: true })
-        ).toContainText('heun')
-        await expect(
-          node.getByRole('combobox', { name: 'scheduler', exact: true })
-        ).toContainText('karras')
-        await expect(
-          node.getByLabel('denoise', { exact: true }).getByRole('spinbutton')
-        ).toHaveValue('0.75')
+        ).toContainText('euler')
       } finally {
         await unrouteObjectInfo()
       }
