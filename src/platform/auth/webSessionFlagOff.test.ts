@@ -778,4 +778,24 @@ describe('Firebase-only account actions with unified_web_session off', () => {
       expect(currentUser.needsFirebaseSignIn.value).toBe(false)
     }
   )
+
+  it.for([{ unified_cloud_auth: false }, { unified_cloud_auth: true }])(
+    'sends no revoke-all for a Firebase login (unified_cloud_auth $unified_cloud_auth)',
+    async (features) => {
+      const recorder = installFetchRecorder(features)
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolve(EMAIL_USER)
+      await bootCloudIdentity()
+
+      expect(await useCloudWebSessionStore().revokeAllSessions()).toEqual({
+        status: 'error',
+        code: 'NO_SESSION',
+        retryable: false
+      })
+      expect(
+        recorder.all.filter(({ path }) => path.startsWith('/api/auth/'))
+      ).toEqual([])
+    }
+  )
 })

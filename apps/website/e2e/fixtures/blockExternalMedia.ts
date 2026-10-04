@@ -30,7 +30,9 @@ const EMBED_HOSTS = new Set([
 const SCRIPT_HOSTS = new Set(['js-na2.hsforms.net'])
 const GITHUB_ATTACHMENT_URLS = new Set([
   'https://github.com/user-attachments/assets/07c6b3bf-9aa3-49b7-b8ad-1b4300802473',
-  'https://github.com/user-attachments/assets/916211b0-5da9-4c91-b817-bc898a36cfca'
+  'https://github.com/user-attachments/assets/916211b0-5da9-4c91-b817-bc898a36cfca',
+  'https://github.com/user-attachments/assets/f58091d4-909e-44e2-b0bc-5499a8f2b468',
+  'https://github.com/user-attachments/assets/049b928c-2366-4f47-8f8d-108133723658'
 ])
 const MEDIA_PATTERNS = [
   /^https:\/\/media\.comfy\.org\/website\/comfy-agent\/[^/?]+\.svg(?:\?.*)?$/i,

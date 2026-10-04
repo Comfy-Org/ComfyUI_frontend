@@ -22,6 +22,7 @@ import type {
 import {
   createFakeBillingClient,
   failedOperation,
+  hostedPendingOperation,
   pendingOperation,
   previewOf,
   succeededOperation
@@ -260,9 +261,8 @@ describe('the embedded checkout journey', () => {
   ])('$name', async ({ options, last }) => {
     await renderCheckout(CHECKOUT_PATH, options)
 
-    await waitFor(() => expect(journey()).toHaveLength(2))
+    await waitFor(() => expect(journey()[1]).toMatchObject(last))
     expect(journeyNames()[0]).toBe('billing.checkout.entered')
-    expect(journey()[1]).toMatchObject(last)
   })
 
   it.for<{
@@ -358,7 +358,8 @@ describe('the embedded checkout journey', () => {
         'billing.checkout.payment_submit_attempted',
         'billing.checkout.method_selected',
         'billing.checkout.submitted',
-        'billing.checkout.operation_linked'
+        'billing.checkout.operation_linked',
+        'billing.checkout.ended'
       ])
     )
     const [, , , , , submitted, linked] = journey()
@@ -797,4 +798,225 @@ describe('the embedded checkout journey', () => {
       expect(linked()).toMatchObject([{ billing_op_id: 'op_9' }])
     })
   })
+})
+
+describe('the embedded checkout exits and endings', () => {
+  beforeEach(() => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    vi.spyOn(window, 'close').mockImplementation(() => {})
+  })
+
+  const leavePage = () => {
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+  }
+  const exitsOf = () =>
+    journey().filter(({ name }) => name === 'billing.checkout.abandoned')
+  const endingsOf = () =>
+    journey().filter(({ name }) => name === 'billing.checkout.ended')
+
+  it.for<{ name: string; leave: () => Promise<void> | void; exit: string }>([
+    { name: 'the page goes away', leave: leavePage, exit: 'page_exit' },
+    {
+      name: 'the customer goes Back',
+      leave: () =>
+        userEvent.click(screen.getByRole('button', { name: 'Back' })),
+      exit: 'back'
+    },
+    {
+      name: 'the customer closes the checkout',
+      leave: () =>
+        userEvent.click(screen.getByRole('button', { name: 'Close' })),
+      exit: 'close'
+    }
+  ])(
+    'reports a checkout abandoned once, at its last phase, when $name',
+    async ({ leave, exit }) => {
+      await renderCheckout()
+      await screen.findByRole('button', { name: 'Pay and subscribe' })
+      await waitFor(() =>
+        expect(journeyNames()).toContain('billing.checkout.preview_ready')
+      )
+
+      await leave()
+      leavePage()
+
+      expect(exitsOf()).toEqual([
+        expect.objectContaining({
+          phase: 'abandoned',
+          last_phase: 'preview_ready',
+          exit,
+          ui_mode: 'embedded',
+          billing_surface: 'billing_web'
+        })
+      ])
+    }
+  )
+
+  it('reports no abandon for a page handed to a hosted payment step', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    fake.publishOperation(
+      hostedPendingOperation('https://hooks.stripe.test/redirect/op_1')
+    )
+    await waitFor(() => expect(window.location.assign).toHaveBeenCalled())
+    leavePage()
+
+    expect(exitsOf()).toEqual([])
+  })
+
+  it('reports no abandon for a page that left for a payment method of its own site', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+
+    reportConfirm('ctoken_1', 'alipay')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    leavePage()
+
+    expect(exitsOf()).toEqual([])
+  })
+
+  it('reports a card Pay still in flight when the page goes away as abandoned', async () => {
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+
+    reportConfirm('ctoken_1', 'card')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    leavePage()
+
+    expect(exitsOf()).toEqual([
+      expect.objectContaining({ last_phase: 'submitted', exit: 'page_exit' })
+    ])
+  })
+
+  it.for<{ name: string; type: string; label: string; exits: number }>([
+    {
+      name: 'a saved Alipay account, which pays on its own site',
+      type: 'alipay',
+      label: 'Alipay',
+      exits: 0
+    },
+    { name: 'a saved card', type: 'card', label: 'visa •••• 4242', exits: 1 }
+  ])(
+    'reports $exits abandon when the page goes away during a Pay with $name',
+    async ({ type, label, exits }) => {
+      const fake = await renderCheckout(CHECKOUT_PATH, {
+        paymentMethods: {
+          status: 'ok',
+          value: [
+            {
+              id: 'pm_saved',
+              type,
+              brand: 'visa',
+              last4: '4242',
+              is_default: true
+            }
+          ]
+        }
+      })
+      await screen.findByText(label)
+      fake.subscribe.mockImplementation(() => new Promise(() => {}))
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      )
+      await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+      leavePage()
+
+      expect(exitsOf()).toHaveLength(exits)
+    }
+  )
+
+  it('reports the success its own payment reached, and no abandon after it', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1', 'card')
+    await screen.findByRole('heading', { name: "You're all set" })
+    await waitFor(() => expect(endingsOf()).toHaveLength(1))
+    const [, closeButton] = screen.getAllByRole('button', { name: 'Close' })
+    await userEvent.click(closeButton)
+    leavePage()
+
+    expect(endingsOf()).toEqual([
+      expect.objectContaining({
+        phase: 'ended',
+        ending_kind: 'success',
+        attribution: 'started',
+        billing_op_id: 'op_9'
+      })
+    ])
+    expect(exitsOf()).toEqual([])
+  })
+
+  it('reports a success this page recovered rather than paid as followed', async () => {
+    await renderCheckout(CHECKOUT_PATH, {
+      recover: { status: 'ok', value: succeededOperation('op_old') }
+    })
+
+    await screen.findByRole('heading', { name: "You're all set" })
+    await waitFor(() => expect(endingsOf()).toHaveLength(1))
+
+    expect(endingsOf()[0]).toMatchObject({
+      ending_kind: 'success',
+      attribution: 'followed'
+    })
+    expect(endingsOf()[0]).not.toHaveProperty('billing_op_id')
+  })
+
+  it.for<{
+    name: string
+    preview: PreviewSubscribeResult
+    kind: string
+  }>([
+    {
+      name: 'a session the quote refused',
+      preview: { status: 'error', code: 'ACCESS_DENIED' },
+      kind: 'refused'
+    },
+    {
+      name: 'a plan the catalog does not have',
+      preview: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: readBillingErrorCode({
+          code: 'INVALID_PLAN',
+          message: 'unknown plan'
+        })
+      },
+      kind: 'plan_unavailable'
+    },
+    {
+      name: 'a quote that never got an answer',
+      preview: { status: 'error', code: 'REQUEST_FAILED' },
+      kind: 'load_failed'
+    }
+  ])(
+    'reports the ending screen of $name without an attribution, and no abandon after it',
+    async ({ preview, kind }) => {
+      await renderCheckout(CHECKOUT_PATH, { preview })
+      await screen.findByRole('button', { name: 'Back' })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+      leavePage()
+
+      expect(endingsOf()).toEqual([
+        expect.objectContaining({ phase: 'ended', ending_kind: kind })
+      ])
+      expect(endingsOf()[0]).not.toHaveProperty('attribution')
+      expect(exitsOf()).toEqual([])
+    }
+  )
 })
