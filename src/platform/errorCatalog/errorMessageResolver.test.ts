@@ -234,6 +234,36 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it.for([
+    { type: 'unknown_node_class', catalogId: 'unknown_validation_error' },
+    {
+      type: 'exception_during_validation',
+      catalogId: 'exception_during_validation'
+    },
+    {
+      type: 'custom_validation_failed',
+      catalogId: 'custom_validation_failed'
+    },
+    { type: 'dependency_cycle', catalogId: 'dependency_cycle' },
+    { type: 'value_not_in_list', catalogId: 'value_not_in_list' }
+  ])(
+    'resolves $type when the backend omits details, as the cloud contract allows',
+    ({ type, catalogId }) => {
+      const resolved = resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: { type, message: 'Validation failed' },
+        nodeDisplayName: 'KSampler'
+      })
+
+      expect(resolved.catalogId).toBe(catalogId)
+      expect(resolved.displayTitle).toBeTruthy()
+      expect(resolved.toastMessage).toBeTruthy()
+      for (const copy of Object.values(resolved)) {
+        expect(copy).not.toContain('undefined')
+      }
+    }
+  )
+
   it('falls back to raw API copy when catalog keys are missing in the active locale', () => {
     const originalLocale = i18n.global.locale.value
     const originalKoMessages = i18n.global.getLocaleMessage('ko')
