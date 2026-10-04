@@ -132,41 +132,31 @@ describe('measureViewportFromElement', () => {
 
 describe('applyViewport', () => {
   it('sizes and scales both canvases to the physical dimensions', () => {
-    const fgContext = createMockCanvasRenderingContext2D()
-    const bgContext = createMockCanvasRenderingContext2D()
-    const fg = createTestCanvasElement({ ctx: fgContext })
-    const bg = createTestCanvasElement({ ctx: bgContext })
+    const foreground = createTransformTrackingCanvas()
+    const background = createTransformTrackingCanvas()
 
-    applyViewport(measureViewport(800, 600, 2), fg, bg)
+    applyViewport(
+      measureViewport(800, 600, 2),
+      foreground.canvas,
+      background.canvas
+    )
 
-    expect([fg.width, fg.height, bg.width, bg.height]).toEqual([
-      1600, 1200, 1600, 1200
-    ])
-    expect(fgContext.setTransform).toHaveBeenCalledExactlyOnceWith(
-      2,
-      0,
-      0,
-      2,
-      0,
-      0
-    )
-    expect(bgContext.setTransform).toHaveBeenCalledExactlyOnceWith(
-      2,
-      0,
-      0,
-      2,
-      0,
-      0
-    )
+    expect([
+      foreground.canvas.width,
+      foreground.canvas.height,
+      background.canvas.width,
+      background.canvas.height
+    ]).toEqual([1600, 1200, 1600, 1200])
+    expect(foreground.transform).toEqual({ x: 2, y: 2 })
+    expect(background.transform).toEqual({ x: 2, y: 2 })
   })
 
   it('scales a shared foreground/background context only once', () => {
-    const ctx = createMockCanvasRenderingContext2D()
-    const canvas = createTestCanvasElement({ ctx })
+    const { canvas, transform } = createTransformTrackingCanvas()
 
     applyViewport(measureViewport(800, 600, 2), canvas, canvas)
 
-    expect(ctx.setTransform).toHaveBeenCalledExactlyOnceWith(2, 0, 0, 2, 0, 0)
+    expect(transform).toEqual({ x: 2, y: 2 })
   })
 
   it('hands the applied DPR and CSS dimensions to the consumer', () => {
@@ -298,6 +288,26 @@ describe('applyLogicalCanvasStyle', () => {
     ])
   })
 
+  it('does not mistake a transformed intrinsic canvas for CSS sizing', () => {
+    const canvas = createTestCanvasElement()
+    Object.defineProperties(canvas, {
+      offsetWidth: { configurable: true, value: 800 },
+      offsetHeight: { configurable: true, value: 600 }
+    })
+    vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(() => {
+      const width = Number.parseFloat(canvas.style.width) || canvas.width
+      const height = Number.parseFloat(canvas.style.height) || canvas.height
+      return new DOMRect(0, 0, width * 2, height * 2)
+    })
+
+    applyLogicalCanvasStyle(canvas, 1600, 1200)
+
+    expect([canvas.style.width, canvas.style.height]).toEqual([
+      '1600px',
+      '1200px'
+    ])
+  })
+
   it('does not probe a canvas whose layout box differs from its backing store', () => {
     // The steady state of a stylesheet-sized canvas above DPR 1: the box cannot
     // be coming from attributes it does not match, so no probe is needed.
@@ -306,11 +316,13 @@ describe('applyLogicalCanvasStyle', () => {
       height: 1200,
       cssSize: [800, 600]
     })
-    const backingStoreWrites = vi.spyOn(canvas, 'width', 'set')
+    const widthWrites = vi.spyOn(canvas, 'width', 'set')
+    const heightWrites = vi.spyOn(canvas, 'height', 'set')
 
     const bitmapDiscarded = applyLogicalCanvasStyle(canvas, 800, 600)
 
-    expect(backingStoreWrites).not.toHaveBeenCalled()
+    expect(widthWrites).not.toHaveBeenCalled()
+    expect(heightWrites).not.toHaveBeenCalled()
     expect(bitmapDiscarded).toBe(false)
     expect([canvas.style.width, canvas.style.height]).toEqual(['', ''])
   })

@@ -126,6 +126,20 @@ export function createTestCanvasElement({
   element.width = width
   element.height = height
   element.getContext = vi.fn().mockReturnValue(ctx)
+  Object.defineProperties(element, {
+    offsetWidth: {
+      configurable: true,
+      get: () =>
+        cssSize?.[0] ??
+        (Number.parseFloat(element.style.width) || element.width)
+    },
+    offsetHeight: {
+      configurable: true,
+      get: () =>
+        cssSize?.[1] ??
+        (Number.parseFloat(element.style.height) || element.height)
+    }
+  })
   if (cssSize) {
     vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
       new DOMRect(0, 0, ...cssSize)

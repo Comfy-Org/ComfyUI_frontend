@@ -6713,8 +6713,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       window.devicePixelRatio
     )
 
-    // A discarded bitmap has to be repainted even when nothing resized, or the
-    // canvas stays blank until something else happens to mark it dirty.
     if (
       !bitmapDiscarded &&
       this.canvas.width === viewport.physicalWidth &&

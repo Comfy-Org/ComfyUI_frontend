@@ -23,21 +23,13 @@ const autoSizedStyleByCanvas = new WeakMap<
 >()
 
 /**
- * Sets the context transform to the applied DPR outright, so it neither
- * compounds across applications nor depends on what last reset the context.
- */
-function applyContextTransform(canvas: HTMLCanvasElement, dpr: number): void {
-  canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0)
-}
-
-/**
  * Measures the layout box a canvas has without its backing store's intrinsic
  * contribution: zeroing the attributes collapses an `auto`-sized canvas and
  * leaves one whose dimensions come from CSS untouched.
  *
- * Reassigning the attributes resets the 2D context, so the transform of the
- * last applied viewport is restored before returning. A probe must not be
- * observable in what gets drawn next.
+ * Reassigning the attributes resets the 2D context and clears the bitmap. The
+ * transform of the last applied viewport is restored before returning; the
+ * caller is responsible for redrawing.
  */
 function probeCssSize(canvas: HTMLCanvasElement): Size {
   const savedWidth = canvas.width
@@ -50,7 +42,8 @@ function probeCssSize(canvas: HTMLCanvasElement): Size {
   } finally {
     canvas.width = savedWidth
     canvas.height = savedHeight
-    applyContextTransform(canvas, appliedViewportByCanvas.get(canvas)?.dpr ?? 1)
+    const dpr = appliedViewportByCanvas.get(canvas)?.dpr ?? 1
+    canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 }
 
@@ -98,10 +91,13 @@ function readSizeOwnership(
   if (style.width && style.height) return { independent: true, probed: false }
 
   // A layout box that differs from the backing-store attributes cannot be
-  // coming from them, so something else already owns the size. This is the
-  // steady state of a stylesheet-sized canvas at a DPR above one, and settling
-  // it here is what keeps the destructive probe below rare.
-  if (canvas.width !== rect.width || canvas.height !== rect.height)
+  // coming from them, so something else already owns the size. This settles a
+  // stylesheet-sized canvas above DPR 1 without the destructive probe; at DPR 1
+  // its box equals its attributes, so every call probes.
+  if (
+    canvas.width !== canvas.offsetWidth ||
+    canvas.height !== canvas.offsetHeight
+  )
     return { independent: true, probed: false }
 
   // Equal is the ambiguous case. Only an `auto`-sized box collapses when the
@@ -209,7 +205,7 @@ function applySurfaceViewport(
   const { physicalWidth, physicalHeight, dpr } = viewport
   if (canvas.width !== physicalWidth) canvas.width = physicalWidth
   if (canvas.height !== physicalHeight) canvas.height = physicalHeight
-  applyContextTransform(canvas, dpr)
+  canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0)
 }
 
 function applyViewport(
