@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import WorkflowTemplateDetail from '@/components/custom/widget/WorkflowTemplateDetail.vue'
-import { i18n } from '@/i18n'
+import { t } from '@/i18n'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 const meta: Meta<typeof WorkflowTemplateDetail> = {
@@ -12,8 +12,6 @@ const meta: Meta<typeof WorkflowTemplateDetail> = {
 
 export default meta
 type Story = StoryObj<typeof meta>
-
-const t = i18n.global.t
 
 const withPreview: NonNullable<Story['render']> = (args) => ({
   components: { WorkflowTemplateDetail },
@@ -36,9 +34,17 @@ const withPreview: NonNullable<Story['render']> = (args) => ({
 const checkpoint = {
   id: 'm1',
   name: 'sd_xl_base_1.0.safetensors',
-  description: 'checkpoints'
+  description: 'Checkpoints · 6.46 GB'
 }
-const vae = { id: 'm2', name: 'sdxl_vae.safetensors', description: 'vae' }
+const vae = {
+  id: 'm2',
+  name: 'sdxl_vae.safetensors',
+  description: 'VAE · 319.8 MB'
+}
+
+/** Sizes are not known until metadata resolves, so the type stands alone. */
+const unsizedCheckpoint = { ...checkpoint, description: 'Checkpoints' }
+const unsizedVae = { ...vae, description: 'VAE' }
 
 const installed = {
   kind: 'installed',
@@ -87,7 +93,7 @@ export const OpenNow: Story = {
           },
           { ...vae, status: installed }
         ],
-        '6.94 GB'
+        '6.77 GB'
       )
     ],
     modelSetupState: 'none'
@@ -102,13 +108,13 @@ export const Resolving: Story = {
     groups: [
       modelsGroup([
         {
-          ...checkpoint,
+          ...unsizedCheckpoint,
           status: {
             kind: 'unknown',
             label: t('templateWorkflows.detail.unknown')
           }
         },
-        { ...vae, status: installed }
+        { ...unsizedVae, status: installed }
       ])
     ],
     modelSetupState: 'resolving'
@@ -116,7 +122,6 @@ export const Resolving: Story = {
   render: withPreview
 }
 
-/** A missing model adds the per-row action beside the bulk one. */
 export const DownloadableRow: Story = {
   args: {
     ...base,
@@ -133,7 +138,7 @@ export const DownloadableRow: Story = {
           },
           { ...vae, status: installed }
         ],
-        '6.94 GB'
+        '6.77 GB'
       )
     ],
     modelSetupState: 'downloadable'

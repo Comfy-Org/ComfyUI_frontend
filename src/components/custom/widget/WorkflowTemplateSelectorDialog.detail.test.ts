@@ -129,7 +129,6 @@ const mocks = vi.hoisted(() => ({
     })
   ),
   rowDownloadDispose: vi.fn(),
-  useRowDownloads: vi.fn(),
   rowDownloadRequest: vi.fn(),
   rowDownloadStateFor: vi.fn<(model: ModelFile) => TemplateModelDownloadState>(
     () => ({ status: 'idle', attempt: 0 })
@@ -141,6 +140,8 @@ const mocks = vi.hoisted(() => ({
     checkpoints: ['/models/checkpoints']
   }))
 }))
+
+import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -198,14 +199,13 @@ vi.mock(
 vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateModelRowDownloads'),
   () => ({
-    useTemplateModelRowDownloads: (options: { folderPaths: unknown }) => {
-      mocks.useRowDownloads(options)
-      return {
+    useTemplateModelRowDownloads: vi.fn(
+      (_options: Parameters<typeof useTemplateModelRowDownloads>[0]) => ({
         dispose: mocks.rowDownloadDispose,
         request: mocks.rowDownloadRequest,
         stateFor: mocks.rowDownloadStateFor
-      }
-    }
+      })
+    )
   })
 )
 
@@ -700,7 +700,6 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
 
     await waitFor(() => expect(card).toHaveFocus())
     expect(scrollContainer).toHaveProperty('scrollTop', 180)
-    // Leaving Detail must release the row-download owner it created.
     expect(mocks.rowDownloadDispose).toHaveBeenCalled()
   })
 
@@ -709,7 +708,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     await clickTemplateCard()
     await screen.findByRole('article', { name: fixtures.template.title })
 
-    expect(mocks.useRowDownloads).toHaveBeenCalledWith({
+    expect(vi.mocked(useTemplateModelRowDownloads)).toHaveBeenCalledWith({
       folderPaths: { checkpoints: ['/models/checkpoints'] }
     })
   })
@@ -720,9 +719,9 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     renderDialog()
     await clickTemplateCard()
 
-    // A failed lookup must not keep Detail shut: the rows still render, and the
-    // Electron dispatch is the only thing that needs a path.
     await screen.findByRole('article', { name: fixtures.template.title })
-    expect(mocks.useRowDownloads).toHaveBeenCalledWith({ folderPaths: {} })
+    expect(vi.mocked(useTemplateModelRowDownloads)).toHaveBeenCalledWith({
+      folderPaths: {}
+    })
   })
 })

@@ -57,8 +57,6 @@ describe('loadFolderPathsOnce', () => {
     await expect(first).rejects.toThrow('socket closed')
     await expect(second).resolves.toEqual({ loras: ['/models/loras'] })
 
-    // The stale rejection must not discard the request that replaced it: a
-    // third caller shares the second request rather than opening a third.
     await expect(loadFolderPathsOnce()).resolves.toEqual({
       loras: ['/models/loras']
     })

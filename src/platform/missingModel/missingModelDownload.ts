@@ -128,10 +128,6 @@ type Desktop2Download = NonNullable<
   NonNullable<typeof window.__comfyDesktop2>['downloadModel']
 >
 
-/**
- * The host a dispatch would hand this download to. Prefetch and dispatch both
- * read it, so neither can decide differently from the other.
- */
 function modelDownloadRoute():
   | { host: 'desktop2'; download: Desktop2Download }
   | { host: 'electron' }
