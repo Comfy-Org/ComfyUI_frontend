@@ -193,7 +193,12 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   const concreteWidgets = widgets.map((widget) => {
     try {
       return toConcreteWidget(widget, node)
-    } catch {
+    } catch (error) {
+      // Only the unreadable-name case is swallowed, and only because the
+      // refusal below is about to take this widget anyway. Conversion reads
+      // `type` too, and a failure there leaves a widget the refusal has no
+      // reason to drop — so it keeps throwing, as it did before.
+      if (!isWidgetNameUnreadable(widget)) throw error
       return widget
     }
   })

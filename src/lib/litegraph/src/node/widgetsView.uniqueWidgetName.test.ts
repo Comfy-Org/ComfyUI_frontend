@@ -306,6 +306,30 @@ describe('unique widget name invariant', () => {
     )
   })
 
+  it('does not swallow a conversion failure the refusal would not take', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+
+    // Conversion reads `type` as well as `name`. This widget's name is
+    // perfectly readable, so the refusal has no reason to drop it — letting
+    // the conversion failure pass would leave a raw widget on the node and in
+    // the store's order with nothing having reported it.
+    const hostile = {
+      name: 'steps',
+      get type(): string {
+        throw new Error('type is not readable')
+      },
+      value: 2,
+      y: 0,
+      options: {}
+    }
+
+    expect(() => node.widgets!.push(hostile as never)).toThrow(
+      'type is not readable'
+    )
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('clears slot back-references to a widget it refused', () => {
     const node = createNode()
     node.addWidget('number', 'seed', 1, () => undefined, {})
