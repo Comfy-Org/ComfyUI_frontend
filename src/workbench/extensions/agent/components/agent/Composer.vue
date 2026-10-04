@@ -343,7 +343,7 @@ defineExpose({
     id="agent-composer"
     ref="composerContainerRef"
     data-testid="agent-composer"
-    class="relative flex flex-col rounded-lg border border-border-subtle bg-base-background"
+    class="relative flex min-h-0 flex-1 flex-col rounded-lg border border-border-subtle bg-base-background"
   >
     <div
       v-if="mentionVisible"
@@ -449,7 +449,7 @@ defineExpose({
       data-testid="composer-input-box"
       :class="
         cn(
-          'relative -m-px flex flex-col border transition-colors',
+          'relative -m-px flex min-h-0 flex-1 flex-col overflow-hidden border transition-colors',
           assetDragActive
             ? 'h-28 rounded-lg border-dashed border-component-node-border bg-secondary-background'
             : 'min-h-28 rounded-lg border-border-subtle bg-secondary-background focus-within:border-muted-foreground'
@@ -500,7 +500,7 @@ defineExpose({
       <div
         v-if="composer.attachments.value.length"
         data-testid="composer-asset-section"
-        class="flex flex-wrap gap-2 p-3"
+        class="flex max-h-32 flex-wrap gap-2 overflow-y-auto p-3"
       >
         <AttachmentChip
           v-for="item in composer.attachments.value"
