@@ -163,7 +163,6 @@ describe('useElectronDownloadStore progress observation', () => {
   })
 
   it('keeps notifying after a subscriber throws', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     downloadManager.getAllDownloads.mockResolvedValueOnce([downloadState()])
     const store = useElectronDownloadStore()
     await vi.waitFor(() => expect(store.downloads).toHaveLength(1))
