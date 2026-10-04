@@ -32,9 +32,9 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
   })
 
   // No billing workspace loads in this environment, so the cancellation waits
-  // for routing, times out and reports an error instead of cancelling. The
-  // success path is covered in cancelSubscriptionSdkRail.
-  test('"Cancel subscription" button reports an error when billing is unavailable', async ({
+  // for routing, times out and fails instead of cancelling. The success path
+  // is covered in cancelSubscriptionSdkRail.
+  test('"Cancel subscription" button fails without claiming success when billing is unavailable', async ({
     comfyPage
   }) => {
     test.setTimeout(45_000)
@@ -44,8 +44,16 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
 
     await dialog.confirmCancelButton.click()
 
-    await expect(comfyPage.toast.toastErrors.first()).toBeVisible({
+    await expect(comfyPage.toast.toastErrors).toHaveCount(1, {
       timeout: 20_000
     })
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      'Failed to cancel subscription'
+    )
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      "We couldn't reach your account. Try again in a moment."
+    )
+    await expect(comfyPage.toast.toastSuccesses).toHaveCount(0)
+    await expect(dialog.root).toBeVisible()
   })
 })

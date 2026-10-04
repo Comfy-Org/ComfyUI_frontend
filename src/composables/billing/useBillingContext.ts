@@ -37,6 +37,8 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
 const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
 
+const ROUTING_WAIT_TIMEOUT_MS = 10_000
+
 class BillingRoutingUnavailableError extends Error {}
 
 function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
@@ -265,12 +267,9 @@ function useBillingContextInternal(): BillingContext {
     { immediate: true }
   )
 
-  const ROUTING_WAIT_TIMEOUT_MS = 10_000
-
-  // Resolves false so the caller stops: after reporting once on timeout (as
-  // legacy actions did on failure), or silently when the user switched
-  // workspace during the wait.
-  async function whenRoutingKnown(): Promise<boolean> {
+  // Rejects on timeout. Resolves false when the user switched workspace during
+  // the wait, so the caller stops silently.
+  async function waitForRouting(): Promise<boolean> {
     if (type.value !== 'unknown') return true
     const workspaceId = store.activeWorkspace?.id
     try {
@@ -278,14 +277,22 @@ function useBillingContextInternal(): BillingContext {
         timeout: ROUTING_WAIT_TIMEOUT_MS,
         throwOnTimeout: true
       })
-      const currentId = store.activeWorkspace?.id
-      return !workspaceId || currentId === workspaceId
     } catch {
-      useErrorHandling().toastErrorHandler(
-        new BillingRoutingUnavailableError(
-          t('auth.webSession.token.unavailable')
-        )
+      throw new BillingRoutingUnavailableError(
+        t('auth.webSession.token.unavailable')
       )
+    }
+    const currentId = store.activeWorkspace?.id
+    return !workspaceId || currentId === workspaceId
+  }
+
+  // For actions whose caller shows no outcome: reports a timeout once, as
+  // legacy actions did on failure, and resolves false so the caller stops.
+  async function whenRoutingKnown(): Promise<boolean> {
+    try {
+      return await waitForRouting()
+    } catch (err) {
+      useErrorHandling().toastErrorHandler(err)
       return false
     }
   }
@@ -370,14 +377,14 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function cancelSubscription(isScopeCurrent?: () => boolean) {
-    if (!(await whenRoutingKnown())) return
+    if (!(await waitForRouting())) return
     return activeContext.value.cancelSubscription(isScopeCurrent)
   }
 
   async function resubscribe(
     options?: Parameters<BillingActions['resubscribe']>[0]
   ) {
-    if (!(await whenRoutingKnown())) return
+    if (!(await waitForRouting())) return
     return activeContext.value.resubscribe(options)
   }
 
