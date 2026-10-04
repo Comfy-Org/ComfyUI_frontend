@@ -488,7 +488,8 @@ import type {
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type {
   TemplateDetailGroup,
-  TemplateDetailRow
+  TemplateDetailRow,
+  TemplateModelSetupState
 } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
@@ -1099,9 +1100,7 @@ function isModelDownloadCandidate(
   return state.status === 'idle' || state.status === 'failed'
 }
 
-const activeDetailModelSetupState = computed<
-  'none' | 'resolving' | 'downloadable'
->(() => {
+const activeDetailModelSetupState = computed<TemplateModelSetupState>(() => {
   const setup = activeDetail.value?.modelSetup
   if (!setup) return 'none'
   if (setup.pending) return 'resolving'

@@ -4,7 +4,10 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
+import type {
+  TemplateDetailGroup,
+  TemplateModelSetupState
+} from '@/platform/workflow/templates/types/templateDetail'
 
 const {
   title,
@@ -21,12 +24,7 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  /**
-   * 'resolving' until the parent knows what is missing, then 'downloadable'
-   * only if something is. Availability is never known while resolving, so the
-   * two cannot be combined.
-   */
-  modelSetupState?: 'none' | 'resolving' | 'downloadable'
+  modelSetupState?: TemplateModelSetupState
 }>()
 
 const emit = defineEmits<{

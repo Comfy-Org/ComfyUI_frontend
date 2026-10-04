@@ -27,6 +27,13 @@ export interface TemplateDetailRow {
   status?: TemplateDetailRowStatus
 }
 
+/**
+ * What the Detail footer may offer. `resolving` is distinct from `none`:
+ * availability is not known yet, so it cannot yet be said that nothing is
+ * downloadable.
+ */
+export type TemplateModelSetupState = 'none' | 'resolving' | 'downloadable'
+
 export interface TemplateDetailGroup {
   id: string
   label: string

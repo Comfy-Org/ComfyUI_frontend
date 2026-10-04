@@ -129,6 +129,7 @@ const mocks = vi.hoisted(() => ({
     })
   ),
   rowDownloadDispose: vi.fn(),
+  useRowDownloads: vi.fn(),
   rowDownloadRequest: vi.fn(),
   rowDownloadStateFor: vi.fn<(model: ModelFile) => TemplateModelDownloadState>(
     () => ({ status: 'idle', attempt: 0 })
@@ -180,7 +181,7 @@ vi.mock(
         prepareWorkflowTemplate: mocks.prepareWorkflowTemplate,
         openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
         discardPreparedWorkflowTemplate: mocks.discardPreparedWorkflowTemplate,
-        loadWorkflowTemplate: vi.fn(async () => 'loaded' as const)
+        loadWorkflowTemplate: vi.fn(async () => 'loaded')
       }) as unknown as ReturnType<typeof useTemplateWorkflows>
   })
 )
@@ -197,11 +198,14 @@ vi.mock(
 vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateModelRowDownloads'),
   () => ({
-    useTemplateModelRowDownloads: () => ({
-      dispose: mocks.rowDownloadDispose,
-      request: mocks.rowDownloadRequest,
-      stateFor: mocks.rowDownloadStateFor
-    })
+    useTemplateModelRowDownloads: (options: { folderPaths: unknown }) => {
+      mocks.useRowDownloads(options)
+      return {
+        dispose: mocks.rowDownloadDispose,
+        request: mocks.rowDownloadRequest,
+        stateFor: mocks.rowDownloadStateFor
+      }
+    }
   })
 )
 
@@ -411,25 +415,25 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     mocks.rowDownloadStateFor.mockImplementation((model) => {
       if (model.name === fixtures.failedModel.name) {
         return {
-          status: 'failed' as const,
+          status: 'failed',
           attempt: 1,
-          reason: 'error' as const
+          reason: 'error'
         }
       }
       if (model.name === fixtures.activeDownloadModel.name) {
         return {
-          status: 'downloading' as const,
+          status: 'downloading',
           attempt: 1,
-          activity: 'active' as const,
+          activity: 'active',
           receivedBytes: 1,
           totalBytes: 2,
           fraction: 0.5
         }
       }
       if (model.name === fixtures.doneModel.name) {
-        return { status: 'done' as const, attempt: 1 }
+        return { status: 'done', attempt: 1 }
       }
-      return { status: 'idle' as const, attempt: 0 }
+      return { status: 'idle', attempt: 0 }
     })
     const { user } = await clickTemplateCardAfterRender()
     await user.click(
@@ -501,7 +505,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
       name: 'an aborted metadata batch',
       outcome: () =>
         mocks.resolveTemplateModelMetadata.mockResolvedValueOnce({
-          status: 'aborted' as const
+          status: 'aborted'
         }),
       reports: false
     }
@@ -696,5 +700,29 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
 
     await waitFor(() => expect(card).toHaveFocus())
     expect(scrollContainer).toHaveProperty('scrollTop', 180)
+    // Leaving Detail must release the row-download owner it created.
+    expect(mocks.rowDownloadDispose).toHaveBeenCalled()
+  })
+
+  it('hands the resolved folder paths to the row downloads it creates', async () => {
+    renderDialog()
+    await clickTemplateCard()
+    await screen.findByRole('article', { name: fixtures.template.title })
+
+    expect(mocks.useRowDownloads).toHaveBeenCalledWith({
+      folderPaths: { checkpoints: ['/models/checkpoints'] }
+    })
+  })
+
+  it('opens Detail with empty paths when the folder lookup fails', async () => {
+    mocks.loadFolderPathsOnce.mockRejectedValueOnce(new Error('offline'))
+
+    renderDialog()
+    await clickTemplateCard()
+
+    // A failed lookup must not keep Detail shut: the rows still render, and the
+    // Electron dispatch is the only thing that needs a path.
+    await screen.findByRole('article', { name: fixtures.template.title })
+    expect(mocks.useRowDownloads).toHaveBeenCalledWith({ folderPaths: {} })
   })
 })

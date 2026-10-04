@@ -5,7 +5,10 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
+import type {
+  TemplateDetailGroup,
+  TemplateModelSetupState
+} from '@/platform/workflow/templates/types/templateDetail'
 
 import WorkflowTemplateDetail from './WorkflowTemplateDetail.vue'
 
@@ -48,7 +51,7 @@ function renderDetail({
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetupState?: 'none' | 'resolving' | 'downloadable'
+  modelSetupState?: TemplateModelSetupState
 } = {}) {
   const modelSetupProps = {
     modelSetupState
