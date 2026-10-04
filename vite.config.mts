@@ -151,7 +151,11 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
 const SENTRY_UPLOAD_ENABLED = DISTRIBUTION === 'cloud' && !IS_DEV
 const SENTRY_UPLOAD =
   SENTRY_UPLOAD_ENABLED && hasCompleteSentryUploadConfig(process.env)
-    ? resolveSentryUploadConfig(process.env)
+    ? resolveSentryUploadConfig({
+        distribution: DISTRIBUTION,
+        isDev: IS_DEV,
+        env: process.env
+      })
     : undefined
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing
@@ -616,7 +620,12 @@ export default defineConfig({
           {
             name: 'validate-sentry-upload-config',
             apply: 'build' as const,
-            configResolved: () => resolveSentryUploadConfig(process.env)
+            configResolved: () =>
+              resolveSentryUploadConfig({
+                distribution: DISTRIBUTION,
+                isDev: IS_DEV,
+                env: process.env
+              })
           },
           ...(SENTRY_UPLOAD ? [sentryVitePlugin(SENTRY_UPLOAD)] : [])
         ]
