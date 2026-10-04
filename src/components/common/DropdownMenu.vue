@@ -11,6 +11,10 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import MenuItems from '@/components/ui/menu/MenuItems.vue'
+import {
+  menuContentClass,
+  menuItemClass
+} from '@/components/ui/menu/menuStyles'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -35,16 +39,12 @@ const {
   buttonClass?: string
 }>()
 
-const itemClass = computed(() =>
-  cn(
-    'm-1 flex cursor-pointer items-center-safe gap-1 rounded-lg p-2 leading-none data-disabled:pointer-events-none data-disabled:text-muted-foreground data-highlighted:bg-secondary-background-hover',
-    itemProp
-  )
-)
+const itemClass = computed(() => cn(menuItemClass, itemProp))
 
 const contentClass = computed(() =>
   cn(
-    'z-1700 min-w-55 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[opacity,transform] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+    menuContentClass,
+    'z-1700 min-w-55 will-change-[opacity,transform] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
     contentProp
   )
 )
@@ -81,10 +81,9 @@ const { t } = useI18n()
             :content-style
             disable-commandless
             legacy-checked-role
-            separator-class="m-1 h-px bg-border-subtle"
           >
             <template #item="{ item, hasSubmenu }">
-              <i v-if="item.icon" :class="item.icon" class="size-5 shrink-0" />
+              <i v-if="item.icon" :class="item.icon" class="size-4 shrink-0" />
               <div class="mr-auto truncate">{{ toValue(item.label) }}</div>
               <i
                 v-if="hasSubmenu"
@@ -103,7 +102,7 @@ const { t } = useI18n()
             </template>
           </MenuItems>
         </slot>
-        <DropdownMenuArrow class="fill-base-background stroke-border-subtle" />
+        <DropdownMenuArrow class="fill-base-background stroke-border-default" />
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
