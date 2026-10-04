@@ -65,6 +65,7 @@ export function useBoundingBoxes(
   const bgImage = ref<HTMLImageElement | null>(null)
   const inlineEditor = ref<InlineEditorState | null>(null)
   const grid = ref(true)
+  const incomingPending = ref(false)
 
   const { width: containerWidth } = useElementSize(canvasContainer)
 
@@ -600,6 +601,7 @@ export function useBoundingBoxes(
   function clearAll() {
     state.value.regions = []
     activeIndex.value = -1
+    incomingPending.value = false
     setLastIncoming([])
     syncState()
   }
@@ -742,7 +744,6 @@ export function useBoundingBoxes(
   }
 
   applyIncomingBoxes(incomingBoxes.value, false)
-  const incomingPending = ref(false)
   watch(incomingBoxes, (incoming) => {
     if (backgroundLoading.value) incomingPending.value = true
     else applyIncomingBoxes(incoming)

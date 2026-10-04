@@ -463,6 +463,20 @@ describe('useBoundingBoxes background image', () => {
     expect(modelBoxes(c)[0].width).toBe(256)
   })
 
+  it('drops boxes deferred by a background load when the canvas is cleared', async () => {
+    appState.node = makeNode()
+    backgroundUrl.value = '/view?filename=bg.png'
+    const c = setup()
+    incomingBoxes.value = [box({ x: 0, width: 100 })]
+    await flush()
+
+    c.clearAll()
+    FakeImage.created[0].load(512, 512)
+    await flush()
+
+    expect(modelBoxes(c)).toHaveLength(0)
+  })
+
   it('ignores a background that finishes loading after it was replaced', async () => {
     const node = makeNode()
     appState.node = node
