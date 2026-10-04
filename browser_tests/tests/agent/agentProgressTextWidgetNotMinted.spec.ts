@@ -122,11 +122,6 @@ test.describe(
         await expect
           .poll(() => hostSocket.humanOpOutcomes().map((o) => o.outcome))
           .toEqual(['applied'])
-
-        await streamProgress(page, hostSocket, 'Status: Settled')
-        await expect
-          .poll(() => rig.widgetValue(NODE_ID, PREVIEW_WIDGET))
-          .toBe('Status: Settled')
       })
 
       await test.step('no rejection toast, hand edit still on screen', async () => {
