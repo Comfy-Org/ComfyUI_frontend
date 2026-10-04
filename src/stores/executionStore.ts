@@ -373,6 +373,8 @@ export const useExecutionStore = defineStore('execution', () => {
 
     const states = nodeProgressStates.value // Apparently doing this inside `Object.entries` causes issues
     for (const state of Object.values(states)) {
+      if (!messageMatchesActiveWorkflow(state.prompt_id, state.workflow_id))
+        continue
       const parts = String(state.display_node_id).split(':')
       for (let i = 0; i < parts.length; i++) {
         const executionId = parts.slice(0, i + 1).join(':')

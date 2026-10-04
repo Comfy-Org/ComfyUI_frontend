@@ -213,4 +213,77 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
       outlined: true
     })
   })
+
+  test('stays clean across repeated switches during one run', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
+    const simulator = new BackendSimulator(exec)
+    const workflowAId = await activeWorkflowId(comfyPage)
+
+    const jobId = await exec.run()
+    await comfyPage.nextFrame()
+    const running = simulator.prompt(jobId, { workflowId: workflowAId })
+    simulator.play([running.start()])
+
+    await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
+    await comfyPage.nextFrame()
+
+    // Round 2 of the GPU QA: the first arrival in B was clean and later ones
+    // were not, so one switch proves nothing here.
+    for (const [index, step] of [3, 5, 7, 9].entries()) {
+      await comfyPage.workflow.switchToTab(WORKFLOW_A)
+      await comfyPage.nextFrame()
+      simulator.play([...running.nodeRunning(KSAMPLER_NODE, step, 10)])
+      await comfyPage.nextFrame()
+      expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
+        progress: step / 10,
+        outlined: true
+      })
+
+      await comfyPage.workflow.switchToTab(WORKFLOW_B)
+      await comfyPage.nextFrame()
+      expect(
+        await canvasNodeRender(comfyPage, KSAMPLER_NODE),
+        `arrival ${index + 1} in B must not inherit A`
+      ).toEqual({ progress: null, outlined: false })
+    }
+  })
+
+  test('stays clean while the visible workflow is queued behind the running one', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
+    const simulator = new BackendSimulator(exec)
+    const workflowAId = await activeWorkflowId(comfyPage)
+
+    const jobA = await exec.run()
+    await comfyPage.nextFrame()
+    const running = simulator.prompt(jobA, { workflowId: workflowAId })
+    simulator.play([
+      running.start(),
+      ...running.nodeRunning(KSAMPLER_NODE, 1, 4)
+    ])
+
+    await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
+    await comfyPage.nextFrame()
+
+    // B is queued behind A and has not started. QA saw A's progress land on
+    // B's KSampler the moment B was queued.
+    await exec.run()
+    await comfyPage.nextFrame()
+    expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
+      progress: null,
+      outlined: false
+    })
+
+    simulator.play([...running.nodeRunning(KSAMPLER_NODE, 3, 4)])
+    await comfyPage.nextFrame()
+    expect(await canvasNodeRender(comfyPage, KSAMPLER_NODE)).toEqual({
+      progress: null,
+      outlined: false
+    })
+  })
 })

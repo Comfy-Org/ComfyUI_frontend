@@ -901,5 +901,88 @@ describe('executionStore workflow gating', () => {
 
       expect(store.nodeProgressStates['1']).toBeUndefined()
     })
+    // Round 2 of the GPU QA: the first switch is clean, a later one is not.
+    it('stays clean across repeated switches during one run', async () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+
+      for (const [i, step] of [3, 5, 7, 9].entries()) {
+        fire('progress_state', {
+          prompt_id: 'job-a',
+          workflow_id: WORKFLOW_A_ID,
+          nodes: { '1': nodeState('job-a', '1', 'running', step) }
+        })
+        useWorkflowStore().activeWorkflow = workflowB
+        await nextTick()
+        expect(
+          store.nodeProgressStates['1'],
+          `switch ${i + 1} to B must not inherit A`
+        ).toBeUndefined()
+
+        useWorkflowStore().activeWorkflow = workflowA
+        await nextTick()
+        expect(store.nodeProgressStates['1']?.value).toBe(step)
+      }
+    })
+
+    it('stays clean while the active workflow is queued behind the running one', async () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 3) }
+      })
+
+      useWorkflowStore().activeWorkflow = workflowB
+      queueJobFrom('job-b', workflowB)
+      await nextTick()
+      expect(store.nodeProgressStates['1']).toBeUndefined()
+
+      // A keeps running; B's own job has not started yet.
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 6) }
+      })
+
+      expect(store.nodeProgressStates['1']).toBeUndefined()
+    })
+    // The canvas stamps progress onto the new graph's nodes when the graph
+    // changes (nodeProgressCanvasSync.replaceGraph), reading whatever the
+    // mirror holds at that instant. Clearing the mirror on a watcher is a race
+    // against that, and it is the race the GPU QA lost. So the projection has
+    // to be correct even when the mirror still holds the foreign entry.
+    it('does not project a foreign entry that is still in the mirror', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 3) }
+      })
+      expect(Object.keys(store.nodeLocationProgressStates)).toHaveLength(1)
+
+      // Switch without letting the watcher run, which is what the canvas sees
+      // when it observes the graph change first.
+      useWorkflowStore().activeWorkflow = workflowB
+
+      expect(store.nodeProgressStates['1']?.value).toBe(3)
+      expect(store.nodeLocationProgressStates).toEqual({})
+    })
+
+    it('projects the active workflow own entry', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+      queueJobFrom('job-a', workflowA)
+      fire('progress_state', {
+        prompt_id: 'job-a',
+        workflow_id: WORKFLOW_A_ID,
+        nodes: { '1': nodeState('job-a', '1', 'running', 3) }
+      })
+
+      const projected = Object.values(store.nodeLocationProgressStates)
+      expect(projected).toHaveLength(1)
+      expect(projected[0]?.value).toBe(3)
+    })
   })
 })
