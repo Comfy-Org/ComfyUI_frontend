@@ -1,14 +1,15 @@
 import type { TooltipOptions } from 'primevue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   cleanupComplexPromotionFixtureNodeType,
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -27,8 +28,12 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { isWidgetId, widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
+
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 const GRAPH_ID = 'graph-test'
 
@@ -854,5 +859,57 @@ describe('live widget update handler', () => {
     expect(liveWidget.value).toBeNull()
     expect(callback).toHaveBeenCalledTimes(1)
     expect(callback.mock.calls[0][0]).toBeNull()
+  })
+})
+
+describe('Save As app input rendering', () => {
+  it('keeps a copied app input renderable and editable after graph reload', () => {
+    const originalId = '11111111-1111-4111-8111-111111111111'
+    const store = useWorkflowStore()
+    class AppInputNode extends LGraphNode {
+      constructor() {
+        super('App input')
+        this.addWidget('text', 'prompt', 'original text', () => {})
+      }
+    }
+    LiteGraph.registerNodeType('SaveAs/AppInput', AppInputNode)
+    const originalGraph = new LGraph()
+    originalGraph.id = originalId
+    const originalNode = LiteGraph.createNode('SaveAs/AppInput')
+    assert.exists(originalNode)
+    originalGraph.add(originalNode)
+    const selectedId = widgetId(originalId, originalNode.id, 'prompt')
+    originalGraph.extra.linearData = {
+      inputs: [[selectedId, 'Prompt']],
+      outputs: []
+    }
+    const state = zComfyWorkflow.parse(originalGraph.serialize())
+    const source = store.createTemporary('original.app.json', state)
+    source.changeTracker = createMockChangeTracker({ activeState: state })
+
+    const copy = store.saveAs(source, 'workflows/copy.app.json')
+    assert.exists(copy.content)
+    const saved = zComfyWorkflow.parse(JSON.parse(copy.content))
+    const copiedGraph = new LGraph()
+    copiedGraph.configure(JSON.parse(copy.content) as ISerialisedGraph)
+    const copiedNode = copiedGraph.getNodeById(originalNode.id)
+    assert.exists(copiedNode)
+    const copiedId = saved.extra?.linearData?.inputs?.[0][0]
+    assert(isWidgetId(copiedId))
+    const controls = computeProcessedWidgets({
+      nodeData: copiedNode._state,
+      widgetIds: [copiedId],
+      graphId: copiedGraph.id,
+      showAdvanced: false,
+      isGraphReady: true,
+      rootGraph: copiedGraph,
+      ui: { getTooltipConfig: () => ({}), handleNodeRightClick: () => {} }
+    })
+
+    expect(controls).toHaveLength(1)
+    expect(controls[0].visible).toBe(true)
+    controls[0].updateHandler('copied text')
+    expect(copiedNode.widgets?.[0].value).toBe('copied text')
+    expect(originalNode.widgets?.[0].value).toBe('original text')
   })
 })

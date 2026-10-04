@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { widgetId } from '@/types/widgetId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -860,6 +861,65 @@ describe('useWorkflowStore', () => {
       // Verify the content was updated
       expect(workflow.changeTracker.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
+    })
+  })
+
+  describe('Save As app inputs', () => {
+    const originalId = '11111111-1111-4111-8111-111111111111'
+    const otherGraphId = '22222222-2222-4222-8222-222222222222'
+
+    it('remaps only copied root widget identities and preserves input configuration', () => {
+      const state: ComfyWorkflowJSON = {
+        ...structuredClone(defaultGraph),
+        id: originalId,
+        extra: {
+          linearMode: true,
+          linearData: {
+            inputs: [
+              [widgetId(originalId, toNodeId(7), 'prompt'), 'Prompt'],
+              [
+                widgetId(originalId, toNodeId(9), 'promoted seed'),
+                'Seed',
+                { height: 180, description: 'Keep this setting' }
+              ],
+              [widgetId(originalId, toNodeId('node:7'), 'prompt:%'), 'Encoded'],
+              [widgetId(otherGraphId, toNodeId(7), 'prompt'), 'Foreign'],
+              [7, 'Legacy numeric'],
+              [`${otherGraphId}:9`, 'Legacy locator']
+            ],
+            outputs: [7, `${otherGraphId}:9`]
+          }
+        }
+      }
+      const original = structuredClone(state)
+      const source = store.createTemporary('original.app.json', state)
+      source.changeTracker = createMockChangeTracker({ activeState: state })
+
+      const copy = store.saveAs(source, 'workflows/copy.app.json')
+      assert.exists(copy.content)
+      const saved = zComfyWorkflow.parse(JSON.parse(copy.content))
+      assert.isDefined(saved.id)
+
+      expect(saved.id).not.toBe(originalId)
+      expect(saved.extra).toEqual({
+        linearMode: true,
+        linearData: {
+          inputs: [
+            [`${saved.id}:7:prompt`, 'Prompt'],
+            [
+              `${saved.id}:9:promoted%20seed`,
+              'Seed',
+              { height: 180, description: 'Keep this setting' }
+            ],
+            [`${saved.id}:node%3A7:prompt%3A%25`, 'Encoded'],
+            [`${otherGraphId}:7:prompt`, 'Foreign'],
+            [7, 'Legacy numeric'],
+            [`${otherGraphId}:9`, 'Legacy locator']
+          ],
+          outputs: [7, `${otherGraphId}:9`]
+        }
+      })
+      expect(source.activeState).toEqual(original)
     })
   })
 

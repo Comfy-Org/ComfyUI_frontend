@@ -31,6 +31,7 @@ import {
 } from '@/types/nodeIdentification'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { isWidgetId, parseWidgetId, widgetId } from '@/types/widgetId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -248,6 +249,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const state = JSON.parse(
       JSON.stringify(existingWorkflow.activeState)
     ) as ComfyWorkflowJSON
+    const linearData = state.extra?.linearData
+    if (linearData?.inputs) {
+      linearData.inputs = linearData.inputs.map((input): typeof input => {
+        const [storedId, ...rest] = input
+        if (!isWidgetId(storedId)) return input
+        const { graphId, nodeId, name } = parseWidgetId(storedId)
+        return graphId === state.id
+          ? [widgetId(id, nodeId, name), ...rest]
+          : input
+      })
+    }
     state.id = id
 
     const workflow: ComfyWorkflow =
