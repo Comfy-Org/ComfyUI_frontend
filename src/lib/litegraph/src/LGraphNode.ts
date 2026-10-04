@@ -229,9 +229,8 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   // `JSON.stringify` omits it. Either way the key is not an own key, so
   // `getRestoredWidgetValue` returns undefined — it does not fall back to the
   // positional register once a named one is present — and the widget reloads
-  // at its construction default. Spread back into an ordinary object below:
-  // spread defines `__proto__` as a data property rather than invoking the
-  // setter.
+  // at its construction default. Keeping the null prototype also prevents
+  // absent names such as `constructor` from resolving to inherited values.
   const named: Record<string, TWidgetValue> = Object.create(null)
 
   for (const widget of widgets) {
@@ -241,7 +240,7 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
     positional.push(forPositional)
     named[widget.name] = forNamed
   }
-  return { widgets_values: positional, widgets_values_named: { ...named } }
+  return { widgets_values: positional, widgets_values_named: named }
 }
 
 function configureCanonicalField(

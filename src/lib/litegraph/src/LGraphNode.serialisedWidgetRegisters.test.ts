@@ -77,7 +77,7 @@ describe('serialised widget registers', () => {
 
       const named = node.serialize().widgets_values_named!
 
-      expect(Object.getPrototypeOf(named)).toBe(Object.prototype)
+      expect(Object.getPrototypeOf(named)).toBeNull()
       expect((named as Record<string, unknown>)['smuggled']).toBeUndefined()
       expect(
         Object.getOwnPropertyDescriptor(named, '__proto__')?.value
@@ -100,14 +100,15 @@ describe('serialised widget registers', () => {
       ).toBe('carried')
     })
 
-    it('leaves an ordinary name an own key of an ordinary object', () => {
+    it('leaves an ordinary name as an own key without inherited names', () => {
       node.addWidget('text', 'ordinary', 'value', null, {})
 
       const named = node.serialize().widgets_values_named!
 
       expect(Object.hasOwn(named, 'ordinary')).toBe(true)
       expect(named['ordinary']).toBe('value')
-      expect(Object.getPrototypeOf(named)).toBe(Object.prototype)
+      expect(Object.getPrototypeOf(named)).toBeNull()
+      expect(named['constructor']).toBeUndefined()
     })
   })
 
@@ -211,13 +212,15 @@ describe('serialised widget registers', () => {
         configurable: true,
         get() {
           reads++
-          return 'typed'
+          return reads === 1 ? 'typed' : 'changed'
         }
       })
 
-      node.serialize()
+      const serialised = node.serialize()
 
       expect(reads).toBe(1)
+      expect(serialised.widgets_values).toEqual(['typed'])
+      expect(serialised.widgets_values_named).toEqual({ prompt: 'typed' })
     })
 
     it('puts one snapshot in both registers when the value re-encodes differently', () => {
@@ -228,7 +231,7 @@ describe('serialised widget registers', () => {
       const value = {
         toJSON: () => ({ encode: ++encodes })
       }
-      node.addWidget('custom' as never, 'settings', value as never, null, {})
+      node.addWidget('custom', 'settings', value, null, {})
 
       const serialised = node.serialize()
 
