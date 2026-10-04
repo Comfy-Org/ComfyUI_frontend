@@ -471,7 +471,7 @@ defineExpose({
       <div
         v-if="selectionTags.length"
         data-testid="composer-node-section"
-        class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
+        class="flex min-h-0 max-h-32 flex-wrap items-center gap-2 overflow-y-auto border-b border-border-default p-3"
       >
         <Tag
           v-for="tag in selectionTags"
