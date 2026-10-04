@@ -14,14 +14,20 @@ test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
     postedMessages
   }) => {
     const page = comfyPage.page
-    const uploaded: UploadImageResponse = {
-      name: 'reference.png',
-      subfolder: '',
-      type: 'input'
-    }
-    await page.route('**/api/upload/image', (route) =>
-      route.fulfill(jsonRoute(uploaded))
-    )
+    // Each attachment ref is the upload response name, so a shared name would
+    // make the POST assertion below pass on one ref echoed 36 times. Unique
+    // names are what let it distinguish that from 36 refs actually travelling.
+    const uploadedRefs: string[] = []
+    await page.route('**/api/upload/image', (route) => {
+      const name = `reference-${uploadedRefs.length + 1}.png`
+      const uploaded: UploadImageResponse = {
+        name,
+        subfolder: '',
+        type: 'input'
+      }
+      uploadedRefs.push(name)
+      return route.fulfill(jsonRoute(uploaded))
+    })
 
     await agentPanel.open()
     await agentPanel.selectWorkflow()
@@ -36,9 +42,20 @@ test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
 
     await expect(agentPanel.attachmentChips).toHaveCount(ATTACHMENT_COUNT)
     await expect(agentPanel.sendButton).toBeEnabled()
-    await expect(agentPanel.sendButton).toBeInViewport()
+    // ratio: 1 rather than the default ratio: 0 — a Send button clipped down to
+    // a sliver is the FE-3202 symptom, and it satisfies ratio: 0.
+    await expect(agentPanel.sendButton).toBeInViewport({ ratio: 1 })
 
-    await agentPanel.composer.press('Enter')
+    // Click, not Enter: the keyboard path posts even when the button has been
+    // pushed out of reach, so only a real click proves Send is usable.
+    await agentPanel.sendButton.click()
     await expect.poll(() => postedMessages.length).toBe(1)
+
+    expect(uploadedRefs).toHaveLength(ATTACHMENT_COUNT)
+    const postedAttachments: string[] = JSON.parse(
+      postedMessages[0]
+    ).attachments
+    expect(postedAttachments).toHaveLength(ATTACHMENT_COUNT)
+    expect(postedAttachments).toEqual(expect.arrayContaining(uploadedRefs))
   })
 })

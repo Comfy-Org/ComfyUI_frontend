@@ -449,7 +449,7 @@ defineExpose({
       data-testid="composer-input-box"
       :class="
         cn(
-          'relative -m-px flex max-h-96 flex-col border transition-colors',
+          'relative -m-px flex max-h-[50dvh] flex-col border transition-colors',
           assetDragActive
             ? 'h-28 rounded-lg border-dashed border-component-node-border bg-secondary-background'
             : 'min-h-28 rounded-lg border-border-subtle bg-secondary-background focus-within:border-muted-foreground'
@@ -471,7 +471,7 @@ defineExpose({
       <div
         v-if="selectionTags.length"
         data-testid="composer-node-section"
-        class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
+        class="flex min-h-0 flex-wrap items-center gap-2 overflow-y-auto border-b border-border-default p-3"
       >
         <Tag
           v-for="tag in selectionTags"
@@ -500,7 +500,7 @@ defineExpose({
       <div
         v-if="composer.attachments.value.length"
         data-testid="composer-asset-section"
-        class="flex max-h-32 shrink-0 flex-wrap gap-2 overflow-y-auto p-3"
+        class="flex max-h-32 flex-wrap gap-2 overflow-y-auto p-3"
       >
         <AttachmentChip
           v-for="item in composer.attachments.value"
@@ -594,7 +594,7 @@ defineExpose({
         </div>
       </div>
 
-      <div class="flex items-center justify-between px-3 py-2">
+      <div class="flex shrink-0 items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
           <DropdownMenuTrigger as-child>
             <Button
