@@ -3,11 +3,48 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { t as translate } from '@/i18n'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 /** `dep-f24d36bb` out of `dep-f24d36bb-fd1f-...`: enough to tell two apart. */
 function shortId(deploymentId: string): string {
   return deploymentId.slice(0, 12)
+}
+
+/**
+ * The message for a deployment's label: its Build name and the Release
+ * version it runs now, or its short id when Build names are hidden.
+ */
+function labelMessage(
+  deployment: WorkspaceDeployment
+): [key: string, values: Record<string, string | number>] {
+  if (
+    deployment.build_name !== undefined &&
+    deployment.release_version !== undefined
+  ) {
+    return [
+      'deploymentSwitcher.deployment',
+      { build: deployment.build_name, version: deployment.release_version }
+    ]
+  }
+  return [
+    'deploymentSwitcher.unnamedDeployment',
+    { id: shortId(deployment.deployment_id) }
+  ]
+}
+
+/**
+ * The label of the deployment this page booted on, for text outside the
+ * switcher that names where the editor runs (FE-2434); undefined on Comfy
+ * Cloud and until the first listing answers. Works outside a component.
+ */
+export function useBootDeploymentLabel() {
+  const { bootDeployment } = storeToRefs(useDeploymentPickStore())
+  return computed(() => {
+    if (!bootDeployment.value) return undefined
+    const [key, values] = labelMessage(bootDeployment.value)
+    return translate(key, values, { escapeParameter: false })
+  })
 }
 
 /**
@@ -22,18 +59,8 @@ export function useDeploymentLabels() {
     storeToRefs(useDeploymentPickStore())
 
   function deploymentLabel(deployment: WorkspaceDeployment): string {
-    if (
-      deployment.build_name !== undefined &&
-      deployment.release_version !== undefined
-    ) {
-      return t('deploymentSwitcher.deployment', {
-        build: deployment.build_name,
-        version: deployment.release_version
-      })
-    }
-    return t('deploymentSwitcher.unnamedDeployment', {
-      id: shortId(deployment.deployment_id)
-    })
+    const [key, values] = labelMessage(deployment)
+    return t(key, values)
   }
 
   /** The id and status, marking the workspace's default deployment. */

@@ -87,6 +87,34 @@ describe('useDeploymentPickStore', () => {
     expect(store.canSetDefault).toBe(false)
   })
 
+  it('remembers the deployment the page booted on from the first listing only', async () => {
+    mockWorkspaceApi.listDeployments
+      .mockResolvedValueOnce(listing)
+      .mockResolvedValue({ ...listing, picked_deployment_id: 'dep-1' })
+    const store = useDeploymentPickStore()
+    expect(store.bootDeployment).toBeUndefined()
+
+    await Promise.all([store.loadOnce(), store.loadOnce()])
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+    expect(store.bootDeployment?.deployment_id).toBe('dep-2')
+
+    await store.load()
+    expect(store.pickedDeploymentId).toBe('dep-1')
+    expect(store.bootDeployment?.deployment_id).toBe('dep-2')
+  })
+
+  it('boots on Comfy Cloud when the pick is no longer listed', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: 'dep-gone'
+    })
+    const store = useDeploymentPickStore()
+    await store.loadOnce()
+
+    expect(store.pickIsGone).toBe(true)
+    expect(store.bootDeployment).toBeNull()
+  })
+
   it('follows the workspace default when the browser has no pick of its own', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,
