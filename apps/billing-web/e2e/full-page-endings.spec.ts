@@ -116,7 +116,7 @@ test('a scheduled change ends on the plan that starts, its date, and the plan ke
     reasons: []
   })
   await signIn(CHECKOUT)
-  await payButton(page).click()
+  await page.getByRole('button', { name: 'Confirm change' }).click()
 
   await expect(heading(page, 'Your plan change is scheduled')).toBeVisible()
   await expect(
@@ -154,6 +154,50 @@ test('a reload after its own Pay went through renders Already completed on every
   await expect(heading(page, 'Already completed')).toBeVisible()
   await expect(payButton(page)).toBeHidden()
   expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+/** How the real preview route refuses a link: a 400 with its own code and sentence. */
+function refuseQuote(cloud: MockCloud, message: string) {
+  cloud.reply('POST', '/billing/preview-subscribe', () => ({
+    status: 400,
+    body: { code: 'TRANSITION_NOT_ALLOWED', message }
+  }))
+}
+
+test('E2: reopening the checkout link after its own Pay went through is Already completed, even when the quote refuses it with a 400', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(heading(page, "You're all set")).toBeVisible()
+  refuseQuote(cloud, 'the selected plan is already the current plan')
+
+  await page.goto(CHECKOUT)
+
+  await expect(heading(page, 'Already completed')).toBeVisible()
+  await expect(code(page)).toHaveText('op_subscribe')
+  await expect(heading(page, "Couldn't load your checkout")).toBeHidden()
+  await expect(payButton(page)).toBeHidden()
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test("a coded quote refusal on a link nothing here paid is Checkout not available in the server's words", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  refuseQuote(cloud, 'the selected plan is already the current plan')
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, 'Checkout not available')).toBeVisible()
+  await expect(
+    page.getByText('the selected plan is already the current plan')
+  ).toBeVisible()
+  await expect(code(page)).toHaveText('TRANSITION_NOT_ALLOWED')
+  await expect(page.getByRole('button', { name: 'Try again' })).toBeHidden()
+  await expect(contactSupport(page)).toBeVisible()
 })
 
 const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
@@ -281,7 +325,7 @@ test('a one-time code on a monthly plan change reads This payment only on the su
   await signIn(CHECKOUT)
   await expect(page.getByText('This payment only')).toBeVisible()
   await expect(page.getByText('First month')).toHaveCount(0)
-  await payButton(page).click()
+  await page.getByRole('button', { name: 'Confirm upgrade' }).click()
 
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(paidToday(page)).toHaveText(
@@ -318,7 +362,7 @@ test('765-15713: a prorated upgrade reads Paid today and why, without itemizing 
     }
   }
   await signIn(CHECKOUT)
-  await payButton(page).click()
+  await page.getByRole('button', { name: 'Confirm upgrade' }).click()
 
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(paidToday(page)).toHaveText(
@@ -686,6 +730,37 @@ test('433-6840: a team link without its commit stop is an invalid link, and View
   await expect(code(page)).toHaveText('CHECKOUT_LINK_INVALID')
   await expect(payButton(page)).toBeHidden()
   expect(subscribeRequests(cloud)).toHaveLength(0)
+
+  await page.getByRole('button', { name: 'View plans' }).click()
+
+  await expect(heading(page, 'Host app')).toBeVisible()
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?pricing=team&workspace=ws_e2e'
+  )
+})
+
+test('G7: a catalog team plan linked without its commit stop, which the quote refuses with a 400, is Plan not available and View plans opens the Team tab', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const [listed] = cloud.scenario.plans.plans
+  cloud.scenario.plans = {
+    ...cloud.scenario.plans,
+    plans: [
+      ...cloud.scenario.plans.plans,
+      { ...listed, slug: 'team_per_credit_monthly', tier: 'TEAM' }
+    ]
+  }
+  refuseQuote(
+    cloud,
+    'team_credit_stop_id is required for the per-credit Team plan'
+  )
+  await signIn(entryPath('checkout', { plan: 'team_per_credit_monthly' }))
+
+  await expect(heading(page, "This plan isn't available")).toBeVisible()
+  await expect(code(page)).toHaveText('CHECKOUT_LINK_INVALID')
+  await expect(heading(page, "Couldn't load your checkout")).toBeHidden()
 
   await page.getByRole('button', { name: 'View plans' }).click()
 

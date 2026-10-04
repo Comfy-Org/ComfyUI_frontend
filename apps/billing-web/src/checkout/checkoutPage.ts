@@ -17,6 +17,12 @@ export interface ScheduledChange {
   readonly effectiveAt: string
 }
 
+/** A quote the server refused in its own words: its code, and the sentence it wrote for the customer. */
+export interface ServerRefusal {
+  readonly code: string
+  readonly message?: string
+}
+
 /** `none` means the read succeeded and the workspace has no saved method. */
 type SavedStatus = 'loading' | 'ready' | 'none' | 'failed'
 
@@ -159,6 +165,7 @@ export type CheckoutPage =
       readonly reason: CapabilityDenialReason
       readonly scheduled?: ScheduledChange
     }
+  | { readonly kind: 'refused'; readonly server: ServerRefusal }
   | {
       readonly kind: 'unavailable'
       readonly cause: LoadFailure
@@ -214,8 +221,11 @@ export type CheckoutPageEvent =
   /** The lifecycle could not say what the workspace is waiting on. */
   | { readonly type: 'recheckFailed'; readonly code: string }
   | { readonly type: 'planUnavailable'; readonly reason: PlanUnavailableReason }
-  /** The quote answered `allowed: false`; its free-text reason is never read. */
-  | { readonly type: 'notAllowed' }
+  /**
+   * The server will not sell this link: a quote answering `allowed: false`,
+   * whose free-text reason is never read, or a coded 4xx refusal (`server`).
+   */
+  | { readonly type: 'notAllowed'; readonly server?: ServerRefusal }
   /** The server's catalog named the plan a settled payment bought. */
   | { readonly type: 'settledPlanRead'; readonly plan: SettledPlan }
   /** Try again on a checkout that could not load. */
@@ -394,7 +404,7 @@ function isStopEvent(event: CheckoutPageEvent): event is StopEvent {
 /**
  * The page a read that ends resolving leaves behind. A refused quote over a
  * success this tab already saw is that success revisited; any other is a
- * checkout the server will not sell, for a reason it gives no code for.
+ * checkout the server will not sell, in its own words when it coded them.
  */
 function stoppedOn(
   page: Extract<CheckoutPage, { kind: 'resolving' }>,
@@ -402,9 +412,7 @@ function stoppedOn(
 ): CheckoutPage {
   switch (event.type) {
     case 'notAllowed':
-      return page.settled === undefined
-        ? { kind: 'refused', reason: 'unspecified' }
-        : { kind: 'terminal', operation: page.settled, attribution: 'settled' }
+      return notSoldOn(page, event)
     case 'refused':
       return {
         kind: 'refused',
@@ -420,6 +428,18 @@ function stoppedOn(
     case 'planUnavailable':
       return { kind: 'plan_unavailable', reason: event.reason }
   }
+}
+
+/** A link the server will not sell is the success this tab already saw, revisited, or a refusal. */
+function notSoldOn(
+  page: Extract<CheckoutPage, { kind: 'resolving' }>,
+  event: Extract<CheckoutPageEvent, { type: 'notAllowed' }>
+): CheckoutPage {
+  if (page.settled !== undefined)
+    return { kind: 'terminal', operation: page.settled, attribution: 'settled' }
+  return event.server === undefined
+    ? { kind: 'refused', reason: 'unspecified' }
+    : { kind: 'refused', server: event.server }
 }
 
 /** An event that means nothing in the current state returns it untouched. */
@@ -503,6 +523,10 @@ function cancelOf(page: CheckoutPage): PaymentCancel | undefined {
 
 export const isCanceling = (page: CheckoutPage) =>
   cancelOf(page) === 'canceling'
+
+/** The customer asked to cancel the payment, whatever the server answered. */
+export const isCancelAsked = (page: CheckoutPage) =>
+  cancelOf(page) !== undefined
 
 function withCancel(
   page: CheckoutPage,
@@ -1109,7 +1133,9 @@ export type SubmitPhase =
 
 /**
  * What Cancel payment offers on a challenge. Absent for an operation the
- * server never cancels (a top-up), so the button never shows there.
+ * server never cancels (a top-up), and while Stripe's challenge window covers
+ * the page, where the button cannot be reached and closing the window is the
+ * way out.
  */
 export type CancelOffer = 'offered' | 'canceling' | 'not_cancelable'
 
@@ -1122,9 +1148,22 @@ export function submitPhaseOf(
   const { redirectMethod, operation, cancel } = page.attempt
   if (redirectMethod !== undefined)
     return { kind: 'redirecting', method: redirectMethod }
-  return operation === undefined
+  return operation === undefined ||
+    (cancel === undefined && isStillConfirming(operation))
     ? { kind: 'unknown' }
     : phaseOver(operation, cancel)
+}
+
+/**
+ * The server reports an intent it has not confirmed yet as `processing`, the
+ * same as one past the bank, so this page's own Pay is past a challenge only
+ * once the customer was asked for one.
+ */
+function isStillConfirming(operation: PendingBillingOperation): boolean {
+  return (
+    operation.authenticationState === 'processing' &&
+    !operation.customerActionSeen
+  )
 }
 
 /** A payment the server would not cancel because it is already moving is Phase B on its word. */
@@ -1153,7 +1192,11 @@ function cancelOfferOf(
   operation: PendingBillingOperation,
   cancel: Exclude<PaymentCancel, 'PAYMENT_IN_FLIGHT'> | undefined
 ): { readonly cancel?: CancelOffer } {
-  if (operation.kind !== 'subscription') return {}
+  if (
+    operation.kind !== 'subscription' ||
+    operation.challenge?.status === 'in_progress'
+  )
+    return {}
   return { cancel: cancel === undefined ? 'offered' : CANCEL_OFFER[cancel] }
 }
 
@@ -1187,6 +1230,21 @@ export function isChallengeReopenable(
   if (operation.presentation === 'hosted')
     return operation.actionUrl !== undefined
   return operation.challenge?.status === 'required'
+}
+
+/**
+ * A plan payment whose in-page challenge Stripe's window ended unfinished,
+ * closed by the customer or failed by the bank. Nothing was charged, but the
+ * server still holds the plan change for it until it is canceled.
+ */
+export function abandonedChallengeOf(
+  operation: BillingOperationState | undefined
+): string | undefined {
+  return operation?.phase === 'pending' &&
+    operation.kind === 'subscription' &&
+    operation.challenge?.status === 'failed'
+    ? operation.id
+    : undefined
 }
 
 /**

@@ -172,6 +172,8 @@
     "fullPage": {
       "logo": "Comfy",
       "payForCredits": "Pay",
+      "confirmUpgrade": "Confirm upgrade",
+      "confirmChange": "Confirm change",
       "planName": "{tier} Plan",
       "terms": {
         "agreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",

@@ -105,6 +105,31 @@ describe('endingOf', () => {
       screen: { kind: 'already_completed' }
     },
     {
+      name: 'a quote the server refused with its own code and sentence',
+      page: {
+        kind: 'refused',
+        server: {
+          code: 'TRANSITION_NOT_ALLOWED',
+          message: 'the selected plan is already the current plan'
+        }
+      },
+      screen: {
+        kind: 'refused',
+        code: 'TRANSITION_NOT_ALLOWED',
+        copy: 'unknown',
+        serverMessage: 'the selected plan is already the current plan'
+      }
+    },
+    {
+      name: 'a quote the server refused with its own code and no sentence',
+      page: { kind: 'refused', server: { code: 'TRANSITION_NOT_ALLOWED' } },
+      screen: {
+        kind: 'refused',
+        code: 'TRANSITION_NOT_ALLOWED',
+        copy: 'unknown'
+      }
+    },
+    {
       name: 'a checkout that could not load',
       page: { kind: 'unavailable', cause: 'quote', code: 'REQUEST_FAILED' },
       screen: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' }
