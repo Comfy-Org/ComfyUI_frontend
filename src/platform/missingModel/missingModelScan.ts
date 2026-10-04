@@ -1,4 +1,7 @@
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  DeclaredModelFile,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
@@ -402,7 +405,7 @@ export function enrichWithEmbeddedMetadata(
     else candidatesByKey.set(nameKey, [c])
   }
 
-  const deduped: ModelFile[] = []
+  const deduped: DeclaredModelFile[] = []
   const enrichedKeys = new Set<string>()
   for (const model of embeddedModels) {
     const dedupeKey = `${model.name}::${model.directory}`
@@ -432,8 +435,11 @@ export function enrichWithEmbeddedMetadata(
 function collectEmbeddedModels(
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
   graphData: MissingModelWorkflowData
-): ModelFile[] {
-  const result: ModelFile[] = []
+): DeclaredModelFile[] {
+  // Node-level entries only have to name a model; the top-level list is
+  // declared strict. Enrichment fills each field where present, so both can
+  // ride in one array.
+  const result: DeclaredModelFile[] = []
   const nodesById = new Map(allNodes.map((node) => [String(node.id), node]))
 
   for (const node of allNodes) {
