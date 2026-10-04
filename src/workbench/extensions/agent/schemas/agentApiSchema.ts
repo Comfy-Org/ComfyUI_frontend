@@ -50,6 +50,18 @@ const zAgentAskOption = z
   })
   .passthrough()
 
+/**
+ * One `context.nodes` entry of a `delete_approval` ask. Parsed per entry, so a
+ * bad entry is counted as unlisted instead of dropping the whole card.
+ */
+export const zAgentAskNodeRef = z
+  .object({
+    id: z.union([z.string(), z.number()]),
+    type: z.string().optional(),
+    title: z.string().optional()
+  })
+  .passthrough()
+
 const zAgentPendingAsk = z
   .object({
     message_id: z.string(),

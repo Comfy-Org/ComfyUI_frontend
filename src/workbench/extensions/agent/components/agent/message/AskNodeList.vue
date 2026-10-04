@@ -30,7 +30,7 @@ const { t } = useI18n()
       </span>
     </li>
     <li v-if="hiddenCount > 0" class="text-muted-foreground">
-      {{ t('agent.askUser.moreNodes', { count: hiddenCount }, hiddenCount) }}
+      {{ t('agent.askUser.moreNodes', hiddenCount) }}
     </li>
   </ul>
 </template>
