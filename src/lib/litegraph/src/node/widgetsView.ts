@@ -33,19 +33,10 @@ interface WidgetsViewState {
 const EMPTY_REFUSAL: ReadonlySet<IBaseWidget> = new Set()
 
 /**
- * The unresolved names already reported for a node, so a pair that no later
- * commit can resolve is alerted on once instead of on every commit.
- *
- * An unresolved pair — unlike the two removing causes — survives the walk, so
- * every subsequent `syncWidgetOrder` (`push`, `splice`, a reorder, each
- * `addWidget`) and every `attachNodeToStores` finds it again. `reportError`
- * builds an `Error` with a stack and dispatches to Sentry and Datadog with no
- * dedupe or throttle of its own, so reporting per pass is an unbounded stream
- * of identical warnings for as long as the session lasts. The removing causes
- * self-clear after one report because the widget is gone, and are not tracked.
- *
- * Replaced rather than added to on each pass: a name that stops being
- * ambiguous and later collides again is a new event and is reported again.
+ * The unresolved names already reported for a node. A kept pair survives the
+ * walk, so every later commit finds it again and `reportError` has no dedupe
+ * of its own. Replaced rather than added to, so a name that stops colliding
+ * and later collides again is reported again.
  */
 const reportedUnresolvedNames = new WeakMap<LGraphNode, Set<string>>()
 
@@ -53,10 +44,8 @@ const states = new WeakMap<LGraphNode, WidgetsViewState>()
 const widgetsViewGetters = new WeakSet<() => IBaseWidget[] | undefined>()
 
 /**
- * Reads a property off a widget that is being refused. The widget reached that
- * state because an accessor misbehaved, so every read here is hostile: a
- * `name` getter that throws would escape `syncWidgetOrder` after the array has
- * already been spliced, leaving the node and the store's order out of sync.
+ * Reads a property off a widget being refused. Every read here is hostile by
+ * definition, and a throw would escape after the array was spliced.
  */
 function safeRead(read: () => unknown): string | undefined {
   try {
@@ -79,13 +68,9 @@ function reportTeardownFailure(node: LGraphNode, error: unknown): void {
 }
 
 /**
- * Whether {@link input} is bound to the widget being released.
- *
- * Two bindings, because production uses both: `_widget` holds a direct
- * reference (promoted subgraph inputs), while an ordinary node binds its widget
- * inputs by name and resolves them on read. Matching only the reference finds
- * nothing on the nodes this refusal actually runs for, and the slot then
- * re-binds to whichever widget kept the name.
+ * Two bindings, because production uses both: promoted subgraph inputs hold a
+ * direct `_widget` reference, and an ordinary node binds by name and resolves
+ * on read. Matching only the reference finds nothing on these nodes.
  */
 function inputBindsWidget(
   input: LGraphNode['inputs'][number],
@@ -111,27 +96,16 @@ function clearRefusedSlotBindings(
 }
 
 /**
- * Releases a widget the node has just refused. It is already off the array, so
- * `LGraphNode.removeWidget` can no longer find it and the teardown that method
- * owns has to happen here: slot back-references would otherwise keep pointing
- * at a widget the node no longer has.
- *
- * Both steps are guarded and reported rather than thrown. This runs after the
- * array has been spliced, so a throw escaping here would leave the node and the
- * store's order out of sync — and during `LGraph.add`, a half-attached node.
- *
- * The widget's store entry is deliberately *not* deleted. A refused widget's
- * name is by definition the one another widget kept, so `widget.widgetId` now
- * resolves to that widget's entry — deleting it would destroy the value of the
- * widget this invariant exists to protect.
+ * The teardown `LGraphNode.removeWidget` owes a widget it can no longer find,
+ * because the refusal already took it off the array. Every step is guarded: a
+ * throw here would leave the node and the store's order out of sync, and during
+ * `LGraph.add` a half-attached node.
  */
 function releaseRefusedWidget(
   node: LGraphNode,
-  // Typed to admit the nullish case the type system says cannot happen: a hole
-  // or an explicit `undefined` in `node.widgets` reaches the walk as an
-  // unreadable name and is refused like anything else. Matching the teardown on
-  // it would clear every input whose `_widget` is still unset, which is nearly
-  // all of them.
+  // Nullish because a hole or an explicit `undefined` in `node.widgets` is
+  // refused like anything else, and matching the teardown on it would clear
+  // every input whose `_widget` is unset.
   widget: IBaseWidget | undefined,
   name: string | undefined
 ): void {
@@ -182,14 +156,11 @@ function refuseAmbiguousWidgets(
   const alreadyReported = takeUnresolvedReportGate(node, refused)
 
   for (const finding of refused) {
-    // An unresolved pair this node has already been alerted on is not a new
-    // event. Skipping before the teardown below would be wrong for any other
-    // cause, but an unresolved duplicate is never released, so there is
-    // nothing here to skip past.
+    // Safe to skip before the teardown below only because a kept pair is
+    // never released.
     if (alreadyReported(finding)) continue
 
-    // Only a widget the walk took off the array needs releasing; an unresolved
-    // duplicate is still the node's widget and must keep its slot wiring.
+    // A kept duplicate is still the node's widget and keeps its slot wiring.
     if (finding.removed) {
       releaseRefusedWidget(node, finding.widget, finding.name)
     }
@@ -201,13 +172,7 @@ function refuseAmbiguousWidgets(
   )
 }
 
-/**
- * Records which names are unresolved on {@link node} now, and returns the
- * predicate for "already alerted on before this pass".
- *
- * Replaces the record rather than adding to it, so a name that stops being
- * ambiguous and later collides again is reported again.
- */
+/** @returns whether a finding was already alerted on before this pass. */
 function takeUnresolvedReportGate(
   node: LGraphNode,
   refused: readonly RefusedWidget<IBaseWidget>[]
@@ -226,15 +191,8 @@ function takeUnresolvedReportGate(
 }
 
 /**
- * The alert for one finding. The three causes are different failures and are
- * alerted on separately: an unreadable name has no duplicate at all, so
- * reporting one would send whoever reads the alert looking for a collision that
- * does not exist, and an unresolved pair is still on the node rather than lost.
- *
- * `cause` and `name` come from the walk, never from another read of the
- * accessor. It is hostile by definition, it need not answer twice the same way,
- * and the walk may have written to it up to four times before giving up — so a
- * re-read can name a candidate no widget holds.
+ * One alert per cause, because they are different failures: an unreadable name
+ * has no duplicate to go looking for, and a kept pair has lost nothing.
  */
 const REFUSAL_ALERTS: Record<
   RefusedWidget<IBaseWidget>['cause'],
@@ -243,8 +201,6 @@ const REFUSAL_ALERTS: Record<
     message: (nodeId: LGraphNode['id'], name: string | undefined) => string
   }
 > = {
-  // Deliberately not "the accessor threw": a name that will not coerce or will
-  // not percent-encode reads perfectly and still yields no id.
   'unreadable-name': {
     errorType: 'failure_reading_widget_name',
     message: (nodeId) =>
@@ -281,13 +237,9 @@ function reportRefusal(
 }
 
 /**
- * Whether {@link node} still exposes the mutation view this module installed,
- * and so is subject to the unique-name invariant at all.
- *
- * `SubgraphNode` replaces `widgets` with its own computed getter over promoted
- * widgets, which never commits through here. Distinguishing the two matters to
- * callers that infer refusal from a widget's absence: on a promoted list the
- * object handed in is not the object read back, so absence means nothing.
+ * Whether {@link node} still exposes this module's mutation view, and so is
+ * subject to the invariant at all. `SubgraphNode` rebuilds `widgets` on every
+ * read, so on a promoted list a widget's absence means nothing.
  */
 function commitsThroughWidgetsView(node: LGraphNode): boolean {
   const descriptor = Object.getOwnPropertyDescriptor(node, 'widgets')
@@ -306,21 +258,14 @@ export function wasWidgetRefused(
 }
 
 /**
- * Enforces the invariant for a node that is joining a graph.
+ * The second enforcement point: a node joining a graph. `LGraph.add` normalizes
+ * the view while `node.graph` is unset, so that commit mints no `WidgetId` and
+ * does not enforce.
  *
- * `LGraph.add` normalizes the widgets view while `node.graph` is still unset,
- * so that commit cannot mint a `WidgetId` and deliberately does not enforce.
- * This runs where identities actually come into existence — immediately before
- * the node's widgets are registered — which is the first point at which an
- * ambiguous pair can do any harm.
- *
- * Only for a node whose widgets list this module owns. `SubgraphNode`'s getter
- * rebuilds the array on every read, so a refusal there splices a throwaway copy
- * and nothing leaves the node — while the caller still reports a
- * refusal and tears down the slot back-references of a widget that is still
- * there. Two promoted inputs carrying the same inner
- * widget name reach exactly that state, so the guard is load-bearing rather
- * than defensive.
+ * Gated on the node still owning its widgets list, because a refusal on
+ * `SubgraphNode`'s rebuilt array splices a throwaway copy while still reporting
+ * and tearing down a widget that is still there. Two promoted inputs sharing an
+ * inner widget name reach that state.
  */
 export function refuseAmbiguousNodeWidgets(node: LGraphNode): void {
   if (!commitsThroughWidgetsView(node)) return
@@ -337,15 +282,13 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   node._widgetSlotsDirty = true
   const graphId = node.graph?.rootGraph.id
 
-  // `BaseWidget`'s constructor reads the source object's `name`, so converting
-  // a raw push whose accessor throws throws out of this commit — and out of
-  // every later one, wedging the node with a stale store order. That is the
-  // exact state `UNREADABLE_NAME` exists to contain, so leave the object
-  // unconverted and let the refusal below take it.
+  // `BaseWidget`'s constructor reads the source object's `name`, so a raw push
+  // whose accessor throws would throw out of this commit and every later one,
+  // wedging the node with a stale store order. Leave it unconverted for the
+  // refusal below instead.
   const concreteWidgets = widgets.map((widget) => {
-    // Decided before the conversion, not inside the catch. Probing the
-    // accessor after it has already thrown asks a hostile getter the same
-    // question twice and acts on whichever answer comes back second.
+    // Before the conversion, not inside the catch: a hostile getter asked
+    // twice can answer differently.
     const unreadable = isWidgetNameUnreadable(widget)
     try {
       return toConcreteWidget(widget, node)
@@ -365,25 +308,18 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
     widgets[index] = widget
   }
 
-  // Nothing is registered until the node is in a graph, so there is no
-  // identity to collide over yet — and renaming earlier than the store needs
-  // it changes names that node construction still matches on. Enforcement
-  // belongs at the first commit that can actually mint a `WidgetId`.
+  // No graph, no identity to collide over yet — and renaming earlier changes
+  // names that node construction still matches on.
   if (!graphId) return
 
-  // After normalization, not before: `toConcreteWidget` merges the concrete
-  // class's writable `name` accessor over a plain object's pinned one, so a
-  // widget judged unrenamable while still raw would be destroyed even though
-  // it renames cleanly a line later.
+  // After normalization: `toConcreteWidget` merges the class's writable `name`
+  // accessor over a plain object's pinned one, so a widget judged unrenamable
+  // while still raw renames cleanly a line later.
   const refused = refuseAmbiguousWidgets(node, widgets)
 
   for (const widget of concreteWidgets) {
-    // Membership by set, not by `widgets.includes`: this loop runs on every
-    // commit and `node.widgets` commits once per `addWidget`, so a linear scan
-    // here is quadratic per commit and cubic over building a node.
-    //
-    // A widget that would not convert is still raw and so not bindable; it has
-    // also just been refused, so it is no longer on the node either.
+    // By set, not `widgets.includes`: this runs on every commit, so a linear
+    // scan here is cubic over building a node.
     if (!refused.has(widget) && isNodeBindable(widget)) {
       widget.setNodeId(node.id)
     }

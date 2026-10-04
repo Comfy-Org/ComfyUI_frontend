@@ -2309,11 +2309,9 @@ export class LGraphNode
     const widget = toConcreteWidget(custom_widget, this)
     this.widgets.push(widget)
 
-    // Two widgets on one node cannot share a name (ADR-ECS-0008). The push
-    // above commits through the widgets view, which refuses a duplicate it
-    // cannot rename apart and reports it. Registering or restoring a widget
-    // that is no longer on the node would write over the widget that kept the
-    // name, so stop here and hand the caller back the detached widget.
+    // The push committed through the widgets view, which may have refused the
+    // widget (ADR-ECS-0008). Registering one the node no longer has would write
+    // over the widget that kept the name.
     if (!this.widgets.includes(widget)) return widget
 
     // Only register with store if node has a valid ID (is already in a graph).

@@ -31,10 +31,8 @@ export function attachNodeToStores(
   }
 
   if (!node.widgets) return
-  // Two widgets on one node cannot share a name (ADR-ECS-0008), and this is
-  // the first moment a `WidgetId` exists to collide over: the node now has a
-  // graph and its final id. Registering an ambiguous pair would bind both to
-  // one store entry, and `setNodeId` would in fact register neither.
+  // The node now has a graph and its final id, so this is the first moment a
+  // `WidgetId` exists to collide over (ADR-ECS-0008).
   refuseAmbiguousNodeWidgets(node)
   for (const widget of node.widgets) {
     if (isNodeBindable(widget)) widget.setNodeId(node.id)
