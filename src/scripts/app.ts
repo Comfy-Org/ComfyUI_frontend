@@ -351,9 +351,12 @@ export class ComfyApp {
   private rootGraphInternal: LGraph | undefined
 
   // TODO: Migrate internal usage to the
-  /** @deprecated Use {@link rootGraph} instead */
-  get graph() {
-    return this.rootGraphInternal!
+  /**
+   * The root graph, or `undefined` before {@link setup} assigns it.
+   * @deprecated Use {@link rootGraph} instead
+   */
+  get graph(): LGraph | undefined {
+    return this.rootGraphInternal
   }
 
   get rootGraph(): LGraph {

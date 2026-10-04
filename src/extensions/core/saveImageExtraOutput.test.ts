@@ -15,7 +15,9 @@ interface FilenamePrefixWidget {
   serializeValue?: () => string
 }
 
-async function loadExtension(graph: LGraph): Promise<ComfyExtension> {
+async function loadExtension(
+  graph: LGraph | undefined
+): Promise<ComfyExtension> {
   vi.resetModules()
   const { app } = await import('@/scripts/app')
   vi.mocked(app).graph = graph
@@ -26,7 +28,8 @@ async function loadExtension(graph: LGraph): Promise<ComfyExtension> {
 
 async function createNodeWithFilenamePrefix(
   nodeName: string,
-  prefix: string
+  prefix: string,
+  { withRootGraph = true }: { withRootGraph?: boolean } = {}
 ): Promise<FilenamePrefixWidget> {
   const graph = new LGraph()
   const sampler = new LGraphNode('Sampler')
@@ -34,7 +37,7 @@ async function createNodeWithFilenamePrefix(
   sampler.addWidget('number', 'seed', 12345, () => undefined, {})
   graph.add(sampler)
 
-  const ext = await loadExtension(graph)
+  const ext = await loadExtension(withRootGraph ? graph : undefined)
 
   const nodeType = {
     prototype: {}
@@ -98,5 +101,15 @@ describe('Comfy.SaveImageExtraOutput', () => {
     widget.value = 'edited_%Sampler.seed%'
 
     expect(widget.serializeValue!()).toBe('edited_12345')
+  })
+
+  it('serializes the unsubstituted value when the root graph is not yet assigned', async () => {
+    const widget = await createNodeWithFilenamePrefix(
+      'SaveImage',
+      'ComfyUI_%Sampler.seed%',
+      { withRootGraph: false }
+    )
+
+    expect(widget.serializeValue!()).toBe('ComfyUI_%Sampler.seed%')
   })
 })

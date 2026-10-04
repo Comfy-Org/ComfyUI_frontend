@@ -329,8 +329,9 @@ export function resolveNode(
 export function resolveNodeWidget(
   nodeId: SerializedNodeId,
   widgetName?: string,
-  graph: LGraph = app.rootGraph
+  graph: LGraph | null | undefined = app.rootGraphOrUndefined
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
+  if (!graph) return []
   if (widgetName && typeof nodeId === 'string') {
     const locator = parseNodeLocatorId(nodeId)
     if (locator?.subgraphUuid) {

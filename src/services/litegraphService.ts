@@ -946,8 +946,8 @@ export const useLitegraphService = () => {
       options
     )
 
-    const graph = useWorkflowStore().activeSubgraph ?? app.graph
-    if (!node) return null
+    const graph = useWorkflowStore().activeSubgraph ?? app.rootGraphOrUndefined
+    if (!node || !graph) return null
 
     graph.add(node, addOptions)
     return node

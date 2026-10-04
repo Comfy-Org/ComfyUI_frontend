@@ -43,10 +43,14 @@ app.registerExtension({
 
         const widget = this.widgets?.find((w) => w.name === 'filename_prefix')
         if (!widget) return r
-        widget.serializeValue = () =>
-          typeof widget.value === 'string'
-            ? applyTextReplacements(app.graph, widget.value)
-            : widget.value
+        widget.serializeValue = () => {
+          if (typeof widget.value !== 'string') return widget.value
+          // Serialization can be driven before setup() assigns the root graph;
+          // without a graph there is nothing to search and replace against.
+          const graph = app.rootGraphOrUndefined
+          if (!graph) return widget.value
+          return applyTextReplacements(graph, widget.value)
+        }
 
         return r
       }

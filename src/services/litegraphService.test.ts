@@ -42,6 +42,41 @@ describe('useLitegraphService().getCanvasCenter', () => {
   )
 })
 
+describe('useLitegraphService().addNodeOnGraph', () => {
+  const nodeName = 'TestAddNodeOnGraph'
+
+  const nodeDef: ComfyNodeDefV1 = {
+    name: nodeName,
+    display_name: 'Test Add Node On Graph',
+    category: 'testing',
+    python_module: 'nodes',
+    description: '',
+    input: { required: {} },
+    output: ['LATENT'],
+    output_name: ['latent'],
+    output_node: false
+  }
+
+  beforeEach(async () => {
+    await useLitegraphService().registerNodeDef(nodeName, nodeDef)
+  })
+
+  it('adds the node to the root graph once it is assigned', () => {
+    const rootGraph = app.rootGraph
+
+    const node = useLitegraphService().addNodeOnGraph(nodeDef)
+
+    expect(node).not.toBeNull()
+    expect(rootGraph.nodes).toContain(node)
+  })
+
+  it('returns null instead of throwing when the root graph is not yet assigned', () => {
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
+
+    expect(useLitegraphService().addNodeOnGraph(nodeDef)).toBeNull()
+  })
+})
+
 describe('useLitegraphService().registerNodeDef slot text', () => {
   const nodeName = 'TestBackendSlotText'
 
