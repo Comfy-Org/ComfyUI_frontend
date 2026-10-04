@@ -67,6 +67,7 @@ const ANSWER_ASK_TIMEOUT_MS = 15_000
 type AgentApiOperation =
   | 'answer_thread_ask'
   | 'cancel_thread_message'
+  | 'get_cloud_workflow'
   | 'get_run_mode'
   | 'get_thread_messages'
   | 'list_cloud_workflows'
@@ -594,6 +595,7 @@ export function createAgentRestClient() {
     workflowId: string
   ): Promise<WorkflowResponse> {
     return request(
+      'get_cloud_workflow',
       `/workflows/${encodeURIComponent(workflowId)}`,
       { method: 'GET' },
       zWorkflowResponse
