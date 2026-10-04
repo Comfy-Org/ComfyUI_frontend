@@ -191,20 +191,35 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
+/** Deep-copies one widget value for one serialized register. */
+function cloneWidgetValue(value: TWidgetValue): TWidgetValue {
+  return value != null && typeof value === 'object'
+    ? (JSON.parse(JSON.stringify(value)) as TWidgetValue)
+    : (value ?? null)
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
-  const named: Record<string, TWidgetValue> = {}
+  // Null-prototype while accumulating, so a widget legitimately named
+  // `__proto__` becomes an own key instead of reaching the inherited
+  // `__proto__` setter. That setter drops a primitive value silently and
+  // promotes an object value to this register's prototype, where
+  // `JSON.stringify` omits it. Either way the key is not an own key, so
+  // `getRestoredWidgetValue` returns undefined — it does not fall back to the
+  // positional register once a named one is present — and the widget reloads
+  // at its construction default. Spread back into an ordinary object below:
+  // spread defines `__proto__` as a data property rather than invoking the
+  // setter.
+  const named: Record<string, TWidgetValue> = Object.create(null)
+
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
-    positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
+    // One clone per register. The two are independent snapshots, so a consumer
+    // that rewrites one in place cannot reach the other.
+    positional.push(cloneWidgetValue(widget.value))
+    named[widget.name] = cloneWidgetValue(widget.value)
   }
-  return { widgets_values: positional, widgets_values_named: named }
+  return { widgets_values: positional, widgets_values_named: { ...named } }
 }
 
 function configureCanonicalField(
