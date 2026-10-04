@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import WorkflowTemplateDetail from '@/components/custom/widget/WorkflowTemplateDetail.vue'
+import { i18n } from '@/i18n'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 const meta: Meta<typeof WorkflowTemplateDetail> = {
@@ -12,18 +13,17 @@ const meta: Meta<typeof WorkflowTemplateDetail> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Stands in for the template thumbnail the dialog passes through this slot. */
-const withPreview = (args: Record<string, unknown>) => ({
+const t = i18n.global.t
+
+const withPreview: NonNullable<Story['render']> = (args) => ({
   components: { WorkflowTemplateDetail },
   setup: () => ({ args }),
   template: `
-    <div style="height: 640px">
+    <div class="h-160">
       <WorkflowTemplateDetail v-bind="args">
         <template #preview>
           <div
-            style="aspect-ratio: 16 / 10; display: grid; place-items: center;
-                   background: linear-gradient(135deg, #e5e7eb, #cbd5e1);
-                   color: #64748b; font-size: 13px"
+            class="grid aspect-8/5 place-items-center bg-secondary-background text-xs text-muted-foreground"
           >
             Template preview
           </div>
@@ -33,61 +33,32 @@ const withPreview = (args: Record<string, unknown>) => ({
   `
 })
 
-const nodes: TemplateDetailGroup = {
-  id: 'nodes',
-  label: 'Nodes',
-  total: '3 nodes',
-  rows: [
-    { id: 'n1', name: 'Load Checkpoint', description: 'Core' },
-    { id: 'n2', name: 'KSampler', description: 'Core' },
-    { id: 'n3', name: 'VAE Decode', description: 'Core' }
-  ]
+const checkpoint = {
+  id: 'm1',
+  name: 'sd_xl_base_1.0.safetensors',
+  description: 'checkpoints'
 }
+const vae = { id: 'm2', name: 'sdxl_vae.safetensors', description: 'vae' }
 
-function models(
-  downloadable: boolean,
-  total = '2 models'
+const installed = {
+  kind: 'installed',
+  label: t('templateWorkflows.detail.installed')
+} as const
+
+/**
+ * `buildTemplateDetailGroups` emits one `models` group, and its total only when
+ * every declaration carries a size - so the resolving case shows none.
+ */
+function modelsGroup(
+  rows: TemplateDetailGroup['rows'],
+  total?: string
 ): TemplateDetailGroup {
   return {
     id: 'models',
-    label: 'Models',
-    total,
-    rows: [
-      {
-        id: 'm1',
-        name: 'sd_xl_base_1.0.safetensors',
-        description: 'checkpoints',
-        status: downloadable
-          ? {
-              kind: 'downloadable',
-              label: 'Download model',
-              downloadState: { status: 'idle', attempt: 0 }
-            }
-          : { kind: 'installed', label: 'Downloaded' }
-      },
-      {
-        id: 'm2',
-        name: 'sdxl_vae.safetensors',
-        description: 'vae',
-        status: { kind: 'installed', label: 'Downloaded' }
-      }
-    ]
+    label: t('templateWorkflows.detail.models'),
+    ...(total !== undefined && { total }),
+    rows
   }
-}
-
-/** While resolving, no row has a resolved status yet. */
-const unresolvedModels: TemplateDetailGroup = {
-  id: 'models',
-  label: 'Models',
-  total: '2 models',
-  rows: [
-    {
-      id: 'm1',
-      name: 'sd_xl_base_1.0.safetensors',
-      description: 'checkpoints'
-    },
-    { id: 'm2', name: 'sdxl_vae.safetensors', description: 'vae' }
-  ]
 }
 
 const base = {
@@ -96,27 +67,75 @@ const base = {
     'Generate an image from a text prompt with the SDXL base checkpoint.'
 }
 
-/** Nothing is missing, so the only action opens the template. */
+/**
+ * Detail only opens when something is missing, so this state is a missing model
+ * that cannot be fetched automatically rather than a template with none.
+ */
 export const OpenNow: Story = {
-  args: { ...base, groups: [nodes, models(false)], modelSetupState: 'none' },
+  args: {
+    ...base,
+    groups: [
+      modelsGroup(
+        [
+          {
+            ...checkpoint,
+            status: {
+              kind: 'manual',
+              label: t('templateWorkflows.detail.unavailable'),
+              href: 'https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0'
+            }
+          },
+          { ...vae, status: installed }
+        ],
+        '6.94 GB'
+      )
+    ],
+    modelSetupState: 'none'
+  },
   render: withPreview
 }
 
-/** Availability is not known yet, so no download action is offered. */
+/** Metadata is still resolving, so Download models & open is shown disabled. */
 export const Resolving: Story = {
   args: {
     ...base,
-    groups: [nodes, unresolvedModels],
+    groups: [
+      modelsGroup([
+        {
+          ...checkpoint,
+          status: {
+            kind: 'unknown',
+            label: t('templateWorkflows.detail.unknown')
+          }
+        },
+        { ...vae, status: installed }
+      ])
+    ],
     modelSetupState: 'resolving'
   },
   render: withPreview
 }
 
-/** A missing model adds the bulk action and the per-row action beside it. */
+/** A missing model adds the per-row action beside the bulk one. */
 export const DownloadableRow: Story = {
   args: {
     ...base,
-    groups: [nodes, models(true)],
+    groups: [
+      modelsGroup(
+        [
+          {
+            ...checkpoint,
+            status: {
+              kind: 'downloadable',
+              label: t('templateWorkflows.detail.downloadModel'),
+              downloadState: { status: 'idle', attempt: 0 }
+            }
+          },
+          { ...vae, status: installed }
+        ],
+        '6.94 GB'
+      )
+    ],
     modelSetupState: 'downloadable'
   },
   render: withPreview
