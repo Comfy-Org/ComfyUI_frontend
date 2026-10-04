@@ -90,10 +90,17 @@ const UNREADABLE_NAME = Symbol('unreadable widget name')
 /** Why a widget could not be given a unique name on its node. */
 type WidgetRefusalCause = 'unreadable-name' | 'duplicate-name'
 
-/** A refused widget, with the cause recorded by the walk that refused it. */
+/**
+ * A refused widget, with the cause and the name key recorded by the walk that
+ * refused it. Both come from here rather than from another read of the
+ * accessor: a hostile one need not answer twice the same way, and by the time
+ * a caller reports the refusal the walk may also have written to it.
+ */
 export interface RefusedWidget<T> {
   widget: T
   cause: WidgetRefusalCause
+  /** The key the walk read, or `undefined` when no key could be derived. */
+  name: string | undefined
 }
 
 /**
@@ -118,8 +125,13 @@ function readName(widget: { name: string }): string | typeof UNREADABLE_NAME {
     // assigned, which is the entire reason the coercion is here.
     const raw: unknown = widget.name
     const key = String(raw)
-    // Mirrors `widgetId`: the key is only usable if the id can be built from it.
-    encodeURIComponent(key)
+    // Mirrors `widgetId`, which encodes the **raw** value rather than the
+    // coerced one — a Symbol survives `String()` and then throws there.
+    const encoded = encodeURIComponent(raw as string)
+    // `widgetId` is `graphId:nodeId:name` and its pattern needs a non-empty
+    // last segment, so an empty name mints an id the store refuses to key on.
+    // That is the unaddressable state this walk exists to catch.
+    if (!encoded) return UNREADABLE_NAME
     return key
   } catch {
     return UNREADABLE_NAME
@@ -261,7 +273,7 @@ export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
       // node makes `ensureUniqueWidgetNames` fail on every later call — which
       // bails registration for every *other* widget on the node too.
       verdicts.set(widget, false)
-      refused.push({ widget, cause: 'unreadable-name' })
+      refused.push({ widget, cause: 'unreadable-name', name: undefined })
       continue
     }
 
@@ -277,7 +289,7 @@ export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
     const unique = renameApart(widget, key, used, reserved)
     if (unique === undefined) {
       verdicts.set(widget, false)
-      refused.push({ widget, cause: 'duplicate-name' })
+      refused.push({ widget, cause: 'duplicate-name', name: key })
       continue
     }
     used.add(unique)

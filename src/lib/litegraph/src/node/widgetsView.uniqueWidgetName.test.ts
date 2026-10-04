@@ -251,9 +251,17 @@ describe('unique widget name invariant', () => {
       configurable: false
     })
 
-    // The report runs after the array has already been spliced, so re-reading
-    // the accessor there would leave the node's widgets and the store's order
-    // out of sync — with the error surfacing far from its cause.
+    // Everything the report reads off a refused widget is hostile by then, so
+    // `type` is poisoned too: the report runs after the array has been
+    // spliced, and a throw there would leave the node's widgets and the
+    // store's order out of sync, surfacing far from its cause.
+    Object.defineProperty(hostile, 'type', {
+      get(): string {
+        throw new Error('type is not readable either')
+      },
+      configurable: false
+    })
+
     expect(() =>
       node.addWidget('number', 'cfg', 3, () => undefined, {})
     ).not.toThrow()
@@ -311,14 +319,14 @@ describe('unique widget name invariant', () => {
     node.addWidget('number', 'seed', 1, () => undefined, {})
     const flaky = node.addWidget('number', 'steps', 2, () => undefined, {})
 
-    // Throws for the reserved-names pass and for the walk, then succeeds. The
-    // walk refuses it for an unreadable name; anything that asks the accessor
-    // again afterwards gets a readable name and would call it a duplicate.
-    let reads = 0
+    // Unreadable for as long as the widget is on the node, readable once it
+    // has been dropped. The walk therefore decides "unreadable"; anything that
+    // asks the accessor again afterwards — the refusal reports after the
+    // splice — gets a name back and would call it a duplicate instead.
     Object.defineProperty(flaky, 'name', {
       get(): string {
-        reads++
-        if (reads <= 2) throw new Error('name is not readable')
+        if (node.widgets?.includes(flaky))
+          throw new Error('name is not readable')
         return 'seed'
       },
       configurable: true
@@ -389,6 +397,110 @@ describe('unique widget name invariant', () => {
 
     expect(names(node)).toEqual(['b', 'a'])
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a refused widget whose own teardown throws', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    const second = node.addWidget('number', 'steps', 2, () => undefined, {})
+    second.onRemove = () => {
+      throw new Error('teardown blew up')
+    }
+    pinName(second, 'seed')
+
+    // Teardown stopping half-done leaves a DOM widget's element mounted and
+    // extension resources undisposed, so it needs a sink rather than a log.
+    expect(() =>
+      node.addWidget('number', 'cfg', 3, () => undefined, {})
+    ).not.toThrow()
+
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.errorType)
+    ).toEqual([
+      'widget_refusal_teardown_failed',
+      'widget_duplicate_name_refused'
+    ])
+  })
+
+  it('leaves a node alone once it stops exposing the widget list this module owns', () => {
+    // The node committed widgets through the view, then something replaced
+    // `widgets` with its own getter — which is what `SubgraphNode` does, and
+    // what an extension can do. This module still holds the array it built,
+    // and acting on it would refuse widgets off a list the node no longer
+    // reads, reporting a refusal nothing can observe.
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('custom', 'duplicate', 'first', () => undefined, {})
+    const second = node.addWidget('custom', 'second', 'second', () => {}, {})
+    pinName(second, 'duplicate')
+
+    const ownList = [...(node.widgets ?? [])]
+    Object.defineProperty(node, 'widgets', {
+      get: () => ownList,
+      set: () => {},
+      configurable: true
+    })
+
+    graph.add(node)
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(ownList).toHaveLength(2)
+  })
+
+  it('does not re-enter the commit path when a node joins a graph', () => {
+    // Handing the walk `node.widgets` gives it the mutation view, so its
+    // closing splice runs a whole nested commit from inside the walk — before
+    // the refused widget is released or reported, and with anything that
+    // throws in there escaping the join with the splice already applied.
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('custom', 'duplicate', 'first', () => undefined, {})
+    const second = node.addWidget('custom', 'second', 'second', () => {}, {})
+    pinName(second, 'duplicate')
+
+    const replaceNodeWidgetOrder = vi.spyOn(
+      useWidgetValueStore(),
+      'replaceNodeWidgetOrder'
+    )
+
+    graph.add(node)
+
+    expect(names(node)).toEqual(['duplicate'])
+    expect(replaceNodeWidgetOrder).not.toHaveBeenCalled()
+  })
+
+  it('reports the name the walk read, not what the rename attempts left behind', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    const normalising = node.addWidget(
+      'number',
+      'steps',
+      2,
+      () => undefined,
+      {}
+    )
+    // Stores a transformed value, so it never answers to the candidate it was
+    // offered and is refused — and afterwards it holds a name no widget on the
+    // node owns, which is what the report must not quote.
+    let stored = 'seed'
+    Object.defineProperty(normalising, 'name', {
+      get: () => stored,
+      set: (value: string) => {
+        stored = `${value}-normalised`
+      },
+      configurable: true
+    })
+
+    node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    expect(normalising.name).not.toBe('seed')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'widget_duplicate_name_refused',
+        context: expect.objectContaining({ widgetName: 'seed' })
+      })
+    )
   })
 
   it('does not report a refusal it cannot carry out on a subgraph node', () => {

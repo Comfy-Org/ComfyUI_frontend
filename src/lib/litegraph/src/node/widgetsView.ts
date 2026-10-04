@@ -33,6 +33,12 @@ const DUPLICATE_WIDGET_NAME_ERROR_TYPE = 'widget_duplicate_name_refused'
  */
 const UNREADABLE_WIDGET_NAME_ERROR_TYPE = 'widget_unreadable_name_refused'
 
+/**
+ * Stable `errorType` for a refused widget whose own teardown threw, which
+ * leaves its release half-done. Also a contract, not an implementation detail.
+ */
+const REFUSED_WIDGET_TEARDOWN_ERROR_TYPE = 'widget_refusal_teardown_failed'
+
 interface WidgetsViewState {
   target: IBaseWidget[]
   view: IBaseWidget[]
@@ -80,7 +86,16 @@ function releaseRefusedWidget(node: LGraphNode, widget: IBaseWidget): void {
   try {
     widget.onRemove?.()
   } catch (error) {
-    console.error('Failed to release a refused widget', error)
+    // Its own type: teardown stopping half-done leaves a DOM widget's element
+    // mounted and extension-held resources undisposed, and a bare console log
+    // reaches no telemetry sink, so it reads as zero rather than as a problem.
+    reportError(error, {
+      errorType: REFUSED_WIDGET_TEARDOWN_ERROR_TYPE,
+      surface: 'graph',
+      level: 'warning',
+      tags: { node_type: node.type },
+      context: { nodeId: String(node.id) }
+    })
   }
 }
 
@@ -102,21 +117,25 @@ function refuseAmbiguousWidgets(
   const refused = dropUnrenamableDuplicateWidgets(widgets)
   if (!refused.length) return
 
-  for (const { widget, cause } of refused) {
+  for (const { widget, cause, name } of refused) {
     // The two causes are different failures and are alerted on separately: an
     // unreadable name has no duplicate at all, so reporting one would send
     // whoever reads the alert looking for a collision that does not exist.
-    // The cause comes from the walk rather than from another read of the
-    // accessor, which is hostile by definition and need not answer twice the
-    // same way.
+    //
+    // Both the cause and the name come from the walk, never from another read
+    // of the accessor. It is hostile by definition, it need not answer twice
+    // the same way, and the walk may have written to it up to four times
+    // before giving up — so a re-read can name a candidate no widget holds.
     const unreadable = cause === 'unreadable-name'
-    const widgetName = safeRead(() => widget.name)
     releaseRefusedWidget(node, widget)
     reportError(
       new Error(
         unreadable
-          ? `Refused a widget on node ${node.id}: its name could not be read, so no widget identity can be derived for it`
-          : `Refused a widget named "${widgetName}": node ${node.id} already has a widget of that name and the duplicate cannot be renamed`
+          ? // Deliberately not "the accessor threw": a name that will not
+            // coerce or will not percent-encode reads perfectly and still
+            // yields no id.
+            `Refused a widget on node ${node.id}: no widget identity can be derived from its name`
+          : `Refused a widget named "${name}": node ${node.id} already has a widget of that name and the duplicate cannot be renamed`
       ),
       {
         errorType: unreadable
@@ -127,7 +146,7 @@ function refuseAmbiguousWidgets(
         tags: { node_type: node.type },
         context: {
           nodeId: String(node.id),
-          widgetName,
+          widgetName: name,
           widgetType: safeRead(() => widget.type)
         }
       }
@@ -179,7 +198,11 @@ export function wasWidgetRefused(
  */
 export function refuseAmbiguousNodeWidgets(node: LGraphNode): void {
   if (!commitsThroughWidgetsView(node)) return
-  const widgets = node.widgets
+  // This module's own array, never `node.widgets`. That getter hands back the
+  // mutation view, and the walk's closing splice on the view re-enters
+  // `syncWidgetOrder` — a whole nested commit, run while the refused widget's
+  // slot back-references are still live and before anything is reported.
+  const widgets = states.get(node)?.target
   if (!widgets?.length) return
   refuseAmbiguousWidgets(node, widgets)
 }
@@ -194,6 +217,10 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   // exact state `UNREADABLE_NAME` exists to contain, so leave the object
   // unconverted and let the refusal below take it.
   const concreteWidgets = widgets.map((widget) => {
+    // Decided before the conversion, not inside the catch. Probing the
+    // accessor after it has already thrown asks a hostile getter the same
+    // question twice and acts on whichever answer comes back second.
+    const unreadable = isWidgetNameUnreadable(widget)
     try {
       return toConcreteWidget(widget, node)
     } catch (error) {
@@ -204,7 +231,7 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
       // throwing, as it did before. This also only covers the commit path:
       // `addCustomWidget` converts before it pushes, so `addWidget` and
       // `addDOMWidget` still throw to their caller.
-      if (!isWidgetNameUnreadable(widget)) throw error
+      if (!unreadable) throw error
       return widget
     }
   })

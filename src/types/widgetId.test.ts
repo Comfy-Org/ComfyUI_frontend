@@ -184,6 +184,42 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     expect(widgets).toEqual([fine])
   })
 
+  it('refuses a name whose id the store would reject', () => {
+    // `String(Symbol())` succeeds, so coercion alone says this name is fine —
+    // but `widgetId` encodes the raw value and throws on it. And an empty name
+    // encodes to nothing, minting `graphId:nodeId:`, which the store refuses
+    // to key on: the widget lands in exactly the unaddressable state this walk
+    // exists to catch, silently.
+    const symbolNamed = widgetNamed(Symbol('seed'))
+    const empty = widgetNamed('')
+    const fine = widgetNamed('seed')
+    const widgets = [fine, symbolNamed, empty]
+
+    expect(refusedWidgets(widgets)).toEqual([symbolNamed, empty])
+    expect(widgets).toEqual([fine])
+  })
+
+  it('reports the name the walk read, not one the rename attempts left behind', () => {
+    // The walk writes to a colliding widget before giving up, so the value the
+    // accessor holds afterwards can be a candidate no widget on the node owns.
+    const first = widgetNamed('seed')
+    let stored = 'seed'
+    const normalising = {
+      get name(): string {
+        return stored
+      },
+      set name(value: string) {
+        stored = `${value}-normalised`
+      }
+    }
+
+    const refused = dropUnrenamableDuplicateWidgets([first, normalising])
+
+    expect(refused).toHaveLength(1)
+    expect(refused[0].name).toBe('seed')
+    expect(refused[0].widget.name).not.toBe('seed')
+  })
+
   it('records why each widget was refused, rather than leaving it to be guessed', () => {
     // A hostile accessor need not answer the same way twice, so the cause has
     // to come from the walk that made the decision.

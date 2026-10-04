@@ -227,6 +227,13 @@ legitimate re-mint rather than an identity collision — which is why
 >   `push`, a splice, a whole-array assignment. `addCustomWidget` converts
 >   before it pushes, so `addWidget` and `addDOMWidget` with a hostile accessor
 >   still throw to their caller and never reach the refusal.
+> - **The two points cover array mutations and the join, not every way a name
+>   changes.** Redefining a `name` is not an array mutation, so an extension
+>   that adds a widget under a unique name in `onAdded` and then pins it onto
+>   an existing one leaves the ambiguous pair standing until some later
+>   `node.widgets` mutation commits. That is deliberate — enforcing on every
+>   property write would mean watching every widget — but it means "caught at
+>   the join" is true of the join itself, not of what `onAdded` does after it.
 > - **`SubgraphNode` does not commit through this path, and neither
 >   enforcement point runs on it.** It redefines `widgets` as a computed getter
 >   over its promoted widgets and overrides `addCustomWidget`, so an ambiguous
