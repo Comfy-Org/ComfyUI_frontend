@@ -191,17 +191,6 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
-/**
- * Two independent copies of one snapshot of {@link value}, for the two
- * registers.
- *
- * Serialized exactly once on purpose. Cloning twice would read the widget's
- * value twice and run a getter or a `toJSON()` twice with it, so a stateful
- * one could hand the registers *different* values — and the two have always
- * been equal by construction, which `diffNamedValuesShadow` relies on. It also
- * doubles the stringify on a path every autosave, change-tracker snapshot and
- * prompt build runs.
- */
 function cloneWidgetValueTwice(
   value: TWidgetValue
 ): [TWidgetValue, TWidgetValue] {
