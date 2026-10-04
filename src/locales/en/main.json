@@ -5373,6 +5373,7 @@
   },
   "agent": {
     "title": "Comfy Agent",
+    "openVideo": "Open video: {name}",
     "diagnosticReport": {
       "retry": "Retry copy report",
       "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",

@@ -153,7 +153,13 @@ function stopPreview(event: Event): void {
         v-for="asset in visibleVisual"
         :key="asset.url"
         type="button"
-        :aria-label="asset.label ?? asset.filename"
+        :aria-label="
+          asset.kind === 'video'
+            ? t('agent.openVideo', {
+                name: asset.label ?? asset.filename
+              })
+            : (asset.label ?? asset.filename)
+        "
         :class="
           cn(
             'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',

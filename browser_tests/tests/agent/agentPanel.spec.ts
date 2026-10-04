@@ -179,6 +179,42 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  // Regression: https://linear.app/comfyorg/issue/PM-1895/fix-video-outputs-in-the-agent-tab-play-only-on-hover-with-no-video
+  test('identifies a generated video before hover', async ({
+    agentPanel,
+    getWebSocket,
+    postedMessages
+  }) => {
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+
+    const composer = agentPanel.root.getByRole('textbox', {
+      name: /^Describe ideas/
+    })
+    await composer.fill('Generate a short video')
+    await agentPanel.root
+      .getByRole('button', { name: enMessages.agent.send })
+      .click()
+    await expect.poll(() => postedMessages.length).toBe(1)
+
+    const ws = await getWebSocket()
+    assert.equal(MESSAGE_DELTA_EVENT.type, 'agent_message_delta')
+    pushEvent(ws, {
+      ...MESSAGE_DELTA_EVENT,
+      data: {
+        ...MESSAGE_DELTA_EVENT.data,
+        delta:
+          '[generated_clip.mp4](https://media.comfy.org/website/comfy-agent/generated_clip.mp4)'
+      }
+    })
+
+    const videoTile = agentPanel.root.getByRole('button', {
+      name: 'Open video: generated_clip.mp4'
+    })
+    await expect(videoTile).toBeVisible()
+    await expect(videoTile.getByTestId('reply-video-affordance')).toBeVisible()
+  })
+
   test('shows an admission paywall without losing the rejected prompt', async ({
     agentPanel,
     comfyPage

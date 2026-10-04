@@ -95,9 +95,9 @@ describe('ReplyAssetGroup', () => {
 
     expect(screen.getAllByTestId('reply-video-affordance')).toHaveLength(1)
     expect(
-      within(screen.getByRole('button', { name: 'clip.mp4' })).getByTestId(
-        'reply-video-affordance'
-      )
+      within(
+        screen.getByRole('button', { name: 'Open video: clip.mp4' })
+      ).getByTestId('reply-video-affordance')
     ).toBeInTheDocument()
     expect(
       within(screen.getByRole('button', { name: 'i1.png' })).queryByTestId(
@@ -114,7 +114,9 @@ describe('ReplyAssetGroup', () => {
   it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
     renderGroup([image(1), video])
 
-    await userEvent.click(screen.getByRole('button', { name: 'clip.mp4' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open video: clip.mp4' })
+    )
 
     const lightbox = screen.getByTestId('lightbox')
     expect(lightbox.dataset.active).toBe('1')
