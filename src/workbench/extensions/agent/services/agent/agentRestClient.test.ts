@@ -316,7 +316,11 @@ describe('postMessage wire body', () => {
       ask_kinds: unknown
     }
     expect(parsed.ask_kinds).toEqual([...RENDERED_ASK_KINDS])
-    expect(parsed.ask_kinds).toEqual(['run_approval', 'ask_user'])
+    expect(parsed.ask_kinds).toEqual([
+      'run_approval',
+      'ask_user',
+      'delete_approval'
+    ])
   })
 
   // The id this send already reports on app:agent_message_sent has to reach the

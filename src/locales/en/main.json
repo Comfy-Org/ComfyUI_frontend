@@ -5400,6 +5400,17 @@
       "answeredElsewhere": "This question was answered somewhere else.",
       "closed": "This question was closed without an answer."
     },
+    "deleteApproval": {
+      "nodes": "Nodes to delete",
+      "nodeId": "#{id}",
+      "moreNodes": "{count} more node not listed | {count} more nodes not listed",
+      "delete": "Delete",
+      "keep": "Keep",
+      "deleted": "You chose to delete them.",
+      "kept": "You chose to keep them.",
+      "answeredElsewhere": "This was answered somewhere else.",
+      "closed": "This request was closed without an answer."
+    },
     "dismiss": "Dismiss",
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",
