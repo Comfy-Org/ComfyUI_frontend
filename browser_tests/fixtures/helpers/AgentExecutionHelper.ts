@@ -25,6 +25,7 @@ export class AgentExecutionHelper {
   > = {}
   private readonly assets: AssetsHelper
   private readonly submitted: unknown[] = []
+  private readonly addressedJobs = new Set<string>()
   private jobCounter = 0
 
   /**
@@ -42,7 +43,7 @@ export class AgentExecutionHelper {
    * `/api/view`) then advances exactly as the server's does while this tab is
    * told nothing — the shape PM-1875 reported.
    */
-  private addressedToThisTab: () => boolean = () => true
+  private addressedToThisTab: (jobId: string) => boolean = () => true
 
   constructor(
     private readonly page: Page,
@@ -58,6 +59,7 @@ export class AgentExecutionHelper {
       if (route.request().method() !== 'POST') return route.fallback()
       this.submitted.push(route.request().postDataJSON())
       const jobId = `agent-exec-job-${++this.jobCounter}`
+      this.recordAddressing(jobId)
       await this.upsertJob({
         id: jobId,
         status: 'pending',
@@ -85,14 +87,19 @@ export class AgentExecutionHelper {
    * unaddressed run is still visibly active to this tab and merely inert on
    * its canvas.
    */
-  addressFramesWhen(predicate: () => boolean): void {
+  addressFramesWhen(predicate: (jobId: string) => boolean): void {
     this.addressedToThisTab = predicate
   }
 
   /** Sends an execution frame only to the socket it is addressed to. */
-  private unicast(frame: ExecutionHostFrame): void {
-    if (!this.addressedToThisTab()) return
+  private unicast(jobId: string, frame: ExecutionHostFrame): void {
+    if (!this.addressedJobs.has(jobId)) return
     this.hostSocket.sendExecution(frame)
+  }
+
+  /** Freezes the addressee when the run is submitted, as ComfyUI does. */
+  private recordAddressing(jobId: string): void {
+    if (this.addressedToThisTab(jobId)) this.addressedJobs.add(jobId)
   }
 
   submittedPrompts(): readonly unknown[] {
@@ -110,6 +117,7 @@ export class AgentExecutionHelper {
    * queue surface.
    */
   async enqueueServerRun(jobId: string): Promise<void> {
+    this.recordAddressing(jobId)
     await this.upsertJob({
       id: jobId,
       status: 'pending',
@@ -129,7 +137,7 @@ export class AgentExecutionHelper {
       execution_start_time: Date.now(),
       execution_end_time: null
     })
-    this.unicast({
+    this.unicast(jobId, {
       type: 'execution_start',
       data: { prompt_id: jobId, timestamp: Date.now() }
     })
@@ -160,7 +168,7 @@ export class AgentExecutionHelper {
         }
       })
     )
-    this.unicast({
+    this.unicast(jobId, {
       type: 'executed',
       data: {
         prompt_id: jobId,
@@ -169,7 +177,7 @@ export class AgentExecutionHelper {
         output: { images: [{ filename, subfolder: '', type: 'output' }] }
       }
     })
-    this.unicast({
+    this.unicast(jobId, {
       type: 'execution_success',
       data: { prompt_id: jobId, timestamp: Date.now() }
     })
@@ -205,7 +213,7 @@ export class AgentExecutionHelper {
       execution_end_time: Date.now(),
       execution_error: error
     })
-    this.unicast({ type: 'execution_error', data: error })
+    this.unicast(jobId, { type: 'execution_error', data: error })
     this.status(0)
   }
 
@@ -223,7 +231,7 @@ export class AgentExecutionHelper {
     }: { nodeId: string; value?: number; max?: number }
   ): Promise<void> {
     await this.startJob(jobId)
-    this.unicast({
+    this.unicast(jobId, {
       type: 'progress_state',
       data: {
         prompt_id: jobId,

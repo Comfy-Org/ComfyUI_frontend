@@ -62,7 +62,7 @@ test.describe(
       await expect(outputImage).toBeVisible()
       await expect(outputImage).toHaveAttribute(
         'src',
-        new RegExp(outputFilename(jobId).replace('.', '\\.'))
+        new RegExp(outputFilename(jobId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
       )
 
       await queuePanel.open()
@@ -84,19 +84,32 @@ test.describe(
         expect(Object.keys(body)).not.toContain('client_id')
         expect(lastTurnClientId()).toBeUndefined()
 
-        // And specifically not the stale id still sitting in this tab's
-        // `sessionStorage`, which `api.initialClientId` exposes. Addressing a
-        // run to that would aim this user's execution events at a socket that
-        // is dead, or that belongs to the tab this one was duplicated from.
+        // And specifically not the stale id captured by `api.initialClientId`
+        // from this tab's sessionStorage at module construction. Addressing a
+        // run to it would aim this user's execution events at a dead socket,
+        // or at the tab this one was duplicated from.
         expect(JSON.stringify(body)).not.toContain(STALE_SESSION_CLIENT_ID)
       })
 
       test('the run still completes, and only this canvas cannot follow it', async ({
-        rig: { runWorkflowForUser, runningOutline, outputImage },
+        rig: {
+          harness,
+          startRunForUser,
+          finishRunForUser,
+          runningOutline,
+          outputImage
+        },
         page
       }) => {
         const jobId = 'agent-local-run-unaddressed'
-        await runWorkflowForUser(jobId)
+        await expect(harness.sourceNode).toBeVisible()
+        await startRunForUser(jobId)
+
+        // The server is stalled mid-run. If this tab received its addressed
+        // frames, the target root would carry the executing outline class.
+        await expect(runningOutline).toHaveCount(0)
+
+        await finishRunForUser(jobId)
 
         // The run was real and the server finished it — the queue, which is
         // HTTP and identity-blind, has the row.
@@ -104,11 +117,8 @@ test.describe(
         await queuePanel.open()
         await expect(queuePanel.jobRow(jobId)).toBeVisible()
 
-        // This tab was never an addressee, so the graph shows nothing: no
-        // highlight while it ran, no output when it finished. Same locators
-        // the addressed case above proves do match real state, so a tab that
-        // did receive the frames would turn this red rather than pass unseen.
-        await expect(runningOutline).toHaveCount(0)
+        // This tab was never an addressee, so the completed run adds no output
+        // to the source node that is visibly present above.
         await expect(outputImage).toHaveCount(0)
       })
     })
