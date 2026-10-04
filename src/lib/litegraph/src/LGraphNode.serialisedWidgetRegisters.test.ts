@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 function serialisedNode(
   widgets: readonly { name: string; value: TWidgetValue }[]
