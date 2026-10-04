@@ -43,22 +43,19 @@ test.describe(
       )
       await expect(comfyPage.vueNodes.getNodeLocator(nodeId)).toBeVisible()
 
-      const widgetRow = () =>
-        comfyPage.page.getByTestId(TestIds.widgets.widget).filter({
-          has: comfyPage.page
-            .getByTestId(TestIds.widgets.layoutFieldLabel)
-            .and(comfyPage.page.getByText(WIDGET_NAME, { exact: true }))
-        })
+      const widget = comfyPage.vueNodes
+        .getWidgetRowByLabel('Node With Output List', WIDGET_NAME)
+        .getByRole('textbox')
 
-      await widgetRow().getByRole('textbox').fill(TYPED_VALUE)
-      await widgetRow().getByRole('textbox').blur()
+      await widget.fill(TYPED_VALUE)
+      await widget.blur()
       await comfyPage.menu.topbar.saveWorkflowAs(workflowName)
 
       await comfyPage.workflow.newBlankWorkflow()
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       await openWorkflowFromSidebar(comfyPage, workflowName)
 
-      await expect(widgetRow().getByRole('textbox')).toHaveValue(TYPED_VALUE)
+      await expect(widget).toHaveValue(TYPED_VALUE)
     })
   }
 )
