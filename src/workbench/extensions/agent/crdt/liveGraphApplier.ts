@@ -4,9 +4,9 @@ import {
   OPAQUE_WIDGETS_KEY,
   readStamps
 } from '@comfyorg/comfy-multi-player'
+import { isEqual } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
-import { isEqual } from 'es-toolkit'
 
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeFlags, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
