@@ -407,14 +407,22 @@ describe('unique widget name invariant', () => {
     const store = useWidgetValueStore()
     const rootGraphId = host.rootGraph.id
 
-    for (const [slot, sourceNodeId] of [
-      [0, 900],
-      [1, 901]
-    ] as const) {
-      const id = widgetId(rootGraphId, toNodeId(sourceNodeId), 'seed')
-      store.registerWidget(id, { type: 'number', value: slot, options: {} })
-      host.inputs[slot].widgetId = id
-    }
+    // Same inner widget name on two different inner nodes, which is what
+    // promoting `seed` from two samplers produces.
+    const firstPromoted = widgetId(rootGraphId, toNodeId(900), 'seed')
+    const secondPromoted = widgetId(rootGraphId, toNodeId(901), 'seed')
+    store.registerWidget(firstPromoted, {
+      type: 'number',
+      value: 0,
+      options: {}
+    })
+    store.registerWidget(secondPromoted, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    host.inputs[0].widgetId = firstPromoted
+    host.inputs[1].widgetId = secondPromoted
 
     expect(host.widgets.map((widget) => widget.name)).toEqual(['seed', 'seed'])
 

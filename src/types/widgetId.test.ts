@@ -38,6 +38,15 @@ describe('ensureUniqueWidgetNames', () => {
   })
 })
 
+/**
+ * A widget whose `name` is whatever a node pack actually assigned. The runtime
+ * type is the thing under test, so the narrowing happens once here rather than
+ * at each fixture.
+ */
+function widgetNamed(name: unknown): { name: string } {
+  return { name } as { name: string }
+}
+
 /** The refused widgets alone; the cause is asserted separately where it matters. */
 function refusedWidgets<T extends { name: string }>(widgets: T[]): T[] {
   return dropUnrenamableDuplicateWidgets(widgets).map(({ widget }) => widget)
@@ -146,8 +155,8 @@ describe('dropUnrenamableDuplicateWidgets', () => {
   })
 
   it('tells an unreadable name apart from one that reads as undefined', () => {
-    const first = { name: undefined as unknown as string }
-    const second = { name: undefined as unknown as string }
+    const first = widgetNamed(undefined)
+    const second = widgetNamed(undefined)
     const widgets = [first, second]
 
     // `undefined` is a bad identity, not a missing one: two of them collide
@@ -161,7 +170,7 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     // `WidgetId`: one will not coerce to a string at all, the other is a lone
     // surrogate that `encodeURIComponent` rejects. Letting either escape wedges
     // the commit that is trying to settle the node's names.
-    const unstringifiable = { name: Object.create(null) as string }
+    const unstringifiable = widgetNamed(Object.create(null))
     const unencodable = { name: '\uD800' }
     const fine = { name: 'seed' }
     const widgets = [fine, unstringifiable, unencodable]
@@ -212,9 +221,9 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     // the same id. Comparing the raw values lets both through and the clash
     // lands in the store, where nothing is looking for it.
     const widgets = [
-      { name: undefined as unknown as string },
+      widgetNamed(undefined),
       { name: 'undefined' },
-      { name: 1 as unknown as string },
+      widgetNamed(1),
       { name: '1' }
     ]
 
