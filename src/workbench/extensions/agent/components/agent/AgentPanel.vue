@@ -501,7 +501,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer class="min-h-0 shrink overflow-hidden py-3">
+      <footer class="min-h-0 shrink overflow-y-auto py-3">
         <div
           class="mx-auto flex h-full min-h-0 w-full max-w-[640px] flex-col gap-4 px-4"
         >
