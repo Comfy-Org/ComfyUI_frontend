@@ -1,6 +1,6 @@
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { zModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { DeclaredModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zDeclaredModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
 import type { FlattenableWorkflowNode } from './workflowFlattening'
 
@@ -15,6 +15,14 @@ type NodeModelMetadata = {
   properties?: { models?: unknown }
 }
 
+function declaredModels(models: unknown): DeclaredModelFile[] {
+  if (!Array.isArray(models)) return []
+  return models.flatMap((entry) => {
+    const model = zDeclaredModelFile.safeParse(entry)
+    return model.success ? [model.data] : []
+  })
+}
+
 /**
  * The declared models a node actually has selected in its widgets.
  *
@@ -25,20 +33,9 @@ type NodeModelMetadata = {
  * both as "nothing"; callers that distinguish "no metadata" from "metadata
  * that matched nothing" have to check for `undefined`.
  */
-/** Keeps the entries that are model records, discarding anything else. */
-function declaredModels(models: unknown): ModelFile[] {
-  if (!Array.isArray(models)) return []
-  const parsed: ModelFile[] = []
-  for (const entry of models) {
-    const model = zModelFile.safeParse(entry)
-    if (model.success) parsed.push(model.data)
-  }
-  return parsed
-}
-
 export function getSelectedModelsMetadata(
   node: NodeModelMetadata
-): ModelFile[] | undefined {
+): DeclaredModelFile[] | undefined {
   const models = declaredModels(node.properties?.models)
   if (!models.length || !node.widgets_values) return
 

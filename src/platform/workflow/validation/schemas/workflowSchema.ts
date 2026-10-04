@@ -57,12 +57,29 @@ const zVector2 = z.union([
 ])
 
 // Definition of an AI model file used in the workflow.
-export const zModelFile = z.object({
+const zModelFile = z.object({
   name: z.string(),
   url: z.string().url(),
   hash: z.string().optional(),
   hash_type: z.string().optional(),
   directory: z.string()
+})
+
+/**
+ * What a node's `properties.models` entry has to carry to be usable at all.
+ * Only `name` is required, because that is what selection and enrichment key
+ * on; everything else is filled in where present and left alone where not.
+ *
+ * Separate from `zModelFile`, which is the strict shape a workflow must
+ * declare to pass validation. Workflows that failed strict validation still
+ * load, and their entries are the ones most likely to be partial.
+ */
+export const zDeclaredModelFile = z.object({
+  name: z.string(),
+  url: z.string().optional(),
+  hash: z.string().optional(),
+  hash_type: z.string().optional(),
+  directory: z.string().optional()
 })
 
 const zGraphState = z
@@ -677,6 +694,7 @@ export const zClipboardItems: z.ZodType<
 > = zClipboardItemsSchema
 
 export type ModelFile = z.infer<typeof zModelFile>
+export type DeclaredModelFile = z.infer<typeof zDeclaredModelFile>
 export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>
 export type ComfyNode = z.infer<typeof zComfyNode>
 export type Reroute = z.infer<typeof zReroute>
