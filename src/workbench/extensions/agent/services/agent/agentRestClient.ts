@@ -7,6 +7,7 @@ import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
 
+import { rememberAgentRequestFailure } from './agentRequestFailure'
 import {
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
@@ -383,7 +384,7 @@ export function createAgentRestClient() {
     return new AgentApiError(message, response.status, body, retryAfterSeconds)
   }
 
-  async function request<T>(
+  async function send<T>(
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
@@ -398,6 +399,25 @@ export function createAgentRestClient() {
       throw new AgentResponseUnreadableError(error)
     }
     return schema.parse(payload)
+  }
+
+  /**
+   * FE-3200: notes which route a failure came from, then rethrows the identical
+   * value. The boundary is the only place that knows — `hydrateFromServer`
+   * wraps three different requests in one `catch` — and the error has to keep
+   * its exact identity, since `#19740` landed to stop transport failures being
+   * renamed and callers branch on `instanceof` and on `status`.
+   */
+  async function request<T>(
+    route: string,
+    init: Parameters<typeof api.fetchApi>[1],
+    schema: z.ZodType<T>
+  ): Promise<T> {
+    try {
+      return await send(route, init, schema)
+    } catch (error) {
+      throw rememberAgentRequestFailure(error, route)
+    }
   }
 
   function jsonInit(method: string, body: unknown): RequestInit {

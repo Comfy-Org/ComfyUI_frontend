@@ -115,6 +115,10 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure
+} from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
@@ -1306,9 +1310,15 @@ async function refreshHistory(): Promise<void> {
   try {
     history.replaceAll((await listThreads()).map(toChatSession))
   } catch (error) {
+    const diagnostics = describeAgentRequestFailure(error)
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_thread_list_load_failed'
+      errorType: 'agent_thread_list_load_failed',
+      tags: diagnostics,
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_thread_list_load_failed',
+        diagnostics
+      )
     })
     surfaceAgentError(
       'agent_api_failed',
@@ -1318,7 +1328,7 @@ async function refreshHistory(): Promise<void> {
       'thread_list_load_failed',
       'pre_acceptance',
       'error_overlay',
-      { retryable: isRetryableRequestFailure(error, false) }
+      { retryable: isRetryableRequestFailure(error, false), diagnostics }
     )
   }
 }

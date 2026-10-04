@@ -86,6 +86,45 @@ describe('reportError', () => {
     )
   })
 
+  it('overrides Sentry grouping only when a fingerprint is given', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed',
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
+
+    expect(captureException.mock.calls[0][1]).toMatchObject({
+      fingerprint: ['agent-request-failure', '/agent/threads']
+    })
+    // Undefined rather than an empty array. `Scope.update` destructures
+    // `fingerprint = []` and assigns only `if (fingerprint.length)`, so this is
+    // what leaves an existing caller's computed grouping untouched — an empty
+    // array would too, but a non-empty default would silently regroup every
+    // report in the app.
+    expect(captureException.mock.calls[1][1]).toHaveProperty(
+      'fingerprint',
+      undefined
+    )
+  })
+
+  it('does not send a fingerprint to Datadog, which groups on errorType', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      surface: 'agent',
+      errorType: 'agent_history_load_failed',
+      fingerprint: ['agent-request-failure']
+    })
+
+    expect(addError.mock.calls[0][1]).not.toHaveProperty('fingerprint')
+  })
+
   it('names a Datadog copy without changing the original error', async () => {
     const { reportError } = await loadReportError()
     const cause = new Error('Connection closed')
