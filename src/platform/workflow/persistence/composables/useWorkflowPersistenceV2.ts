@@ -147,18 +147,9 @@ export function useWorkflowPersistenceV2() {
   // Firebase's browserLocalPersistence syncs that state between windows over
   // `storage` events: a second window that merely boots rewrites the shared
   // `firebase:authUser:*` record, and this window sees its user drop to null
-  // without anyone having signed out. Clearing and fencing on that signal
-  // destroyed every draft in the browser and left writes fenced with nothing
-  // left to release them (the release below waits on a workspace init that
-  // only a full boot re-runs).
-  //
-  // The sign-out sites own both steps instead, synchronously, before
-  // navigation, with the user's intent in hand. There are two of them and
-  // `Comfy.User.SignOut` is only one: a key-only session never reaches that
-  // command, so `useCurrentUser.handleSignOut` runs the same pair on the
-  // API-key rail. Anything this composable needs abandoned on the way out is
-  // registered below rather than exported, because each call of this
-  // composable owns its own debounce.
+  // without anyone having signed out. Explicit sign-out sites clear shared
+  // storage and broadcast intent; this composable fences on that intent,
+  // never on an observed null user.
   const unregisterPersistenceCancel = registerWorkflowPersistenceCancel(() => {
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()

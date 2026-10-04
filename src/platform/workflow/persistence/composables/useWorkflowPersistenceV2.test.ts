@@ -197,6 +197,7 @@ describe('useWorkflowPersistenceV2', () => {
       app.unmount()
       container.remove()
     }
+    storageIO.resetStorageAvailable()
   })
 
   /**
@@ -888,6 +889,17 @@ describe('useWorkflowPersistenceV2', () => {
     await vi.runAllTimersAsync()
 
     localStorage.clear()
+    const personalPayloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      'personal'
+    )
+    localStorage.setItem(
+      personalPayloadKey,
+      JSON.stringify({
+        data: JSON.stringify({ marker: 'written-before-intent-arrived' }),
+        updatedAt: Date.now()
+      })
+    )
     window.dispatchEvent(
       new StorageEvent('storage', {
         key: 'Comfy.Workflow.SignOutIntent',
@@ -895,6 +907,7 @@ describe('useWorkflowPersistenceV2', () => {
         storageArea: localStorage
       })
     )
+    expect(localStorage.getItem(personalPayloadKey)).toBeNull()
     sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
 
     mocks.state.currentGraph = { marker: 'after-sign-out' }
@@ -902,9 +915,7 @@ describe('useWorkflowPersistenceV2', () => {
     window.dispatchEvent(new Event('pagehide'))
     await vi.runAllTimersAsync()
 
-    expect(
-      localStorage.getItem(StorageKeys.draftPayload(workflow.path, 'personal'))
-    ).toBeNull()
+    expect(localStorage.getItem(personalPayloadKey)).toBeNull()
   })
 
   it('abandons the queued write and the stale readiness watcher when this window signs out', async () => {
