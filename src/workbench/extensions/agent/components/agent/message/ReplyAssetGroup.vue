@@ -63,6 +63,7 @@ const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
 const galleryIndex = ref(-1)
+const autoplayGalleryVideo = ref(false)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
@@ -132,6 +133,7 @@ function inspect(asset: ReplyAsset): void {
     })
     return
   }
+  autoplayGalleryVideo.value = asset.kind === 'video'
   galleryIndex.value = galleryAssets.value.indexOf(asset)
 }
 
@@ -280,13 +282,14 @@ function stopPreview(event: Event): void {
       </Button>
     </div>
 
-    <!-- `autoplay-video`: the tile these open from carries a play badge, so a
-         click has to produce playback rather than a second paused player. -->
+    <!-- A video tile carries a play badge, so clicking it has to produce
+         playback rather than a second paused player. An image tile makes no
+         such promise, including when the user later navigates to a video. -->
     <MediaLightbox
       v-if="galleryIndex !== -1"
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
-      autoplay-video
+      :autoplay-video="autoplayGalleryVideo"
       @update:active-index="galleryIndex = $event"
     />
   </div>

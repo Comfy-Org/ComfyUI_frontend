@@ -208,9 +208,35 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       data: {
         ...MESSAGE_DELTA_EVENT.data,
         delta:
+          '![generated_still.png](https://media.comfy.org/website/comfy-agent/generated_still.png)\n\n' +
           '[generated_clip.mp4](https://media.comfy.org/website/comfy-agent/generated_clip.mp4)'
       }
     })
+
+    // An image tile does not promise playback. Navigating from one to a video
+    // must therefore keep the video paused rather than inheriting the Agent
+    // gallery's direct-video autoplay behavior.
+    await agentPanel.root
+      .getByRole('button', { name: 'generated_still.png', exact: true })
+      .click()
+    const imageOpenedGallery = comfyPage.page.getByRole('dialog', {
+      name: enMessages.g.gallery
+    })
+    await imageOpenedGallery
+      .getByRole('button', { name: enMessages.g.next })
+      .click()
+    const navigatedVideo = imageOpenedGallery.locator('video')
+    await expect(navigatedVideo).toBeVisible()
+    await expect
+      .poll(() =>
+        navigatedVideo.evaluate(
+          (video: HTMLVideoElement) => video.paused && video.currentTime === 0
+        )
+      )
+      .toBe(true)
+    await imageOpenedGallery
+      .getByRole('button', { name: enMessages.g.close })
+      .click()
 
     const videoTile = agentPanel.root.getByRole('button', {
       name: enMessages.agent.openVideo.replace('{name}', 'generated_clip.mp4'),

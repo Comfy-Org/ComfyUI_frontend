@@ -159,6 +159,14 @@ describe('ReplyAssetGroup', () => {
     expect(screen.getByTestId('lightbox').dataset.autoplayVideo).toBe('true')
   })
 
+  it('does not opt into video autoplay when the lightbox opens from an image', async () => {
+    renderGroup([image(1), video])
+
+    await userEvent.click(screen.getByRole('button', { name: 'i1.png' }))
+
+    expect(screen.getByTestId('lightbox').dataset.autoplayVideo).toBe('false')
+  })
+
   it('PM-1895 clears the play badge while the hover preview is playing', async () => {
     const play = vi
       .spyOn(HTMLMediaElement.prototype, 'play')
