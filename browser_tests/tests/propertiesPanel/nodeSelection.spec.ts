@@ -50,6 +50,7 @@ test.describe('Properties panel - Node selection', () => {
 
       await panel.getTab('Info').click()
       await panel.getTab('Parameters').click()
+      await panel.searchWidgets('steps')
       await expect(
         panel.contentArea.getByText('steps', { exact: true })
       ).toBeVisible()

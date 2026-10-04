@@ -86,6 +86,13 @@ describe('searchWidgets', () => {
     const result = searchWidgets(widgets, 'IMAGE width')
     expect(result).toHaveLength(1)
   })
+
+  it('searches a legacy widget with no type by name', () => {
+    const widget = createWidget('width', 'number')
+    Reflect.deleteProperty(widget.widget, 'type')
+
+    expect(searchWidgets([widget], 'width')).toEqual([widget])
+  })
 })
 
 describe('searchWidgetsAndNodes', () => {

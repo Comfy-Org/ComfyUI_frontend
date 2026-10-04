@@ -51,7 +51,10 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
       index,
       searchableLabel: item.widget.label?.toLowerCase() || '',
       searchableName: item.widget.name.toLowerCase(),
-      searchableType: item.widget.type.toLowerCase(),
+      searchableType:
+        typeof item.widget.type === 'string'
+          ? item.widget.type.toLowerCase()
+          : '',
       searchableValue: item.widget.value?.toString().toLowerCase() || ''
     }
     return searchableItem
