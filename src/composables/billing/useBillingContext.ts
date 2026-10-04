@@ -41,6 +41,8 @@ const ROUTING_WAIT_TIMEOUT_MS = 10_000
 
 class BillingRoutingUnavailableError extends Error {}
 
+class BillingWorkspaceChangedError extends Error {}
+
 function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
   const normalizedSlug = planSlug?.toLowerCase()
   return (
@@ -286,6 +288,15 @@ function useBillingContextInternal(): BillingContext {
     return !workspaceId || currentId === workspaceId
   }
 
+  // For actions whose caller shows the outcome: a workspace switch during the
+  // wait is a failure the caller reports, not a silent drop.
+  async function waitForRoutingInSameWorkspace(): Promise<void> {
+    if (await waitForRouting()) return
+    throw new BillingWorkspaceChangedError(
+      t('subscription.cancelDialog.workspaceChanged')
+    )
+  }
+
   // For actions whose caller shows no outcome: reports a timeout once, as
   // legacy actions did on failure, and resolves false so the caller stops.
   async function whenRoutingKnown(): Promise<boolean> {
@@ -377,14 +388,14 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function cancelSubscription(isScopeCurrent?: () => boolean) {
-    if (!(await waitForRouting())) return
+    await waitForRoutingInSameWorkspace()
     return activeContext.value.cancelSubscription(isScopeCurrent)
   }
 
   async function resubscribe(
     options?: Parameters<BillingActions['resubscribe']>[0]
   ) {
-    if (!(await waitForRouting())) return
+    await waitForRoutingInSameWorkspace()
     return activeContext.value.resubscribe(options)
   }
 
