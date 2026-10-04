@@ -20,6 +20,7 @@ import {
   claimPendingCheckoutTerminal
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 
 const {
   mockGetCheckoutAttribution,
@@ -2769,15 +2770,27 @@ describe('useSubscription', () => {
         }
       )
 
-      it.for<{ action: PortalAction; target: string }>([
-        { action: 'manageSubscription', target: 'manage_subscription' },
-        { action: 'handleInvoiceHistory', target: 'invoices' }
+      it.for<{
+        action: PortalAction
+        target: string
+        settles: (run: Promise<void>) => Promise<void>
+      }>([
+        {
+          action: 'manageSubscription',
+          target: 'manage_subscription',
+          settles: (run) => expect(run).rejects.toThrow()
+        },
+        {
+          action: 'handleInvoiceHistory',
+          target: 'invoices',
+          settles: (run) => expect(run).resolves.toBeUndefined()
+        }
       ])(
         'reports $action as a failed open when the tab is blocked',
-        async ({ action, target }) => {
+        async ({ action, target, settles }) => {
           mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
 
-          await useSubscriptionWithScope()[action]()
+          await settles(useSubscriptionWithScope()[action]())
           leaveAndReturn()
 
           expect(portalEvents()).toEqual([
@@ -2831,6 +2844,19 @@ describe('useSubscription', () => {
           expect(mockReportError).not.toHaveBeenCalled()
         }
       )
+
+      it('rejects a blocked manage subscription tab with the blocked-tab message, without reporting it', async () => {
+        mockAccessBillingPortalDirect.mockResolvedValueOnce(false)
+
+        await expect(
+          useSubscriptionWithScope().manageSubscription()
+        ).rejects.toEqual(
+          new PaymentPopupBlockedError(
+            "Couldn't open the billing page. Allow pop-ups for this site and try again."
+          )
+        )
+        expect(mockReportError).not.toHaveBeenCalled()
+      })
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
@@ -2848,7 +2874,11 @@ describe('useSubscription', () => {
       await fetchStatus()
       mockGetBillingStatus.mockClear()
 
-      await manageSubscription()
+      const blockedOpen = manageSubscription()
+      await expect(blockedOpen).rejects.toBeInstanceOf(PaymentPopupBlockedError)
+      await expect(blockedOpen).rejects.toThrow(
+        "Couldn't open the billing page. Allow pop-ups for this site and try again."
+      )
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(mockGetBillingStatus).not.toHaveBeenCalled()
