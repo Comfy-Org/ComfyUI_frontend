@@ -151,11 +151,15 @@ function readName(widget: { name: string }): string | typeof UNREADABLE_NAME {
     const key = String(raw)
     // Mirrors `widgetId`, which encodes the **raw** value rather than the
     // coerced one — a Symbol survives `String()` and then throws there.
-    const encoded = encodeURIComponent(raw as string)
-    // `widgetId` is `graphId:nodeId:name` and its pattern needs a non-empty
-    // last segment, so an empty name mints an id the store refuses to key on.
-    // That is the unaddressable state this walk exists to catch.
-    if (!encoded) return UNREADABLE_NAME
+    //
+    // An *empty* name is deliberately not refused here. It mints
+    // `graphId:nodeId:`, which the store declines to key on — but declining an
+    // id costs the widget nothing, while refusing it deletes a widget that
+    // renders, fires its callback and serializes, and shifts every positional
+    // value after it. `addWidget('text', '', …)` is an ordinary unlabeled
+    // widget that node packs ship, and `emptyNameWidget.spec.ts` asserts it
+    // stays on the node.
+    encodeURIComponent(raw as string)
     return key
   } catch {
     return UNREADABLE_NAME

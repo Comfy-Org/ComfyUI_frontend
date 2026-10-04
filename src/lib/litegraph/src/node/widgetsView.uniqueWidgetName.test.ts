@@ -367,6 +367,46 @@ describe('unique widget name invariant', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('clears a slot bound to the refused widget by name, which is how real nodes bind', () => {
+    // The existing case sets `input._widget` by hand, and production assigns
+    // that only for promoted subgraph inputs — the one class this refusal is
+    // gated off. Ordinary nodes bind widget inputs by name, so a refusal that
+    // only matches the direct reference clears nothing and the slot silently
+    // re-binds to the widget that kept the name.
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    const second = node.addWidget('number', 'steps', 2, () => undefined, {})
+    node.addInput('steps', 'INT')
+    const input = node.inputs.at(-1)!
+    input.widget = { name: 'steps' }
+    pinName(second, 'steps')
+
+    // A second widget pinned onto `steps` is refused, and the slot that named
+    // it must not be left pointing at a name it no longer owns.
+    const third = node.addWidget('number', 'spare', 3, () => undefined, {})
+    pinName(third, 'steps')
+    node.addWidget('number', 'cfg', 4, () => undefined, {})
+
+    expect(node.widgets!.indexOf(third)).toBe(-1)
+    expect(input.widget).toBeUndefined()
+  })
+
+  it('does not tear down every input when a hole reaches the refusal', () => {
+    // A nullish entry reads as an unreadable name and is refused like anything
+    // else. Matching the teardown on it would clear every input whose
+    // `_widget` is still unset, which is nearly all of them.
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    node.addInput('seed', 'INT')
+    const input = node.inputs.at(-1)!
+    input.widget = { name: 'seed' }
+
+    expect(() => node.widgets!.push(undefined as never)).not.toThrow()
+
+    expect(input.widget).toEqual({ name: 'seed' })
+    expect(names(node)).toEqual(['seed'])
+  })
+
   it('clears slot back-references to a widget it refused', () => {
     const node = createNode()
     node.addWidget('number', 'seed', 1, () => undefined, {})

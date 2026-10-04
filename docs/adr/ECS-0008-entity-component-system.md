@@ -246,7 +246,18 @@ legitimate re-mint rather than an identity collision — which is why
 >   with nothing reported. The guard also only covers the commit path — a raw
 >   `push`, a splice, a whole-array assignment. `addCustomWidget` converts
 >   before it pushes, so `addWidget` and `addDOMWidget` with a hostile accessor
->   still throw to their caller and never reach the refusal.
+>   still throw to their caller and never reach the refusal. And the verdict
+>   that decides whether to swallow is one read taken before the conversion,
+>   so a getter that answers _inconsistently_ — throwing on one read and not
+>   the next — can still land either way. Closing that needs the conversion to
+>   happen inside the walk, which is a larger change than this one; the trade
+>   is recorded here rather than left implicit.
+> - **An un-keyable name is declined, not refused.** An empty name mints
+>   `graphId:nodeId:`, which the store will not key on. That widget still
+>   renders, still fires its callback and still serializes, so deleting it
+>   would lose a working widget and shift every positional value after it.
+>   Refusal is for a name that is _ambiguous_ with another widget's, not for
+>   one the store happens not to track.
 > - **The two points cover array mutations and the join, not every way a name
 >   changes.** Redefining a `name` is not an array mutation, so an extension
 >   that adds a widget under a unique name in `onAdded` and then pins it onto
