@@ -39,6 +39,7 @@ import {
   linksMap,
   metaMap,
   nodesMap,
+  overflowBoundRefusal,
   overflowWidgetName,
   parseOverflowWidgetName,
   widgetStorageOf,
@@ -109,6 +110,13 @@ function projectOutputSlot(slot: unknown): unknown {
  * order is always resolved by the real catalog name at that position, never
  * by a coincidentally-shaped one, so a genuine `widget_order` mismatch there
  * still throws exactly as before. Returns `-1` when neither resolves.
+ *
+ * Deliberately NOT where the BE-17528 overflow bound lives: a `-1` from here
+ * is "no position", which {@link widgetsToPositional}'s shadowing branch
+ * legitimately treats as "not projected right now". A beyond-bound index must
+ * be a refusal instead, so the caller checks `overflowBoundRefusal` before it
+ * reads this at all. `cloud`'s `catalogpins.ts` `resolvesIn` mirrors this
+ * function and applies its own, stricter bound on top.
  */
 function positionalIndexOf(order: readonly string[], name: string): number {
   const known = order.indexOf(name);
@@ -139,6 +147,13 @@ function widgetsToPositional(
   let max = -1;
   widgets.forEach((_v, storageKey) => {
     const { name, occurrence } = widgetIdentityFromStorageKey(storageKey);
+    // BEFORE any resolution, and before the two early returns below, so a
+    // beyond-bound overflow name cannot be answered with a silent skip: the
+    // loop's whole output is an allocation through the highest index it
+    // accepts, and this document state arrives as caller-supplied doc bytes
+    // that no op-payload bound ever saw (BE-17528).
+    const refusal = overflowBoundRefusal(name);
+    if (refusal !== null) throw new TypeError(`project: ${nodeType}: ${refusal}`);
     const i = occurrence === 0 ? positionalIndexOf(order, name) : widgetIndexOf(order, name, occurrence);
     // A sub-widget of an option the node does not select owns no slot; its
     // value is kept for when that option is selected again.

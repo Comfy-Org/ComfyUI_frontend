@@ -793,7 +793,21 @@ for its corpus; rule 6 was added by Amendment A4):
    real name, the real name owns it and the overflow value is shadowed (kept
    in the document, not projected) until the position is free again. Both
    are pure functions of doc state, so replicas converge in any arrival
-   order. A node stored opaquely
+   order. **N is BOUNDED (BE-17528):** an overflow name whose index is at or
+   past `MAX_OVERFLOW_WIDGETS` is REFUSED, on mint and on projection alike,
+   because the projected array runs through the highest index any stored
+   name encodes and that index arrives in document bytes no op-payload
+   bound ever saw. The bound is ABSOLUTE, not relative to the node's
+   expanded order: a bound of the form `order.length + N` moves when an
+   ordinary selector write changes the selection, which would let one
+   applied op turn a projectable node into a permanently unprojectable one.
+   It equals `MAX_COLLECTION_ENTRIES`, so every `widgets_values` an op may
+   carry still round-trips; a host may apply a stricter bound of its own.
+   The refusal is loud rather than a skip — unlike shadowing, a
+   beyond-bound index never becomes legitimate. It is decided on the
+   DECODED widget name, so the plain and the A24 occurrence-encoded
+   spellings of one identity get the same verdict on both legs. A node
+   stored opaquely
    (`__widgets_opaque` — Amendment A2) emits its array verbatim and needs no
    catalog entry.
 3. **Numbers serialize as JS numbers.** Python may emit `8.0` where JS emits

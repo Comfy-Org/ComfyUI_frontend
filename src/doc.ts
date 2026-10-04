@@ -24,6 +24,7 @@
 
 import * as Y from "yjs";
 import { assertNever } from "./exhaustive.js";
+import { MAX_OVERFLOW_WIDGETS } from "./limits.js";
 import {
   LEGACY_NODE_INCARNATION,
   NODE_INCARNATION_KEY,
@@ -31,7 +32,7 @@ import {
   type WidgetCatalog,
   type WorkflowNode,
 } from "./types.js";
-import { widgetOccurrenceAt, widgetStorageKey } from "./widget-identity.js";
+import { widgetIdentityFromStorageKey, widgetOccurrenceAt, widgetStorageKey } from "./widget-identity.js";
 import {
   WIDGET_FORM_FIELD,
   WIDGET_FORM_KEY,
@@ -126,6 +127,52 @@ const OVERFLOW_WIDGET_NAME_RE = /^_extra_(0|[1-9]\d*)$/;
 export function parseOverflowWidgetName(name: string): number | null {
   const match = OVERFLOW_WIDGET_NAME_RE.exec(name);
   return match ? Number(match[1]!) : null;
+}
+
+/**
+ * Why `name` may not be stored as an overflow slot, or `null` to accept it
+ * (BE-17528). Only an overflow placeholder can be refused here: a real catalog
+ * name addresses a position inside the order.
+ *
+ * The bound is enforced on BOTH legs of the round trip the BE-9176 workaround
+ * rests on — mint names an overrun entry positionally, projection reads the
+ * same shape back — because enforcing it on one leg alone would trade an
+ * unbounded allocation for a document that mints fine and is then permanently
+ * unprojectable.
+ *
+ * Takes no order, deliberately: {@link MAX_OVERFLOW_WIDGETS} is absolute for
+ * the reason given there, so neither leg can disagree with the other and no
+ * document write can move the verdict for a name already stored. A bound
+ * expressed against the node's expanded order moved under an ordinary
+ * dynamic-combo selector write, which recreated the very failure above.
+ *
+ * The refusal is loud rather than a skip. A beyond-bound name cannot be
+ * resolved to a position, and the one existing path that tolerates an
+ * unresolvable overflow name — `widgetsToPositional`'s shadowing branch, for a
+ * slot whose index the CURRENT dynamic-combo selection has given to a real
+ * name — is about a value that is still legitimately in the document and
+ * projects again later. A beyond-bound index never becomes legitimate, so
+ * silently dropping it would hide the only signal that the document is corrupt.
+ *
+ * Accepts a widget NAME or an occurrence-encoded STORAGE KEY (A24) and decodes
+ * before deciding, so the two legs cannot disagree about which spelling they
+ * were handed. That is not defensive sugar: the first version of this guard
+ * read the raw key on the name-keyed mint leg, where the key is caller-supplied
+ * verbatim, and `{"<occurrence-encoded _extra_1000000>": 1}` therefore MINTED
+ * and was then permanently unprojectable — the mint-then-refuse failure the
+ * two-leg design exists to prevent. Decoding here rather than at each call site
+ * means a future caller cannot reintroduce it by forgetting. Idempotent on a
+ * plain name, which is what the projection leg passes.
+ */
+export function overflowBoundRefusal(nameOrStorageKey: string): string | null {
+  const { name } = widgetIdentityFromStorageKey(nameOrStorageKey);
+  const index = parseOverflowWidgetName(name);
+  if (index === null || index < MAX_OVERFLOW_WIDGETS) return null;
+  return (
+    `overflow widget '${name}' addresses index ${String(index)}, at or past the ` +
+    `${String(MAX_OVERFLOW_WIDGETS)}-slot overflow bound; projecting it would allocate a ` +
+    "widgets_values array through that index (BE-17528)"
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -793,6 +840,11 @@ function slotToYMap(slot: unknown, what: string): Y.Map<unknown> | unknown {
  * are named positionally via {@link overflowWidgetName} rather than the whole
  * node being lost. This is not silently swallowing a mismatch: every value is
  * kept, under a name that cannot be confused with a real catalog entry.
+ *
+ * That overrun is BOUNDED, on both shapes (BE-17528 —
+ * {@link overflowBoundRefusal}). An array whose overrun exceeds the bound is
+ * refused here rather than stored, so this function cannot mint a node that
+ * `project()` would then refuse to lay out.
  */
 function widgetsToYMap(wv: unknown, widgetOrder: readonly string[] | undefined): Y.Map<unknown> {
   const widgets = new Y.Map<unknown>();
@@ -800,11 +852,27 @@ function widgetsToYMap(wv: unknown, widgetOrder: readonly string[] | undefined):
     const order = widgetOrder ?? [];
     wv.forEach((v, i) => {
       const name = order[i] ?? overflowWidgetName(i);
+      const refusal = overflowBoundRefusal(name);
+      if (refusal !== null) throw new TypeError(`widgets_values[${String(i)}]: ${refusal}`);
       const occurrence = i < order.length ? widgetOccurrenceAt(order, i) : 0;
       widgets.set(widgetStorageKey(name, occurrence), cloneForMap(v, `widgets_values[${String(i)}]`));
     });
   } else if (isPlainObject(wv)) {
-    for (const [k, v] of Object.entries(wv)) widgets.set(k, cloneForMap(v, `widgets_values.${k}`));
+    for (const [k, v] of Object.entries(wv)) {
+      // A name-keyed record is not decomposed against the order, so a
+      // placeholder-shaped KEY is the only way an overflow index reaches
+      // storage on this leg. `add_node`/`insert_workflow` already refuse one
+      // (`rejectUnprojectableWidgets`, `unknown_widget`); `mint()` does not
+      // run that check, and this is the shared chokepoint both reach.
+      //
+      // `k` arrives VERBATIM from the caller's JSON, so it can be either
+      // spelling: a plain name, or an A24 occurrence-encoded storage key whose
+      // decoded name is the placeholder. `overflowBoundRefusal` decodes, which
+      // is why the check is not a regex on `k` here — see the note there.
+      const refusal = overflowBoundRefusal(k);
+      if (refusal !== null) throw new TypeError(`widgets_values.${k}: ${refusal}`);
+      widgets.set(k, cloneForMap(v, `widgets_values.${k}`));
+    }
   }
   return widgets;
 }

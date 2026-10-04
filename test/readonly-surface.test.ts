@@ -780,6 +780,7 @@ describe("read-only surface — classification", () => {
     "MAX_PAYLOAD_DEPTH",
     "MAX_COLLECTION_ENTRIES",
     "MAX_OP_COST",
+    "MAX_OVERFLOW_WIDGETS",
     "opBoundsRefusal",
     "NODE_INCARNATION_KEY",
     "LEGACY_NODE_INCARNATION",
