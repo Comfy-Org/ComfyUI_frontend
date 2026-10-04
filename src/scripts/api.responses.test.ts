@@ -36,6 +36,50 @@ describe('ComfyApi response boundaries', () => {
   })
 
   it.for([
+    {
+      name: 'omits details, as the cloud contract allows',
+      reason: {
+        type: 'unknown_node_class',
+        message: "this deployment's build does not contain SomeCustomNode."
+      },
+      expected:
+        '\nSomeCustomNode:\n    - ' +
+        "this deployment's build does not contain SomeCustomNode."
+    },
+    {
+      name: 'sends empty details, as core ComfyUI does',
+      reason: {
+        type: 'prompt_no_outputs',
+        message: 'Prompt has no outputs',
+        details: ''
+      },
+      expected: '\nSomeCustomNode:\n    - Prompt has no outputs'
+    },
+    {
+      name: 'sends details',
+      reason: {
+        type: 'value_not_in_list',
+        message: 'Value not in list',
+        details: 'ckpt_name: missing.safetensors'
+      },
+      expected:
+        '\nSomeCustomNode:\n    - Value not in list: ckpt_name: missing.safetensors'
+    }
+  ])('formats a node error that $name', ({ reason, expected }) => {
+    expect(
+      new PromptExecutionError({
+        node_errors: {
+          '12': {
+            class_type: 'SomeCustomNode',
+            errors: [reason],
+            dependent_outputs: []
+          }
+        }
+      }).toString()
+    ).toBe(expected)
+  })
+
+  it.for([
     { name: 'null response', payload: null },
     { name: 'missing data', payload: {} },
     { name: 'non-string data', payload: { data: 17 } },
