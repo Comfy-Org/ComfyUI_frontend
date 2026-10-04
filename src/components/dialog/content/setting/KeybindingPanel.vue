@@ -25,21 +25,16 @@
         <DropdownMenu
           :entries="menuEntries"
           :style="keybindingOverlayContentStyle"
-          icon="icon-[lucide--ellipsis]"
-          item-class="text-sm gap-2"
-          button-size="unset"
-          button-class="size-10"
           to="#keybinding-panel-actions"
           align="end"
         >
           <template #button>
             <Button
-              size="unset"
-              class="size-10"
+              size="icon-lg"
               data-testid="keybinding-preset-menu"
-            >
-              <i class="icon-[lucide--ellipsis]" />
-            </Button>
+              icon="icon-[lucide--ellipsis]"
+              :aria-label="$t('g.more')"
+            />
           </template>
         </DropdownMenu>
       </div>

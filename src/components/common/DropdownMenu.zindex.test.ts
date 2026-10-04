@@ -52,7 +52,7 @@ describe('DropdownMenu z-index', () => {
 
     const menu = await screen.findByRole('menu')
     expect(menu.style.zIndex).toBe('')
-    expect(menu.className).toContain('z-1700')
+    expect(menu.className).toContain('z-3000')
   })
 
   it('opens a nested menu above a registered dialog', async () => {

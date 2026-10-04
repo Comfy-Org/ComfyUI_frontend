@@ -89,9 +89,12 @@ const entries = computed(() => {
       @close-auto-focus="isEditing && $event.preventDefault()"
     >
       <template #trigger>
-        <Button variant="muted-textonly" data-testid="widget-actions-menu">
-          <i class="icon-[lucide--ellipsis]" />
-        </Button>
+        <Button
+          variant="muted-textonly"
+          data-testid="widget-actions-menu"
+          icon="icon-[lucide--ellipsis]"
+          :aria-label="$t('g.more')"
+        />
       </template>
     </Menu>
   </div>

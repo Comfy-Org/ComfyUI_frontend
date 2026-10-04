@@ -4,13 +4,11 @@
       <template #trigger>
         <Button
           v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
-          class="rounded-lg"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('g.moreWorkflows')"
-        >
-          <i class="pi pi-ellipsis-h" />
-        </Button>
+          icon="icon-[lucide--ellipsis]"
+        />
       </template>
       <template #item="{ item }">
         <i v-if="item.icon" :class="item.icon" />

@@ -36,28 +36,16 @@
               </Button>
             </template>
           </DropdownMenu>
-          <DropdownMenu v-else>
-            <template #button>
-              <Button size="icon" :aria-label="$t('g.sort')">
-                <i class="icon-[lucide--settings-2] size-4" />
-              </Button>
+          <Menu v-else>
+            <template #trigger>
+              <Button
+                size="icon"
+                :aria-label="$t('g.sort')"
+                icon="icon-[lucide--settings-2]"
+              />
             </template>
-            <template #default="{ itemClass }">
-              <DropdownMenuRadioGroup v-model="sortOrder">
-                <DropdownMenuRadioItem
-                  v-for="option in sortingOptions"
-                  :key="option.id"
-                  :value="option.id"
-                  :class="itemClass"
-                >
-                  <span class="flex-1">{{ $t(option.label) }}</span>
-                  <DropdownMenuItemIndicator class="size-4 shrink-0">
-                    <i class="icon-[lucide--check]" />
-                  </DropdownMenuItemIndicator>
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </template>
-          </DropdownMenu>
+            <MenuRadioGroup v-model="sortOrder" :options="sortingOptions" />
+          </Menu>
         </template>
       </SidebarTopArea>
     </template>
@@ -107,7 +95,6 @@
 import { useLocalStorage } from '@vueuse/core'
 import { mapValues } from 'es-toolkit'
 import type { MenuItem } from '@/components/ui/menu/types'
-import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from 'reka-ui'
 import {
   computed,
   nextTick,
@@ -125,6 +112,8 @@ import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
@@ -187,8 +176,8 @@ const sortOrder = usePerTabState(selectedTab, sortOrderByTab)
 
 const sortingOptions = computed(() =>
   nodeOrganizationService.getSortingStrategies().map((strategy) => ({
-    id: strategy.id,
-    label: strategy.label
+    value: strategy.id,
+    label: t(strategy.label)
   }))
 )
 

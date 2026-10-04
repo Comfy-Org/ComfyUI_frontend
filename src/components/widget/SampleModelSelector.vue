@@ -25,9 +25,12 @@
         </Button>
         <Menu :items="moreMenuItems" align="end">
           <template #trigger>
-            <Button size="icon" variant="secondary">
-              <i class="icon-[lucide--ellipsis] size-4" />
-            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              icon="icon-[lucide--ellipsis]"
+              :aria-label="$t('g.more')"
+            />
           </template>
         </Menu>
       </div>

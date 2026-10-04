@@ -59,9 +59,8 @@
               size="icon"
               variant="muted-textonly"
               :aria-label="$t('g.moreOptions')"
-            >
-              <i class="icon-[lucide--ellipsis] size-4" />
-            </Button>
+              icon="icon-[lucide--ellipsis]"
+            />
           </template>
         </Menu>
       </div>

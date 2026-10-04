@@ -125,12 +125,11 @@ const menuItems = computed<MenuItem[]>(() => [
     <template #trigger>
       <Button
         size="icon"
-        variant="secondary"
+        variant="muted-textonly"
         data-testid="widget-actions-menu-button"
-        class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
-      >
-        <i class="icon-[lucide--more-vertical] size-4" />
-      </Button>
+        icon="icon-[lucide--more-vertical]"
+        :aria-label="t('g.more')"
+      />
     </template>
   </Menu>
 </template>

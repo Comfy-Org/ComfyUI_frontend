@@ -141,9 +141,11 @@ async function rerun(e: Event) {
     </Button>
     <Menu v-if="selectedItem" :items="selectedItemMenuEntries">
       <template #trigger>
-        <Button size="icon" :aria-label="t('g.moreOptions')">
-          <i class="icon-[lucide--ellipsis]" />
-        </Button>
+        <Button
+          size="icon"
+          :aria-label="t('g.moreOptions')"
+          icon="icon-[lucide--ellipsis]"
+        />
       </template>
     </Menu>
   </section>

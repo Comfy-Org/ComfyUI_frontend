@@ -5,6 +5,7 @@ export interface MenuItemCommandEvent {
 
 interface MenuItemMetadata {
   label?: string | (() => string)
+  description?: string | (() => string)
   icon?: string
   disabled?: boolean | (() => boolean)
   visible?: boolean | (() => boolean)
@@ -36,6 +37,7 @@ export interface MenuItemAction extends MenuItemMetadata {
   items?: never
   command?: (event: MenuItemCommandEvent) => unknown
   checked?: boolean | (() => boolean)
+  variant?: 'destructive'
 }
 
 export type MenuItem = MenuItemSeparator | MenuItemSubmenu | MenuItemAction

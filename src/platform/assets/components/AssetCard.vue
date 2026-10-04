@@ -55,9 +55,12 @@
           align="end"
         >
           <template #trigger>
-            <Button size="sm" variant="secondary">
-              <i class="icon-[lucide--ellipsis] size-4" />
-            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon="icon-[lucide--ellipsis]"
+              :aria-label="$t('g.more')"
+            />
           </template>
         </Menu>
       </IconGroup>

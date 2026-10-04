@@ -289,9 +289,7 @@ export const TestIds = {
     progressOverlay: 'queue-progress-overlay',
     progressNodeFill: 'queue-progress-node-fill',
     overlayToggle: 'queue-overlay-toggle',
-    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
-    clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
     notificationBanner: 'queue-notification-banner'
   },

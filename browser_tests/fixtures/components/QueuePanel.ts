@@ -9,6 +9,12 @@ export class QueuePanel {
   readonly progressNodeFill: Locator
   readonly moreOptionsButton: Locator
   readonly jobAssetsList: Locator
+  readonly menu: Locator
+  readonly dockedHistoryAction: Locator
+  readonly runProgressAction: Locator
+  readonly clearHistoryAction: Locator
+  readonly filterButton: Locator
+  readonly sortButton: Locator
 
   constructor(readonly page: Page) {
     this.overlayToggle = page.getByTestId(TestIds.queue.overlayToggle)
@@ -18,6 +24,25 @@ export class QueuePanel {
     )
     this.moreOptionsButton = this.overlay.getByLabel(/More options/i)
     this.jobAssetsList = page.getByTestId(TestIds.queue.jobAssetsList)
+    this.menu = page.getByRole('menu')
+    this.dockedHistoryAction = page.getByRole('menuitemcheckbox', {
+      name: 'Docked Job History'
+    })
+    this.runProgressAction = page.getByRole('menuitemcheckbox', {
+      name: 'Show run progress bar'
+    })
+    this.clearHistoryAction = page.getByRole('menuitem', {
+      name: 'Clear job history',
+      exact: true
+    })
+    this.filterButton = this.overlay.getByRole('button', {
+      name: 'Filter jobs'
+    })
+    this.sortButton = this.overlay.getByRole('button', { name: 'Sort jobs' })
+  }
+
+  menuOption(label: string): Locator {
+    return this.menu.getByRole('menuitemradio', { name: label, exact: true })
   }
 
   jobRow(jobId: string): Locator {
@@ -52,11 +77,6 @@ export class QueuePanel {
 
   async openClearHistoryDialog() {
     await this.moreOptionsButton.click()
-
-    const clearHistoryAction = this.page.getByTestId(
-      TestIds.queue.clearHistoryAction
-    )
-    await expect(clearHistoryAction).toBeVisible()
-    await clearHistoryAction.click()
+    await this.clearHistoryAction.click()
   }
 }

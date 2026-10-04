@@ -46,8 +46,15 @@ function select(event: Event) {
     "
     v-tooltip="{ value: item.tooltip, showDelay: 0 }"
     :aria-label="toValue(item.label)"
+    :aria-description="toValue(item.description)"
     :disabled="toValue(item.disabled) ?? (disableCommandless && !item.command)"
-    :class="cn(itemClass, toValue(item.class))"
+    :class="
+      cn(
+        itemClass,
+        item.variant === 'destructive' && 'text-destructive-background',
+        toValue(item.class)
+      )
+    "
     v-bind="
       legacyCheckedRole && item.checked !== undefined
         ? {
