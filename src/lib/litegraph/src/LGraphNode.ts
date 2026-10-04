@@ -234,6 +234,54 @@ function configureCanonicalField(
 }
 
 /**
+ * Mirrors `MAX_CLIPBOARD_WIDGET_VALUES` in the workflow schema, which bounds
+ * the same shape on the clipboard path. Duplicated rather than imported because
+ * `src/lib` is vendored leaf code and cannot reach an app layer.
+ */
+const MAX_POSITIONAL_WIDGET_VALUES = 10_000
+
+/**
+ * The positional register a node's `widgets_values` carries.
+ *
+ * `zWidgetValues` is `z.union([z.array(…), z.record(…)])`, `zComfyNode` is
+ * `.passthrough()`, and only the clipboard schemas run
+ * `normalizeClipboardNodeWidgets` — so on the workflow-load path this field can
+ * be an array, the indexed array-like `{ 0: v, 1: v, length: n }` form
+ * {@link ISerialisedNode} documents for custom nodes, or a name-keyed record.
+ *
+ * `Array.from` alone handles the first two and **trusts `length` without a
+ * bound**: `{ "length": 1000000000 }` passes load validation and materialises a
+ * billion-element array, which freezes the tab. Rejecting every non-array
+ * instead is not the fix either — that discards the documented array-like form,
+ * turning a freeze into silent total loss for a shape that used to restore
+ * correctly. So the array-like is mapped under the same bound the clipboard
+ * path applies, and anything else contributes no positional values.
+ */
+function positionalWidgetValues(values: unknown): TWidgetValue[] {
+  if (Array.isArray(values)) return Array.from(values)
+  if (values === null || typeof values !== 'object') return []
+
+  const { length } = values as { length?: unknown }
+  if (
+    typeof length !== 'number' ||
+    !Number.isSafeInteger(length) ||
+    length < 0 ||
+    length > MAX_POSITIONAL_WIDGET_VALUES
+  ) {
+    return []
+  }
+
+  const positional: TWidgetValue[] = Array.from({ length })
+  for (const [key, value] of Object.entries(values)) {
+    const index = Number(key)
+    if (Number.isInteger(index) && index >= 0 && index < length) {
+      positional[index] = value as TWidgetValue
+    }
+  }
+  return positional
+}
+
+/**
  * A `fallbackWidgetsValuesNames` entry names a legacy slot only if it is a
  * non-empty string. The list is read off unvalidated `/object_info`, so its
  * declared element type is not a runtime guarantee and a non-string entry says
@@ -315,18 +363,38 @@ function deriveNamedFromFallbackNames(
   return Object.fromEntries(entries)
 }
 
+/**
+ * `widgets_values_named` is never declared by `zComfyNode`/`zSubgraphInstance`,
+ * both of which are `.passthrough()`, so any JSON reaches here. `[]`, `true`
+ * and `"x"` are all truthy and would short-circuit the `??` below, spread to
+ * `{}` or to index keys, and switch the node into named restoration — where
+ * every widget then fails `Object.hasOwn` and resets to its default while
+ * `widgets_values` still holds the saved values. An empty `{}` has the same
+ * effect, and is refused for the same reason a register derived from a list
+ * that names nothing is.
+ */
+function suppliedNamedRegister(
+  named: unknown
+): Record<string, TWidgetValue> | undefined {
+  if (named === null || typeof named !== 'object' || Array.isArray(named)) {
+    return
+  }
+  const register = named as Record<string, TWidgetValue>
+  return Object.keys(register).length > 0 ? register : undefined
+}
+
 export function createWidgetRestorationState(
   info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
   fallbackNames?: readonly unknown[]
 ) {
-  const positional = Array.from(info.widgets_values ?? [])
+  const positional = positionalWidgetValues(info.widgets_values)
   // `nodeData` is built from unvalidated `/object_info` and then mutated in
   // place by `beforeRegisterNodeDef` extensions, so this may be any value. A
   // bare string is indexable, which would otherwise attribute one slot per
   // character and opt the node in on a register of single letters.
   const list = Array.isArray(fallbackNames) ? fallbackNames : undefined
   const named =
-    info.widgets_values_named ??
+    suppliedNamedRegister(info.widgets_values_named) ??
     (info.widgets_values && list
       ? deriveNamedFromFallbackNames(positional, list)
       : undefined)
@@ -334,7 +402,14 @@ export function createWidgetRestorationState(
   return {
     positional,
     named: named ? { ...named } : undefined,
-    restoreNamed: Boolean(named && (LiteGraph.namedValuesRestore || list))
+    // The opt-in is gated on the field being *present*, not on it being
+    // usable: a node ships it because its widget order changed, so suppressing
+    // named restoration over a malformed list would place every value of a
+    // workflow that supplied its own `widgets_values_named` by index — which is
+    // the error the list exists to prevent. Only derivation needs `list`.
+    restoreNamed: Boolean(
+      named && (LiteGraph.namedValuesRestore || fallbackNames !== undefined)
+    )
   }
 }
 
@@ -1295,11 +1370,15 @@ export class LGraphNode
 
     realignGroupWidgetChildLinks(this, info)
 
-    const restoration = createWidgetRestorationState(
-      info,
-      this.constructor.nodeData?.fallbackWidgetsValuesNames
-    )
+    const fallbackList = this.constructor.nodeData?.fallbackWidgetsValuesNames
+    const restoration = createWidgetRestorationState(info, fallbackList)
     const namedValues = restoration.named
+    // A node that ships the list but derives no register is reported with an
+    // empty one rather than skipped. The shadow diff is the only existing
+    // signal that a node definition's list is unusable, and gating it on
+    // `namedValues` being truthy would silence exactly the nodes that need it.
+    const shadowValues =
+      namedValues ?? (fallbackList === undefined ? undefined : {})
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
@@ -1349,14 +1428,14 @@ export class LGraphNode
       }
 
       this.onConfigure?.(extensionConfigureView(this, info))
-      if (this.widgets && namedValues) {
+      if (this.widgets && shadowValues) {
         const legacyShadow = computeLegacyWidgetShadow(
           this.widgets,
-          info.widgets_values
+          restoration.positional
         )
         reportNamedValuesShadowDiff(
           this,
-          diffNamedValuesShadow(namedValues, legacyShadow),
+          diffNamedValuesShadow(shadowValues, legacyShadow),
           Boolean(info.widgets_values_named)
         )
       }

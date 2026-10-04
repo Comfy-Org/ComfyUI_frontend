@@ -52,6 +52,17 @@ function widgetValues(node: LGraphNode): TWidgetValue[] {
   return node.widgets!.map((widget) => widget.value)
 }
 
+/**
+ * These cases feed shapes the parameter types cannot describe, because the
+ * point is that the runtime values are not what the types claim: `zComfyNode`
+ * is `.passthrough()` and `/object_info` is unvalidated. Named so the intent is
+ * legible rather than scattered as bare double assertions.
+ */
+type RestorationInfo = Parameters<typeof createWidgetRestorationState>[0]
+const asMalformedInfo = (info: unknown) => info as RestorationInfo
+const asMalformedList = (list: unknown) =>
+  list as Parameters<typeof createWidgetRestorationState>[1]
+
 describe('fallback widget-name coverage', () => {
   let node: LGraphNode
 
@@ -233,7 +244,101 @@ describe('fallback widget-name coverage', () => {
     })
   })
 
+  describe('`widgets_values` is not always an array', () => {
+    it('maps the indexed array-like form custom nodes serialize', () => {
+      const restoration = createWidgetRestorationState(
+        asMalformedInfo({ widgets_values: { 0: 12345, 1: 37, length: 2 } }),
+        ['seed', 'steps']
+      )
+
+      expect(restoration).toStrictEqual({
+        positional: [12345, 37],
+        named: { seed: 12345, steps: 37 },
+        restoreNamed: true
+      })
+    })
+
+    it('does not materialise an array from an unbounded array-like `length`', () => {
+      // `zWidgetValues` accepts the record form with any numeric value and the
+      // 10k clipboard clamp is not wired into the load path, so this passes
+      // validation. `Array.from` on it allocates a billion elements.
+      const restoration = createWidgetRestorationState(
+        asMalformedInfo({ widgets_values: { length: 1_000_000_000 } }),
+        ['seed']
+      )
+
+      expect(restoration.positional).toStrictEqual([])
+    })
+
+    it('takes no positional values from a name-keyed record', () => {
+      // Known gap rather than a fix: the record form is only normalized on the
+      // clipboard path, and promoting it here would not restore anything
+      // either, because the opt-in still gates on the list or the user setting.
+      const restoration = createWidgetRestorationState(
+        asMalformedInfo({ widgets_values: { seed: 12345, steps: 37 } }),
+        ['seed', 'steps']
+      )
+
+      expect(restoration).toStrictEqual({
+        positional: [],
+        named: undefined,
+        restoreNamed: false
+      })
+    })
+  })
+
+  describe('a supplied `widgets_values_named` is validated, not trusted', () => {
+    // `zComfyNode` is `.passthrough()` and never declares the field, so any
+    // JSON reaches here. Each of these is truthy, so without the check it
+    // would short-circuit derivation, spread to `{}` or to index keys, and
+    // switch the node into named mode where no widget matches.
+    const malformed: [string, unknown][] = [
+      ['an array', []],
+      ['a boolean', true],
+      ['a string', 'x'],
+      ['an empty object', {}]
+    ]
+
+    for (const [label, supplied] of malformed) {
+      it(`ignores ${label} and derives from the list instead`, () => {
+        const restoration = createWidgetRestorationState(
+          asMalformedInfo({
+            widgets_values: [12345, 37],
+            widgets_values_named: supplied
+          }),
+          ['seed', 'steps']
+        )
+
+        expect(restoration).toStrictEqual({
+          positional: [12345, 37],
+          named: { seed: 12345, steps: 37 },
+          restoreNamed: true
+        })
+      })
+    }
+  })
+
   describe('the opt-in and the supplied register are untouched', () => {
+    it('still activates a supplied register when the list is malformed', () => {
+      // Derivation needs a usable list; the opt-in does not. A node ships this
+      // field because its widget order changed, so reading positionally over a
+      // malformed list would place every value in the wrong widget — the error
+      // the field exists to prevent.
+      const restoration = createWidgetRestorationState(
+        {
+          widgets_values: [111, 12],
+          widgets_values_named: { seed: 987654321, steps: 37 }
+        },
+        asMalformedList('steps')
+      )
+
+      expect(restoration).toStrictEqual({
+        positional: [111, 12],
+        named: { seed: 987654321, steps: 37 },
+        restoreNamed: true
+      })
+    })
+
     it('still lets an empty list activate a supplied named register', () => {
       const restoration = createWidgetRestorationState(
         {
