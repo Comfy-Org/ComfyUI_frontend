@@ -212,6 +212,11 @@ describe('toAgentPaywallReason', () => {
       case: 'an unavailable presentation',
       presentation: { kind: 'unavailable' },
       expected: 'unknown'
+    },
+    {
+      case: 'an unresolved presentation',
+      presentation: { kind: 'unresolved' },
+      expected: 'unknown'
     }
   ] as const)('reports $expected for $case', ({ presentation, expected }) => {
     expect(toAgentPaywallReason(presentation)).toBe(expected)
