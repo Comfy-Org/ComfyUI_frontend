@@ -201,7 +201,7 @@ const zExtensionsResponse = z.array(z.string())
 const zError = z.object({
   type: z.string(),
   message: z.string(),
-  details: z.string(),
+  details: z.string().optional(),
   extra_info: z
     .object({
       input_name: z.string().optional()
@@ -228,7 +228,7 @@ const zPromptResponse = z.object({
 const zPromptError = z.object({
   type: z.string(),
   message: z.string(),
-  details: z.string()
+  details: z.string().optional()
 })
 
 const zDeviceStats = z.object({
