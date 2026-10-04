@@ -1,7 +1,9 @@
-import { i18n } from '@/i18n'
-
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentAskNodeRef } from '../../schemas/agentApiSchema'
+import type {
+  AgentMessages,
+  RenderedAskKind,
+  TurnId
+} from '../../schemas/agentApiSchema'
+import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
 
 export type PartState = 'streaming' | 'done'
 
@@ -40,12 +42,15 @@ export interface NoticePart {
    * on its own.
    */
   retryAfterSeconds?: number
-  /**
-   * Set on the notice that stands in for an ask the panel cannot render, so
-   * it goes when that ask resolves instead of telling the user to stop a turn
-   * that has moved on.
-   */
-  askId?: string
+}
+
+/**
+ * Stands in for an ask the panel cannot render, so the user sees why the turn
+ * is waiting. It goes when that ask resolves.
+ */
+export interface AskUnavailablePart {
+  type: 'askUnavailable'
+  askId: string
 }
 
 export interface TabLinkPart {
@@ -80,20 +85,7 @@ export interface AskUserResolution {
   otherText?: string
 }
 
-/**
- * A canvas node a `delete_approval` ask would remove, as the host listed it in
- * `context.nodes`. `name` is the node's title, falling back to its type.
- */
-export interface AskNodeRef {
-  id: string
-  name?: string
-}
-
-/**
- * A question card: the generic `ask_user` prompt plus every option the agent
- * offered, or a `delete_approval` (host-supplied delete/keep options) that
- * also lists the nodes it would remove.
- */
+/** The generic `ask_user` question: a prompt plus every option the agent offered. */
 export interface AskUserPart {
   type: 'askUser'
   askId: string
@@ -102,14 +94,6 @@ export interface AskUserPart {
   minSelections: number
   maxSelections: number
   allowOther: boolean
-  /** The nodes a `delete_approval` would remove; absent for `ask_user`. */
-  nodes?: AskNodeRef[]
-  /**
-   * How many of the host's delete targets the card does not list (past the
-   * display cap, or unreadable), so a Delete answer never covers nodes the
-   * user was not told about.
-   */
-  hiddenNodeCount?: number
   /** Set once the ask is resolved; the card then reads back the answer. */
   resolution?: AskUserResolution
 }
@@ -128,9 +112,11 @@ export function isPendingAskPart(part: MessagePart): part is AskPart {
   )
 }
 
-/** Whether this part belongs to the ask `askId`: its card or its stand-in notice. */
-function belongsToAsk(part: MessagePart, askId: string): boolean {
-  return (isAskPart(part) || part.type === 'notice') && part.askId === askId
+/** The ask a part belongs to: its card or its stand-in notice. */
+export function askIdOf(part: MessagePart): string | undefined {
+  return isAskPart(part) || part.type === 'askUnavailable'
+    ? part.askId
+    : undefined
 }
 
 /**
@@ -144,9 +130,9 @@ export function retireAskParts(
   askId: string,
   resolution: AskUserResolution = { answered: false, selected: [] }
 ): MessagePart[] {
-  if (!parts.some((part) => belongsToAsk(part, askId))) return parts
+  if (!parts.some((part) => askIdOf(part) === askId)) return parts
   return parts.flatMap((part): MessagePart[] => {
-    if (!belongsToAsk(part, askId)) return [part]
+    if (askIdOf(part) !== askId) return [part]
     if (part.type !== 'askUser') return []
     // A real answer outranks an earlier retirement that could not name one
     // (a 409, a lost frame), so the card ends up showing what was chosen.
@@ -154,15 +140,6 @@ export function retireAskParts(
       part.resolution && (part.resolution.answered || !resolution.answered)
     return [keep ? part : { ...part, resolution }]
   })
-}
-
-/**
- * The body of `POST /agent/threads/:id/asks/:ask_id/answer`: the chosen option
- * ids plus, when the ask allows it, free text that counts as one more selection.
- */
-export interface AgentAskAnswer {
-  selected: string[]
-  otherText?: string
 }
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
@@ -187,8 +164,7 @@ export const ASK_USER_LIMITS = {
   options: 50,
   prompt: 2000,
   label: 200,
-  description: 500,
-  nodes: 50
+  description: 500
 } as const
 
 function clip(text: string, max: number): string {
@@ -231,50 +207,6 @@ function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   }
 }
 
-function toAskNodeRef(value: unknown): AskNodeRef | undefined {
-  const parsed = zAgentAskNodeRef.safeParse(value)
-  if (!parsed.success) return undefined
-  const { id, title, type } = parsed.data
-  const name = title?.trim() || type?.trim()
-  return {
-    id: clip(String(id), ASK_USER_LIMITS.label),
-    name: name ? clip(name, ASK_USER_LIMITS.label) : undefined
-  }
-}
-
-/**
- * The host's `context.nodes`, read defensively: a list that is not an array
- * shows nothing, and entries past the cap or unreadable are counted as hidden.
- */
-function toAskNodeRefs(
-  context: AskInput['context']
-): Pick<AskUserPart, 'nodes' | 'hiddenNodeCount'> {
-  const raw: unknown = context?.nodes
-  if (!Array.isArray(raw)) return {}
-  const nodes = raw
-    .slice(0, ASK_USER_LIMITS.nodes)
-    .flatMap((node) => toAskNodeRef(node) ?? [])
-  const hidden = raw.length - nodes.length
-  return {
-    ...(nodes.length > 0 && { nodes }),
-    ...(hidden > 0 && { hiddenNodeCount: hidden })
-  }
-}
-
-function toDeleteApprovalPart(ask: AskInput): AskUserPart | undefined {
-  const part = toAskUserPart(ask)
-  return part && { ...part, ...toAskNodeRefs(ask.context) }
-}
-
-/** The ask kinds this panel can render, sent as `ask_kinds` on each turn. */
-export const RENDERED_ASK_KINDS = [
-  'run_approval',
-  'ask_user',
-  'delete_approval'
-] as const
-
-type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
-
 const ASK_PART_BUILDERS: Record<
   RenderedAskKind,
   (ask: AskInput) => AskPart | undefined
@@ -285,8 +217,7 @@ const ASK_PART_BUILDERS: Record<
     workflowId: ask.context?.workflow_id || undefined,
     workflowName: ask.context?.workflow_name || undefined
   }),
-  ask_user: toAskUserPart,
-  delete_approval: toDeleteApprovalPart
+  ask_user: toAskUserPart
 }
 
 export function isRenderedAskKind(kind: unknown): kind is RenderedAskKind {
@@ -305,18 +236,11 @@ export function toAskPart(ask: AskInput): AskPart | undefined {
 }
 
 /**
- * The ask's card, or a notice when it cannot be rendered, so the user sees why
- * the turn is waiting instead of an invisible prompt.
+ * The ask's card, or a stand-in notice when it cannot be rendered, so the
+ * user sees why the turn is waiting instead of an invisible prompt.
  */
-export function toAskOrNoticePart(ask: AskInput): AskPart | NoticePart {
-  return (
-    toAskPart(ask) ?? {
-      type: 'notice',
-      level: 'warning',
-      text: i18n.global.t('agent.askUnavailable'),
-      askId: ask.ask_id
-    }
-  )
+export function toAskOrNoticePart(ask: AskInput): AskPart | AskUnavailablePart {
+  return toAskPart(ask) ?? { type: 'askUnavailable', askId: ask.ask_id }
 }
 
 export interface PaywallPart {
@@ -331,6 +255,7 @@ export type MessagePart =
   | ThinkingPart
   | ToolPart
   | NoticePart
+  | AskUnavailablePart
   | TabLinkPart
   | RunApprovalPart
   | AskUserPart

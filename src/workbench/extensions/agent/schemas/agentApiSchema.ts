@@ -12,6 +12,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type {
   AgentAnswerAccepted,
+  AgentAnswerRequest,
   AgentCancelAccepted,
   AgentRunMode as AgentRunModePreference,
   AgentThreadSummary,
@@ -24,6 +25,7 @@ import { isNodeLocatorId } from '@/types/nodeIdentification'
 export { zAgentAdmissionError, zAgentAnswerAccepted, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
+  AgentAnswerRequest,
   AgentCancelAccepted,
   AgentRunModePreference,
   AgentThreadSummary
@@ -50,17 +52,9 @@ const zAgentAskOption = z
   })
   .passthrough()
 
-/**
- * One `context.nodes` entry of a `delete_approval` ask. Parsed per entry, so a
- * bad entry is counted as unlisted instead of dropping the whole card.
- */
-export const zAgentAskNodeRef = z
-  .object({
-    id: z.union([z.string(), z.number()]),
-    type: z.string().optional(),
-    title: z.string().optional()
-  })
-  .passthrough()
+/** The ask kinds this panel can render, sent as `ask_kinds` on each turn. */
+export const RENDERED_ASK_KINDS = ['run_approval', 'ask_user'] as const
+export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
 const zAgentPendingAsk = z
   .object({

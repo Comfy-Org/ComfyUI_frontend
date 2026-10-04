@@ -1726,12 +1726,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
       await session.answerAsk('turn-1:call-1', {
         selected: ['sdxl'],
-        otherText: 'a LoRA'
+        other_text: 'a LoRA'
       })
 
       expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
         selected: ['sdxl'],
-        otherText: 'a LoRA'
+        other_text: 'a LoRA'
       })
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
 
@@ -1750,7 +1750,7 @@ describe('useAgentSession (v1 composition root)', () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', {
         selected: ['sdxl'],
-        otherText: 'a LoRA'
+        other_text: 'a LoRA'
       })
 
       emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))

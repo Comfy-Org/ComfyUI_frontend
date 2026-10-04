@@ -14,7 +14,10 @@ const options: AskUserPart['options'] = [
   { id: 'sd15', label: 'SD 1.5' }
 ]
 
-function renderCard(ask: Partial<AskUserPart> = {}, answering = false) {
+function renderCard(
+  ask: Partial<AskUserPart> = {},
+  { answering = false }: { answering?: boolean } = {}
+) {
   const user = userEvent.setup()
   const result = render(AskUserCard, {
     props: {
@@ -131,7 +134,7 @@ describe('AskUserCard', () => {
     expect(screen.getByRole('checkbox', { name: 'Flux Dev' })).toBeDisabled()
     await user.click(submit())
     expect(emitted().answer).toEqual([
-      ['ask-1', { selected: ['sdxl'], otherText: 'a LoRA' }]
+      ['ask-1', { selected: ['sdxl'], other_text: 'a LoRA' }]
     ])
   })
 
@@ -166,7 +169,7 @@ describe('AskUserCard', () => {
     await user.click(submit())
 
     expect(emitted().answer).toEqual([
-      ['ask-1', { selected: [], otherText: 'Pony' }],
+      ['ask-1', { selected: [], other_text: 'Pony' }],
       ['ask-1', { selected: ['flux'] }]
     ])
   })
@@ -186,7 +189,7 @@ describe('AskUserCard', () => {
       'Pony{Enter}'
     )
     expect(emitted().answer).toEqual([
-      ['ask-1', { selected: [], otherText: 'Pony' }]
+      ['ask-1', { selected: [], other_text: 'Pony' }]
     ])
   })
 
@@ -207,7 +210,7 @@ describe('AskUserCard', () => {
 
     await user.keyboard('{Enter}')
     expect(emitted().answer).toEqual([
-      ['ask-1', { selected: [], otherText: '日本' }]
+      ['ask-1', { selected: [], other_text: '日本' }]
     ])
   })
 
@@ -230,24 +233,25 @@ describe('AskUserCard', () => {
   })
 
   it('disables every control while the answer is in flight', () => {
-    const { submit } = renderCard({ maxSelections: 2, allowOther: true }, true)
+    const { submit } = renderCard(
+      { maxSelections: 2, allowOther: true },
+      { answering: true }
+    )
 
-    expect(
-      screen.getAllByRole('checkbox').filter((box) => !box.matches(':disabled'))
-    ).toEqual([])
+    expect(screen.getByRole('checkbox', { name: 'SDXL' })).toBeDisabled()
+    expect(screen.getByRole('checkbox', { name: 'Flux Dev' })).toBeDisabled()
+    expect(screen.getByRole('checkbox', { name: 'SD 1.5' })).toBeDisabled()
     expect(screen.getByRole('textbox', { name: 'Other' })).toBeDisabled()
     expect(submit()).toBeDisabled()
     expect(submit()).toHaveAttribute('aria-busy', 'true')
   })
 
   it('disables the radios while the answer is in flight', () => {
-    renderCard({}, true)
+    renderCard({}, { answering: true })
 
-    expect(
-      screen
-        .getAllByRole('radio')
-        .filter((radio) => !radio.matches(':disabled'))
-    ).toEqual([])
+    expect(screen.getByRole('radio', { name: 'SDXL' })).toBeDisabled()
+    expect(screen.getByRole('radio', { name: 'Flux Dev' })).toBeDisabled()
+    expect(screen.getByRole('radio', { name: 'SD 1.5' })).toBeDisabled()
   })
 
   describe('once resolved', () => {
@@ -284,6 +288,16 @@ describe('AskUserCard', () => {
         'This question was closed without an answer.'
       )
       expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    })
+
+    it('says another place answered it when there is no answer to read back', () => {
+      renderCard({ resolution: { answered: true, selected: [] } })
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'This question was answered somewhere else.'
+      )
+      expect(screen.queryByText('Answered')).not.toBeInTheDocument()
+      expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
     })
 
     it('turns read-only in place when the resolution arrives', async () => {

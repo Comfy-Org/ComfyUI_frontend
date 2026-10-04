@@ -9,7 +9,7 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import {
-  isAskPart,
+  askIdOf,
   isRenderedAskKind,
   retireAskParts,
   snapshotMessage,
@@ -346,11 +346,7 @@ export function createAgentEventTransport(
    * separately from unknown input.
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
-    const shown = message.parts.some(
-      (part) =>
-        (isAskPart(part) || part.type === 'notice') &&
-        part.askId === data.ask_id
-    )
+    const shown = message.parts.some((part) => askIdOf(part) === data.ask_id)
     if (shown) return false
     if (!toAskPart(data))
       reportUndeliverableAsk(
@@ -376,7 +372,8 @@ export function createAgentEventTransport(
   }
 
   /** Applies one `agent_ask_resolved` frame: retires the matching ask part,
-   * since its ask is no longer pending. Returns `false` when no part matched. */
+   * since its ask is no longer pending. Returns `false` when no part
+   * matched. */
   function handleAskResolvedEvent(
     data: AgentAskResolvedEvent['data']
   ): boolean {
@@ -465,7 +462,8 @@ export function createAgentEventTransport(
    * handler above, and reports whether `ingest` should emit a fresh
    * snapshot afterwards. Most event types always want a snapshot; a
    * repeated `agent_active_tab`, a redelivered `agent_ask` or an
-   * `agent_ask_resolved` for an ask this message does not hold is a no-op (mirroring their handlers' own `false` return), and
+   * `agent_ask_resolved` for an ask this message does not hold is a no-op
+   * (mirroring their handlers' own `false` return), and
    * `agent_message_done` already emits via `settle()` so it says no too.
    */
   function applyChatEvent(event: AgentChatEvent): boolean {

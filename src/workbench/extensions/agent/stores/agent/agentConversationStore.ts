@@ -1,7 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentAnswerRequest,
+  AgentMessages,
+  TurnId
+} from '../../schemas/agentApiSchema'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
@@ -9,13 +13,12 @@ import type {
 } from '../../services/agent/agentEventTransport'
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
 import type {
-  AgentAskAnswer,
   AskUserResolution,
   AssistantMessage
 } from '../../services/agent/agentMessageParts'
 import {
+  askIdOf,
   createAssistantMessage,
-  isAskPart,
   isPendingAskPart,
   retireAskParts
 } from '../../services/agent/agentMessageParts'
@@ -465,13 +468,18 @@ export const useAgentConversationStore = defineStore(
      * without a record of what we sent, a resolution naming someone else's
      * choice is indistinguishable from confirmation of our own.
      */
-    const submittedAskSelections = new Map<string, AgentAskAnswer>()
+    const submittedAskSelections = new Map<string, AgentAnswerRequest>()
 
-    function recordAskSelection(askId: string, answer: AgentAskAnswer): void {
+    function recordAskSelection(
+      askId: string,
+      answer: AgentAnswerRequest
+    ): void {
       submittedAskSelections.set(askId, answer)
     }
 
-    function submittedAskSelection(askId: string): AgentAskAnswer | undefined {
+    function submittedAskSelection(
+      askId: string
+    ): AgentAnswerRequest | undefined {
       return submittedAskSelections.get(askId)
     }
 
@@ -493,8 +501,8 @@ export const useAgentConversationStore = defineStore(
         submitted !== undefined &&
         submitted.selected.length === selected.length &&
         submitted.selected.every((id) => selected.includes(id))
-      return ours && submitted.otherText
-        ? { answered, selected, otherText: submitted.otherText }
+      return ours && submitted.other_text
+        ? { answered, selected, otherText: submitted.other_text }
         : { answered, selected }
     }
 
@@ -1099,11 +1107,7 @@ export const useAgentConversationStore = defineStore(
       if (retired.size === 0) return
       const named = new Set(
         transcript.messages.flatMap((message) =>
-          message.parts.flatMap((part) =>
-            (isAskPart(part) || part.type === 'notice') && part.askId
-              ? [part.askId]
-              : []
-          )
+          message.parts.flatMap((part) => askIdOf(part) ?? [])
         )
       )
       for (const askId of retired.keys())

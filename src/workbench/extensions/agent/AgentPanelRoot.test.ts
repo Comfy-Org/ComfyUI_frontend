@@ -4443,6 +4443,67 @@ describe('AgentPanelRoot run approval telemetry', () => {
   })
 })
 
+describe('AgentPanelRoot ask_user answer telemetry', () => {
+  it('never reports an ask_user answer as a run approval, even one named run', async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/asks/') && init?.method === 'POST')
+        return json(200, { status: 'answered' })
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, {})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    telemetry.trackAgentRunApprovalShown.mockClear()
+    telemetry.trackAgentRunApprovalResolved.mockClear()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = 'turn-question' as TurnId
+    store.recordUser(turnId, 'go on')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-question:call-1',
+          kind: 'ask_user',
+          prompt: 'Should I run it now?',
+          options: [
+            { id: 'run', label: 'Run now' },
+            { id: 'cancel', label: 'Not yet' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    await userEvent.click(await screen.findByRole('radio', { name: 'Run now' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await vi.waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(
+          ([url, init]) => url.includes('/asks/') && init?.method === 'POST'
+        )
+      ).toHaveLength(1)
+    )
+    ws.emit('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: turnId,
+      ask_id: 'turn-question:call-1',
+      status: 'answered',
+      selected: ['run']
+    })
+    expect(await screen.findByText('Answered')).toBeVisible()
+
+    expect(telemetry.trackAgentRunApprovalShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentRunApprovalResolved).not.toHaveBeenCalled()
+  })
+})
+
 describe('AgentPanelRoot lifecycle', () => {
   beforeEach(() => {
     ws.clear()

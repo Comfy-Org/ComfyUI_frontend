@@ -79,7 +79,6 @@ import {
 } from './composables/agent/useOnboarding'
 
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
-import type { AgentAskAnswer } from './services/agent/agentMessageParts'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -96,6 +95,7 @@ import {
 } from './composables/agent/useCanvasSelection'
 import type {
   AgentActiveTabData,
+  AgentAnswerRequest,
   AgentThreadSummary
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
@@ -1227,20 +1227,23 @@ function forgetApproval(askId: string): void {
 
 async function onAnswerAsk(
   askId: string,
-  answer: AgentAskAnswer
+  answer: AgentAnswerRequest
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
   const decidedAt = Date.now()
-  const decision = runApprovalDecision(answer)
+  // Only a run-approval card records when it was shown, so an `ask_user`
+  // that happens to offer `run` or `cancel` never reports as one.
+  const decision =
+    shownAt === undefined ? undefined : runApprovalDecision(answer)
   if ((await answerAsk(askId, answer)) && decision)
     trackApprovalResolved(askId, decision, decidedAt, shownAt)
 }
 
-/** The run-approval decision an answer carries; none for an `ask_user` answer. */
+/** The run-approval decision an answer carries, if it is one. */
 function runApprovalDecision(
-  answer: AgentAskAnswer
+  answer: AgentAnswerRequest
 ): 'run' | 'cancel' | undefined {
-  if (answer.selected.length !== 1 || answer.otherText) return undefined
+  if (answer.selected.length !== 1 || answer.other_text) return undefined
   const [choice] = answer.selected
   return choice === 'run' || choice === 'cancel' ? choice : undefined
 }

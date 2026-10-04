@@ -2,9 +2,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { AgentAnswerRequest } from '../../../schemas/agentApiSchema'
 import type {
   ActivityPart,
-  AgentAskAnswer,
   AssistantMessage,
   TextPart
 } from '../../../services/agent/agentMessageParts'
@@ -36,7 +36,7 @@ const { t } = useI18n()
 
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
-  answerAsk: [askId: string, answer: AgentAskAnswer]
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]

@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
@@ -778,130 +778,34 @@ describe('AgentMessage ask_user question', () => {
     })
 
     expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
-    expect(
-      screen.getAllByRole('radio').map((radio) => radio.matches(':disabled'))
-    ).toEqual([true, true])
+    const [sdxl, flux] = screen.getAllByRole('radio')
+    expect(sdxl).toBeDisabled()
+    expect(flux).toBeDisabled()
   })
 })
 
-describe('AgentMessage delete_approval', () => {
-  type AskFrame = Parameters<typeof toAskOrNoticePart>[0]
-
-  const deleteFrame = (frame: Partial<AskFrame> = {}): AskFrame => ({
-    kind: 'delete_approval',
-    ask_id: 'turn-2:call-4',
-    prompt: 'Delete these 2 nodes you added?',
-    options: [
-      { id: 'delete', label: 'Delete' },
-      { id: 'keep', label: 'Keep them' }
-    ],
-    min_selections: 1,
-    max_selections: 1,
-    allow_other: false,
-    context: {
-      action: 'delete_nodes',
-      nodes: [
-        { id: 12, type: 'KSampler', title: 'Hero sampler' },
-        { id: '13', type: 'VAEDecode', title: '' }
-      ]
-    },
-    ...frame
-  })
-
-  const messageWith = (frame: AskFrame): AssistantMessage => ({
-    id: 'msg-delete' as TurnId,
-    role: 'assistant',
-    parts: [toAskOrNoticePart(frame)],
-    streaming: true,
-    thinking: false
-  })
-
-  it('renders the question card with the nodes it would delete and sends the choice', async () => {
-    const { emitted } = render(AgentMessage, {
-      props: { message: messageWith(deleteFrame()) },
-      global: { plugins: [i18n] }
-    })
-
-    expect(
-      screen.getByText('Delete these 2 nodes you added?')
-    ).toBeInTheDocument()
-    const nodes = within(screen.getByRole('list', { name: 'Nodes to delete' }))
-    expect(
-      nodes.getAllByRole('listitem').map((item) => item.textContent.trim())
-    ).toEqual(['Hero sampler#12', 'VAEDecode#13'])
-    expect(
-      screen.getAllByRole('radio').map((radio) => radio.getAttribute('value'))
-    ).toEqual(['delete', 'keep'])
-
-    await userEvent.click(screen.getByRole('radio', { name: 'Delete' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
-
-    expect(emitted().answerAsk).toEqual([
-      ['turn-2:call-4', { selected: ['delete'] }]
-    ])
-  })
-
-  it('still renders the prompt and options when context.nodes is malformed', () => {
-    render(AgentMessage, {
-      props: {
-        message: messageWith(
-          deleteFrame({ context: { action: 'delete_nodes', nodes: 'oops' } })
-        )
-      },
-      global: { plugins: [i18n] }
-    })
-
-    expect(
-      screen.getByText('Delete these 2 nodes you added?')
-    ).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Delete' })).toBeInTheDocument()
-    expect(screen.queryByRole('list')).not.toBeInTheDocument()
-  })
-
-  it('says how many delete targets the list leaves out', () => {
-    render(AgentMessage, {
-      props: {
-        message: messageWith(
-          deleteFrame({
-            context: {
-              action: 'delete_nodes',
-              nodes: [{ id: 12, type: 'KSampler' }, { title: 'no id' }]
-            }
-          })
-        )
-      },
-      global: { plugins: [i18n] }
-    })
-
-    const nodes = within(screen.getByRole('list', { name: 'Nodes to delete' }))
-    expect(nodes.getByText('1 more node not listed')).toBeInTheDocument()
-  })
-
-  it('reads back the answer once resolved, with no way to answer again', () => {
-    const [part] = messageWith(deleteFrame()).parts
-    assert(part.type === 'askUser')
+describe('AgentMessage ask the panel cannot render', () => {
+  it('shows the warning notice instead of a card', () => {
     render(AgentMessage, {
       props: {
         message: {
-          ...messageWith(deleteFrame()),
+          id: 'msg-unknown' as TurnId,
+          role: 'assistant',
           parts: [
-            { ...part, resolution: { answered: true, selected: ['keep'] } }
-          ]
+            toAskOrNoticePart({
+              kind: 'erase_canvas',
+              ask_id: 'turn-2:call-4',
+              prompt: 'Erase everything?',
+              options: [{ id: 'yes', label: 'Yes' }],
+              min_selections: 1,
+              max_selections: 1,
+              allow_other: false
+            })
+          ],
+          streaming: true,
+          thinking: false
         }
       },
-      global: { plugins: [i18n] }
-    })
-
-    expect(screen.getByText('Keep them')).toBeInTheDocument()
-    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Submit' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('falls back to the warning notice for a kind the panel does not render', () => {
-    render(AgentMessage, {
-      props: { message: messageWith(deleteFrame({ kind: 'erase_canvas' })) },
       global: { plugins: [i18n] }
     })
 
@@ -910,6 +814,6 @@ describe('AgentMessage delete_approval', () => {
         'The agent asked a question this panel cannot show. Stop the turn to continue.'
       )
     ).toBeInTheDocument()
-    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(screen.queryByText('Erase everything?')).not.toBeInTheDocument()
   })
 })

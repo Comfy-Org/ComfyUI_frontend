@@ -21,6 +21,7 @@ import {
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
+  AgentAnswerRequest,
   AgentMessages,
   AgentTurnAccepted,
   AgentWsEvent,
@@ -43,10 +44,7 @@ import type {
   OpenTabsSnapshot,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
-import type {
-  AgentAskAnswer,
-  AssistantMessage
-} from '../../services/agent/agentMessageParts'
+import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import type { LiveTurn } from '../../stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -329,7 +327,7 @@ function isRetryableAnswerFailure(error: unknown): boolean {
  * option to disagree with.
  */
 function isSupersededAnswer(
-  submitted: AgentAskAnswer,
+  submitted: AgentAnswerRequest,
   settled: readonly string[]
 ): boolean {
   if (settled.length === 0) return false
@@ -1329,7 +1327,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function answerAsk(
     askId: string,
-    answer: AgentAskAnswer
+    answer: AgentAnswerRequest
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
@@ -1439,7 +1437,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function sendAnswer(
     threadId: string,
     askId: string,
-    answer: AgentAskAnswer
+    answer: AgentAnswerRequest
   ): Promise<void> {
     for (let attempt = 0; ; attempt++) {
       try {

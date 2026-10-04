@@ -61,6 +61,23 @@ function drive(events: AgentChatEvent[]): AssistantMessage {
   return emit.mock.calls.at(-1)?.[0] ?? message
 }
 
+/**
+ * Ingests each event into its own turn's transport, all sharing one
+ * undeliverable-ask reporter as the store does, so the transport's own
+ * redelivery dedupe cannot hide the reporter's.
+ */
+function driveInFreshTurns(events: AgentChatEvent[]): void {
+  const { report } = createUndeliverableAskReporter()
+  for (const event of events)
+    createAgentEventTransport(
+      createAssistantMessage(T),
+      vi.fn(),
+      undefined,
+      undefined,
+      report
+    ).ingest(event)
+}
+
 function thinking(delta: string): AgentChatEvent {
   return {
     type: 'agent_thinking',
@@ -658,7 +675,7 @@ describe('agentEventTransport run approval', () => {
     ])
 
     expect(message.parts).toEqual([
-      expect.objectContaining({ type: 'notice', askId: 'ask-user-1' })
+      { type: 'askUnavailable', askId: 'ask-user-1' }
     ])
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
@@ -679,11 +696,7 @@ describe('agentEventTransport run approval', () => {
     ])
 
     expect(message.parts).toEqual([
-      expect.objectContaining({
-        type: 'notice',
-        level: 'warning',
-        askId: 'unknown-1'
-      })
+      { type: 'askUnavailable', askId: 'unknown-1' }
     ])
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
@@ -698,22 +711,10 @@ describe('agentEventTransport run approval', () => {
   })
 
   it('bounds reported ask identities and evicts the oldest', () => {
-    // One reporter across turns, as the store shares it: the transport's own
-    // dedupe would otherwise hide the reporter's eviction.
-    const { report } = createUndeliverableAskReporter()
     const asks = Array.from({ length: 33 }, (_, index) =>
       runApproval(`unknown-${index}`, 'unsupported')
     )
-    for (const ask of [...asks, asks[0]]) {
-      const transport = createAgentEventTransport(
-        createAssistantMessage(T),
-        vi.fn(),
-        undefined,
-        undefined,
-        report
-      )
-      transport.ingest(ask)
-    }
+    driveInFreshTurns([...asks, asks[0]])
 
     expect(reportError).toHaveBeenCalledTimes(34)
   })

@@ -5395,13 +5395,10 @@
       "chooseAny": "Choose all that apply",
       "other": "Other",
       "otherPlaceholder": "Type your own answer",
-      "submit": "Submit",
       "answered": "Answered",
       "otherAnswer": "Other: {text}",
-      "closed": "This question was closed without an answer.",
-      "nodesToDelete": "Nodes to delete",
-      "nodeId": "#{id}",
-      "moreNodes": "{count} more node not listed | {count} more nodes not listed"
+      "answeredElsewhere": "This question was answered somewhere else.",
+      "closed": "This question was closed without an answer."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",
