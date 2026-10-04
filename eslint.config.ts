@@ -174,9 +174,7 @@ const websiteI18nSettings = {
     localeDir: [
       {
         pattern: './apps/website/src/locales/en/main.json',
-        localeKey: 'path',
-        localePattern:
-          /^\.?\/?apps\/website\/src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+        localeKey: 'path'
       }
     ],
     cwd: import.meta.dirname,
