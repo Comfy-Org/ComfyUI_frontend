@@ -186,10 +186,12 @@ legitimate re-mint rather than an identity collision — which is why
 > identity twice, and nothing downstream can tell the two apart.
 >
 > The repeat is renamed to `name#1` before any id is derived. Where it cannot
-> be — a `name` that cannot be written at all, or an accessor that throws
-> (`src/types/widgetId.ts`) — the widget is **refused**: it is dropped from
-> `node.widgets` and reported. First occurrence wins; renamable collisions
-> elsewhere on the node are still renamed.
+> be — a `name` that cannot be written at all — the widget is **refused**: it
+> is dropped from `node.widgets` and reported. A widget whose name yields no id
+> at all is refused the same way, and that is not only an accessor that throws:
+> a value that will not coerce to a string and one `encodeURIComponent` rejects
+> are the same failure (`src/types/widgetId.ts`). First occurrence wins;
+> renamable collisions elsewhere on the node are still renamed.
 >
 > **Refusal keys on whether the write was possible, not on whether it landed,
 > and the difference is load-bearing.** `BaseWidget.set name` delegates to
@@ -225,8 +227,7 @@ legitimate re-mint rather than an identity collision — which is why
 > assignment all commit through it — but it enforces nothing until `graphId`
 > exists, so it does not cover the join itself.
 >
-> Four boundaries on that, because each one is load-bearing and none is
-> obvious from the rule:
+> These boundaries are part of the decision:
 >
 > - **Enforcement starts when the node joins a graph**, not when a detached
 >   node is built. No `WidgetId` exists before then, so there is no identity to
@@ -274,6 +275,20 @@ legitimate re-mint rather than an identity collision — which is why
 >   and report a refusal that did not happen. Two promoted inputs carrying the
 >   same inner widget name reach exactly that state, so the gate is
 >   load-bearing rather than defensive.
+> - **A removal shifts the positional values of a workflow saved before it, and
+>   that is accepted here rather than fixed.** `LGraph.configure` adds each node
+>   before configuring it, so the refusal has already run by the time values are
+>   restored, and positional restore counts the widgets the node has _now_ — so
+>   for `[a, dup, b]` saved as `[1, 2, 3]`, `b` is handed `2` and `3` is
+>   dropped. It takes all three of a pre-change workflow, a widget whose `name`
+>   cannot be written, and no name register: a renamable duplicate is kept
+>   rather than removed, and a saved `widgets_values_named` restores each widget
+>   under its own name instead. All three measured at this head in
+>   `widgetsView.refusalValueRestore.test.ts`. Carrying the refused widget's
+>   original slot through `createWidgetRestorationState` as an index map would
+>   close the remainder; it is not done here because that record has to be built
+>   at the join and read back during restore, and a stale one would move values
+>   on every later load — a worse failure than the one it fixes.
 >
 > A serialized `(name, occurrence)` identity was proposed instead, so that both
 > widgets could be persisted ([#19717](https://github.com/Comfy-Org/ComfyUI_frontend/pull/19717)).
