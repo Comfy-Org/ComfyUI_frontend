@@ -85,6 +85,8 @@ export const Default: Story = seeded({
   pickedDeploymentId: null,
   pickSource: null,
   defaultDeploymentId: null,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
   buildsVisible: true
 })
 
@@ -95,6 +97,8 @@ export const Picked: Story = seeded({
   pickedDeploymentId: studioProd.deployment_id,
   pickSource: 'browser',
   defaultDeploymentId: null,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
   buildsVisible: true
 })
 
@@ -108,6 +112,8 @@ export const FollowingWorkspaceDefault: Story = seeded({
   pickedDeploymentId: studioProd.deployment_id,
   pickSource: 'workspace_default',
   defaultDeploymentId: studioProd.deployment_id,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
   buildsVisible: true
 })
 
@@ -121,6 +127,23 @@ export const OwnPickOverWorkspaceDefault: Story = seeded({
   pickedDeploymentId: experiments.deployment_id,
   pickSource: 'browser',
   defaultDeploymentId: studioProd.deployment_id,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
+  buildsVisible: true
+})
+
+/**
+ * The workspace default this browser followed is gone (deleted, or no
+ * longer the workspace's): ingest serves Comfy Cloud, and the trigger says why.
+ */
+export const DefaultGone: Story = seeded({
+  phase: 'ready',
+  deployments: [studioProd, experiments],
+  pickedDeploymentId: null,
+  pickSource: null,
+  defaultDeploymentId: null,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: studioStaging.deployment_id,
   buildsVisible: true
 })
 
@@ -131,6 +154,8 @@ export const Empty: Story = seeded({
   pickedDeploymentId: null,
   pickSource: null,
   defaultDeploymentId: null,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
   buildsVisible: true
 })
 
@@ -157,5 +182,7 @@ export const BuildsHidden: Story = seeded({
   pickedDeploymentId: studioProd.deployment_id,
   pickSource: 'browser',
   defaultDeploymentId: null,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
   buildsVisible: false
 })
