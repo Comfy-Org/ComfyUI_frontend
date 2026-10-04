@@ -27,8 +27,7 @@ function failureLabel(): string {
       role="status"
       :aria-label="failureLabel()"
       severity="danger"
-      variant="badge"
-      class="h-5 px-2 py-0.5 text-xs font-medium normal-case"
+      variant="compact"
     >
       {{ failureLabel() }}
     </Badge>

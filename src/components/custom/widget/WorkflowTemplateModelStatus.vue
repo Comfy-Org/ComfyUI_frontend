@@ -37,11 +37,7 @@ const emit = defineEmits<{ download: [] }>()
     />
   </span>
   <span v-else-if="row.status" class="flex shrink-0 items-center gap-2">
-    <Badge
-      severity="secondary"
-      variant="badge"
-      class="h-5 px-2 py-0.5 text-xs font-medium text-muted-foreground normal-case"
-    >
+    <Badge severity="secondary" variant="compact" class="text-muted-foreground">
       {{ row.status.label }}
     </Badge>
   </span>

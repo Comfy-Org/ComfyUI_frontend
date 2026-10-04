@@ -140,9 +140,8 @@ function namedLabel(key: string): string {
     v-else-if="status.downloadState.status === 'done'"
     role="status"
     :aria-label="t('templateWorkflows.detail.downloaded')"
-    variant="badge"
+    variant="compact"
     severity="success"
-    class="h-5 px-2 py-0.5 text-xs font-medium normal-case"
   >
     {{ t('templateWorkflows.detail.downloaded') }}
   </Badge>
