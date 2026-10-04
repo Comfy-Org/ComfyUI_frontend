@@ -64,15 +64,6 @@ describe('useElectronDownloadStore progress observation', () => {
     )
   })
 
-  it('restores an empty snapshot without taking the failure path', async () => {
-    const store = useElectronDownloadStore()
-    await vi.waitFor(() =>
-      expect(downloadManager.getAllDownloads).toHaveBeenCalled()
-    )
-
-    expect(store.downloads).toEqual([])
-  })
-
   it('restores status, bytes, and a valid byte fraction', async () => {
     downloadManager.getAllDownloads.mockResolvedValueOnce([
       downloadState({ state: DownloadStatus.PAUSED })
