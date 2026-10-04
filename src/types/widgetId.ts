@@ -79,14 +79,18 @@ export function ensureUniqueWidgetNames(
 }
 
 /**
- * Reads `name` without letting a throwing accessor escape. A widget whose
- * `name` cannot be read has no identity to collide with, so it is left alone.
+ * A `name` that could not be read at all, because the accessor threw. Distinct
+ * from a widget whose name *is* `undefined`: that one has an identity, a bad
+ * one, and two of them collide with each other.
  */
-function readName(widget: { name: string }): string | undefined {
+const UNREADABLE_NAME = Symbol('unreadable widget name')
+
+/** Reads `name` without letting a throwing accessor escape. */
+function readName(widget: { name: string }): string | typeof UNREADABLE_NAME {
   try {
     return widget.name
   } catch {
-    return undefined
+    return UNREADABLE_NAME
   }
 }
 
@@ -106,7 +110,7 @@ function readableNames(widgets: readonly { name: string }[]): Set<string> {
   const names = new Set<string>()
   for (const widget of widgets) {
     const name = readName(widget)
-    if (name !== undefined) names.add(name)
+    if (name !== UNREADABLE_NAME) names.add(name)
   }
   return names
 }
@@ -122,6 +126,42 @@ function freeSuffixedName(
   let index = 1
   while (taken.some((names) => names.has(`${name}#${index}`))) index++
   return `${name}#${index}`
+}
+
+/**
+ * How many distinct names a colliding widget is offered before it is refused.
+ *
+ * One attempt is not enough: a `name` setter can reject one target and accept
+ * another. `BaseWidget`'s delegates to `widgetValueStore.renameWidget`, which
+ * refuses to move onto an id the store already holds — so a stale entry under
+ * `seed#1` makes a perfectly renamable widget look unrenamable. Refusal
+ * deletes the widget, so it has to be the answer to "no name works", not to
+ * "the first name I tried did not".
+ */
+const RENAME_ATTEMPTS = 4
+
+/**
+ * Renames {@link widget} to the first free `name#n` that the write actually
+ * takes, setting aside each candidate the setter rejects so the next attempt
+ * offers a different one.
+ *
+ * @returns the name it now answers to, or `undefined` if no attempt stuck.
+ */
+function renameApart(
+  widget: { name: string },
+  name: string,
+  used: ReadonlySet<string>,
+  reserved: ReadonlySet<string>
+): string | undefined {
+  // Rejected candidates are tracked per widget, not reserved globally: a name
+  // this widget's setter would not take is still free for the next widget.
+  const rejected = new Set<string>()
+  for (let attempt = 0; attempt < RENAME_ATTEMPTS; attempt++) {
+    const candidate = freeSuffixedName(name, [used, reserved, rejected])
+    if (tryRename(widget, candidate)) return candidate
+    rejected.add(candidate)
+  }
+  return undefined
 }
 
 /**
@@ -142,39 +182,61 @@ function freeSuffixedName(
  * This walk renames those and refuses only what is genuinely unaddressable: a
  * widget the store cannot tell apart silently shares another widget's value.
  *
+ * It does its own renaming rather than delegating the happy path to
+ * {@link ensureUniqueWidgetNames}, which decides renamability from the
+ * property descriptor alone and never reads the name back. A setter that
+ * accepts the write and ignores it satisfies that check, so delegating would
+ * report success over a node that still carries the ambiguous pair.
+ *
  * @returns the removed widgets, in array order. Empty when the node was
  * already unambiguous, which is the overwhelmingly common case.
  */
 export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
   widgets: T[]
 ): T[] {
-  if (ensureUniqueWidgetNames(widgets)) return []
-
   const kept: T[] = []
   const refused: T[] = []
   const used = new Set<string>()
-  const seen = new Set<T>()
   const reserved = readableNames(widgets)
+  /** Every widget already walked, against whether that walk kept it. */
+  const verdicts = new Map<T, boolean>()
 
   for (const widget of widgets) {
-    // Nothing new to collide with: either the same widget object occupying a
-    // second slot mid-reorder, or a name that cannot be read at all.
-    const name = seen.has(widget) ? undefined : readName(widget)
-    seen.add(widget)
+    // The same widget object may occupy a second slot mid-reorder. That is one
+    // widget, not a collision — but it has to follow the verdict its first
+    // occurrence got, or a refused widget is re-admitted by its own repeat.
+    const previous = verdicts.get(widget)
+    if (previous !== undefined) {
+      if (previous) kept.push(widget)
+      continue
+    }
 
-    if (name === undefined || !used.has(name)) {
-      if (name !== undefined) used.add(name)
+    const name = readName(widget)
+    if (name === UNREADABLE_NAME) {
+      // No readable name means no derivable `WidgetId`, and leaving it on the
+      // node makes `ensureUniqueWidgetNames` fail on every later call — which
+      // bails registration for every *other* widget on the node too.
+      verdicts.set(widget, false)
+      refused.push(widget)
+      continue
+    }
+
+    if (!used.has(name)) {
+      used.add(name)
+      verdicts.set(widget, true)
       kept.push(widget)
       continue
     }
 
-    const unique = freeSuffixedName(name, [used, reserved])
-    if (!tryRename(widget, unique)) {
+    const unique = renameApart(widget, name, used, reserved)
+    if (unique === undefined) {
+      verdicts.set(widget, false)
       refused.push(widget)
       continue
     }
     used.add(unique)
     reserved.add(unique)
+    verdicts.set(widget, true)
     kept.push(widget)
   }
 

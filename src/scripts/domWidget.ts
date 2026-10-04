@@ -7,6 +7,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 // would hit its TDZ. LGraphNode/LiteGraph must stay barrel-sourced — a direct
 // LGraphNode import re-triggers the LGraph<->Subgraph cycle.
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { wasWidgetRefused } from '@/lib/litegraph/src/node/widgetsView'
 import type {
   IBaseWidget,
   IWidgetOptions
@@ -329,11 +330,20 @@ export class ComponentWidgetImpl<
 export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
   node.addCustomWidget(widget)
 
+  // A duplicate name the node could not rename apart is refused and spliced
+  // straight back out (ADR-ECS-0008). Registering it anyway would mount its
+  // element over the canvas for a widget the graph does not have, and nothing
+  // would unmount it until the node itself is removed.
+  if (wasWidgetRefused(node, widget)) return
+
   if (node.graph) {
     useDomWidgetStore().registerWidget(widget)
   }
 
   node.onAdded = useChainCallback(node.onAdded, () => {
+    // Joining a graph is the first commit that can refuse a duplicate name,
+    // so a widget accepted above may not have survived it.
+    if (wasWidgetRefused(node, widget)) return
     useDomWidgetStore().registerWidget(widget)
   })
 

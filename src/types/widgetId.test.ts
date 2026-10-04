@@ -124,7 +124,7 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     expect(widgets.map(({ name }) => name)).toEqual(['seed'])
   })
 
-  it('refuses nothing when a name accessor throws', () => {
+  it('refuses a widget whose name accessor throws, without letting it escape', () => {
     const hostile = {
       get name(): string {
         throw new Error('name is not readable')
@@ -132,10 +132,72 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     }
     const widgets = [{ name: 'seed' }, hostile]
 
-    // No readable name is no identity to collide with, so there is nothing to
-    // refuse — and the throw must not escape into a widgets mutation.
+    // A name that cannot be read is a `WidgetId` that cannot be derived, and
+    // leaving it on the node makes `ensureUniqueWidgetNames` fail on every
+    // later call — which bails registration for the whole node, including the
+    // widgets that are perfectly addressable. The throw must not escape.
+    expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([hostile])
+    expect(widgets).toHaveLength(1)
+  })
+
+  it('tells an unreadable name apart from one that reads as undefined', () => {
+    const first = { name: undefined as unknown as string }
+    const second = { name: undefined as unknown as string }
+    const widgets = [first, second]
+
+    // `undefined` is a bad identity, not a missing one: two of them collide
+    // with each other and would mint the same `graphId:nodeId:undefined`.
     expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([])
-    expect(widgets).toHaveLength(2)
+    expect(widgets.map(({ name }) => name)).toEqual([undefined, 'undefined#1'])
+  })
+
+  it('offers another name when a setter rejects only the first one', () => {
+    // `BaseWidget` delegates its `name` setter to the store, which refuses to
+    // move onto an id something else already holds. Refusal deletes a widget,
+    // so one rejected candidate must not be read as unrenamable.
+    let name = 'seed'
+    const picky = {
+      get name() {
+        return name
+      },
+      set name(value: string) {
+        if (value !== 'seed#1') name = value
+      }
+    }
+    const widgets = [{ name: 'seed' }, picky]
+
+    expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([])
+    expect(widgets.map((widget) => widget.name)).toEqual(['seed', 'seed#2'])
+  })
+
+  it('does not reserve a name one widget rejected against the next widget', () => {
+    const offered: string[] = []
+    const stubborn = {
+      get name() {
+        return 'seed'
+      },
+      set name(value: string) {
+        offered.push(value)
+      }
+    }
+    const renamable = { name: 'seed' }
+    const widgets = [{ name: 'seed' }, stubborn, renamable]
+
+    expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([stubborn])
+    // `seed#1` was offered to `stubborn` and did not take, so it is still free
+    // for the next widget — a name one setter refuses is not a name in use.
+    expect(offered).toContain('seed#1')
+    expect(widgets.map((widget) => widget.name)).toEqual(['seed', 'seed#1'])
+  })
+
+  it('refuses every occurrence of a widget it refused once', () => {
+    const refused = pinned('seed')
+    const widgets = [{ name: 'seed' }, refused, refused]
+
+    // The identity bypass that keeps a reordering widget in place must not
+    // re-admit one whose first occurrence was already refused and reported.
+    expect(dropUnrenamableDuplicateWidgets(widgets)).toEqual([refused])
+    expect(widgets.map(({ name }) => name)).toEqual(['seed'])
   })
 
   it('does not refuse one widget object occupying two array slots', () => {

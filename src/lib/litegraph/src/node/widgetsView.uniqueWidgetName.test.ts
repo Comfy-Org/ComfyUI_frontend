@@ -176,7 +176,7 @@ describe('unique widget name invariant', () => {
     expect(storedNames(node)).toEqual(['seed', 'steps', 'steps#1'])
   })
 
-  it('refuses a pinned duplicate pushed in raw, not only one added through addWidget', () => {
+  it('renames rather than refuses a raw pushed duplicate, which normalization makes renamable', () => {
     const node = createNode()
     node.addWidget('number', 'seed', 1, () => undefined, {})
     const raw: IBaseWidget = {
@@ -190,9 +190,13 @@ describe('unique widget name invariant', () => {
 
     node.widgets!.push(raw)
 
-    expect(names(node)).toEqual(['seed'])
-    expect(storedNames(node)).toEqual(['seed'])
-    expect(reportError).toHaveBeenCalledOnce()
+    // Renamability is judged after `toConcreteWidget`, which gives a raw
+    // object the concrete class's writable `name` accessor. Judging it while
+    // still raw would delete a widget that renames cleanly a line later, and
+    // refusal is permanent.
+    expect(names(node)).toEqual(['seed', 'seed#1'])
+    expect(storedNames(node)).toEqual(['seed', 'seed#1'])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('refuses the later of a pinned pair carried in by a whole-array assignment', () => {
@@ -207,6 +211,75 @@ describe('unique widget name invariant', () => {
 
     expect(node.widgets).toEqual([kept])
     expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  it('leaves names alone while the node is detached, and settles them on add', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'audio', 1, () => undefined, {})
+    node.addWidget('button', 'audio', '', () => undefined, {})
+
+    // No `WidgetId` exists before the node has a graph, so there is nothing to
+    // collide over yet — and renaming during construction is observable:
+    // `litegraphService` finds the widget a custom constructor just made by
+    // comparing `candidate.name` to the returned widget's name, so an early
+    // rename moves the input's label onto the wrong widget. Core's RecordAudio
+    // node builds exactly this shape.
+    expect(names(node)).toEqual(['audio', 'audio'])
+
+    graph.add(node)
+
+    expect(names(node)).toEqual(['audio', 'audio#1'])
+    expect(storedNames(node)).toEqual(['audio', 'audio#1'])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a widget whose name throws without letting the throw escape the commit', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    const hostile = node.addWidget('number', 'steps', 2, () => undefined, {})
+    Object.defineProperty(hostile, 'name', {
+      get(): string {
+        throw new Error('name is not readable')
+      },
+      configurable: false
+    })
+
+    // The report runs after the array has already been spliced, so re-reading
+    // the accessor there would leave the node's widgets and the store's order
+    // out of sync — with the error surfacing far from its cause.
+    expect(() =>
+      node.addWidget('number', 'cfg', 3, () => undefined, {})
+    ).not.toThrow()
+
+    expect(names(node)).toEqual(['seed', 'cfg'])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'widget_duplicate_name_refused',
+        context: expect.objectContaining({ widgetName: undefined })
+      })
+    )
+  })
+
+  it('clears slot back-references to a widget it refused', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    const second = node.addWidget('number', 'steps', 2, () => undefined, {})
+    node.addInput('steps', 'INT')
+    const input = node.inputs.at(-1)!
+    input._widget = second
+    input.widget = { name: 'steps' }
+    pinName(second, 'seed')
+
+    node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    // Refusal splices the widget straight out of the array, so the teardown
+    // `removeWidget` owns has to happen here or the node keeps pointing at a
+    // widget it no longer has.
+    expect(node.widgets).not.toContain(second)
+    expect(input._widget).toBeUndefined()
+    expect(input.widget).toBeUndefined()
   })
 
   it('does not refuse one widget object occupying two slots mid-reorder', () => {

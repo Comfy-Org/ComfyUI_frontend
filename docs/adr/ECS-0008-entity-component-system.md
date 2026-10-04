@@ -185,14 +185,28 @@ legitimate re-mint rather than an identity collision — which is why
 > another widget already holds is not a second identity; it is the same
 > identity twice, and nothing downstream can tell the two apart.
 >
-> `ensureUniqueWidgetNames` keeps it true by renaming the repeat to `name#1`
-> before any id is derived. Where it cannot — a `name` that is not writable, or
-> an accessor that throws (`src/types/widgetId.ts`) — the widget is **refused**:
-> `node.widgets` is a mutation view, so every add commits through
-> `syncWidgetOrder`, which drops what it cannot name uniquely and reports it
-> under the stable `errorType` `widget_duplicate_name_refused`. First
-> occurrence wins; renamable collisions elsewhere on the node are still
-> renamed.
+> The repeat is renamed to `name#1` before any id is derived. Where it cannot
+> be — a `name` whose writes do not stick, or an accessor that throws
+> (`src/types/widgetId.ts`) — the widget is **refused**: `node.widgets` is a
+> mutation view, so every add commits through `syncWidgetOrder`, which drops
+> what it cannot name uniquely and reports it under the stable `errorType`
+> `widget_duplicate_name_refused`. First occurrence wins; renamable collisions
+> elsewhere on the node are still renamed.
+>
+> Three boundaries on that, because each one is load-bearing and none is
+> obvious from the rule:
+>
+> - **Enforcement starts when the node joins a graph**, not when a detached
+>   node is built. No `WidgetId` exists before then, so there is no identity to
+>   collide over — and renaming during construction changes names that
+>   `litegraphService` still matches a freshly created widget on.
+> - **Renamability is judged after normalization.** `toConcreteWidget` merges
+>   the concrete class's writable `name` accessor over a plain object's pinned
+>   one, so a raw widget that looks unrenamable usually is not.
+> - **`SubgraphNode` does not commit through this path.** It redefines
+>   `widgets` as a computed getter over its promoted widgets and overrides
+>   `addCustomWidget`, so an ambiguous pair there keeps the pre-existing
+>   behaviour.
 >
 > A serialized `(name, occurrence)` identity was proposed instead, so that both
 > widgets could be persisted ([#19717](https://github.com/Comfy-Org/ComfyUI_frontend/pull/19717)).

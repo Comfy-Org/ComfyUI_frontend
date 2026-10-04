@@ -1,3 +1,4 @@
+import { refuseAmbiguousNodeWidgets } from '@/lib/litegraph/src/node/widgetsView'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -30,6 +31,11 @@ export function attachNodeToStores(
   }
 
   if (!node.widgets) return
+  // Two widgets on one node cannot share a name (ADR-ECS-0008), and this is
+  // the first moment a `WidgetId` exists to collide over: the node now has a
+  // graph and its final id. Registering an ambiguous pair would bind both to
+  // one store entry, and `setNodeId` would in fact register neither.
+  refuseAmbiguousNodeWidgets(node)
   for (const widget of node.widgets) {
     if (isNodeBindable(widget)) widget.setNodeId(node.id)
   }
