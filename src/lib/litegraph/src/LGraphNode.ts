@@ -207,8 +207,6 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    // Each register gets its own copy. They used to share one object, so a
-    // consumer rewriting a value in place through one reached the other.
     const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
     positional.push(positionalValue)
     // Not `named[widget.name] = …`: for a widget named `__proto__` that runs
