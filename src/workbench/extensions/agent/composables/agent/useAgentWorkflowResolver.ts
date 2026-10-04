@@ -28,7 +28,7 @@ type WorkflowResolverDeps = {
   getCloudWorkflow: AgentRestClient['getCloudWorkflow']
 }
 
-type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
+export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 
 export function useAgentWorkflowResolver({
   workflows,

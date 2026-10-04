@@ -15,7 +15,10 @@ import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
-import type { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
+import type {
+  CloudWorkflowLifecycle,
+  useAgentWorkflowResolver
+} from './useAgentWorkflowResolver'
 
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow | null }
@@ -23,7 +26,7 @@ type RestorationOutcome =
   | { outcome: 'superseded' }
 
 function restorationOutcomeFor(
-  lifecycle: 'live' | 'gone' | 'unknown',
+  lifecycle: CloudWorkflowLifecycle,
   target: ComfyWorkflow | null
 ): RestorationOutcome {
   switch (lifecycle) {
