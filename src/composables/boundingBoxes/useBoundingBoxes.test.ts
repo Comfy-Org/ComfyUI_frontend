@@ -441,6 +441,28 @@ describe('useBoundingBoxes background image', () => {
     expect(modelBoxes(c)[0].width).toBe(256)
   })
 
+  it('does not re-apply stale incoming boxes when a background finishes loading', async () => {
+    appState.node = makeNode()
+    const c = setup()
+    c.grid.value = false
+    incomingBoxes.value = [box({ x: 0, width: 100 })]
+    await flush()
+    c.clearAll()
+    await flush()
+    c.onPointerDown(pe(10, 10))
+    c.onCanvasPointerMove(pe(60, 60))
+    c.onDocPointerUp(pe(60, 60))
+    await flush()
+
+    backgroundUrl.value = '/view?filename=bg.png'
+    await flush()
+    FakeImage.created[0].load(512, 512)
+    await flush()
+
+    expect(modelBoxes(c)).toHaveLength(1)
+    expect(modelBoxes(c)[0].width).toBe(256)
+  })
+
   it('ignores a background that finishes loading after it was replaced', async () => {
     const node = makeNode()
     appState.node = node

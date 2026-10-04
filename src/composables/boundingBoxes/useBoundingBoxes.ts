@@ -742,8 +742,15 @@ export function useBoundingBoxes(
   }
 
   applyIncomingBoxes(incomingBoxes.value, false)
-  watch([incomingBoxes, backgroundLoading], ([incoming, loading]) => {
-    if (!loading) applyIncomingBoxes(incoming)
+  const incomingPending = ref(false)
+  watch(incomingBoxes, (incoming) => {
+    if (backgroundLoading.value) incomingPending.value = true
+    else applyIncomingBoxes(incoming)
+  })
+  watch(backgroundLoading, (loading) => {
+    if (loading || !incomingPending.value) return
+    incomingPending.value = false
+    applyIncomingBoxes(incomingBoxes.value)
   })
   void nextTick(() => requestDraw())
 
