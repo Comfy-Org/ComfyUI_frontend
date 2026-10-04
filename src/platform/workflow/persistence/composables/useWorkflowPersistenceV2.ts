@@ -33,6 +33,7 @@ import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftT
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   completeWorkflowLogoutTransition,
+  registerWorkflowLogoutIntentListener,
   registerWorkflowPersistenceCancel,
   registerWorkflowPersistenceFlush
 } from '@/platform/workflow/persistence/base/storageIO'
@@ -163,6 +164,7 @@ export function useWorkflowPersistenceV2() {
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
   })
+  const unregisterLogoutIntentListener = registerWorkflowLogoutIntentListener()
 
   onUserResolved(() => {
     if (!isCloud) return
@@ -331,6 +333,7 @@ export function useWorkflowPersistenceV2() {
     window.removeEventListener('pagehide', flushPendingPersistence)
     unregisterPersistenceFlush()
     unregisterPersistenceCancel()
+    unregisterLogoutIntentListener()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
   })

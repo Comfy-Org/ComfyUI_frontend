@@ -44,4 +44,24 @@ test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
       })
       .toBe(true)
   })
+
+  test('a deliberate sign-out in a second window stops departed-user persistence', async ({
+    workflowDraft
+  }) => {
+    const initialTouch = await workflowDraft.touchGraph()
+    await expect
+      .poll(() => workflowDraft.hasPersistedTouch(initialTouch))
+      .toBe(true)
+
+    await workflowDraft.triggerForeignWindowSignOut()
+
+    await expect.poll(() => workflowDraft.getDraftKeys()).toEqual([])
+
+    const touchAfterSignOut = await workflowDraft.touchGraph()
+    await workflowDraft.firePageHide()
+
+    await expect
+      .poll(() => workflowDraft.hasPersistedTouch(touchAfterSignOut))
+      .toBe(false)
+  })
 })
