@@ -778,8 +778,9 @@ describe('AgentMessage ask_user question', () => {
     })
 
     expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
-    for (const radio of screen.getAllByRole('radio'))
-      expect(radio).toBeDisabled()
+    expect(
+      screen.getAllByRole('radio').map((radio) => radio.matches(':disabled'))
+    ).toEqual([true, true])
   })
 })
 
