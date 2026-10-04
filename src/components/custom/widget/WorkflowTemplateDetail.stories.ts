@@ -34,17 +34,19 @@ const withPreview: NonNullable<Story['render']> = (args) => ({
 const checkpoint = {
   id: 'm1',
   name: 'sd_xl_base_1.0.safetensors',
-  description: 'Checkpoints · 6.46 GB'
+  description: 'Checkpoints · 6.46 GB · Used by Load Checkpoint'
 }
 const vae = {
   id: 'm2',
   name: 'sdxl_vae.safetensors',
-  description: 'VAE · 319.8 MB'
+  description: 'VAE · 319.8 MB · Used by VAE Decode'
 }
 
-/** Sizes are not known until metadata resolves, so the type stands alone. */
-const unsizedCheckpoint = { ...checkpoint, description: 'Checkpoints' }
-const unsizedVae = { ...vae, description: 'VAE' }
+const unsizedCheckpoint = {
+  ...checkpoint,
+  description: 'Checkpoints · Used by Load Checkpoint'
+}
+const unsizedVae = { ...vae, description: 'VAE · Used by VAE Decode' }
 
 const installed = {
   kind: 'installed',

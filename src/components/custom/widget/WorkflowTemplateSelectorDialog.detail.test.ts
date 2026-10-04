@@ -12,6 +12,7 @@ import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates
 import type { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { useLazyPagination } from '@/composables/useLazyPagination'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
+import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -140,8 +141,6 @@ const mocks = vi.hoisted(() => ({
     checkpoints: ['/models/checkpoints']
   }))
 }))
-
-import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -708,7 +707,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     await clickTemplateCard()
     await screen.findByRole('article', { name: fixtures.template.title })
 
-    expect(vi.mocked(useTemplateModelRowDownloads)).toHaveBeenCalledWith({
+    expect(useTemplateModelRowDownloads).toHaveBeenCalledWith({
       folderPaths: { checkpoints: ['/models/checkpoints'] }
     })
   })
@@ -720,7 +719,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     await clickTemplateCard()
 
     await screen.findByRole('article', { name: fixtures.template.title })
-    expect(vi.mocked(useTemplateModelRowDownloads)).toHaveBeenCalledWith({
+    expect(useTemplateModelRowDownloads).toHaveBeenCalledWith({
       folderPaths: {}
     })
   })
