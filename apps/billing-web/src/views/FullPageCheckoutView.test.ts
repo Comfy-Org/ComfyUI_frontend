@@ -221,6 +221,18 @@ async function renderCheckout(
 const payButton = () =>
   screen.getByRole('button', { name: 'Pay and subscribe' })
 
+/** A 400 the server coded, the way the preview route refuses a link. */
+const refusedQuote = (
+  serverCode: string,
+  message: string
+): PreviewSubscribeResult => ({
+  status: 'error',
+  code: 'REQUEST_FAILED',
+  httpStatus: 400,
+  serverCode: readBillingErrorCode({ code: serverCode, message }),
+  serverMessage: message
+})
+
 afterEach(() => {
   sessionStorage.clear()
 })
@@ -584,31 +596,57 @@ describe('FullPageCheckoutView', () => {
     ])
   })
 
-  it.for<{ name: string; serverCode: string; heading: string }>([
+  it.for<{ name: string; preview: PreviewSubscribeResult; heading: string }>([
     {
       name: 'a plan the catalog lacks is Plan not available',
-      serverCode: 'INVALID_PLAN',
+      preview: refusedQuote('INVALID_PLAN', 'no'),
       heading: "This plan isn't available"
     },
     {
-      name: 'any other refused quote is a load failure',
-      serverCode: 'TRANSITION_NOT_ALLOWED',
+      name: 'any other coded refusal is Checkout not available',
+      preview: refusedQuote('TRANSITION_NOT_ALLOWED', 'no'),
+      heading: 'Checkout not available'
+    },
+    {
+      name: 'a quote the server could not answer is a load failure',
+      preview: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      heading: "Couldn't load your checkout"
+    },
+    {
+      name: 'a quote that never reached the server is a load failure',
+      preview: { status: 'error', code: 'REQUEST_FAILED' },
       heading: "Couldn't load your checkout"
     }
-  ])('$name', async ({ serverCode, heading }) => {
-    await renderCheckout({
-      preview: {
-        status: 'error',
-        code: 'REQUEST_FAILED',
-        httpStatus: 400,
-        serverCode: readBillingErrorCode({ code: serverCode, message: 'no' })
-      }
-    })
+  ])('$name', async ({ preview, heading }) => {
+    await renderCheckout({ preview })
 
     expect(
       await screen.findByRole('heading', { name: heading })
     ).toBeInTheDocument()
     expect(form.mounts).toBe(0)
+  })
+
+  it("ends a coded refusal on the server's code and sentence, never a retry", async () => {
+    const fake = await renderCheckout({
+      preview: refusedQuote(
+        'TRANSITION_NOT_ALLOWED',
+        'the selected plan is already the current plan'
+      )
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Checkout not available' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('the selected plan is already the current plan')
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'TRANSITION_NOT_ALLOWED'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Try again' })
+    ).not.toBeInTheDocument()
+    expect(fake.subscribe).not.toHaveBeenCalled()
   })
 
   it.for<{
@@ -661,6 +699,27 @@ describe('FullPageCheckoutView', () => {
           value: previewOf({
             new_plan: { ...previewOf().new_plan, tier: 'TEAM' }
           })
+        }
+      },
+      code: 'CHECKOUT_LINK_INVALID',
+      plans: 'https://testcloud.comfy.org/?pricing=team&workspace=ws-team'
+    },
+    {
+      name: 'a catalog team plan named without its commit stop, which the quote refuses',
+      path: '/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=team_per_credit_monthly',
+      options: {
+        preview: refusedQuote(
+          'TRANSITION_NOT_ALLOWED',
+          'team_credit_stop_id is required for the per-credit Team plan'
+        ),
+        plans: {
+          status: 'ok',
+          value: {
+            plans: [
+              planOf(),
+              planOf({ slug: 'team_per_credit_monthly', tier: 'TEAM' })
+            ]
+          }
         }
       },
       code: 'CHECKOUT_LINK_INVALID',
@@ -1561,6 +1620,24 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     await renderCheckout({
       recover: { status: 'ok', value: succeededOperation('op_done') },
       preview: { status: 'ok', value: previewOf({ allowed: false }) }
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Already completed' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_done'
+    )
+    expect(form.mounts).toBe(0)
+  })
+
+  it('lands on Already completed for a settled payment whose link the quote now refuses with its own code', async () => {
+    await renderCheckout({
+      recover: { status: 'ok', value: succeededOperation('op_done') },
+      preview: refusedQuote(
+        'TRANSITION_NOT_ALLOWED',
+        'the selected plan is already the current plan'
+      )
     })
 
     expect(
