@@ -7,9 +7,14 @@ import MenuAction from './MenuAction.vue'
 import MenuItemContent from './MenuItemContent.vue'
 import MenuSeparator from './MenuSeparator.vue'
 import MenuSubmenu from './MenuSubmenu.vue'
-import type { MenuItem, MenuItemSlotProps } from './types'
+import type { MenuItem } from './types'
 
 defineOptions({ name: 'MenuItems' })
+
+type MenuItemSlotProps = {
+  item: MenuItem
+  hasSubmenu: boolean
+}
 
 const [DefineItemContent, ReuseItemContent] =
   createReusableTemplate<MenuItemSlotProps>()
@@ -45,14 +50,16 @@ const visibleItems = computed(() =>
     :key="item.key ?? toValue(item.label) ?? index"
   >
     <MenuSeparator v-if="item.separator" />
-    <MenuSubmenu
-      v-else-if="item.items || item.radioGroup"
-      :item
-      :item-content="itemContent ?? $slots.item"
-      :owner-id
-      @select="emit('select')"
-    >
+    <MenuSubmenu v-else-if="item.items || item.radioGroup" :item :owner-id>
       <ReuseItemContent :item :has-submenu="true" />
+      <template #content="{ items: childItems }">
+        <MenuItems
+          :items="childItems"
+          :item-content="itemContent ?? $slots.item"
+          :owner-id
+          @select="emit('select')"
+        />
+      </template>
     </MenuSubmenu>
     <MenuAction
       v-else
