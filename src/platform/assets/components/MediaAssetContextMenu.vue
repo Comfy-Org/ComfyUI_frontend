@@ -3,31 +3,14 @@
     :id="contextMenuId"
     ref="contextMenu"
     :model="contextMenuItems"
-    :class="
-      cn(
-        'rounded-lg',
-        'bg-secondary-background text-base-foreground',
-        'shadow-lg'
-      )
-    "
     @hide="onMenuHide"
-  >
-    <template #item="{ item }">
-      <Button variant="secondary" class="w-full justify-start">
-        <i v-if="item.icon" :class="item.icon" class="size-4" />
-        <span>{{
-          typeof item.label === 'function' ? item.label() : (item.label ?? '')
-        }}</span>
-      </Button>
-    </template>
-  </ContextMenu>
+  />
 </template>
 
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
@@ -35,7 +18,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { isPreviewableMediaType } from '@/utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'

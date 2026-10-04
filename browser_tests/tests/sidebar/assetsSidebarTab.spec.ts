@@ -184,6 +184,33 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await mockViewFiles(page, viewFiles)
   })
 
+  test('uses one hover background across an asset menu row', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const menu = comfyPage.contextMenu
+    await tab.open()
+    await tab.rightClickAsset('alpha')
+
+    for (const area of ['padding', 'content'] as const) {
+      await test.step(`Hover the item ${area}`, async () => {
+        await menu.hoverItem('Export workflow', area)
+        await expect(menu.menuItem('Export workflow')).toHaveAttribute(
+          'data-highlighted',
+          ''
+        )
+        await expect(async () => {
+          const { row, content } =
+            await menu.getItemBackgrounds('Export workflow')
+          expect(content).toBe(row)
+        }).toPass({ timeout: 5000 })
+      })
+    }
+
+    await menu.clickMenuItemExact('Inspect asset')
+    await expect(comfyPage.mediaLightbox.root).toBeVisible()
+  })
+
   test('renders generated and imported assets with image previews', async ({
     comfyPage
   }) => {

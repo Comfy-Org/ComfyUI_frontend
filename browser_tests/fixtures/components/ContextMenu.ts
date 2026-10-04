@@ -33,6 +33,36 @@ export class ContextMenu {
     return this.anyMenu.getByRole('menuitem', { name, exact: true })
   }
 
+  async hoverItem(name: string, area: 'padding' | 'content') {
+    const item = this.menuItem(name)
+    const position = await item.evaluate((element, area) => {
+      const { width, height } = element.getBoundingClientRect()
+      return {
+        x:
+          area === 'padding'
+            ? parseFloat(getComputedStyle(element).paddingLeft) / 2
+            : width / 2,
+        y: height / 2
+      }
+    }, area)
+    await item.hover({ position })
+  }
+
+  async getItemBackgrounds(name: string) {
+    return this.menuItem(name).evaluate((item) => {
+      const rect = item.getBoundingClientRect()
+      const row = getComputedStyle(item).backgroundColor
+      const content = document
+        .elementsFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
+        .filter((element) => item.contains(element))
+        .map((element) => getComputedStyle(element).backgroundColor)
+        .find(
+          (color) => color !== 'rgba(0, 0, 0, 0)' && color !== 'transparent'
+        )
+      return { row, content }
+    })
+  }
+
   async openColorSubmenu(): Promise<Locator> {
     await this.menuItem('Color').click()
     const submenu = this.page.getByRole('menu').filter({
