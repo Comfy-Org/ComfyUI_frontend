@@ -137,8 +137,6 @@ export const useSubgraphNavigationStore = defineStore(
       const canvas = canvasStore.canvas
       if (!canvas) return
 
-      canvasScheduler.cancel('subgraph-navigation-fit')
-
       const expectedKey = buildCacheKey(graphId)
       const viewport = viewportCache.get(expectedKey)
       if (viewport) {

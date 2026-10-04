@@ -16,28 +16,12 @@ const autoSizedStyleByCanvas = new WeakMap<
   HTMLCanvasElement,
   { width?: string; height?: string }
 >()
-const appliedContextDprByCanvas = new WeakMap<HTMLCanvasElement, number>()
 
-function invalidateCanvasContextTransform(canvas: HTMLCanvasElement): void {
-  appliedContextDprByCanvas.delete(canvas)
-}
-
-function applyLogicalCanvasStyle(
+function applyParentSizedCanvasStyle(
   canvas: HTMLCanvasElement,
   width: number,
   height: number
 ): void {
-  if (!(width > 0) || !(height > 0)) return
-
-  const rect = canvas.getBoundingClientRect()
-  if (
-    Math.abs(rect.width - width) < 1 &&
-    Math.abs(rect.height - height) < 1 &&
-    rect.width > 0 &&
-    rect.height > 0
-  )
-    return
-
   const { style } = canvas
   const previousStyle = autoSizedStyleByCanvas.get(canvas) ?? {}
   const nextStyle: { width?: string; height?: string } = {}
@@ -111,35 +95,11 @@ function measureViewportFromElement(
   } finally {
     element.width = savedWidth
     element.height = savedHeight
-    invalidateCanvasContextTransform(element)
   }
   const width = cssRect.width || previousViewport?.cssWidth || initialRect.width
   const height =
     cssRect.height || previousViewport?.cssHeight || initialRect.height
   return measureViewport(width, height, rawDpr)
-}
-
-function applySurfaceViewport(
-  canvas: HTMLCanvasElement,
-  viewport: CanvasViewport
-): void {
-  const { physicalWidth, physicalHeight, dpr } = viewport
-  let contextReset = false
-  if (canvas.width !== physicalWidth) {
-    canvas.width = physicalWidth
-    contextReset = true
-  }
-  if (canvas.height !== physicalHeight) {
-    canvas.height = physicalHeight
-    contextReset = true
-  }
-  if (contextReset) invalidateCanvasContextTransform(canvas)
-
-  if (appliedContextDprByCanvas.get(canvas) === dpr) return
-
-  if (!contextReset) canvas.width = physicalWidth
-  canvas.getContext('2d')?.scale(dpr, dpr)
-  appliedContextDprByCanvas.set(canvas, dpr)
 }
 
 function applyViewport(
@@ -148,8 +108,34 @@ function applyViewport(
   bg: HTMLCanvasElement,
   consumer?: CanvasViewportConsumer
 ): CanvasViewport {
-  applySurfaceViewport(fg, viewport)
-  if (bg !== fg) applySurfaceViewport(bg, viewport)
+  const previousForegroundViewport = appliedViewportByCanvas.get(fg)
+  const foregroundChanged =
+    fg.width !== viewport.physicalWidth ||
+    fg.height !== viewport.physicalHeight ||
+    previousForegroundViewport?.dpr !== viewport.dpr
+  if (
+    fg.width !== viewport.physicalWidth ||
+    previousForegroundViewport?.dpr !== viewport.dpr
+  )
+    fg.width = viewport.physicalWidth
+  if (fg.height !== viewport.physicalHeight) fg.height = viewport.physicalHeight
+  if (foregroundChanged) fg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
+  if (bg !== fg) {
+    const previousBackgroundViewport = appliedViewportByCanvas.get(bg)
+    const backgroundChanged =
+      bg.width !== viewport.physicalWidth ||
+      bg.height !== viewport.physicalHeight ||
+      previousBackgroundViewport?.dpr !== viewport.dpr
+    if (
+      bg.width !== viewport.physicalWidth ||
+      previousBackgroundViewport?.dpr !== viewport.dpr
+    )
+      bg.width = viewport.physicalWidth
+    if (bg.height !== viewport.physicalHeight)
+      bg.height = viewport.physicalHeight
+    if (backgroundChanged)
+      bg.getContext('2d')?.scale(viewport.dpr, viewport.dpr)
+  }
 
   appliedViewportByCanvas.set(fg, viewport)
   appliedViewportByCanvas.set(bg, viewport)
@@ -164,6 +150,6 @@ export {
   readBrowserDpr,
   measureViewport,
   measureViewportFromElement,
-  applyLogicalCanvasStyle,
+  applyParentSizedCanvasStyle,
   applyViewport
 }

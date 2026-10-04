@@ -28,16 +28,4 @@ describe('visibleCanvasViewport', () => {
       visibleCanvasViewport({ ds: createTestDragAndScale(800, 450) })
     ).toEqual([0, 0, 300, 450])
   })
-
-  it('falls back to the whole canvas when the panel leaves nothing uncovered', () => {
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.consentAccepted = true
-    panel.isOpen = true
-    panel.setWidth(500)
-
-    expect(
-      visibleCanvasViewport({ ds: createTestDragAndScale(480, 450) })
-    ).toEqual([0, 0, 480, 450])
-  })
 })

@@ -8,7 +8,5 @@ export function visibleCanvasViewport(
   const panel = useAgentPanelStore()
   const [width, height] = canvas.ds.getViewportSize()
   const coveredWidth = panel.isVisible ? panel.width : 0
-  const uncoveredWidth = width - coveredWidth
-  if (!(uncoveredWidth > 0)) return [0, 0, width, height]
-  return [0, 0, uncoveredWidth, height]
+  return [0, 0, Math.max(width - coveredWidth, 0), height]
 }

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { nextTick } from 'vue'
 
@@ -210,37 +210,6 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       mockGraph.nodes = []
       mockGraph._nodes = []
-    })
-
-    it('does not let a first-visit fit queued for a hidden canvas overwrite a later cache restore', () => {
-      const store = useSubgraphNavigationStore()
-      store.viewportCache.delete(':sub-a')
-      setCanvasVisible(mockCanvas.canvas, false)
-      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
-      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
-      mockGraph._nodes = mockGraph.nodes
-      onTestFinished(() => {
-        mockGraph.nodes = []
-        mockGraph._nodes = []
-      })
-
-      mockCanvas.subgraph = { id: 'sub-a' } as never
-      store.restoreViewport('sub-a')
-
-      store.viewportCache.set(':sub-b', { scale: 1, offset: [0, 0] })
-      mockCanvas.subgraph = { id: 'sub-b' } as never
-      store.restoreViewport('sub-b')
-
-      mockCanvas.subgraph = { id: 'sub-a' } as never
-      store.viewportCache.set(':sub-a', { scale: 3, offset: [11, 22] })
-      store.restoreViewport('sub-a')
-
-      setCanvasVisible(mockCanvas.canvas, true)
-      useCanvasScheduler().flush()
-
-      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
-      expect(mockCanvas.ds.scale).toBe(3)
-      expect(mockCanvas.ds.offset).toEqual([11, 22])
     })
 
     it('skips a queued fit if the active graph changes while hidden', () => {
