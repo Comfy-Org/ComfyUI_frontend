@@ -7,6 +7,8 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+## 0.3.9 - 2026-10-04
+
 ### Added
 
 - Let a producer declare one node instance's ordered serializable-widget
@@ -21,10 +23,28 @@ this package uses semantic versioning.
   `{order}`, a malformed one is refused rather than ignored, and a node that
   carries none behaves exactly as before. `SCHEMA_VERSION` is unchanged at v5:
   the reserved `__widgets_form` key is reachable only on a node that opted in,
-  so no earlier v5 document can contain it.
+  so no earlier v5 document can contain it. One pre-existing path stays
+  narrower than the rest: `insert_workflow` strips every `__`-prefixed key at
+  every depth, so a serializer's own `__`-prefixed data key inside
+  `widgets_values` does not survive that path, while the same node minted,
+  added or written through `set_widget` keeps it (#273).
 - Export `WIDGET_FORM_FIELD`, `WIDGET_FORM_KEY`, `WidgetValuesForm` and
   `WidgetFormShape` so a producer and a catalog-less follower do not hardcode
-  the names. Interpreting a declaration stays package-private.
+  the names. Interpreting a declaration stays package-private (#273).
+
+### Fixed
+
+- Derive a numeric id for an `insert_workflow` group instead of the string
+  derived id every other remapped kind gets, at the root and inside
+  `definitions.subgraphs[].groups`. The frontend's workflow schema declares
+  `groups[].id` as a number and refuses the whole workflow when one is a
+  string, so an insert carrying groups projected a workflow the canvas
+  rejected, after which the canvas kept its own copy of the graph and stopped
+  taking the document's projection. A document that already stores the string
+  form reads back through the same fold, so it projects the number a fresh
+  insert derives and `project` → `mint` → `project` stays a fixed point; only
+  that derived form is coerced, and a workflow's own string group id, a numeric
+  one and an absent one are untouched. Link ids are unchanged (#264).
 
 ## 0.3.8 - 2026-10-03
 
