@@ -891,7 +891,7 @@ describe('Save As app input rendering', () => {
     assert.exists(copy.content)
     const saved = zComfyWorkflow.parse(JSON.parse(copy.content))
     const copiedGraph = new LGraph()
-    copiedGraph.configure(JSON.parse(copy.content) as ISerialisedGraph)
+    copiedGraph.configure(saved as ISerialisedGraph)
     const copiedNode = copiedGraph.getNodeById(originalNode.id)
     assert.exists(copiedNode)
     const copiedId = saved.extra?.linearData?.inputs?.[0][0]
