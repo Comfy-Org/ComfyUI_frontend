@@ -205,6 +205,15 @@ function tabIndex(item: (typeof sections)[number]): number {
   return section.value === item ? 0 : -1
 }
 
+function selectSection(item: (typeof sections)[number]) {
+  if (item !== section.value && enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'tab_switched',
+      properties: { ...modelAnalytics, tab: item }
+    })
+  section.value = item
+}
+
 function selectExample(index: number) {
   const example = initial.examples[index]
   if (!example || formDisabled.value) return
@@ -262,7 +271,7 @@ function start() {
       :aria-controls="`workflow-panel-${item}`"
       :tabindex="tabIndex(item)"
       class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-warm-white"
-      @click="section = item"
+      @click="selectSection(item)"
     >
       {{ t(sectionLabels[item]) }}
     </button>

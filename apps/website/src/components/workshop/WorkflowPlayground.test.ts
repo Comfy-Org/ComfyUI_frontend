@@ -101,7 +101,45 @@ describe('WorkflowPlayground analytics', () => {
     })
     expect(
       vi.mocked(captureWorkshopEvent).mock.calls.map(([event]) => event.name)
-    ).toEqual(['model_viewed', 'api_viewed'])
+    ).toEqual(['model_viewed', 'tab_switched', 'api_viewed'])
+  })
+})
+
+describe('WorkflowPlayground tab analytics', () => {
+  it('reports a tab switch with the tab switched to and workflow attribution', async () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('tab', { name: 'Details' }))
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'tab_switched',
+      properties: expect.objectContaining({
+        model_slug: model.slug,
+        page_type: 'workflow',
+        workflow_id: model.workflowId,
+        tab: 'workflow'
+      })
+    })
+
+    vi.mocked(captureWorkshopEvent).mockClear()
+    await visitor.click(screen.getByRole('tab', { name: 'Details' }))
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it('reports no tab switch while Workflows access is off', async () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Details' }))
+
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 })
 
