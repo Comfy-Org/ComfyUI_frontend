@@ -22,4 +22,9 @@ The candidate dependency prototype lives in `ci-tests-e2e.yaml`. See
 [CI-PREREQUISITES-0038](../../docs/adr/CI-PREREQUISITES-0038-gate-expensive-candidate-tests.md)
 for measured runtimes, required-check compatibility, and rollout limits.
 
+The required `lint-and-format` context keeps one stable name across pull requests and merge-queue
+candidates. Changes confined to `apps/website/**` run website-scoped lint, format, typecheck, and
+Knip jobs. Any file outside that directory selects the full repository jobs; pushes to protected
+branches always run the full jobs.
+
 For GitHub Actions documentation, see [Events that trigger workflows](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows).

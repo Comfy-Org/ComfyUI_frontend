@@ -23,7 +23,20 @@ env:
     packages/*/node_modules/.cache/tsbuildinfo
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      website-only: ${{ steps.changes.outputs.website-only-changes }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   lint:
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
@@ -110,6 +123,8 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
   typecheck:
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
@@ -136,6 +151,8 @@ jobs:
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
   typecheck-aux:
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
@@ -162,6 +179,8 @@ jobs:
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
   repo-checks:
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
@@ -177,3 +196,84 @@ jobs:
 
       - name: Verify knip, locale integrity and ADR index
         uses: ./.github/actions/repo-checks
+
+  website-lint:
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.ref }}
+          token: ${{ !github.event.pull_request.head.repo.fork && secrets.PR_GH_TOKEN || github.token }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Restore lint caches
+        id: lint-cache
+        uses: ./.github/actions/tool-cache-restore
+        with:
+          scope: website-lint
+          path: ${{ env.LINT_CACHE_PATHS }}
+
+      - name: Apply website lint and format fixes
+        run: |
+          pnpm exec stylelint --cache --cache-strategy content --fix 'apps/website/**/*.{css,vue}'
+          pnpm exec oxlint apps/website --type-aware --fix
+          pnpm exec eslint apps/website --cache --cache-strategy content --concurrency auto --fix
+          pnpm --filter @comfyorg/website format
+
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit changes
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add apps/website
+          git commit -m "[automated] Apply website lint and format fixes"
+          git push
+
+      - name: Fail for fork PRs with unfixed lint or format issues
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "::error::Website linting or formatting issues found. Run the website checks locally and push the changes."
+          exit 1
+
+      - name: Save lint caches
+        if: always()
+        uses: ./.github/actions/tool-cache-save
+        with:
+          cache-key: ${{ steps.lint-cache.outputs.cache-key }}
+          path: ${{ env.LINT_CACHE_PATHS }}
+
+  website-typecheck:
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-frontend
+      - name: Typecheck website
+        run: pnpm typecheck:website
+
+  website-repo-checks:
+    needs: changes
+    if: ${{ needs.changes.result == 'success' && needs.changes.outputs.website-only == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-frontend
+      - name: Find unused website files, exports and dependencies
+        run: pnpm knip --workspace apps/website
