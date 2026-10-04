@@ -11,7 +11,10 @@ import type {
   WorkflowExecutionFailureReason,
   WorkflowExecutionIntent
 } from '@/platform/telemetry/types'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyApiWorkflow,
@@ -715,11 +718,19 @@ export const useExecutionStore = defineStore('execution', () => {
    * the active workflow to preserve current behaviour for the existing
    * single-tab common case.
    */
-  /** Graph id of the active workflow, or null when it has none. */
+  /**
+   * Graph id of the active workflow, or null when it has none.
+   *
+   * `LoadedComfyWorkflow` types both states as present, but the running store
+   * does not always honour that, and this is read from a watcher and from a
+   * computed now — so a missing state has to return null rather than throw and
+   * take unrelated features down with it.
+   */
   function activeWorkflowGraphId(): string | null {
-    const active = workflowStore.activeWorkflow
+    const active: Partial<LoadedComfyWorkflow> | null =
+      workflowStore.activeWorkflow
     if (!active) return null
-    return active.activeState.id ?? active.initialState.id ?? null
+    return active.activeState?.id ?? active.initialState?.id ?? null
   }
 
   function messageMatchesActiveWorkflow(

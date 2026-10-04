@@ -94,7 +94,8 @@ describe('BackendSimulator frame scripting', () => {
     expect(sent[0].data).toEqual({
       workflow_id: 'wf-a',
       prompt_id: 'job-a',
-      node: '7'
+      node: '7',
+      display_node: '7'
     })
   })
 
