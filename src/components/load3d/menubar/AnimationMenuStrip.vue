@@ -61,9 +61,10 @@
           :class="
             cn(
               menuButtonClass,
-              selectedSpeed === speed && 'bg-secondary-background-hover'
+              selectedSpeed === speed && selectedMenuButtonClass
             )
           "
+          :aria-pressed="selectedSpeed === speed"
           @click="setSpeed(speed)"
         >
           {{ formatSpeed(speed) }}
@@ -97,10 +98,10 @@
           :class="
             cn(
               menuButtonClass,
-              selectedAnimation === clip.index &&
-                'bg-secondary-background-hover'
+              selectedAnimation === clip.index && selectedMenuButtonClass
             )
           "
+          :aria-pressed="selectedAnimation === clip.index"
           @click="setClip(clip.index)"
         >
           <span class="truncate">{{ clip.name }}</span>
@@ -125,7 +126,10 @@ import {
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { menuButtonClass } from '@/components/ui/menu/menuStyles'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { AnimationItem } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'

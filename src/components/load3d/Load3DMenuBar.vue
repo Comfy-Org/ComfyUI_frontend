@@ -32,9 +32,10 @@
             :class="
               cn(
                 menuButtonClass,
-                activeCategory === c.key && 'bg-secondary-background-hover'
+                activeCategory === c.key && selectedMenuButtonClass
               )
             "
+            :aria-pressed="activeCategory === c.key"
             @click="selectCategory(c.key)"
           >
             <i :class="cn(c.icon, 'size-4')" />
@@ -208,7 +209,10 @@ import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExc
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { menuButtonClass } from '@/components/ui/menu/menuStyles'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {

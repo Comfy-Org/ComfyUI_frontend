@@ -60,10 +60,7 @@
           type="button"
           :aria-pressed="gizmoMode === m.mode"
           :class="
-            cn(
-              menuButtonClass,
-              gizmoMode === m.mode && 'bg-secondary-background-hover'
-            )
+            cn(menuButtonClass, gizmoMode === m.mode && selectedMenuButtonClass)
           "
           @click="selectMode(m.mode)"
         >
@@ -91,7 +88,10 @@ import {
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { menuButtonClass } from '@/components/ui/menu/menuStyles'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import type {
   GizmoMode,
   ModelConfig
