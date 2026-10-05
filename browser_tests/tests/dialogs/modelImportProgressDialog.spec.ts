@@ -295,7 +295,13 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     const toast = page.getByRole('status').filter({ hasText: assetName })
     await expect(toast).toBeVisible()
     await toast.getByRole('button', { name: 'Expand' }).click()
+    const cancellation = page.waitForResponse(
+      (candidate) =>
+        candidate.url().endsWith(`/tasks/${taskId}`) &&
+        candidate.request().method() === 'DELETE'
+    )
     await toast.getByRole('button', { name: 'Cancel Download' }).click()
+    await (await cancellation).finished()
 
     const advanceReconciliation = async () => {
       const response = page.waitForResponse(
@@ -303,6 +309,8 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
           candidate.url().endsWith(`/tasks/${taskId}`) &&
           candidate.request().method() === 'GET'
       )
+      await page.clock.runFor(10_001)
+      await page.evaluate(() => Promise.resolve())
       await page.clock.runFor(10_001)
       await (await response).finished()
       await page.clock.runFor(1)
