@@ -58,10 +58,10 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
-          OUTPUT=$(pnpm dlx wrangler@^4.0.0 pages deploy video-report \
+          OUTPUT=$(pnpm dlx wrangler@4.147.0 pages deploy video-report \
             --project-name=comfyui-playwright-chromium --branch="pr-${PR_NUMBER}-new-tests")
           echo "$OUTPUT"
-          URL=$(printf '%s\n' "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev' | head -1)
+          URL=$(printf '%s\n' "$OUTPUT" | { grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev' || true; } | head -1)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Write video section
@@ -80,7 +80,7 @@ jobs:
             echo '## Playwright video walkthroughs'
             echo
             printf 'Recording run: **%s**. [Run and downloadable reports](%s).\n' "$RESULT" "$RUN_URL"
-            printf '\nRecorded head: `%s`.\n' "$HEAD_SHA"
+            printf '\nRecorded head: %s%s%s.\n' '`' "$HEAD_SHA" '`'
             if [ -n "$REPORT_URL" ]; then
               printf '\n[View tests with embedded video](%s).\n' "$REPORT_URL"
             else

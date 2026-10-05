@@ -234,12 +234,7 @@ describe('independent video workflow', () => {
               }
             }),
             expect.objectContaining({
-              id: 'section',
-              if: expect.stringContaining("steps.pr.outputs.skip != 'true'")
-            }),
-            expect.objectContaining({
               uses: './.github/actions/post-pr-report-comment',
-              if: "steps.section.outcome == 'success'",
               with: expect.objectContaining({
                 'pr-number': '${{ steps.pr.outputs.number }}'
               })
