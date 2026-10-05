@@ -2,7 +2,7 @@ import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
-import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import {
   type Load3dCachedOutput,
   getLoad3dOutputCache,
@@ -283,10 +283,7 @@ useExtensionService().registerExtension({
           component: Load3DViewerContent,
           props: props,
           dialogComponentProps: {
-            renderer: 'reka',
-            size: 'full',
-            contentClass: LOAD3D_VIEWER_CONTENT_CLASS,
-            maximizable: true,
+            ...LOAD3D_VIEWER_DIALOG_PROPS,
             onClose: async () => {
               await useLoad3dService().handleViewerClose(props.node)
             }

@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { load3dViewerTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 
 test.describe('Load3D Viewer', () => {
@@ -78,5 +79,50 @@ test.describe('Load3D Viewer', () => {
     expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(
       viewport!.height + 1
     )
+  })
+})
+
+test.describe('Load3D asset viewer', () => {
+  test('keeps a generated 3D asset outside the workspace inset', async ({
+    comfyPage
+  }) => {
+    await comfyPage.assets.mockOutputHistory([
+      createMockJob({ id: 'load3d-geometry', mediaKind: '3D' })
+    ])
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.page.route('**/view?**', (route) =>
+      route.fulfill({ path: assetPath('workflowInMedia/workflow.glb') })
+    )
+    await comfyPage.page.setViewportSize({ width: 1280, height: 800 })
+    await comfyPage.page.evaluate(() => {
+      document.documentElement.style.setProperty(
+        '--workspace-inset-right',
+        '420px'
+      )
+    })
+
+    const assets = comfyPage.menu.assetsTab
+    await assets.open()
+    const card = comfyPage.page.getByRole('button', {
+      name: 'output_load3d-geometry.glb - 3D asset'
+    })
+    await expect(card).toBeVisible()
+    const assetCard = card.locator('xpath=ancestor::div[@data-asset-id]')
+    await assetCard.hover()
+    await assetCard.getByRole('button', { name: 'More options' }).click()
+    await comfyPage.page.getByText('Inspect asset').click()
+    const dialog = comfyPage.page.getByRole('dialog', {
+      name: 'output_load3d-geometry.glb'
+    })
+    await expect(dialog).toBeVisible()
+
+    await expect(async () => {
+      const dialogBox = await dialog.boundingBox()
+      expect(dialogBox).not.toBeNull()
+      if (!dialogBox) return
+
+      expect(dialogBox.x).toBeCloseTo(8, 1)
+      expect(dialogBox.x + dialogBox.width).toBeCloseTo(852, 1)
+    }).toPass({ timeout: 5000 })
   })
 })
