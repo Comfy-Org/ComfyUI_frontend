@@ -4,7 +4,9 @@ import { useTemplateRef } from 'vue'
 import { usePreviewVideo } from '@/composables/usePreviewVideo'
 import type { WorkshopModel } from '@/config/models-catalogue'
 
-const { model } = defineProps<{ model: WorkshopModel }>()
+const { model } = defineProps<{
+  model: Pick<WorkshopModel, 'name' | 'thumbnail'>
+}>()
 const video = useTemplateRef<HTMLVideoElement>('video')
 const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
 </script>

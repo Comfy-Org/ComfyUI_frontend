@@ -12,12 +12,13 @@ describe('workshopAppHref', () => {
   })
 
   it('uses the catalogue artwork for every app card', () => {
-    expect(workshopApps('en', appModels).map(({ image }) => image)).toEqual(
-      appModels.map((app) => app.thumbnail?.url ?? app.thumbnailUrl)
-    )
     expect(
-      workshopApps('en', appModels).find(({ key }) => key === 'reshoot')?.image
-    ).toBe('/images/cinematic-studio/train.jpg')
+      workshopApps('en', appModels).map(({ thumbnail }) => thumbnail)
+    ).toEqual(appModels.map((app) => app.thumbnail))
+    expect(
+      workshopApps('en', appModels).find(({ key }) => key === 'reshoot')
+        ?.thumbnail
+    ).toEqual({ url: '/videos/reshoot/thumbnail.mp4', kind: 'video' })
   })
 })
 
