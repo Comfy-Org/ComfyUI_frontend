@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import Toaster from './Toaster.vue'
 import { useToast } from './toastStore'
@@ -143,5 +144,19 @@ describe('Toaster', () => {
       )
     ).not.toBeInTheDocument()
     expect(screen.queryByTestId('toast')).not.toBeInTheDocument()
+  })
+
+  it('keeps docked panels visible during node selection', async () => {
+    renderToaster()
+    useAgentNodeSelectionStore().isActive = true
+
+    useToast().custom(
+      { template: '<div>Downloading models</div>' },
+      {},
+      { placement: 'dock' }
+    )
+    await nextTick()
+
+    expect(screen.getByText('Downloading models')).toBeVisible()
   })
 })
