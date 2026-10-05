@@ -71,13 +71,8 @@ import SkillPackListItem from './SkillPackListItem.vue'
 const { t } = useI18n()
 const dialogStore = useDialogStore()
 
-const {
-  packs,
-  loading,
-  operatingPackName,
-  fetchSkillPacks,
-  deleteSkillPack
-} = useSkillPacks()
+const { packs, loading, operatingPackName, fetchSkillPacks, deleteSkillPack } =
+  useSkillPacks()
 
 const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)

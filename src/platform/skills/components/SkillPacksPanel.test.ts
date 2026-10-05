@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
@@ -13,7 +14,14 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const DIALOG_HANDLE = { key: 'confirm-delete-skill-pack' }
+const DIALOG_HANDLE: ReturnType<typeof showConfirmDialog> = {
+  key: 'confirm-delete-skill-pack',
+  visible: true,
+  component: defineComponent(() => () => null),
+  contentProps: {},
+  dialogComponentProps: {},
+  priority: 0
+}
 const mockCloseDialog = vi.fn()
 
 const mockPack: SkillPack = {
@@ -26,41 +34,16 @@ const mockPack: SkillPack = {
   updated_at: '2026-08-22T00:00:00Z'
 }
 
-vi.mock(import('@/platform/skills/api/skillsApi'), () => ({
-  listSkillPacks: vi.fn(),
-  deleteSkillPack: vi.fn(),
-  SkillPacksApiError: class SkillPacksApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status: number
-    ) {
-      super(message)
-    }
-  }
-}))
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 
-vi.mock('@/components/dialog/confirm/confirmDialog')
-
-vi.mock('@/platform/skills/components/SkillPackFormDialog.vue', () => ({
-  default: { name: 'SkillPackFormDialog', template: '<div />' }
-}))
+vi.mock(import('@/components/dialog/confirm/confirmDialog'))
 
 const mockShowConfirmDialog = vi.mocked(showConfirmDialog)
 
-interface CapturedConfirmOptions {
-  headerProps: { title: string }
-  props: { promptText: string }
-  footerProps: {
-    confirmText: string
-    confirmVariant: string
-    onCancel: () => void
-    onConfirm: () => Promise<void>
-  }
-}
-
-function capturedOptions(): CapturedConfirmOptions {
-  return mockShowConfirmDialog.mock
-    .calls[0][0] as unknown as CapturedConfirmOptions
+function capturedOptions() {
+  const options = mockShowConfirmDialog.mock.calls[0]?.[0]
+  assert.exists(options)
+  return options
 }
 
 const i18n = createI18n({
@@ -70,13 +53,14 @@ const i18n = createI18n({
   fallbackWarn: false,
   messages: {
     en: {
-      g: { delete: 'Delete' },
+      g: { edit: 'Edit', delete: 'Delete' },
       skillPacks: {
         title: 'Agent Skill Packs',
         panelDescription: 'Teach the agent a preference',
         yourPacks: 'Your Packs',
         addPack: 'Add Skill Pack',
         noPacks: 'No skill packs yet',
+        packSize: '{bytes} bytes',
         deleteConfirmTitle: 'Delete Skill Pack',
         deleteConfirmMessage: 'Delete {name}?'
       }
@@ -89,16 +73,10 @@ function renderPanel() {
     global: {
       plugins: [i18n],
       stubs: {
-        Button: {
+        SkillPackFormDialog: {
           template:
-            '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-          props: ['disabled']
-        },
-        SkillPackListItem: {
-          template:
-            '<button data-testid="delete-trigger" @click="$emit(\'delete\')">delete</button>',
-          props: ['pack', 'loading', 'disabled'],
-          emits: ['edit', 'delete']
+            '<div v-if="visible" role="dialog" :aria-label="pack?.name">{{ pack?.body }}</div>',
+          props: ['visible', 'pack']
         }
       }
     }
@@ -111,31 +89,57 @@ describe('SkillPacksPanel', () => {
     vi.mocked(listSkillPacks).mockResolvedValue([mockPack])
     vi.mocked(deleteSkillPackApi).mockResolvedValue(undefined)
     vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
-    mockShowConfirmDialog.mockReturnValue(
-      DIALOG_HANDLE as ReturnType<typeof showConfirmDialog>
-    )
+    mockShowConfirmDialog.mockReturnValue(DIALOG_HANDLE)
+  })
+
+  it('opens the existing editor with full instructions when a row is clicked', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+
+    await user.click(await screen.findByRole('button', { name: mockPack.name }))
+
+    expect(
+      screen.getByRole('dialog', { name: mockPack.name })
+    ).toHaveTextContent(mockPack.body)
+    expect(mockShowConfirmDialog).not.toHaveBeenCalled()
   })
 
   it('routes delete confirmation through showConfirmDialog with destructive variant', async () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(screen.getByTestId('delete-trigger'))
+    await user.click(await screen.findByRole('button', { name: 'Delete' }))
 
     const opts = capturedOptions()
-    expect(opts.props.promptText).toBe('Delete my-render-defaults?')
-    expect(opts.footerProps.confirmVariant).toBe('destructive')
+    expect(opts.props?.promptText).toBe('Delete my-render-defaults?')
+    expect(opts.footerProps?.confirmVariant).toBe('destructive')
   })
 
   it('onConfirm closes the dialog with the helper handle and deletes the pack', async () => {
     const user = userEvent.setup()
     renderPanel()
-    await user.click(screen.getByTestId('delete-trigger'))
+    await user.click(await screen.findByRole('button', { name: 'Delete' }))
 
-    await capturedOptions().footerProps.onConfirm()
+    const onConfirm = capturedOptions().footerProps?.onConfirm
+    assert(typeof onConfirm === 'function')
+    await onConfirm()
 
     expect(mockCloseDialog).toHaveBeenCalledExactlyOnceWith(DIALOG_HANDLE)
     expect(deleteSkillPackApi).toHaveBeenCalledWith(mockPack.name)
     expect(useSkillPacksStore().packs).toEqual([])
+  })
+
+  it('cancel closes confirmation and preserves the pack', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(await screen.findByRole('button', { name: 'Delete' }))
+
+    const onCancel = capturedOptions().footerProps?.onCancel
+    assert(typeof onCancel === 'function')
+    onCancel()
+
+    expect(mockCloseDialog).toHaveBeenCalledExactlyOnceWith(DIALOG_HANDLE)
+    expect(deleteSkillPackApi).not.toHaveBeenCalled()
+    expect(useSkillPacksStore().packs).toEqual([mockPack])
   })
 })
