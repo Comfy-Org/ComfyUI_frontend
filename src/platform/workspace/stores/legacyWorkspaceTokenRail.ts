@@ -1,3 +1,5 @@
+import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+import type { ErrorResponse } from '@comfyorg/ingest-types'
 import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import { delay } from 'es-toolkit'
 import type { Ref, ShallowRef } from 'vue'
@@ -50,6 +52,7 @@ interface MintedToken {
 
 const PERMANENT_AUTH_ERROR_CODES = new Set([
   'ACCESS_DENIED',
+  'SSO_REQUIRED',
   'WORKSPACE_NOT_FOUND',
   'INVALID_FIREBASE_TOKEN',
   'NOT_AUTHENTICATED'
@@ -84,7 +87,7 @@ function tokenExchangeFailedError(error: string): WorkspaceAuthError {
 
 function tokenExchangeErrorForStatus(
   status: number,
-  message: string
+  body: ErrorResponse
 ): WorkspaceAuthError {
   if (status === 401) {
     return new WorkspaceAuthError(
@@ -95,7 +98,7 @@ function tokenExchangeErrorForStatus(
   if (status === 403) {
     return new WorkspaceAuthError(
       t('workspaceAuth.errors.accessDenied'),
-      'ACCESS_DENIED'
+      isSsoRequiredRefusal(status, body) ? 'SSO_REQUIRED' : 'ACCESS_DENIED'
     )
   }
   if (status === 404) {
@@ -104,7 +107,7 @@ function tokenExchangeErrorForStatus(
       'WORKSPACE_NOT_FOUND'
     )
   }
-  return tokenExchangeFailedError(message)
+  return tokenExchangeFailedError(body.message)
 }
 
 function parseMintedToken(rawData: unknown, ownerUid: string): MintedToken {
@@ -377,8 +380,10 @@ export function createLegacyWorkspaceTokenRail({
     })
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
-      throw tokenExchangeErrorForStatus(response.status, message)
+      throw tokenExchangeErrorForStatus(
+        response.status,
+        await parseErrorResponse(response)
+      )
     }
 
     return parseMintedToken(await response.json(), ownerUid)
@@ -476,7 +481,9 @@ export function createLegacyWorkspaceTokenRail({
   ): err is WorkspaceAuthError {
     return (
       err instanceof WorkspaceAuthError &&
-      (err.code === 'ACCESS_DENIED' || err.code === 'WORKSPACE_NOT_FOUND')
+      (err.code === 'ACCESS_DENIED' ||
+        err.code === 'SSO_REQUIRED' ||
+        err.code === 'WORKSPACE_NOT_FOUND')
     )
   }
 

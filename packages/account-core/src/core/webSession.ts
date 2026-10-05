@@ -13,6 +13,7 @@ import {
 
 import { COMFY_CLIENT } from './requestAuth.js'
 import { timedSignal } from './requestTimeout.js'
+import { SSO_REQUIRED_SERVER_CODE } from './ssoRequired.js'
 import type {
   WebSessionCommandResult,
   WebSessionErrorCode,
@@ -47,7 +48,8 @@ const UNAUTHORIZED_CODES: Readonly<Record<string, WebSessionErrorCode>> = {
 
 const FORBIDDEN_CODES: Readonly<Record<string, WebSessionErrorCode>> = {
   csrf_invalid: 'CSRF_STALE',
-  workspace_access_denied: 'WORKSPACE_ACCESS_DENIED'
+  workspace_access_denied: 'WORKSPACE_ACCESS_DENIED',
+  [SSO_REQUIRED_SERVER_CODE]: 'SSO_REQUIRED'
 }
 
 function failure(
@@ -72,7 +74,11 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-function classifyFailure(status: number, body: unknown): WebSessionFailure {
+/** Classifies an ingest refusal the way every session call does. */
+export function classifyWebSessionFailure(
+  status: number,
+  body: unknown
+): WebSessionFailure {
   if (status === 429 || status >= 500) {
     return failure('SESSION_UNAVAILABLE', status)
   }
@@ -107,7 +113,9 @@ async function send(
     const body = await readJson(response)
     if (signal?.aborted) return failure('SESSION_UNAVAILABLE')
     const { status } = response
-    return response.ok ? { status, body } : classifyFailure(status, body)
+    return response.ok
+      ? { status, body }
+      : classifyWebSessionFailure(status, body)
   } catch {
     return failure('SESSION_UNAVAILABLE')
   } finally {
