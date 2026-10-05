@@ -440,9 +440,7 @@ async function topUpThenUpgrade(page: Page): Promise<Locator> {
   await bootApp(page)
   const topUp = await buyFiftyDollars(page)
   await expect(
-    new ToastHelper(page).toastSuccesses.filter({
-      hasText: 'Credits added successfully!'
-    })
+    new ToastHelper(page).withText('Credits added successfully!')
   ).toBeVisible()
   await expect(topUp.root).toBeHidden()
 
@@ -485,9 +483,7 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
 
       await buyFiftyDollars(page)
 
-      await expect(
-        toast.toastSuccesses.filter({ hasText: 'Credits added successfully!' })
-      ).toBeVisible()
+      await expect(toast.withText('Credits added successfully!')).toBeVisible()
       expect(routes.topupRequests).toHaveLength(1)
       const [purchase] = routes.topupRequests
       expect(transport(purchase)).toBe('xhr')

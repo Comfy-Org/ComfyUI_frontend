@@ -31,7 +31,6 @@ import {
   mockWorkspaceList,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Recovery on the billing SDK rails with the embedded checkout off: a hosted
@@ -579,9 +578,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       await expect(completeVerification(dialog)).not.toHaveAttribute(
         'aria-busy'
       )
-      await expect(
-        toast.toastSuccesses.getByText('Credits added successfully')
-      ).toHaveCount(0)
+      await expect(toast.withText('Credits added successfully')).toHaveCount(0)
     })
 
     test('settles the same purchase when the customer retries the verification', async ({
@@ -600,9 +597,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       routes.setOperation(SUCCEEDED)
       await returnToTab(page)
 
-      await expect(
-        toast.toastSuccesses.getByText('Credits added successfully')
-      ).toBeVisible()
+      await expect(toast.withText('Credits added successfully')).toBeVisible()
       await expect(dialog.root).toBeHidden()
       expect(routes.purchaseRequests).toHaveLength(1)
       expect(operationIdsPolled(routes.pollRequests)).toEqual(
@@ -634,7 +629,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       }
 
       await expect(
-        toast.visibleToasts.getByText('Verify your payment to add your credits')
+        toast.withText('Verify your payment to add your credits')
       ).toHaveCount(0)
       // Shown as work in progress, not as a step the customer still owes.
       await expect(completeVerification(dialog)).toBeDisabled()
@@ -663,9 +658,9 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       routes.setOperation(SUCCEEDED)
       await returnToTab(page)
 
-      await expect(
-        toast.toastSuccesses.getByText('Credits added successfully')
-      ).toBeVisible({ timeout: 45_000 })
+      await expect(toast.withText('Credits added successfully')).toBeVisible({
+        timeout: 45_000
+      })
       expect(routes.purchaseRequests).toHaveLength(1)
       expect(transports(routes.pollRequests)).not.toContain('xhr')
       // The step was already done, so the reload has nothing to reopen.

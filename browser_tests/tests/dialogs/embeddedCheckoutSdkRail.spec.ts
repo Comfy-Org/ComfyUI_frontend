@@ -702,9 +702,7 @@ test.describe('Embedded top-up bank step', { tag: '@cloud' }, () => {
       .getByRole('button', { name: 'Complete verification' })
       .click()
 
-    await expect(
-      toast.toastSuccesses.getByText('Credits added successfully')
-    ).toBeVisible()
+    await expect(toast.withText('Credits added successfully')).toBeVisible()
     expect(bankSteps(fake)).toEqual([
       { method: 'handleNextAction', clientSecret: BANK_STEP_SECRET },
       { method: 'handleNextAction', clientSecret: RETRY_SECRET }

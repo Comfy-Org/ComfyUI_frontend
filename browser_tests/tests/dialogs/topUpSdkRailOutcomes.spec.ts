@@ -241,9 +241,7 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
     )
     await returnToTab(page)
 
-    await expect(
-      toast.toastSuccesses.getByText('Credits added successfully!')
-    ).toBeVisible()
+    await expect(toast.withText('Credits added successfully!')).toBeVisible()
     await expect(dialog.root).toBeHidden()
     expect(routes.balanceRequests.length).toBeGreaterThan(
       balanceReadsBeforeSettlement
@@ -272,7 +270,7 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
     const dialog = await openConfirmStep(page)
     await payButton(dialog).click()
 
-    await expect(toast.toastErrors.getByText('Purchase Failed')).toBeVisible()
+    await expect(toast.withText('Purchase Failed')).toBeVisible()
     await expect(payButton(dialog)).toBeEnabled()
     await expect(toast.toastSuccesses).toHaveCount(0)
     // A settled purchase re-reads the balance; a declined one must not.
@@ -404,9 +402,9 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
 
     await topUp.root.getByRole('button', { name: 'Close' }).click()
     await switchWorkspace(page, personal.name)
-    await expect(
-      toast.toastSuccesses.getByText('Credits added successfully')
-    ).toBeVisible({ timeout: 45_000 })
+    await expect(toast.withText('Credits added successfully')).toBeVisible({
+      timeout: 45_000
+    })
     expect(routes.pollRequests.length).toBeGreaterThan(pollsBeforeTeam)
     await expect.poll(() => operationPointerWorkspaces(page)).toEqual([])
     expect(routes.purchaseRequests).toHaveLength(1)
