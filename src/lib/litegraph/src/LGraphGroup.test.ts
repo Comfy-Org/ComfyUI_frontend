@@ -479,12 +479,72 @@ describe('group layout in layoutStore', () => {
       })
     })
 
-    test('does not expose geometry storage as own enumerable state', () => {
-      const group = new LGraphGroup('group', toGroupId(812))
+    test('keeps tracking and moving its children', () => {
+      const graph = new LGraph()
+      const group = addedGroup(graph, toGroupId(813))
+      const node = new LGraphNode('inside')
+      node.pos = [150, 150]
+      node.size = [20, 20]
+      graph.add(node)
+      node.updateArea()
 
-      expect(Object.keys(group)).not.toContain('bounds')
-      expect(JSON.parse(JSON.stringify(group))).not.toHaveProperty('bounds')
+      clobberWithJsonCopy(group)
+      group.recomputeInsideNodes()
+      group.move(10, 20)
+
+      expect(group.children.has(node)).toBe(true)
+      expect(group.nodes).toEqual([node])
+      expect([...group.pos]).toEqual([110, 120])
+      expect([...node.pos]).toEqual([160, 170])
     })
+
+    test('ignores incompatible values written over its internals', () => {
+      const graph = new LGraph()
+      const group = addedGroup(graph, toGroupId(814))
+      const children = group.children
+
+      expect(() =>
+        Object.assign(group, {
+          bounds: { 0: 1, 1: 2, 2: 3, 3: 4 },
+          _pos: 'x',
+          _size: [1],
+          _bounding: null,
+          _nodes: {},
+          _children: []
+        })
+      ).not.toThrow()
+
+      expect([...group.boundingRect]).toEqual([100, 100, 300, 200])
+      expect(group.children).toBe(children)
+      expect(group.nodes).toEqual([])
+    })
+
+    test('applies numeric tuples written over its geometry', () => {
+      const graph = new LGraph()
+      const group = addedGroup(graph, toGroupId(815))
+      const pos = group.pos
+
+      Object.assign(group, { _pos: [5, 6] })
+      expect(group.pos).toBe(pos)
+      expect([...group.boundingRect]).toEqual([5, 6, 300, 200])
+
+      Object.assign(group, { bounds: [7, 8, 410, 310] })
+      expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+        id: group.id,
+        position: { x: 7, y: 8 },
+        size: { width: 410, height: 310 }
+      })
+    })
+
+    test.for(['bounds', '_pos', '_size', '_bounding', '_nodes', '_children'])(
+      'does not expose %s as own enumerable state',
+      (key, { expect }) => {
+        const group = new LGraphGroup('group', toGroupId(812))
+
+        expect(Object.keys(group)).not.toContain(key)
+        expect(JSON.parse(JSON.stringify(group))).not.toHaveProperty(key)
+      }
+    )
   })
 
   test('group collections react to nested bounds updates', () => {

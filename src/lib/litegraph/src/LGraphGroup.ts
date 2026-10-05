@@ -41,6 +41,42 @@ export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
 }
 
+interface GuardedFields {
+  bounds: Rectangle
+  _pos: Point
+  _size: Size
+  _bounding: Rectangle
+  _nodes: LGraphNode[]
+  _children: Set<Positionable>
+}
+
+/**
+ * Defines a non-enumerable accessor, so snapshots of the group (JSON, spread)
+ * omit it and assigning a snapshot back cannot replace the backing object.
+ * Writes are passed to {@link set}, which ignores values it cannot apply.
+ */
+function defineGuarded<K extends keyof GuardedFields>(
+  group: LGraphGroup,
+  key: K,
+  get: () => GuardedFields[K],
+  set: (value: unknown) => void
+): void {
+  Object.defineProperty(group, key, {
+    get,
+    set,
+    enumerable: false,
+    configurable: true
+  })
+}
+
+/** The values of an array or `Float64Array` of exactly `length` finite numbers. */
+function finiteNumbers(value: unknown, length: number): number[] | undefined {
+  if (!Array.isArray(value) && !(value instanceof Float64Array)) return
+  const items: unknown[] = Array.from(value)
+  const numbers = items.filter((item): item is number => Number.isFinite(item))
+  if (items.length === length && numbers.length === length) return numbers
+}
+
 export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static minWidth = 140
   static minHeight = 80
@@ -62,8 +98,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   font_size: number = LiteGraph.GROUP_TEXT_SIZE
   declare private readonly bounds: Rectangle
   /** @deprecated See {@link _children} */
-  _nodes: LGraphNode[] = []
-  _children: Set<Positionable> = new Set()
+  declare _nodes: LGraphNode[]
+  declare _children: Set<Positionable>
   graph?: LGraph
   flags: IGraphGroupFlags = {}
   private detachedSelected = false
@@ -119,20 +155,32 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
         return value
       }
     })
-    // Non-enumerable and non-writable: snapshots of the group (JSON, spread)
-    // omit them, and assigning one back cannot replace the geometry storage.
-    const fixed = (value: unknown): PropertyDescriptor => ({
-      value,
-      enumerable: false,
-      writable: false,
-      configurable: false
-    })
-    Object.defineProperties(this, {
-      bounds: fixed(bounds),
-      _pos: fixed(_pos),
-      _size: fixed(_size),
-      _bounding: fixed(_bounding)
-    })
+    let nodes: LGraphNode[] = []
+    let children = new Set<Positionable>()
+    const setBounds = (value: unknown) => {
+      const rect = finiteNumbers(value, 4)
+      if (rect) this.setBounds(rect[0], rect[1], rect[2], rect[3])
+    }
+    const setPos = (value: unknown) => {
+      const pos = finiteNumbers(value, 2)
+      if (pos) this.setBounds(pos[0], pos[1], _size[0], _size[1])
+    }
+    const setSize = (value: unknown) => {
+      const size = finiteNumbers(value, 2)
+      if (size) this.setBounds(_pos[0], _pos[1], size[0], size[1])
+    }
+    const setNodes = (value: unknown) => {
+      if (Array.isArray(value)) nodes = value
+    }
+    const setChildren = (value: unknown) => {
+      if (value instanceof Set) children = value
+    }
+    defineGuarded(this, 'bounds', () => bounds, setBounds)
+    defineGuarded(this, '_bounding', () => _bounding, setBounds)
+    defineGuarded(this, '_pos', () => _pos, setPos)
+    defineGuarded(this, '_size', () => _size, setSize)
+    defineGuarded(this, '_nodes', () => nodes, setNodes)
+    defineGuarded(this, '_children', () => children, setChildren)
 
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = toGroupId(id ?? -1)
