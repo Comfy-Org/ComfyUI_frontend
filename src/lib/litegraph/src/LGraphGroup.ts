@@ -126,6 +126,16 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     const { pale_blue } = LGraphCanvas.node_colors
     this.color = pale_blue.groupcolor
 
+    let reported = false
+    const reportForeignShape = (key: string, value: unknown) => {
+      if (reported) return
+      reported = true
+      console.warn(
+        `[LGraphGroup] ${key} was assigned a ${typeof value}, not a coordinate array. The group kept its own buffer. This is usually an extension copying a group by enumerating its own keys; the stack below names it.`,
+        value
+      )
+    }
+
     // Assignment copies coordinates into the buffer rather than replacing it,
     // so a JSON round-trip or a legacy `group._bounding = [...]` cannot leave
     // behind a plain object that every later geometry read would throw on.
@@ -138,6 +148,9 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       Object.defineProperty(this, key, {
         get: () => buffer,
         set: (value: ArrayLike<number> | null | undefined) => {
+          if (!Array.isArray(value) && !ArrayBuffer.isView(value))
+            reportForeignShape(key, value)
+
           const coords: number[] = []
           for (let index = 0; index < arity; index++) {
             const coord = Number(value?.[index])
@@ -147,7 +160,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
           write(coords)
         },
         enumerable: true,
-        configurable: false
+        configurable: true
       })
     }
 

@@ -515,29 +515,31 @@ describe('geometry an extension cannot clobber', () => {
     expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
   })
 
-  test('the geometry buffers cannot be deleted or redefined away', () => {
+  test.for(['bounds', '_pos', '_size', '_bounding'] as const)(
+    '%s keeps the descriptor shape the ecosystem already sees',
+    (property, { expect }) => {
+      const group = new LGraphGroup('group', toGroupId(813))
+
+      expect(Object.getOwnPropertyDescriptor(group, property)).toMatchObject({
+        enumerable: true,
+        configurable: true
+      })
+      expect(Object.keys(group)).toContain(property)
+    }
+  )
+
+  test('a foreign assignment names itself in the console', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const graph = new LGraph()
-    const group = new LGraphGroup('group', toGroupId(813))
+    const group = new LGraphGroup('group', toGroupId(816))
     graph.add(group)
 
-    expect(() => {
-      Object.defineProperty(group, '_pos', { value: [0, 0] })
-    }).toThrow(TypeError)
-    expect(() => {
-      // @ts-expect-error a geometry buffer is not an optional property
-      delete group._bounding
-    }).toThrow(TypeError)
+    Object.assign(group, { bounds: { 0: 1, 1: 2, 2: 300, 3: 400 } })
+    Object.assign(group, { _bounding: { 0: 5, 1: 6, 2: 70, 3: 80 } })
 
-    group.pos = [60, 70]
-    expect([...group.boundingRect]).toEqual([60, 70, 140, 80])
-  })
-
-  test('a copy of a group still carries every geometry buffer', () => {
-    const group = new LGraphGroup('group', toGroupId(816))
-
-    expect(Object.keys(group)).toEqual(
-      expect.arrayContaining(['bounds', '_pos', '_size', '_bounding'])
-    )
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('bounds')
+    warn.mockRestore()
   })
 
   test('geometry still reads through a reactive proxy', () => {
@@ -551,5 +553,9 @@ describe('geometry an extension cannot clobber', () => {
     expect([...reactiveGroup.boundingRect]).toEqual([60, 70, 140, 80])
     expect([...reactiveGroup.pos]).toEqual([60, 70])
     expect([...reactiveGroup._bounding]).toEqual([60, 70, 140, 80])
+
+    Object.assign(reactiveGroup, { _bounding: [1, 2, 300, 400] })
+
+    expect([...group.boundingRect]).toEqual([1, 2, 300, 400])
   })
 })
