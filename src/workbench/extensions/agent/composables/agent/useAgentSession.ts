@@ -1137,16 +1137,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (workflowTargetChanged(originContext, wfContext)) {
-        recordUnavailableTarget(text)
-        return false
-      }
-      // Still unnamed after preparation refreshed the index: the turn has no
-      // workflow to belong to, so it is not sent at all.
-      if (wfContext?.unresolved) {
-        recordUnresolvedTarget(text)
-        return false
-      }
+      if (refusesTarget(text, originContext, wfContext)) return false
       sentContext = wfContext
       const ack = await postTurn(
         threadAtSend,
@@ -1174,12 +1165,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  /**
+   * Refuses, with a notice, a turn whose target cannot be attributed after
+   * preparation. Sent without a workflow, the server would fall back to the
+   * thread's previous one and edit a tab the user is not looking at.
+   */
+  function refusesTarget(
+    text: string,
+    origin: WorkflowTurnContext | undefined,
+    current: WorkflowTurnContext | undefined
+  ): boolean {
+    if (workflowTargetChanged(origin, current)) {
+      recordUnavailableTarget(text)
+      return true
+    }
+    // Still unnamed after preparation refreshed the index: the turn has no
+    // workflow to belong to, so it is not sent at all.
+    if (current?.unresolved) {
+      recordUnresolvedTarget(text)
+      return true
+    }
+    return false
+  }
+
+  // A named origin that no longer resolves has closed, whether or not it had
+  // a workflow id yet: an id-less tab closing mid-preparation must not send
+  // with neither a workflow nor the unbound flag.
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
     current: WorkflowTurnContext | undefined
   ): boolean {
-    if (origin?.id === undefined) return false
-    return current?.id !== origin.id
+    if (origin === undefined) return false
+    if (current === undefined) return true
+    return origin.id !== undefined && current.id !== origin.id
   }
 
   async function sendMessage(
