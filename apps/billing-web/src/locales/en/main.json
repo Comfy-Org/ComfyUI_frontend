@@ -172,6 +172,8 @@
     "fullPage": {
       "logo": "Comfy",
       "payForCredits": "Pay",
+      "confirmUpgrade": "Confirm upgrade",
+      "confirmChange": "Confirm change",
       "planName": "{tier} Plan",
       "terms": {
         "agreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
@@ -262,7 +264,9 @@
           "alipay": "Alipay"
         },
         "completeVerification": "Complete verification",
-        "cancel": "Cancel payment"
+        "cancel": "Cancel payment",
+        "canceling": "Canceling…",
+        "notCancelable": "This payment can't be canceled right now. Finish verifying, or contact support if it doesn't go through."
       },
       "ending": {
         "thisWorkspace": "this workspace",
@@ -294,6 +298,10 @@
         "success": {
           "title": "You're all set",
           "body": "Your plan for {workspace} has been successfully updated."
+        },
+        "scheduled": {
+          "title": "Your plan change is scheduled",
+          "body": "Your plan for {workspace} changes to {plan} on {date}. You'll keep {kept} until then."
         },
         "success_credits": {
           "title": "You're all set",
@@ -395,6 +403,8 @@
         "item": {
           "prorated": "{plan} - Prorated",
           "remainingTime": "Remaining time for {plan} plan, less unused time from {current} plan",
+          "remainingTimeOn": "Remaining time on {plan}",
+          "unusedTimeOn": "Unused time on {plan}",
           "billedMonthly": "{amount} /mo, billed monthly",
           "billedYearly": "Billed yearly",
           "rateMonthly": "{amount} /mo",

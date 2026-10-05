@@ -1,4 +1,4 @@
-import { until } from '@vueuse/core'
+import { createEventHook, until } from '@vueuse/core'
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
@@ -139,7 +139,9 @@ function sessionOptions(): WebSessionOptions {
   }
 }
 
-function createCloudIdentity(): WebSessionIdentity {
+function createCloudIdentity(
+  onAccountChanged: (change: WebSessionAccountChange) => void
+): WebSessionIdentity {
   const visibility = createWebVisibilityPort()
   const crossTab = createWebCrossTabRefreshPort<WebSessionSharedMessage>()
   return createWebSessionIdentity({
@@ -156,7 +158,7 @@ function createCloudIdentity(): WebSessionIdentity {
       }
     },
     origin: window.location.origin,
-    onAccountChanged: resetForAccountChange,
+    onAccountChanged,
     ...webSessionTelemetryHooks((event) =>
       useTelemetry()?.trackWebSessionEvent(event)
     ),
@@ -179,6 +181,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined
   let pendingSignIn: InteractiveSignIn | null = null
   let releaseRequests = () => {}
+  let signingOut = false
+  const signedOutElsewhere = createEventHook()
   const state = shallowRef<WebSessionIdentityState>({ phase: 'idle' })
   const signedInUser = computed(() =>
     state.value.phase === 'signed_in' ? state.value.session.user : undefined
@@ -250,7 +254,12 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     if (decided) return identity !== null
     decided = true
     if (!useFeatureFlags().flags.unifiedWebSessionEnabled) return false
-    const session = createCloudIdentity()
+    const session = createCloudIdentity((change) => {
+      resetForAccountChange(change)
+      if (change.reason === 'signed_out' && !signingOut) {
+        void signedOutElsewhere.trigger()
+      }
+    })
     identity = session
     session.subscribe((next) => {
       state.value = next
@@ -316,7 +325,10 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   async function signOut(): Promise<void> {
     pendingSignIn = null
     clearInteractiveSignIn()
-    const result = await identity?.signOut()
+    signingOut = true
+    const result = await identity?.signOut().finally(() => {
+      signingOut = false
+    })
     if (result === undefined || result.status === 'ok') return
     reportError(new Error('Session cookie deletion failed'), {
       surface: 'auth',
@@ -327,17 +339,10 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
 
   async function revokeAllSessions(): Promise<WebSessionCommandResult> {
     const session = currentSession()
-    const user = firebaseIdentity.currentUser()
-    if (!session || !user) {
+    if (!session) {
       return { status: 'error', code: 'NO_SESSION', retryable: false }
     }
-    return revokeAllWebSessions(sessionOptions(), session.csrfToken, () =>
-      user.getIdToken()
-    ).catch(() => ({
-      status: 'error',
-      code: 'SESSION_UNAVAILABLE',
-      retryable: true
-    }))
+    return revokeAllWebSessions(sessionOptions(), session.csrfToken)
   }
 
   function currentSession(): WebSession | undefined {
@@ -431,6 +436,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     whenReady: () => ready,
     whenSessionCreated: () => creating,
     whenDecided,
+    /** The account left this tab without a sign-out here. */
+    onSignedOutElsewhere: signedOutElsewhere.on,
     signedInInteractively,
     signOut,
     revokeAllSessions

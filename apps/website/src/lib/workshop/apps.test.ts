@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { appModels } from '../../config/workshop-app-content'
+import { appModels } from '@/config/workshop-app-content'
 import { workshopAppHref, workshopAppRepo, workshopApps } from './apps'
 
 describe('workshopAppHref', () => {

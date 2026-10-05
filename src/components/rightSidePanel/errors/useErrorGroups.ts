@@ -207,7 +207,10 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
         searchableNodeId: card.nodeId ?? '',
         searchableNodeTitle: card.nodeTitle ?? '',
         searchableRawMessage: card.errors.map((e) => e.message).join(' '),
-        searchableRawDetails: card.errors.map((e) => e.details).join(' '),
+        searchableRawDetails: card.errors
+          .map((e) => e.details)
+          .filter(Boolean)
+          .join(' '),
         searchableMessage: card.errors
           .map((e) =>
             [e.displayTitle, e.displayMessage, e.message]

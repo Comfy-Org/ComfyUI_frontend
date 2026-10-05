@@ -7,9 +7,13 @@ import { computed } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
 
-import { useWorkshopSession } from '../../../../../config/workshop-session-state'
-import type { Geometry } from '../cvgeo'
-import type { ReshootJob, ReshootQuote, ReshootTransport } from '../transport'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { Geometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import type {
+  ReshootJob,
+  ReshootQuote,
+  ReshootTransport
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 
 export const FREE_QUOTE: ReshootQuote = {
   free_runs_allowance: { runs: 5, period: 'P7D', period_seconds: 604_800 },

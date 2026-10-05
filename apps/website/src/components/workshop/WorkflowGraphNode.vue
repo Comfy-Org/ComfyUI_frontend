@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { GraphNode } from '../../lib/workshop/workflow-graph'
+import type { GraphNode } from '@/lib/workshop/workflow-graph'
 
 const { node } = defineProps<{ node: GraphNode }>()
 

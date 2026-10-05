@@ -1,7 +1,7 @@
-import { translationsFor } from '../i18n/translations'
-import { subscribeUrl } from '../data/pricingPlans'
-import type { BillingCycle } from '../data/pricingPlans'
-import type { Locale, TranslationKey } from '../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { subscribeUrl } from '@/data/pricingPlans'
+import type { BillingCycle } from '@/data/pricingPlans'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
 interface PricingTier {
   slug: string

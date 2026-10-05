@@ -1,10 +1,10 @@
 ---
 import type { GetStaticPaths } from 'astro'
 
-import type { Pack } from '../../../data/cloudNodes'
+import type { Pack } from '@/data/cloudNodes'
 
-import PackDetailPage from '../../../templates/cloud-nodes/PackDetailPage.astro'
-import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
+import PackDetailPage from '@/templates/cloud-nodes/PackDetailPage.astro'
+import { loadPacksForBuild } from '@/utils/cloudNodes.build'
 
 interface Props {
   pack: Pack

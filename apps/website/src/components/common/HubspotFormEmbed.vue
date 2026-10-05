@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { translationsFor } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { formId, locale = 'en' } = defineProps<{
   formId: string

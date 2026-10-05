@@ -2,11 +2,11 @@
 import { ChevronLeft } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 
-import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { lastShelf } from '../../lib/workshop/shelf-memory'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { lastShelf } from '@/lib/workshop/shelf-memory'
+import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 
 const {
   catalogue,

@@ -1,12 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const robotsTxt = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), '../../public/robots.txt'),
-  'utf8'
-)
+import { websiteRoot } from '@website/paths'
+
+const robotsTxt = readFileSync(join(websiteRoot, 'public/robots.txt'), 'utf8')
 
 const rulesFor = (directive: string) =>
   robotsTxt
