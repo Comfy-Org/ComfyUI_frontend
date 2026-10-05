@@ -59,8 +59,8 @@ export function redirectSourcePattern(source: string): RegExp {
 }
 
 /**
- * llms.txt links whose path matches a redirect source (e.g. a Vercel edge
- * redirect). Linking a redirect source instead of its destination means an
+ * llms.txt links whose path, or the page a `.md` twin copies, matches a
+ * redirect source (e.g. a Vercel edge redirect). Linking a redirect source instead of its destination means an
  * agent following the link pays an extra hop, and the description sitting
  * next to it describes whatever page the redirect used to point at.
  */
@@ -70,7 +70,11 @@ export function findRedirectedLinks(
 ): LlmsTxtLink[] {
   const patterns = redirectSources.map(redirectSourcePattern)
   return internalLinks(links)
-    .filter(({ path }) => patterns.some((pattern) => pattern.test(path)))
+    .filter(({ path }) =>
+      [path, path.replace(/\.md$/, '')].some((candidate) =>
+        patterns.some((pattern) => pattern.test(candidate))
+      )
+    )
     .map(({ link }) => link)
 }
 

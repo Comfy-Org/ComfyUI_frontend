@@ -163,6 +163,17 @@ describe('findStaleLinks', () => {
     ])
   })
 
+  it('fails the markdown twin of a redirected page', () => {
+    expect(
+      findStaleLinks(
+        sectionFile('https://comfy.org/cloud/enterprise.md'),
+        checks
+      )
+    ).toEqual([
+      '[FLUX.1 Dev](https://comfy.org/cloud/enterprise.md) is a redirect source'
+    ])
+  })
+
   it('fails a link that matches a literal redirect source', () => {
     expect(
       findStaleLinks(sectionFile('https://comfy.org/cloud/enterprise/'), checks)
