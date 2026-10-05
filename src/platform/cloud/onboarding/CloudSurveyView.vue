@@ -97,6 +97,10 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     useTelemetry()?.trackSurvey('submitted', payload)
   }
 
+  await advanceFromSurvey(replaying, replayOwner)
+}
+
+async function advanceFromSurvey(replaying: boolean, replayOwner: string) {
   try {
     const failure = await router.push({ name: 'cloud-user-check' })
     if (isNavigationFailure(failure)) throw failure
