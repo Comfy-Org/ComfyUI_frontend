@@ -2725,8 +2725,8 @@
         "orgNotAttached": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
         "orgMismatch": "You signed in to a different organization than the one for this email. Try again with your work account.",
         "suspended": "Your organization has removed your access. Contact your administrator.",
-        "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support@comfy.org.",
-        "accountConflict": "More than one Comfy account uses this email. Email support@comfy.org for help.",
+        "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support{'@'}comfy.org.",
+        "accountConflict": "More than one Comfy account uses this email. Email support{'@'}comfy.org for help.",
         "idpError": "Your identity provider didn't complete the sign-in. Try again.",
         "rateLimited": "Too many sign-in attempts. Wait a few minutes and try again.",
         "failed": "We couldn't sign you in with single sign-on. Try again."
