@@ -65,7 +65,11 @@ jobs:
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Write video section
-        if: steps.pr.outputs.skip != 'true'
+        id: section
+        if: >-
+          steps.pr.outputs.skip != 'true' &&
+          (steps.download.outcome == 'success' ||
+          github.event.workflow_run.conclusion != 'success')
         env:
           RUN_URL: ${{ github.event.workflow_run.html_url }}
           RESULT: ${{ github.event.workflow_run.conclusion }}
@@ -80,14 +84,14 @@ jobs:
             if [ -n "$REPORT_URL" ]; then
               printf '\n[View tests with embedded video](%s).\n' "$REPORT_URL"
             else
-              printf '\nNo hosted video report is available. See the run for skipped recording, failures, or artifacts.\n'
+              printf '\nNo hosted video report is available. See the run for failures or artifacts.\n'
             fi
             echo
             echo 'Videos are supplementary and do not gate E2E. Reports may be incomplete if a recording shard failed or timed out.'
           } > video-section.md
 
       - name: Publish video section
-        if: steps.pr.outputs.skip != 'true'
+        if: steps.section.outcome == 'success'
         uses: ./.github/actions/post-pr-report-comment
         with:
           pr-number: ${{ steps.pr.outputs.number }}

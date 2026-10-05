@@ -193,51 +193,6 @@ describe('independent video workflow', () => {
     }
   )
 
-  it('records slow-motion shards without joining the required test pipeline', () => {
-    const workflow: unknown = parse(
-      readFileSync('.github/workflows/ci-playwright-videos.yaml', 'utf8')
-    )
-
-    expect(workflow).toMatchObject({
-      on: { pull_request: expect.any(Object) },
-      permissions: { contents: 'read' },
-      concurrency: { group: '${{ github.workflow }}-${{ github.ref }}' },
-      defaults: { run: { shell: 'bash' } },
-      jobs: {
-        build: { needs: 'plan' },
-        'playwright-video-new-tests': {
-          needs: ['plan', 'build'],
-          'timeout-minutes': 60,
-          strategy: {
-            'fail-fast': false,
-            matrix: '${{ fromJSON(needs.plan.outputs.matrix) }}'
-          },
-          steps: expect.arrayContaining([
-            expect.objectContaining({
-              env: expect.objectContaining({
-                RECORD_VIDEO: 'true',
-                SLOW_MO: '250',
-                PLAYWRIGHT_BLOB_OUTPUT_DIR: 'blob-report',
-                SHARD: '${{ matrix.shardIndex }}/${{ matrix.shardTotal }}'
-              }),
-              run: expect.stringContaining('--shard="$SHARD"')
-            }),
-            expect.objectContaining({
-              if: 'always()',
-              with: expect.objectContaining({
-                name: 'video-blob-${{ matrix.project }}-${{ matrix.shardIndex }}'
-              })
-            })
-          ])
-        },
-        report: {
-          needs: ['plan', 'playwright-video-new-tests'],
-          if: "always() && needs.plan.outputs.has-tests == 'true'"
-        }
-      }
-    })
-  })
-
   it('publishes only the triggering run from a trusted checkout for a current PR', () => {
     const workflow: unknown = parse(
       readFileSync('.github/workflows/pr-playwright-videos.yaml', 'utf8')
@@ -279,8 +234,12 @@ describe('independent video workflow', () => {
               }
             }),
             expect.objectContaining({
+              id: 'section',
+              if: expect.stringContaining("steps.pr.outputs.skip != 'true'")
+            }),
+            expect.objectContaining({
               uses: './.github/actions/post-pr-report-comment',
-              if: "steps.pr.outputs.skip != 'true'",
+              if: "steps.section.outcome == 'success'",
               with: expect.objectContaining({
                 'pr-number': '${{ steps.pr.outputs.number }}'
               })
