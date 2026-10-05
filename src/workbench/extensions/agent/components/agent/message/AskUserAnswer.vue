@@ -33,6 +33,7 @@ const answers = computed(() => {
 const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
   answered: 'agent.askUser.answered',
   closed: 'agent.askUser.closed',
+  retired: 'agent.askUser.closed',
   unknown: 'agent.askUser.unconfirmed'
 }
 </script>

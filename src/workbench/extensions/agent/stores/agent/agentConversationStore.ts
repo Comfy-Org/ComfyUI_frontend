@@ -216,10 +216,6 @@ function finishWithPersistedParts(
 
 const MAX_DEPARTED_TURNS = 32
 
-function sameIds(a: readonly string[], b: readonly string[]): boolean {
-  return a.length === b.length && a.every((id) => b.includes(id))
-}
-
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
@@ -489,24 +485,19 @@ export const useAgentConversationStore = defineStore(
 
     /**
      * The resolution a card shows once the server settles it, read only from
-     * what the frame reports. This client's own answer is never echoed as the
-     * committed one: when the frame names no selection, or one that differs
-     * from what this client sent, the card just reads as answered.
+     * what the frame reports: its selection is the committed answer, whoever
+     * gave it. This client's own free text is never echoed; when the frame
+     * names no selection the card just reads as answered.
      */
     function settledAskResolution(
-      askId: string,
       answered: boolean,
       settled: Pick<AgentAnswerRequest, 'other_text'> & {
         selected: string[] | null
       }
     ): AskUserResolution {
       if (!answered) return { status: 'closed', selected: [] }
-      const submitted = submittedAskSelections.get(askId)
       const { selected, other_text: otherText } = settled
-      const named =
-        selected !== null &&
-        (submitted === undefined || sameIds(submitted.selected, selected))
-      if (!named) return { status: 'answered', selected: [] }
+      if (selected === null) return { status: 'answered', selected: [] }
       return otherText
         ? { status: 'answered', selected, otherText }
         : { status: 'answered', selected }

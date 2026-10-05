@@ -20,7 +20,8 @@ const { t } = useI18n()
 const decision = computed(() => {
   const resolution = part.resolution
   if (!resolution) return undefined
-  if (resolution.status === 'closed') return t('agent.deleteApproval.closed')
+  if (resolution.status === 'closed' || resolution.status === 'retired')
+    return t('agent.deleteApproval.closed')
   if (resolution.status === 'unknown')
     return t('agent.deleteApproval.unconfirmed')
   if (resolution.selected.includes('delete'))
