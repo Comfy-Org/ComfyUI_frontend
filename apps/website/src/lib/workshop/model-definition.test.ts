@@ -57,7 +57,7 @@ describe('modelDefinition', () => {
     {
       locale: 'zh-CN',
       expected:
-        'FLUX 2 Max Text-to-Image 是 Black Forest Labs 推出的 文本转图像模型。在 Comfy 上，你可以在浏览器中运行它，或通过 Comfy Router API 以 bfl/flux-2-max 调用。'
+        'FLUX 2 Max Text-to-Image 是 Black Forest Labs 推出的文本转图像模型。在 Comfy 上，你可以在浏览器中运行它，或通过 Comfy Router API 以 bfl/flux-2-max 调用。'
     },
     {
       locale: 'ja',

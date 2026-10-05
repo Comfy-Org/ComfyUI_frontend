@@ -4680,8 +4680,8 @@
         "kind": "AI 模型",
         "kindA": "{label}模型",
         "kindAn": "{label}模型",
-        "what": "{name} 是一款 {kind}。",
-        "whatFrom": "{name} 是 {provider} 推出的 {kind}。",
+        "what": "{name} 是一款{kind}。",
+        "whatFrom": "{name} 是 {provider} 推出的{kind}。",
         "router": "在 Comfy 上，你可以在浏览器中运行它，或通过 Comfy Router API 以 {routerId} 调用。",
         "sentence": "{what}{router}"
       },
