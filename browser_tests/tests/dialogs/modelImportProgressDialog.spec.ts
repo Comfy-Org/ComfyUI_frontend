@@ -258,6 +258,73 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
   })
 
+  test('a dismissed unconfirmed cancellation stays hidden from late progress', async ({
+    comfyPage
+  }) => {
+    const { page } = comfyPage
+    const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224e'
+    const assetName = 'unconfirmed-cancel-model.safetensors'
+    await page.clock.install()
+    await page.route(`**/tasks/${taskId}`, async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({ status: 204 })
+        return
+      }
+      await route.fulfill({
+        json: {
+          id: taskId,
+          idempotency_key: taskId,
+          task_name: 'task:download_file',
+          payload: {},
+          status: 'running',
+          create_time: new Date().toISOString(),
+          update_time: new Date().toISOString()
+        } satisfies TaskResponse
+      })
+    })
+
+    await comfyPage.assets.dispatchDownload({
+      task_id: taskId,
+      asset_name: assetName,
+      bytes_total: 1000,
+      bytes_downloaded: 200,
+      progress: 20,
+      status: 'running'
+    })
+
+    const toast = page.getByRole('status').filter({ hasText: assetName })
+    await expect(toast).toBeVisible()
+    await toast.getByRole('button', { name: 'Expand' }).click()
+    await toast.getByRole('button', { name: 'Cancel Download' }).click()
+
+    const advanceReconciliation = async () => {
+      const response = page.waitForResponse(
+        (candidate) =>
+          candidate.url().endsWith(`/tasks/${taskId}`) &&
+          candidate.request().method() === 'GET'
+      )
+      await page.clock.runFor(10_001)
+      await (await response).finished()
+      await page.clock.runFor(1)
+    }
+    await advanceReconciliation()
+    await expect(
+      toast.getByText('Cancelled', { exact: true }).first()
+    ).toBeVisible()
+    await toast.getByRole('button', { name: 'Close' }).click()
+    await expect(toast).toBeHidden()
+
+    await comfyPage.assets.dispatchDownload({
+      task_id: taskId,
+      asset_name: assetName,
+      bytes_total: 1000,
+      bytes_downloaded: 750,
+      progress: 75,
+      status: 'running'
+    })
+    await expect(toast).toBeHidden()
+  })
+
   test('closing a failed download while polling does not reopen its toast', async ({
     comfyPage
   }) => {
