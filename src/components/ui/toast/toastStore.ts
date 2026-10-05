@@ -61,7 +61,10 @@ export const useToast = defineStore('toast', () => {
   let nextId = 1
 
   function enqueue(toast: Toast) {
-    const target = agentNodeSelectionStore.isActive ? queuedToasts : toasts
+    const target =
+      agentNodeSelectionStore.isActive && !isDocked(toast)
+        ? queuedToasts
+        : toasts
     target.value = [...target.value, toast]
   }
 

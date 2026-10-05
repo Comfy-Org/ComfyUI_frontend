@@ -99,12 +99,7 @@ const icons = {
     enter-from-class="translate-y-full opacity-0"
     leave-active-class="transition-all duration-200 ease-in"
     leave-to-class="translate-y-full opacity-0"
-    :class="
-      cn(
-        'pointer-events-none fixed inset-x-4 bottom-6 flex flex-col items-center gap-2 *:pointer-events-auto sm:inset-x-0',
-        agentNodeSelectionActive && 'hidden'
-      )
-    "
+    class="pointer-events-none fixed inset-x-4 bottom-6 flex flex-col items-center gap-2 *:pointer-events-auto sm:inset-x-0"
   >
     <component
       :is="message.component"

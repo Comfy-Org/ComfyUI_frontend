@@ -84,4 +84,20 @@ describe('useToast', () => {
       expect.objectContaining({ id: dockedId, placement: 'dock' })
     ])
   })
+
+  it('docks panels immediately during node selection', () => {
+    const selection = useAgentNodeSelectionStore()
+    const toast = useToast()
+    selection.isActive = true
+
+    toast.custom(
+      { template: '<div>Downloads</div>' },
+      {},
+      { placement: 'dock' }
+    )
+
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({ placement: 'dock' })
+    ])
+  })
 })
