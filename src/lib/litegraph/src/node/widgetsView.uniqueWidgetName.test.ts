@@ -249,8 +249,6 @@ describe('unique widget name invariant', () => {
     })
 
     expect(() => node.widgets!.push(hostile)).not.toThrow()
-    // `indexOf` rather than `not.toContain`: the matcher deep-compares, which
-    // reads the getter and throws out of the assertion itself.
     expect(node.widgets!.indexOf(hostile)).toBe(-1)
 
     expect(() =>
@@ -264,6 +262,29 @@ describe('unique widget name invariant', () => {
         errorType: 'failure_reading_widget_name'
       })
     )
+  })
+
+  it('converts a raw pushed widget whose name throws only on the first read', () => {
+    const node = createNode()
+    node.addWidget('number', 'seed', 1, () => undefined, {})
+    let reads = 0
+    const flaky: IBaseWidget = {
+      name: 'steps',
+      type: 'number',
+      value: 2,
+      y: 0,
+      options: {}
+    }
+    Object.defineProperty(flaky, 'name', {
+      get(): string {
+        reads++
+        if (reads === 1) throw new Error('name is not readable yet')
+        return 'steps'
+      }
+    })
+
+    expect(() => node.widgets!.push(flaky)).not.toThrow()
+    expect(names(node)).toEqual(['seed', 'steps'])
   })
 
   it('reports the cause the walk decided, not the one a later read suggests', () => {
@@ -489,9 +510,15 @@ describe('unique widget name invariant', () => {
     const kept = node.addWidget('number', 'seed', 1, () => undefined, {})
     const refused = node.addWidget('number', 'seed', 2, () => undefined, {})
     refused.value = 42
+    const refusedId = widgetId(node.graph!.rootGraph.id, node.id, 'seed#1')
+    let valueSeenOnRemove: unknown
+    refused.onRemove = () => {
+      valueSeenOnRemove = useWidgetValueStore().getWidget(refusedId)?.value
+    }
     pinName(refused, 'seed')
     node.addWidget('number', 'steps', 0, () => undefined, {})
 
+    expect(valueSeenOnRemove).toBe(42)
     expect(storedNames(node)).toEqual(['seed', 'steps'])
     expect(kept.value).toBe(1)
     expect(

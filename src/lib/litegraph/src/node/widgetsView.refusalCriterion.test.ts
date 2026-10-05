@@ -36,13 +36,11 @@ describe('unique-name refusal criterion', () => {
 
     expect(storedNames(graph, node)).toEqual(['seed', 'steps'])
 
-    // Deletes the store entries and leaves `_state.nodeId` set.
     graph.remove(node)
 
     steps.name = 'seed'
     expect(steps.name).toBe('seed')
 
-    // Undo and paste both land here.
     graph.add(node)
 
     expect(node.widgets).toContain(seed)
@@ -95,8 +93,6 @@ describe('unique-name refusal criterion', () => {
     node.addWidget('number', 'seed', 1, () => undefined, {})
     const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
 
-    // Writable, so the widget must not be removed, and no candidate the walk
-    // offers can ever stick.
     Object.defineProperty(steps, 'name', {
       get: () => 'seed',
       set: () => undefined,
@@ -108,8 +104,6 @@ describe('unique-name refusal criterion', () => {
     expect(node.widgets).toContain(steps)
     expect(reportedTypes()).toEqual(['failure_resolving_widget_duplicate_name'])
 
-    // Re-found by every later commit, and `reportError` has no dedupe of its
-    // own, so this would otherwise warn for the rest of the session.
     node.addWidget('number', 'denoise', 4, () => undefined, {})
     node.widgets?.push(
       node.addWidget('number', 'guidance', 5, () => undefined, {})

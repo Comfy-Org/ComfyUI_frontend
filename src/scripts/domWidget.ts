@@ -330,8 +330,6 @@ export class ComponentWidgetImpl<
 export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
   node.addCustomWidget(widget)
 
-  // Registering a refused widget mounts its element over the canvas for a
-  // widget the graph does not have, and nothing unmounts it.
   if (wasWidgetRefused(node, widget)) return
 
   if (node.graph) {
@@ -339,8 +337,6 @@ export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
   }
 
   node.onAdded = useChainCallback(node.onAdded, () => {
-    // The join is the first commit that can refuse, so a widget accepted
-    // above may not have survived it.
     if (wasWidgetRefused(node, widget)) return
     useDomWidgetStore().registerWidget(widget)
   })

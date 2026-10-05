@@ -31,8 +31,6 @@ export function attachNodeToStores(
   }
 
   if (!node.widgets) return
-  // The node now has a graph and its final id, so this is the first moment a
-  // `WidgetId` exists to collide over (ADR-ECS-0008).
   refuseAmbiguousNodeWidgets(node)
   for (const widget of node.widgets) {
     if (isNodeBindable(widget)) widget.setNodeId(node.id)

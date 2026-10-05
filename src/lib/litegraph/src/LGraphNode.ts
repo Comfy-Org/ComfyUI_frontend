@@ -2309,9 +2309,6 @@ export class LGraphNode
     const widget = toConcreteWidget(custom_widget, this)
     this.widgets.push(widget)
 
-    // The push committed through the widgets view, which may have refused the
-    // widget (ADR-ECS-0008). Registering one the node no longer has would write
-    // over the widget that kept the name.
     if (!this.widgets.includes(widget)) return widget
 
     // Only register with store if node has a valid ID (is already in a graph).

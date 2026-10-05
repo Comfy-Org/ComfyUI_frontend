@@ -146,22 +146,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const previousId = widgetId(graphId, nodeId, previous)
 
     const registered = store.getWidget(previousId)
-
-    // Nothing in the store answers to the old name, so there is nothing to keep
-    // consistent and the write is this widget's own business. `_state.nodeId`
-    // outlives `graph.remove`, which clears the node's entries, so declining
-    // here left a re-added node holding two widgets under one name: every
-    // `setNodeId` on it then bails on `ensureUniqueWidgetNames` and the node
-    // registers — and renders — no widgets at all.
     if (!registered) {
       this._name = value
       return
     }
-
-    // `previousId` names whichever widget actually registered it, which need
-    // not be this one when two share a name. Moving an entry this widget is not
-    // bound to welds the pair onto one `WidgetState` with one value between
-    // them, and the rename still reads back as success.
     if (registered !== this._state) return
 
     const moved = store.renameWidget(
