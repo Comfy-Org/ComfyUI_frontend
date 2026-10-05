@@ -1,6 +1,5 @@
-import { whenever } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
-import { computed, reactive, ref, toValue } from 'vue'
+import { computed, onScopeDispose, reactive, ref, toValue, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -47,6 +46,7 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
   const store = useSkillPacksStore()
 
   const loading = ref(false)
+  let formGeneration = 0
   /** A 400: the request can be edited into a valid one. */
   const fieldError = ref<string | null>(null)
   /**
@@ -90,7 +90,15 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
   }
 
   resetForm()
-  whenever(() => visible.value, resetForm)
+  watch(
+    () => visible.value,
+    (isVisible) => {
+      formGeneration++
+      if (isVisible) resetForm()
+    },
+    { flush: 'sync' }
+  )
+  onScopeDispose(() => formGeneration++)
 
   function validateName(): boolean {
     const name = form.name.trim()
@@ -159,8 +167,10 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
   }
 
   async function handleSubmit() {
+    if (loading.value || !visible.value) return
     if (!validate()) return
 
+    const generation = formGeneration
     loading.value = true
     try {
       const saved = await publishSkillPack({
@@ -169,20 +179,26 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
         body: form.body
       })
       store.upsertPack(saved)
+      if (generation !== formGeneration) return
       onSaved()
       visible.value = false
     } catch (error) {
-      if (error instanceof SkillPacksApiError && error.status === 409) {
-        budgetError.value = error.message
-      } else if (error instanceof SkillPacksApiError && error.status === 404) {
+      if (error instanceof SkillPacksApiError && error.status === 404) {
         store.markUnavailable()
-        visible.value = false
-      } else if (error instanceof SkillPacksApiError) {
-        fieldError.value = error.message
-      } else {
+        if (generation === formGeneration) visible.value = false
+        return
+      }
+      if (!(error instanceof SkillPacksApiError)) {
         reportError(error, {
           errorType: 'error_publishing_agent_skill_pack'
         })
+      }
+      if (generation !== formGeneration) return
+      if (error instanceof SkillPacksApiError && error.status === 409) {
+        budgetError.value = error.message
+      } else if (error instanceof SkillPacksApiError) {
+        fieldError.value = error.message
+      } else {
         fieldError.value = t('g.unknownError')
       }
     } finally {

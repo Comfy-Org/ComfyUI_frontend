@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render } from '@testing-library/vue'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -14,18 +14,7 @@ import { useSkillPacksStore } from '../stores/skillPacksStore'
 import type { SkillPack } from '../types'
 import { useSkillPackForm } from './useSkillPackForm'
 
-vi.mock('../api/skillsApi', () => ({
-  publishSkillPack: vi.fn(),
-  listSkillPacks: vi.fn(),
-  SkillPacksApiError: class SkillPacksApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status: number
-    ) {
-      super(message)
-    }
-  }
-}))
+vi.mock(import('../api/skillsApi'), { spy: true })
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -69,6 +58,16 @@ function makePack(overrides: Partial<SkillPack> = {}): SkillPack {
   }
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 /**
  * `useSkillPackForm` reads i18n and the store, so it has to run inside a
  * component. The harness exposes the composable's return value directly.
@@ -90,12 +89,6 @@ function mountForm(pack?: SkillPack) {
 }
 
 describe('useSkillPackForm', () => {
-  beforeEach(() => {
-    vi.mocked(publishSkillPack).mockReset()
-    vi.mocked(listSkillPacks).mockReset()
-    vi.mocked(reportError).mockReset()
-  })
-
   it('seeds the editor from the pack it was given, with no second fetch', () => {
     const pack = makePack()
     const { form } = mountForm(pack)
@@ -162,7 +155,9 @@ describe('useSkillPackForm', () => {
   })
 
   it('counts the description in code points, not UTF-16 units', async () => {
-    const { form, errors, handleSubmit } = mountForm()
+    const saved = makePack({ description: '😀'.repeat(700) })
+    vi.mocked(publishSkillPack).mockResolvedValue(saved)
+    const { form, errors, fieldError, onSaved, handleSubmit } = mountForm()
     form.name = 'my-pack'
     // 700 astral code points is 1400 UTF-16 units but under the 1024 cap.
     form.description = '😀'.repeat(700)
@@ -172,6 +167,9 @@ describe('useSkillPackForm', () => {
 
     expect(errors.description).toBe('')
     expect(publishSkillPack).toHaveBeenCalledOnce()
+    expect(fieldError.value).toBeNull()
+    expect(onSaved).toHaveBeenCalledOnce()
+    expect(useSkillPacksStore().packs).toEqual([saved])
   })
 
   it('lets the server enforce deployment-configured pack budgets', async () => {
@@ -277,5 +275,136 @@ describe('useSkillPackForm', () => {
     })
     expect(store.packs).toEqual([saved])
     expect(onSaved).toHaveBeenCalledOnce()
+  })
+
+  it('submits once when publish is repeated while pending', async () => {
+    const pending = deferred<SkillPack>()
+    vi.mocked(publishSkillPack).mockReturnValue(pending.promise)
+    const { form, handleSubmit, onSaved } = mountForm()
+    Object.assign(form, {
+      name: 'my-pack',
+      description: 'load me',
+      body: 'do it'
+    })
+
+    const first = handleSubmit()
+    const repeated = handleSubmit()
+    pending.resolve(makePack())
+    await Promise.all([first, repeated])
+
+    expect(publishSkillPack).toHaveBeenCalledOnce()
+    expect(onSaved).toHaveBeenCalledOnce()
+  })
+
+  it('waits for an earlier save before submitting a reopened form', async () => {
+    const pending = deferred<SkillPack>()
+    vi.mocked(publishSkillPack)
+      .mockReturnValueOnce(pending.promise)
+      .mockResolvedValueOnce(makePack({ name: 'new-pack', body: 'new draft' }))
+    const { form, handleSubmit, visible } = mountForm()
+    Object.assign(form, {
+      name: 'my-pack',
+      description: 'load me',
+      body: 'do it'
+    })
+    const first = handleSubmit()
+    visible.value = false
+    visible.value = true
+    Object.assign(form, {
+      name: 'new-pack',
+      description: 'load me',
+      body: 'new draft'
+    })
+
+    await handleSubmit()
+    expect(publishSkillPack).toHaveBeenCalledOnce()
+    pending.resolve(makePack())
+    await first
+    expect(visible.value).toBe(true)
+    expect(form.body).toBe('new draft')
+
+    await handleSubmit()
+    expect(publishSkillPack).toHaveBeenLastCalledWith({
+      name: 'new-pack',
+      description: 'load me',
+      body: 'new draft'
+    })
+    expect(visible.value).toBe(false)
+  })
+
+  it('retains failed input and allows a successful retry', async () => {
+    const saved = makePack({ body: 'keep this draft' })
+    vi.mocked(publishSkillPack)
+      .mockRejectedValueOnce(new SkillPacksApiError('correct the request', 400))
+      .mockResolvedValueOnce(saved)
+    const { form, handleSubmit, fieldError, visible } = mountForm()
+    Object.assign(form, {
+      name: 'my-pack',
+      description: 'load me',
+      body: 'keep this draft'
+    })
+
+    await handleSubmit()
+    expect(form).toEqual({
+      name: 'my-pack',
+      description: 'load me',
+      body: 'keep this draft'
+    })
+    expect(visible.value).toBe(true)
+    expect(fieldError.value).toBe('correct the request')
+
+    await handleSubmit()
+    expect(fieldError.value).toBeNull()
+    expect(visible.value).toBe(false)
+    expect(useSkillPacksStore().packs).toEqual([saved])
+  })
+
+  it('preserves a reopened draft when an earlier save completes', async () => {
+    const pending = deferred<SkillPack>()
+    vi.mocked(publishSkillPack).mockReturnValue(pending.promise)
+    const { form, handleSubmit, visible, onSaved } = mountForm()
+    Object.assign(form, {
+      name: 'my-pack',
+      description: 'load me',
+      body: 'do it'
+    })
+    const submit = handleSubmit()
+
+    visible.value = false
+    await nextTick()
+    visible.value = true
+    await nextTick()
+    form.body = 'new unsaved draft'
+    pending.resolve(makePack())
+    await submit
+
+    expect(visible.value).toBe(true)
+    expect(form.body).toBe('new unsaved draft')
+    expect(onSaved).not.toHaveBeenCalled()
+    expect(useSkillPacksStore().packs).toEqual([makePack()])
+  })
+
+  it('does not attach an earlier save error to a reopened draft', async () => {
+    const pending = deferred<SkillPack>()
+    vi.mocked(publishSkillPack).mockReturnValue(pending.promise)
+    const { form, handleSubmit, visible, fieldError, loading } = mountForm()
+    Object.assign(form, {
+      name: 'my-pack',
+      description: 'load me',
+      body: 'do it'
+    })
+    const submit = handleSubmit()
+
+    visible.value = false
+    await nextTick()
+    visible.value = true
+    await nextTick()
+    form.body = 'new unsaved draft'
+    pending.reject(new SkillPacksApiError('earlier request failed', 400))
+    await submit
+
+    expect(fieldError.value).toBeNull()
+    expect(form.body).toBe('new unsaved draft')
+    expect(loading.value).toBe(false)
   })
 })
