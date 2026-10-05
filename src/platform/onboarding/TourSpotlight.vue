@@ -163,9 +163,8 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
-import { zIndexManager } from '@/utils/zIndexManager'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import CoachmarkCard from './CoachmarkCard.vue'
 import {
@@ -263,8 +262,7 @@ async function raiseOverlay() {
   await nextTick()
   const el = overlayRef.value
   if (!el) return
-  zIndexManager.clear(el)
-  zIndexManager.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
+  raiseModalLayer(el)
 }
 
 watch(
@@ -282,7 +280,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  if (overlayRef.value) zIndexManager.clear(overlayRef.value)
+  if (overlayRef.value) releaseModalLayer(overlayRef.value)
 })
 
 function viewport() {

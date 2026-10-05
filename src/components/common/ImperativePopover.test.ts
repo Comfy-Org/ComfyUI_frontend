@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
-import { zIndexManager } from '@/utils/zIndexManager'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import ImperativePopover from './ImperativePopover.vue'
 
@@ -23,7 +23,7 @@ function renderPopover(withOutside = false) {
 
 afterEach(() => {
   if (openModal) {
-    zIndexManager.clear(openModal)
+    releaseModalLayer(openModal)
     openModal = undefined
   }
 })
@@ -149,7 +149,7 @@ describe('ImperativePopover', () => {
 
   it('opens above a registered modal', async () => {
     openModal = document.createElement('div')
-    zIndexManager.set('modal', openModal, 3702)
+    raiseModalLayer(openModal)
     const dialogZIndex = Number(openModal.style.zIndex)
     renderPopover()
 

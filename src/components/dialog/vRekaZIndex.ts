@@ -1,21 +1,16 @@
 import type { Directive } from 'vue'
 
-import { zIndexManager } from '@/utils/zIndexManager'
-
-/** Shared modal stacking sequence; later registrations cover earlier ones. */
-export const MODAL_Z_KEY = 'modal'
-export const MODAL_Z_BASE = 1700
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 export const vRekaZIndex: Directive<HTMLElement> = {
   mounted(el) {
-    zIndexManager.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
+    raiseModalLayer(el)
   },
   updated(el, { value, oldValue }) {
     if (value === oldValue) return
-    zIndexManager.clear(el)
-    zIndexManager.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
+    raiseModalLayer(el)
   },
   beforeUnmount(el) {
-    zIndexManager.clear(el)
+    releaseModalLayer(el)
   }
 }

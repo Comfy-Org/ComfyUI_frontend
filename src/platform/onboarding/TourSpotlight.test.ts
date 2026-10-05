@@ -1,26 +1,33 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { zIndexManager } from '@/utils/zIndexManager'
+import {
+  raiseModalLayer,
+  releaseModalLayer,
+  topModalZIndex
+} from '@/utils/modalLayerStack'
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
 import type { SpotlightStep } from './onboardingTours'
-
-vi.mock<unknown>(import('@/utils/zIndexManager'), () => ({
-  zIndexManager: { set: vi.fn(), clear: vi.fn() }
-}))
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: enMessages }
 })
+
+function openLaterLayer() {
+  const layer = document.createElement('div')
+  raiseModalLayer(layer)
+  onTestFinished(() => releaseModalLayer(layer))
+  return layer
+}
 
 function spotlightStep(overrides: Partial<SpotlightStep> = {}): SpotlightStep {
   return { kind: 'spotlight', name: 'run', placement: 'right', ...overrides }
@@ -81,44 +88,35 @@ describe('TourSpotlight', () => {
   })
 
   it('claims the modal stack on mount and releases it on unmount', async () => {
-    vi.mocked(zIndexManager.set).mockClear()
-    vi.mocked(zIndexManager.clear).mockClear()
-
     const { unmount } = renderSpotlight()
     await nextTick()
     await nextTick()
-    expect(zIndexManager.set).toHaveBeenCalled()
+    expect(topModalZIndex()).toBeGreaterThan(0)
 
-    const clearedWhileMounted = vi.mocked(zIndexManager.clear).mock.calls.length
     unmount()
     expect(
-      vi.mocked(zIndexManager.clear).mock.calls.length,
+      topModalZIndex(),
       'an overlay that never releases its entry leaves the modal stack raised'
-    ).toBe(clearedWhileMounted + 1)
+    ).toBe(0)
   })
 
-  it('re-claims the modal stack per step without leaking entries', async () => {
-    vi.mocked(zIndexManager.set).mockClear()
-    vi.mocked(zIndexManager.clear).mockClear()
-
+  it('rises above a later layer when the step changes', async () => {
     const { rerender, unmount } = renderSpotlight()
     await nextTick()
     await nextTick()
+    const laterLayer = openLaterLayer()
+    const laterZIndex = topModalZIndex()
 
     await rerender({ step: spotlightStep({ placement: 'left' }) })
     await nextTick()
     await nextTick()
+    expect(topModalZIndex()).toBeGreaterThan(laterZIndex)
 
     unmount()
-    // Sets must pair with clears or entries leak; the +1 is the unmount clear.
-    expect(vi.mocked(zIndexManager.clear).mock.calls.length).toBe(
-      vi.mocked(zIndexManager.set).mock.calls.length + 1
-    )
-    expect(zIndexManager.set).toHaveBeenCalled()
+    expect(topModalZIndex()).toBe(Number(laterLayer.style.zIndex))
   })
 
   it('leaves focus, z-order and travel alone when a step renames itself', async () => {
-    vi.mocked(zIndexManager.set).mockClear()
     const runState = ref('generating')
     const step: SpotlightStep = {
       kind: 'spotlight',
@@ -139,7 +137,8 @@ describe('TourSpotlight', () => {
 
     const skip = screen.getByRole('button', { name: 'Skip' })
     skip.focus()
-    const raises = vi.mocked(zIndexManager.set).mock.calls.length
+    openLaterLayer()
+    const topZIndex = topModalZIndex()
     const travel = screen.getByTestId('coach-card').className
 
     runState.value = 'succeeded'
@@ -155,9 +154,9 @@ describe('TourSpotlight', () => {
       'a step renaming itself mid-run must not pull focus off what the user selected'
     ).toHaveFocus()
     expect(
-      vi.mocked(zIndexManager.set).mock.calls.length,
-      'a re-raise per rename leaks a z-index entry every time'
-    ).toBe(raises)
+      topModalZIndex(),
+      'a rename is not a new step, so the overlay must not re-raise'
+    ).toBe(topZIndex)
     expect(
       screen.getByTestId('coach-card').className,
       'a rename is not a move, so the card must not re-arm its travel'
