@@ -16,12 +16,12 @@ const DAY = 86_400_000
 const session = (
   id: string,
   updatedAt: number,
-  isTitleFallback = false
+  titleSource: ChatSession['titleSource'] = 'server'
 ): ChatSession => ({
   id,
   title: id,
   updatedAt,
-  isTitleFallback
+  titleSource
 })
 
 describe('groupSessionsByRecency', () => {
@@ -185,70 +185,6 @@ describe('useAgentChatHistoryStore', () => {
 
     expect(store.titleFor('a')).toBeUndefined()
     expect(store.sessions.map(({ id }) => id)).toEqual(['a'])
-  })
-
-  it('overlays a derived session title without changing the server snapshot', () => {
-    const store = useAgentChatHistoryStore()
-    store.replaceAll([session('a', 1), session('b', 2)])
-
-    store.patchTitle('a', 'Clear entire canvas')
-
-    expect(store.sessions.map((s) => ({ id: s.id, title: s.title }))).toEqual([
-      { id: 'a', title: 'a' },
-      { id: 'b', title: 'b' }
-    ])
-  })
-
-  it('reflects a patched title in the grouped list immediately', () => {
-    const store = useAgentChatHistoryStore()
-    store.replaceAll([session('a', NOW - 1_000, true)])
-    store.setActive('a')
-
-    store.patchTitle('a', 'Clear entire canvas')
-
-    expect(store.grouped.current[0]).toMatchObject({
-      id: 'a',
-      title: 'Clear entire canvas'
-    })
-  })
-
-  it('ignores a whitespace-only title patch', () => {
-    const store = useAgentChatHistoryStore()
-    store.replaceAll([session('a', 1)])
-
-    store.patchTitle('a', '   ')
-
-    expect(store.sessions[0]?.title).toBe('a')
-  })
-
-  it('applies a derived title when the session arrives in a later refresh', () => {
-    const store = useAgentChatHistoryStore()
-    store.patchTitle('unknown-thread', 'Clear entire canvas')
-    store.replaceAll([session('unknown-thread', 1, true)])
-
-    expect(store.grouped.earlier[0]).toMatchObject({
-      id: 'unknown-thread',
-      title: 'Clear entire canvas'
-    })
-  })
-
-  it('keeps a derived title across server-list refreshes', () => {
-    const store = useAgentChatHistoryStore()
-    store.replaceAll([session('a', NOW - 1_000, true)])
-    store.patchTitle('a', 'Clear entire canvas')
-
-    store.replaceAll([session('a', NOW - 1_000, true)])
-
-    expect(store.grouped.today[0]?.title).toBe('Clear entire canvas')
-  })
-
-  it('keeps a server-authored title ahead of a derived title', () => {
-    const store = useAgentChatHistoryStore()
-    store.patchTitle('a', 'Raw first message')
-
-    store.replaceAll([session('a', NOW - 1_000)])
-
-    expect(store.grouped.today[0]?.title).toBe('a')
   })
 
   it('removes a session with no server request', () => {

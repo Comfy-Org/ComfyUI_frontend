@@ -14,10 +14,6 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-// Regression for the agent thread list caching a title separately from the
-// active chat, so a thread's list entry could keep showing a stale preview
-// after the open chat derived a better title from its real first message
-// (AgentPanelRoot.vue's `patchTitle`/`activeSessionTitle` watch).
 const WORKSPACE_ID = 'personal'
 const THREAD_ID = 'thread-title-sync-e2e'
 const TURN_ID = 'c6c9b9b0-2f31-4a63-9b00-000000000001'
@@ -81,10 +77,8 @@ test.describe(
     }) => {
       test.setTimeout(60_000)
 
-      let threadsRequestCount = 0
       let resolveThreadsRefetch: (() => void) | undefined
       await page.route('**/api/agent/threads', async (route) => {
-        threadsRequestCount += 1
         await route.fulfill(jsonRoute(staleThreadList))
         resolveThreadsRefetch?.()
       })
@@ -161,7 +155,6 @@ test.describe(
         await refetchCompleted
         await expect(realTitleRow).toBeVisible()
         await expect(staleRow).toHaveCount(0)
-        expect(threadsRequestCount).toBeGreaterThanOrEqual(2)
       })
     })
   }

@@ -1,13 +1,11 @@
+import type { HistoryGroups } from '../stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from '../stores/agent/agentConversationStore'
 
 const MAX_DERIVED_TITLE_LENGTH = 60
 
-/**
- * Placeholder title for an untitled thread: the first user message, trimmed
- * and truncated. Used until the server's asynchronous title generation
- * lands, which happens off the critical path with no push notification when
- * it completes (see `agentChatHistoryStore`'s `patchTitle`).
- */
+const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+
+/** First user message, trimmed and capped at 60 graphemes. */
 export function deriveSessionTitle(
   entries: ConversationEntry[]
 ): string | undefined {
@@ -15,10 +13,24 @@ export function deriveSessionTitle(
     (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
       entry.role === 'user'
   )
+  const text = firstUser?.text.trim() ?? ''
   return (
-    Array.from(firstUser?.text.trim() ?? '')
+    Array.from(graphemes.segment(text), ({ segment }) => segment)
       .slice(0, MAX_DERIVED_TITLE_LENGTH)
       .join('')
       .trimEnd() || undefined
   )
+}
+
+export function withCurrentSessionTitle(
+  groups: HistoryGroups,
+  title: string | undefined
+): HistoryGroups {
+  if (!title) return groups
+  return {
+    ...groups,
+    current: groups.current.map((session) =>
+      session.titleSource === 'fallback' ? { ...session, title } : session
+    )
+  }
 }

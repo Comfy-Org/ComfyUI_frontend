@@ -3899,7 +3899,12 @@ describe('AgentPanelRoot history', () => {
     // The server has no delete endpoint yet, so the tombstone must hold the
     // thread out of the next refresh instead of letting it resurrect.
     useAgentChatHistoryStore().replaceAll([
-      { id: 'th-active', title: 'build a duck', updatedAt: Date.now() }
+      {
+        id: 'th-active',
+        title: 'build a duck',
+        updatedAt: Date.now(),
+        titleSource: 'server'
+      }
     ])
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
@@ -3947,50 +3952,81 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
-  it('patches the cached history title once the active chat learns a better one', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.endsWith('/api/agent/threads'))
-          return json(
-            200,
-            agentThreadList([
-              agentThread({
-                id: 'th-active',
-                title: '',
-                preview: 'delete everything on this canvas',
-                last_message_at: '2026-07-07T10:00:00Z'
-              })
+  describe('history row title for the active chat', () => {
+    function stubActiveThread(serverTitle: string): void {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.endsWith('/api/agent/threads'))
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-active',
+                  title: serverTitle,
+                  preview: 'delete everything on this canvas',
+                  last_message_at: '2026-07-07T10:00:00Z'
+                })
+              ])
+            )
+          if (url.includes('/messages'))
+            return json(200, [
+              {
+                id: 'active-user',
+                thread_id: 'th-active',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'active-turn',
+                content: { text: 'Clear entire canvas' }
+              }
             ])
-          )
-        if (url.includes('/messages'))
-          return json(200, [
-            {
-              id: 'active-user',
-              thread_id: 'th-active',
-              seq: 1,
-              role: 'user',
-              status: 'complete',
-              turn_id: 'active-turn',
-              content: { text: 'Clear entire canvas' }
-            }
-          ])
-        return json(200, [])
+          return json(200, [])
+        })
+      )
+      useAgentConversationStore().setThreadId('th-active')
+    }
+
+    async function openHistory(): Promise<void> {
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await screen.findByRole('heading', {
+        name: i18n.global.t('agent.history')
       })
-    )
-    useAgentConversationStore().setThreadId('th-active')
+    }
 
-    renderWithSelectedTarget()
-
-    expect(
+    it('shows the first user message while the server title is empty', async () => {
+      stubActiveThread('')
+      renderWithSelectedTarget()
       await screen.findByRole('button', { name: 'Clear entire canvas' })
-    ).toBeInTheDocument()
-    await vi.waitFor(() =>
-      expect(useAgentChatHistoryStore().grouped.current[0]).toMatchObject({
-        id: 'th-active',
-        title: 'Clear entire canvas'
-      })
-    )
+
+      await openHistory()
+
+      expect(
+        await screen.findByRole('button', { name: 'Clear entire canvas' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('delete everything on this canvas')
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps the server title when one exists', async () => {
+      stubActiveThread('Canvas cleanup')
+      renderWithSelectedTarget()
+      await screen.findByRole('button', { name: 'Clear entire canvas' })
+
+      await openHistory()
+
+      expect(
+        await screen.findByRole('button', { name: 'Canvas cleanup' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Clear entire canvas' })
+      ).not.toBeInTheDocument()
+    })
   })
 
   it('surfaces a thread-list failure via the host error modal', async () => {
