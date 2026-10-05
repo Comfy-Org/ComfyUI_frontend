@@ -4,7 +4,7 @@ import { reactive, unref, shallowRef } from 'vue'
 
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ToastId } from '@/components/ui/toast/toastStore'
+import type { ToastId } from '@/types/toastId'
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'

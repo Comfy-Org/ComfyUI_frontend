@@ -6,7 +6,7 @@ import type {
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { ToastId } from '@/components/ui/toast/toastStore'
+import type { ToastId } from '@/types/toastId'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'

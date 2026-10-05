@@ -13,7 +13,7 @@ import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ToastId } from '@/components/ui/toast/toastStore'
+import type { ToastId } from '@/types/toastId'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'

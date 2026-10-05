@@ -28,7 +28,7 @@ import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
-import type { ToastId } from '@/components/ui/toast/toastStore'
+import type { ToastId } from '@/types/toastId'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'

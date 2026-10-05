@@ -18,7 +18,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ToastId } from '@/components/ui/toast/toastStore'
+import type { ToastId } from '@/types/toastId'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 
 const { toastId, title, text, workspaceName, workspaceId } = defineProps<{

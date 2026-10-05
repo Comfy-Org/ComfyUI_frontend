@@ -2,7 +2,7 @@ import { onScopeDispose, toValue, watch } from 'vue'
 import type { Component, MaybeRefOrGetter } from 'vue'
 
 import { useToast } from './toastStore'
-import type { ToastId } from './toastStore'
+import type { ToastId } from '@/types/toastId'
 
 export function useDockedToast(
   visible: MaybeRefOrGetter<boolean>,
