@@ -3,28 +3,23 @@
     v-show="workspaceState.focusMode"
     class="no-drag fixed top-0 right-0 z-9999 flex flex-row"
   >
-    <Tooltip
-      :config="{ value: $t('menu.showMenu'), showDelay: 300 }"
-      side="right"
+    <Button
+      :tooltip="$t('menu.showMenu')"
+      tooltip-side="right"
+      variant="muted-textonly"
+      size="lg"
+      :aria-label="$t('menu.showMenu')"
+      aria-live="assertive"
+      @click="exitFocusMode"
+      @contextmenu="showNativeSystemMenu"
     >
-      <Button
-        variant="muted-textonly"
-        size="lg"
-        :aria-label="$t('menu.showMenu')"
-        aria-live="assertive"
-        @click="exitFocusMode"
-        @contextmenu="showNativeSystemMenu"
-      >
-        <i class="pi pi-bars" />
-      </Button>
-    </Tooltip>
+      <i class="pi pi-bars" />
+    </Button>
     <div class="window-actions-spacer" />
   </div>
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { watchEffect } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

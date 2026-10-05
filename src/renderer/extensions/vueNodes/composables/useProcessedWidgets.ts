@@ -37,13 +37,13 @@ export function useProcessedWidgets(
   const { handleNodeRightClick } = useNodeEventHandlers()
 
   const nodeType = computed(() => nodeDataGetter()?.type || '')
-  const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(nodeType)
+  const { getWidgetTooltip, tooltipsEnabled } = useNodeTooltips(nodeType)
 
   const ui: WidgetUiCallbacks = {
-    getTooltipConfig: (widget, fullValue = '') =>
-      createTooltipConfig(
-        [getWidgetTooltip(widget), fullValue].join('\n\n').trim()
-      ),
+    getTooltip: (widget, fullValue = '') =>
+      tooltipsEnabled.value
+        ? [getWidgetTooltip(widget), fullValue].join('\n\n').trim()
+        : '',
     handleNodeRightClick
   }
 

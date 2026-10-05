@@ -54,7 +54,8 @@
               />
             </Button>
             <Button
-              v-tooltip.bottom="$t('g.learnMore')"
+              :tooltip="$t('g.learnMore')"
+              tooltip-side="bottom"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('g.learnMore')"
@@ -95,6 +96,7 @@ import FolderCustomizationDialog from '@/components/common/CustomizationDialog.v
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
@@ -238,8 +240,13 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           }
         },
         renderDragPreview(container) {
-          if (!node.data) return
-          const vnode = h(NodePreview, { nodeDef: node.data })
+          const nodeDef = node.data
+          if (!nodeDef) return
+          const vnode = h(
+            TooltipProvider,
+            { disabled: true },
+            { default: () => h(NodePreview, { nodeDef }) }
+          )
           vnode.appContext = appContext
           render(vnode, container)
           return () => {

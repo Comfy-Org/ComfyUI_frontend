@@ -13,15 +13,14 @@
     >
       <Menu>
         <template #trigger>
-          <Tooltip :config="filterTooltipConfig" side="top">
-            <Button
-              variant="secondary"
-              size="icon"
-              :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
-              icon="icon-[lucide--list-filter]"
-              :indicator="selectedWorkflowFilter !== 'all'"
-            />
-          </Tooltip>
+          <Button
+            :tooltip="t('sideToolbar.queueProgressOverlay.filterBy')"
+            variant="secondary"
+            size="icon"
+            :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
+            icon="icon-[lucide--list-filter]"
+            :indicator="selectedWorkflowFilter !== 'all'"
+          />
         </template>
         <MenuRadioGroup
           v-model="selectedWorkflowFilter"
@@ -30,31 +29,26 @@
       </Menu>
       <Menu>
         <template #trigger>
-          <Tooltip :config="sortTooltipConfig" side="top">
-            <Button
-              variant="secondary"
-              size="icon"
-              :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
-              icon="icon-[lucide--arrow-up-down]"
-              :indicator="selectedSortMode !== 'mostRecent'"
-            />
-          </Tooltip>
+          <Button
+            :tooltip="t('sideToolbar.queueProgressOverlay.sortBy')"
+            variant="secondary"
+            size="icon"
+            :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
+            icon="icon-[lucide--arrow-up-down]"
+            :indicator="selectedSortMode !== 'mostRecent'"
+          />
         </template>
         <MenuRadioGroup v-model="selectedSortMode" :options="sortOptions" />
       </Menu>
-      <Tooltip
+      <Button
         v-if="showAssetsAction"
-        :config="showAssetsTooltipConfig"
-        side="top"
-      >
-        <Button
-          variant="secondary"
-          size="icon"
-          :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
-          icon="icon-[comfy--image-ai-edit]"
-          @click="emit('showAssets')"
-        />
-      </Tooltip>
+        :tooltip="t('sideToolbar.queueProgressOverlay.showAssets')"
+        variant="secondary"
+        size="icon"
+        :aria-label="t('sideToolbar.queueProgressOverlay.showAssetsPanel')"
+        icon="icon-[comfy--image-ai-edit]"
+        @click="emit('showAssets')"
+      />
     </div>
   </div>
 </template>
@@ -67,10 +61,8 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 
 const {
@@ -99,15 +91,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
-const filterTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.filterBy'))
-)
-const sortTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.sortBy'))
-)
-const showAssetsTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.showAssets'))
-)
 const showAssetsAction = computed(() => !hideShowAssetsAction)
 const searchPlaceholderText = computed(
   () => searchPlaceholder ?? t('sideToolbar.queueProgressOverlay.searchJobs')

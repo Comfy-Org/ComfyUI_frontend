@@ -9,28 +9,28 @@
       <slot name="alt-title" />
     </template>
     <template #tool-buttons>
-      <Tooltip :config="$t('g.refresh')" side="bottom">
-        <Button
-          data-testid="workflows-refresh-button"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('g.refresh')"
-          :aria-busy="workflowStore.isSyncLoading"
-          :disabled="workflowStore.isSyncLoading"
-          @click="workflowStore.syncWorkflows()"
-        >
-          <i
-            aria-hidden="true"
-            data-testid="workflows-refresh-icon"
-            :class="
-              cn(
-                'icon-[lucide--refresh-cw] size-4',
-                workflowStore.isSyncLoading && 'animate-spin'
-              )
-            "
-          />
-        </Button>
-      </Tooltip>
+      <Button
+        :tooltip="$t('g.refresh')"
+        tooltip-side="bottom"
+        data-testid="workflows-refresh-button"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.refresh')"
+        :aria-busy="workflowStore.isSyncLoading"
+        :disabled="workflowStore.isSyncLoading"
+        @click="workflowStore.syncWorkflows()"
+      >
+        <i
+          aria-hidden="true"
+          data-testid="workflows-refresh-icon"
+          :class="
+            cn(
+              'icon-[lucide--refresh-cw] size-4',
+              workflowStore.isSyncLoading && 'animate-spin'
+            )
+          "
+        />
+      </Button>
       <slot
         name="header-actions"
         :has-results="filteredPersistedWorkflows.length > 0"
@@ -153,8 +153,6 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

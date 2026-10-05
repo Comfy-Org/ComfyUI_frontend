@@ -11,46 +11,34 @@
         class="flex w-full items-center justify-between gap-2"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2">
-          <Tooltip
-            :config="{
-              value: $t('sideToolbar.backToAssets'),
-              showDelay: 300
-            }"
-            side="bottom"
+          <Button
+            :tooltip="$t('sideToolbar.backToAssets')"
+            tooltip-side="bottom"
+            variant="textonly"
+            size="icon"
+            type="button"
+            class="shrink-0"
+            :aria-label="$t('sideToolbar.backToAssets')"
+            @click="exitFolderView"
           >
-            <Button
-              variant="textonly"
-              size="icon"
-              type="button"
-              class="shrink-0"
-              :aria-label="$t('sideToolbar.backToAssets')"
-              @click="exitFolderView"
-            >
-              <i class="icon-[lucide--arrow-left] size-4" />
-            </Button>
-          </Tooltip>
+            <i class="icon-[lucide--arrow-left] size-4" />
+          </Button>
           <span class="shrink-0 font-bold">
             {{ $t('assetBrowser.jobId') }}:
           </span>
           <span class="min-w-0 truncate text-sm">{{ folderJobId }}</span>
-          <Tooltip
-            :config="{
-              value: $t('g.copyJobId'),
-              showDelay: 300
-            }"
-            side="bottom"
+          <Button
+            :tooltip="$t('g.copyJobId')"
+            tooltip-side="bottom"
+            variant="textonly"
+            size="icon"
+            type="button"
+            class="shrink-0"
+            :aria-label="$t('g.copyJobId')"
+            @click="copyFolderJobId"
           >
-            <Button
-              variant="textonly"
-              size="icon"
-              type="button"
-              class="shrink-0"
-              :aria-label="$t('g.copyJobId')"
-              @click="copyFolderJobId"
-            >
-              <i class="icon-[lucide--copy] size-4" />
-            </Button>
-          </Tooltip>
+            <i class="icon-[lucide--copy] size-4" />
+          </Button>
         </div>
         <div class="shrink-0">
           <span>{{ formattedExecutionTime }}</span>
@@ -199,7 +187,6 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'

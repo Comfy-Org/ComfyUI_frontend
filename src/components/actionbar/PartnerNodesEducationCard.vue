@@ -80,21 +80,20 @@
                 <span class="text-xs font-semibold text-white">
                   {{ t('partnerNodesEducation.partnerTab') }}
                 </span>
-                <Tooltip
-                  :config="t('partnerNodesEducation.tooltip')"
-                  side="top"
-                  :side-offset="8"
-                  content-class="max-w-56"
-                  open-on-click
-                  suppress-description
-                >
-                  <button
-                    type="button"
-                    :aria-label="t('partnerNodesEducation.tooltip')"
-                    class="flex items-center text-white/60 hover:text-white"
-                  >
-                    <i class="icon-[lucide--info] size-3" />
-                  </button>
+                <Tooltip v-model:open="infoTooltipOpen" disable-closing-trigger>
+                  <TooltipTrigger as-child>
+                    <button
+                      type="button"
+                      :aria-label="t('partnerNodesEducation.tooltip')"
+                      class="flex items-center text-white/60 hover:text-white"
+                      @click.stop="infoTooltipOpen = true"
+                    >
+                      <i class="icon-[lucide--info] size-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent :side-offset="8" class="max-w-56">{{
+                    t('partnerNodesEducation.tooltip')
+                  }}</TooltipContent>
                 </Tooltip>
               </div>
             </div>
@@ -157,6 +156,8 @@ import PartnerNodesComparisonRow from '@/components/actionbar/PartnerNodesCompar
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
 import { useDialogService } from '@/services/dialogService'
@@ -185,6 +186,7 @@ const { t } = useI18n()
 const pitchId = useId()
 
 const slider = useTemplateRef<InstanceType<typeof VideoCompareSlider>>('slider')
+const infoTooltipOpen = ref(false)
 const audibleSide = ref<'open' | 'partner' | null>(null)
 
 function toggleAudio(side: 'open' | 'partner') {

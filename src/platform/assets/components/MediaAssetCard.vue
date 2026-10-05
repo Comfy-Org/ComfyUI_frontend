@@ -145,16 +145,15 @@
           </div>
         </div>
         <div v-if="showOutputCount" class="shrink-0">
-          <Tooltip :config="$t('mediaAsset.actions.seeMoreOutputs')" side="top">
-            <Button
-              :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
-              variant="secondary"
-              @click.stop="handleOutputCountClick"
-            >
-              <i class="icon-[lucide--layers] size-4" />
-              <span>{{ outputCount }}</span>
-            </Button>
-          </Tooltip>
+          <Button
+            :tooltip="$t('mediaAsset.actions.seeMoreOutputs')"
+            :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
+            variant="secondary"
+            @click.stop="handleOutputCountClick"
+          >
+            <i class="icon-[lucide--layers] size-4" />
+            <span>{{ outputCount }}</span>
+          </Button>
         </div>
       </div>
     </div>
@@ -162,8 +161,6 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 

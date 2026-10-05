@@ -1,30 +1,28 @@
 <template>
   <template v-if="!sceneHasImage || hdriPath">
-    <Tooltip
-      :config="
-        tip(
-          hdriPath ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
-        )
-      "
-      side="bottom"
-    >
-      <button
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="
-          compact
-            ? hdriPath
-              ? t('load3d.hdri.changeFile')
-              : t('load3d.hdri.uploadFile')
-            : undefined
-        "
-        @click="hdriFileRef?.click()"
-      >
-        <i class="icon-[lucide--upload] size-4" />
-        <span v-if="!compact">{{
-          hdriPath ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
-        }}</span>
-      </button>
+    <Tooltip>
+      <TooltipTrigger as-child>
+        <button
+          :class="actionClass(false)"
+          type="button"
+          :aria-label="
+            compact
+              ? hdriPath
+                ? t('load3d.hdri.changeFile')
+                : t('load3d.hdri.uploadFile')
+              : undefined
+          "
+          @click="hdriFileRef?.click()"
+        >
+          <i class="icon-[lucide--upload] size-4" />
+          <span v-if="!compact">{{
+            hdriPath ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
+          }}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{{
+        hdriPath ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
+      }}</TooltipContent>
     </Tooltip>
     <input
       ref="hdriFileRef"
@@ -36,51 +34,68 @@
   </template>
 
   <template v-if="hdriPath">
-    <Tooltip :config="tip(t('load3d.hdri.label'))" side="bottom">
-      <button
-        :class="actionClass(hdriEnabled)"
-        :aria-pressed="hdriEnabled"
-        type="button"
-        :aria-label="compact ? t('load3d.hdri.label') : undefined"
-        @click="toggleHdriEnabled"
-      >
-        <i class="icon-[lucide--globe] size-4" />
-        <span v-if="!compact">{{ t('load3d.hdri.label') }}</span>
-      </button>
+    <Tooltip>
+      <TooltipTrigger as-child>
+        <button
+          :class="actionClass(hdriEnabled)"
+          :aria-pressed="hdriEnabled"
+          type="button"
+          :aria-label="compact ? t('load3d.hdri.label') : undefined"
+          @click="toggleHdriEnabled"
+        >
+          <i class="icon-[lucide--globe] size-4" />
+          <span v-if="!compact">{{ t('load3d.hdri.label') }}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{{
+        t('load3d.hdri.label')
+      }}</TooltipContent>
     </Tooltip>
-    <Tooltip :config="tip(t('load3d.hdri.showAsBackground'))" side="bottom">
-      <button
-        :class="actionClass(hdriShowAsBackground)"
-        :aria-pressed="hdriShowAsBackground"
-        type="button"
-        :aria-label="compact ? t('load3d.hdri.showAsBackground') : undefined"
-        @click="toggleHdriShowAsBackground"
-      >
-        <i class="icon-[lucide--image] size-4" />
-        <span v-if="!compact">{{ t('load3d.hdri.showAsBackground') }}</span>
-      </button>
+    <Tooltip>
+      <TooltipTrigger as-child>
+        <button
+          :class="actionClass(hdriShowAsBackground)"
+          :aria-pressed="hdriShowAsBackground"
+          type="button"
+          :aria-label="compact ? t('load3d.hdri.showAsBackground') : undefined"
+          @click="toggleHdriShowAsBackground"
+        >
+          <i class="icon-[lucide--image] size-4" />
+          <span v-if="!compact">{{ t('load3d.hdri.showAsBackground') }}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{{
+        t('load3d.hdri.showAsBackground')
+      }}</TooltipContent>
     </Tooltip>
-    <Tooltip :config="tip(t('load3d.hdri.removeFile'))" side="bottom">
-      <button
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? t('load3d.hdri.removeFile') : undefined"
-        @click="removeHdri"
-      >
-        <i class="icon-[lucide--x] size-4" />
-        <span v-if="!compact">{{ t('load3d.hdri.removeFile') }}</span>
-      </button>
+    <Tooltip>
+      <TooltipTrigger as-child>
+        <button
+          :class="actionClass(false)"
+          type="button"
+          :aria-label="compact ? t('load3d.hdri.removeFile') : undefined"
+          @click="removeHdri"
+        >
+          <i class="icon-[lucide--x] size-4" />
+          <span v-if="!compact">{{ t('load3d.hdri.removeFile') }}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{{
+        t('load3d.hdri.removeFile')
+      }}</TooltipContent>
     </Tooltip>
   </template>
 </template>
 
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { actionClass, tip } from '@/components/load3d/menubar/menuBarStyles'
+import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
 import {
   SUPPORTED_HDRI_EXTENSIONS,
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT

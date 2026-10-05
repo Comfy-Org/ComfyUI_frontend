@@ -76,7 +76,7 @@ function createGraphWithNode(
 }
 
 const noopUi = {
-  getTooltipConfig: () => ({}),
+  getTooltip: () => '',
   handleNodeRightClick: () => {}
 }
 

@@ -1,68 +1,73 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <Tooltip v-else :config="tooltipConfig" side="left">
-    <div
-      :aria-label="standalone ? accessibleName : undefined"
-      :class="
-        cn(
-          'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
-          'cursor-crosshair',
-          dotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
-          {
-            'lg-slot--connected': props.connected,
-            'lg-slot--compatible': props.compatible,
-            'opacity-40': shouldDim
-          },
-          props.socketless && 'pointer-events-none invisible'
-        )
-      "
-      @pointerenter="revealLinks"
-      @pointerleave="unrevealLinks"
-    >
-      <!-- Connection Dot -->
-      <SlotConnectionDot
-        :slot-key
+  <Tooltip v-else :disabled="!tooltipText" :delay-duration="tooltipDelay">
+    <TooltipTrigger as-child>
+      <div
+        :aria-label="standalone ? accessibleName : undefined"
         :class="
           cn(
-            'w-3 -translate-x-1/2',
-            hasError &&
-              'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
+            'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
+            'cursor-crosshair',
+            dotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
+            {
+              'lg-slot--connected': props.connected,
+              'lg-slot--compatible': props.compatible,
+              'opacity-40': shouldDim
+            },
+            props.socketless && 'pointer-events-none invisible'
           )
         "
-        :slot-data
-        @click="onClick"
-        @dblclick="onDoubleClick"
-        @pointerdown="onPointerDown"
-      />
-
-      <!-- Slot Name -->
-      <div class="flex h-full min-w-0 items-center">
-        <EditableText
-          v-if="!props.dotOnly && !hasNoLabel"
-          class="min-w-0"
-          :label-class="
+        @pointerenter="revealLinks"
+        @pointerleave="unrevealLinks"
+      >
+        <!-- Connection Dot -->
+        <SlotConnectionDot
+          :slot-key
+          :class="
             cn(
-              'block truncate text-node-component-slot-text',
-              hasError && 'font-medium text-error'
+              'w-3 -translate-x-1/2',
+              hasError &&
+                'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
             )
           "
-          :is-editing
-          :model-value="
-            slotData.label ||
-            slotData.localized_name ||
-            (slotData.name ?? `Input ${index}`)
-          "
-          @cancel="isEditing = false"
-          @dblclick="isEditing = true"
-          @edit="onEditLabel"
+          :slot-data
+          @click="onClick"
+          @dblclick="onDoubleClick"
+          @pointerdown="onPointerDown"
         />
+
+        <!-- Slot Name -->
+        <div class="flex h-full min-w-0 items-center">
+          <EditableText
+            v-if="!props.dotOnly && !hasNoLabel"
+            class="min-w-0"
+            :label-class="
+              cn(
+                'block truncate text-node-component-slot-text',
+                hasError && 'font-medium text-error'
+              )
+            "
+            :is-editing
+            :model-value="
+              slotData.label ||
+              slotData.localized_name ||
+              (slotData.name ?? `Input ${index}`)
+            "
+            @cancel="isEditing = false"
+            @dblclick="isEditing = true"
+            @edit="onEditLabel"
+          />
+        </div>
       </div>
-    </div>
+    </TooltipTrigger>
+    <TooltipContent side="left">{{ tooltipText }}</TooltipContent>
   </Tooltip>
 </template>
 
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -115,16 +120,17 @@ const accessibleName = computed(
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
-const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
+const { getInputSlotTooltip, tooltipsEnabled, tooltipDelay } = useNodeTooltips(
   props.nodeType || ''
 )
 
-const tooltipConfig = computed(() => {
+const tooltipText = computed(() => {
+  if (!tooltipsEnabled.value) return ''
   const inputName = props.slotData.name || ''
   const displayName = props.slotData.localized_name || inputName
   const tooltipText = getInputSlotTooltip(inputName)
   const fallbackText = tooltipText || t('g.inputTooltip', { name: displayName })
-  return createTooltipConfig(fallbackText)
+  return fallbackText
 })
 
 const { revealLinks, unrevealLinks } = useSlotLinkReveal({

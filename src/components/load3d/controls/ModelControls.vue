@@ -1,23 +1,17 @@
 <template>
   <div class="flex flex-col">
     <div class="show-up-direction relative">
-      <Tooltip
-        :config="{
-          value: t('load3d.upDirection'),
-          showDelay: 300
-        }"
-        side="right"
+      <Button
+        :tooltip="t('load3d.upDirection')"
+        tooltip-side="right"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="t('load3d.upDirection')"
+        @click="toggleUpDirection"
       >
-        <Button
-          size="icon"
-          variant="textonly"
-          class="rounded-full"
-          :aria-label="t('load3d.upDirection')"
-          @click="toggleUpDirection"
-        >
-          <i class="pi pi-arrow-up text-lg text-base-foreground" />
-        </Button>
-      </Tooltip>
+        <i class="pi pi-arrow-up text-lg text-base-foreground" />
+      </Button>
       <div
         v-show="showUpDirection"
         class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
@@ -42,23 +36,17 @@
     </div>
 
     <div v-if="materialModes.length > 0" class="show-material-mode relative">
-      <Tooltip
-        :config="{
-          value: t('load3d.materialMode'),
-          showDelay: 300
-        }"
-        side="right"
+      <Button
+        :tooltip="t('load3d.materialMode')"
+        tooltip-side="right"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="t('load3d.materialMode')"
+        @click="toggleMaterialMode"
       >
-        <Button
-          size="icon"
-          variant="textonly"
-          class="rounded-full"
-          :aria-label="t('load3d.materialMode')"
-          @click="toggleMaterialMode"
-        >
-          <i class="pi pi-box text-lg text-base-foreground" />
-        </Button>
-      </Tooltip>
+        <i class="pi pi-box text-lg text-base-foreground" />
+      </Button>
       <div
         v-show="showMaterialMode"
         class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
@@ -83,30 +71,22 @@
     </div>
 
     <div v-if="hasSkeleton">
-      <Tooltip
-        :config="{
-          value: t('load3d.showSkeleton'),
-          showDelay: 300
-        }"
-        side="right"
+      <Button
+        :tooltip="t('load3d.showSkeleton')"
+        tooltip-side="right"
+        size="icon"
+        variant="textonly"
+        :class="cn('rounded-full', showSkeleton && 'bg-blue-500')"
+        :aria-label="t('load3d.showSkeleton')"
+        @click="showSkeleton = !showSkeleton"
       >
-        <Button
-          size="icon"
-          variant="textonly"
-          :class="cn('rounded-full', showSkeleton && 'bg-blue-500')"
-          :aria-label="t('load3d.showSkeleton')"
-          @click="showSkeleton = !showSkeleton"
-        >
-          <i class="pi pi-sitemap text-lg text-base-foreground" />
-        </Button>
-      </Tooltip>
+        <i class="pi pi-sitemap text-lg text-base-foreground" />
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

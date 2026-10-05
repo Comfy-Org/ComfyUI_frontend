@@ -6,7 +6,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -122,15 +121,15 @@ async function rerun(e: Event) {
       </Button>
       <div class="mx-1 border-r border-border-subtle" />
     </template>
-    <Tooltip v-if="selectedOutput" :config="t('g.download')" side="top">
-      <Button
-        size="icon"
-        :aria-label="t('g.download')"
-        @click="() => downloadOutput(selectedOutput)"
-      >
-        <i class="icon-[lucide--download]" />
-      </Button>
-    </Tooltip>
+    <Button
+      v-if="selectedOutput"
+      :tooltip="t('g.download')"
+      size="icon"
+      :aria-label="t('g.download')"
+      @click="() => downloadOutput(selectedOutput)"
+    >
+      <i class="icon-[lucide--download]" />
+    </Button>
     <Button
       v-if="isWorkflowActive && !selectedItem"
       data-testid="linear-cancel-run"

@@ -1,53 +1,41 @@
 <template>
   <div class="flex flex-col">
-    <Tooltip
-      :config="{
-        value: $t('load3d.switchCamera'),
-        showDelay: 300
-      }"
-      side="right"
+    <Button
+      :tooltip="$t('load3d.switchCamera')"
+      tooltip-side="right"
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      :aria-label="$t('load3d.switchCamera')"
+      @click="switchCamera"
     >
-      <Button
-        size="icon"
-        variant="textonly"
-        class="rounded-full"
-        :aria-label="$t('load3d.switchCamera')"
-        @click="switchCamera"
-      >
-        <i class="pi pi-camera text-lg text-base-foreground" />
-      </Button>
-    </Tooltip>
-    <Tooltip
+      <i class="pi pi-camera text-lg text-base-foreground" />
+    </Button>
+    <Button
       v-if="hasCustomUp"
-      :config="{
-        value: useCustomUp
-          ? $t('load3d.useNaturalUp')
-          : $t('load3d.useCustomUp'),
-        showDelay: 300
-      }"
-      side="right"
+      :tooltip="
+        useCustomUp ? $t('load3d.useNaturalUp') : $t('load3d.useCustomUp')
+      "
+      tooltip-side="right"
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      :aria-label="
+        useCustomUp ? $t('load3d.useNaturalUp') : $t('load3d.useCustomUp')
+      "
+      @click="toggleUp"
     >
-      <Button
-        size="icon"
-        variant="textonly"
-        class="rounded-full"
-        :aria-label="
-          useCustomUp ? $t('load3d.useNaturalUp') : $t('load3d.useCustomUp')
+      <i
+        :class="
+          cn(
+            useCustomUp
+              ? 'icon-[lucide--compass]'
+              : 'icon-[lucide--rotate-ccw]',
+            'size-5 text-base-foreground'
+          )
         "
-        @click="toggleUp"
-      >
-        <i
-          :class="
-            cn(
-              useCustomUp
-                ? 'icon-[lucide--compass]'
-                : 'icon-[lucide--rotate-ccw]',
-              'size-5 text-base-foreground'
-            )
-          "
-        />
-      </Button>
-    </Tooltip>
+      />
+    </Button>
     <PopupSlider
       v-if="showFOVButton"
       v-model="fov"
@@ -57,8 +45,6 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { computed } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'

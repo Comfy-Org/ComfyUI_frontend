@@ -17,23 +17,22 @@
       />
     </div>
     <div v-else-if="showIntensityControl" class="relative">
-      <Tooltip
-        :config="{
-          value: $t('load3d.lightIntensity'),
-          showDelay: 300
-        }"
-        side="right"
-      >
-        <Button
-          ref="triggerRef"
-          size="icon"
-          variant="textonly"
-          class="rounded-full"
-          :aria-label="$t('load3d.lightIntensity')"
-          @click="toggleLightIntensity"
-        >
-          <i class="icon-[lucide--sun] text-lg text-base-foreground" />
-        </Button>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <Button
+            ref="triggerRef"
+            size="icon"
+            variant="textonly"
+            class="rounded-full"
+            :aria-label="$t('load3d.lightIntensity')"
+            @click="toggleLightIntensity"
+          >
+            <i class="icon-[lucide--sun] text-lg text-base-foreground" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">{{
+          $t('load3d.lightIntensity')
+        }}</TooltipContent>
       </Tooltip>
       <div
         v-show="showLightIntensity"
@@ -54,11 +53,12 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import type {

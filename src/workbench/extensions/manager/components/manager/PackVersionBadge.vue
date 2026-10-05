@@ -1,30 +1,32 @@
 <template>
   <div>
-    <Tooltip
-      :config="isDisabled ? $t('manager.enablePackToChangeVersion') : null"
-      side="top"
-    >
-      <div
-        class="inline-flex items-center gap-1 rounded-2xl py-1 text-xs"
-        :class="{
-          'bg-dialog-surface px-1.5': fill,
-          'cursor-pointer': !isDisabled,
-          'cursor-not-allowed opacity-60': isDisabled
-        }"
-        :aria-haspopup="!isDisabled"
-        :role="isDisabled ? 'text' : 'button'"
-        :tabindex="isDisabled ? -1 : 0"
-        @click="!isDisabled && toggleVersionSelector($event)"
-        @keydown.enter="!isDisabled && toggleVersionSelector($event)"
-        @keydown.space="!isDisabled && toggleVersionSelector($event)"
-      >
-        <i
-          v-if="isUpdateAvailable"
-          class="pi pi-arrow-circle-up text-xs text-blue-600"
-        />
-        <span>{{ installedVersion }}</span>
-        <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
-      </div>
+    <Tooltip :disabled="!isDisabled">
+      <TooltipTrigger as-child>
+        <div
+          class="inline-flex items-center gap-1 rounded-2xl py-1 text-xs"
+          :class="{
+            'bg-dialog-surface px-1.5': fill,
+            'cursor-pointer': !isDisabled,
+            'cursor-not-allowed opacity-60': isDisabled
+          }"
+          :aria-haspopup="!isDisabled"
+          :role="isDisabled ? 'text' : 'button'"
+          :tabindex="isDisabled ? -1 : 0"
+          @click="!isDisabled && toggleVersionSelector($event)"
+          @keydown.enter="!isDisabled && toggleVersionSelector($event)"
+          @keydown.space="!isDisabled && toggleVersionSelector($event)"
+        >
+          <i
+            v-if="isUpdateAvailable"
+            class="pi pi-arrow-circle-up text-xs text-blue-600"
+          />
+          <span>{{ installedVersion }}</span>
+          <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{{
+        $t('manager.enablePackToChangeVersion')
+      }}</TooltipContent>
     </Tooltip>
 
     <Popover ref="popoverRef" align="start" content-class="p-0">
@@ -41,6 +43,8 @@
 <script setup lang="ts">
 import Popover from '@/components/common/ImperativePopover.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { valid as validSemver } from 'semver'
 import { computed, ref, watch } from 'vue'
 

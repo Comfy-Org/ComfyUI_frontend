@@ -6,7 +6,8 @@
     >
       <template #tool-buttons>
         <Button
-          v-tooltip.bottom="$t('g.newFolder')"
+          :tooltip="$t('g.newFolder')"
+          tooltip-side="bottom"
           class="new-folder-button"
           variant="muted-textonly"
           size="icon"
@@ -16,7 +17,8 @@
           <i class="icon-[lucide--folder-plus] size-4" />
         </Button>
         <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupBy')"
+          :tooltip="$t('sideToolbar.nodeLibraryTab.groupBy')"
+          tooltip-side="bottom"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
@@ -25,7 +27,8 @@
           <i :class="cn(selectedGroupingIcon, 'size-4')" />
         </Button>
         <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
+          :tooltip="$t('sideToolbar.nodeLibraryTab.sortMode')"
+          tooltip-side="bottom"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
@@ -34,7 +37,8 @@
           <i :class="cn(selectedSortingIcon, 'size-4')" />
         </Button>
         <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
+          :tooltip="$t('sideToolbar.nodeLibraryTab.resetView')"
+          tooltip-side="bottom"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('sideToolbar.nodeLibraryTab.resetView')"
@@ -43,7 +47,8 @@
           <i class="icon-[lucide--filter-x] size-4" />
         </Button>
         <Button
-          v-tooltip.bottom="$t('menu.refresh')"
+          :tooltip="$t('menu.refresh')"
+          tooltip-side="bottom"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('menu.refresh')"
@@ -200,7 +205,8 @@
                       />
                     </Button>
                     <Button
-                      v-tooltip.bottom="$t('g.learnMore')"
+                      :tooltip="$t('g.learnMore')"
+                      tooltip-side="bottom"
                       variant="muted-textonly"
                       size="icon-sm"
                       :aria-label="$t('g.learnMore')"
@@ -246,6 +252,7 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
@@ -393,8 +400,13 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       children,
       draggable: node.leaf,
       renderDragPreview(container) {
-        if (!node.data) return
-        const vnode = h(NodePreview, { nodeDef: node.data })
+        const nodeDef = node.data
+        if (!nodeDef) return
+        const vnode = h(
+          TooltipProvider,
+          { disabled: true },
+          { default: () => h(NodePreview, { nodeDef }) }
+        )
         vnode.appContext = appContext
         render(vnode, container)
         return () => {

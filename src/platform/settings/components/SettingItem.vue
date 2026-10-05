@@ -11,19 +11,15 @@
         severity="primary"
         class="pi pi-language"
       />
-      <Tooltip
-        v-if="setting.experimental"
-        :config="{
-          value: $t('g.experimental'),
-          showDelay: 600
-        }"
-        side="right"
-      >
-        <Badge severity="primary">
-          <template #icon>
-            <i-material-symbols:experiment-outline />
-          </template>
-        </Badge>
+      <Tooltip v-if="setting.experimental">
+        <TooltipTrigger as-child>
+          <Badge severity="primary">
+            <template #icon>
+              <i-material-symbols:experiment-outline />
+            </template>
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent side="right">{{ $t('g.experimental') }}</TooltipContent>
       </Tooltip>
     </template>
   </FormItem>
@@ -31,6 +27,8 @@
 
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'

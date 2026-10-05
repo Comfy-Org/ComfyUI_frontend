@@ -49,14 +49,13 @@ describe('MaskEditorButton', () => {
     ).toBeInTheDocument()
   })
 
-  it('should hide via v-show when no single image node is selected', () => {
+  it('should hide when no single image node is selected', () => {
     mockSelectionState.isSingleImageNode = ref(false)
     renderButton()
 
-    const btn = screen.getByLabelText('Open in Mask Editor', {
-      selector: 'button'
-    })
-    expect(btn.getAttribute('style') ?? '').toContain('display: none')
+    expect(
+      screen.queryByRole('button', { name: 'Open in Mask Editor' })
+    ).not.toBeInTheDocument()
   })
 
   it('should execute the OpenMaskEditor command on click', async () => {

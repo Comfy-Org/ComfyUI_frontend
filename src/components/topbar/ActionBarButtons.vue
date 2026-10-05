@@ -3,30 +3,25 @@
     data-testid="action-bar-buttons"
     class="flex h-full shrink-0 items-center gap-1 empty:hidden"
   >
-    <Tooltip
+    <Button
       v-for="(button, index) in actionBarButtonStore.buttons"
       :key="index"
-      :config="button.tooltip"
-      side="bottom"
+      :tooltip="button.tooltip"
+      tooltip-side="bottom"
+      :aria-label="button.tooltip || button.label"
+      :class="button.class"
+      variant="muted-textonly"
+      size="sm"
+      class="h-7 rounded-full"
+      @click="button.onClick"
     >
-      <Button
-        :aria-label="button.tooltip || button.label"
-        :class="button.class"
-        variant="muted-textonly"
-        size="sm"
-        class="h-7 rounded-full"
-        @click="button.onClick"
-      >
-        <i :class="button.icon" />
-        <span v-if="!isMobile && button.label">{{ button.label }}</span>
-      </Button>
-    </Tooltip>
+      <i :class="button.icon" />
+      <span v-if="!isMobile && button.label">{{ button.label }}</span>
+    </Button>
   </div>
 </template>
 
 <script lang="ts" setup>
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'

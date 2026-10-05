@@ -1,7 +1,6 @@
 import { computed, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
-import type { TooltipConfig } from '@/components/ui/tooltip'
 import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -85,19 +84,9 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     )
   }
 
-  const createTooltipConfig = (text: string): TooltipConfig => {
-    const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
-    const tooltipText = text || ''
-
-    return {
-      value: tooltipText,
-      showDelay: tooltipDelay,
-      hideDelay: 0,
-      disabled: !tooltipsEnabled.value || !tooltipText,
-      contentClass:
-        'max-w-96 whitespace-pre-line px-4 py-2 text-sm font-normal leading-tight shadow-none'
-    }
-  }
+  const tooltipDelay = computed(() =>
+    settingsStore.get('LiteGraph.Node.TooltipDelay')
+  )
 
   return {
     tooltipsEnabled,
@@ -105,6 +94,6 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     getInputSlotTooltip,
     getOutputSlotTooltip,
     getWidgetTooltip,
-    createTooltipConfig
+    tooltipDelay
   }
 }

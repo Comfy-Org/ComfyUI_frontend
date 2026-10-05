@@ -1,30 +1,22 @@
 <template>
   <div class="relative rounded-lg bg-backdrop/30">
     <div class="flex flex-col gap-2">
-      <Tooltip
-        :config="{
-          value: t('load3d.openIn3DViewer'),
-          showDelay: 300
-        }"
-        side="right"
+      <Button
+        :tooltip="t('load3d.openIn3DViewer')"
+        tooltip-side="right"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="t('load3d.openIn3DViewer')"
+        @click="openIn3DViewer"
       >
-        <Button
-          size="icon"
-          variant="textonly"
-          class="rounded-full"
-          :aria-label="t('load3d.openIn3DViewer')"
-          @click="openIn3DViewer"
-        >
-          <i class="pi pi-expand text-lg text-base-foreground" />
-        </Button>
-      </Tooltip>
+        <i class="pi pi-expand text-lg text-base-foreground" />
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { useI18n } from 'vue-i18n'
 
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'

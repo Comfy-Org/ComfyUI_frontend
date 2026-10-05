@@ -1,17 +1,14 @@
 <template>
   <Menu :items="menuItems">
     <template #trigger>
-      <Tooltip
-        :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
-        side="right"
-      >
-        <Button
-          variant="muted-textonly"
-          size="icon-lg"
-          :aria-label="$t('g.moreOptions')"
-          icon="icon-[lucide--ellipsis]"
-        />
-      </Tooltip>
+      <Button
+        :tooltip="$t('g.moreOptions')"
+        tooltip-side="right"
+        variant="muted-textonly"
+        size="icon-lg"
+        :aria-label="$t('g.moreOptions')"
+        icon="icon-[lucide--ellipsis]"
+      />
     </template>
   </Menu>
 </template>
@@ -24,7 +21,6 @@ import { useI18n } from 'vue-i18n'
 
 import Menu from '@/components/ui/menu/Menu.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'

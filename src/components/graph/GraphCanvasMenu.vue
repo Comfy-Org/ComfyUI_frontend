@@ -26,81 +26,73 @@
 
         <div class="h-[27px] w-px self-center bg-node-divider" />
 
-        <Tooltip :config="fitViewTooltip" side="top">
-          <Button
-            variant="secondary"
-            :aria-label="fitViewTooltip"
-            :style="stringifiedMinimapStyles.buttonStyles"
-            class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface"
-            @click="() => commandStore.execute('Comfy.Canvas.FitView')"
-          >
-            <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
-          </Button>
-        </Tooltip>
+        <Button
+          :tooltip="fitViewTooltip"
+          variant="secondary"
+          :aria-label="fitViewTooltip"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface"
+          @click="() => commandStore.execute('Comfy.Canvas.FitView')"
+        >
+          <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
+        </Button>
 
-        <Tooltip :config="t('zoomControls.label')" side="top">
-          <Button
-            variant="secondary"
-            :class="
-              cn(
-                'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-                isModalVisible &&
-                  'not-active:bg-interface-panel-selected-surface'
-              )
-            "
-            :aria-label="t('zoomControls.label')"
-            data-testid="zoom-controls-button"
-            :style="stringifiedMinimapStyles.buttonStyles"
-            @click="toggleModal"
-          >
-            <span class="inline-flex items-center gap-1 px-2 text-xs">
-              <span>{{ canvasStore.appScalePercentage }}%</span>
-              <i
-                class="icon-[lucide--chevron-down] size-4"
-                aria-hidden="true"
-              />
-            </span>
-          </Button>
-        </Tooltip>
+        <Button
+          :tooltip="t('zoomControls.label')"
+          variant="secondary"
+          :class="
+            cn(
+              'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+              isModalVisible && 'not-active:bg-interface-panel-selected-surface'
+            )
+          "
+          :aria-label="t('zoomControls.label')"
+          data-testid="zoom-controls-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          @click="toggleModal"
+        >
+          <span class="inline-flex items-center gap-1 px-2 text-xs">
+            <span>{{ canvasStore.appScalePercentage }}%</span>
+            <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
+          </span>
+        </Button>
 
         <div class="h-[27px] w-px self-center bg-node-divider" />
 
-        <Tooltip :config="minimapTooltip" side="top">
-          <Button
-            variant="secondary"
-            :aria-label="minimapTooltip"
-            data-testid="toggle-minimap-button"
-            :style="stringifiedMinimapStyles.buttonStyles"
-            :class="
-              cn(
-                'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-                settingStore.get('Comfy.Minimap.Visible') &&
-                  'not-active:bg-interface-panel-selected-surface'
-              )
-            "
-            @click="onMinimapToggleClick"
-          >
-            <i class="icon-[lucide--map] size-4" aria-hidden="true" />
-          </Button>
-        </Tooltip>
+        <Button
+          :tooltip="minimapTooltip"
+          variant="secondary"
+          :aria-label="minimapTooltip"
+          data-testid="toggle-minimap-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          :class="
+            cn(
+              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+              settingStore.get('Comfy.Minimap.Visible') &&
+                'not-active:bg-interface-panel-selected-surface'
+            )
+          "
+          @click="onMinimapToggleClick"
+        >
+          <i class="icon-[lucide--map] size-4" aria-hidden="true" />
+        </Button>
 
-        <Tooltip :config="linkVisibilityTooltip" side="top" :side-offset="26">
-          <Button
-            variant="secondary"
-            :class="
-              cn(
-                'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-                linkHidden && 'not-active:bg-interface-panel-selected-surface'
-              )
-            "
-            :aria-label="linkVisibilityAriaLabel"
-            data-testid="toggle-link-visibility-button"
-            :style="stringifiedMinimapStyles.buttonStyles"
-            @click="onLinkVisibilityToggleClick"
-          >
-            <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
-          </Button>
-        </Tooltip>
+        <Button
+          :tooltip="linkVisibilityLabel"
+          variant="secondary"
+          :class="
+            cn(
+              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+              linkHidden && 'not-active:bg-interface-panel-selected-surface'
+            )
+          "
+          :aria-label="linkVisibilityLabel"
+          data-testid="toggle-link-visibility-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          @click="onLinkVisibilityToggleClick"
+        >
+          <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
+        </Button>
       </ButtonGroup>
     </div>
   </div>
@@ -112,7 +104,6 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useZoomControls } from '@/composables/useZoomControls'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -186,12 +177,7 @@ const minimapTooltip = computed(() => {
   const shortcut = minimapCommandText.value
   return shortcut ? `${label} (${shortcut})` : label
 })
-const linkVisibilityTooltip = computed(() =>
-  linkHidden.value
-    ? t('graphCanvasMenu.showLinks')
-    : t('graphCanvasMenu.hideLinks')
-)
-const linkVisibilityAriaLabel = computed(() =>
+const linkVisibilityLabel = computed(() =>
   linkHidden.value
     ? t('graphCanvasMenu.showLinks')
     : t('graphCanvasMenu.hideLinks')

@@ -1,40 +1,43 @@
 <template>
   <DefineTrigger>
-    <Tooltip :config="{ value: tooltipText, showDelay: 512 }" side="bottom">
-      <button
-        ref="wrapperRef"
-        type="button"
-        :data-testid="`subgraph-breadcrumb-item-${item.key}`"
-        :data-active="isActive ? '' : undefined"
-        draggable="false"
-        :class="
-          cn(
-            'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit]',
-            isActive &&
-              'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
-            menuOpen && 'p-breadcrumb-item-link-menu-visible'
-          )
-        "
-        @click="handleClick"
-        @keydown="handleKeydown"
-      >
-        <i
-          v-if="hasMissingNodes && isRoot"
-          data-testid="subgraph-breadcrumb-missing-nodes-icon"
-          class="icon-[lucide--triangle-alert] text-warning-background"
-        />
-        <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
-          {{ item.label }}
-        </span>
-        <Badge
-          v-if="item.isBlueprint"
-          data-testid="subgraph-breadcrumb-blueprint-tag"
-          severity="primary"
+    <Tooltip :disabled="!tooltipText">
+      <TooltipTrigger as-child>
+        <button
+          ref="wrapperRef"
+          type="button"
+          :data-testid="`subgraph-breadcrumb-item-${item.key}`"
+          :data-active="isActive ? '' : undefined"
+          draggable="false"
+          :class="
+            cn(
+              'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit]',
+              isActive &&
+                'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
+              menuOpen && 'p-breadcrumb-item-link-menu-visible'
+            )
+          "
+          @click="handleClick"
+          @keydown="handleKeydown"
         >
-          {{ t('breadcrumbsMenu.blueprint') }}
-        </Badge>
-        <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
-      </button>
+          <i
+            v-if="hasMissingNodes && isRoot"
+            data-testid="subgraph-breadcrumb-missing-nodes-icon"
+            class="icon-[lucide--triangle-alert] text-warning-background"
+          />
+          <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
+            {{ item.label }}
+          </span>
+          <Badge
+            v-if="item.isBlueprint"
+            data-testid="subgraph-breadcrumb-blueprint-tag"
+            severity="primary"
+          >
+            {{ t('breadcrumbsMenu.blueprint') }}
+          </Badge>
+          <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{{ tooltipText }}</TooltipContent>
     </Tooltip>
   </DefineTrigger>
   <Menu
@@ -72,6 +75,8 @@ import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItemAction } from '@/components/ui/menu/types'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {

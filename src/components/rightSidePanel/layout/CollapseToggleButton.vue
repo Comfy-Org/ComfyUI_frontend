@@ -8,36 +8,31 @@
     leave-to-class="max-w-0 opacity-0 ml-0"
   >
     <div v-if="show" class="ml-2 flex items-center overflow-hidden">
-      <Tooltip
-        :config="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
-        side="bottom"
+      <Button
+        :tooltip="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
+        tooltip-side="bottom"
+        :aria-label="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
+        variant="textonly"
+        size="icon-sm"
+        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+        @click="toggle"
       >
-        <Button
-          :aria-label="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
-          variant="textonly"
-          size="icon-sm"
-          class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
-          @click="toggle"
-        >
-          <i
-            :class="
-              cn(
-                'size-4',
-                isAllCollapsed
-                  ? 'icon-[lucide--list-tree]'
-                  : 'icon-[lucide--list-collapse]'
-              )
-            "
-          />
-        </Button>
-      </Tooltip>
+        <i
+          :class="
+            cn(
+              'size-4',
+              isAllCollapsed
+                ? 'icon-[lucide--list-tree]'
+                : 'icon-[lucide--list-collapse]'
+            )
+          "
+        />
+      </Button>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'

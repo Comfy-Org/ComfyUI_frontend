@@ -7,6 +7,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -238,49 +240,41 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
       v-if="readableText"
       class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
-      <Tooltip
+      <Button
         v-if="editable && (text || workflowReferences.length)"
-        :config="t('g.edit')"
-        :delay-duration="300"
-        :ignore-non-keyboard-focus="false"
-        disable-closing-trigger
-        :collision-padding="8"
+        :tooltip="t('g.edit')"
+        type="button"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="t('g.edit')"
+        class="size-6 rounded-lg"
+        @click="emit('edit', { text, workflowReferences })"
       >
-        <Button
-          type="button"
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="t('g.edit')"
-          class="size-6 rounded-lg"
-          @click="emit('edit', { text, workflowReferences })"
-        >
-          <span class="icon-[lucide--pencil] size-3" />
-        </Button>
-      </Tooltip>
-      <Tooltip
-        :config="copied ? t('agent.copied') : t('agent.copy')"
-        :delay-duration="300"
-        :ignore-non-keyboard-focus="false"
-        disable-closing-trigger
-        :collision-padding="8"
-      >
-        <Button
-          type="button"
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-          class="size-6 rounded-lg"
-          @click="copyMessage"
-        >
-          <span
-            :class="
-              cn(
-                'size-3',
-                copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-              )
-            "
-          />
-        </Button>
+        <span class="icon-[lucide--pencil] size-3" />
+      </Button>
+      <Tooltip :ignore-non-keyboard-focus="false" disable-closing-trigger>
+        <TooltipTrigger as-child>
+          <Button
+            type="button"
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="copied ? t('agent.copied') : t('agent.copy')"
+            class="size-6 rounded-lg"
+            @click="copyMessage"
+          >
+            <span
+              :class="
+                cn(
+                  'size-3',
+                  copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+                )
+              "
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{{
+          copied ? t('agent.copied') : t('agent.copy')
+        }}</TooltipContent>
       </Tooltip>
     </div>
   </div>

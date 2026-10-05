@@ -1,16 +1,16 @@
 <template>
   <div class="show-slider relative">
-    <Tooltip :config="{ value: tooltipText, showDelay: 300 }" side="right">
-      <Button
-        size="icon"
-        variant="textonly"
-        class="rounded-full"
-        :aria-label="tooltipText"
-        @click="toggleSlider"
-      >
-        <i :class="['pi', icon, 'text-lg text-base-foreground']" />
-      </Button>
-    </Tooltip>
+    <Button
+      :tooltip="tooltipText"
+      tooltip-side="right"
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      :aria-label="tooltipText"
+      @click="toggleSlider"
+    >
+      <i :class="cn('pi', icon, 'text-lg text-base-foreground')" />
+    </Button>
     <div
       v-show="showSlider"
       class="absolute top-0 left-12 w-[150px] rounded-lg bg-interface-menu-surface p-4 shadow-lg"
@@ -28,8 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

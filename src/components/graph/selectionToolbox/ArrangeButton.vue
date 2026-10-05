@@ -1,14 +1,16 @@
 <template>
   <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
-      <Tooltip :config="{ value: t('g.arrange'), showDelay: 1000 }" side="top">
-        <Button variant="muted-textonly" :aria-label="t('g.arrange')">
-          <div class="flex items-center gap-1 px-0">
-            <i class="icon-[lucide--layout-grid]" />
-            <i class="icon-[lucide--chevron-down]" />
-          </div>
-        </Button>
-      </Tooltip>
+      <Button
+        :tooltip="t('g.arrange')"
+        variant="muted-textonly"
+        :aria-label="t('g.arrange')"
+      >
+        <div class="flex items-center gap-1 px-0">
+          <i class="icon-[lucide--layout-grid]" />
+          <i class="icon-[lucide--chevron-down]" />
+        </div>
+      </Button>
     </PopoverTrigger>
     <PopoverPortal>
       <PopoverContent
@@ -32,48 +34,30 @@
           />
         </div>
         <div v-else class="flex flex-row gap-1">
-          <Tooltip
-            :config="{
-              value: t('g.arrangeVertically'),
-              showDelay: 1000
-            }"
-            side="top"
+          <Button
+            :tooltip="t('g.arrangeVertically')"
+            variant="muted-textonly"
+            :aria-label="t('g.arrangeVertically')"
+            @click="start('vertical')"
           >
-            <Button
-              variant="muted-textonly"
-              :aria-label="t('g.arrangeVertically')"
-              @click="start('vertical')"
-            >
-              <i class="icon-[lucide--stretch-horizontal]" />
-            </Button>
-          </Tooltip>
-          <Tooltip
-            :config="{
-              value: t('g.arrangeHorizontally'),
-              showDelay: 1000
-            }"
-            side="top"
+            <i class="icon-[lucide--stretch-horizontal]" />
+          </Button>
+          <Button
+            :tooltip="t('g.arrangeHorizontally')"
+            variant="muted-textonly"
+            :aria-label="t('g.arrangeHorizontally')"
+            @click="start('horizontal')"
           >
-            <Button
-              variant="muted-textonly"
-              :aria-label="t('g.arrangeHorizontally')"
-              @click="start('horizontal')"
-            >
-              <i class="icon-[lucide--stretch-vertical]" />
-            </Button>
-          </Tooltip>
-          <Tooltip
-            :config="{ value: t('g.arrangeAsGrid'), showDelay: 1000 }"
-            side="top"
+            <i class="icon-[lucide--stretch-vertical]" />
+          </Button>
+          <Button
+            :tooltip="t('g.arrangeAsGrid')"
+            variant="muted-textonly"
+            :aria-label="t('g.arrangeAsGrid')"
+            @click="start('grid')"
           >
-            <Button
-              variant="muted-textonly"
-              :aria-label="t('g.arrangeAsGrid')"
-              @click="start('grid')"
-            >
-              <i class="icon-[lucide--grid-3x3]" />
-            </Button>
-          </Tooltip>
+            <i class="icon-[lucide--grid-3x3]" />
+          </Button>
         </div>
         <PopoverArrow class="fill-base-background stroke-border-subtle" />
       </PopoverContent>
@@ -82,8 +66,6 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import {
   PopoverArrow,
   PopoverContent,

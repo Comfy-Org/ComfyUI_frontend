@@ -37,23 +37,17 @@
           <div class="flex items-center gap-1 text-muted">
             <i :class="providerIcon" />
             {{ providerName }}
-            <Tooltip
+            <Button
               v-if="isEmailProvider"
-              :config="{
-                value: $t('userSettings.updatePassword'),
-                showDelay: 300
-              }"
-              side="right"
+              :tooltip="$t('userSettings.updatePassword')"
+              tooltip-side="right"
+              variant="muted-textonly"
+              size="icon-sm"
+              :aria-label="$t('userSettings.updatePassword')"
+              @click="onUpdatePassword"
             >
-              <Button
-                variant="muted-textonly"
-                size="icon-sm"
-                :aria-label="$t('userSettings.updatePassword')"
-                @click="onUpdatePassword"
-              >
-                <i class="pi pi-pen-to-square" />
-              </Button>
-            </Tooltip>
+              <i class="pi pi-pen-to-square" />
+            </Button>
           </div>
         </div>
 
@@ -103,7 +97,6 @@ import { useRouter } from 'vue-router'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'
 import { useDialogService } from '@/services/dialogService'

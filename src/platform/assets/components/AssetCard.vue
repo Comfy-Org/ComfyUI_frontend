@@ -39,16 +39,16 @@
           )
         "
       >
-        <Tooltip :config="$t('assetBrowser.modelInfo.title')" side="bottom">
-          <Button
-            :aria-label="$t('assetBrowser.modelInfo.title')"
-            variant="secondary"
-            size="sm"
-            @click.stop="$emit('showInfo', asset)"
-          >
-            <i class="icon-[lucide--info]" />
-          </Button>
-        </Tooltip>
+        <Button
+          :tooltip="$t('assetBrowser.modelInfo.title')"
+          tooltip-side="bottom"
+          :aria-label="$t('assetBrowser.modelInfo.title')"
+          variant="secondary"
+          size="sm"
+          @click.stop="$emit('showInfo', asset)"
+        >
+          <i class="icon-[lucide--info]" />
+        </Button>
         <Menu
           v-if="showAssetOptions"
           v-model:open="assetMenuOpen"
@@ -67,36 +67,36 @@
       </IconGroup>
     </div>
     <div class="flex max-h-32 flex-auto flex-col justify-between gap-2">
-      <Tooltip
-        :config="{ value: displayName, showDelay: tooltipDelay }"
-        side="top"
-      >
-        <h3
-          :id="titleId"
-          :class="
-            cn(
-              'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
-              'text-base-foreground'
-            )
-          "
-        >
-          {{ displayName }}
-        </h3>
+      <Tooltip :disabled="!displayName" :delay-duration="tooltipDelay">
+        <TooltipTrigger as-child>
+          <h3
+            :id="titleId"
+            :class="
+              cn(
+                'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
+                'text-base-foreground'
+              )
+            "
+          >
+            {{ displayName }}
+          </h3>
+        </TooltipTrigger>
+        <TooltipContent>{{ displayName }}</TooltipContent>
       </Tooltip>
-      <Tooltip
-        :config="{ value: asset.secondaryText, showDelay: tooltipDelay }"
-        side="top"
-      >
-        <p
-          :id="descId"
-          :class="
-            cn(
-              'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
-            )
-          "
-        >
-          {{ asset.secondaryText }}
-        </p>
+      <Tooltip :disabled="!asset.secondaryText" :delay-duration="tooltipDelay">
+        <TooltipTrigger as-child>
+          <p
+            :id="descId"
+            :class="
+              cn(
+                'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
+              )
+            "
+          >
+            {{ asset.secondaryText }}
+          </p>
+        </TooltipTrigger>
+        <TooltipContent>{{ asset.secondaryText }}</TooltipContent>
       </Tooltip>
       <div class="mt-auto flex items-center justify-between gap-2">
         <div class="flex gap-3 text-xs text-muted-foreground">
@@ -147,6 +147,8 @@ import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'

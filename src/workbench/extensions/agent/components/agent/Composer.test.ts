@@ -761,11 +761,9 @@ describe('Composer', () => {
         mount()
 
         await userEvent.hover(screen.getByRole('button', { name: triggerName }))
-        expect(
-          await screen.findByText(tooltipCopy, {
-            selector: '[data-slot="tooltip-content"]'
-          })
-        ).toBeVisible()
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
+          tooltipCopy
+        )
       }
     )
 
@@ -1636,26 +1634,6 @@ describe('Composer', () => {
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
   })
 
-  it('shows the remove tooltip for a selection chip with a duplicate title', async () => {
-    mount({
-      selectionTags: [
-        { id: '5', title: 'KSampler' },
-        { id: '6', title: 'KSampler' }
-      ]
-    })
-
-    await userEvent.hover(
-      screen.getByRole('button', {
-        name: 'Remove KSampler #5 reference'
-      })
-    )
-    expect(
-      await screen.findByText('Remove', {
-        selector: '[data-slot="tooltip-content"]'
-      })
-    ).toBeVisible()
-  })
-
   it('emits removeTag when a selection chip is removed', async () => {
     const { emitted } = mount({
       selectionTags: [{ id: '5', title: 'KSampler' }]
@@ -1676,11 +1654,7 @@ describe('Composer', () => {
         name: 'Remove KSampler #5 reference'
       })
     )
-    expect(
-      await screen.findByText('Remove', {
-        selector: '[data-slot="tooltip-content"]'
-      })
-    ).toBeVisible()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Remove')
   })
 
   it('renders a selection chip label as non-interactive context', () => {

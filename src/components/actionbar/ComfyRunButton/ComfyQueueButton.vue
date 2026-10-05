@@ -3,30 +3,24 @@
     class="queue-button-group h-8 rounded-lg bg-secondary-background"
   >
     <BatchCountEdit />
-    <Tooltip
-      :config="{
-        value: queueButtonTooltip,
-        showDelay: 600
-      }"
-      side="bottom"
+    <Button
+      :tooltip="queueButtonTooltip"
+      tooltip-side="bottom"
+      :variant="queueButtonVariant"
+      size="unset"
+      :class="
+        cn(
+          'h-full gap-1.5 rounded-lg px-4',
+          paymentRecoveryLock ? 'font-medium' : 'font-light'
+        )
+      "
+      data-testid="queue-button"
+      :data-variant="queueButtonVariant"
+      @click="queuePrompt"
     >
-      <Button
-        :variant="queueButtonVariant"
-        size="unset"
-        :class="
-          cn(
-            'h-full gap-1.5 rounded-lg px-4',
-            paymentRecoveryLock ? 'font-medium' : 'font-light'
-          )
-        "
-        data-testid="queue-button"
-        :data-variant="queueButtonVariant"
-        @click="queuePrompt"
-      >
-        <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
-        {{ queueButtonLabel }}
-      </Button>
-    </Tooltip>
+      <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
+      {{ queueButtonLabel }}
+    </Button>
 
     <Menu side="bottom" :side-offset="4" class="min-w-44">
       <template #trigger>
@@ -61,7 +55,6 @@ import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'

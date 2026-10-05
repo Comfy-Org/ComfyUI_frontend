@@ -2,6 +2,8 @@
 import { DropdownMenuRadioGroup } from 'reka-ui'
 
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import MenuItemContent from './MenuItemContent.vue'
 import MenuRadioItem from './MenuRadioItem.vue'
@@ -31,19 +33,21 @@ function select(option: { value: T; command?: () => unknown }, event: Event) {
     <Tooltip
       v-for="option in options"
       :key="option.value"
-      :config="{ value: option.tooltip, showDelay: 600 }"
-      side="right"
+      :disabled="!option.tooltip"
     >
-      <MenuRadioItem :value="option.value" @select="select(option, $event)">
-        <MenuItemContent
-          :item="{
-            label: option.label,
-            icon: option.icon,
-            checked: selected === option.value
-          }"
-          :has-submenu="false"
-        />
-      </MenuRadioItem>
+      <TooltipTrigger as-child>
+        <MenuRadioItem :value="option.value" @select="select(option, $event)">
+          <MenuItemContent
+            :item="{
+              label: option.label,
+              icon: option.icon,
+              checked: selected === option.value
+            }"
+            :has-submenu="false"
+          />
+        </MenuRadioItem>
+      </TooltipTrigger>
+      <TooltipContent side="right">{{ option.tooltip }}</TooltipContent>
     </Tooltip>
   </DropdownMenuRadioGroup>
 </template>

@@ -7,8 +7,6 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
@@ -380,22 +378,19 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-else>
       <div class="flex h-10 shrink-0 items-center px-2">
-        <Tooltip
-          :config="buildTooltipConfig(t('agent.showChatHistory'))"
-          side="right"
+        <Button
+          id="agent-chat-history"
+          :tooltip="t('agent.showChatHistory')"
+          tooltip-side="right"
+          type="button"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="t('agent.showChatHistory')"
+          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
+          @click="onOpenHistory"
         >
-          <Button
-            id="agent-chat-history"
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('agent.showChatHistory')"
-            class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
-            @click="onOpenHistory"
-          >
-            <span class="icon-[lucide--history] size-4 shrink-0" />
-          </Button>
-        </Tooltip>
+          <span class="icon-[lucide--history] size-4 shrink-0" />
+        </Button>
         <template v-if="renaming">
           <Input
             ref="renameInput"
@@ -435,19 +430,16 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             class="agent-scope"
           >
             <template #trigger>
-              <Tooltip
-                :config="buildTooltipConfig(t('agent.chatOptions'))"
-                side="bottom"
+              <Button
+                :tooltip="t('agent.chatOptions')"
+                tooltip-side="bottom"
+                variant="muted-textonly"
+                size="icon-sm"
+                :aria-label="t('agent.chatOptions')"
+                class="size-6 shrink-0"
               >
-                <Button
-                  variant="muted-textonly"
-                  size="icon-sm"
-                  :aria-label="t('agent.chatOptions')"
-                  class="size-6 shrink-0"
-                >
-                  <span class="icon-[lucide--chevron-down] size-3" />
-                </Button>
-              </Tooltip>
+                <span class="icon-[lucide--chevron-down] size-3" />
+              </Button>
             </template>
           </Menu>
         </div>

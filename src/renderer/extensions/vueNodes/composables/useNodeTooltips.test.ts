@@ -113,17 +113,6 @@ describe('useNodeTooltips', () => {
     expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('preserves the newline separating a widget label from its long value', () => {
-    const { createTooltipConfig } = useNodeTooltips('SAM3_Detect')
-
-    const config = createTooltipConfig(`${jsonTooltip}\n\na-long-value`)
-
-    // Without a whitespace-preserving rule the \n\n separator collapses to a
-    // space and the label runs into the value (BUG-020).
-    expect(config.contentClass).toContain('whitespace-pre-line')
-    expect(config.value).toContain('\n\n')
-  })
-
   it('resolves descriptions for definitions added after the backend fetch', () => {
     const nodeName = 'FrontendOnlyNode'
     mergeCustomNodesI18n({

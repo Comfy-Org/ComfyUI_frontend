@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -124,22 +126,25 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
         "
         @click="nodeColor = option.name"
       >
-        <Tooltip :config="option.localizedName()" side="top">
-          <div
-            :class="cn('size-4 rounded-full ring-2 ring-gray-500/10')"
-            :style="{
-              backgroundColor: isLightTheme
-                ? option.value.light
-                : option.value.dark,
-              '--tw-ring-color':
-                option.name === nodeColor
-                  ? isLightTheme
-                    ? option.value.ringLight
-                    : option.value.ringDark
-                  : undefined
-            }"
-            :data-testid="option.name"
-          />
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <div
+              :class="cn('size-4 rounded-full ring-2 ring-gray-500/10')"
+              :style="{
+                backgroundColor: isLightTheme
+                  ? option.value.light
+                  : option.value.dark,
+                '--tw-ring-color':
+                  option.name === nodeColor
+                    ? isLightTheme
+                      ? option.value.ringLight
+                      : option.value.ringDark
+                    : undefined
+              }"
+              :data-testid="option.name"
+            />
+          </TooltipTrigger>
+          <TooltipContent>{{ option.localizedName() }}</TooltipContent>
         </Tooltip>
       </button>
     </div>

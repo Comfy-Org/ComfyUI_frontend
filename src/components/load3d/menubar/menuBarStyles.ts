@@ -22,7 +22,3 @@ export function actionClass(active: boolean) {
     active && 'bg-button-active-surface'
   )
 }
-
-export function tip(label: string) {
-  return { value: label, showDelay: 300 }
-}

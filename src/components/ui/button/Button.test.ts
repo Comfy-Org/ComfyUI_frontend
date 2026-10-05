@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+
 import Button from './Button.vue'
 
 describe('Button', () => {
@@ -74,6 +76,45 @@ describe('Button', () => {
     // oxlint-disable-next-line testing-library/no-node-access -- root element tag is the contract under test
     const root = container.firstElementChild
     expect(root?.tagName).toBe('A')
+  })
+
+  it('shows its tooltip on keyboard focus without changing its name', async () => {
+    const user = userEvent.setup()
+    render({
+      components: { Button, TooltipProvider },
+      template: `
+        <TooltipProvider>
+          <Button tooltip="Delete the node" tooltip-side="bottom" aria-label="Delete">
+            <i class="icon-[lucide--trash]" />
+          </Button>
+        </TooltipProvider>
+      `
+    })
+
+    await user.tab()
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Delete the node'
+    )
+    expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
+      'data-side',
+      'bottom'
+    )
+    expect(
+      screen.getByRole('button', { name: 'Delete' })
+    ).toHaveAccessibleDescription('Delete the node')
+  })
+
+  it('renders without tooltip wiring when it has no tooltip', async () => {
+    const user = userEvent.setup()
+    render(Button, { slots: { default: 'Plain' } })
+
+    await user.tab()
+
+    expect(screen.getByRole('button', { name: 'Plain' })).not.toHaveAttribute(
+      'data-state'
+    )
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
   it('applies variant classes through buttonVariants', () => {

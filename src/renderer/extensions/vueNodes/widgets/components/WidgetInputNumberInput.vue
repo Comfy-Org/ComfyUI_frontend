@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -155,38 +157,41 @@ const inputAriaAttrs = computed(() => ({
 
 <template>
   <WidgetLayoutField :widget :root-class="props.rootClass">
-    <Tooltip :config="buttonTooltip" side="right">
-      <ScrubableNumberInput
-        v-model="modelValue"
-        :aria-label="widget.name"
-        :min="filteredProps.min"
-        :max="filteredProps.max"
-        :step="stepValue"
-        :display-value="formattedValue"
-        :disabled="isDisabled"
-        :hide-buttons="buttonsDisabled"
-        :parse-value="parseWidgetValue"
-        :input-attrs="inputAriaAttrs"
-        :class="
-          cn(
-            WidgetInputBaseClass,
-            'relative flex grow text-xs',
-            useWidgetHeight()
-          )
-        "
-      >
-        <template #background>
-          <div
-            class="pointer-events-none absolute size-full overflow-clip rounded-md"
-          >
+    <Tooltip :disabled="!buttonTooltip">
+      <TooltipTrigger as-child>
+        <ScrubableNumberInput
+          v-model="modelValue"
+          :aria-label="widget.name"
+          :min="filteredProps.min"
+          :max="filteredProps.max"
+          :step="stepValue"
+          :display-value="formattedValue"
+          :disabled="isDisabled"
+          :hide-buttons="buttonsDisabled"
+          :parse-value="parseWidgetValue"
+          :input-attrs="inputAriaAttrs"
+          :class="
+            cn(
+              WidgetInputBaseClass,
+              'relative flex grow text-xs',
+              useWidgetHeight()
+            )
+          "
+        >
+          <template #background>
             <div
-              class="size-full bg-primary-background/15"
-              :style="{ width: `${sliderWidth}%` }"
-            />
-          </div>
-        </template>
-        <slot />
-      </ScrubableNumberInput>
+              class="pointer-events-none absolute size-full overflow-clip rounded-md"
+            >
+              <div
+                class="size-full bg-primary-background/15"
+                :style="{ width: `${sliderWidth}%` }"
+              />
+            </div>
+          </template>
+          <slot />
+        </ScrubableNumberInput>
+      </TooltipTrigger>
+      <TooltipContent side="right">{{ buttonTooltip }}</TooltipContent>
     </Tooltip>
   </WidgetLayoutField>
 </template>

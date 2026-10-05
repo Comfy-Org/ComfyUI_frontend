@@ -77,16 +77,16 @@
     />
     <ContextMenu ref="rowMenu" :model="rowMenuItems" @hide="restoreRowFocus" />
 
-    <Tooltip :config="$t('g.resetAllKeybindingsTooltip')" side="right">
-      <Button
-        class="mt-4 w-full"
-        variant="destructive-textonly"
-        @click="resetAllKeybindings"
-      >
-        <i class="icon-[lucide--rotate-ccw]" />
-        {{ $t('g.resetAll') }}
-      </Button>
-    </Tooltip>
+    <Button
+      :tooltip="$t('g.resetAllKeybindingsTooltip')"
+      tooltip-side="right"
+      class="mt-4 w-full"
+      variant="destructive-textonly"
+      @click="resetAllKeybindings"
+    >
+      <i class="icon-[lucide--rotate-ccw]" />
+      {{ $t('g.resetAll') }}
+    </Button>
   </div>
 </template>
 
@@ -112,7 +112,6 @@ import TableRow from '@/components/ui/table/TableRow.vue'
 import TableSortHead from '@/components/ui/table/TableSortHead.vue'
 import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'

@@ -1,5 +1,5 @@
 import { getActivePinia } from 'pinia'
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -209,12 +209,11 @@ describe('NodeHeader.vue', () => {
       await user.hover(screen.getByTestId('node-title'))
       expect(await screen.findByRole('tooltip')).toBeInTheDocument()
 
-      // oxlint-disable-next-line testing-library/prefer-user-event
-      await fireEvent.dblClick(screen.getByTestId('node-header-1'))
+      await user.dblClick(screen.getByTestId('node-title'))
+      await user.hover(screen.getByTestId('node-title'))
 
-      await waitFor(() => {
-        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-      })
+      expect(screen.getByTestId('node-title-input')).toBeInTheDocument()
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     })
   })
 })

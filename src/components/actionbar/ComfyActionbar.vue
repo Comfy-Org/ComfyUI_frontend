@@ -25,49 +25,53 @@
             <ComfyRunButton />
           </Suspense>
         </div>
-        <Tooltip :config="cancelJobTooltipConfig" side="bottom">
-          <Button
-            :variant="isExecutionIdle ? 'secondary' : 'destructive'"
-            size="icon"
-            :disabled="isExecutionIdle"
-            :aria-label="t('menu.interrupt')"
-            @click="cancelCurrentJob"
-          >
-            <i class="icon-[lucide--x] size-4" />
-          </Button>
-        </Tooltip>
-        <Tooltip :config="queueHistoryTooltipConfig" side="bottom">
-          <Button
-            variant="secondary"
-            size="md"
-            :aria-pressed="
+        <Button
+          :tooltip="t('menu.interrupt')"
+          tooltip-side="bottom"
+          :variant="isExecutionIdle ? 'secondary' : 'destructive'"
+          size="icon"
+          :disabled="isExecutionIdle"
+          :aria-label="t('menu.interrupt')"
+          @click="cancelCurrentJob"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </Button>
+        <Button
+          :tooltip="
+            isQueuePanelV2Enabled
+              ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+              : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+          "
+          tooltip-side="bottom"
+          variant="secondary"
+          size="md"
+          :aria-pressed="
+            isQueuePanelV2Enabled
+              ? activeSidebarTabId === 'job-history'
+              : queueOverlayExpanded
+          "
+          class="relative px-3"
+          data-testid="queue-overlay-toggle"
+          @click="toggleQueueOverlay"
+          @contextmenu.stop.prevent="showQueueContextMenu"
+        >
+          <span class="text-sm font-normal tabular-nums">
+            {{ activeJobsLabel }}
+          </span>
+          <StatusBadge
+            v-if="activeJobsCount > 0"
+            data-testid="active-jobs-indicator"
+            variant="dot"
+            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+          />
+          <span class="sr-only">
+            {{
               isQueuePanelV2Enabled
-                ? activeSidebarTabId === 'job-history'
-                : queueOverlayExpanded
-            "
-            class="relative px-3"
-            data-testid="queue-overlay-toggle"
-            @click="toggleQueueOverlay"
-            @contextmenu.stop.prevent="showQueueContextMenu"
-          >
-            <span class="text-sm font-normal tabular-nums">
-              {{ activeJobsLabel }}
-            </span>
-            <StatusBadge
-              v-if="activeJobsCount > 0"
-              data-testid="active-jobs-indicator"
-              variant="dot"
-              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-            />
-            <span class="sr-only">
-              {{
-                isQueuePanelV2Enabled
-                  ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                  : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-              }}
-            </span>
-          </Button>
-        </Tooltip>
+                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+            }}
+          </span>
+        </Button>
         <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
       <FreeTierQuota v-if="!isDocked" />
@@ -85,8 +89,6 @@
 </template>
 
 <script lang="ts" setup>
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import {
   useDraggable,
   useEventListener,
@@ -105,7 +107,6 @@ import Button from '@/components/ui/button/Button.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -365,18 +366,6 @@ watch(isDragging, (dragging) => {
   }
 })
 
-const cancelJobTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.interrupt'))
-)
-const queueHistoryTooltipConfig = computed(() =>
-  buildTooltipConfig(
-    t(
-      isQueuePanelV2Enabled.value
-        ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
-        : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
-    )
-  )
-)
 const activeJobsLabel = computed(() => {
   const count = activeJobsCount.value
   return t(

@@ -1,37 +1,42 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <Tooltip v-else :config="tooltipConfig" side="right">
-    <div
-      :class="slotWrapperClass"
-      @pointerenter="revealLinks"
-      @pointerleave="unrevealLinks"
-    >
-      <div class="relative flex h-full min-w-0 items-center">
-        <!-- Slot Name -->
-        <span
-          v-if="!props.dotOnly && !hasNoLabel"
-          class="truncate text-node-component-slot-text"
-        >
-          {{
-            slotData.label ||
-            slotData.localized_name ||
-            (slotData.name ?? `Output ${index}`)
-          }}
-        </span>
+  <Tooltip v-else :disabled="!tooltipText" :delay-duration="tooltipDelay">
+    <TooltipTrigger as-child>
+      <div
+        :class="slotWrapperClass"
+        @pointerenter="revealLinks"
+        @pointerleave="unrevealLinks"
+      >
+        <div class="relative flex h-full min-w-0 items-center">
+          <!-- Slot Name -->
+          <span
+            v-if="!props.dotOnly && !hasNoLabel"
+            class="truncate text-node-component-slot-text"
+          >
+            {{
+              slotData.label ||
+              slotData.localized_name ||
+              (slotData.name ?? `Output ${index}`)
+            }}
+          </span>
+        </div>
+        <!-- Connection Dot -->
+        <SlotConnectionDot
+          :slot-key
+          class="w-3 translate-x-1/2"
+          :slot-data
+          @pointerdown="onPointerDown"
+        />
       </div>
-      <!-- Connection Dot -->
-      <SlotConnectionDot
-        :slot-key
-        class="w-3 translate-x-1/2"
-        :slot-data
-        @pointerdown="onPointerDown"
-      />
-    </div>
+    </TooltipTrigger>
+    <TooltipContent side="right">{{ tooltipText }}</TooltipContent>
   </Tooltip>
 </template>
 
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -72,11 +77,12 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const { getOutputSlotTooltip, createTooltipConfig } = useNodeTooltips(
+const { getOutputSlotTooltip, tooltipsEnabled, tooltipDelay } = useNodeTooltips(
   props.nodeType || ''
 )
 
-const tooltipConfig = computed(() => {
+const tooltipText = computed(() => {
+  if (!tooltipsEnabled.value) return ''
   const slotName = props.slotData.name || ''
   const tooltipText = getOutputSlotTooltip(props.index)
   const fallbackText = tooltipText || `Output: ${slotName}`
@@ -84,7 +90,7 @@ const tooltipConfig = computed(() => {
     props.slotData.shape === RenderShape.GRID
       ? ` ${t('vueNodesSlot.iterative')}`
       : ''
-  return createTooltipConfig(fallbackText + iterativeSuffix)
+  return fallbackText + iterativeSuffix
 })
 
 const { revealLinks, unrevealLinks } = useSlotLinkReveal({

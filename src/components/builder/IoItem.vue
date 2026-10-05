@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -76,15 +78,18 @@ const entries = computed(() => {
         @edit="onEditComplete"
         @cancel="isEditing = false"
       />
-      <Tooltip :config="{ value: subTitleTooltip, showDelay: 300 }" side="left">
-        <div
-          class="drag-handle truncate text-xs text-muted-foreground"
-          data-testid="builder-io-item-subtitle"
-          @mouseenter="
-            subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
-          "
-          v-text="subTitle"
-        />
+      <Tooltip :disabled="!subTitleTooltip">
+        <TooltipTrigger as-child>
+          <div
+            class="drag-handle truncate text-xs text-muted-foreground"
+            data-testid="builder-io-item-subtitle"
+            @mouseenter="
+              subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
+            "
+            v-text="subTitle"
+          />
+        </TooltipTrigger>
+        <TooltipContent side="left">{{ subTitleTooltip }}</TooltipContent>
       </Tooltip>
     </div>
     <Menu

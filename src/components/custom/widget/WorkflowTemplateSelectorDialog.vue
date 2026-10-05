@@ -279,21 +279,18 @@
                   v-if="template.isPartnerNode || template.tutorialUrl"
                   #top-right
                 >
-                  <Tooltip
+                  <Button
                     v-if="template.tutorialUrl"
-                    :config="$t('g.seeTutorial')"
-                    side="bottom"
+                    :tooltip="$t('g.seeTutorial')"
+                    tooltip-side="bottom"
+                    :aria-label="$t('g.seeTutorial')"
+                    variant="inverted"
+                    size="icon"
+                    class="not-group-hover/card:opacity-0"
+                    @click.stop="openTutorial(template)"
                   >
-                    <Button
-                      :aria-label="$t('g.seeTutorial')"
-                      variant="inverted"
-                      size="icon"
-                      class="not-group-hover/card:opacity-0"
-                      @click.stop="openTutorial(template)"
-                    >
-                      <i class="icon-[lucide--info] size-4" />
-                    </Button>
-                  </Tooltip>
+                    <i class="icon-[lucide--info] size-4" />
+                  </Button>
                   <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>
               </CardTop>
@@ -330,22 +327,27 @@
                     />
                     <Tooltip
                       v-if="tags.hidden.length"
-                      :config="tags.hidden"
-                      side="top"
-                      open-on-click
-                      suppress-description
+                      :open="openTagsTooltip === template.name"
+                      disable-closing-trigger
+                      @update:open="setTagsTooltipOpen(template.name, $event)"
                     >
-                      <button
-                        type="button"
-                        :aria-label="tags.hidden.join(', ')"
-                        class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-base-foreground focus-visible:outline-none"
-                      >
-                        <Tag
-                          :label="`+${tags.hidden.length}`"
-                          shape="square"
-                          class="bg-charcoal-500/50 opacity-80"
-                        />
-                      </button>
+                      <TooltipTrigger as-child>
+                        <button
+                          type="button"
+                          :aria-label="tags.hidden.join(', ')"
+                          class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-base-foreground focus-visible:outline-none"
+                          @click.stop="openTagsTooltip = template.name"
+                        >
+                          <Tag
+                            :label="`+${tags.hidden.length}`"
+                            shape="square"
+                            class="bg-charcoal-500/50 opacity-80"
+                          />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{{
+                        tags.hidden.join(', ')
+                      }}</TooltipContent>
                     </Tooltip>
                   </div>
                 </div>
@@ -470,6 +472,8 @@ import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import TemplatePreview from '@/components/templates/thumbnails/TemplatePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
@@ -540,6 +544,12 @@ const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
 // Track session time for telemetry
 const sessionStartTime = ref<number>(0)
 const templateWasSelected = ref(false)
+const openTagsTooltip = ref<string | null>(null)
+
+function setTagsTooltipOpen(templateName: string, open: boolean) {
+  if (open) openTagsTooltip.value = templateName
+  else if (openTagsTooltip.value === templateName) openTagsTooltip.value = null
+}
 const detailPreviewHovered = ref(false)
 
 onMounted(() => {
