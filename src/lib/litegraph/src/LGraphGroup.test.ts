@@ -468,17 +468,9 @@ describe('group layout in layoutStore', () => {
 })
 
 describe('geometry an extension cannot clobber', () => {
-  test('a copy of a group carries no geometry buffer to write back', () => {
-    const group = new LGraphGroup('group', toGroupId(810))
-
-    expect(Object.keys(group)).not.toContain('bounds')
-    expect(JSON.parse(JSON.stringify(group))).not.toHaveProperty('bounds')
-    expect(Object.assign({}, group)).not.toHaveProperty('bounds')
-  })
-
-  test('a JSON round-trip written back onto a group leaves geometry working', () => {
+  test('a JSON round-trip written back onto a detached group keeps it usable', () => {
     const graph = new LGraph()
-    const group = new LGraphGroup('group', toGroupId(811))
+    const group = new LGraphGroup('group', toGroupId(810))
     group.pos = [100, 100]
     group.size = [300, 200]
 
@@ -494,20 +486,63 @@ describe('geometry an extension cannot clobber', () => {
     })
   })
 
-  test('assigning over the geometry buffer fails in the caller', () => {
+  test('a JSON round-trip written back onto a live group keeps it usable', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(815))
+    graph.add(group)
+    group.pos = [50, 60]
+
+    Object.assign(group, JSON.parse(JSON.stringify(group)))
+    group.pos = [70, 80]
+
+    expect([...group.boundingRect]).toEqual([70, 80, 140, 80])
+    expect(group.serialize().bounding).toEqual([70, 80, 140, 80])
+  })
+
+  test.for([
+    ['bounds', [1, 2, 300, 400], [1, 2, 300, 400]],
+    ['_bounding', [1, 2, 300, 400], [1, 2, 300, 400]],
+    ['_pos', [1, 2], [1, 2, 140, 80]],
+    ['_size', [300, 400], [10, 10, 300, 400]]
+  ] as const)(
+    'assigning a plain array to %s updates the buffer instead of replacing it',
+    ([property, assigned, expected], { expect }) => {
+      const graph = new LGraph()
+      const group = new LGraphGroup('group', toGroupId(811))
+      graph.add(group)
+
+      Object.assign(group, { [property]: assigned })
+
+      expect([...group.boundingRect]).toEqual(expected)
+      expect(group.serialize().bounding).toEqual(expected)
+    }
+  )
+
+  test('a non-numeric assignment leaves the geometry untouched', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group', toGroupId(812))
     graph.add(group)
 
-    expect(() => {
-      Object.assign(group, { bounds: [1, 2, 3, 4] })
-    }).toThrow(TypeError)
+    Object.assign(group, { bounds: null, _bounding: 'nonsense', _pos: {} })
+
     expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
+  })
+
+  test('the geometry buffers cannot be deleted or redefined away', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(813))
+    graph.add(group)
+
+    expect(Reflect.deleteProperty(group, '_bounding')).toBe(false)
+    expect(Reflect.defineProperty(group, '_pos', { value: [0, 0] })).toBe(false)
+
+    group.pos = [60, 70]
+    expect([...group.boundingRect]).toEqual([60, 70, 140, 80])
   })
 
   test('geometry still reads through a reactive proxy', () => {
     const graph = new LGraph()
-    const group = new LGraphGroup('group', toGroupId(813))
+    const group = new LGraphGroup('group', toGroupId(814))
     graph.add(group)
     const reactiveGroup = reactive(group)
 
@@ -515,5 +550,6 @@ describe('geometry an extension cannot clobber', () => {
 
     expect([...reactiveGroup.boundingRect]).toEqual([60, 70, 140, 80])
     expect([...reactiveGroup.pos]).toEqual([60, 70])
+    expect([...reactiveGroup._bounding]).toEqual([60, 70, 140, 80])
   })
 })
