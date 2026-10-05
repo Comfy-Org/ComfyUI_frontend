@@ -44,19 +44,27 @@ describe('WorkshopAppCard', () => {
     {
       thumbnail: { url: '/images/app.jpg', kind: 'image' },
       media: 'IMG',
+      poster: null,
       placeholder: 0
     },
     {
-      thumbnail: { url: '/media/app.mp4', kind: 'video' },
+      thumbnail: {
+        url: '/media/app.mp4',
+        kind: 'video',
+        poster: '/media/app.jpg'
+      },
       media: 'VIDEO',
+      poster: '/media/app.jpg',
       placeholder: 0
     },
-    { thumbnail: undefined, media: undefined, placeholder: 1 }
+    { thumbnail: undefined, media: undefined, poster: null, placeholder: 1 }
   ] as const)(
     'shows $media artwork, or the initial without any',
-    ({ thumbnail, media, placeholder }) => {
+    ({ thumbnail, media, placeholder, poster }) => {
       render(WorkshopAppCard, { props: { app: { ...app, thumbnail } } })
-      expect(screen.queryByTestId('model-card-media')?.tagName).toBe(media)
+      const artwork = screen.queryByTestId('model-card-media')
+      expect(artwork?.tagName).toBe(media)
+      expect(artwork?.getAttribute('poster') ?? null).toBe(poster)
       expect(screen.queryAllByTestId('model-media-placeholder')).toHaveLength(
         placeholder
       )

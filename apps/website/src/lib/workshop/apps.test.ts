@@ -18,7 +18,11 @@ describe('workshopAppHref', () => {
     expect(
       workshopApps('en', appModels).find(({ key }) => key === 'reshoot')
         ?.thumbnail
-    ).toEqual({ url: '/videos/reshoot/thumbnail.mp4', kind: 'video' })
+    ).toEqual({
+      url: '/videos/reshoot/thumbnail.mp4',
+      kind: 'video',
+      poster: '/videos/reshoot/poster.jpg'
+    })
   })
 })
 

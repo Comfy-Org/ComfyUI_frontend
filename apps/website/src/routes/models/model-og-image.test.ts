@@ -13,11 +13,17 @@ describe('modelOgImage', () => {
       expected: 'https://cdn.test/a.webp'
     },
     { kind: 'video', url: 'https://cdn.test/a.mp4', expected: undefined },
+    {
+      kind: 'video',
+      url: 'https://cdn.test/a.mp4',
+      poster: 'https://cdn.test/a.jpg',
+      expected: 'https://cdn.test/a.jpg'
+    },
     { kind: 'audio', url: 'https://cdn.test/a.mp3', expected: undefined }
   ] as const)(
-    'uses a $kind thumbnail only when it is an image',
-    ({ kind, url, expected }) => {
-      expect(modelOgImage({ thumbnail: { kind, url } })).toBe(expected)
+    'uses a $kind thumbnail only through an image ($expected)',
+    ({ expected, ...thumbnail }) => {
+      expect(modelOgImage({ thumbnail })).toBe(expected)
     }
   )
 

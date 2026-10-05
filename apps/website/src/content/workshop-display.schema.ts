@@ -27,6 +27,8 @@ const mediaAssetSchema = z.object({
   /** An absolute URL, or a root-relative path to a file this site serves. */
   url: z.union([z.string().url(), z.string().regex(/^\/[^/]/)]),
   kind: mediaKindSchema,
+  /** A still shown in place of a video until it plays, or when it never does. */
+  poster: z.union([z.string().url(), z.string().regex(/^\/[^/]/)]).optional(),
   /** The prompt that produced a sample, where the content side recorded one. */
   prompt: z.string().optional()
 })

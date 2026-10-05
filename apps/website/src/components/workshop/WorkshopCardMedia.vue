@@ -18,6 +18,7 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
     v-if="model.thumbnail?.kind === 'video'"
     ref="video"
     :src="previewSrc"
+    :poster="model.thumbnail.poster"
     class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
     aria-hidden="true"
     data-testid="model-card-media"
