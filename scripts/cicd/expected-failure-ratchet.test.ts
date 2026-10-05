@@ -111,6 +111,25 @@ describe('expected failure inventory', () => {
     ])
   })
 
+  it('uses the enclosing title for callback-form test.fail', () => {
+    const inventoryId = (title: string) =>
+      inspectSource(
+        `
+          test('${title}', () => {
+            test.fail(({ browserName }) => browserName === 'webkit')
+          })
+        `,
+        'browser_tests/callback-condition.spec.ts'
+      )[0].id
+
+    expect(inventoryId('old title')).toBe(
+      'playwright:browser_tests/callback-condition.spec.ts:old title:1'
+    )
+    expect(inventoryId('new title')).toBe(
+      'playwright:browser_tests/callback-condition.spec.ts:new title:1'
+    )
+  })
+
   it('recognizes aliased, extended, and merged Playwright runners', () => {
     const source = `
       import { baseFixture as runner } from '@e2e/fixtures/baseFixture'

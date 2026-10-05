@@ -70,7 +70,7 @@ function testTitle(
   runner: string | undefined,
   playwrightRunners: ReadonlySet<string>
 ): string {
-  if (hasTestBody(node)) {
+  if (node.arguments.length > 1 && hasTestBody(node)) {
     const declaredTitle = titleText(node.arguments.at(0))
     if (declaredTitle) return declaredTitle
   }
