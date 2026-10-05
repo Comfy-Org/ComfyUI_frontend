@@ -46,12 +46,6 @@ function respondWithAuthScheme(
   })
 }
 
-/** The `extra` context of the most recent `reportError` call. */
-function reportedContext(): Record<string, unknown> | undefined {
-  expect(reportError).toHaveBeenCalledOnce()
-  return vi.mocked(reportError).mock.calls.at(-1)?.[1].context
-}
-
 function lastCall(): { route: string; init: RequestInit } {
   const [route, init] = vi.mocked(api.fetchApi).mock.calls.at(-1)!
   return { route, init: init ?? {} }
@@ -623,10 +617,8 @@ describe('error mapping', () => {
         operation: 'get_thread_messages',
         status: 401,
         authScheme: 'web-session',
-        credential: 'unreported'
-      },
-      context: {
-        backendMessage: 'Authentication method not allowed for this endpoint'
+        credential: 'unreported',
+        backendReason: 'auth_method_not_allowed'
       },
       level: 'warning'
     })
@@ -646,7 +638,8 @@ describe('error mapping', () => {
       operation: 'get_thread_messages',
       status: 403,
       authScheme: 'cloud-auth-header',
-      credential: 'unreported'
+      credential: 'unreported',
+      backendReason: 'other'
     })
   })
 
@@ -661,7 +654,8 @@ describe('error mapping', () => {
       operation: 'get_thread_messages',
       status: 401,
       authScheme: 'none',
-      credential: 'unreported'
+      credential: 'unreported',
+      backendReason: 'unauthorized'
     })
   })
 
@@ -676,7 +670,8 @@ describe('error mapping', () => {
       operation: 'get_thread_messages',
       status: 401,
       authScheme: 'unreported',
-      credential: 'unreported'
+      credential: 'unreported',
+      backendReason: 'unauthorized'
     })
   })
 
@@ -706,12 +701,9 @@ describe('error mapping', () => {
         status: 403,
         authScheme: 'web-session',
         credential: 'session-cookie',
+        backendReason: 'auth_method_not_allowed',
         backendErrorType: 'auth_type_not_allowed',
         acceptedMethods: 'bearer_jwt,x_api_key'
-      },
-      context: {
-        backendMessage:
-          'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
       },
       level: 'warning'
     })
@@ -742,17 +734,45 @@ describe('error mapping', () => {
       expect(reportedTags()).toMatchObject({
         authScheme: scheme,
         credential,
+        backendReason: 'other',
         backendErrorCode: 'UNAUTHORIZED'
       })
     }
   )
 
-  it('bounds and scrubs the backend text before reporting it', async () => {
-    const token = `eyJ${'a'.repeat(60)}.${'b'.repeat(60)}.${'c'.repeat(60)}`
+  it('classifies the ingest { code, message } shape from its message field', async () => {
     respondWithAuthScheme(
       jsonResponse(401, {
-        error: `denied for someone@example.com with ${token} ${'x '.repeat(300)}`
+        code: 'UNAUTHORIZED',
+        message: 'Authentication method not allowed for this endpoint'
       }),
+      'web-session',
+      'session-cookie'
+    )
+
+    await makeClient()
+      .getRunMode()
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'get_run_mode',
+      status: 401,
+      authScheme: 'web-session',
+      credential: 'session-cookie',
+      backendReason: 'auth_method_not_allowed',
+      backendErrorCode: 'UNAUTHORIZED'
+    })
+  })
+
+  it.for([
+    'user 3f2b8c1e-9a4d-4e57-8b1a-0c6d2f7e5a91 not authorized for workspace 7d1e4b2a-5c3f-4a68-9e0b-1f2a3b4c5d6e',
+    'invalid key 9f86d081884c7d659a2feaa0c55ad015',
+    'token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc rejected',
+    'denied for someone@example.com',
+    'x '.repeat(5000)
+  ])('reports no part of free-form backend text: %s', async (text) => {
+    respondWithAuthScheme(
+      jsonResponse(403, { error: text }),
       'cloud-auth-header',
       'bearer'
     )
@@ -761,18 +781,39 @@ describe('error mapping', () => {
       .getRunMode()
       .catch((e: unknown) => e)
 
-    const backendMessage = String(reportedContext()?.backendMessage)
-    expect(backendMessage).not.toContain('example.com')
-    expect(backendMessage).not.toContain(token)
-    expect(backendMessage).toContain('[redacted]')
-    expect(backendMessage.length).toBeLessThanOrEqual(200)
+    expect(reportedTags()).toEqual({
+      operation: 'get_run_mode',
+      status: 403,
+      authScheme: 'cloud-auth-header',
+      credential: 'bearer',
+      backendReason: 'other'
+    })
+    expect(vi.mocked(reportError).mock.calls.at(-1)?.[1].context).toBe(
+      undefined
+    )
+    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toMatch(
+      /[0-9a-f]{12,}|eyJ|example\.com/
+    )
   })
 
-  it('caps the reported accepted-methods list and ignores non-string entries', async () => {
+  it('maps unknown backend codes, types and accepted methods to other and bounds the list', async () => {
     respondWithAuthScheme(
       jsonResponse(403, {
-        accepted: ['a', 1, null, 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
-        error: { type: 'auth_type_not_allowed', message: 'nope' }
+        code: 'ws_7d1e4b2a5c3f4a689e0b1f2a3b4c5d6e',
+        accepted: [
+          'bearer_jwt',
+          1,
+          null,
+          'x_api_key',
+          'custom_scheme_a',
+          'custom_scheme_b',
+          'a',
+          'b',
+          'c',
+          'd',
+          'e'
+        ],
+        error: { type: 'brand_new_type', message: 'nope' }
       }),
       'web-session',
       'session-cookie'
@@ -783,8 +824,24 @@ describe('error mapping', () => {
       .catch((e: unknown) => e)
 
     expect(reportedTags()).toMatchObject({
-      acceptedMethods: 'a,b,c,d,e,f,g,h'
+      backendErrorType: 'other',
+      backendErrorCode: 'other',
+      acceptedMethods: 'bearer_jwt,x_api_key,other'
     })
+  })
+
+  it('falls back to error.code when the top-level code is not a string', async () => {
+    respondWithAuthScheme(
+      jsonResponse(403, { code: 403, error: { code: 'csrf_invalid' } }),
+      'web-session',
+      'session-cookie'
+    )
+
+    await makeClient()
+      .getRunMode()
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toMatchObject({ backendErrorCode: 'csrf_invalid' })
   })
 
   it('never reports a thread, message or ask id from the failing path (PM-1802)', async () => {
@@ -801,7 +858,8 @@ describe('error mapping', () => {
       operation: 'answer_thread_ask',
       status: 403,
       authScheme: 'cloud-auth-header',
-      credential: 'unreported'
+      credential: 'unreported',
+      backendReason: 'other'
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -826,7 +884,8 @@ describe('error mapping', () => {
       operation: 'cancel_thread_message',
       status: 403,
       authScheme: 'cloud-auth-header',
-      credential: 'unreported'
+      credential: 'unreported',
+      backendReason: 'other'
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -868,7 +927,8 @@ describe('error mapping', () => {
       operation: 'list_cloud_workflows',
       status: 401,
       authScheme: 'cloud-auth-header',
-      credential: 'unreported'
+      credential: 'unreported',
+      backendReason: 'unauthorized'
     })
   })
 

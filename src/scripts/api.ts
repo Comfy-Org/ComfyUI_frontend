@@ -635,13 +635,19 @@ export class ComfyApi extends EventTarget {
     if (!authHeader) {
       return { scheme: 'none', credential: 'none', unifiedRetryOn401: false }
     }
+    const credential: AuthCredential =
+      'Authorization' in authHeader
+        ? 'bearer'
+        : 'X-API-KEY' in authHeader
+          ? 'api-key'
+          : 'none'
 
     for (const [key, value] of Object.entries(authHeader)) {
       addHeaderEntry(headers, key, value)
     }
     return {
       scheme: 'cloud-auth-header',
-      credential: 'Authorization' in authHeader ? 'bearer' : 'api-key',
+      credential,
       unifiedRetryOn401: await shouldRemintCloudRequest()
     }
   }
