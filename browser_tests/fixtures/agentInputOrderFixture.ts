@@ -38,17 +38,12 @@ export const test = agentTest.extend<{
       workflow_id: workflowId
     })
 
-    // `bootAgentApp` turns Vue nodes on for the `@vue-nodes` tag this spec
-    // carries, so only the canvas-info overlay has to be set here.
     await bootAgentApp(page, true, {
       objectInfo,
       settings: { 'Comfy.Graph.CanvasInfo': false }
     })
 
     await mockWorkflowPersistence(page, workflowId)
-    // `staleCanvasSeed`, not `seed`: the canvas starts one revision behind
-    // the host so that the values the spec asserts after catch-up are wrong
-    // here first.
     await loadSeedIntoActiveTab(page, staleCanvasSeed)
 
     await use(socket)

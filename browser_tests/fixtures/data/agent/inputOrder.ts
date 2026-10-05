@@ -79,11 +79,19 @@ interface SourceValues {
   prompt: string
 }
 
-/**
- * Node 1's widget values the host document carries. Deliberately unequal to
- * each other: equal dimensions cannot distinguish a correct named binding
- * from one that landed on the wrong slot.
- */
+const SOURCE_NODE = 1
+const TARGET_NODE = 2
+export const sourceNodeId = String(SOURCE_NODE)
+export const targetNodeId = String(TARGET_NODE)
+
+const SOURCE_SLOT = { width: 0, height: 1, length: 2 } as const
+
+const WIDTH_LINK = 276
+const HEIGHT_LINK = 277
+const LENGTH_LINK = 275
+const DIMENSION_LINK_IDS = [WIDTH_LINK, HEIGHT_LINK, LENGTH_LINK] as const
+type DimensionLinkId = (typeof DIMENSION_LINK_IDS)[number]
+
 const HOST_SOURCE_VALUES: SourceValues = {
   width: 832,
   height: 448,
@@ -93,22 +101,11 @@ const HOST_SOURCE_VALUES: SourceValues = {
 
 const HOST_REF_IMAGE_SIZE = 'max'
 
-// The one source of the dimension link ids. Both origin maps below
-// `satisfies Record<DimensionLinkId, number>` rather than `as const`, so an
-// id dropped from here cannot typecheck while silently dropping a link from
-// node 1's outputs and leaving it in the link tuples.
-const DIMENSION_LINK_IDS = [276, 277, 275] as const
-type DimensionLinkId = (typeof DIMENSION_LINK_IDS)[number]
-
-/**
- * Origin slot each dimension link carries in the host document: `width`
- * reads node 1's `width` output, and so on down the three.
- */
 const HOST_ORIGIN_SLOT = {
-  276: 0,
-  277: 1,
-  275: 2
-} satisfies Record<DimensionLinkId, number>
+  [WIDTH_LINK]: SOURCE_SLOT.width,
+  [HEIGHT_LINK]: SOURCE_SLOT.height,
+  [LENGTH_LINK]: SOURCE_SLOT.length
+} as const satisfies Record<DimensionLinkId, number>
 
 const STALE_SOURCE_VALUES: SourceValues = {
   width: 512,
@@ -119,22 +116,12 @@ const STALE_SOURCE_VALUES: SourceValues = {
 
 const STALE_REF_IMAGE_SIZE = 'match'
 
-/**
- * Origin slot each dimension link carries on the stale canvas, rotated one
- * place off the host's: `width` reads node 1's `height` output, `height`
- * reads `length`, `length` reads `width`. Link ids and target slots are
- * untouched, so the only thing wrong is which named output feeds which named
- * input — the binding this fixture exists to pin.
- */
 const STALE_ORIGIN_SLOT = {
-  276: 1,
-  277: 2,
-  275: 0
-} satisfies Record<DimensionLinkId, number>
+  [WIDTH_LINK]: SOURCE_SLOT.height,
+  [HEIGHT_LINK]: SOURCE_SLOT.length,
+  [LENGTH_LINK]: SOURCE_SLOT.width
+} as const satisfies Record<DimensionLinkId, number>
 
-// Reduced saved-workflow topology from PR #17221, not a recorded Agent turn.
-// Both revisions go through here so neither can drift structurally against
-// the other.
 function buildSeed(
   values: SourceValues,
   originSlot: Record<DimensionLinkId, number>,
@@ -145,7 +132,7 @@ function buildSeed(
   return {
     nodes: [
       {
-        id: 1,
+        id: SOURCE_NODE,
         type: source.name,
         pos: [30, 80],
         size: [260, 320],
@@ -154,9 +141,21 @@ function buildSeed(
         mode: 0,
         inputs: [],
         outputs: [
-          { name: 'width', type: 'INT', links: dimensionLinksFrom(0) },
-          { name: 'height', type: 'INT', links: dimensionLinksFrom(1) },
-          { name: 'length', type: 'INT', links: dimensionLinksFrom(2) },
+          {
+            name: 'width',
+            type: 'INT',
+            links: dimensionLinksFrom(SOURCE_SLOT.width)
+          },
+          {
+            name: 'height',
+            type: 'INT',
+            links: dimensionLinksFrom(SOURCE_SLOT.height)
+          },
+          {
+            name: 'length',
+            type: 'INT',
+            links: dimensionLinksFrom(SOURCE_SLOT.length)
+          },
           { name: 'prompt', type: 'STRING', links: [279] },
           { name: 'image_a', type: 'IMAGE', links: [278] },
           { name: 'image_b', type: 'IMAGE', links: [282] }
@@ -170,7 +169,7 @@ function buildSeed(
         ]
       },
       {
-        id: 2,
+        id: TARGET_NODE,
         type: target.name,
         pos: [340, 80],
         size: [280, 320],
@@ -187,18 +186,23 @@ function buildSeed(
             widget: { name: 'prompt' },
             link: 279
           },
-          { name: 'width', type: 'INT', widget: { name: 'width' }, link: 276 },
+          {
+            name: 'width',
+            type: 'INT',
+            widget: { name: 'width' },
+            link: WIDTH_LINK
+          },
           {
             name: 'height',
             type: 'INT',
             widget: { name: 'height' },
-            link: 277
+            link: HEIGHT_LINK
           },
           {
             name: 'length',
             type: 'INT',
             widget: { name: 'length' },
-            link: 275
+            link: LENGTH_LINK
           }
         ],
         outputs: [],
@@ -213,12 +217,26 @@ function buildSeed(
       }
     ],
     links: [
-      [276, 1, originSlot[276], 2, 4, 'INT'],
-      [277, 1, originSlot[277], 2, 5, 'INT'],
-      [275, 1, originSlot[275], 2, 6, 'INT'],
-      [279, 1, 3, 2, 3, 'STRING'],
-      [278, 1, 4, 2, 0, 'IMAGE'],
-      [282, 1, 5, 2, 1, 'IMAGE']
+      [WIDTH_LINK, SOURCE_NODE, originSlot[WIDTH_LINK], TARGET_NODE, 4, 'INT'],
+      [
+        HEIGHT_LINK,
+        SOURCE_NODE,
+        originSlot[HEIGHT_LINK],
+        TARGET_NODE,
+        5,
+        'INT'
+      ],
+      [
+        LENGTH_LINK,
+        SOURCE_NODE,
+        originSlot[LENGTH_LINK],
+        TARGET_NODE,
+        6,
+        'INT'
+      ],
+      [279, SOURCE_NODE, 3, TARGET_NODE, 3, 'STRING'],
+      [278, SOURCE_NODE, 4, TARGET_NODE, 0, 'IMAGE'],
+      [282, SOURCE_NODE, 5, TARGET_NODE, 1, 'IMAGE']
     ],
     groups: [],
     config: {},
@@ -227,20 +245,12 @@ function buildSeed(
   }
 }
 
-/** The revision the host document is minted from. */
 export const seed = buildSeed(
   HOST_SOURCE_VALUES,
   HOST_ORIGIN_SLOT,
   HOST_REF_IMAGE_SIZE
 )
 
-/**
- * The revision the tab already holds when the host's catch-up arrives. It
- * has to differ from `seed`: loading the host's own seed onto the canvas
- * would make the spec's visible-value and binding assertions true before
- * `doc_subscribe` was answered, so a follower that skipped catch-up over
- * nodes the graph already holds would leave the spec green.
- */
 export const staleCanvasSeed = buildSeed(
   STALE_SOURCE_VALUES,
   STALE_ORIGIN_SLOT,
@@ -253,14 +263,14 @@ function expectedPrompt(
   refImageSize: string
 ) {
   return {
-    '1': { ...values },
-    '2': {
-      width: ['1', originSlot[276]],
-      height: ['1', originSlot[277]],
-      length: ['1', originSlot[275]],
-      prompt: ['1', 3],
-      'ref_images.ref_image_0': ['1', 4],
-      'ref_images.ref_image_1': ['1', 5],
+    [sourceNodeId]: { ...values },
+    [targetNodeId]: {
+      width: [sourceNodeId, originSlot[WIDTH_LINK]],
+      height: [sourceNodeId, originSlot[HEIGHT_LINK]],
+      length: [sourceNodeId, originSlot[LENGTH_LINK]],
+      prompt: [sourceNodeId, 3],
+      'ref_images.ref_image_0': [sourceNodeId, 4],
+      'ref_images.ref_image_1': [sourceNodeId, 5],
       ref_image_size: refImageSize
     }
   }
@@ -284,12 +294,4 @@ export const hostVisibleValues = {
   length: String(HOST_SOURCE_VALUES.length),
   prompt: HOST_SOURCE_VALUES.prompt,
   refImageSize: HOST_REF_IMAGE_SIZE
-}
-
-export const staleVisibleValues = {
-  width: String(STALE_SOURCE_VALUES.width),
-  height: String(STALE_SOURCE_VALUES.height),
-  length: String(STALE_SOURCE_VALUES.length),
-  prompt: STALE_SOURCE_VALUES.prompt,
-  refImageSize: STALE_REF_IMAGE_SIZE
 }

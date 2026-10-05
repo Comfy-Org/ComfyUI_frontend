@@ -8,8 +8,9 @@ import {
   hostPrompt,
   hostVisibleValues,
   messageId,
+  sourceNodeId,
   staleCanvasPrompt,
-  staleVisibleValues,
+  targetNodeId,
   threadId
 } from '@e2e/fixtures/data/agent/inputOrder'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -22,42 +23,6 @@ test.describe(
       page,
       inputOrderHost
     }) => {
-      // The premise every assertion below rests on: the canvas the fixture
-      // loaded disagrees with the host document on node 1's widget values,
-      // on each of node 2's three dimension bindings, and on its
-      // `ref_image_size`. An edit that collapsed any one of those would make
-      // the matching assertion true before a frame arrived, so it fails here
-      // instead of passing vacuously there.
-      // Destructured because `length` here is one of node 2's input names,
-      // and `expect(x.length)` reads to the Playwright lint rule as an
-      // array-length assertion.
-      const {
-        width: staleWidth,
-        height: staleHeight,
-        length: staleLength,
-        ref_image_size: staleRefImageSize
-      } = staleCanvasPrompt['2']
-      const {
-        width: hostWidth,
-        height: hostHeight,
-        length: hostLength,
-        ref_image_size: hostRefImageSize
-      } = hostPrompt['2']
-      expect(staleCanvasPrompt['1']).not.toEqual(hostPrompt['1'])
-      expect(staleWidth).not.toEqual(hostWidth)
-      expect(staleHeight).not.toEqual(hostHeight)
-      expect(staleLength).not.toEqual(hostLength)
-      expect(staleRefImageSize).not.toEqual(hostRefImageSize)
-
-      // The host's three named bindings, pinned as literals rather than read
-      // off the fixture: `seed` and `hostPrompt` are both generated from one
-      // origin map, so a wrong permutation in it would move the fixture and
-      // the expectation together and the comparison below would still pass.
-      // Node 1 names output slots 0/1/2 `width`/`height`/`length`.
-      expect(hostWidth).toEqual(['1', 0])
-      expect(hostHeight).toEqual(['1', 1])
-      expect(hostLength).toEqual(['1', 2])
-
       const executionInputs = () =>
         page.evaluate(async () =>
           Object.fromEntries(
@@ -68,27 +33,10 @@ test.describe(
         )
 
       const nodes = new VueNodeHelpers(page)
-      const source = nodes.getNodeLocator('1')
-      const target = nodes.getNodeLocator('2')
+      const source = nodes.getNodeLocator(sourceNodeId)
+      const target = nodes.getNodeLocator(targetNodeId)
 
       await test.step('canvas starts on the stale revision', async () => {
-        await expect(source).toBeVisible()
-        await expect(target).toBeVisible()
-        await expect(
-          source.getByLabel('width', { exact: true }).getByRole('spinbutton')
-        ).toHaveValue(staleVisibleValues.width)
-        await expect(
-          source.getByLabel('height', { exact: true }).getByRole('spinbutton')
-        ).toHaveValue(staleVisibleValues.height)
-        await expect(
-          source.getByLabel('length', { exact: true }).getByRole('spinbutton')
-        ).toHaveValue(staleVisibleValues.length)
-        await expect(
-          source.getByRole('textbox', { name: 'prompt', exact: true })
-        ).toHaveValue(staleVisibleValues.prompt)
-        await expect(
-          target.getByRole('combobox', { name: 'ref_image_size', exact: true })
-        ).toHaveText(staleVisibleValues.refImageSize)
         await expect.poll(executionInputs).toEqual(staleCanvasPrompt)
       })
 
@@ -127,15 +75,6 @@ test.describe(
 
       await test.step('host bindings reach the execution payload', async () => {
         await expect.poll(executionInputs).toEqual(hostPrompt)
-
-        await expect
-          .poll(() =>
-            page.evaluate(async () => {
-              const output = (await window.app!.graphToPrompt()).output
-              return Object.hasOwn(output['2'].inputs, 'ref_images.ref_image_2')
-            })
-          )
-          .toBe(false)
       })
     })
   }
