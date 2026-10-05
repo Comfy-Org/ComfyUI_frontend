@@ -124,6 +124,31 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
   return true
 }
 
+type Desktop2Download = NonNullable<
+  NonNullable<typeof window.__comfyDesktop2>['downloadModel']
+>
+
+function modelDownloadRoute():
+  | { host: 'desktop2'; download: Desktop2Download }
+  | { host: 'electron' }
+  | { host: 'browser' } {
+  const bridge = window.__comfyDesktop2
+  const isRemote = bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
+  if (bridge?.downloadModel && !isRemote) {
+    return { host: 'desktop2', download: bridge.downloadModel.bind(bridge) }
+  }
+  return { host: isDesktop ? 'electron' : 'browser' }
+}
+
+/**
+ * Only the Electron path needs a resolved `savePath`: the desktop2 bridge takes
+ * the logical directory name and decides where to write, and a browser opens
+ * the URL instead.
+ */
+export function modelDownloadNeedsFolderPaths(): boolean {
+  return modelDownloadRoute().host === 'electron'
+}
+
 export function dispatchModelDownload(
   model: ModelWithUrl,
   paths: Record<string, string[]>,
@@ -133,16 +158,14 @@ export function dispatchModelDownload(
     return { status: 'not-dispatched', reason: 'not-downloadable' }
   }
 
-  const desktop2Bridge = window.__comfyDesktop2
-  const isRemote =
-    desktop2Bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
-  if (desktop2Bridge?.downloadModel && !isRemote) {
+  const route = modelDownloadRoute()
+  if (route.host === 'desktop2') {
     try {
       return {
         status: 'host-requested',
         host: 'desktop2',
         hostResult: Promise.resolve(
-          desktop2Bridge.downloadModel(model.url, model.name, model.directory)
+          route.download(model.url, model.name, model.directory)
         )
       }
     } catch (error) {
@@ -150,7 +173,7 @@ export function dispatchModelDownload(
     }
   }
 
-  if (!isDesktop) {
+  if (route.host === 'browser') {
     openUrlInNewTab(model.url, model.name)
     return { status: 'browser-requested' }
   }

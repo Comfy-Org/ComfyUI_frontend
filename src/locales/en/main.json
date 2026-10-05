@@ -1260,7 +1260,8 @@
       "retryDownloadNamed": "Retry download for {model}",
       "getItManually": "Get it manually",
       "usedBy": "Used by {nodes}",
-      "openTemplate": "Open template",
+      "downloadModelsAndOpen": "Download models & open",
+      "openNow": "Open now",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
     },
