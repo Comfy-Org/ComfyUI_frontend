@@ -27,8 +27,6 @@ export interface TemplateDetailRow {
   status?: TemplateDetailRowStatus
 }
 
-export type TemplateModelSetupState = 'none' | 'resolving' | 'downloadable'
-
 export interface TemplateDetailGroup {
   id: string
   label: string

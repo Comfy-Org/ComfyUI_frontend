@@ -4,10 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type {
-  TemplateDetailGroup,
-  TemplateModelSetupState
-} from '@/platform/workflow/templates/types/templateDetail'
+import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 const {
   title,
@@ -16,7 +13,11 @@ const {
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  modelSetupState = 'none'
+  modelSetupEnabled = false,
+  setupPending = false,
+  requirementsMet = false,
+  modelDownloadsAvailable = false,
+  remainingModelDownloadSize
 } = defineProps<{
   title: string
   description: string
@@ -24,7 +25,11 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetupState?: TemplateModelSetupState
+  modelSetupEnabled?: boolean
+  setupPending?: boolean
+  requirementsMet?: boolean
+  modelDownloadsAvailable?: boolean
+  remainingModelDownloadSize?: string
 }>()
 
 const emit = defineEmits<{
@@ -38,7 +43,19 @@ const detailRoot = ref<HTMLElement | null>(null)
 const detailId = useId()
 const cloudTitleId = `${detailId}-cloud-title`
 const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
-const offerDownloadAndOpen = computed(() => modelSetupState !== 'none')
+const offerDownloadAndOpen = computed(
+  () =>
+    modelSetupEnabled &&
+    !requirementsMet &&
+    (setupPending || modelDownloadsAvailable)
+)
+const downloadModelsAndOpenLabel = computed(() =>
+  remainingModelDownloadSize
+    ? t('templateWorkflows.detail.downloadModelsAndOpenWithSize', {
+        size: remainingModelDownloadSize
+      })
+    : t('templateWorkflows.detail.downloadModelsAndOpen')
+)
 
 defineExpose({
   focus: () => detailRoot.value?.focus()
@@ -135,34 +152,34 @@ defineExpose({
     <footer
       class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border-subtle px-6 py-4"
     >
-      <Button
-        v-if="offerDownloadAndOpen"
-        variant="outline"
-        size="sm"
-        :disabled="openPending"
-        @click="emit('open-template')"
-      >
-        {{ t('templateWorkflows.detail.openNow') }}
-      </Button>
-      <Button
-        variant="inverted"
-        size="sm"
-        :loading="openPending"
-        :disabled="modelSetupState === 'resolving'"
-        @click="
-          offerDownloadAndOpen
-            ? emit('download-models-and-open')
-            : emit('open-template')
-        "
-      >
-        {{
-          t(
+      <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
+        <Button
+          v-if="offerDownloadAndOpen"
+          variant="outline"
+          size="lg"
+          :disabled="openPending"
+          @click="emit('open-template')"
+        >
+          {{ t('templateWorkflows.detail.openNow') }}
+        </Button>
+        <Button
+          variant="inverted"
+          size="lg"
+          :loading="openPending"
+          :disabled="offerDownloadAndOpen && setupPending"
+          @click="
             offerDownloadAndOpen
-              ? 'templateWorkflows.detail.downloadModelsAndOpen'
-              : 'templateWorkflows.detail.openNow'
-          )
-        }}
-      </Button>
+              ? emit('download-models-and-open')
+              : emit('open-template')
+          "
+        >
+          {{
+            offerDownloadAndOpen
+              ? downloadModelsAndOpenLabel
+              : t('templateWorkflows.detail.openNow')
+          }}
+        </Button>
+      </div>
     </footer>
   </article>
 </template>

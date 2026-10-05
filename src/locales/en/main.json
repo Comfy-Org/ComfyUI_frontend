@@ -1261,6 +1261,7 @@
       "getItManually": "Get it manually",
       "usedBy": "Used by {nodes}",
       "downloadModelsAndOpen": "Download models & open",
+      "downloadModelsAndOpenWithSize": "Download models & open ({size})",
       "openNow": "Open now",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"

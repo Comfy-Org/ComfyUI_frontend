@@ -408,7 +408,11 @@
         :cloud-url="activeDetailCloudUrl"
         :is-partner-node="activeDetail.template.openSource === false"
         :open-pending="openPending"
-        :model-setup-state="activeDetailModelSetupState"
+        model-setup-enabled
+        :setup-pending="activeDetail.modelSetup.pending"
+        :requirements-met="activeDetailModelRequirementsMet"
+        :model-downloads-available="activeDetailModelDownloadsAvailable"
+        :remaining-model-download-size="activeDetailRemainingModelDownloadSize"
         @open-template="onOpenTemplate"
         @download-models-and-open="onDownloadModelsAndOpen"
         @download-model="onDownloadModel"
@@ -488,8 +492,7 @@ import type {
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type {
   TemplateDetailGroup,
-  TemplateDetailRow,
-  TemplateModelSetupState
+  TemplateDetailRow
 } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
@@ -1100,15 +1103,57 @@ function isModelDownloadCandidate(
   return state.status === 'idle' || state.status === 'failed'
 }
 
-const activeDetailModelSetupState = computed<TemplateModelSetupState>(() => {
+function isModelRowComplete(
+  row: TemplateModelSetupRow,
+  rowDownloads: TemplateModelRowDownloads
+): boolean {
+  if (row.status === 'installed') return true
+  return rowDownloads.stateFor(row.model).status === 'done'
+}
+
+/**
+ * The rows this click would start. `modelDownloadsAvailable` and the remaining
+ * size both read it, so they cannot disagree about what is being offered.
+ */
+const activeDetailModelDownloadCandidates = computed<
+  readonly TemplateModelSetupRow[]
+>(() => {
   const setup = activeDetail.value?.modelSetup
-  if (!setup) return 'none'
-  if (setup.pending) return 'resolving'
-  return setup.result.rows.some((row) =>
+  if (!setup || setup.pending) return []
+  return setup.result.rows.filter((row) =>
     isModelDownloadCandidate(row, setup.rowDownloads)
   )
-    ? 'downloadable'
-    : 'none'
+})
+
+const activeDetailModelDownloadsAvailable = computed(
+  () => activeDetailModelDownloadCandidates.value.length > 0
+)
+
+const activeDetailModelRequirementsMet = computed(() => {
+  const setup = activeDetail.value?.modelSetup
+  return Boolean(
+    setup &&
+    setup.result.rows.every((row) =>
+      isModelRowComplete(row, setup.rowDownloads)
+    )
+  )
+})
+
+/**
+ * Only what this click starts, and only when every one of those rows declares a
+ * size. A partial total reads as complete and understates the download, so an
+ * unknown size withdraws the figure rather than approximating it.
+ */
+const activeDetailRemainingModelDownloadSize = computed(() => {
+  const rows = activeDetailModelDownloadCandidates.value
+  if (rows.length === 0) return undefined
+
+  let totalBytes = 0
+  for (const row of rows) {
+    if (row.fileSize === null) return undefined
+    totalBytes += row.fileSize
+  }
+  return formatSize(totalBytes)
 })
 
 function applyTemplateModelMetadata(

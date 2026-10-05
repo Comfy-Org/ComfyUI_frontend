@@ -5,10 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type {
-  TemplateDetailGroup,
-  TemplateModelSetupState
-} from '@/platform/workflow/templates/types/templateDetail'
+import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 import WorkflowTemplateDetail from './WorkflowTemplateDetail.vue'
 
@@ -45,16 +42,28 @@ function renderDetail({
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  modelSetupState = 'none'
+  modelSetupEnabled = false,
+  setupPending = false,
+  requirementsMet = false,
+  modelDownloadsAvailable = false,
+  remainingModelDownloadSize
 }: {
   renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetupState?: TemplateModelSetupState
+  modelSetupEnabled?: boolean
+  setupPending?: boolean
+  requirementsMet?: boolean
+  modelDownloadsAvailable?: boolean
+  remainingModelDownloadSize?: string
 } = {}) {
   const modelSetupProps = {
-    modelSetupState
+    modelSetupEnabled,
+    setupPending,
+    requirementsMet,
+    modelDownloadsAvailable,
+    remainingModelDownloadSize
   }
 
   return render(WorkflowTemplateDetail, {
@@ -152,7 +161,10 @@ describe('WorkflowTemplateDetail', () => {
 
   it('keeps Open now available while offering Download models & open', async () => {
     const user = userEvent.setup()
-    const result = renderDetail({ modelSetupState: 'downloadable' })
+    const result = renderDetail({
+      modelSetupEnabled: true,
+      modelDownloadsAvailable: true
+    })
 
     await user.click(screen.getByRole('button', { name: 'Open now' }))
     await user.click(
@@ -167,7 +179,7 @@ describe('WorkflowTemplateDetail', () => {
   })
 
   it('does not block Open now while model metadata is pending', () => {
-    renderDetail({ modelSetupState: 'resolving' })
+    renderDetail({ modelSetupEnabled: true, setupPending: true })
 
     expect(screen.getByRole('button', { name: 'Open now' })).toBeEnabled()
     expect(
@@ -491,5 +503,49 @@ describe('WorkflowTemplateDetail', () => {
     expect(
       screen.getByRole('status', { name: 'Downloaded' })
     ).toHaveTextContent('Downloaded')
+  })
+  it('states the cost on the bulk action when every startable row declares one', () => {
+    renderDetail({
+      modelSetupEnabled: true,
+      modelDownloadsAvailable: true,
+      remainingModelDownloadSize: '6.46 GB'
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Download models & open (6.46 GB)' })
+    ).toBeInTheDocument()
+  })
+
+  it('drops the cost rather than stating a partial one', () => {
+    renderDetail({
+      modelSetupEnabled: true,
+      modelDownloadsAvailable: true
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Download models & open' })
+    ).toBeInTheDocument()
+  })
+
+  it('offers the bulk action disabled while availability is still resolving', () => {
+    renderDetail({ modelSetupEnabled: true, setupPending: true })
+
+    expect(
+      screen.getByRole('button', { name: 'Download models & open' })
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Open now' })).toBeEnabled()
+  })
+
+  it('offers only Open now once every requirement is met', () => {
+    renderDetail({
+      modelSetupEnabled: true,
+      requirementsMet: true,
+      modelDownloadsAvailable: true
+    })
+
+    expect(
+      screen.queryByRole('button', { name: /Download models & open/ })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open now' })).toBeInTheDocument()
   })
 })

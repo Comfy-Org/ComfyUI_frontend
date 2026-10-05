@@ -98,7 +98,11 @@ export const OpenNow: Story = {
         '6.77 GB'
       )
     ],
-    modelSetupState: 'none'
+    // Detail only opens when something is missing, so the reachable 'no bulk
+    // action' state is an unmet requirement nothing can start automatically.
+    modelSetupEnabled: true,
+    requirementsMet: false,
+    modelDownloadsAvailable: false
   },
   render: withPreview
 }
@@ -119,7 +123,9 @@ export const Resolving: Story = {
         { ...unsizedVae, status: installed }
       ])
     ],
-    modelSetupState: 'resolving'
+    modelSetupEnabled: true,
+    requirementsMet: false,
+    setupPending: true
   },
   render: withPreview
 }
@@ -143,7 +149,12 @@ export const DownloadableRow: Story = {
         '6.77 GB'
       )
     ],
-    modelSetupState: 'downloadable'
+    modelSetupEnabled: true,
+    requirementsMet: false,
+    modelDownloadsAvailable: true,
+    // The checkpoint alone; the installed VAE is not part of what this click
+    // fetches, which is why this differs from the group's 6.77 GB declaration.
+    remainingModelDownloadSize: '6.46 GB'
   },
   render: withPreview
 }
