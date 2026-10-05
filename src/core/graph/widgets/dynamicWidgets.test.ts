@@ -970,8 +970,12 @@ const SEEDANCE_NODE_TYPE = 'test/SeedanceLikeReferences'
  * Shaped after the Seedance partner nodes (PN-1520): two `IO.Autogrow`
  * groups nested inside one `IO.DynamicCombo` option.
  */
-function seedanceNodeDef(min: number): ComfyNodeDefV1 {
-  const autogrow = (type: string, count: number): Required<InputSpec> => [
+function autogrowRefs(
+  type: string,
+  count: number,
+  min: number
+): Required<InputSpec> {
+  return [
     'COMFY_AUTOGROW_V3',
     {
       template: {
@@ -981,6 +985,11 @@ function seedanceNodeDef(min: number): ComfyNodeDefV1 {
       }
     }
   ]
+}
+
+function seedanceNodeDef(min: number): ComfyNodeDefV1 {
+  const autogrow = (type: string, count: number) =>
+    autogrowRefs(type, count, min)
   return {
     name: SEEDANCE_NODE_TYPE,
     display_name: 'Seedance Like References',
@@ -1012,6 +1021,48 @@ function seedanceNodeDef(min: number): ComfyNodeDefV1 {
     output_name: ['VIDEO'],
     output_node: false
   }
+}
+
+const SEEDANCE_MULTI_OPTION_TYPE = 'test/SeedanceLikeMultiOption'
+
+/**
+ * The Seedance shape with the reference groups on a model that is not the
+ * definition's first, as the customer's saved workflows have it.
+ */
+const seedanceMultiOptionDef: ComfyNodeDefV1 = {
+  name: SEEDANCE_MULTI_OPTION_TYPE,
+  display_name: 'Seedance Like Multi Option',
+  category: 'testing',
+  python_module: 'nodes',
+  description: '',
+  input: {
+    required: {
+      model: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'seedance-1-lite',
+              inputs: { required: { seed: ['INT', { default: 0 }] } }
+            },
+            {
+              key: 'seedance-1-pro',
+              inputs: {
+                required: {
+                  seed: ['INT', { default: 0 }],
+                  reference_images: autogrowRefs('IMAGE', 8, 2),
+                  reference_videos: autogrowRefs('VIDEO', 4, 0)
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  output: ['VIDEO'],
+  output_name: ['VIDEO'],
+  output_node: false
 }
 
 class RefSourceNode extends LGraphNode {
@@ -1161,6 +1212,47 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
       connected: connectedUnder(reloadedNode, 'model.reference_videos.').length,
       slots: videoSlots.length
     }).toEqual({ connected: 4, slots: 4 })
+  })
+
+  test('keeps both groups when a saved non-default option is restored', async () => {
+    await useLitegraphService().registerNodeDef(
+      SEEDANCE_MULTI_OPTION_TYPE,
+      seedanceMultiOptionDef
+    )
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(SEEDANCE_MULTI_OPTION_TYPE)
+    assert.ok(node, 'seedance node')
+    graph.add(node)
+    const combo = node.widgets?.find((widget) => widget.name === 'model')
+    assert.ok(combo, 'model combo widget')
+    combo.value = 'seedance-1-pro'
+    connectRefs(graph, node, 'reference_images', 0, 6)
+    connectRefs(graph, node, 'reference_videos', 1, 2)
+
+    // The production shape the table above cannot reach: the customer's
+    // saved model is not the definition's first option, so the restore is
+    // recognised only by `app.configuringGraph`.
+    const serialized = structuredClone(graph.serialize())
+    const reloaded = new LGraph()
+    const appInternals = fromAny<{ configuringGraphLevel: number }, unknown>(
+      app
+    )
+    appInternals.configuringGraphLevel = 1
+    try {
+      reloaded.configure(serialized)
+    } finally {
+      appInternals.configuringGraphLevel = 0
+    }
+
+    const reloadedNode = reloaded.getNodeById(node.id)
+    assert.ok(reloadedNode, 'reloaded node')
+    expect({
+      images: connectedUnder(reloadedNode, 'model.reference_images.'),
+      videos: connectedUnder(reloadedNode, 'model.reference_videos.')
+    }).toEqual({
+      images: refNames('reference_images', 6),
+      videos: refNames('reference_videos', 2)
+    })
   })
 
   test('ignores an out-of-range ordinal in a prefix-named group', async () => {
