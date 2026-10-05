@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
@@ -85,7 +86,10 @@ test.describe(
         await expect.poll(() => postedMessages).toHaveLength(1)
         // Asserting the refs, not just the count: a send that leaked past the
         // gate would carry the staged empty refs and still be three long.
-        expect(JSON.parse(postedMessages[0]).attachments).toEqual(
+        expect(
+          zAgentPostMessageRequest.parse(JSON.parse(postedMessages[0]))
+            .attachments
+        ).toEqual(
           Array.from(
             { length: ATTACHMENT_COUNT },
             (_, index) => `uploaded-${index + 1}.png`
