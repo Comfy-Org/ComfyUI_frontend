@@ -12,6 +12,7 @@ const SKILL_PACKS_FLAG = 'agent-skill-packs'
 export const useSkillPacksStore = defineStore('skillPacks', () => {
   const packs = ref<SkillPack[]>([])
   const loading = ref(false)
+  const hasLoaded = ref(false)
   const flagsEnabled = ref(false)
   // Disabled backend gates answer 404, independently of PostHog flags.
   const routesAvailable = ref(true)
@@ -70,6 +71,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
       const nextPacks = await listSkillPacks()
       if (generation !== fetchGeneration) return
       packs.value = nextPacks
+      hasLoaded.value = true
       routesAvailable.value = true
     } catch (error) {
       if (generation !== fetchGeneration) return
@@ -86,6 +88,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   function upsertPack(pack: SkillPack): void {
     fetchGeneration++
     loading.value = false
+    hasLoaded.value = true
     const rest = packs.value.filter((existing) => existing.name !== pack.name)
     packs.value = [...rest, pack].sort((a, b) => a.name.localeCompare(b.name))
   }
@@ -100,12 +103,14 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     fetchGeneration++
     loading.value = false
     routesAvailable.value = false
+    hasLoaded.value = false
     packs.value = []
   }
 
   return {
     packs,
     loading,
+    hasLoaded,
     enabled,
     flagsEnabled,
     routesAvailable,

@@ -19,7 +19,10 @@
       </Button>
     </div>
 
-    <div v-if="loading" class="flex items-center justify-center py-8">
+    <div
+      v-if="loading && !hasLoaded"
+      class="flex items-center justify-center py-8"
+    >
       <i class="icon-[lucide--loader-circle] size-8 animate-spin text-muted" />
     </div>
 
@@ -64,16 +67,26 @@ import SkillPackListItem from './SkillPackListItem.vue'
 const { t } = useI18n()
 const dialogStore = useDialogStore()
 
-const { packs, loading, operatingPackName, fetchSkillPacks, deleteSkillPack } =
-  useSkillPacks()
+const {
+  packs,
+  loading,
+  hasLoaded,
+  operatingPackName,
+  fetchSkillPacks,
+  deleteSkillPack
+} = useSkillPacks()
 
 const editorVisible = ref(false)
 const selectedPack = ref<SkillPack | undefined>()
 const keyboardNavigation = ref(false)
 
-useEventListener('keydown', () => (keyboardNavigation.value = true), {
-  capture: true
-})
+useEventListener(
+  'keydown',
+  (event) => {
+    if (event.key !== 'Escape') keyboardNavigation.value = true
+  },
+  { capture: true }
+)
 useEventListener(
   ['pointerdown', 'pointermove'],
   () => (keyboardNavigation.value = false),
