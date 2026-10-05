@@ -48,12 +48,11 @@ export function useCloudAuthPage(options: {
   async function onAuthSuccess() {
     if (flags.ssoEnabled && (await useSessionCookie().sessionRequiresSso())) {
       const authStore = useAuthStore()
-      const email = authStore.userEmail ?? undefined
-      await authStore.logout()
       presentSsoRequired({
-        email,
+        email: authStore.userEmail ?? undefined,
         returnTo: getSafePreviousFullPath(route.query) ?? SSO_DEFAULT_RETURN_TO
       })
+      await authStore.logout()
       return
     }
     await redirectAfterAuth()
