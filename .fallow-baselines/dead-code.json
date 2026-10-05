@@ -15,7 +15,12 @@
   ],
   "private_type_leaks": [],
   "unused_dependencies": [],
-  "unused_dev_dependencies": [],
+  "unused_dev_dependencies": [
+    "package.json:@typescript-eslint/utils",
+    "package.json:eslint-plugin-storybook",
+    "package.json:eslint-plugin-testing-library",
+    "package.json:typescript-native-bridge"
+  ],
   "circular_dependencies": [
     "apps/website/src/components/ui/button-mask/ButtonMask.vue->apps/website/src/components/ui/button-mask/index.ts",
     "browser_tests/fixtures/ComfyPage.ts->browser_tests/fixtures/components/QueuePanel.ts",

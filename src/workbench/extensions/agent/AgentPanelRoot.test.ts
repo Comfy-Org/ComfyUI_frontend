@@ -2370,6 +2370,58 @@ function stubUploadFetch(uploaded: string[] = [], status = 200): string[] {
   return uploaded
 }
 
+async function actDuringPendingSubmission(
+  action: string,
+  textbox: HTMLElement
+): Promise<void> {
+  if (action === 'new-draft' || action === 'cleared-draft') {
+    await userEvent.click(textbox)
+    await userEvent.paste('New input')
+  }
+  if (action === 'cleared-draft') await userEvent.clear(textbox)
+  if (action === 'removed-reference') {
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.addToPrompt')
+      })
+    )
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'reference' })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove reference reference' })
+    )
+  }
+  if (action === 'removed-attachment') {
+    useAgentComposerStore().addAttachment({
+      id: 'upload-2',
+      name: 'new.png',
+      ref: 'new.png'
+    })
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: i18n.global.t('agent.remove')
+      })
+    )
+  }
+  if (action === 'new-chat')
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+  if (action === 'history') {
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Earlier chat'))
+  }
+  if (action === 'stop') {
+    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+  }
+}
+
 describe('AgentPanelRoot attach flow', () => {
   beforeEach(() => {
     ws.clear()
@@ -10029,13 +10081,17 @@ describe('AgentPanelRoot workflow binding', () => {
       'new-chat',
       'history'
     ].flatMap((nextAction) =>
-      ['mounted', 'reopened'].map((panel) => ({ nextAction, panel }))
+      ['mounted', 'reopened'].map((panel) => ({
+        nextAction,
+        panel,
+        expectedDraft: nextAction === 'new-draft' ? 'New input' : ''
+      }))
     ),
-    { nextAction: 'untouched', panel: 'closed' },
-    { nextAction: 'stop', panel: 'reopened' }
+    { nextAction: 'untouched', panel: 'closed', expectedDraft: '' },
+    { nextAction: 'stop', panel: 'reopened', expectedDraft: '' }
   ])(
     'settles a submission without losing composer intent: $nextAction ($panel)',
-    async ({ nextAction, panel }) => {
+    async ({ nextAction, panel, expectedDraft }) => {
       setupWorkflowContext({
         targetId: 'wf-42',
         references: [
@@ -10124,54 +10180,8 @@ describe('AgentPanelRoot workflow binding', () => {
         textbox = screen.getByRole('textbox')
         expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
       }
-      if (nextAction === 'new-draft' || nextAction === 'cleared-draft')
-        await userEvent.click(textbox)
-      await userEvent.paste('New input')
-      if (nextAction === 'cleared-draft') await userEvent.clear(textbox)
-      if (nextAction === 'removed-reference') {
-        await userEvent.click(
-          screen.getByRole('button', {
-            name: i18n.global.t('agent.addToPrompt')
-          })
-        )
-        await userEvent.click(
-          screen.getByRole('menuitem', { name: 'Workflows' })
-        )
-        await userEvent.click(
-          await screen.findByRole('menuitem', { name: 'reference' })
-        )
-        await userEvent.click(
-          screen.getByRole('button', { name: 'Remove reference reference' })
-        )
-      }
-      if (nextAction === 'removed-attachment') {
-        composer.addAttachment({
-          id: 'upload-2',
-          name: 'new.png',
-          ref: 'new.png'
-        })
-        await userEvent.click(
-          await screen.findByRole('button', {
-            name: i18n.global.t('agent.remove')
-          })
-        )
-      }
-      if (nextAction === 'new-chat')
-        await userEvent.click(
-          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
-        )
-      if (nextAction === 'history') {
-        await userEvent.click(
-          screen.getByRole('button', {
-            name: i18n.global.t('agent.showChatHistory')
-          })
-        )
-        await userEvent.click(await screen.findByText('Earlier chat'))
-      }
-      if (nextAction === 'stop') {
-        await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
-        expect(cancellations).toHaveLength(0)
-      }
+      await actDuringPendingSubmission(nextAction, textbox)
+      if (nextAction === 'stop') expect(cancellations).toHaveLength(0)
       finishSend(
         nextAction === 'stop'
           ? json(202, ack('wf-42', 'm-stopped'))
@@ -10218,9 +10228,7 @@ describe('AgentPanelRoot workflow binding', () => {
           ]
         })
       } else {
-        expect(useAgentComposerStore().draft).toBe(
-          nextAction === 'new-draft' ? 'New input' : ''
-        )
+        expect(useAgentComposerStore().draft).toBe(expectedDraft)
         expect(composer.attachments).toEqual([])
         expect(
           screen.queryByRole('button', { name: 'Open reference' })

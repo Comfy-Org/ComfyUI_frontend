@@ -11,6 +11,22 @@ const { name, previewUrl, variant } = defineProps<{
   variant: 'tray' | 'inline' | 'menu'
 }>()
 const kind = computed(() => getMediaTypeFromFilename(name))
+const isMediaIcon = computed(
+  () => variant === 'tray' && (kind.value === 'audio' || kind.value === 'video')
+)
+const mediaLabel = computed(() =>
+  kind.value === 'audio'
+    ? 'sideToolbar.mediaAssets.filterAudio'
+    : 'sideToolbar.mediaAssets.filterVideo'
+)
+const iconSize = computed(
+  () =>
+    ({
+      tray: 'size-6 text-muted-foreground',
+      menu: 'size-3.5',
+      inline: 'size-3'
+    })[variant]
+)
 const icon = computed(() => {
   if (variant !== 'tray') return 'icon-[lucide--paperclip]'
   return kind.value === 'other'
@@ -30,28 +46,10 @@ const icon = computed(() => {
     />
     <span
       v-else
-      :role="kind === 'audio' || kind === 'video' ? 'img' : undefined"
-      :aria-label="
-        kind === 'audio' || kind === 'video'
-          ? $t(
-              kind === 'audio'
-                ? 'sideToolbar.mediaAssets.filterAudio'
-                : 'sideToolbar.mediaAssets.filterVideo'
-            )
-          : undefined
-      "
-      :aria-hidden="(kind !== 'audio' && kind !== 'video') || undefined"
-      :class="
-        cn(
-          icon,
-          'shrink-0',
-          variant === 'tray'
-            ? 'size-6 text-muted-foreground'
-            : variant === 'menu'
-              ? 'size-3.5'
-              : 'size-3'
-        )
-      "
+      :role="isMediaIcon ? 'img' : undefined"
+      :aria-label="isMediaIcon ? $t(mediaLabel) : undefined"
+      :aria-hidden="!isMediaIcon || undefined"
+      :class="cn(icon, 'shrink-0', iconSize)"
     />
   </span>
 </template>

@@ -118,8 +118,7 @@ export class AgentPanel {
   }
 
   /**
-   * The composer attachment carrying `name`. Matches on the chip's own
-   * attribute, including while the visible filename is hidden.
+   * The composer attachment carrying `name`.
    *
    * `name` is a filename and may legitimately contain a quote or backslash, so
    * it is escaped for the double-quoted CSS string rather than interpolated
