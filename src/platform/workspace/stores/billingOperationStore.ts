@@ -270,7 +270,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const id =
       kind === 'action'
         ? toastStore.warning(t(messageKey))
-        : toastStore.info(t(messageKey))
+        : toastStore.loading(t(messageKey))
     progressToasts.set(opId, { kind, id })
   }
 
