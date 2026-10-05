@@ -142,6 +142,25 @@ describe('SearchAutocomplete', () => {
     await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('foo'))
   })
 
+  it('does not treat a matching query as a selected suggestion', async () => {
+    const user = userEvent.setup()
+    render(SearchAutocomplete, {
+      global: { plugins: [i18n] },
+      props: {
+        modelValue: 'foo',
+        suggestions: ['foo', 'bar'],
+        openOnFocus: true
+      }
+    })
+
+    await user.click(screen.getByRole('combobox'))
+
+    expect(await screen.findByRole('option', { name: 'foo' })).toHaveAttribute(
+      'aria-selected',
+      'false'
+    )
+  })
+
   it('does not select an option when Enter is pressed during composition', async () => {
     const onSelect = vi.fn()
     const onUpdateModelValue = vi.fn()
