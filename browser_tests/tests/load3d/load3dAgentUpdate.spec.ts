@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
+
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
 import { Load3DViewerHelper } from '@e2e/tests/load3d/Load3DViewerHelper'
@@ -128,20 +130,8 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
       // `SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH` and 560 and 640 would overlay
       // while the three wider samples would not. The inset assertion below is
       // what holds that precondition, rather than this comment.
-      for (const width of [1280, 1920, 2560, 640, 560]) {
-        await page.setViewportSize({ width, height: 800 })
-        // `setViewportSize` resolves before the page has re-laid out, and the
-        // inset publish is a separate async flush, so without this an
-        // iteration's first attempt can pair a pre-resize box with a
-        // post-resize inset. It also makes `width` legitimate ground truth for
-        // `100vw`: a headed run on a narrower display gets a window-clamped
-        // viewport, and that then fails here, naming the viewport, instead of
-        // further down naming the viewer.
-        await expect
-          .poll(() => page.evaluate(() => window.innerWidth))
-          .toBe(width)
-
-        await expect(async () => {
+      const expectViewerBesidePanel = async (width: number) =>
+        expect(async () => {
           const dialogBox = await viewer.dialog.boundingBox()
           const panelBox = await panel.boundingBox()
           // Read the resolved value, not the inline style the panel happens to
@@ -154,7 +144,7 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
               getComputedStyle(document.documentElement)
                 .getPropertyValue(property)
                 .trim(),
-            '--workspace-inset-right'
+            WORKSPACE_INSET_RIGHT
           )
           expect(dialogBox).not.toBeNull()
           expect(panelBox).not.toBeNull()
@@ -214,7 +204,77 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
             'the viewer sits centred between the viewport and panel edges'
           )
         }).toPass({ timeout: 5000 })
+
+      const resizeViewportTo = async (width: number) => {
+        await page.setViewportSize({ width, height: 800 })
+        // Only guarantees the box is not measured before the viewport width
+        // changed — `window.innerWidth` reflects the new metrics before the
+        // `resize` event dispatches, so it says nothing about whether the
+        // inset publish has flushed; `toPass` is what covers that. It also
+        // makes `width` legitimate ground truth for `100vw`: a headed run on a
+        // narrower display gets a window-clamped viewport, which then fails
+        // here naming the viewport instead of three assertions later naming
+        // the viewer.
+        await expect
+          .poll(() => page.evaluate(() => window.innerWidth))
+          .toBe(width)
       }
+
+      // Closes the viewer first, because its modal overlay covers the handle.
+      const dragPanelEdgeBy = async (dx: number) => {
+        await viewer.cancelButton.click()
+        await viewer.waitForClosed()
+        const handleBox = await page
+          .getByTestId('agent-panel-resize-handle')
+          .boundingBox()
+        expect(handleBox).not.toBeNull()
+        if (!handleBox) throw new Error('Panel resize handle is not laid out')
+        const x = handleBox.x + handleBox.width / 2
+        const y = handleBox.y + handleBox.height / 2
+        await page.mouse.move(x, y)
+        await page.mouse.down()
+        await page.mouse.move(x + dx, y, { steps: 10 })
+        await page.mouse.up()
+      }
+
+      const reopenViewer = async () => {
+        await load3dAgent.viewer.openViewerButton.click()
+        await viewer.waitForOpen()
+        await expect
+          .poll(() => viewer.dialog.evaluate((el) => el.getAnimations().length))
+          .toBe(0)
+      }
+
+      for (const width of [1280, 1920, 2560, 640, 560]) {
+        await resizeViewportTo(width)
+        await expectViewerBesidePanel(width)
+      }
+
+      // Every iteration above leaves the panel at its default 420px, so the
+      // inset term in the viewer's cap and a hard-coded `420px` would be
+      // indistinguishable — including to the inset assertion itself, which is
+      // tautological while the width never varies. Drag the panel wider and
+      // re-measure: at a 1920px viewport that regression would render the
+      // viewer at 1484px instead of 1284px and overlap the panel by 200px.
+      //
+      // The viewer has to be closed to do it. It is modal, and its overlay is
+      // `fixed inset-0`, so the panel's resize handle is genuinely unreachable
+      // by a pointer while the viewer is open.
+      await resizeViewportTo(1920)
+      await dragPanelEdgeBy(-200)
+      await expect
+        .poll(async () => Math.round((await panel.boundingBox())?.width ?? 0))
+        .toBe(620)
+      await reopenViewer()
+      await expectViewerBesidePanel(1920)
+
+      // Restore the default width: the narrow steps below are written against
+      // a 420px panel, and a 620px one overlays at their viewports.
+      await dragPanelEdgeBy(200)
+      await expect
+        .poll(async () => Math.round((await panel.boundingBox())?.width ?? 0))
+        .toBe(420)
+      await reopenViewer()
     })
 
     await test.step('keep the viewer outside the docked Agent panel', async () => {
