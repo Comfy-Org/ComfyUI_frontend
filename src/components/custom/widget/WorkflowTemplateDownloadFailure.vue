@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
@@ -11,6 +12,7 @@ const { state, rowName } = defineProps<{
 }>()
 const emit = defineEmits<{ retry: [] }>()
 const { t } = useI18n()
+const hintId = `${useId()}-download-failed-hint`
 
 function failureLabel(): string {
   return t(
@@ -24,6 +26,14 @@ function failureLabel(): string {
 <template>
   <span class="col-start-3 row-start-1 flex shrink-0 items-center gap-2">
     <Badge
+      v-tooltip.top="
+        state.reason === 'error'
+          ? {
+              value: t('templateWorkflows.detail.downloadFailedHint'),
+              class: 'template-detail-tooltip'
+            }
+          : undefined
+      "
       role="status"
       :aria-label="failureLabel()"
       severity="danger"
@@ -31,6 +41,9 @@ function failureLabel(): string {
     >
       {{ failureLabel() }}
     </Badge>
+    <span v-if="state.reason === 'error'" :id="hintId" class="sr-only">
+      {{ t('templateWorkflows.detail.downloadFailedHint') }}
+    </span>
     <Button
       :aria-label="
         t(
@@ -39,6 +52,7 @@ function failureLabel(): string {
           { escapeParameter: false }
         )
       "
+      :aria-describedby="state.reason === 'error' ? hintId : undefined"
       variant="outline"
       size="unset"
       class="h-6 rounded-md bg-secondary-background px-2 text-xs"

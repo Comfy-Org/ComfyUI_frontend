@@ -548,4 +548,43 @@ describe('WorkflowTemplateDetail', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open now' })).toBeInTheDocument()
   })
+  it.for([
+    ['error', true],
+    ['cancelled', false]
+  ] as const)(
+    'explains a %s download to the control that can act on it',
+    ([reason, explained]) => {
+      renderDetail({
+        renderedGroups: [
+          {
+            id: 'models',
+            label: 'Models',
+            rows: [
+              {
+                id: 'failed-model',
+                name: 'failed.safetensors',
+                description: 'Checkpoint',
+                status: {
+                  kind: 'downloadable',
+                  label: 'Download model',
+                  downloadState: { status: 'failed', attempt: 1, reason }
+                }
+              }
+            ]
+          }
+        ]
+      })
+
+      const retry = screen.getByRole('button', {
+        name: 'Retry download for failed.safetensors'
+      })
+      // The badge carries the hint visually, but only Retry can be focused, so
+      // it is what has to describe the failure for anyone not using a mouse.
+      expect(retry).toHaveAccessibleDescription(
+        explained
+          ? "The download couldn't be completed. Use Retry to try again."
+          : ''
+      )
+    }
+  )
 })

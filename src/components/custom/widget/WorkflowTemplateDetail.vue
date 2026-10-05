@@ -2,6 +2,7 @@
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import WorkflowTemplateDescription from '@/components/custom/widget/WorkflowTemplateDescription.vue'
 import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
@@ -125,11 +126,7 @@ defineExpose({
         <h2 class="m-0 text-base font-semibold wrap-break-word">
           {{ title }}
         </h2>
-        <p
-          class="m-0 max-w-2xl text-sm/relaxed wrap-break-word text-muted-foreground"
-        >
-          {{ description }}
-        </p>
+        <WorkflowTemplateDescription :description />
       </div>
 
       <div
@@ -137,7 +134,7 @@ defineExpose({
         role="region"
         :aria-label="t('templateWorkflows.detail.requirements')"
         tabindex="0"
-        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2"
+        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2 @[48rem]/template-detail:px-6"
       >
         <WorkflowTemplateDetailGroup
           v-for="group in groups"
