@@ -74,21 +74,46 @@ export interface AskUserOption {
 }
 
 /**
- * How an ask was closed. `answered` names the committed answer only as far as
- * the server reported it (`selected` may be empty when it did not); `closed`
- * means cancelled, expired or retired with no answer; `unknown` means this
- * client sent an answer but could not confirm the server took it.
+ * How an ask was closed. The server decides `answered` (naming the committed
+ * answer as far as it reported it; `selected` may be empty) and `closed`
+ * (cancelled or expired). The client alone decides `unknown` (it sent an
+ * answer but could not confirm the server took it) and `retired` (it stopped
+ * waiting knowing nothing, e.g. a 409 or the turn ending).
  */
 export interface AskUserResolution {
-  status: 'answered' | 'closed' | 'unknown'
+  status: 'answered' | 'closed' | 'unknown' | 'retired'
   selected: string[]
   otherText?: string
 }
 
 const RESOLUTION_RANK: Record<AskUserResolution['status'], number> = {
-  closed: 0,
+  retired: 0,
   unknown: 1,
+  closed: 2,
   answered: 2
+}
+
+function isServerDecided({ status }: AskUserResolution): boolean {
+  return status === 'answered' || status === 'closed'
+}
+
+function namesAnswer({ selected, otherText }: AskUserResolution): boolean {
+  return selected.length > 0 || otherText !== undefined
+}
+
+/**
+ * Whether `next` should replace the resolution a card already shows. What the
+ * server decided outranks anything this client guessed, and a local guess
+ * never replaces the server's. Between two server reports, one that names the
+ * answer replaces one that did not.
+ */
+function supersedes(
+  next: AskUserResolution,
+  shown: AskUserResolution
+): boolean {
+  const rank = RESOLUTION_RANK[next.status] - RESOLUTION_RANK[shown.status]
+  if (rank !== 0) return rank > 0
+  return isServerDecided(next) && !namesAnswer(shown) && namesAnswer(next)
 }
 
 /** The generic `ask_user` question: a prompt plus every option the agent offered. */
@@ -134,18 +159,14 @@ export function askIdOf(part: MessagePart): string | undefined {
 export function retireAskParts(
   parts: MessagePart[],
   askId: string,
-  resolution: AskUserResolution = { status: 'closed', selected: [] }
+  resolution: AskUserResolution = { status: 'retired', selected: [] }
 ): MessagePart[] {
   if (!parts.some((part) => askIdOf(part) === askId)) return parts
   return parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
     if (part.type !== 'askUser') return []
-    // A real answer outranks an earlier retirement that could not name one
-    // (a 409, a lost frame), so the card ends up showing what was chosen.
     const keep =
-      part.resolution &&
-      RESOLUTION_RANK[part.resolution.status] >=
-        RESOLUTION_RANK[resolution.status]
+      part.resolution !== undefined && !supersedes(resolution, part.resolution)
     return [keep ? part : { ...part, resolution }]
   })
 }
