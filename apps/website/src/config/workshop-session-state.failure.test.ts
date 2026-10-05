@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, readonly, ref } from 'vue'
 
 import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
-let { useWorkshopAuthFlag } = await import('../scripts/posthog')
+let { useWorkshopAuthFlag } = await import('@/scripts/posthog')
 let { workshopIdentity, workshopSessionClient, subscribeAuthRefreshTelemetry } =
   await import('./workshop-account')
 import type { WorkshopSession } from './workshop-session-state'
@@ -19,7 +19,7 @@ const subscribers = new Set<(snapshot: Snapshot) => void>()
 let emittedSnapshot: Snapshot
 let liveSnapshot: Snapshot
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-account'))
 
 const bootSession: WorkshopSession = {
@@ -39,7 +39,7 @@ const authenticatedSnapshot: Snapshot = {
 
 beforeEach(async () => {
   vi.resetModules()
-  ;({ useWorkshopAuthFlag } = await import('../scripts/posthog'))
+  ;({ useWorkshopAuthFlag } = await import('@/scripts/posthog'))
   ;({ workshopIdentity, workshopSessionClient, subscribeAuthRefreshTelemetry } =
     await import('./workshop-account'))
 

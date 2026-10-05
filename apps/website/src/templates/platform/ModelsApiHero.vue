@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import { externalLinks, getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import CodeTabs from './CodeTabs.vue'
 import { routerCodeTabs } from './codeSamples'
 

@@ -3,10 +3,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import Badge from '../ui/badge/Badge.vue'
-import Button from '../ui/button/Button.vue'
+import type { Locale } from '@/i18n/translations'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 type Cta = {
   label: string

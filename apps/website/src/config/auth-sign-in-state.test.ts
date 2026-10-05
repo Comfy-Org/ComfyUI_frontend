@@ -1,7 +1,7 @@
 import { ENUMERATION_ORACLE } from '@comfyorg/account-core/testing'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../i18n/translations'
+import { t } from '@/i18n/translations'
 import type { AuthSignInState } from './auth-sign-in-state'
 import { authSignInTransition, signInErrorMessage } from './auth-sign-in-state'
 
