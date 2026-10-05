@@ -1644,7 +1644,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         event.data.ask_id,
         event.data.thread_id,
         conversationStore.settledAskResolution(
-          event.data.ask_id,
           event.data.status === 'answered',
           { selected: event.data.selected }
         )

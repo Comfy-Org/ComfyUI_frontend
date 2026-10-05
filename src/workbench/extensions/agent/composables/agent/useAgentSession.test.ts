@@ -208,7 +208,8 @@ const runApproval = (id: string, askId = 'turn-1:call-1') =>
 const askResolved = (
   id: string,
   askId = 'turn-1:call-1',
-  selected: string[] | null = ['run']
+  selected: string[] | null = ['run'],
+  status: 'answered' | 'cancelled' | 'expired' = 'answered'
 ) =>
   wire({
     type: 'agent_ask_resolved',
@@ -216,7 +217,7 @@ const askResolved = (
       thread_id: 'th-1',
       message_id: id,
       ask_id: askId,
-      status: 'answered',
+      status,
       selected
     }
   })
@@ -1771,9 +1772,23 @@ describe('useAgentSession (v1 composition root)', () => {
       })
     })
 
-    // Another tab answered first: only the server knows what was committed,
-    // so the card reads as answered without naming ours or theirs.
-    it('reads as answered, naming nothing, when another answer won', async () => {
+    it('lets the server cancel replace an unconfirmed answer', async () => {
+      const { session, answerAsk, emit } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('backend blip', 500, undefined)
+      )
+      await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', null, 'cancelled'))
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'closed', selected: [] }
+      })
+    })
+
+    // Another tab answered first: the frame's selection is what the server
+    // committed, so the card shows that, never ours.
+    it('shows the committed answer when another answer won', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', {
         selected: ['sdxl'],
@@ -1783,8 +1798,9 @@ describe('useAgentSession (v1 composition root)', () => {
       emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
 
       expect(card()).toMatchObject({
-        resolution: { status: 'answered', selected: [] }
+        resolution: { status: 'answered', selected: ['flux'] }
       })
+      expect(card()).not.toHaveProperty('resolution.otherText')
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
@@ -1800,7 +1816,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
 
       expect(card()).toMatchObject({
-        resolution: { status: 'closed', selected: [] }
+        resolution: { status: 'retired', selected: [] }
       })
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
     })

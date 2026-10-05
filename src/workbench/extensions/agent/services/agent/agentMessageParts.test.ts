@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it } from 'vitest'
 
 import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
-import type { MessagePart } from './agentMessageParts'
+import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
   ASK_USER_LIMITS,
   askIdOf,
@@ -372,37 +372,84 @@ describe('retireAskParts', () => {
     })
   })
 
-  it('lets a real answer replace a retirement that could not name one, never the reverse', () => {
-    const closed = retireAskParts(parts, 'q')
-    expect(closed.at(-1)).toMatchObject({
-      resolution: { status: 'closed', selected: [] }
-    })
-    const answered = retireAskParts(closed, 'q', {
-      status: 'answered',
-      selected: ['sdxl']
-    })
-    expect(answered.at(-1)).toMatchObject({
-      resolution: { status: 'answered', selected: ['sdxl'] }
-    })
-    expect(retireAskParts(answered, 'q').at(-1)).toMatchObject({
-      resolution: { status: 'answered', selected: ['sdxl'] }
-    })
+  const resolve = (
+    shown: AskUserResolution[],
+    next: AskUserResolution | undefined
+  ) =>
+    retireAskParts(
+      shown.reduce(
+        (current, resolution) => retireAskParts(current, 'q', resolution),
+        parts
+      ),
+      'q',
+      next
+    ).at(-1)
+
+  it.for<{
+    name: string
+    shown: AskUserResolution[]
+    next?: AskUserResolution
+    expected: AskUserResolution
+  }>([
+    {
+      name: 'a server answer replaces a local retirement',
+      shown: [{ status: 'retired', selected: [] }],
+      next: { status: 'answered', selected: ['sdxl'] },
+      expected: { status: 'answered', selected: ['sdxl'] }
+    },
+    {
+      name: 'a server cancel replaces an unknown outcome',
+      shown: [{ status: 'unknown', selected: [] }],
+      next: { status: 'closed', selected: [] },
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'a server answer replaces an unknown outcome',
+      shown: [{ status: 'unknown', selected: [] }],
+      next: { status: 'answered', selected: ['flux'] },
+      expected: { status: 'answered', selected: ['flux'] }
+    },
+    {
+      name: 'an unknown outcome outlasts a local retirement',
+      shown: [{ status: 'unknown', selected: [] }],
+      expected: { status: 'unknown', selected: [] }
+    },
+    {
+      name: 'a server answer outlasts a local retirement',
+      shown: [{ status: 'answered', selected: ['sdxl'] }],
+      expected: { status: 'answered', selected: ['sdxl'] }
+    },
+    {
+      name: 'a server cancel outlasts a local retirement',
+      shown: [{ status: 'closed', selected: [] }],
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'a server cancel outlasts an unknown outcome',
+      shown: [{ status: 'closed', selected: [] }],
+      next: { status: 'unknown', selected: [] },
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'a named answer replaces an unnamed one',
+      shown: [{ status: 'answered', selected: [] }],
+      next: { status: 'answered', selected: ['flux'] },
+      expected: { status: 'answered', selected: ['flux'] }
+    },
+    {
+      name: 'a named answer outlasts an unnamed one',
+      shown: [{ status: 'answered', selected: ['flux'] }],
+      next: { status: 'answered', selected: [] },
+      expected: { status: 'answered', selected: ['flux'] }
+    }
+  ])('$name', ({ shown, next, expected }) => {
+    expect(resolve(shown, next)).toMatchObject({ resolution: expected })
   })
 
-  it('keeps an unknown outcome over a bare closure, and lets an answer replace it', () => {
-    const unknown = retireAskParts(parts, 'q', {
-      status: 'unknown',
-      selected: []
+  it('retires with no resolution as a local retirement', () => {
+    expect(retireAskParts(parts, 'q').at(-1)).toMatchObject({
+      resolution: { status: 'retired', selected: [] }
     })
-    expect(retireAskParts(unknown, 'q').at(-1)).toMatchObject({
-      resolution: { status: 'unknown' }
-    })
-    expect(
-      retireAskParts(unknown, 'q', {
-        status: 'answered',
-        selected: ['flux']
-      }).at(-1)
-    ).toMatchObject({ resolution: { status: 'answered', selected: ['flux'] } })
   })
 
   it('returns the same array when no part belongs to the ask', () => {

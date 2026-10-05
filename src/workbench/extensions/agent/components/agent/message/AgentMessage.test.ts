@@ -901,12 +901,12 @@ describe('AgentMessage delete approval', () => {
     {
       name: 'delete',
       resolution: { status: 'answered', selected: ['delete'] },
-      text: 'You chose to delete them.'
+      text: 'Answered: delete them.'
     },
     {
       name: 'keep',
       resolution: { status: 'answered', selected: ['keep'] },
-      text: 'You chose to keep them.'
+      text: 'Answered: keep them.'
     },
     {
       name: 'an answer the server did not name',
@@ -916,6 +916,11 @@ describe('AgentMessage delete approval', () => {
     {
       name: 'no answer',
       resolution: { status: 'closed', selected: [] },
+      text: 'This request was closed without an answer.'
+    },
+    {
+      name: 'a local retirement',
+      resolution: { status: 'retired', selected: [] },
       text: 'This request was closed without an answer.'
     },
     {
