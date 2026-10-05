@@ -10,6 +10,8 @@ import {
 import type { PromptSnapshot } from '../types/workflowReference'
 import { assetReferenceText, nodeReferenceText } from './agentMessageText'
 
+// Ruleset verification fixture: agent-scoped change for ProtectMain.
+
 export function insertComposerReference(
   prompt: ComposerPrompt,
   reference: ComposerReference,
