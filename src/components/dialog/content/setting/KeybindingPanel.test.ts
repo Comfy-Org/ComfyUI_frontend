@@ -33,11 +33,6 @@ vi.mock<unknown>(import('@/platform/keybindings/presetService'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({ useToast: () => ({ add: vi.fn() }) })
-)
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -161,7 +156,9 @@ describe('KeybindingPanel', () => {
     registerCommand('command-alpha', 'Alpha')
     registerCommand('command-middle', 'Middle')
     const { container } = renderPanel()
+    const header = screen.getByRole('columnheader', { name: 'Command' })
 
+    expect(header).toHaveAttribute('aria-sort', 'none')
     expect(getVisibleCommandIds(container)).toEqual([
       'command-zulu',
       'command-alpha',
@@ -169,6 +166,7 @@ describe('KeybindingPanel', () => {
     ])
 
     await user.click(screen.getByRole('button', { name: 'Command' }))
+    expect(header).toHaveAttribute('aria-sort', 'ascending')
     expect(getVisibleCommandIds(container)).toEqual([
       'command-alpha',
       'command-middle',
@@ -176,10 +174,69 @@ describe('KeybindingPanel', () => {
     ])
 
     await user.click(screen.getByRole('button', { name: 'Command' }))
+    expect(header).toHaveAttribute('aria-sort', 'descending')
     expect(getVisibleCommandIds(container)).toEqual([
       'command-zulu',
       'command-middle',
       'command-alpha'
     ])
+  })
+
+  it('runs row action buttons once without activating the row', async () => {
+    const user = userEvent.setup()
+    registerCommand('command-single', 'Single binding')
+    useKeybindingStore().addDefaultKeybinding(
+      new KeybindingImpl({
+        commandId: 'command-single',
+        combo: { key: 'S', ctrl: true }
+      })
+    )
+    renderPanel()
+    const row = screen.getByRole('row', { name: /Single binding/ })
+
+    await user.click(within(row).getByRole('button', { name: 'Edit' }))
+    expect(editKeybinding).toHaveBeenCalledOnce()
+    expect(editKeybinding).toHaveBeenCalledWith(
+      expect.objectContaining({ commandId: 'command-single', mode: 'edit' })
+    )
+    expect(row).not.toHaveAttribute('data-state', 'selected')
+
+    editKeybinding.mockClear()
+    await user.dblClick(
+      within(row).getByRole('button', { name: 'Add new keybinding' })
+    )
+    expect(editKeybinding).not.toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'edit' })
+    )
+  })
+
+  it('opens a row context menu whose command fires once and dismisses with Escape', async () => {
+    const user = userEvent.setup()
+    registerCommand('command-plain', 'Plain command')
+    renderPanel()
+    const row = screen.getByRole('row', { name: /Plain command/ })
+
+    await user.pointer({ keys: '[MouseRight]', target: row })
+    expect(
+      await screen.findByRole('menuitem', { name: 'Change keybinding' })
+    ).toHaveAttribute('aria-disabled', 'true')
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Add new keybinding' })
+    )
+
+    expect(editKeybinding).toHaveBeenCalledOnce()
+    expect(editKeybinding).toHaveBeenCalledWith(
+      expect.objectContaining({ commandId: 'command-plain', mode: 'add' })
+    )
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
+
+    await user.pointer({ keys: '[MouseRight]', target: row })
+    expect(await screen.findByRole('menu')).toBeVisible()
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
   })
 })

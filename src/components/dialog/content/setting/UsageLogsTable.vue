@@ -58,7 +58,7 @@
       :page="pagination.page"
       :total="pagination.total"
       :items-per-page="pagination.limit"
-      class="mt-3 flex justify-center"
+      class="mt-3"
       @update:page="onPageChange"
     />
   </div>

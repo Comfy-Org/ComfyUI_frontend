@@ -15,8 +15,6 @@
         "src/components/dialog/content/ErrorDialogContent.vue",
         "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
         "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
-        "src/components/dialog/content/setting/KeybindingPanel.test.ts",
-        "src/components/dialog/content/setting/KeybindingPanel.vue",
         "src/components/dialog/content/setting/SettingItem.test.ts",
         "src/components/dialog/content/setting/UsageLogsTable.test.ts",
         "src/components/dialog/content/signin/SignInForm.test.ts",

@@ -2,9 +2,9 @@
   <TableRow
     tabindex="0"
     :data-state="selected ? 'selected' : undefined"
-    @click="emit('rowClick', $event)"
+    @click="emit('rowClick')"
     @dblclick="emit('rowDblclick')"
-    @contextmenu="emit('rowContextmenu')"
+    @contextmenu="emit('rowContextmenu', $event)"
     @keydown="emit('rowKeydown', $event)"
   >
     <TableCell class="p-1">
@@ -42,7 +42,11 @@
       }}</span>
     </TableCell>
     <TableCell class="p-1 whitespace-nowrap">
-      <div class="actions flex flex-row justify-end whitespace-nowrap">
+      <div
+        class="flex flex-row justify-end whitespace-nowrap"
+        @click.stop
+        @dblclick.stop
+      >
         <Button
           v-if="command.keybindings.length === 1"
           v-tooltip="$t('g.edit')"
@@ -145,9 +149,9 @@ const { command, expanded, selected } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  rowClick: [event: MouseEvent]
+  rowClick: []
   rowDblclick: []
-  rowContextmenu: []
+  rowContextmenu: [event: MouseEvent]
   rowKeydown: [event: KeyboardEvent]
   edit: [binding: KeybindingImpl]
   add: []
