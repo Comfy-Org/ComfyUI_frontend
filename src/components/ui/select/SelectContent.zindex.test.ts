@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { StyleValue } from 'vue'
 import { nextTick, ref } from 'vue'
 
-import { zIndexManager } from '@/utils/zIndexManager'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import Select from './Select.vue'
 import SelectContent from './SelectContent.vue'
@@ -55,7 +55,7 @@ let openModal: HTMLElement | undefined
 
 afterEach(() => {
   if (openModal) {
-    zIndexManager.clear(openModal)
+    releaseModalLayer(openModal)
     openModal = undefined
   }
 })
@@ -63,7 +63,7 @@ afterEach(() => {
 describe('SelectContent z-index', () => {
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
-    zIndexManager.set('modal', openModal, 3702)
+    raiseModalLayer(openModal)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderSelect()
 
@@ -91,7 +91,7 @@ describe('SelectContent z-index', () => {
 
   it('preserves caller styles while lifting above a dialog', async () => {
     openModal = document.createElement('div')
-    zIndexManager.set('modal', openModal, 3702)
+    raiseModalLayer(openModal)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderSelect({ maxWidth: '100px' })
 

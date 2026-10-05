@@ -2,7 +2,7 @@ import { render } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { zIndexManager } from '@/utils/zIndexManager'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import SearchAutocomplete from './SearchAutocomplete.vue'
 
@@ -20,7 +20,7 @@ let openModal: HTMLElement | undefined
 
 afterEach(() => {
   if (openModal) {
-    zIndexManager.clear(openModal)
+    releaseModalLayer(openModal)
     openModal = undefined
   }
 })
@@ -28,7 +28,7 @@ afterEach(() => {
 describe('SearchAutocomplete z-index', () => {
   it('opens suggestions above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
-    zIndexManager.set('modal', openModal, 3702)
+    raiseModalLayer(openModal)
     const dialogZIndex = Number(openModal.style.zIndex)
 
     const { rerender, unmount } = render(SearchAutocomplete, {
