@@ -51,5 +51,5 @@ jobs:
           WEBSITE_APPROVER_LOGIN: webreviewer-bot
           # This is intentionally checked in: changing who can receive an
           # automatic approval must itself pass normal repository review.
-          WEBSITE_AUTO_APPROVE_AUTHORS: '["bertfy"]'
+          WEBSITE_AUTO_APPROVE_AUTHORS: '["bertfy", "christian-byrne"]'
         run: node .github/scripts/website-auto-approve.mjs

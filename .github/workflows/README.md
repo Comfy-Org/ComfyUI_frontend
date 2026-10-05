@@ -45,10 +45,11 @@ submitted after policy approval blocks merge immediately through GitHub's review
 trusted PR event reevaluates and withdraws the policy approval. The review body identifies the
 verdict as policy-only; it must not be interpreted as a diff review.
 
-The initial author allowlist contains only `bertfy`. Expand it by reviewing a
-change to `WEBSITE_AUTO_APPROVE_AUTHORS` in the workflow. A repository administrator must configure
-a `website-approval` environment whose deployment branch restriction allows only the protected
-default branch, then provide the bot's classic PAT as that environment's
+The Stage 1 author allowlist contains `bertfy` plus `christian-byrne` as the explicitly labeled
+synthetic contributor; the latter must be removed when the canary ends. Expand or retain it only by
+reviewing a change to `WEBSITE_AUTO_APPROVE_AUTHORS` in the workflow. A repository administrator
+must configure a `website-approval` environment whose deployment branch restriction allows only the
+protected default branch, then provide the bot's classic PAT as that environment's
 `WEBSITE_APPROVAL_TOKEN` secret. Missing or mismatched credentials fail closed.
 
 ## Website production identity and validation rollback
