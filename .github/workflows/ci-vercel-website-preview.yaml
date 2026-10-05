@@ -320,17 +320,31 @@ jobs:
           PREVIOUS_SHA: ${{ steps.previous-production.outputs.sha }}
           DEPLOYED_SHA: ${{ github.sha }}
         run: |
+          DEPLOYMENT_HOST=${DEPLOY_URL#https://}
+          if [[ ! "$DEPLOYMENT_HOST" =~ ^[A-Za-z0-9.-]+\.vercel\.app$ ]]; then
+            echo "::error::Unexpected immutable deployment URL: $DEPLOY_URL"
+            exit 1
+          fi
+          DEPLOYMENT=$(curl -fsS --retry 3 \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v13/deployments/$DEPLOYMENT_HOST?teamId=$VERCEL_ORG_ID")
+          DEPLOYED_DEPLOYMENT_ID=$(jq -er \
+            --arg projectId "$VERCEL_PROJECT_ID" \
+            'select((.projectId // .project.id) == $projectId) | .id' \
+            <<< "$DEPLOYMENT")
           mkdir -p temp/website-production-transition
           jq -n \
             --arg previousDeploymentId "$PREVIOUS_DEPLOYMENT_ID" \
             --arg previousSha "$PREVIOUS_SHA" \
+            --arg deployedDeploymentId "$DEPLOYED_DEPLOYMENT_ID" \
             --arg deploymentUrl "$DEPLOY_URL" \
             --arg deployedSha "$DEPLOYED_SHA" \
             --arg runId "$GITHUB_RUN_ID" \
-            '{previousDeploymentId: $previousDeploymentId, previousSha: $previousSha, deploymentUrl: $deploymentUrl, deployedSha: $deployedSha, runId: $runId}' \
+            '{previousDeploymentId: $previousDeploymentId, previousSha: $previousSha, deployedDeploymentId: $deployedDeploymentId, deploymentUrl: $deploymentUrl, deployedSha: $deployedSha, runId: $runId}' \
             > temp/website-production-transition/transition.json
           {
             echo "**Production:** $DEPLOY_URL"
+            echo "**Deployment ID:** $DEPLOYED_DEPLOYMENT_ID"
             echo "**Deployed SHA:** $DEPLOYED_SHA"
             echo "**Previous deployment:** $PREVIOUS_DEPLOYMENT_ID"
             echo "**Previous SHA:** $PREVIOUS_SHA"

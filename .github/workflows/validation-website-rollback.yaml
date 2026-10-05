@@ -11,6 +11,11 @@ on:
         description: 'Source SHA expected at the canonical hostname after rollback'
         required: true
         type: string
+      perform_rollback:
+        description: 'Change production after target validation; false performs a safe preflight only'
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -68,8 +73,14 @@ jobs:
             echo "::error::Deployment $TARGET_DEPLOYMENT serves $ACTUAL_SHA, expected $EXPECTED_SHA"
             exit 1
           fi
+          {
+            echo "**Validated rollback target:** $TARGET_DEPLOYMENT"
+            echo "**Validated rollback SHA:** $ACTUAL_SHA"
+            echo "**Production mutation requested:** ${{ inputs.perform_rollback }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Roll back to the captured deployment
+        if: inputs.perform_rollback
         env:
           TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
         run: |
@@ -79,6 +90,7 @@ jobs:
             --scope="$VERCEL_SCOPE"
 
       - name: Verify rollback at the canonical hostname
+        if: inputs.perform_rollback
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
@@ -97,6 +109,7 @@ jobs:
           exit 1
 
       - name: Preserve the rolled-back deployment and resume automatic promotion
+        if: inputs.perform_rollback
         env:
           TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
         run: |
@@ -106,6 +119,7 @@ jobs:
             --scope="$VERCEL_SCOPE"
 
       - name: Verify post-rollback promotion state
+        if: inputs.perform_rollback
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |

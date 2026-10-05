@@ -53,9 +53,19 @@ administrator must provide the bot's classic PAT as the Actions secret
 Every website preview and production build writes a cache-disabled `/__build.json` containing the
 repository, exact source SHA, workflow run, attempt, and build time. The deploy workflow verifies
 the immutable Vercel URL before it accepts canonical `comfy.org` promotion and retains the prior
-deployment ID/SHA as a short-lived artifact.
+and newly deployed IDs/SHA values as a short-lived artifact.
 
 `validation-website-rollback.yaml` is a manually dispatched validation-only workflow. It accepts
-that captured immutable deployment ID and expected SHA, uses Vercel's instant rollback, verifies
-the canonical marker and public homepage, then promotes the same known-good deployment to preserve
-it while resuming normal automatic production-domain assignment.
+that captured immutable deployment ID and expected SHA. Its safe default validates that the target
+belongs to the website project and serves the expected marker without changing production. Setting
+`perform_rollback` to true uses Vercel's instant rollback, verifies the canonical marker and public
+homepage, then promotes the same known-good deployment to preserve it while resuming normal
+automatic production-domain assignment.
+
+The first production deploy containing `/__build.json` is the rollback bootstrap, not the positive
+canary. Before any disposable canary PR is opened or queued, download that deploy's transition
+artifact and run `Validation: Website Production Rollback` with its `deployedDeploymentId` and
+`deployedSha`, leaving `perform_rollback` false. The positive canary may start only after this
+no-mutation preflight is green. This ensures its captured previous deployment is a known-good,
+marker-bearing rollback target; an older legacy deployment with an unavailable marker is never
+silently accepted as the canary rollback proof.
