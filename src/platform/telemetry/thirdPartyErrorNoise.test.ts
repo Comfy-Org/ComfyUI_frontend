@@ -40,18 +40,22 @@ describe('third-party error noise', () => {
       }
     },
     {
-      event: { type: undefined },
-      hint: {
-        originalException: Object.assign(new Error('aborted'), {
-          name: 'AbortError'
-        })
-      }
+      event: {
+        type: undefined,
+        exception: {
+          values: [{ type: 'AbortError', value: 'The user aborted a request.' }]
+        }
+      },
+      hint: {}
     },
     {
       event: {
         type: undefined,
         exception: {
-          values: [{ type: 'AbortError', value: 'The user aborted a request.' }]
+          values: [
+            { type: 'TypeError', value: 'cause' },
+            { type: 'AbortError', value: 'The user aborted a request.' }
+          ]
         }
       },
       hint: {}
@@ -62,6 +66,26 @@ describe('third-party error noise', () => {
       expect(sentryThirdPartyErrorFilter(event, hint)).toBeNull()
     }
   )
+
+  it('keeps a first-party error that wraps an AbortError cause', () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          { type: 'AbortError', value: 'The user aborted a request.' },
+          { type: 'Error', value: 'Failed to load model list' }
+        ]
+      }
+    } satisfies ErrorEvent
+
+    expect(
+      sentryThirdPartyErrorFilter(event, {
+        originalException: new Error('Failed to load model list', {
+          cause: new DOMException('The user aborted a request.', 'AbortError')
+        })
+      })
+    ).toBe(event)
+  })
 
   it('keeps other error types', () => {
     const event = {

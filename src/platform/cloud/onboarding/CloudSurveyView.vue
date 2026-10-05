@@ -84,6 +84,10 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     return
   }
   const result = await submitSurvey(payload, replayOwner)
+  if (result.status === 'cancelled') {
+    isSubmitting.value = false
+    return
+  }
   if (result.status === 'failed') {
     reportSurveySubmissionFailure(result.cause)
     isSubmitting.value = false
