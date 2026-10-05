@@ -642,8 +642,6 @@ export function clearWorkflowStorageForScope(scope: StorageScope): void {
     StorageKeys.agentWorkflowTabBindings(scope),
     StorageKeys.agentChatTitles(scope),
     StorageKeys.agentDeletedThreads(scope),
-    `Comfy.Workflow.Drafts:${scope}`,
-    `Comfy.Workflow.DraftOrder:${scope}`,
     ...legacyLocalRestorePointerKeys
   ]
   const localPrefixes = [`${StorageKeys.prefixes.draftPayload}${scope}:`]

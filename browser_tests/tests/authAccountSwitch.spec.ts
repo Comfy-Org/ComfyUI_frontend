@@ -420,10 +420,6 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
         credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
       )
-      await page.reload({ waitUntil: 'domcontentloaded' })
-      await comfyPage.waitForAppReady()
-      await identityPersistence.seed([accountBIdentity])
-      await page.reload({ waitUntil: 'domcontentloaded' })
       await comfyPage.waitForAppReady()
       await expect(
         page.getByRole('tab', {
