@@ -2602,19 +2602,27 @@ describe.for([{ unified: false }, { unified: true }])(
       })
 
       describe('once the tab is in the app', () => {
-        let stopRecording = () => {}
+        const stopRecording: (() => void)[] = []
 
-        afterEach(() => stopRecording())
+        afterEach(() => {
+          stopRecording.splice(0).forEach((stop) => stop())
+        })
 
-        const enterAppRecordingLandings = async () => {
+        const enterAppRecordingNavigations = async () => {
           const { server } = await install({ userId: 'user-a' })
           identity.resolve(null)
           await expect(enterApp()).resolves.toBe('/user-select')
+          const started: string[] = []
           const landings: string[] = []
-          stopRecording = router.afterEach((to) => {
-            landings.push(to.path)
-          })
-          return { server, landings }
+          stopRecording.push(
+            router.beforeEach((to) => {
+              started.push(to.path)
+            }),
+            router.afterEach((to) => {
+              landings.push(to.path)
+            })
+          )
+          return { server, started, landings }
         }
 
         it.for<{ name: string; session: ServerSession }>([
@@ -2626,10 +2634,11 @@ describe.for([{ unified: false }, { unified: true }])(
         ])(
           'sends the tab to the login page once, keeping its path, when $name',
           async ({ session }) => {
-            const { server, landings } = await enterAppRecordingLandings()
+            const { server, landings } = await enterAppRecordingNavigations()
 
             server.session = session
             await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+            await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
             await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
 
             expect(landings).toEqual(['/cloud/login'])
@@ -2640,12 +2649,12 @@ describe.for([{ unified: false }, { unified: true }])(
         )
 
         it('leaves the navigation of a sign-out in this tab to the sign-out flow', async () => {
-          const { landings } = await enterAppRecordingLandings()
+          const { started } = await enterAppRecordingNavigations()
 
           await useAuthStore().logout()
           await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
 
-          expect(landings).toEqual([])
+          expect(started).toEqual([])
         })
       })
 

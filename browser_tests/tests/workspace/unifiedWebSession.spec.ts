@@ -172,6 +172,29 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
     })
   })
 
+  test('a session revoked elsewhere sends the open tab to the login page when it becomes visible', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await comfyPage.waitForAppReady()
+    expect(page.url()).not.toContain('/cloud/login')
+
+    await page.route('**/api/auth/session', (route) =>
+      route.request().method() === 'GET'
+        ? route.fulfill({
+            status: 401,
+            contentType: 'application/json',
+            body: JSON.stringify({ code: 'session_revoked' })
+          })
+        : route.fallback()
+    )
+    await page.evaluate(() =>
+      document.dispatchEvent(new Event('visibilitychange'))
+    )
+
+    await expect(page).toHaveURL(/\/cloud\/login/)
+  })
+
   test('[E2E-03] switching workspace mints nothing until the next Run, which uses the new workspace', async ({
     comfyPage,
     tokenMints
