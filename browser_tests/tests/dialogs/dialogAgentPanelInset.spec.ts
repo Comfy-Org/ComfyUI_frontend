@@ -4,9 +4,22 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { expectDialogBoundsWithDockedPanel } from '@e2e/fixtures/utils/workspaceInset'
 
+const viewportCases = [
+  {
+    name: '1440px',
+    viewportWidth: 1440,
+    expectedOverlayBounds: { x: 0, y: 0, width: 1440, height: 800 }
+  },
+  {
+    name: '1920px',
+    viewportWidth: 1920,
+    expectedOverlayBounds: { x: 0, y: 0, width: 1920, height: 800 }
+  }
+]
+
 test.describe('Dialog layout with a docked Agent panel', () => {
-  for (const viewportWidth of [1440, 1920]) {
-    test.describe(`at a ${viewportWidth}px viewport`, () => {
+  for (const { name, viewportWidth, expectedOverlayBounds } of viewportCases) {
+    test.describe(`at a ${name} viewport`, () => {
       test.use({ viewport: { width: viewportWidth, height: 800 } })
 
       test('Templates browser stays centered at every panel width', async ({
@@ -22,7 +35,7 @@ test.describe('Dialog layout with a docked Agent panel', () => {
         )
 
         await expect(comfyPage.page.getByTestId('dialog-overlay')).toHaveBounds(
-          { x: 0, y: 0, width: viewportWidth, height: 800 },
+          expectedOverlayBounds,
           { numDigits: 1 }
         )
       })
