@@ -637,20 +637,23 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   ): Promise<void> {
     assertCancellationScopeCurrent(isScopeCurrent)
     const attemptStartedAt = Date.now()
-    const trackCancelSucceeded = () =>
+    const rail = useSubscriptionRail()
+    const trackCancelSucceeded = (billingClient: BillingClient) =>
       telemetry?.trackBillingEvent({
         operation: 'operation',
         stage: 'succeeded',
         outcome: 'success',
         operation_type: 'cancel',
+        billing_client: billingClient,
         duration_ms: Date.now() - attemptStartedAt
       })
-    const trackCancelFailed = (err: unknown) =>
+    const trackCancelFailed = (err: unknown, billingClient: BillingClient) =>
       telemetry?.trackBillingEvent({
         operation: 'operation',
         stage: 'failed',
         outcome: 'failure',
         operation_type: 'cancel',
+        billing_client: billingClient,
         failure_category: categorizeBillingApiError(err),
         duration_ms: Date.now() - attemptStartedAt
       })
@@ -659,19 +662,21 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       operation: 'operation',
       stage: 'started',
       outcome: 'pending',
-      operation_type: 'cancel'
+      operation_type: 'cancel',
+      billing_client: rail ? 'sdk' : 'legacy'
     })
 
-    const rail = useSubscriptionRail()
     if (rail) {
       const settled = await onSubscriptionRail(() =>
         rail.cancelSubscription()
       ).catch((err: unknown) => {
-        if (!(err instanceof SettledOperationError)) trackCancelFailed(err)
+        if (!(err instanceof SettledOperationError)) {
+          trackCancelFailed(err, 'sdk')
+        }
         throw err
       })
       if (settled !== DECLINED) {
-        if (!settled.operationObserved) trackCancelSucceeded()
+        if (!settled.operationObserved) trackCancelSucceeded('sdk')
         return
       }
     }
@@ -702,10 +707,10 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         // fetchStatus records its own read failure; the cancellation still
         // holds, so the operation is not in error.
         error.value = null
-        trackCancelSucceeded()
+        trackCancelSucceeded('legacy')
         return
       }
-      if (billingOpId === undefined) trackCancelFailed(err)
+      if (billingOpId === undefined) trackCancelFailed(err, 'legacy')
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
       throw err
