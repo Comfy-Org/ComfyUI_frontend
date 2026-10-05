@@ -25,8 +25,16 @@ type BaselineEntry = z.infer<typeof baselineEntrySchema>
 
 const LIVE_DEFECT_CEILING = 25
 
-const SOURCE_ROOTS = ['browser_tests', 'src']
-const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx'])
+const SOURCE_ROOTS = [
+  'apps',
+  'browser_tests',
+  'build',
+  'packages',
+  'scripts',
+  'src',
+  'tools'
+]
+const SOURCE_EXTENSIONS = new Set(['.cts', '.mts', '.ts', '.tsx'])
 
 function isTestExpression(
   expression: ts.Expression,
@@ -59,7 +67,7 @@ function hasTestBody(node: ts.CallExpression): boolean {
 
 function testTitle(
   node: ts.CallExpression,
-  runner: string,
+  runner: string | undefined,
   playwrightRunners: ReadonlySet<string>
 ): string {
   if (hasTestBody(node)) {
@@ -112,8 +120,25 @@ function importedPlaywrightRunners(node: ts.Node): string[] {
   const bindings = node.importClause?.namedBindings
   if (!bindings || !ts.isNamedImports(bindings)) return []
   return bindings.elements
+    .filter(({ propertyName, name }) =>
+      /(?:fixture|test)$/i.test((propertyName ?? name).text)
+    )
     .map(({ name }) => name.text)
-    .filter((name) => /(?:fixture|test)$/i.test(name))
+}
+
+function createsRunner(
+  initializer: ts.CallExpression,
+  runners: ReadonlySet<string>
+): boolean {
+  const { root, properties } = callChain(initializer.expression)
+  if (root !== undefined && runners.has(root) && properties.includes('extend'))
+    return true
+  return (
+    root === 'mergeTests' &&
+    initializer.arguments.some(
+      (argument) => ts.isIdentifier(argument) && runners.has(argument.text)
+    )
+  )
 }
 
 function extendedPlaywrightRunner(
@@ -121,14 +146,12 @@ function extendedPlaywrightRunner(
   runners: ReadonlySet<string>
 ): string | undefined {
   if (
-    !ts.isVariableDeclaration(node) ||
-    !ts.isIdentifier(node.name) ||
-    !node.initializer ||
-    !ts.isCallExpression(node.initializer)
+    ts.isVariableDeclaration(node) &&
+    ts.isIdentifier(node.name) &&
+    node.initializer &&
+    ts.isCallExpression(node.initializer) &&
+    createsRunner(node.initializer, runners)
   )
-    return
-  const { root, properties } = callChain(node.initializer.expression)
-  if (root && runners.has(root) && properties.includes('extend'))
     return node.name.text
 }
 
@@ -178,10 +201,27 @@ function playwrightRunnerNames(sourceFile: ts.SourceFile): Set<string> {
   return runners
 }
 
-function isVitestFailure(root: string | undefined, properties: string[]) {
+function vitestRunnerNames(sourceFile: ts.SourceFile): Set<string> {
+  const runners = new Set(['it', 'test'])
+
+  function visit(node: ts.Node) {
+    const extendedRunner = extendedPlaywrightRunner(node, runners)
+    if (extendedRunner) runners.add(extendedRunner)
+    ts.forEachChild(node, visit)
+  }
+
+  visit(sourceFile)
+  return runners
+}
+
+function isVitestFailure(
+  root: string | undefined,
+  properties: string[],
+  vitestRunners: ReadonlySet<string>
+) {
   return (
     root !== undefined &&
-    ['it', 'test'].includes(root) &&
+    vitestRunners.has(root) &&
     properties.includes('fails')
   )
 }
@@ -200,13 +240,14 @@ function isPlaywrightFailure(
 
 function expectedFailureKind(
   node: ts.CallExpression,
-  playwrightRunners: ReadonlySet<string>
+  playwrightRunners: ReadonlySet<string>,
+  vitestRunners: ReadonlySet<string>
 ): ExpectedFailureKind | undefined {
   if (ts.isCallExpression(node.parent) && node.parent.expression === node)
     return
 
   const { root, properties } = callChain(node.expression)
-  if (isVitestFailure(root, properties)) return 'vitest'
+  if (isVitestFailure(root, properties, vitestRunners)) return 'vitest'
   if (isPlaywrightFailure(root, properties, playwrightRunners))
     return 'playwright'
 }
@@ -222,7 +263,10 @@ export function inspectSource(source: string, file: string): ExpectedFailure[] {
     ts.ScriptTarget.Latest,
     true
   )
-  const playwrightRunners = playwrightRunnerNames(sourceFile)
+  const playwrightRunners = file.startsWith('browser_tests/')
+    ? playwrightRunnerNames(sourceFile)
+    : new Set<string>()
+  const vitestRunners = vitestRunnerNames(sourceFile)
   const found: Omit<ExpectedFailure, 'id'>[] = []
 
   function visit(node: ts.Node) {
@@ -231,7 +275,7 @@ export function inspectSource(source: string, file: string): ExpectedFailure[] {
       return
     }
 
-    const kind = expectedFailureKind(node, playwrightRunners)
+    const kind = expectedFailureKind(node, playwrightRunners, vitestRunners)
 
     if (kind) {
       const position = sourceFile.getLineAndCharacterOfPosition(node.getStart())
@@ -239,7 +283,7 @@ export function inspectSource(source: string, file: string): ExpectedFailure[] {
       const title =
         kind === 'vitest'
           ? vitestTitle(node)
-          : testTitle(node, root!, playwrightRunners)
+          : testTitle(node, root, playwrightRunners)
       found.push({ kind, file, line: position.line + 1, title })
     }
 

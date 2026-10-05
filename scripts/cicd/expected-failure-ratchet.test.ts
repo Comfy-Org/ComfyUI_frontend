@@ -90,4 +90,40 @@ describe('expected failure inventory', () => {
       'playwright:browser_tests/fixture.spec.ts:new title:1'
     )
   })
+
+  it('recognizes aliased, extended, and merged Playwright runners', () => {
+    const source = `
+      import { baseFixture as runner } from '@e2e/fixtures/baseFixture'
+      const extended = runner.extend({})
+      const merged = mergeTests(extended, anotherFixture)
+      merged('known defect', () => merged.fail(true))
+    `
+
+    expect(inspectSource(source, 'browser_tests/fixture.spec.ts')).toEqual([
+      {
+        id: 'playwright:browser_tests/fixture.spec.ts:known defect:1',
+        kind: 'playwright',
+        file: 'browser_tests/fixture.spec.ts',
+        line: 5,
+        title: 'known defect'
+      }
+    ])
+  })
+
+  it('does not classify extended Vitest runners as Playwright failures', () => {
+    const source = `
+      const customTest = test.extend({})
+      customTest.fails('known defect', () => {})
+    `
+
+    expect(inspectSource(source, 'src/example.test.ts')).toEqual([
+      {
+        id: 'vitest:src/example.test.ts:known defect:1',
+        kind: 'vitest',
+        file: 'src/example.test.ts',
+        line: 3,
+        title: 'known defect'
+      }
+    ])
+  })
 })
