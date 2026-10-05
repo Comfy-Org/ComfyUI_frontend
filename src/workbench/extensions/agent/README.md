@@ -3,8 +3,27 @@
 The In-App Agent panel is a manager-pattern workbench extension. The panel lives
 entirely in this subtree and renders in a right dock registered by
 `src/extensions/core/agentPanel.ts`, so it shares the host pinia and vue-i18n
-instances and wires every host dependency itself (REST client, `/ws` event source,
-draft-to-canvas seam).
+instances and wires every host dependency itself (REST client, agent events
+socket, draft-to-canvas seam).
+
+## Backend contract
+
+The panel speaks one contract on the cloud and on the local agent:
+
+- **Events socket, `/api/agent/events`** (`services/agent/agentEventSource.ts`).
+  Agent events and CRDT doc frames share it in both directions; ComfyUI's
+  `/ws` carries neither. Its URL comes from `api.apiURL`, and the caller's
+  credential rides as `?token=`, read again on every connect. Reconnects back
+  off with jitter.
+- **Identity, `GET /api/agent/identity`** (`services/agent/agentIdentity.ts`).
+  Canvas ops carry `human:<user_id>:<tab>` with the id the backend reports,
+  so the follower stays inactive until it answers.
+- **Saved workflows, `GET /api/workflows`**. A saved tab the index does not
+  name is refused with a retryable notice rather than sent without an id.
+- **Credential** (`services/agent/agentAuth.ts`). Agent requests carry the
+  signed-in user's auth header, or the stored API key when no one is signed in.
+  A signed-out send opens the sign-in dialog. Signing out or switching account
+  (or API key) reconnects the socket and looks the identity up again.
 
 ## Activation and consent
 
@@ -46,7 +65,9 @@ the Agent tour appear.
 The doc-host follower has no gate of its own: it mounts with the agent panel,
 so it runs only once the panel's activation and consent requirements above are
 satisfied.
-The follower uses the existing same-origin `/ws` connection. To run against a
+The follower's doc frames ride the events socket
+(`crdt/agentDocFrameTransport.ts`), and every open of that socket resubscribes.
+The dev server proxies `/api/agent/events` as a WebSocket. To run against a
 cloud ephemeral environment:
 
 ```bash
@@ -55,6 +76,11 @@ DEV_SERVER_COMFYUI_URL=https://<host>/ pnpm dev
 
 Incoming `doc_update` frames are decoded and applied incrementally with
 `Y.applyUpdate`; the follower never requests or fans out a full document for
-each update. Human `doc_ops` transmission is implemented, but converting local
-canvas commands to the shared semantic op vocabulary remains intentionally
-unwired until the `@comfyorg/comfy-multi-player` applier is available.
+each update. Human edits are minted into the shared op vocabulary and sent as
+`doc_ops` frames on the same socket (`crdt/docOpMinter.ts`).
+
+While the follower holds the bound document, a turn sends no draft: the
+document is the source of truth and an unversioned draft would overwrite it.
+Once the follower gives up on that document (refused for good, every subscribe
+unanswered, or unreadable), turns seed the draft again; a reconnect retries the
+document and withholds it until that attempt settles.
