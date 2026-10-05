@@ -14,6 +14,47 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 export const AGENT_SOCKET_URL = /\/api\/agent\/events(?:\?|$)/
 
 /**
+ * The document event the page dispatches, with the raw frame as its detail,
+ * once it has handled a frame from the agent socket (see
+ * `announceHandledAgentFrames`).
+ */
+export const AGENT_FRAME_HANDLED_EVENT = 'agent-socket-frame-handled'
+
+/**
+ * Makes the page announce every frame its agent socket has handled. A routed
+ * socket cannot report delivery, and the panel's own listener is not
+ * reachable from a test, so each agent socket the page opens gets a listener
+ * of its own. It is registered before the panel's, so it announces on the next
+ * task: by then the panel has handled the frame. Install before the page
+ * loads.
+ */
+export async function announceHandledAgentFrames(page: Page): Promise<void> {
+  await page.addInitScript(
+    ({ urlPattern, eventName }) => {
+      const agentSocketUrl = new RegExp(urlPattern)
+      class AnnouncingWebSocket extends window.WebSocket {
+        constructor(url: string | URL, protocols?: string | string[]) {
+          super(url, protocols)
+          if (!agentSocketUrl.test(String(url))) return
+          this.addEventListener('message', ({ data }) => {
+            setTimeout(() =>
+              document.dispatchEvent(
+                new CustomEvent(eventName, { detail: data })
+              )
+            )
+          })
+        }
+      }
+      window.WebSocket = AnnouncingWebSocket
+    },
+    {
+      urlPattern: AGENT_SOCKET_URL.source,
+      eventName: AGENT_FRAME_HANDLED_EVENT
+    }
+  )
+}
+
+/**
  * The user id `GET /api/agent/identity` reports. The follower stamps every
  * human op with `human:<user_id>:<tab>`, so it matches the signed-in cloud
  * test user the boot mocks authenticate as.
