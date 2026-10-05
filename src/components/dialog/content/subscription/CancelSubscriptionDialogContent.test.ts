@@ -1,7 +1,7 @@
 import { computed, nextTick, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { CancelRail, SubscriptionInfo } from '@/composables/billing/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import userEvent from '@testing-library/user-event'
@@ -178,7 +178,7 @@ describe('CancelSubscriptionDialogContent', () => {
       setSubscription(null)
       mockShouldUseWorkspaceBilling.value = true
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
-        undefined
+        'workspace'
       )
 
       const { unmount } = renderComponent()
@@ -458,7 +458,7 @@ describe('CancelSubscriptionDialogContent', () => {
       setSubscription(null)
       mockShouldUseWorkspaceBilling.value = true
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
-        undefined
+        'workspace'
       )
 
       renderComponent()
@@ -505,7 +505,7 @@ describe('CancelSubscriptionDialogContent', () => {
       useBillingCapabilities().canCancel = computed(() => false)
       mockCanManageSubscriptionLifecycle.value = true
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
-        undefined
+        'workspace'
       )
 
       renderComponent()
@@ -539,7 +539,7 @@ describe('CancelSubscriptionDialogContent', () => {
       setSubscription(null)
       mockShouldUseWorkspaceBilling.value = true
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
-        undefined
+        'workspace'
       )
       vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
         new Error('Refresh failed')
@@ -584,7 +584,7 @@ describe('CancelSubscriptionDialogContent', () => {
     it('asks the user to finish on Stripe and claims no success', async () => {
       setSubscription(subscription())
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
-        undefined
+        'legacy'
       )
 
       renderComponent()
@@ -607,7 +607,7 @@ describe('CancelSubscriptionDialogContent', () => {
         subscription({ isCancelled: isCancelled.value })
       )
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
-        undefined
+        'legacy'
       )
 
       const { unmount } = renderComponent()
@@ -639,7 +639,7 @@ describe('CancelSubscriptionDialogContent', () => {
         subscription({ isCancelled: isCancelled.value })
       )
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
-        undefined
+        'legacy'
       )
       const view = renderComponent(props)
       await confirm()
@@ -684,8 +684,8 @@ describe('CancelSubscriptionDialogContent', () => {
       )
       let resolvePortal!: () => void
       vi.mocked(useBillingContext().cancelSubscription).mockReturnValueOnce(
-        new Promise<void>((resolve) => {
-          resolvePortal = resolve
+        new Promise<CancelRail>((resolve) => {
+          resolvePortal = () => resolve('legacy')
         })
       )
 
@@ -711,7 +711,7 @@ describe('CancelSubscriptionDialogContent', () => {
       const status = ref<SubscriptionInfo | null>(null)
       useBillingContext().subscription = computed(() => status.value)
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
-        undefined
+        'legacy'
       )
       renderComponent()
       await confirm()
@@ -808,7 +808,7 @@ describe('CancelSubscriptionDialogContent', () => {
     it('reports abandoned, not confirmed, when closed before the cancel is observed', async () => {
       setSubscription(subscription())
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
-        undefined
+        'legacy'
       )
 
       const { unmount } = renderComponent()
@@ -835,8 +835,8 @@ describe('CancelSubscriptionDialogContent', () => {
     function pendingPortal() {
       let resolvePortal!: () => void
       vi.mocked(useBillingContext().cancelSubscription).mockReturnValueOnce(
-        new Promise<void>((resolve) => {
-          resolvePortal = resolve
+        new Promise<CancelRail>((resolve) => {
+          resolvePortal = () => resolve('legacy')
         })
       )
       return () => resolvePortal()
@@ -892,6 +892,26 @@ describe('CancelSubscriptionDialogContent', () => {
       expect(mockToastAdd).not.toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'success' })
       )
+      expect(terminalEvents()).toHaveLength(0)
+    })
+
+    it('keeps awaiting Stripe when routing flips to workspace billing mid-call in the same workspace', async () => {
+      setSubscription(subscription())
+      const workspaceRail = ref(false)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceRail.value
+      )
+      const resolvePortal = pendingPortal()
+
+      renderComponent()
+      await confirm()
+      workspaceRail.value = true
+      resolvePortal()
+
+      expect(
+        await screen.findByText(/Finish cancelling on the Stripe page/i)
+      ).toBeInTheDocument()
+      expect(mockToastAdd).not.toHaveBeenCalled()
       expect(terminalEvents()).toHaveLength(0)
     })
 

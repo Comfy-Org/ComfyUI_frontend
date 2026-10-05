@@ -58,6 +58,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { CancelRail } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import {
@@ -265,11 +266,10 @@ function handleCancelError(error: unknown) {
   reportCancelFailure(error)
 }
 
-// Routing resolves inside the cancel call, so pick the rail after it returns,
-// but only while the scope is unchanged (the call throws if it changed mid-wait).
-async function finishCancel(confirmedBeforeCall: boolean) {
+// The rail comes from the cancel call itself; current routing may have flipped since.
+async function finishCancel(rail: CancelRail, confirmedBeforeCall: boolean) {
   if (!isScopeCurrent()) return abortForScopeChange()
-  if (!shouldUseWorkspaceBilling.value) return awaitStripeCancel()
+  if (rail === 'legacy') return awaitStripeCancel()
   if (!confirmedBeforeCall) reportWorkspaceConfirmed()
   await finishWorkspaceCancel()
 }
@@ -285,11 +285,12 @@ async function onConfirmCancel() {
   lastCancelled = subscription.value ? !!subscription.value.isCancelled : null
   cancelObserved = false
   isLoading.value = true
+  let rail: CancelRail
   try {
-    await cancelSubscription(isScopeCurrent)
+    rail = await cancelSubscription(isScopeCurrent)
   } catch (error) {
     return handleCancelError(error)
   }
-  await finishCancel(confirmedBeforeCall)
+  await finishCancel(rail, confirmedBeforeCall)
 }
 </script>

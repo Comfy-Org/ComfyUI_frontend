@@ -610,6 +610,28 @@ describe('useBillingContext', () => {
     expect(() => showSubscriptionDialog()).not.toThrow()
   })
 
+  it('reports the rail in effect when cancelSubscription was dispatched, not the one after it resolves', async () => {
+    mockBillingRail.value = 'legacy_stripe'
+    let finishPortal!: () => void
+    vi.mocked(useSubscription().manageSubscription).mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishPortal = resolve
+      })
+    )
+    const context = useBillingContext()
+    expect(context.type.value).toBe('legacy')
+
+    const cancelling = context.cancelSubscription()
+    await vi.waitFor(() =>
+      expect(useSubscription().manageSubscription).toHaveBeenCalled()
+    )
+    mockIsPersonal.value = false
+    expect(context.type.value).toBe('workspace')
+    finishPortal()
+
+    expect(await cancelling).toBe('legacy')
+  })
+
   describe('workspace not loaded yet', () => {
     function holdWorkspaceUnloaded(type: 'personal' | 'team') {
       const loaded = ref(false)
