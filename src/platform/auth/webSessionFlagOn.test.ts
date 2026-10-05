@@ -185,7 +185,7 @@ type ServerSession =
   | 'revoked'
   | 'network'
   | 'restore_token_revoked'
-  | { userId: string; signInProvider?: string }
+  | { userId: string; provider?: string }
 
 interface FeatureAnswers {
   probe: boolean
@@ -206,13 +206,16 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
-function sessionBody(userId: string, signInProvider = 'google.com') {
+function sessionBody(
+  userId: string,
+  { provider = 'google.com' }: { provider?: string } = {}
+) {
   return {
     user: {
       id: userId,
       email: `${userId}@example.com`,
       email_verified: true,
-      sign_in_provider: signInProvider
+      sign_in_provider: provider
     },
     csrf_token: `csrf-${userId}`,
     expires_at: new Date(Date.now() + 86_400_000).toISOString(),
@@ -256,7 +259,9 @@ function installServer(
       return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
     }
     if (typeof session === 'object')
-      return jsonResponse(sessionBody(session.userId, session.signInProvider))
+      return jsonResponse(
+        sessionBody(session.userId, { provider: session.provider })
+      )
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
     return jsonResponse({ code, message: code }, 401)
   }
@@ -3043,10 +3048,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
     'a pending desktop login code on a $provider session-only tab (sso_enabled $sso)',
     async ({ sso, provider, inApp, code }) => {
       const desktopCode = `dlc_${code.repeat(43)}`
-      installServer(
-        { userId: 'user-a', signInProvider: provider },
-        { sso_enabled: sso }
-      )
+      installServer({ userId: 'user-a', provider }, { sso_enabled: sso })
       await refreshRemoteConfig({ useAuth: false })
       useAuthStore()
       identity.resolve(null)
