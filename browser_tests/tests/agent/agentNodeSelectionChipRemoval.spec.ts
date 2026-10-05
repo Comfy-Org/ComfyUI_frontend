@@ -44,6 +44,9 @@ test.describe(
         })
 
         await expect(panel.getByTestId('node-reference-chip')).toBeVisible()
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+          .toEqual([node.id])
       })
 
       const removeButton = panel.getByRole('button', {
@@ -55,6 +58,9 @@ test.describe(
         await expect(removeButton).toBeVisible()
         await removeButton.click()
         await expect(removeButton).toHaveCount(0)
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+          .toEqual([])
         await expect
           .poll(async () => {
             const canvas = await comfyPage.canvas.screenshot({

@@ -2190,6 +2190,7 @@ function setupNodeSelectionCanvas() {
     selectItems,
     deselect,
     deselectAll,
+    setDirty: vi.fn(),
     animateToBounds: vi.fn(),
     canvas: canvasElement,
     ds: createTestDragAndScale(900, 700)
@@ -10398,6 +10399,37 @@ describe('AgentPanelRoot workflow binding', () => {
     expect([...state.selectedItems]).toEqual([state.nodes[0]])
     expect(canvasStore.selectedItems).toEqual([state.nodes[0]])
   })
+
+  it.for([1, 2])(
+    'redraws the canvas after removing an inline node from %i selected nodes',
+    async (count) => {
+      makeTab()
+      mockMessagesEndpoint('wf-42')
+      const state = setupOwnedSelectionCanvas()
+      const other = new LGraphNode('VAE Decode')
+      state.subgraph.add(other)
+      vi.spyOn(state.canvas, 'animateToBounds').mockImplementation(() => {})
+      renderWithSelectedTarget()
+      useAgentPanelStore().isOpen = true
+      await enterNodeSelectionMode()
+      const selected = [state.subgraphNode, other].slice(0, count)
+      state.canvas.selectItems(selected)
+      syncFakeSelection()
+      await nextTick()
+      state.canvas.dirty_canvas = false
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
+      )
+
+      expect(
+        screen.queryByRole('button', { name: 'Remove KSampler #12 reference' })
+      ).toBeNull()
+      expect([...state.canvas.selectedItems]).toEqual(selected.slice(1))
+      expect(state.subgraphNode.selected).toBe(false)
+      expect(state.canvas.dirty_canvas).toBe(true)
+    }
+  )
 
   it('does not expose a canvas-focus action on a reference chip', async () => {
     makeTab()

@@ -1745,6 +1745,7 @@ function onRemoveSelectionTag(id: string): void {
   removeSelectionTag(id)
   if (node) {
     canvasStore.canvas?.deselect(node)
+    canvasStore.canvas?.setDirty(true)
   }
 }
 
