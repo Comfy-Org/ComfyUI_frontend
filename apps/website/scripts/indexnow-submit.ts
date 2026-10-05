@@ -17,14 +17,7 @@ import {
 import type { IndexNowPayload } from '@/lib/indexnow'
 import { planSubmission } from '@/lib/indexnow'
 
-const { values } = parseArgs({
-  options: {
-    current: { type: 'string' },
-    previous: { type: 'string' },
-    'previous-status': { type: 'string' },
-    'dry-run': { type: 'boolean', default: false }
-  }
-})
+const REQUEST_TIMEOUT_MS = 30_000
 
 function report(line: string): void {
   process.stdout.write(`${line}\n`)
@@ -47,8 +40,11 @@ function readText(path: string | undefined): string {
 }
 
 async function keyFileIsLive(): Promise<boolean> {
-  const response = await fetch(INDEXNOW_KEY_LOCATION)
-  return response.ok && (await response.text()).trim() === INDEXNOW_KEY
+  const response = await fetch(INDEXNOW_KEY_LOCATION, {
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  })
+  const body = await response.text()
+  return response.ok && body.trim() === INDEXNOW_KEY
 }
 
 const ACCEPTED = new Set([200, 202])
@@ -60,8 +56,10 @@ async function postBatch(
   const response = await fetch(INDEXNOW_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   })
+  await response.body?.cancel()
   const accepted = ACCEPTED.has(response.status)
   const line = `${label} (${payload.urlList.length} URLs): HTTP ${response.status}`
   if (accepted) report(`IndexNow ${line}`)
@@ -88,6 +86,14 @@ function preview(payloads: IndexNowPayload[]): void {
 }
 
 async function main(): Promise<void> {
+  const { values } = parseArgs({
+    options: {
+      current: { type: 'string' },
+      previous: { type: 'string' },
+      'previous-status': { type: 'string' },
+      'dry-run': { type: 'boolean', default: false }
+    }
+  })
   const plan = planSubmission(
     readText(values.current),
     Number(values['previous-status']),
