@@ -1,5 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequired'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { User } from 'firebase/auth'
@@ -1059,6 +1061,81 @@ describe('useWorkspaceAuthStore', () => {
       expect(token).toBeNull()
       expect(currentWorkspace.value).toBeNull()
       expect(useToastStore().add).toHaveBeenCalledTimes(1)
+    })
+
+    it.for([
+      { ssoEnabled: false, toasts: 1, shown: false },
+      { ssoEnabled: true, toasts: 0, shown: true }
+    ])(
+      'a recovery refused with sso_required tears down; the SSO screen replaces the toast: $shown (sso_enabled $ssoEnabled)',
+      async ({ ssoEnabled, toasts, shown }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+        vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+          'firebase-token-xyz'
+        )
+        vi.stubGlobal(
+          'fetch',
+          vi
+            .fn()
+            .mockResolvedValueOnce({
+              ok: true,
+              json: () => Promise.resolve(mockTokenResponse)
+            })
+            .mockResolvedValue(
+              Response.json(
+                { code: 'sso_required', message: 'use SSO' },
+                { status: 403 }
+              )
+            )
+        )
+
+        const store = useWorkspaceAuthStore()
+        const { currentWorkspace } = storeToRefs(store)
+        await store.switchWorkspace('workspace-123')
+
+        const token = await store.ensureWorkspaceToken('workspace-999')
+        await vi.dynamicImportSettled()
+
+        expect(token).toBeNull()
+        expect(currentWorkspace.value).toBeNull()
+        expect(useToastStore().add).toHaveBeenCalledTimes(toasts)
+        if (toasts) {
+          expect(useToastStore().add).toHaveBeenCalledWith(
+            expect.objectContaining({
+              detail: 'workspaceAuth.errors.accessDenied'
+            })
+          )
+        }
+        expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
+          shown
+        )
+      }
+    )
+
+    it('names an sso_required refusal SSO_REQUIRED and keeps the access-denied message', async () => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            Response.json(
+              { code: 'sso_required', message: 'use SSO' },
+              { status: 403 }
+            )
+          )
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      await expect(store.switchWorkspace('workspace-123')).rejects.toEqual(
+        expect.objectContaining({
+          code: 'SSO_REQUIRED',
+          message: 'workspaceAuth.errors.accessDenied'
+        })
+      )
     })
 
     it('backs off re-minting after a failed recovery instead of retrying every call', async () => {
@@ -3157,6 +3234,65 @@ describe('useWorkspaceAuthStore', () => {
           })
         )
         expect(unifiedToken.value).toBeNull()
+      }
+    )
+
+    it.for([
+      { ssoEnabled: false, toasts: 1, shown: false },
+      { ssoEnabled: true, toasts: 0, shown: true }
+    ])(
+      'a refresh refused with sso_required clears the slot; the SSO screen replaces the toast: $shown (sso_enabled $ssoEnabled)',
+      async ({ ssoEnabled, toasts, shown }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+        vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+          'firebase-token-xyz'
+        )
+        const expiresInMs = 3600 * 1000
+        vi.stubGlobal(
+          'fetch',
+          vi
+            .fn()
+            .mockResolvedValueOnce({
+              ok: true,
+              json: () =>
+                Promise.resolve({
+                  ...personalTokenResponse,
+                  expires_at: new Date(Date.now() + expiresInMs).toISOString()
+                })
+            })
+            .mockResolvedValue(
+              Response.json(
+                { code: 'sso_required', message: 'use SSO' },
+                { status: 403 }
+              )
+            )
+        )
+
+        const store = useWorkspaceAuthStore()
+        const { unifiedToken } = storeToRefs(store)
+        await store.mintAtLogin()
+
+        await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
+        await vi.dynamicImportSettled()
+
+        expect(unifiedToken.value).toBeNull()
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            tags: { failure_code: 'SSO_REQUIRED', retry_count: 0 }
+          })
+        )
+        expect(useToastStore().add).toHaveBeenCalledTimes(toasts)
+        if (toasts) {
+          expect(useToastStore().add).toHaveBeenCalledWith(
+            expect.objectContaining({
+              detail: 'workspaceAuth.errors.accessDenied'
+            })
+          )
+        }
+        expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
+          shown
+        )
       }
     )
 

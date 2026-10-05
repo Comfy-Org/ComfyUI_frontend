@@ -1,10 +1,20 @@
 import { ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { SSO_DEFAULT_RETURN_TO } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
+import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
+import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
+import { useAuthStore } from '@/stores/authStore'
+
+type AuthMode = 'social' | 'email' | 'sso'
 
 /**
  * State shared by CloudLoginView and CloudSignupView. Sign-up passes
@@ -16,14 +26,38 @@ export function useCloudAuthPage(options: {
   successSummary: string
   defaultRedirect: () => RouteLocationRaw
 }) {
+  const route = useRoute()
+  const { flags } = useFeatureFlags()
   const authError = ref('')
-  const authMode = ref<'social' | 'email' | 'sso'>('social')
+  const authMode = ref<AuthMode>(
+    flags.ssoEnabled && route.query.sso === SSO_ENTRY_OPEN_QUERY.sso
+      ? 'sso'
+      : 'social'
+  )
 
-  const { onAuthSuccess } = usePostAuthRedirect({
+  const { onAuthSuccess: redirectAfterAuth } = usePostAuthRedirect({
     authError,
     successSummary: options.successSummary,
     defaultRedirect: options.defaultRedirect
   })
+
+  /**
+   * Firebase accepts an account an SSO organization holds; ingest refuses its
+   * session. That account is signed out again and sent to SSO.
+   */
+  async function onAuthSuccess() {
+    if (flags.ssoEnabled && (await useSessionCookie().sessionRequiresSso())) {
+      const authStore = useAuthStore()
+      const email = authStore.userEmail ?? undefined
+      await authStore.logout()
+      presentSsoRequired({
+        email,
+        returnTo: getSafePreviousFullPath(route.query) ?? SSO_DEFAULT_RETURN_TO
+      })
+      return
+    }
+    await redirectAfterAuth()
+  }
 
   const social = useSocialSignIn({
     isNewUser: () => options.isNewUser,

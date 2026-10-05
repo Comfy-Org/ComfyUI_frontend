@@ -36,6 +36,7 @@ import {
   rememberSignedInSession
 } from '@/platform/auth/session/ssoReentryStorage'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequired'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   WebSessionTokenError,
@@ -64,6 +65,7 @@ import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
   resultItemUrl,
@@ -185,6 +187,7 @@ type ServerSession =
   | 'revoked'
   | 'network'
   | 'restore_token_revoked'
+  | 'sso_required'
   | { userId: string; provider?: string }
 
 interface FeatureAnswers {
@@ -245,6 +248,9 @@ function installServer(
     if (server.dropPosts) throw new TypeError('reloaded')
     if (server.session === 'restore_token_revoked') {
       return jsonResponse({ code: 'TOKEN_REVOKED', message: 'revoked' }, 401)
+    }
+    if (server.session === 'sso_required') {
+      return jsonResponse({ code: 'sso_required', message: 'use SSO' }, 403)
     }
     server.session = { userId: 'user-a' }
     return jsonResponse({ success: true })
@@ -393,6 +399,21 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
       expect(methodsOf(server.requests)).toEqual(['POST', 'GET'])
     )
   })
+
+  it.for([
+    { session: 'none', requiresSso: false },
+    { session: 'sso_required', requiresSso: true }
+  ] satisfies { session: ServerSession; requiresSso: boolean }[])(
+    'an interactive sign-in answered $session tells the login page requiresSso=$requiresSso',
+    async ({ session, requiresSso }) => {
+      installServer(session)
+      await refreshRemoteConfig({ useAuth: false })
+
+      await useAuthStore().login('user-a@example.com', 'password')
+
+      expect(await useSessionCookie().sessionRequiresSso()).toBe(requiresSso)
+    }
+  )
 
   it.for([
     {
@@ -920,6 +941,29 @@ describe('cloud API requests on the shared web session', () => {
     ])
   })
 
+  it.for([
+    { ssoEnabled: true, shown: true },
+    { ssoEnabled: false, shown: false }
+  ])(
+    'sso_required is returned as is; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled, shown }) => {
+      const ingest = await bootOnSession({ sso_enabled: ssoEnabled })
+      ingest.refusals.push('sso_required')
+
+      const response = await postPrompt()
+      await vi.dynamicImportSettled()
+
+      expect(response.status).toBe(403)
+      expect(ingest.requests).toHaveLength(1)
+      const dialog = useDialogStore().dialogStack.find(
+        ({ key }) => key === SSO_REQUIRED_DIALOG_KEY
+      )
+      expect(dialog?.contentProps).toEqual(
+        shown ? { email: 'user-a@example.com' } : undefined
+      )
+    }
+  )
+
   it('reports a request sent on the session as authenticated', async () => {
     await bootOnSession()
     const onAuthHeader = vi.fn()
@@ -1397,6 +1441,36 @@ describe('comfy-api calls on the shared web session', () => {
       assert(rejection instanceof WebSessionTokenError)
       expect(rejection.failure.code).toBe(failure)
       expect(rejection.message).toBe(copy)
+    }
+  )
+
+  it.for([
+    {
+      ssoEnabled: false,
+      copy: 'Your request was refused. Reload the page and try again.',
+      shown: false
+    },
+    {
+      ssoEnabled: true,
+      copy: 'Your organization requires single sign-on. Continue with SSO to sign in.',
+      shown: true
+    }
+  ])(
+    'a mint refused with sso_required is SSO_REQUIRED; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled, copy, shown }) => {
+      const ingest = await bootOnSession({ sso_enabled: ssoEnabled })
+      ingest.mintRefusal = () =>
+        jsonResponse({ code: 'sso_required', message: 'use SSO' }, 403)
+
+      const rejection = await webSessionResourceHeader().catch(
+        (error: unknown) => error
+      )
+      await vi.dynamicImportSettled()
+
+      assert(rejection instanceof WebSessionTokenError)
+      expect(rejection.failure.code).toBe('SSO_REQUIRED')
+      expect(rejection.message).toBe(copy)
+      expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(shown)
     }
   )
 

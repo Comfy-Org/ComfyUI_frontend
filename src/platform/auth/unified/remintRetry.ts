@@ -136,6 +136,11 @@ export async function fetchWithUnifiedRemint(
       ? input.clone()
       : input
   const response = await fetch(input, init)
+  if (response.status === 403 && isCloud) {
+    const { presentForResponse } =
+      await import('@/platform/auth/sso/ssoRequired')
+    await presentForResponse(response)
+  }
   if (!shouldRetryOn401 || response.status !== 401) {
     return response
   }
@@ -199,6 +204,15 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
   client.interceptors.response.use(
     (response) => response,
     async (error: unknown) => {
+      if (
+        isCloud &&
+        axios.isAxiosError(error) &&
+        error.response?.status === 403
+      ) {
+        const { presentForRefusal } =
+          await import('@/platform/auth/sso/ssoRequired')
+        presentForRefusal(error.response.status, error.response.data)
+      }
       if (
         !isRetriableUnauthorized(error) ||
         !(await shouldRemintCloudRequest())

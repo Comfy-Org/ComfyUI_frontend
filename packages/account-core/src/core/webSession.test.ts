@@ -99,6 +99,12 @@ describe('web session status mapping', () => {
     },
     {
       status: 403,
+      body: errorBody('sso_required'),
+      code: 'SSO_REQUIRED',
+      server: 'sso_required'
+    },
+    {
+      status: 403,
       body: errorBody('origin_not_allowed'),
       code: 'SESSION_REQUEST_REFUSED',
       server: 'origin_not_allowed'

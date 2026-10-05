@@ -31,10 +31,8 @@ import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
-import {
-  decideSsoReentry,
-  SSO_ENTRY_OPEN_QUERY
-} from '@/platform/cloud/onboarding/sso/ssoReentry'
+import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
+import { decideSsoReentry } from '@/platform/cloud/onboarding/sso/ssoReentry'
 import {
   hasPendingDesktopLoginCode,
   installDesktopLoginRedemption
