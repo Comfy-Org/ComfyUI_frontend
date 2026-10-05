@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { workshopPages } from '../../config/workshop-page-content'
+import { workshopPages } from '@/config/workshop-page-content'
 import { modelOgImage } from './model-page'
 
 const VIDEO_EXTENSION = /\.(mp4|webm|mov|m4v|mkv)(\?|#|$)/i

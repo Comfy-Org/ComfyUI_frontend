@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { CircleStop, Crosshair, LoaderCircle } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ReshootTake } from '../../../../composables/useReshoot'
-import type { Locale } from '../../../../i18n/translations'
+import type { ReshootTake } from '@/composables/useReshoot'
+import type { Locale } from '@/i18n/translations'
 import { takeLabel } from './take-label'
 
 const {

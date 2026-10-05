@@ -86,7 +86,15 @@ export function useUploadModelWizard(
   const uploadTypeMismatch = ref<UploadModelTypeMismatch | null>(null)
   let stopAsyncWatch: (() => void) | undefined
   let activeAsyncTaskId: string | undefined
-  onScopeDispose(() => stopAsyncWatch?.())
+  let uploadGeneration = 0
+  let disposed = false
+  const isStaleUpload = (generation: number) =>
+    disposed || generation !== uploadGeneration
+  onScopeDispose(() => {
+    disposed = true
+    uploadGeneration++
+    stopAsyncWatch?.()
+  })
 
   const wizardData = ref<WizardData>({
     url: '',
@@ -225,7 +233,7 @@ export function useUploadModelWizard(
 
   async function uploadPreviewImage(
     filename: string
-  ): Promise<string | undefined> {
+  ): Promise<{ id: string; createdNew: boolean } | undefined> {
     if (!wizardData.value.previewImage) return undefined
 
     try {
@@ -243,19 +251,20 @@ export function useUploadModelWizard(
         name: `${baseFilename}_preview.${extension}`,
         tags: ['preview']
       })
-      return previewAsset.id
+      return {
+        id: previewAsset.id,
+        createdNew: previewAsset.created_new
+      }
     } catch (error) {
       console.error('Failed to upload preview image:', error)
       return undefined
     }
   }
 
-  async function refreshModelCaches() {
-    if (!resolvedModelType.value) return
+  async function refreshModelCaches(modelType = resolvedModelType.value) {
+    if (!modelType) return
 
-    const providers = modelToNodeStore.getAllNodeProviders(
-      resolvedModelType.value
-    )
+    const providers = modelToNodeStore.getAllNodeProviders(modelType)
     const results = await Promise.allSettled(
       providers.map((provider) =>
         assetsStore.updateModelsForNodeType(provider.nodeDef.name)
@@ -310,6 +319,74 @@ export function useUploadModelWizard(
     return true
   }
 
+  function watchAsyncUpload(
+    taskId: string,
+    filename: string,
+    modelType: string | undefined
+  ): UploadModelSuccess {
+    uploadStatus.value = 'processing'
+    const uploadSuccess: UploadModelSuccess = {
+      filename,
+      modelType,
+      taskId,
+      status: 'processing'
+    }
+
+    activeAsyncTaskId = taskId
+    const watchState: { resolved: boolean; stop?: () => void } = {
+      resolved: false
+    }
+    const stop = watch(
+      () =>
+        assetDownloadStore.downloadList.find((d) => d.taskId === taskId)
+          ?.status,
+      async (status) => {
+        if (activeAsyncTaskId !== taskId) {
+          watchState.stop?.()
+          return
+        }
+        if (status === 'completed') {
+          watchState.resolved = true
+          uploadStatus.value = 'success'
+          uploadError.value = ''
+          await refreshModelCaches()
+          watchState.stop?.()
+          if (stopAsyncWatch === watchState.stop) stopAsyncWatch = undefined
+          if (activeAsyncTaskId === taskId) activeAsyncTaskId = undefined
+          return
+        }
+        if (
+          status === 'failed' ||
+          status === 'cancellation_pending' ||
+          status === 'cancelled'
+        ) {
+          // Keep watching because an authoritative completion can replace
+          // provisional failure and cancellation states.
+          const download = assetDownloadStore.downloadList.find(
+            (d) => d.taskId === taskId
+          )
+          uploadStatus.value = 'error'
+          uploadError.value =
+            status === 'cancelled' || status === 'cancellation_pending'
+              ? t('electronFileDownload.cancelled')
+              : download?.error ||
+                t('assetBrowser.downloadFailed', {
+                  name: download?.assetName || ''
+                })
+        }
+      },
+      { immediate: true }
+    )
+    watchState.stop = stop
+    if (watchState.resolved) {
+      stop()
+      stopAsyncWatch = undefined
+    } else {
+      stopAsyncWatch = stop
+    }
+    return uploadSuccess
+  }
+
   async function uploadModel(): Promise<UploadModelSuccess | null> {
     if (isUploading.value) return null
     if (!canUploadModel.value) {
@@ -323,6 +400,7 @@ export function useUploadModelWizard(
     }
 
     isUploading.value = true
+    const generation = ++uploadGeneration
     stopAsyncWatch?.()
     stopAsyncWatch = undefined
     activeAsyncTaskId = undefined
@@ -341,7 +419,18 @@ export function useUploadModelWizard(
         wizardData.value.metadata?.name ||
         'model'
 
-      const previewId = await uploadPreviewImage(filename)
+      const preview = await uploadPreviewImage(filename)
+      if (isStaleUpload(generation)) {
+        if (preview?.createdNew) {
+          try {
+            await assetService.deleteAsset(preview.id)
+          } catch (error) {
+            console.error('Failed to clean up stale preview image:', error)
+          }
+        }
+        return null
+      }
+
       const userMetadata = {
         source: source.type,
         source_url: wizardData.value.url,
@@ -352,7 +441,7 @@ export function useUploadModelWizard(
         source_url: wizardData.value.url,
         tags,
         user_metadata: userMetadata,
-        preview_id: previewId
+        preview_id: preview?.id
       })
 
       if (result.type === 'async' && result.task.status !== 'completed') {
@@ -363,73 +452,21 @@ export function useUploadModelWizard(
             filename
           )
         }
-        uploadStatus.value = 'processing'
-        uploadSuccess = {
-          filename,
-          modelType,
-          taskId: result.task.task_id,
-          status: 'processing'
-        }
+      }
 
-        const taskId = result.task.task_id
-        activeAsyncTaskId = taskId
-        const watchState: {
-          resolved: boolean
-          stop?: () => void
-        } = { resolved: false }
-        const stop = watch(
-          () =>
-            assetDownloadStore.downloadList.find((d) => d.taskId === taskId)
-              ?.status,
-          async (status) => {
-            if (activeAsyncTaskId !== taskId) {
-              watchState.stop?.()
-              return
-            }
-            if (status === 'completed') {
-              // `completed` is the only status the download store treats as
-              // immutable, so it is the only one worth stopping on.
-              watchState.resolved = true
-              uploadStatus.value = 'success'
-              uploadError.value = ''
-              await refreshModelCaches()
-              watchState.stop?.()
-              if (stopAsyncWatch === watchState.stop) {
-                stopAsyncWatch = undefined
-              }
-              if (activeAsyncTaskId === taskId) {
-                activeAsyncTaskId = undefined
-              }
-            } else if (
-              status === 'failed' ||
-              status === 'cancellation_pending' ||
-              status === 'cancelled'
-            ) {
-              // Keep watching: the download store leaves `failed` recheckable
-              // and lets an authoritative `completed` replace a confirmed
-              // `cancelled`, so this error screen can still be recovered from.
-              const download = assetDownloadStore.downloadList.find(
-                (d) => d.taskId === taskId
-              )
-              uploadStatus.value = 'error'
-              uploadError.value =
-                status === 'cancelled' || status === 'cancellation_pending'
-                  ? t('electronFileDownload.cancelled')
-                  : download?.error ||
-                    t('assetBrowser.downloadFailed', {
-                      name: download?.assetName || ''
-                    })
-            }
-          },
-          { immediate: true }
-        )
-        watchState.stop = stop
-        if (watchState.resolved) {
-          stop()
-          stopAsyncWatch = undefined
-        } else {
-          stopAsyncWatch = stop
+      if (isStaleUpload(generation)) {
+        if (result.type === 'sync' || result.task.status === 'completed') {
+          await refreshModelCaches(modelType)
         }
+        return null
+      }
+
+      if (result.type === 'async' && result.task.status !== 'completed') {
+        uploadSuccess = watchAsyncUpload(
+          result.task.task_id,
+          filename,
+          modelType
+        )
       } else {
         if (
           requiredModelType &&
@@ -443,6 +480,7 @@ export function useUploadModelWizard(
 
         uploadStatus.value = 'success'
         await refreshModelCaches()
+        if (isStaleUpload(generation)) return null
         uploadSuccess = {
           filename:
             result.type === 'sync' ? getAssetFilename(result.asset) : filename,
@@ -452,13 +490,16 @@ export function useUploadModelWizard(
       }
       currentStep.value = 3
     } catch (error) {
+      if (isStaleUpload(generation)) return null
       console.error('Failed to upload asset:', error)
       uploadStatus.value = 'error'
       uploadError.value =
         error instanceof Error ? error.message : 'Failed to upload model'
       currentStep.value = 3
     } finally {
-      isUploading.value = false
+      if (!isStaleUpload(generation)) {
+        isUploading.value = false
+      }
     }
     return uploadSuccess
   }
@@ -470,6 +511,7 @@ export function useUploadModelWizard(
   }
 
   function resetWizard() {
+    uploadGeneration++
     stopAsyncWatch?.()
     stopAsyncWatch = undefined
     activeAsyncTaskId = undefined

@@ -8,6 +8,7 @@ import type { noDuplicateIngestType as NoDuplicateIngestType } from './comfyInge
 import type { useGlobalPinia as UseGlobalPinia } from './globalPinia'
 import type {
   noRelativePackages as NoRelativePackages,
+  noRelativeParentPaths as NoRelativeParentPaths,
   noRestrictedPaths as NoRestrictedPaths,
   noUselessPathSegments as NoUselessPathSegments
 } from './importPaths'
@@ -50,12 +51,17 @@ const { noDuplicateIngestType } = requireFrom('./comfyIngestTypes.ts') as {
 const { useGlobalPinia } = requireFrom('./globalPinia.ts') as {
   useGlobalPinia: typeof UseGlobalPinia
 }
-const { noRelativePackages, noRestrictedPaths, noUselessPathSegments } =
-  requireFrom('./importPaths.ts') as {
-    noRelativePackages: typeof NoRelativePackages
-    noRestrictedPaths: typeof NoRestrictedPaths
-    noUselessPathSegments: typeof NoUselessPathSegments
-  }
+const {
+  noRelativePackages,
+  noRelativeParentPaths,
+  noRestrictedPaths,
+  noUselessPathSegments
+} = requireFrom('./importPaths.ts') as {
+  noRelativePackages: typeof NoRelativePackages
+  noRelativeParentPaths: typeof NoRelativeParentPaths
+  noRestrictedPaths: typeof NoRestrictedPaths
+  noUselessPathSegments: typeof NoUselessPathSegments
+}
 const { noNewErrorThrow } = requireFrom('./noNewErrorThrow.ts') as {
   noNewErrorThrow: typeof NoNewErrorThrow
 }
@@ -131,6 +137,7 @@ export default {
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
     'no-relative-packages': noRelativePackages,
+    'no-relative-parent-paths': noRelativeParentPaths,
     'no-restricted-paths': noRestrictedPaths,
     'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,
     'no-unsafe-error-assertion': noUnsafeErrorAssertion,

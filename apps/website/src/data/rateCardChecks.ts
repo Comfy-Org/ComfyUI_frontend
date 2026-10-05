@@ -1,4 +1,4 @@
-import type { RateCard } from '../types/rate-card'
+import type { RateCard } from '@/types/rate-card'
 
 // Kept free of the snapshot import so the refresh script can still run, and
 // replace the snapshot, when the committed one is invalid.

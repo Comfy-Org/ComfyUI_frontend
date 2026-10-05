@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import type { Component } from 'vue'
 import {
   CircleAlert,
@@ -12,12 +12,9 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  Take,
-  TakeKind
-} from '../../../lib/workshop/cinematic-studio/reel'
-import { takeKind } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
+import type { Take, TakeKind } from '@/lib/workshop/cinematic-studio/reel'
+import { takeKind } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
 import { aspectStyle } from './aspect-style'
 
 const {

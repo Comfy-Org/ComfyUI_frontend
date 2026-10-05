@@ -2746,6 +2746,23 @@ describe('useSubscription', () => {
       expect(useAuthActions().accessBillingPortalDirect).toHaveBeenCalled()
     })
 
+    it('passes the cancel option to the portal only when asked', async () => {
+      const { manageSubscription, handleInvoiceHistory } =
+        useSubscriptionWithScope()
+      const open = vi.mocked(useAuthActions().accessBillingPortalDirect)
+
+      await manageSubscription({ cancelSubscription: true })
+      expect(open).toHaveBeenLastCalledWith(undefined, {
+        cancelSubscription: true
+      })
+
+      await manageSubscription()
+      expect(open).toHaveBeenLastCalledWith(undefined, undefined)
+
+      await handleInvoiceHistory()
+      expect(open).toHaveBeenLastCalledWith(undefined, undefined)
+    })
+
     describe('portal telemetry', () => {
       type PortalAction = 'manageSubscription' | 'handleInvoiceHistory'
 

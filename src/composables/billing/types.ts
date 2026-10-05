@@ -132,8 +132,13 @@ export interface BillingState {
   renewalInvoice: ComputedRef<RenewalInvoice | null>
 }
 
-export interface BillingContext extends BillingState, BillingActions {
+/** The rail a cancel actually ran on, fixed when the call was dispatched. */
+export type CancelRail = Exclude<BillingType, 'unknown'>
+
+export interface BillingContext
+  extends BillingState, Omit<BillingActions, 'cancelSubscription'> {
   type: ComputedRef<BillingType>
+  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<CancelRail>
   reconcileSubscriptionSuccess: () => Promise<void>
   /** Reads the checkout rail's status; true once its pending operation is adopted. */
   readCheckoutOperation: () => Promise<boolean>

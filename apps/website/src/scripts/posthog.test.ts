@@ -664,7 +664,7 @@ describe('Workshop analytics transport', () => {
       const { initPostHog, captureWorkshopEvent } = await import('./posthog')
       const { workshopFailureAnalytics } = await import('./workshop-analytics')
       const { WorkshopRouterError } =
-        await import('../config/workshop-router-errors')
+        await import('@/config/workshop-router-errors')
       const cause = new DOMException('Private filename.png', 'NotReadableError')
       const properties = {
         ...tags,

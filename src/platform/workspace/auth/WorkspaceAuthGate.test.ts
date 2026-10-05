@@ -1,6 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { WebSession } from '@comfyorg/account-core/webSession'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -9,7 +14,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -409,6 +414,57 @@ describe('WorkspaceAuthGate', () => {
       expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+    })
+  })
+
+  describe('cloud builds - Firebase user signed in on the web session', () => {
+    let releaseRequests = () => {}
+
+    beforeEach(() => {
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-a' } })
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+      vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
+        undefined
+      )
+      releaseRequests = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => fromPartial<WebSessionRequestScope>({})
+        })
+      )
+    })
+
+    afterEach(() => releaseRequests())
+
+    it('initializes the workspace without minting a unified token', async () => {
+      mountComponent()
+      await flushPromises()
+
+      expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+    })
+
+    it('mints nothing when unmounted while the session lookup is pending', async () => {
+      releaseRequests()
+      let settleScope = (_scope: WebSessionRequestScope | undefined) => {}
+      const pendingScope = new Promise<WebSessionRequestScope | undefined>(
+        (resolve) => {
+          settleScope = resolve
+        }
+      )
+      releaseRequests = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({ scope: () => pendingScope })
+      )
+
+      const { unmount } = mountComponent()
+      await flushPromises()
+      unmount()
+      settleScope(undefined)
+      await flushPromises()
+
+      expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
     })
   })
 

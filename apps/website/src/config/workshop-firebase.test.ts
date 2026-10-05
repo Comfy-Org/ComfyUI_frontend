@@ -1,7 +1,7 @@
 import type { UserCredential } from 'firebase/auth'
 import { describe, expect, it, vi } from 'vitest'
 
-import { captureSignupRollbackFailure } from '../scripts/posthog'
+import { captureSignupRollbackFailure } from '@/scripts/posthog'
 import {
   isWorkshopProvisioningError,
   provisionCustomer,
@@ -20,7 +20,7 @@ const h = vi.hoisted(() => ({
   signInWithGitHub: vi.fn()
 }))
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 vi.mock<unknown>(import('@comfyorg/account-core/firebase'), () => ({
   createFirebaseIdentity: (config: unknown) => {
