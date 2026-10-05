@@ -279,8 +279,8 @@ else
     total_skipped=0
     total_tests=0
 
-    IFS='|' read -r -a agg_counts_array <<< "$all_counts"
-    for counts_json in "${agg_counts_array[@]}"; do
+    IFS='|' read -r -a counts_array <<< "$all_counts"
+    for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && continue
         read -r passed failed flaky skipped total <<< "$(parse_counts "$counts_json")"
         total_passed=$((total_passed + passed))
@@ -321,7 +321,7 @@ else
 
 ### ❌ Failed Tests"
 
-        for counts_json in "${agg_counts_array[@]}"; do
+        for counts_json in "${counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
             
             if command -v jq > /dev/null 2>&1; then
@@ -362,7 +362,6 @@ $test_line"
     i=0
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"
     IFS=' ' read -r -a url_array <<< "$urls"
-    IFS='|' read -r -a counts_array <<< "$all_counts"
     for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && { i=$((i + 1)); continue; }
         browser="${browser_array[$i]:-}"

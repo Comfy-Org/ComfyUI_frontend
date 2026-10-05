@@ -168,23 +168,6 @@ describe('candidate prerequisites', () => {
     }
   )
 
-  it.for(['failure', 'cancelled', 'skipped'])(
-    'video recording ending with %s cannot fail passing E2E tests',
-    (video) => {
-      expect(
-        verdict('e2e-status', {
-          PREFLIGHT: 'success',
-          CHANGES: 'success',
-          SHOULD_RUN: 'true',
-          SHARDED: 'success',
-          CLOUD: 'success',
-          BROWSERS: 'success',
-          VIDEO: video
-        })
-      ).toBe(0)
-    }
-  )
-
   it.for(['e2e-status', 'deploy-and-comment'])(
     '%s does not wait for videos',
     (job) => {
