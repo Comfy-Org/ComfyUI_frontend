@@ -52,6 +52,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -11487,23 +11488,60 @@ describe('AgentPanelRoot against the local agent', () => {
   })
 })
 
+interface AgentAccount {
+  firebase: string | null
+  apiKeyUser: string | null
+}
+
+function signInAs({ firebase, apiKeyUser }: AgentAccount): void {
+  useAuthStore().currentUser =
+    firebase === null ? null : fromPartial<User>({ uid: firebase })
+  useApiKeyAuthStore().currentUser =
+    apiKeyUser === null ? null : { id: apiKeyUser }
+}
+
 describe('AgentPanelRoot agent socket (#17469)', () => {
   // Signing out or switching accounts must not leave the socket authenticated
-  // as the previous account, nor canvas ops stamped with its actor.
-  it('reconnects the socket and looks the identity up again when the account changes', async () => {
-    const authStore = useAuthStore()
-    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    const identity = vi.mocked(resolveAgentIdentity).mock.results.at(-1)
-      ?.value as { reset: ReturnType<typeof vi.fn> }
-    ws.socket.reconnect.mockClear()
+  // as the previous account, nor canvas ops stamped with its actor. The agent
+  // authenticates the signed-in session or, with none, a stored API key, so
+  // either changing is an account change.
+  it.for([
+    {
+      change: 'a Firebase account switch',
+      before: { firebase: 'account-a', apiKeyUser: null },
+      after: { firebase: 'account-b', apiKeyUser: null }
+    },
+    {
+      change: 'a Firebase sign-out',
+      before: { firebase: 'account-a', apiKeyUser: null },
+      after: { firebase: null, apiKeyUser: null }
+    },
+    {
+      change: "an API key replaced by another account's",
+      before: { firebase: null, apiKeyUser: 'key-user-a' },
+      after: { firebase: null, apiKeyUser: 'key-user-b' }
+    },
+    {
+      change: 'an API key cleared',
+      before: { firebase: null, apiKeyUser: 'key-user-a' },
+      after: { firebase: null, apiKeyUser: null }
+    }
+  ])(
+    'reconnects the socket and looks the identity up again on $change',
+    async ({ before, after }) => {
+      signInAs(before)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const identity = vi.mocked(resolveAgentIdentity).mock.results.at(-1)
+        ?.value as { reset: ReturnType<typeof vi.fn> }
+      ws.socket.reconnect.mockClear()
 
-    authStore.currentUser = fromPartial<User>({ uid: 'account-b' })
-    await nextTick()
+      signInAs(after)
+      await nextTick()
 
-    expect(ws.socket.reconnect).toHaveBeenCalledOnce()
-    expect(identity.reset).toHaveBeenCalledOnce()
-  })
+      expect(ws.socket.reconnect).toHaveBeenCalledOnce()
+      expect(identity.reset).toHaveBeenCalledOnce()
+    }
+  )
 
   // The socket's path comes from api.apiURL like every agent REST request, so
   // a ComfyUI served under a sub-path reaches the same backend.
