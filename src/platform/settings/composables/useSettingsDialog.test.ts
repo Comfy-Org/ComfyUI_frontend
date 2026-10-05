@@ -18,9 +18,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (k: string) => k
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/telemetry'))
 

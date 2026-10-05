@@ -1,13 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
-// The api mock is partial, so the real auth store cannot load here; the
-// transport's auth header is not what these tests are about.
+import { api } from '@/scripts/api'
+
+vi.mock(import('@/scripts/api'))
+// The real auth store cannot load against the mocked api; the transport's
+// auth header is not what these tests are about.
 vi.mock(import('../../services/agent/agentAuth'), () => ({
-  withAgentAuth: async (init: RequestInit) => init,
+  withAgentAuth: async <T extends RequestInit>(init: T) => init,
   ensureSignedIn: async () => true
 }))
 
@@ -23,12 +22,14 @@ function jsonResponse(status: number, body: unknown): Response {
 describe('agentRunModeStore', () => {
   beforeEach(() => {
     localStorage.clear()
-    fetchApi.mockReset()
+    vi.mocked(api.fetchApi).mockReset()
   })
 
   it('uses the safe fallback when loading gets 404 with invalid local state', async () => {
     localStorage.setItem('Comfy.Agent.RunModePreference', '{invalid')
-    fetchApi.mockResolvedValueOnce(jsonResponse(404, { error: 'not found' }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      jsonResponse(404, { error: 'not found' })
+    )
 
     const store = useAgentRunModeStore()
     await store.load()
@@ -40,7 +41,9 @@ describe('agentRunModeStore', () => {
   it('migrates a legacy preference when loading gets 404', async () => {
     localStorage.setItem('Comfy.Agent.RunMode', 'auto-limit')
     localStorage.setItem('Comfy.Agent.RunCreditLimit', '75')
-    fetchApi.mockResolvedValueOnce(jsonResponse(404, { error: 'not found' }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      jsonResponse(404, { error: 'not found' })
+    )
 
     const store = useAgentRunModeStore()
     await store.load()
@@ -74,14 +77,17 @@ describe('agentRunModeStore', () => {
   })
 
   it('loads the server preference as the source of truth', async () => {
-    fetchApi.mockResolvedValueOnce(
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
       jsonResponse(200, { mode: 'auto_limited', credit_limit: 25 })
     )
 
     const store = useAgentRunModeStore()
     await store.load()
 
-    expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', { method: 'GET' })
+    expect(api.fetchApi).toHaveBeenCalledWith(
+      '/agent/run-mode',
+      expect.objectContaining({ method: 'GET' })
+    )
     expect(store.mode).toBe('auto_limited')
     expect(store.creditLimit).toBe(25)
   })
@@ -91,7 +97,7 @@ describe('agentRunModeStore', () => {
     const getResponse = new Promise<Response>((resolve) => {
       resolveGet = resolve
     })
-    fetchApi.mockImplementation((_route, init) => {
+    vi.mocked(api.fetchApi).mockImplementation((_route, init) => {
       if (init?.method === 'GET') return getResponse
       return Promise.resolve(
         jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 })
@@ -101,9 +107,10 @@ describe('agentRunModeStore', () => {
 
     const load = store.load()
     await vi.waitFor(() =>
-      expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', {
-        method: 'GET'
-      })
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/agent/run-mode',
+        expect.objectContaining({ method: 'GET' })
+      )
     )
     await store.save('auto_limited', 20)
     resolveGet(jsonResponse(200, { mode: 'ask_approval', credit_limit: null }))
@@ -122,7 +129,7 @@ describe('agentRunModeStore', () => {
     const putResponse = new Promise<Response>((resolve) => {
       resolvePut = resolve
     })
-    fetchApi.mockImplementation((_route, init) =>
+    vi.mocked(api.fetchApi).mockImplementation((_route, init) =>
       init?.method === 'GET' ? getResponse : putResponse
     )
     localStorage.setItem(
@@ -145,7 +152,7 @@ describe('agentRunModeStore', () => {
   it('keeps the latest save when an earlier PUT resolves last', async () => {
     let resolveFirst!: (response: Response) => void
     let resolveSecond!: (response: Response) => void
-    fetchApi
+    vi.mocked(api.fetchApi)
       .mockImplementationOnce(
         () =>
           new Promise<Response>((resolve) => {
@@ -163,7 +170,7 @@ describe('agentRunModeStore', () => {
     const first = store.save('auto_limited', 20)
     const second = store.save('auto', null)
     // A request is dispatched once its auth header resolves, not synchronously.
-    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
     resolveSecond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
     await second
     resolveFirst(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
@@ -176,7 +183,7 @@ describe('agentRunModeStore', () => {
   it('applies an earlier save when the latest one fails', async () => {
     let resolveFirst!: (response: Response) => void
     let resolveSecond!: (response: Response) => void
-    fetchApi
+    vi.mocked(api.fetchApi)
       .mockImplementationOnce(
         () =>
           new Promise<Response>((resolve) => {
@@ -193,7 +200,7 @@ describe('agentRunModeStore', () => {
 
     const first = store.save('auto_limited', 20)
     const second = store.save('auto', null)
-    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
 
     resolveSecond(jsonResponse(500, { error: 'boom' }))
     await expect(second).rejects.toThrow()
@@ -211,7 +218,9 @@ describe('agentRunModeStore', () => {
     )
     localStorage.setItem('Comfy.Agent.RunMode', 'ask')
     localStorage.setItem('Comfy.Agent.RunCreditLimit', '300')
-    fetchApi.mockResolvedValueOnce(jsonResponse(404, { error: 'not found' }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      jsonResponse(404, { error: 'not found' })
+    )
 
     const store = useAgentRunModeStore()
     await store.load()
@@ -223,14 +232,14 @@ describe('agentRunModeStore', () => {
   })
 
   it('saves through the endpoint and applies its canonical response', async () => {
-    fetchApi.mockResolvedValueOnce(
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
       jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 })
     )
 
     const store = useAgentRunModeStore()
     await store.save('auto_limited', 20)
 
-    const [route, init] = fetchApi.mock.calls[0]
+    const [route, init] = vi.mocked(api.fetchApi).mock.calls[0]
     expect(route).toBe('/agent/run-mode')
     expect(init?.method).toBe('PUT')
     expect(JSON.parse(init?.body as string)).toEqual({
@@ -242,7 +251,9 @@ describe('agentRunModeStore', () => {
   })
 
   it('keeps a saved choice locally when the endpoint returns 404', async () => {
-    fetchApi.mockResolvedValueOnce(jsonResponse(404, { error: 'not found' }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      jsonResponse(404, { error: 'not found' })
+    )
 
     const store = useAgentRunModeStore()
     await store.save('auto', null)
@@ -266,12 +277,14 @@ describe('agentRunModeStore', () => {
       const store = useAgentRunModeStore()
 
       await expect(store.save(mode, creditLimit)).rejects.toThrow()
-      expect(fetchApi).not.toHaveBeenCalled()
+      expect(api.fetchApi).not.toHaveBeenCalled()
     }
   )
 
   it('surfaces non-404 failures without changing the saved preference', async () => {
-    fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      jsonResponse(500, { error: 'failed' })
+    )
     const store = useAgentRunModeStore()
 
     await expect(store.save('auto', null)).rejects.toThrow('failed')

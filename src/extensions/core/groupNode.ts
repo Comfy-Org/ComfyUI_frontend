@@ -8,13 +8,18 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { parseNodeId } from '@/types/nodeId'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef,
+  ComfyOutputTypesSpec,
+  InputSpec
+} from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
@@ -53,12 +58,20 @@ export type GroupNodeLink = [
   targetNodeIndex: number,
   targetSlot: number,
   sourceNodeId: SerializedNodeId,
-  type: ISlotType
+  type?: unknown
 ]
 type SlotLinks = Partial<Record<number, GroupNodeLink>>
 type LinksFromMap = Partial<
   Record<number, Partial<Record<number, GroupNodeLink[]>>>
 >
+
+function isSlotType(value: unknown): value is ISlotType {
+  return (
+    typeof value === 'number' ||
+    typeof value === 'string' ||
+    (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+  )
+}
 type LinksToMap = Partial<Record<number, SlotLinks>>
 type ExternalFromMap = Partial<
   Record<number, Partial<Record<number, string | number>>>
@@ -83,6 +96,18 @@ export interface GroupNodeWorkflowData {
   links: GroupNodeLink[]
   nodes: GroupNodeData[]
   config?: Record<number, GroupNodeConfigEntry>
+}
+
+function isOutputTypeSpec(
+  value: unknown
+): value is ComfyOutputTypesSpec[number] {
+  return (
+    typeof value === 'string' ||
+    (Array.isArray(value) &&
+      value.every(
+        (option) => typeof option === 'string' || typeof option === 'number'
+      ))
+  )
 }
 
 interface GroupNodeDef {
@@ -229,7 +254,14 @@ export class GroupNodeConfig {
       if (!linksFrom) return
 
       const firstLink = linksFrom[0]?.at(0)
-      let type: string | number | null = firstLink?.[5] ?? null
+      const linkedType: unknown = firstLink?.at(5)
+      let type: string | number | null = firstLink
+        ? linkedType == null
+          ? null
+          : isSlotType(linkedType)
+            ? slotTypeKey(linkedType)
+            : null
+        : null
       if (type === 'COMBO') {
         // Use the array items
         const output = node.outputs?.[0]
@@ -311,7 +343,7 @@ export class GroupNodeConfig {
       } else {
         // Reroute used as a pipe
         for (const l of this.nodeData.links) {
-          if (l[2] === node.index) {
+          if (l[2] === node.index && isSlotType(l[5])) {
             rerouteType = l[5]
             break
           }
@@ -326,13 +358,14 @@ export class GroupNodeConfig {
       }
 
       config.forceInput = true
+      const rerouteTypeKey = slotTypeKey(rerouteType)
       return {
         input: {
           required: {
-            [rerouteType]: [rerouteType, config]
+            [rerouteTypeKey]: [rerouteTypeKey, config]
           }
         },
-        output: [rerouteType],
+        output: [rerouteTypeKey],
         output_name: [],
         output_is_list: []
       }
@@ -350,7 +383,7 @@ export class GroupNodeConfig {
     node: GroupNodeData,
     inputName: string,
     seenInputs: Record<string, number>,
-    config: unknown[],
+    config: InputSpec,
     extra?: Record<string, unknown>
   ) {
     const nodeConfig = this.nodeData.config?.[node.index ?? -1]
@@ -378,8 +411,7 @@ export class GroupNodeConfig {
     if (config[0] === 'IMAGEUPLOAD') {
       if (!extra) extra = {}
       const nodeIndex = node.index ?? -1
-      const configOptions =
-        typeof config[1] === 'object' && config[1] !== null ? config[1] : {}
+      const configOptions = config[1] ?? {}
       const widgetKey =
         'widget' in configOptions && typeof configOptions.widget === 'string'
           ? configOptions.widget
@@ -388,9 +420,7 @@ export class GroupNodeConfig {
     }
 
     if (extra) {
-      const configObj =
-        typeof config[1] === 'object' && config[1] ? config[1] : {}
-      config = [config[0], { ...configObj, ...extra }]
+      config = [config[0], { ...config[1], ...extra }]
     }
 
     return { name, config, customConfig }
@@ -410,12 +440,29 @@ export class GroupNodeConfig {
     ] = {})
     for (const inputName of inputNames) {
       const inputSpec = inputs[inputName]
+      // The type is either a string (e.g. 'INT') or, for a combo widget, an
+      // array of options (e.g. [['euler', 'ddim']]) — both are valid V1
+      // input specs. Rejecting the array form here misclassified every combo
+      // widget as a plain input slot.
       const isValidSpec =
         Array.isArray(inputSpec) &&
         inputSpec.length >= 1 &&
-        typeof inputSpec[0] === 'string'
+        (typeof inputSpec[0] === 'string' || Array.isArray(inputSpec[0]))
+      // A `forceInput` spec is always a socket, even for a type (e.g. a
+      // combo) that would otherwise materialize as a widget — matches the
+      // rule `litegraphService.addInputSocket`/`addInputWidget` apply when
+      // actually building the node.
+      const specOptions =
+        Array.isArray(inputSpec) &&
+        typeof inputSpec[1] === 'object' &&
+        inputSpec[1] !== null
+          ? inputSpec[1]
+          : {}
+      const isForcedInput =
+        'forceInput' in specOptions && specOptions.forceInput === true
       if (
         isValidSpec &&
+        !isForcedInput &&
         useWidgetStore().inputIsWidget(inputSpec as InputSpec)
       ) {
         const convertedIndex =
@@ -433,10 +480,9 @@ export class GroupNodeConfig {
             node,
             inputName,
             seenInputs,
-            inputs[inputName] as unknown[]
+            inputSpec as InputSpec
           )
           if (this.nodeDef?.input?.required) {
-            // @ts-expect-error legacy dynamic input assignment
             this.nodeDef.input.required[name] = config
           }
           widgetMap[inputName] = name
@@ -453,7 +499,7 @@ export class GroupNodeConfig {
   checkPrimitiveConnection(
     link: GroupNodeLink,
     inputName: string,
-    inputs: Record<string, unknown[]>
+    inputs: Record<string, InputSpec>
   ) {
     const [sourceNodeIndex, , targetNodeIndex] = link
     if (sourceNodeIndex == null) return
@@ -467,14 +513,12 @@ export class GroupNodeConfig {
         unknown,
         Record<string, unknown>
       ]
-      const output = { widget: primitiveConfig }
       const config = mergeIfValid(
-        // @ts-expect-error slot type mismatch - legacy API
-        output,
+        {},
         targetWidget,
         false,
         undefined,
-        primitiveConfig
+        primitiveConfig as InputSpec
       )
       const inputConfig = inputs[inputName]?.[1]
       primitiveConfig[1] =
@@ -507,7 +551,7 @@ export class GroupNodeConfig {
   }
 
   processInputSlots(
-    inputs: Record<string, unknown[]>,
+    inputs: Record<string, InputSpec>,
     node: GroupNodeData,
     slots: string[],
     linksTo: SlotLinks,
@@ -518,7 +562,21 @@ export class GroupNodeConfig {
     const nodeInputs: Record<string, string> = (this.nodeInputs[nodeIdx] = {})
     for (let i = 0; i < slots.length; i++) {
       const inputName = slots[i]
-      const link = linksTo[i]
+      // `linksTo` is keyed by this inner node's own original input-slot
+      // index, which rarely lines up with `i` (this input's position within
+      // the *filtered* `slots` list). Look the real slot index up by name so
+      // an internally-linked input isn't matched against a different slot's
+      // link (or missed/misread entirely) and either wrongly hidden or
+      // wrongly exposed on the group node. A synthesized def can key its
+      // input by type rather than by slot name (e.g. Reroute, whose actual
+      // slot name is always ''), so fall back to the old positional index
+      // when the name lookup misses.
+      const namedSlotIndex = node.inputs?.findIndex(
+        (inp) => inp.name === inputName
+      )
+      const slotIndex =
+        namedSlotIndex != null && namedSlotIndex >= 0 ? namedSlotIndex : i
+      const link = linksTo[slotIndex]
       if (link) {
         this.checkPrimitiveConnection(link, inputName, inputs)
         // This input is linked so we can skip it
@@ -536,7 +594,6 @@ export class GroupNodeConfig {
       if (customConfig?.visible === false) continue
 
       if (this.nodeDef?.input?.required) {
-        // @ts-expect-error legacy dynamic input assignment
         this.nodeDef.input.required[name] = config
       }
       inputMap[inputName] = this.inputCount++
@@ -544,28 +601,25 @@ export class GroupNodeConfig {
   }
 
   processConvertedWidgets(
-    inputs: Record<string, unknown>,
+    inputs: Record<string, InputSpec>,
     node: GroupNodeData,
-    slots: string[],
     converted: Map<number, string>,
     linksTo: SlotLinks,
     inputMap: Record<string, number>,
     seenInputs: Record<string, number>
   ) {
-    // Add converted widgets sorted into their index order (ordered as they were converted) so link ids match up
-    const convertedSlots = [...converted.keys()]
-      .sort((a, b) => a - b)
-      .map((k) => converted.get(k))
-    for (let i = 0; i < convertedSlots.length; i++) {
-      const inputName = convertedSlots[i]
+    // Process converted widgets sorted into their index order (ordered as
+    // they were converted) so link ids match up. `converted`'s keys are
+    // this node's real serialized input-slot indices (set by the
+    // `findIndex` in processWidgetInputs), so use that key - not this
+    // widget's position among converted widgets - to look its link up in
+    // `linksTo`, which is also keyed by real slot index.
+    const convertedEntries = [...converted.entries()].sort(([a], [b]) => a - b)
+    for (const [slotIndex, inputName] of convertedEntries) {
       if (!inputName) continue
-      const link = linksTo[slots.length + i]
+      const link = linksTo[slotIndex]
       if (link) {
-        this.checkPrimitiveConnection(
-          link,
-          inputName,
-          inputs as Record<string, unknown[]>
-        )
+        this.checkPrimitiveConnection(link, inputName, inputs)
         // This input is linked so we can skip it
         continue
       }
@@ -574,14 +628,13 @@ export class GroupNodeConfig {
         node,
         inputName,
         seenInputs,
-        inputs[inputName] as unknown[],
+        inputs[inputName],
         {
           defaultInput: true
         }
       )
 
       if (this.nodeDef?.input?.required) {
-        // @ts-expect-error legacy dynamic input assignment
         this.nodeDef.input.required[name] = config
       }
       this.newToOldWidgetMap[name] = { node, inputName }
@@ -615,7 +668,7 @@ export class GroupNodeConfig {
     const inputMap: Record<string, number> = (this.oldToNewInputMap[nodeIndex] =
       {})
     this.processInputSlots(
-      inputs as unknown as Record<string, unknown[]>,
+      inputs as Record<string, InputSpec>,
       node,
       slots,
       linksTo,
@@ -626,9 +679,8 @@ export class GroupNodeConfig {
     // Converted inputs have to be processed after all other nodes as they'll be at the end of the list
     this._convertedToProcess.push(() =>
       this.processConvertedWidgets(
-        inputs,
+        inputs as Record<string, InputSpec>,
         node,
-        slots,
         converted,
         linksTo,
         inputMap,
@@ -664,14 +716,16 @@ export class GroupNodeConfig {
         continue
       }
 
+      const output = defOutput[outputId]
+      if (!isOutputTypeSpec(output)) continue
+
       if (this.nodeDef?.output) {
         oldToNew[outputId] = this.nodeDef.output.length
         this.newToOldOutputMap[this.nodeDef.output.length] = {
           node,
           slot: outputId
         }
-        // @ts-expect-error legacy dynamic output type assignment
-        this.nodeDef.output.push(defOutput[outputId])
+        this.nodeDef.output.push(output)
         this.nodeDef.output_is_list?.push(
           def.output_is_list?.[outputId] ?? false
         )
@@ -783,6 +837,35 @@ export class GroupNodeConfig {
 }
 
 /**
+ * Finds the outer widget matching `name`, skipping any index already in
+ * `consumed`.
+ *
+ * Widget names inside a synthesized group-node type are meant to be unique
+ * (see {@link GroupNodeConfig.getInputConfig}'s de-duplication), so pairing
+ * by name alone is normally safe. But it is not *guaranteed* unique across
+ * every inner node/widget combination, and a plain `Array.findIndex` always
+ * resolves a shared name to the *first* matching widget — silently copying
+ * that node's value into every other inner node exposing a widget with the
+ * same final name. Consuming each match exactly once, in the same
+ * node-by-node order the inner nodes are unpacked, keeps every widget paired
+ * with the widget belonging to its own originating node even when two
+ * inner nodes end up sharing an outer widget name (e.g. two `CLIPTextEncode`
+ * nodes both exposing `text`).
+ */
+export function findUnconsumedWidgetIndex(
+  widgets: { name?: string }[] | undefined,
+  name: string,
+  consumed: Set<number>
+): number {
+  if (!widgets) return -1
+  for (let i = 0; i < widgets.length; i++) {
+    if (consumed.has(i)) continue
+    if (widgets[i]?.name === name) return i
+  }
+  return -1
+}
+
+/**
  * Migration-only adapter for deprecated group nodes.
  *
  * Group nodes are no longer a supported feature. When a legacy workflow that
@@ -828,6 +911,10 @@ export class GroupNodeHandler {
       // matches nodeData.nodes order.
       const selectedIds = Object.keys(app.canvas.selected_nodes)
       const newNodes: LGraphNode[] = []
+      // Shared across every inner node processed below, in nodeData.nodes
+      // order, so a widget already paired to one inner node's value can
+      // never be matched again for another (see findUnconsumedWidgetIndex).
+      const consumedOuterWidgetIndices = new Set<number>()
       for (let i = 0; i < selectedIds.length; i++) {
         const selectedId = parseNodeId(selectedIds[i])
         const newNode = selectedId
@@ -848,21 +935,30 @@ export class GroupNodeHandler {
           const newName = map[oldName]
           if (!newName) continue
 
-          const widgetIndex =
-            node.widgets?.findIndex((w) => w.name === newName) ?? -1
+          const widgetIndex = findUnconsumedWidgetIndex(
+            node.widgets,
+            newName,
+            consumedOuterWidgetIndices
+          )
           if (widgetIndex === -1) continue
 
-          // Populate the main and any linked widgets
+          // An index is only marked consumed once its value is actually
+          // copied, so a bail below (a missing inner widget, or fewer outer
+          // widgets than this PrimitiveNode has) can't permanently burn an
+          // index another inner node legitimately needs.
           if (innerNodeData.type === 'PrimitiveNode') {
             for (let j = 0; j < newNode.widgets.length; j++) {
               const srcWidget = node.widgets?.[widgetIndex + j]
-              if (srcWidget) newNode.widgets[j].value = srcWidget.value
+              if (!srcWidget) continue
+              consumedOuterWidgetIndices.add(widgetIndex + j)
+              newNode.widgets[j].value = srcWidget.value
             }
           } else {
             const outerWidget = node.widgets?.[widgetIndex]
             const newWidget = newNode.widgets.find((w) => w.name === oldName)
             if (!newWidget || !outerWidget) continue
 
+            consumedOuterWidgetIndices.add(widgetIndex)
             newWidget.value = outerWidget.value
             const linkedWidgets = outerWidget.linkedWidgets ?? []
             for (let w = 0; w < linkedWidgets.length; w++) {

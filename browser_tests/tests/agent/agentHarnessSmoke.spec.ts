@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { AGENT_PANEL_FLAG } from '@/workbench/extensions/agent/utils/postHogFlagSource'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
@@ -98,17 +97,17 @@ test.describe('Agent harness smoke', { tag: '@agent-harness' }, () => {
   })
 
   /**
-   * FE #17469: the standalone panel has no cloud identity for PostHog to
-   * evaluate the flag against, so the harness build forces it on
-   * (extensions/core/agentPanel.ts) - the panel must render with no flag
-   * persisted anywhere. And the agent's document frames now ride the SAME
+   * FE #17469: the standalone panel has no cloud identity for the flag to
+   * evaluate against, so the harness build forces it on
+   * (extensions/core/agentPanel.ts) - the panel must render without it. And
+   * the agent's document frames now ride the SAME
    * socket as the chat stream, so an edit the agent makes must land on the
    * canvas through the follower, not only in the transcript. The node class
    * is asserted through the page's own graph, deterministically: the agent
    * is asked for exactly one node of one class, and the count of that class
    * must rise by exactly one.
    */
-  test('renders without the PostHog flag and lands an agent-added node on the canvas', async ({
+  test('renders without the agent flag and lands an agent-added node on the canvas', async ({
     comfyPage
   }) => {
     test.setTimeout(180_000)
@@ -117,17 +116,6 @@ test.describe('Agent harness smoke', { tag: '@agent-harness' }, () => {
     const nonce = runNonce('agent-harness-canvas')
     const nodeClass = 'EmptyLatentImage'
 
-    // No flag is persisted for this browser: PostHog keeps evaluated flags in
-    // its `ph_*` localStorage entries and cookie, so the panel below opens
-    // on the harness's forced gate alone.
-    const flagPersisted = await page.evaluate(
-      (flag) =>
-        Object.entries(localStorage).some(
-          ([key, value]) => key.startsWith('ph_') && value.includes(flag)
-        ) || document.cookie.includes(flag),
-      AGENT_PANEL_FLAG
-    )
-    expect(flagPersisted).toBe(false)
     const panel = await openPanel(page)
 
     const countNodes = () =>

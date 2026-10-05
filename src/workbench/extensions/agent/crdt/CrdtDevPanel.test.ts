@@ -42,6 +42,7 @@ const STATUS: AgentCrdtStatus = {
   outcomes: {
     received: 5,
     applied: 4,
+    appliedLive: 4,
     skipped: 1,
     errored: 0,
     gap: 0,
@@ -282,6 +283,7 @@ describe('CrdtDevPanel', () => {
     await user.click(copyReportButton)
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'crdt_dev_panel_report_copy_failed'
     })
     expect(copyReportButton).toHaveTextContent('Retry copy report')

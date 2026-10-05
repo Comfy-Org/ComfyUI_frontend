@@ -18,6 +18,7 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+import { createDevAgentConfig } from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 
 dotenvConfig()
@@ -25,14 +26,21 @@ dotenvConfig()
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
 const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
-// vite dev server will listen on all addresses, including LAN and public addresses
-const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
 const BROWSER_TESTS_DIR = resolve('browser_tests')
+const FRONTEND_SCRIPT_TESTS = [
+  'scripts/agentConversationFromLangfuse.test.ts',
+  'scripts/registry-census/matrix_runner.test.ts',
+  'scripts/testingPinia.test.ts'
+]
+const ISOLATED_STORE_TESTS = [
+  'src/stores/entityIdStore.test.ts',
+  'src/testing/pinia.test.ts'
+]
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -202,60 +210,7 @@ const DEV_SEVER_FALLBACK_URL =
 
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
-const DEV_AGENT_URL = process.env.DEV_AGENT_URL
-const DEV_AGENT_SESSION_TOKEN = process.env.DEV_AGENT_SESSION_TOKEN
-const DEV_AGENT_COMFY_TOKEN = process.env.DEV_AGENT_COMFY_TOKEN
-
-// What the dev server adds to every request it proxies to the local agent: the
-// agent's own session token on its dedicated header, and — only when a
-// developer supplies one — a Comfy credential presented the way ingest reads
-// it (an API key as X-API-KEY, anything else as a bearer token). Without one,
-// the browser's own signed-in auth header passes through untouched.
-const DEV_AGENT_PROXY_HEADERS: Record<string, string> = {
-  ...(DEV_AGENT_SESSION_TOKEN
-    ? { 'X-Comfy-Agent-Session': DEV_AGENT_SESSION_TOKEN }
-    : {}),
-  ...(DEV_AGENT_COMFY_TOKEN
-    ? DEV_AGENT_COMFY_TOKEN.startsWith('comfyui-')
-      ? { 'X-API-KEY': DEV_AGENT_COMFY_TOKEN }
-      : { Authorization: `Bearer ${DEV_AGENT_COMFY_TOKEN}` }
-    : {})
-}
-
-if (Boolean(DEV_AGENT_URL) !== Boolean(DEV_AGENT_SESSION_TOKEN)) {
-  throw new Error(
-    'DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN must be configured together.'
-  )
-}
-
-if (process.env.VITE_AGENT_STANDALONE === 'true' && !DEV_AGENT_URL) {
-  throw new Error(
-    'VITE_AGENT_STANDALONE requires DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN; start via scripts/dev-agent-integration.ts.'
-  )
-}
-
-// VITE_AGENT_STANDALONE forces the agent panel on for every user of the bundle
-// it is baked into (src/extensions/core/agentPanel.ts), independent of the
-// distribution. The standalone harness is never a cloud distribution, so a
-// cloud bundle carrying the flag could only be a misconfigured build about to
-// ship the panel to everyone; refuse it here rather than at runtime.
-if (process.env.VITE_AGENT_STANDALONE === 'true' && DISTRIBUTION === 'cloud') {
-  throw new Error(
-    'VITE_AGENT_STANDALONE cannot be combined with DISTRIBUTION=cloud: the standalone agent harness is never a cloud distribution.'
-  )
-}
-
-// The proxy attaches DEV_AGENT_SESSION_TOKEN as a bearer token, so cleartext
-// is only acceptable when the target never leaves the machine.
-if (DEV_AGENT_URL) {
-  const { protocol, hostname } = new URL(DEV_AGENT_URL)
-  const loopback = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname)
-  if (protocol !== 'https:' && !(protocol === 'http:' && loopback)) {
-    throw new Error(
-      `DEV_AGENT_URL must use https unless it targets loopback; got ${DEV_AGENT_URL}`
-    )
-  }
-}
+const devAgentConfig = createDevAgentConfig(process.env)
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
@@ -358,11 +313,7 @@ const vuePluginOptions = process.env.VITEST
 export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
-    host: DEV_AGENT_COMFY_TOKEN
-      ? undefined
-      : VITE_REMOTE_DEV
-        ? '0.0.0.0'
-        : undefined,
+    host: devAgentConfig.host,
     allowedHosts: process.env.AMP_ORB ? true : undefined,
     watch: {
       ignored: [
@@ -393,13 +344,12 @@ export default defineConfig({
           }
         : {}),
 
-      ...(DEV_AGENT_URL && DEV_AGENT_SESSION_TOKEN
+      ...(devAgentConfig.proxy
         ? {
             // The saved-workflow index lives where ingest serves it in the
             // cloud; the local agent answers the same contract.
             '/api/workflows': {
-              target: DEV_AGENT_URL,
-              headers: DEV_AGENT_PROXY_HEADERS,
+              ...devAgentConfig.proxy,
               rewrite: (path: string) => path.replace(/^\/api/, ''),
               bypass: (req, res) => {
                 if (!res || !isCrossOrigin(req)) return null
@@ -409,9 +359,8 @@ export default defineConfig({
               }
             },
             '/api/agent': {
-              target: DEV_AGENT_URL,
+              ...devAgentConfig.proxy,
               ws: true,
-              headers: DEV_AGENT_PROXY_HEADERS,
               rewrite: (path: string) => path.replace(/^\/api/, ''),
               configure: (proxy) => {
                 proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
@@ -920,6 +869,7 @@ export default defineConfig({
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
+      '@/utils/urlSafety': '/packages/shared-frontend-utils/src/urlSafety.ts',
       '@': '/src',
       '@e2e': BROWSER_TESTS_DIR
     }
@@ -936,6 +886,20 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    strictTags: true,
+    tags: [
+      {
+        name: 'concurrent-safe',
+        description:
+          'Independent async tests with test-owned state and cleanup.',
+        concurrent: true
+      },
+      {
+        name: 'shared-state',
+        description: 'Sequential siblings; not a cross-file resource lock.',
+        concurrent: false
+      }
+    ],
     fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
@@ -956,14 +920,44 @@ export default defineConfig({
     // Pin the timezone so date-formatting assertions are deterministic
     // regardless of the contributor's local timezone (CI runs in UTC).
     env: { TZ: 'UTC' },
-    setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
-    include: [
-      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'frontend',
+          setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
+          exclude: ISOLATED_STORE_TESTS,
+          include: [
+            'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            ...FRONTEND_SCRIPT_TESTS
+          ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'isolated-stores',
+          environment: 'node',
+          setupFiles: ['./vitest.network.setup.ts'],
+          include: ISOLATED_STORE_TESTS
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'tooling',
+          environment: 'node',
+          setupFiles: ['./vitest.network.setup.ts'],
+          exclude: FRONTEND_SCRIPT_TESTS,
+          include: [
+            'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+          ]
+        }
+      }
     ],
     coverage: {
       provider: 'v8',
@@ -980,9 +974,9 @@ export default defineConfig({
         ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
-      thresholds: {
-        [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS
-      }
+      thresholds: process.env.VITEST_SHARD
+        ? undefined
+        : { [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS }
     },
     exclude: [
       'src/__ecs_matrix__/**',

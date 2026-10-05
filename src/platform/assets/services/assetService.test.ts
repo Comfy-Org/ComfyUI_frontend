@@ -1,4 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,10 +33,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key,
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
 
@@ -208,6 +204,28 @@ describe(assetService.getAssetMetadata, () => {
           encodeURIComponent('https://example.com/foo bar?x=1')
       )
     )
+  })
+})
+
+describe(assetService.getInputAssetsIncludingPublic, () => {
+  beforeEach(() => {
+    assetService.invalidateInputAssetsIncludingPublic()
+  })
+
+  it('keeps hash-only assets whose file_path and display_name are null', async () => {
+    const hashOnlyAsset = validAsset({
+      id: 'hash-only-input',
+      name: 'fe746_photo.png',
+      tags: ['input'],
+      hash: 'blake3:fe746',
+      file_path: null,
+      display_name: null
+    })
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([hashOnlyAsset]))
+
+    const assets = await assetService.getInputAssetsIncludingPublic()
+
+    expect(assets).toEqual([hashOnlyAsset])
   })
 })
 
@@ -732,7 +750,7 @@ describe(assetService.getAssetModels, () => {
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
   })
 
-  it.fails("resolves models when queried by the node-widget's full category path, not just the bucket's top-level folder key", async () => {
+  it("resolves models when queried by the node-widget's full category path, not just the bucket's top-level folder key", async () => {
     vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     const category =
       useModelToNodeStore().getCategoryForNodeType('LoadChatGLM3')
@@ -749,6 +767,22 @@ describe(assetService.getAssetModels, () => {
     const models = await assetService.getAssetModels(category!)
 
     expect(models).not.toEqual([])
+  })
+
+  it('does not use legacy parent folders for model-type categories', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'checkpoint',
+          name: 'checkpoint.safetensors',
+          tags: ['models', 'model_type:LLM']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('LLM/checkpoints')
+
+    expect(models).toEqual([])
   })
 })
 
@@ -1177,7 +1211,4 @@ describe(assetService.getAssetsForNodeType, () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
