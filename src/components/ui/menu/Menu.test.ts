@@ -345,6 +345,27 @@ describe('Menu', () => {
     expect(await screen.findByRole('menuitem', { name: 'Run' })).toBeVisible()
   })
 
+  it('does not poll geometry while a pointer-anchored context menu is idle', async () => {
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(ContextMenu, { model: [{ label: 'Inspect' }], ref: menu })
+      })
+    )
+    menu.value?.show(
+      new MouseEvent('contextmenu', { clientX: 100, clientY: 120 })
+    )
+    await screen.findByRole('menu')
+    await vi.advanceTimersByTimeAsync(100)
+    const measure = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+
+    await vi.advanceTimersByTimeAsync(160)
+
+    expect(measure).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeVisible()
+  })
+
   it('dismisses a context menu before an outside pointer event is stopped', async () => {
     render(
       defineComponent({
