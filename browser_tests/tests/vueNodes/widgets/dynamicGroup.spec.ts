@@ -98,7 +98,13 @@ test.describe(
       await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
       await comfyPage.command.executeCommand('Comfy.Canvas.CopySelected')
-      await comfyPage.page.mouse.move(850, 350)
+      const previewBounds = (await comfyPage.vueNodes
+        .getNodeLocator('2')
+        .boundingBox())!
+      await comfyPage.page.mouse.move(
+        previewBounds.x + previewBounds.width + 40,
+        previewBounds.y
+      )
       await comfyPage.command.executeCommand('Comfy.Canvas.PasteFromClipboard')
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(4)
       await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
@@ -198,6 +204,11 @@ test.describe(
         'A.safetensors'
       ])
       await expect(add).toBeDisabled()
+      await expect(
+        node
+          .getByRole('group', { name: 'LoRA #4', exact: true })
+          .getByRole('spinbutton')
+      ).toHaveValue('0.2')
 
       const queued = comfyPage.page.waitForResponse('**/api/prompt')
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
