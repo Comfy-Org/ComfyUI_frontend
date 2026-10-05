@@ -4432,6 +4432,42 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  // An id-less origin names no workflow, so a close during prepare() cannot be
+  // caught by comparing ids. Sent anyway, the turn would carry neither a
+  // workflow nor the unbound flag and land on the thread's previous workflow.
+  it('(h10) refuses a send whose id-less origin tab closes during prepare()', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    let originOpen = true
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => (originOpen ? { tabPath: 'tab-new' } : undefined),
+        adopted: vi.fn(),
+        prepare
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('add a node')
+    originOpen = false
+    releasePrepare()
+
+    expect(await sendPromise).toBe(false)
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error' }]
+    })
+  })
+
   it('(h9) a send that starts with no origin tab is not reattributed to a tab attached during prepare()', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
