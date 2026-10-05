@@ -19,6 +19,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 
 /**
  * The backend mints a workflow's CRDT doc lazily on the first agent turn that
@@ -138,11 +139,12 @@ test.describe(
           parseServerDocFrame(frame) === null
         )
           throw new Error(`frame ${frame.type} is not a valid doc frame`)
-        if (!socket) throw new Error('the app has not opened /ws yet')
+        if (!socket)
+          throw new Error('the panel has not opened the agent socket yet')
         socket.send(JSON.stringify(frame))
       }
 
-      await page.routeWebSocket(/\/ws/, (ws) => {
+      await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
         socket = ws
         ws.onMessage((raw) => {
           if (!parseDocSubscribeForWorkflow(raw)) return

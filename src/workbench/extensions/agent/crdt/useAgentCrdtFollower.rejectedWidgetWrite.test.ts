@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
@@ -6,12 +5,12 @@ import { defineComponent, ref } from 'vue'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
 import type { GraphOperation } from './graphOperations'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -74,12 +73,11 @@ function docOpsFrames(raw: string[]): string[][] {
   return raw.map(mintedOpIds).filter((ids) => ids.length > 0)
 }
 
-/** The transport listens on `api`; a server frame is a CustomEvent there. */
+// The agent's one socket, faked at its seam with the real document transport.
+let agentSocket = createFakeAgentSocket()
+
 function answerWithOpsResult(detail: Record<string, unknown>): void {
-  EventTarget.prototype.dispatchEvent.call(
-    api,
-    new CustomEvent('doc_ops_result', { detail })
-  )
+  agentSocket.receive('doc_ops_result', detail)
 }
 
 /**
@@ -90,12 +88,8 @@ function answerWithOpsResult(detail: Record<string, unknown>): void {
 function mountFollower() {
   // The telemetry dedupe is per notifier and each mount makes a new one.
   vi.mocked(reportError).mockClear()
-  const previousSocket = api.socket
-  const send = vi.fn<(frame: string) => void>()
-  api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
-  onTestFinished(() => {
-    api.socket = previousSocket
-  })
+  agentSocket = createFakeAgentSocket()
+  const { send } = agentSocket
   const store = useAgentPanelStore()
   store.enabled = true
   onTestFinished(() => {
@@ -106,7 +100,15 @@ function mountFollower() {
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID))
+        follower = useAgentCrdtFollower(
+          ref<string | null>(WORKFLOW_ID),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          agentSocket.transport
+        )
         return () => null
       }
     })

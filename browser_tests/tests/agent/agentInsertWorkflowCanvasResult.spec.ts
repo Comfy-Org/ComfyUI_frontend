@@ -188,7 +188,7 @@ test.describe(
 
     test('renders a promoted widget, a cross-node link, and a subgraph from one insert_workflow tool call', async ({
       page,
-      getWebSocket
+      getAgentSocket
     }, testInfo) => {
       test.setTimeout(60_000)
       await page.setViewportSize({ width: 1920, height: 1280 })
@@ -205,14 +205,15 @@ test.describe(
         }
       })
       await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
-      const socket = await getWebSocket()
-      const outboundFrames: string[] = []
-      socket.onMessage((message) => outboundFrames.push(String(message)))
 
       // Drive the turn through the real, public Agent panel -- not a raw
       // CRDT call -- exactly as a user would trigger the tool.
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
+      // The panel opens the agent socket when it mounts, not at boot.
+      const socket = await getAgentSocket()
+      const outboundFrames: string[] = []
+      socket.onMessage((message) => outboundFrames.push(String(message)))
       await agentPanel.selectWorkflow()
       await agentPanel.sendMessage(
         'Insert the CLIP-conditioned sampler subgraph onto this canvas'

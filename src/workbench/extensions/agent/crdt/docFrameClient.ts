@@ -104,6 +104,14 @@ export interface DocFrameTransport {
   send(frame: string): boolean
   addEventListener(type: string, listener: EventListener): void
   removeEventListener(type: string, listener: EventListener): void
+  /**
+   * Notify when the transport's socket has (re)opened and can carry a frame.
+   * A subscribe sent while the socket was still connecting is dropped by
+   * design (`send` returned false), and the follower re-drives its intent on
+   * this signal. Optional only for transports that never follow (unit fakes);
+   * a following transport without it waits forever on a dropped subscribe.
+   */
+  onConnected?(listener: () => void): () => void
 }
 
 interface WireData {

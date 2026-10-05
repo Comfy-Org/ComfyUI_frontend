@@ -346,6 +346,18 @@ export default defineConfig({
 
       ...(devAgentConfig.proxy
         ? {
+            // The saved-workflow index lives where ingest serves it in the
+            // cloud; the local agent answers the same contract.
+            '/api/workflows': {
+              ...devAgentConfig.proxy,
+              rewrite: (path: string) => path.replace(/^\/api/, ''),
+              bypass: (req, res) => {
+                if (!res || !isCrossOrigin(req)) return null
+                res.statusCode = 403
+                res.end('The agent proxy serves the dev server origin only')
+                return false
+              }
+            },
             '/api/agent': {
               ...devAgentConfig.proxy,
               ws: true,
@@ -364,6 +376,16 @@ export default defineConfig({
             }
           }
         : {}),
+
+      // The agent events socket in every other setup (ComfyUI behind a
+      // cloud backend serves it at /api/agent/events). The catch-all /api
+      // route below proxies plain HTTP only, so the upgrade needs its own
+      // entry; with a local agent the /api/agent route above wins.
+      '/api/agent/events': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ws: true,
+        ...cloudProxyConfig
+      },
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,

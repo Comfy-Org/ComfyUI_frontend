@@ -21,7 +21,6 @@ const SAMPLER_NODE_ID = 612
 const WORKFLOW_ID = 'd5f3e6c4-0000-4000-8000-000000000070'
 const MESSAGE_ID = 'd5f3e6c4-0000-4000-8000-000000000071'
 const THREAD_ID = 'd5f3e6c4-0000-4000-8000-000000000072'
-const SOCKET_SID = 'd5f3e6c4-0000-4000-8000-000000000073'
 const JOB_ID = 'd5f3e6c4-0000-4000-8000-000000000074'
 
 const PREVIEW_WIDGET = 'preview_text'
@@ -116,7 +115,6 @@ const rigConfig = {
   },
   samplerNodeId: SAMPLER_NODE_ID,
   seed,
-  socketSid: SOCKET_SID,
   threadId: THREAD_ID,
   visibleNodeId: PREVIEW_NODE_ID,
   workflowId: WORKFLOW_ID

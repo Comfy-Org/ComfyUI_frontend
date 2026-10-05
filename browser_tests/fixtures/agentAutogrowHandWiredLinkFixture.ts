@@ -50,7 +50,6 @@ const AGENT_RECONNECT_LINK_ID = 9004
 const WORKFLOW_ID = '6a1c9f3e-4d2b-4a7c-8e1f-3b5d7c9a1f6b'
 const THREAD_ID = 'c3d4e5f6-1a2b-4c3d-8e4f-5a6b7c8d9e0f'
 const MESSAGE_ID = 'a1b2c3d4-5e6f-4a1b-8c2d-3e4f5a6b7c8d'
-const SOCKET_SID = 'f1e2d3c4-b5a6-4978-8a9b-0c1d2e3f4a5b'
 
 // Trimmed `/object_info` entries: a plain IMAGE source, and an API node whose
 // only input is a `COMFY_AUTOGROW_V3` group named `model.images`, mirroring
@@ -214,7 +213,6 @@ async function setUpFixture(page: Page) {
     page,
     WORKFLOW_ID,
     host,
-    SOCKET_SID,
     'apply'
   )
   await hostSocket.install()

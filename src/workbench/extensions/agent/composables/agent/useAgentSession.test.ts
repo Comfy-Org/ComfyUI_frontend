@@ -4,7 +4,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { effectScope, nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -34,16 +34,26 @@ import {
 } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
-  PostMessageInput
+  PostMessageInput,
+  AgentIdentity
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
-import { useAgentSession } from './useAgentSession'
+import {
+  CREDENTIAL_REFRESH_INTERVAL_MS,
+  useAgentSession
+} from './useAgentSession'
 
 vi.mock(import('@/platform/telemetry/reportError'))
+// The real auth store's module graph cannot load here; the request's auth
+// header is not what these tests are about.
+vi.mock(import('../../services/agent/agentAuth'), () => ({
+  withAgentAuth: async <T extends RequestInit>(init: T) => init,
+  ensureSignedIn: async () => true
+}))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
@@ -57,6 +67,12 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         thread_id: 'th-1',
         message_id: 'msg-1',
         workflow_id: 'wf-1'
+      })
+    ),
+    getIdentity: vi.fn(
+      async (): Promise<AgentIdentity> => ({
+        workspaceId: 'w-test',
+        userId: 'user-test'
       })
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
@@ -93,6 +109,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         status: 'answered'
       })
     ),
+    refreshCredential: vi.fn(async () => {}),
     uploadImage: vi.fn(
       async (): Promise<UploadImageResponse> => ({
         name: 'n',
@@ -4278,6 +4295,90 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('tells the server the current tab is unbound when the turn context has no workflow id', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-minted'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'tab-new' }),
+        adopted: vi.fn(),
+        prepare: vi.fn(async () => undefined)
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a node')
+
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      currentTabUnbound: true
+    })
+    expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty(
+      'workflowId'
+    )
+  })
+
+  // Sent without an id, the turn would land on whatever workflow the thread
+  // used last — another canvas. Refused locally instead.
+  it('refuses to send a saved tab the saved-workflow index still has not named', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    const prepare = vi.fn(async () => undefined)
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/a.json', unresolved: true }),
+        adopted: vi.fn(),
+        prepare
+      }
+    })
+    session.start()
+
+    expect(await session.sendMessage('add a node')).toBe(false)
+
+    expect(prepare).toHaveBeenCalled()
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error' }]
+    })
+  })
+
+  it('does not flag the current tab as unbound when the turn context names a workflow', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-a'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => ({ id: 'wf-a', tabPath: 'tab-a' }),
+        adopted: vi.fn(),
+        prepare: vi.fn(async () => undefined)
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a node')
+
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a'
+    })
+    expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty(
+      'currentTabUnbound'
+    )
+  })
+
   it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
@@ -4328,6 +4429,42 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
       workflowId: 'wf-a',
       draft: { content: { nodes: [{ id: 1, type: 'tab-a' }], links: [] } }
+    })
+  })
+
+  // An id-less origin names no workflow, so a close during prepare() cannot be
+  // caught by comparing ids. Sent anyway, the turn would carry neither a
+  // workflow nor the unbound flag and land on the thread's previous workflow.
+  it('(h10) refuses a send whose id-less origin tab closes during prepare()', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    let originOpen = true
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => (originOpen ? { tabPath: 'tab-new' } : undefined),
+        adopted: vi.fn(),
+        prepare
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('add a node')
+    originOpen = false
+    releasePrepare()
+
+    expect(await sendPromise).toBe(false)
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error' }]
     })
   })
 
@@ -6227,5 +6364,72 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     expect(telemetry.trackAgentError).not.toHaveBeenCalled()
     expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
+})
+
+describe('useAgentSession credential refresh', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  it('re-sends the credential every interval while a turn runs and stops when it ends', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { source, emit } = fakeEvents()
+    const scope = effectScope()
+    const session = scope.run(() =>
+      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
+    )!
+    session.start()
+
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS)
+    expect(refreshCredential).not.toHaveBeenCalled()
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+
+    emit(done('msg-1'))
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
+  // A thread switch stashes the running turn; it keeps running server-side and
+  // still needs a current credential until its done event arrives.
+  it('keeps refreshing for a turn a thread switch moved to the background', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { source, emit } = fakeEvents()
+    const scope = effectScope()
+    const session = scope.run(() =>
+      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
+    )!
+    session.start()
+
+    await session.sendMessage('build it')
+    session.newChat()
+    expect(useAgentConversationStore().isStreaming).toBe(false)
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+
+    emit(done('msg-1'))
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
+  it('stops refreshing when the panel scope is disposed mid-turn', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { source } = fakeEvents()
+    const scope = effectScope()
+    const session = scope.run(() =>
+      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
+    )!
+    session.start()
+    await session.sendMessage('build it')
+
+    scope.stop()
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+
+    expect(refreshCredential).not.toHaveBeenCalled()
   })
 })

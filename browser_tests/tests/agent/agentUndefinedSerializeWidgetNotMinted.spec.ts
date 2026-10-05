@@ -28,7 +28,6 @@ const NODE_ID = 711
 const WORKFLOW_ID = 'e7a4c6d2-0000-4000-8000-000000000080'
 const MESSAGE_ID = 'e7a4c6d2-0000-4000-8000-000000000081'
 const THREAD_ID = 'e7a4c6d2-0000-4000-8000-000000000082'
-const SOCKET_SID = 'e7a4c6d2-0000-4000-8000-000000000083'
 
 const PREVIEW_WIDGET = '$$node-text-preview'
 const SEED_VALUE = 777777
@@ -92,7 +91,6 @@ const rigConfig = {
   nodeDefs: { [NODE_TYPE]: nodeDef },
   samplerNodeId: NODE_ID,
   seed,
-  socketSid: SOCKET_SID,
   threadId: THREAD_ID,
   visibleNodeId: NODE_ID,
   workflowId: WORKFLOW_ID

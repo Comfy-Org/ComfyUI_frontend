@@ -24,6 +24,7 @@ function setup() {
   const panel = useAgentPanelStore()
   panel.beginWorkflowRestoration()
   const warnRestoreFailed = vi.fn()
+  const warnWorkflowUnavailable = vi.fn()
   const listCloudWorkflows = vi.fn(
     async (): Promise<CloudWorkflowListing> =>
       listing([
@@ -79,7 +80,7 @@ function setup() {
         selection = useAgentWorkflowSelection({
           resolver,
           canSelectTarget: () => true,
-          warnWorkflowUnavailable: vi.fn(),
+          warnWorkflowUnavailable,
           warnRestoreFailed
         })
         return () => null
@@ -98,7 +99,8 @@ function setup() {
     listCloudWorkflows,
     getCloudWorkflow,
     cloudRows,
-    warnRestoreFailed
+    warnRestoreFailed,
+    warnWorkflowUnavailable
   }
 }
 
@@ -675,5 +677,31 @@ describe('historical workflow restoration', () => {
     expect(panel.targetUnavailable).toBe(false)
     expect(panel.selectedWorkflow?.path).toBe(current.path)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+})
+
+describe('Agent workflow target selection', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('refuses an unresolved saved tab until the saved-workflow index names it', async () => {
+    const {
+      selection,
+      workflows,
+      listCloudWorkflows,
+      warnWorkflowUnavailable
+    } = setup()
+    const tab = createMockLoadedWorkflow({
+      path: 'workflows/unlisted.json',
+      filename: 'unlisted',
+      isTemporary: false
+    })
+    workflows.attachWorkflow(tab)
+    workflows.openWorkflowsInBackground({ right: [tab.path] })
+    listCloudWorkflows.mockResolvedValue(listing([]))
+
+    await expect(selection.selectTarget(tab.path)).resolves.toBe(false)
+
+    expect(warnWorkflowUnavailable).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalledWith(tab)
   })
 })

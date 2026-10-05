@@ -1,18 +1,17 @@
 import { mint } from '@comfyorg/comfy-multi-player'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { api } from '@/scripts/api'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { encodeBase64 } from './docFrameClient'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const sent: string[] = []
@@ -25,11 +24,11 @@ class SinkNode extends LGraphNode {
   }
 }
 
+// The agent's one socket, faked at its seam with the real document transport.
+let agentSocket = createFakeAgentSocket()
+
 function deliver(type: string, data: unknown): void {
-  EventTarget.prototype.dispatchEvent.call(
-    api,
-    new CustomEvent(type, { detail: data })
-  )
+  agentSocket.receive(type, data)
 }
 
 describe('useAgentCrdtFollower over a live graph', () => {
@@ -38,16 +37,11 @@ describe('useAgentCrdtFollower over a live graph', () => {
     vi.stubGlobal('WebSocket', { OPEN: 1 })
     useAgentPanelStore().enabled = true
     LiteGraph.registerNodeType('Sink', SinkNode)
-    api.socket = fromPartial<WebSocket>({
-      readyState: 1,
-      send: vi.fn((frame) => {
-        if (typeof frame === 'string') sent.push(frame)
-      })
+    agentSocket = createFakeAgentSocket()
+    agentSocket.send.mockImplementation((frame) => {
+      sent.push(frame)
+      return true
     })
-  })
-
-  afterEach(() => {
-    api.socket = null
   })
 
   it('applies a frame delivered before the graph existed once the graph appears', async () => {
@@ -63,7 +57,10 @@ describe('useAgentCrdtFollower over a live graph', () => {
             ref(WORKFLOW_ID),
             () => null,
             ref(true),
-            () => graph.value
+            () => graph.value,
+            undefined,
+            undefined,
+            agentSocket.transport
           )
           return () => null
         }

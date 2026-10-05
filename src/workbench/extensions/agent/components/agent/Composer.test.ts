@@ -35,6 +35,12 @@ const tooltipDirectiveStub = {
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry'))
+// The real auth store cannot load against the mocked api; the transport's
+// auth header is not what these tests are about.
+vi.mock(import('../../services/agent/agentAuth'), () => ({
+  withAgentAuth: async <T extends RequestInit>(init: T) => init,
+  ensureSignedIn: async () => true
+}))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)

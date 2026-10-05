@@ -19,6 +19,7 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 
 const DRAFT_THREAD_ID = 'c4a7e2d1-5b3f-4e6a-9c8d-1f2a3b4c5d6e'
 const OTHER_THREAD_ID = 'e1f2a3b4-6c5d-4e7f-8a9b-0c1d2e3f4a5b'
@@ -137,14 +138,8 @@ test.describe(
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
       }
       let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(/\/ws/, (ws) => {
+      await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
         socket = ws
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: { status: { exec_info: { queue_remaining: 0 } } }
-          })
-        )
       })
 
       await bootAgentApp(page, agentFlagEnabled, {
@@ -219,7 +214,7 @@ test.describe(
 
       await test.step('the agent announces the draft it minted and the panel opens a tab for it', async () => {
         await expect(topbar.tabs).toHaveCount(1)
-        if (!socket) throw new Error('the app never opened /ws')
+        if (!socket) throw new Error('the panel never opened the agent socket')
         socket.send(
           JSON.stringify({
             type: 'agent_active_tab',
