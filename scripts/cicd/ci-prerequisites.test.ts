@@ -132,6 +132,30 @@ describe('candidate prerequisites', () => {
           SHOULD_RUN: 'true',
           SHARDED: 'success',
           CLOUD: cloud,
+          DYNAMIC_GROUP: 'success',
+          BROWSERS: 'success',
+          VIDEO: 'skipped'
+        })
+      ).toBe(expected)
+    }
+  )
+
+  it.for([
+    ['success', 0],
+    ['failure', 1],
+    ['cancelled', 1],
+    ['skipped', 1]
+  ] satisfies [string, number][])(
+    'DynamicGroup ending with %s produces E2E exit status %s',
+    ([dynamicGroup, expected]) => {
+      expect(
+        verdict('e2e-status', {
+          PREFLIGHT: 'success',
+          CHANGES: 'success',
+          SHOULD_RUN: 'true',
+          SHARDED: 'success',
+          CLOUD: 'success',
+          DYNAMIC_GROUP: dynamicGroup,
           BROWSERS: 'success',
           VIDEO: 'skipped'
         })
@@ -144,6 +168,7 @@ describe('candidate prerequisites', () => {
     'ecosystem',
     'playwright-tests-chromium-sharded',
     'playwright-tests-cloud-sharded',
+    'playwright-tests-dynamic-group',
     'playwright-tests',
     'playwright-video-new-tests',
     'comment-on-pr-start'

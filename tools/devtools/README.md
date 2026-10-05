@@ -35,9 +35,14 @@ This node requires a backend containing the merged
 [DynamicGroup support](https://github.com/Comfy-Org/ComfyUI/pull/16260).
 Older backends do not register it. The browser scenarios in
 [`dynamicGroup.spec.ts`](../../browser_tests/tests/vueNodes/widgets/dynamicGroup.spec.ts)
-use real `/object_info`, workflow storage and execution. CI temporarily pins
-the backend to merge commit `2d2fa46e18d293ced1b958fe288730e2ef4b322e` until the
-standard CI image includes this support.
+use real `/object_info`, workflow storage and execution. Run them with
+`pnpm exec playwright test --config=playwright.dynamic-group.config.ts`.
+
+The dedicated `playwright-tests-dynamic-group` CI job records videos and pins
+the backend to merge commit `2d2fa46e18d293ced1b958fe288730e2ef4b322e`.
+Other E2E jobs use the standard CI image's backend. Once that image includes
+DynamicGroup, remove the dedicated checkout and dependency installation, and
+use the shared server startup action in this job.
 
 ## Migration
 
