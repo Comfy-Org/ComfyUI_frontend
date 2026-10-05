@@ -3456,6 +3456,7 @@
       "deny": "Abbrechen",
       "detailsHeader": "Details",
       "errorExpired": "Diese Einwilligungsanfrage ist abgelaufen oder wurde bereits verwendet. Bitte starten Sie die Client-App erneut.",
+      "errorOriginRefused": "Wir konnten dies von dieser Seite aus nicht genehmigen. Öffnen Sie die Anmeldung erneut über die App.",
       "errorScopeBroadening": "Die zuvor genehmigten Berechtigungen decken diese Anfrage nicht ab. Sie müssen die neuen Berechtigungen erneut autorisieren.",
       "errorUnavailable": "Diese Funktion ist derzeit nicht verfügbar. Bitte kontaktieren Sie den Support, falls das Problem weiterhin besteht.",
       "genericError": "OAuth-Anfrage fehlgeschlagen. Bitte starten Sie die Client-App erneut.",

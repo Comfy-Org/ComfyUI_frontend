@@ -3456,6 +3456,7 @@
       "deny": "Annulla",
       "detailsHeader": "Dettagli",
       "errorExpired": "Questa richiesta di consenso è scaduta o è già stata utilizzata. Riavvia dall'app client.",
+      "errorOriginRefused": "Non abbiamo potuto approvarlo da questa pagina. Riapri l'accesso dall'app.",
       "errorScopeBroadening": "I permessi precedentemente approvati non coprono questa richiesta. Dovrai autorizzare nuovamente con i nuovi permessi.",
       "errorUnavailable": "Questa funzione non è disponibile al momento. Contatta il supporto se il problema persiste.",
       "genericError": "Richiesta OAuth non riuscita. Riavvia dall'app client.",

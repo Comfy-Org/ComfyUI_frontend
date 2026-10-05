@@ -3456,6 +3456,7 @@
       "deny": "İptal",
       "detailsHeader": "Detaylar",
       "errorExpired": "Bu onay isteğinin süresi doldu veya zaten kullanıldı. Lütfen istemci uygulamasından tekrar başlatın.",
+      "errorOriginRefused": "Bunu bu sayfadan onaylayamadık. Oturum açma işlemini uygulamadan yeniden başlatın.",
       "errorScopeBroadening": "Önceden onaylanan izinler bu isteği kapsamıyor. Yeni izinlerle tekrar yetkilendirmeniz gerekiyor.",
       "errorUnavailable": "Bu özellik şu anda kullanılamıyor. Sorun devam ederse lütfen destek ile iletişime geçin.",
       "genericError": "OAuth isteği başarısız oldu. Lütfen istemci uygulamasından tekrar başlatın.",
