@@ -52,6 +52,25 @@ test('a new subscription reads its charge, allowance and renewal from the quote'
   ])
 })
 
+test('a quote without credit counts leaves the credits line out instead of converting the cents', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const {
+    credits_today: _today,
+    credits_next_period: _nextPeriod,
+    ...uncounted
+  } = cloud.scenario.preview
+  cloud.scenario.preview = uncounted
+  await signIn(CHECKOUT)
+
+  await expectSummary(page, ['Subscribe to Pro Plan · Personal', '$50 USD'])
+  await expect(
+    page.getByRole('region', { name: 'Order summary' })
+  ).not.toContainText('credits')
+})
+
 test('a tier upgrade itemizes the remaining time and the unused-time credit, with a dated credits delta', async ({
   page,
   cloud,
@@ -68,6 +87,8 @@ test('a tier upgrade itemizes the remaining time and the unused-time credit, wit
     proration_unused_cents: 1250,
     credits_today_cents: 3250,
     credits_next_period_cents: 10_000,
+    credits_today: 6858,
+    credits_next_period: 21_100,
     renewal_amount_cents: 10_000,
     renewal_at: RENEWAL_AT,
     current_plan: {
@@ -157,7 +178,9 @@ test('a held discount and an entered code read as rows, with no Subtotal the quo
 }) => {
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
+    cost_today_cents: 2000,
     amount_due_cents: 2000,
+    subtotal_cents: 5000,
     promotion_code: 'COMFY50',
     discounts: [
       { kind: 'plan', code: 'annual_plan_discount_20', amount_off_cents: 999 },
@@ -214,6 +237,7 @@ test('a promo code on a yearly switch is bounded to the first year', async ({
   switchToYearly(cloud.scenario)
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
+    cost_today_cents: 21_504,
     amount_due_cents: 21_504,
     promotion_code: 'COMFY20',
     discounts: [
@@ -229,6 +253,7 @@ test('a promo code on a yearly switch is bounded to the first year', async ({
   await signIn(YEARLY_CHECKOUT)
 
   await expectSummary(page, [
+    'Creator Yearly$268.80',
     'Promo code−$53.76',
     'First year',
     'Total due today$215.04'
@@ -246,12 +271,15 @@ test('744-15697: an account balance the server applied is the last deduction, an
     transition_type: 'upgrade',
     proration_at: '2026-07-10T09:30:00.000Z',
     amount_due_cents: 2750,
-    cost_today_cents: 3250,
+    cost_today_cents: 2750,
+    subtotal_cents: 3250,
     proration_remaining_cents: 4500,
     proration_unused_cents: 1250,
     balance_applied_cents: 500,
     credits_today_cents: 3250,
     credits_next_period_cents: 10_000,
+    credits_today: 6858,
+    credits_next_period: 21_100,
     renewal_amount_cents: 10_000,
     renewal_at: RENEWAL_AT,
     current_plan: {

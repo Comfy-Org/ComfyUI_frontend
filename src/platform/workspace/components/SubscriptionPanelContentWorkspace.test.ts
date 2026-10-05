@@ -1040,7 +1040,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Reactivate your team plan to add more members and run workflows'
+        'Reactivate your Team plan to add more members and run workflows'
       )
     ).toBeInTheDocument()
     expect(

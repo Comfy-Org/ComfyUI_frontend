@@ -2,9 +2,9 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, reactive, watch } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { translationsFor } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import SafeRichText from './SafeRichTextContent'
 
 export interface FaqItem {

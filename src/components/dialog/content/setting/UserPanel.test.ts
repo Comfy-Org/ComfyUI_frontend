@@ -165,28 +165,14 @@ describe('UserPanel sign out of all devices', () => {
       .mockResolvedValue(revokeAll)
   }
 
-  it.for<{
-    name: string
-    session: WebSessionIdentityState
-    firebaseLogin: boolean
-  }>([
-    {
-      name: 'the web session is off',
-      session: { phase: 'idle' },
-      firebaseLogin: true
-    },
+  it.for<{ name: string; session: WebSessionIdentityState }>([
+    { name: 'the web session is off', session: { phase: 'idle' } },
     {
       name: 'the web session is signed out',
-      session: { phase: 'signed_out', outcome: 'signed_out' },
-      firebaseLogin: true
-    },
-    {
-      name: 'the tab has no Firebase login to prove identity',
-      session: signedInSession,
-      firebaseLogin: false
+      session: { phase: 'signed_out', outcome: 'signed_out' }
     }
-  ])('renders nothing when $name', async ({ session, firebaseLogin }) => {
-    signInAsEmailUser({ hasFirebaseLogin: firebaseLogin })
+  ])('renders nothing when $name', async ({ session }) => {
+    signInAsEmailUser({ hasFirebaseLogin: true })
     useCloudWebSessionStore().state = session
     await renderPanel()
 
@@ -214,23 +200,30 @@ describe('UserPanel sign out of all devices', () => {
     )
   })
 
-  it('asks about unsaved work before revoking anything', async () => {
-    signInAsEmailUser({ hasFirebaseLogin: true })
-    withUnsavedWorkflow()
-    vi.mocked(useDialogService().confirm).mockResolvedValue(false)
-    const revokeAll = onWebSession({ status: 'ok' })
-    await renderPanel()
+  it.for([
+    { tab: 'a Firebase login', hasFirebaseLogin: true },
+    { tab: 'a session-only tab', hasFirebaseLogin: false }
+  ])(
+    'asks about unsaved work, then revokes once, on $tab',
+    async ({ hasFirebaseLogin }) => {
+      signInAsEmailUser({ hasFirebaseLogin })
+      withUnsavedWorkflow()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+      const revokeAll = onWebSession({ status: 'ok' })
+      await renderPanel()
 
-    await userEvent.click(screen.getByRole('button', signOutEverywhere))
+      await userEvent.click(screen.getByRole('button', signOutEverywhere))
 
-    expect(useDialogService().confirm).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Unsaved Changes' })
-    )
-    expect(
-      vi.mocked(useDialogService().confirm).mock.invocationCallOrder[0]
-    ).toBeLessThan(revokeAll.mock.invocationCallOrder[0])
-    expect(useAuthStore().logout).toHaveBeenCalledOnce()
-  })
+      expect(useDialogService().confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Unsaved Changes' })
+      )
+      expect(
+        vi.mocked(useDialogService().confirm).mock.invocationCallOrder[0]
+      ).toBeLessThan(revokeAll.mock.invocationCallOrder[0])
+      expect(revokeAll).toHaveBeenCalledOnce()
+      expect(useAuthStore().logout).toHaveBeenCalledOnce()
+    }
+  )
 
   it('sends no revoke and stays signed in when the unsaved-work prompt is cancelled', async () => {
     signInAsEmailUser({ hasFirebaseLogin: true })

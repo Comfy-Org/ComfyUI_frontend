@@ -2,10 +2,10 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { usePersonalWorkspaceSwitch } from '../../composables/usePersonalWorkspaceSwitch'
-import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { translationsFor } from '../../i18n/translations'
-import type { WorkflowCreditsGate } from '../../lib/workshop/workflow-credits-gate'
+import { usePersonalWorkspaceSwitch } from '@/composables/usePersonalWorkspaceSwitch'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { translationsFor } from '@/i18n/translations'
+import type { WorkflowCreditsGate } from '@/lib/workshop/workflow-credits-gate'
 
 const { t } = translationsFor('en')
 const { gate, workspaceName = '' } = defineProps<{

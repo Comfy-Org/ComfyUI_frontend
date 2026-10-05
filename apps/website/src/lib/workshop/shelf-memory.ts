@@ -1,5 +1,5 @@
-import type { UseCase } from '../../config/models-catalogue'
-import { USE_CASES } from '../../config/models-catalogue'
+import type { UseCase } from '@/config/models-catalogue'
+import { USE_CASES } from '@/config/models-catalogue'
 
 export type Shelf = UseCase | 'all' | 'other'
 

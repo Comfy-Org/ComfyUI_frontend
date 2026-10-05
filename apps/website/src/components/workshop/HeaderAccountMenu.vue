@@ -11,11 +11,11 @@ import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopSession } from '../../config/workshop-session-state'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { initialsOf, workspaceInitialsOf } from '../../lib/workshop/initials'
-import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { initialsOf, workspaceInitialsOf } from '@/lib/workshop/initials'
+import type { WorkspaceWithRole } from '@/lib/workshop/workspaces'
 import HeaderWorkspaceMenu from './HeaderWorkspaceMenu.vue'
 
 const {

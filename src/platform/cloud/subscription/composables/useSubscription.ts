@@ -42,10 +42,7 @@ import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
-import {
-  isWorkspaceBillingRequiredError,
-  parseErrorResponse
-} from '@/platform/remote/comfyui/errors'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -588,11 +585,14 @@ function useSubscriptionInternal() {
       shouldWatchCancellation: isSubscriptionEnabled
     })
 
-  const openBillingPortal = async (target: BillingPortalTarget) => {
+  const openBillingPortal = async (
+    target: BillingPortalTarget,
+    options?: { cancelSubscription?: boolean }
+  ) => {
     const portal = createBillingPortalReporter(telemetry, target)
     let opened: boolean
     try {
-      opened = await accessBillingPortalDirect()
+      opened = await accessBillingPortalDirect(undefined, options)
     } catch (error) {
       portal.failed(error, 'legacy')
       throw error
@@ -602,19 +602,12 @@ function useSubscriptionInternal() {
     return opened
   }
 
-  const manageSubscription = async () => {
-    let didOpenPortal: boolean | undefined
-    try {
-      didOpenPortal = await openBillingPortal('manage_subscription')
-    } catch (err) {
-      // The legacy billing adapter recovers from a rail-mismatch refusal.
-      if (isWorkspaceBillingRequiredError(err)) throw err
-      reportError(err)
+  const manageSubscription = async (options?: {
+    cancelSubscription?: boolean
+  }) => {
+    if (!(await openBillingPortal('manage_subscription', options))) {
+      throw new PaymentPopupBlockedError(t('subscription.billingTabBlocked'))
     }
-    if (!didOpenPortal) {
-      return
-    }
-
     startCancellationWatcher()
   }
 
@@ -869,6 +862,13 @@ function useSubscriptionInternal() {
     if (scope === observedStatusScope) return
     observedStatusScope = scope
     statusScopeGeneration += 1
+    // The invoice link is a bearer payment URL: never carry it across scopes.
+    if (subscriptionStatus.value?.renewal_invoice) {
+      subscriptionStatus.value = {
+        ...subscriptionStatus.value,
+        renewal_invoice: undefined
+      }
+    }
   }
 
   watch(
