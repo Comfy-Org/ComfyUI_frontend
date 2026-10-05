@@ -470,26 +470,6 @@
           {
             "paths": [
               {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
-              {
                 "name": "@/i18n",
                 "importNames": ["t", "d", "te"],
                 "message": "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
@@ -523,26 +503,6 @@
           {
             "paths": [
               {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
-              {
                 "name": "vue-i18n",
                 "importNames": ["useI18n"],
                 "message": "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
@@ -575,26 +535,6 @@
           {
             "paths": [
               {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
-              {
                 "name": "@vueuse/core",
                 "importNames": ["useVirtualList"],
                 "message": "useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead."
@@ -622,26 +562,6 @@
           {
             "paths": [
               {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
-              {
                 "name": "@vue/test-utils",
                 "message": "Use @testing-library/vue with @testing-library/user-event instead."
               }
@@ -664,26 +584,6 @@
           "error",
           {
             "paths": [
-              {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
               {
                 "name": "@playwright/test",
                 "importNames": [
