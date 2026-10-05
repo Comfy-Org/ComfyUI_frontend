@@ -21,17 +21,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
-vi.mock('../api/skillsApi', () => ({
-  listSkillPacks: vi.fn(),
-  SkillPacksApiError: class SkillPacksApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status: number
-    ) {
-      super(message)
-    }
-  }
-}))
+vi.mock(import('../api/skillsApi'), { spy: true })
 
 function makePack(overrides: Partial<SkillPack> = {}): SkillPack {
   return {
@@ -76,6 +66,24 @@ describe('skillPacksStore', () => {
     expect(mocks.isFeatureEnabled).toHaveBeenCalledWith('agent-skill-packs')
     expect(listSkillPacks).toHaveBeenCalledOnce()
   })
+
+  it.for([
+    [false, true],
+    [true, false]
+  ])(
+    'hides the surface unless both flags enable it (%s, %s)',
+    async ([parentEnabled, childEnabled]) => {
+      mocks.isFeatureEnabled.mockImplementation((flag: string) =>
+        flag === 'agent-in-app-experience' ? parentEnabled : childEnabled
+      )
+      const store = useSkillPacksStore()
+
+      await store.startFlagGate()
+
+      expect(store.enabled).toBe(false)
+      expect(listSkillPacks).not.toHaveBeenCalled()
+    }
+  )
 
   it('allows the feature gate to retry after setup fails', async () => {
     const failure = new Error('subscription failed')
