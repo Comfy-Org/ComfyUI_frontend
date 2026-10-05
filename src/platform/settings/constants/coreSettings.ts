@@ -915,6 +915,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.5.1'
   },
   {
+    id: 'LiteGraph.Canvas.HideLinksWhileMoving',
+    category: ['LiteGraph', 'Canvas', 'HideLinksWhileMoving'],
+    name: 'Hide links while panning or zooming',
+    tooltip:
+      'Skips drawing links while the canvas is panned or zoomed and draws them again once it stops. Makes moving around large workflows smoother when the browser renders the canvas without GPU acceleration.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.56.0'
+  },
+  {
     id: 'Comfy.EnableWorkflowViewRestore',
     category: ['Comfy', 'Workflow', 'EnableWorkflowViewRestore'],
     name: 'Save and restore canvas position and zoom level in workflows',

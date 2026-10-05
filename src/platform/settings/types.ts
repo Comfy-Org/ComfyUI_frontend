@@ -109,6 +109,7 @@ export type Settings = {
   'Comfy.Server.ServerConfigValues': Record<string, ServerConfigValue>
   'Comfy.Server.LaunchArgs': Record<string, string>
   'LiteGraph.Canvas.MaximumFps': number
+  'LiteGraph.Canvas.HideLinksWhileMoving': boolean
   'Comfy.Workflow.ConfirmDelete': boolean
   'Comfy.Workflow.AutoSaveDelay': number
   'Comfy.Workflow.AutoSave': 'off' | 'after delay'

@@ -70,6 +70,7 @@ import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 import { LinkConnector } from './canvas/LinkConnector'
+import { ViewportMotionTracker } from './canvas/ViewportMotionTracker'
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint
@@ -1054,6 +1055,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** If true, enable live selection during drag. Nodes are selected/deselected in real-time. */
   liveSelection: boolean = false
+
+  /** Hides links while the viewport pans or zooms, when enabled. */
+  readonly viewportMotion = new ViewportMotionTracker(() =>
+    this.setDirty(false, true)
+  )
 
   getMenuOptions?(): IContextMenuValue<string>[]
   getExtraMenuOptions?(
@@ -2296,6 +2302,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   unbindEvents(): void {
     if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
+    if (this.viewportMotion.dispose()) this.dirty_bgcanvas = true
     if (!this._events_binded) {
       console.warn('LGraphCanvas: no events bound')
       return
@@ -5022,6 +5029,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const now = LiteGraph.getTime()
     this.render_time = (now - this.last_draw_time) * 0.001
     this.last_draw_time = now
+    this.viewportMotion.update(this.ds, now)
 
     const graphAtFrameStart = this.graph
     if (graphAtFrameStart) this.ds.computeVisibleArea(this.viewport)
@@ -6059,6 +6067,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.renderedPaths.clear()
     clearLinkBadgeHitAreas(this)
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
+    if (
+      this.viewportMotion.isMoving(LiteGraph.getTime()) &&
+      !this.linkConnector.isConnecting
+    ) {
+      this._visibleReroutes.clear()
+      this.over_link_center = undefined
+      return
+    }
 
     const { graph, subgraph } = this
     if (!graph) throw new NullGraphError()
