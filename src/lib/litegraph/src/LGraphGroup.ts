@@ -126,7 +126,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     const { pale_blue } = LGraphCanvas.node_colors
     this.color = pale_blue.groupcolor
 
-    const rect = this.bounds
     // Assignment copies coordinates into the buffer rather than replacing it,
     // so a JSON round-trip or a legacy `group._bounding = [...]` cannot leave
     // behind a plain object that every later geometry read would throw on.
@@ -147,7 +146,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
           }
           write(coords)
         },
-        enumerable: key !== 'bounds',
+        enumerable: true,
         configurable: false
       })
     }
@@ -156,12 +155,12 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       this.setBounds(coords[0], coords[1], coords[2], coords[3])
     absorbWrites('bounds', 4, writeRect)
     absorbWrites('_bounding', 4, writeRect)
-    absorbWrites('_pos', 2, (coords) =>
-      this.setBounds(coords[0], coords[1], rect[2], rect[3])
-    )
-    absorbWrites('_size', 2, (coords) =>
-      this.setBounds(rect[0], rect[1], coords[0], coords[1])
-    )
+    absorbWrites('_pos', 2, (coords) => {
+      this.pos = [coords[0], coords[1]]
+    })
+    absorbWrites('_size', 2, (coords) => {
+      this.setBounds(this._pos[0], this._pos[1], coords[0], coords[1])
+    })
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */
@@ -206,10 +205,9 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   syncBoundsFromStore(): void {
-    const rootGraph = this.graph?.rootGraph
-    if (!rootGraph || this.id === -1) return
+    if (!this.graph || this.id === -1) return
 
-    const layout = layoutStore.getGroupLayout(rootGraph.id, this.id)
+    const layout = layoutStore.getGroupLayout(this.graph.rootGraph.id, this.id)
     if (!layout) return
 
     const { position, size } = layout
@@ -223,7 +221,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
   private setBounds(x: number, y: number, width: number, height: number): void {
     this.bounds.set([x, y, width, height])
-    if (!this.graph?.rootGraph || this.id === -1) return
+    if (!this.graph || this.id === -1) return
 
     setGroupBoundsLayout(this, { x, y }, { width, height })
     this.syncBoundsFromStore()

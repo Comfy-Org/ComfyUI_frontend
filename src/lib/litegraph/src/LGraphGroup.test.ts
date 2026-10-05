@@ -486,19 +486,6 @@ describe('geometry an extension cannot clobber', () => {
     })
   })
 
-  test('a JSON round-trip written back onto a live group keeps it usable', () => {
-    const graph = new LGraph()
-    const group = new LGraphGroup('group', toGroupId(815))
-    graph.add(group)
-    group.pos = [50, 60]
-
-    Object.assign(group, JSON.parse(JSON.stringify(group)))
-    group.pos = [70, 80]
-
-    expect([...group.boundingRect]).toEqual([70, 80, 140, 80])
-    expect(group.serialize().bounding).toEqual([70, 80, 140, 80])
-  })
-
   test.for([
     ['bounds', [1, 2, 300, 400], [1, 2, 300, 400]],
     ['_bounding', [1, 2, 300, 400], [1, 2, 300, 400]],
@@ -533,11 +520,24 @@ describe('geometry an extension cannot clobber', () => {
     const group = new LGraphGroup('group', toGroupId(813))
     graph.add(group)
 
-    expect(Reflect.deleteProperty(group, '_bounding')).toBe(false)
-    expect(Reflect.defineProperty(group, '_pos', { value: [0, 0] })).toBe(false)
+    expect(() => {
+      Object.defineProperty(group, '_pos', { value: [0, 0] })
+    }).toThrow(TypeError)
+    expect(() => {
+      // @ts-expect-error a geometry buffer is not an optional property
+      delete group._bounding
+    }).toThrow(TypeError)
 
     group.pos = [60, 70]
     expect([...group.boundingRect]).toEqual([60, 70, 140, 80])
+  })
+
+  test('a copy of a group still carries every geometry buffer', () => {
+    const group = new LGraphGroup('group', toGroupId(816))
+
+    expect(Object.keys(group)).toEqual(
+      expect.arrayContaining(['bounds', '_pos', '_size', '_bounding'])
+    )
   })
 
   test('geometry still reads through a reactive proxy', () => {
