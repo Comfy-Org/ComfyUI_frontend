@@ -42,6 +42,18 @@ test.describe(
           return rows
         })
 
+      await test.step('follower reconnects after an abnormal transport close', async () => {
+        const before = agentConversation.subscribeCount()
+        await agentConversation.disconnectFollowerAbnormally()
+        await expect
+          .poll(() => agentConversation.subscribeCount())
+          .toBe(before + 1)
+        await agentConversation.expectCanvasReplayed(lastTurn)
+        await expect
+          .poll(() => agentConversation.renderedWidgetRows())
+          .toEqual(widgetRows)
+      })
+
       const viewport = await test.step('user zooms and pans', async () => {
         const restingOffset = await canvas.getOffset()
         await canvas.setScale(0.8)

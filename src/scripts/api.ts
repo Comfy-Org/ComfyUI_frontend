@@ -242,12 +242,14 @@ interface FrontendApiCalls {
   promptQueueing: { requestId: number; batchCount: number; number?: number }
   promptQueued: { number: number; batchCount: number; requestId?: number }
   graphCleared: never
+  socketClosed: { code: number; reason: string; wasClean: boolean }
   reconnecting: never
   reconnected: never
 }
 
 export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
 export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
+export type SocketClosedEventPayload = FrontendApiCalls['socketClosed']
 
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {
@@ -326,6 +328,12 @@ type ApiToEventType<T = ApiCalls> = {
 
 /** Dictionary of types used in the detail for a custom event */
 type ApiEventTypes = ApiToEventType
+
+const CLIENT_LIFECYCLE_EVENTS: ReadonlySet<keyof ApiCalls> = new Set([
+  'socketClosed',
+  'reconnecting',
+  'reconnected'
+] satisfies readonly (keyof FrontendApiCalls)[])
 
 /** Dictionary of API events: `[name]: CustomEvent<Type>` */
 type ApiEvents = AsCustomEvents<ApiEventTypes>
@@ -1026,7 +1034,7 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', (event) => {
       // A replaced socket (e.g. after resetSocket on an account switch) must
       // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
@@ -1037,6 +1045,11 @@ export class ComfyApi extends EventTarget {
         this.socket = null
         await this.createSocket(true)
       }, 300)
+      this.dispatchCustomEvent('socketClosed', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      })
       if (opened) {
         this.dispatchCustomEvent('status', null)
         this.dispatchCustomEvent('reconnecting')
@@ -1180,7 +1193,10 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
-              if (this._registered.has(msg.type)) {
+              if (
+                this._registered.has(msg.type) &&
+                !CLIENT_LIFECYCLE_EVENTS.has(msg.type)
+              ) {
                 // Fallback for custom types - calls super direct.
                 super.dispatchEvent(
                   new CustomEvent(msg.type, { detail: msg.data })
