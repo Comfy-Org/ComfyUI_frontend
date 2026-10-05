@@ -1597,7 +1597,9 @@ describe('Composer', () => {
     it('clears the status once the last upload settles', async () => {
       const composer = mountUploading(2)
       await nextTick()
-      expect(screen.getByTestId('composer-upload-status')).toBeVisible()
+      expect(screen.getByTestId('composer-upload-status')).toHaveTextContent(
+        /^Uploading 2 attachments$/
+      )
 
       composer.value?.updateAttachment('attachment-1', { uploading: false })
       await nextTick()
