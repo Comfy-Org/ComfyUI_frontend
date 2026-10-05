@@ -142,14 +142,13 @@ export function useWorkflowPersistenceV2() {
   )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  // Sign-out cleanup is NOT driven from here. `resolvedUserInfo` reports the
-  // auth state this window observes, not an action this window took, and
-  // Firebase's browserLocalPersistence syncs that state between windows over
-  // `storage` events: a second window that merely boots rewrites the shared
-  // `firebase:authUser:*` record, and this window sees its user drop to null
-  // without anyone having signed out. Explicit sign-out sites clear shared
-  // storage and broadcast intent; this composable fences on that intent,
-  // never on an observed null user.
+  // `resolvedUserInfo` reports the auth state this window observes, not an
+  // action this window took, and Firebase's browserLocalPersistence syncs that
+  // state between windows over `storage` events: a second window that merely
+  // boots rewrites the shared `firebase:authUser:*` record, and this window
+  // sees its user drop to null without anyone having signed out. Explicit
+  // sign-out sites clear shared storage and broadcast intent; this composable
+  // fences on that intent, never on an observed null user.
   const unregisterPersistenceCancel = registerWorkflowPersistenceCancel(() => {
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()

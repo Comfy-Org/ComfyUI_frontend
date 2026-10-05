@@ -871,6 +871,63 @@ describe('useWorkflowPersistenceV2', () => {
     expect(mockToastAdd).not.toHaveBeenCalled()
   })
 
+  it('keeps drafts and persistence alive when another window rewrites the shared auth record', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'personal', type: 'personal' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('ForeignAuthRecordWrite.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'before-foreign-auth-record-write' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    expect(localStorage.getItem(payloadKey)).not.toBeNull()
+
+    // The companion to the observed-user-drop case above, at the other seam.
+    // A second window booting rewrites the shared `firebase:authUser:*` record
+    // and then Firebase clears it, and both reach this window as real `storage`
+    // events. Only the sign-out intent key may fence and clear; a foreign
+    // auth-record write is the reported bug, not a sign-out, so the listener
+    // has to stay narrow enough to tell them apart.
+    const foreignAuthRecordKey = 'firebase:authUser:test-api-key:[DEFAULT]'
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: foreignAuthRecordKey,
+        newValue: JSON.stringify({ uid: 'user-b' }),
+        storageArea: localStorage
+      })
+    )
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: foreignAuthRecordKey,
+        newValue: null,
+        oldValue: JSON.stringify({ uid: 'user-b' }),
+        storageArea: localStorage
+      })
+    )
+
+    expect(localStorage.getItem(payloadKey)).not.toBeNull()
+    expect(storageIO.isStorageAvailable()).toBe(true)
+
+    mocks.state.currentGraph = { marker: 'after-foreign-auth-record-write' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    expect(JSON.parse(payload.data)).toEqual({
+      marker: 'after-foreign-auth-record-write'
+    })
+    expect(mockToastAdd).not.toHaveBeenCalled()
+  })
+
   it('abandons persistence when another window broadcasts deliberate sign-out', async () => {
     distributionMocks.isCloud = true
     sessionStorage.setItem(
