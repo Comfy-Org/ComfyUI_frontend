@@ -50,6 +50,9 @@ jobs:
       - name: Validate llms.txt links
         run: pnpm --filter @comfyorg/website validate:llms-txt-links
 
+      - name: Validate advertised markdown copies
+        run: pnpm --filter @comfyorg/website validate:markdown-alternates
+
       - name: Check internal links end with a slash
         run: pnpm --filter @comfyorg/website check:link-slashes
 
