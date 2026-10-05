@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -16,6 +16,7 @@ import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useSubscriptionCheckout'),
@@ -514,27 +515,85 @@ describe('shouldPreventRekaDismiss', () => {
     }
   }
 
-  it.for([
-    ['data-reka-popper-content-wrapper', ''],
-    ['role', 'listbox'],
-    ['data-toast-kind', 'info'],
-    ['data-toast-dock', '']
-  ] as const)(
-    'prevents dismiss when target is inside %j',
-    ([attribute, value]) => {
-      const overlay = document.createElement('div')
-      overlay.setAttribute(attribute, value)
-      const inner = document.createElement('button')
-      overlay.appendChild(inner)
-      document.body.appendChild(overlay)
+  function appendLayer(mark: (layer: HTMLElement) => void) {
+    const layer = document.createElement('div')
+    mark(layer)
+    const inner = document.createElement('button')
+    layer.appendChild(inner)
+    document.body.appendChild(layer)
+    onTestFinished(() => {
+      releaseModalLayer(layer)
+      layer.remove()
+    })
+    return inner
+  }
 
-      const event = makeEvent(inner)
+  const ownedLayers = [
+    {
+      name: 'a Reka dismissable layer',
+      mark: (layer: HTMLElement) =>
+        layer.setAttribute('data-dismissable-layer', '')
+    },
+    {
+      name: 'a Reka popper content wrapper',
+      mark: (layer: HTMLElement) =>
+        layer.setAttribute('data-reka-popper-content-wrapper', '')
+    },
+    { name: 'a raised modal layer', mark: raiseModalLayer },
+    {
+      name: 'a toast',
+      mark: (layer: HTMLElement) =>
+        layer.setAttribute('data-toast-kind', 'info')
+    },
+    {
+      name: 'the toast dock',
+      mark: (layer: HTMLElement) => layer.setAttribute('data-toast-dock', '')
+    }
+  ]
+
+  it.for(ownedLayers)(
+    'prevents pointer dismiss when the target is inside $name',
+    ({ mark }) => {
+      const event = makeEvent(appendLayer(mark))
       onRekaPointerDownOutside({ dismissableMask: undefined }, event)
 
       expect(event.defaultPrevented).toBe(true)
-      overlay.remove()
     }
   )
+
+  it.for(ownedLayers)(
+    'prevents focus dismiss when focus moves inside $name',
+    ({ mark }) => {
+      const event = makeEvent(appendLayer(mark))
+      onRekaFocusOutside(event)
+
+      expect(event.defaultPrevented).toBe(true)
+    }
+  )
+
+  it.for(['dialog', 'menu', 'listbox', 'tooltip'])(
+    'allows dismiss from app markup with role=%s that no overlay owns',
+    (role) => {
+      const event = makeEvent(
+        appendLayer((layer) => layer.setAttribute('role', role))
+      )
+      onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+      expect(event.defaultPrevented).toBe(false)
+    }
+  )
+
+  it('allows dismiss from a dialog scrim raised on the modal stack', () => {
+    const event = makeEvent(
+      appendLayer((layer) => {
+        layer.dataset.slot = 'dialog-overlay'
+        raiseModalLayer(layer)
+      })
+    )
+    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+    expect(event.defaultPrevented).toBe(false)
+  })
 
   it('allows dismiss when target is outside any portaled layer', () => {
     const event = makeEvent(document.body)
@@ -576,37 +635,6 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['listbox', 'menu'])(
-    'focus-outside on a sibling %s portal does not dismiss the parent',
-    (role) => {
-      const overlay = document.createElement('div')
-      overlay.setAttribute('role', role)
-      const inner = document.createElement('button')
-      overlay.appendChild(inner)
-      document.body.appendChild(overlay)
-
-      const event = makeEvent(inner)
-      onRekaFocusOutside(event)
-
-      expect(event.defaultPrevented).toBe(true)
-      overlay.remove()
-    }
-  )
-
-  it('focus-outside on a toast does not dismiss the parent', () => {
-    const toast = document.createElement('div')
-    toast.dataset.toastKind = 'info'
-    const closeButton = document.createElement('button')
-    toast.appendChild(closeButton)
-    document.body.appendChild(toast)
-
-    const event = makeEvent(closeButton)
-    onRekaFocusOutside(event)
-
-    expect(event.defaultPrevented).toBe(true)
-    toast.remove()
-  })
-
   it('focus-outside still dismisses when focus moves to a non-portal element', () => {
     const event = makeEvent(document.body)
     onRekaFocusOutside(event)
@@ -617,17 +645,5 @@ describe('shouldPreventRekaDismiss', () => {
     const event = makeEvent(document.body)
     onRekaFocusOutside(event, { dismissOnFocusOutside: false })
     expect(event.defaultPrevented).toBe(true)
-  })
-
-  it('focus-outside on a sibling Reka portal does not dismiss the parent', () => {
-    const portal = document.createElement('div')
-    portal.setAttribute('role', 'dialog')
-    document.body.appendChild(portal)
-
-    const event = makeEvent(portal)
-    onRekaFocusOutside(event)
-
-    expect(event.defaultPrevented).toBe(true)
-    portal.remove()
   })
 })

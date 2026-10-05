@@ -1,24 +1,23 @@
-// Reka portals its dialogs / popovers / menus into the body. When a
-// nested Reka layer opens on top of a non-modal parent, the parent's
-// DismissableLayer sees the focus shift / pointer-down as "outside" and would
-// dismiss itself. These selectors cover the portaled roots so we can treat
-// interactions on them as inside.
-const REKA_PORTAL_SELECTORS =
-  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [data-reka-nested-dialog-overlay], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
+import { MODAL_LAYER_SELECTOR } from '@/utils/modalLayerStack'
+
+// Body-portaled layers live outside the dialog's DOM subtree, so Reka reports
+// interactions on them as "outside". Treat a target as inside when it belongs
+// to another Reka layer or to a non-scrim surface raised on the shared modal
+// stack (toasts, tours, loading overlay).
+const REKA_LAYER_SELECTORS = `[data-dismissable-layer], [data-reka-popper-content-wrapper], ${MODAL_LAYER_SELECTOR}:not([data-slot="dialog-overlay"])`
 
 // Dismissing a toast or using a docked progress panel over a dialog must not
 // take the dialog with it; the empty viewport space beside a toast stays an
 // ordinary scrim click.
 const TOAST_SELECTORS = '[data-toast-kind], [data-toast-dock]'
 
-const OUTSIDE_LAYER_SELECTORS = `${REKA_PORTAL_SELECTORS}, ${TOAST_SELECTORS}`
+const OWNED_LAYER_SELECTORS = `${REKA_LAYER_SELECTORS}, ${TOAST_SELECTORS}`
 
 type OutsideEvent = CustomEvent<{ originalEvent: Event }>
 
 function isInsideOverlay(target: EventTarget | null): boolean {
   return (
-    target instanceof Element &&
-    target.closest(OUTSIDE_LAYER_SELECTORS) !== null
+    target instanceof Element && target.closest(OWNED_LAYER_SELECTORS) !== null
   )
 }
 

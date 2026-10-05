@@ -21,12 +21,14 @@ const overlayClass =
   <DialogOverlay
     v-if="rootContext.modal.value"
     v-bind="delegated"
+    data-slot="dialog-overlay"
     data-testid="dialog-overlay"
     :class="cn(overlayClass, customClass)"
   />
   <Presence v-else :present="delegated.forceMount || rootContext.open.value">
     <div
       :data-state="rootContext.open.value ? 'open' : 'closed'"
+      data-slot="dialog-overlay"
       data-testid="dialog-overlay"
       :class="cn(overlayClass, customClass)"
     />
