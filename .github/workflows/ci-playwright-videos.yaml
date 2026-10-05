@@ -1,0 +1,183 @@
+name: 'CI: Playwright Videos'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  plan:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      files: ${{ steps.detect.outputs.files }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      projects: ${{ steps.plan.outputs.projects }}
+      has-tests: ${{ steps.plan.outputs.has-tests }}
+      playwright-version: ${{ steps.plan.outputs.playwright-version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed specs
+        id: detect
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          bash scripts/cicd/select-pr-playwright-specs.sh "$BASE_SHA" "$HEAD_SHA" > /tmp/video-specs.txt
+          echo "files=$(jq -Rsc 'split("\n") | map(select(length > 0))' /tmp/video-specs.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup frontend
+        if: steps.detect.outputs.files != '[]'
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Plan recording shards
+        id: plan
+        if: steps.detect.outputs.files != '[]'
+        run: |
+          mapfile -t FILES < /tmp/video-specs.txt
+          MATRIX=$(bash scripts/cicd/plan-playwright-videos.sh "${FILES[@]}")
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "has-tests=$(jq '.include | length > 0' <<< "$MATRIX")" >> "$GITHUB_OUTPUT"
+          echo "projects=$(jq -c '[.include[].project] | unique' <<< "$MATRIX")" >> "$GITHUB_OUTPUT"
+          echo "playwright-version=$(node -p 'require("@playwright/test/package.json").version')" >> "$GITHUB_OUTPUT"
+          echo "$MATRIX" | jq . >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.has-tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.plan.outputs.projects) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-frontend
+
+      - name: Build and verify local frontend
+        if: matrix.project == 'chromium'
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+          EXPECTED_DISTRIBUTION: localhost
+          EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
+        run: |
+          pnpm build
+          pnpm test:assets-flag-artifact
+
+      - name: Upload local frontend
+        if: matrix.project == 'chromium'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: frontend-dist
+          path: dist/
+          retention-days: 1
+
+      - name: Build cloud frontend
+        if: matrix.project == 'cloud'
+        uses: ./.github/actions/build-cloud-frontend
+        with:
+          expected_commit: ${{ github.sha }}
+
+  playwright-video-new-tests:
+    needs: [plan, build]
+    if: needs.plan.outputs.has-tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download frontend
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-dist${{ matrix.project == 'cloud' && '-cloud' || '' }}
+          path: dist/
+
+      - uses: ./.github/actions/start-comfyui-server
+      - uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Record changed tests
+        env:
+          RECORD_VIDEO: 'true'
+          SLOW_MO: '250'
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report
+          FILES_JSON: ${{ needs.plan.outputs.files }}
+          PROJECT: ${{ matrix.project }}
+          SHARD: ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: |
+          SPEC_FILES=$(node -e 'process.stdout.write(JSON.parse(process.env.FILES_JSON).join("\n"))')
+          test -n "$SPEC_FILES"
+          mapfile -t FILES <<< "$SPEC_FILES"
+          pnpm exec playwright test --project="$PROJECT" --shard="$SHARD" \
+            --timeout=180000 --retries=0 "${FILES[@]}"
+
+      - name: Upload recording shard
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: video-blob-${{ matrix.project }}-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 1
+
+  report:
+    needs: [plan, playwright-video-new-tests]
+    if: always() && needs.plan.outputs.has-tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: /package.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Download recording shards
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: video-blob-*
+          path: video-blobs
+          merge-multiple: true
+
+      - name: Merge video reports
+        env:
+          PLAYWRIGHT_VERSION: ${{ needs.plan.outputs.playwright-version }}
+        run: pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=html video-blobs
+
+      - name: Upload video report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: playwright-report-new-tests
+          path: playwright-report/
+          retention-days: 30
+          if-no-files-found: error

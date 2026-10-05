@@ -13,7 +13,15 @@ const workflowSchema = z.object({
       needs: z.union([z.string(), z.array(z.string())]).optional(),
       if: z.string().optional(),
       uses: z.string().optional(),
-      steps: z.array(z.object({ run: z.string().optional() })).optional()
+      steps: z
+        .array(
+          z.object({
+            run: z.string().optional(),
+            uses: z.string().optional(),
+            with: z.record(z.string(), z.unknown()).optional()
+          })
+        )
+        .optional()
     })
   )
 })
@@ -25,6 +33,27 @@ function workflow(file: string) {
 }
 
 const pipeline = workflow('ci-tests-e2e.yaml')
+
+it.for([
+  ['ci-tests-e2e.yaml', 'merge-reports'],
+  ['ci-playwright-videos.yaml', 'report']
+])('%s report merging uses the repository pnpm version', ([file, job]) => {
+  const steps = workflow(file).jobs[job].steps ?? []
+  const installIndex = steps.findIndex((step) =>
+    step.uses?.startsWith('pnpm/action-setup@')
+  )
+  expect(installIndex).toBeGreaterThan(0)
+  expect(steps[installIndex].with ?? {}).not.toHaveProperty('version')
+  expect(steps.slice(0, installIndex)).toContainEqual(
+    expect.objectContaining({
+      uses: expect.stringMatching(/^actions\/checkout@/),
+      with: expect.objectContaining({
+        'sparse-checkout': '/package.json',
+        'sparse-checkout-cone-mode': false
+      })
+    })
+  )
+})
 
 function verdict(job: string, env: Record<string, string>) {
   const script = pipeline.jobs[job].steps?.[0].run
@@ -139,13 +168,38 @@ describe('candidate prerequisites', () => {
     }
   )
 
+  it.for(['failure', 'cancelled', 'skipped'])(
+    'video recording ending with %s cannot fail passing E2E tests',
+    (video) => {
+      expect(
+        verdict('e2e-status', {
+          PREFLIGHT: 'success',
+          CHANGES: 'success',
+          SHOULD_RUN: 'true',
+          SHARDED: 'success',
+          CLOUD: 'success',
+          BROWSERS: 'success',
+          VIDEO: video
+        })
+      ).toBe(0)
+    }
+  )
+
+  it.for(['e2e-status', 'deploy-and-comment'])(
+    '%s does not wait for videos',
+    (job) => {
+      expect([pipeline.jobs[job].needs].flat()).not.toContain(
+        'playwright-video-new-tests'
+      )
+    }
+  )
+
   it.for([
     'unit',
     'ecosystem',
     'playwright-tests-chromium-sharded',
     'playwright-tests-cloud-sharded',
     'playwright-tests',
-    'playwright-video-new-tests',
     'comment-on-pr-start'
   ])('%s overrides skipped ancestors only after preflight succeeds', (job) => {
     expect([pipeline.jobs[job].needs].flat()).toContain('preflight')

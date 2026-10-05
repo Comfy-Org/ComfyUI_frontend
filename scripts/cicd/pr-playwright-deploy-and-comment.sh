@@ -272,27 +272,6 @@ else
     # Clean up temp directory
     rm -rf "$temp_dir"
 
-    # Deploy the focused new-tests report (with embedded video), if the PR
-    # added spec files (see playwright-video-new-tests in ci-tests-e2e.yaml).
-    # Reuses the chromium project on its own branch so it doesn't clobber the
-    # main chromium report deployed above.
-    new_tests_url=""
-    new_tests_counts="{}"
-    if [ -d "reports/playwright-report-new-tests" ]; then
-        echo "Found new-tests report, deploying..."
-        new_tests_url=$(deploy_report "reports/playwright-report-new-tests" "chromium" "${cloudflare_branch}-new-tests")
-
-        EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
-        REPORT_DIR="$BASE_DIR/reports/playwright-report-new-tests"
-        if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
-            new_tests_counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$new_tests_url" 2>&1 || echo '{}')
-        fi
-    fi
-
-    # counts_array (browsers only, read again below) must stay separate: the
-    # per-browser listing loop zips it positionally against BROWSERS/urls.
-    agg_all_counts="$all_counts|$new_tests_counts"
-
     # Calculate total test counts across all browsers
     total_passed=0
     total_failed=0
@@ -300,7 +279,7 @@ else
     total_skipped=0
     total_tests=0
 
-    IFS='|' read -r -a agg_counts_array <<< "$agg_all_counts"
+    IFS='|' read -r -a agg_counts_array <<< "$all_counts"
     for counts_json in "${agg_counts_array[@]}"; do
         [ -z "$counts_json" ] && continue
         read -r passed failed flaky skipped total <<< "$(parse_counts "$counts_json")"
@@ -399,11 +378,6 @@ $test_line"
         i=$((i + 1))
     done
     unset IFS
-
-    if [ -n "$new_tests_url" ] && [ "$new_tests_url" != "failed" ]; then
-        comment="$comment
-- **New-test walkthrough** (chromium, recorded video): [View Report](${new_tests_url})$(counts_suffix "$new_tests_counts")"
-    fi
 
     comment="$comment
 
