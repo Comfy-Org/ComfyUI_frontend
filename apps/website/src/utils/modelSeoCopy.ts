@@ -1,5 +1,5 @@
 import type { Model } from '../config/models'
-import { t } from '../i18n/translations'
+import { translationsFor } from '../i18n/translations'
 import type { Locale } from '../i18n/translations'
 
 function isCloudOnly(model: Model): boolean {
@@ -11,11 +11,11 @@ export function getWhatIsDescription(
   dirDesc: string,
   locale: Locale = 'en'
 ): string {
+  const { t } = translationsFor(locale)
   return t(
     isCloudOnly(model)
       ? 'models.faq.whatIs.cloudAnswer'
       : 'models.faq.whatIs.localAnswer',
-    locale,
     {
       name: model.displayName,
       description: dirDesc,
@@ -35,11 +35,11 @@ export function getFaqPricingAnswer(
   model: Model,
   locale: Locale = 'en'
 ): string {
+  const { t } = translationsFor(locale)
   return t(
     isCloudOnly(model)
       ? 'models.faq.isFree.cloudAnswer'
       : 'models.faq.isFree.localAnswer',
-    locale,
     { name: model.displayName }
   )
 }

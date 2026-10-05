@@ -11,6 +11,7 @@ import type {
 } from '@comfyorg/account-core/webSessionIdentity'
 import type {
   WebSession,
+  WebSessionCommandResult,
   WebSessionErrorCode,
   WebSessionOptions
 } from '@comfyorg/account-core/webSession'
@@ -24,6 +25,7 @@ import {
   createSessionTokenMint,
   SessionTokenError
 } from '@comfyorg/account-core/sessionTokenMint'
+import { revokeAllWebSessions } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import {
@@ -86,6 +88,10 @@ const TOKEN_FAILURE_COPY: Readonly<
   CSRF_STALE: 'auth.webSession.token.refused',
   WORKSPACE_ACCESS_DENIED: 'auth.webSession.token.workspaceDenied',
   SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused'
+}
+
+export function webSessionFailureMessage(code: WebSessionErrorCode): string {
+  return t(TOKEN_FAILURE_COPY[code])
 }
 
 const LIFECYCLE_RACES: ReadonlySet<WebSessionErrorCode> = new Set([
@@ -287,7 +293,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
           }
           throw new WebSessionTokenError(
             error,
-            t(TOKEN_FAILURE_COPY[failure.code])
+            webSessionFailureMessage(failure.code)
           )
         }
       }
@@ -317,6 +323,14 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       errorType: 'auth_session_cookie_delete_failed',
       level: 'error'
     })
+  }
+
+  async function revokeAllSessions(): Promise<WebSessionCommandResult> {
+    const session = currentSession()
+    if (!session) {
+      return { status: 'error', code: 'NO_SESSION', retryable: false }
+    }
+    return revokeAllWebSessions(sessionOptions(), session.csrfToken)
   }
 
   function currentSession(): WebSession | undefined {
@@ -411,6 +425,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     whenSessionCreated: () => creating,
     whenDecided,
     signedInInteractively,
-    signOut
+    signOut,
+    revokeAllSessions
   }
 })

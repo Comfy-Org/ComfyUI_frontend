@@ -6,6 +6,8 @@ import {
   useEventListener
 } from '@vueuse/core'
 
+import type { BillingPortalTarget } from '@comfyorg/account-core/billing'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -15,6 +17,7 @@ import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetc
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
+import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   CheckoutAttributionMetadata,
@@ -113,7 +116,7 @@ function useSubscriptionInternal() {
 
     return subscriptionStatus.value?.is_active ?? false
   })
-  const { reportError, accessBillingPortal } = useAuthActions()
+  const { reportError, accessBillingPortalDirect } = useAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
@@ -582,12 +585,24 @@ function useSubscriptionInternal() {
       shouldWatchCancellation: isSubscriptionEnabled
     })
 
-  const manageSubscription = async () => {
-    const didOpenPortal = await accessBillingPortal()
-    if (!didOpenPortal) {
-      return
+  const openBillingPortal = async (target: BillingPortalTarget) => {
+    const portal = createBillingPortalReporter(telemetry, target)
+    let opened: boolean
+    try {
+      opened = await accessBillingPortalDirect()
+    } catch (error) {
+      portal.failed(error, 'legacy')
+      throw error
     }
+    if (opened) portal.opened('legacy')
+    else portal.blocked('legacy')
+    return opened
+  }
 
+  const manageSubscription = async () => {
+    if (!(await openBillingPortal('manage_subscription'))) {
+      throw new PaymentPopupBlockedError(t('subscription.billingTabBlocked'))
+    }
     startCancellationWatcher()
   }
 
@@ -607,9 +622,9 @@ function useSubscriptionInternal() {
     window.open('https://docs.comfy.org', '_blank')
   }
 
-  const handleInvoiceHistory = async () => {
-    await accessBillingPortal()
-  }
+  const handleInvoiceHistory = wrapWithErrorHandlingAsync(async () => {
+    await openBillingPortal('invoices')
+  }, reportError)
 
   type PendingCheckoutRecoverySource =
     | 'bootstrap'
@@ -842,6 +857,13 @@ function useSubscriptionInternal() {
     if (scope === observedStatusScope) return
     observedStatusScope = scope
     statusScopeGeneration += 1
+    // The invoice link is a bearer payment URL: never carry it across scopes.
+    if (subscriptionStatus.value?.renewal_invoice) {
+      subscriptionStatus.value = {
+        ...subscriptionStatus.value,
+        renewal_invoice: undefined
+      }
+    }
   }
 
   watch(
@@ -1076,12 +1098,13 @@ function useSubscriptionInternal() {
       )
 
       if (!response.ok) {
-        const { message } = await parseErrorResponse(response)
+        const { message, code } = await parseErrorResponse(response)
         throw new AuthStoreError(
           t('toastMessages.failedToInitiateSubscription', {
             error: message
           }),
-          response.status
+          response.status,
+          code
         )
       }
 
@@ -1109,6 +1132,7 @@ function useSubscriptionInternal() {
     subscribe,
     subscribeDirect,
     fetchStatus,
+    fetchStatusDirect: fetchSubscriptionStatus,
     showSubscriptionDialog,
     manageSubscription,
     requireActiveSubscription,

@@ -12,6 +12,7 @@
  * as the transport's coded failure.
  */
 import {
+  zCancelBillingOpResponse,
   zCancelSubscriptionResponse2,
   zPaymentPortalResponse,
   zPreviewPlanInfo,
@@ -31,6 +32,7 @@ import type {
   BillingOperationLifecycle,
   IssuedBillingOperation
 } from './operationLifecycle.js'
+import { operationRoute } from './operationLifecycle.js'
 import type {
   BillingOperationKind,
   BillingOperationState,
@@ -48,6 +50,10 @@ export const CANCEL_SUBSCRIPTION_ROUTE = '/billing/subscription/cancel'
 export const PAYMENT_PORTAL_ROUTE = '/billing/payment-portal'
 export const PREVIEW_SUBSCRIBE_ROUTE = '/billing/preview-subscribe'
 
+export function cancelOperationRoute(operationId: string): string {
+  return `${operationRoute(operationId)}/cancel`
+}
+
 /** The closed set of `serverCode` values these commands act on. */
 const NO_ACTIVE_SUBSCRIPTION_SERVER_CODE = 'NO_ACTIVE_SUBSCRIPTION'
 const REACTIVATION_CONFIRMATION_REQUIRED_SERVER_CODE =
@@ -58,6 +64,10 @@ const ALREADY_CANCELED_SERVER_CODE = 'ALREADY_CANCELED'
 const SUBSCRIPTION_QUOTE_STALE_SERVER_CODE = 'SUBSCRIPTION_QUOTE_STALE'
 const SUBSCRIPTION_CHANGE_IN_PROGRESS_SERVER_CODE =
   'SUBSCRIPTION_CHANGE_IN_PROGRESS'
+const CANCEL_REFUSAL_SERVER_CODES = [
+  'NOT_CANCELABLE',
+  'PAYMENT_IN_FLIGHT'
+] as const
 
 export type SubscribeInput = z.infer<typeof zSubscribeRequest>
 
@@ -108,6 +118,23 @@ export type SubscriptionCommandResult =
   | { readonly status: 'ok'; readonly value: SubscriptionCommandOutcome }
   | SubscriptionCommandFailure
 
+/**
+ * Why the server kept a payment it was asked to cancel. `PAYMENT_IN_FLIGHT`:
+ * the payment won the race and the operation will settle on its own.
+ * `NOT_CANCELABLE`: the operation is not one waiting on authentication.
+ */
+export type CancelRefusalCode = (typeof CANCEL_REFUSAL_SERVER_CODES)[number]
+
+/**
+ * The server's answer to cancelling a pending operation. `canceled`: dropped,
+ * nothing charged, also for one already discarded. `cancel_requested`: the
+ * cancel was delivered but has not settled; asking again is safe.
+ */
+export type CancelOperationResult =
+  | { readonly status: 'canceled' | 'cancel_requested' }
+  | { readonly status: 'not_canceled'; readonly code: CancelRefusalCode }
+  | BillingFailure
+
 export type PaymentPortalResult =
   | { readonly status: 'ok'; readonly value: { readonly url: string } }
   | BillingFailure
@@ -130,6 +157,9 @@ const PreviewSchema = zPreviewSubscribeResponse.extend({
   cost_today_cents: wireCents,
   credits_next_period_cents: wireCents,
   credits_today_cents: wireCents,
+  /** Whole credits as granted. Not in ingest-types until cloud PR 11905 syncs. */
+  credits_today: wireCents.nonnegative().optional(),
+  credits_next_period: wireCents.nonnegative().optional(),
   renewal_amount_cents: wireCents.optional(),
   subtotal_cents: wireCents.optional(),
   balance_applied_cents: wireCents.optional(),
@@ -190,6 +220,12 @@ export interface BillingCommands {
   ) => Promise<PreviewSubscribeResult>
   resubscribe: () => Promise<SubscriptionCommandResult>
   cancelSubscription: () => Promise<SubscriptionCommandResult>
+  /**
+   * Asks the server to drop an operation still waiting on the customer's
+   * authentication. Any answer that names the operation's fate wakes the
+   * lifecycle, so the operation it follows catches up with the server.
+   */
+  cancelOperation: (operationId: string) => Promise<CancelOperationResult>
   /** Returns the portal URL; the host decides how to open it. */
   openPaymentPortal: (input: {
     readonly returnUrl?: string
@@ -494,11 +530,32 @@ export function createBillingCommands(
     return { status: 'ok', value: { url } }
   }
 
+  async function cancelOperation(
+    operationId: string
+  ): Promise<CancelOperationResult> {
+    const response = await post(
+      cancelOperationRoute(operationId),
+      undefined,
+      (body) => zCancelBillingOpResponse.safeParse(body)
+    )
+    if (response.status === 'error') {
+      const refusal = CANCEL_REFUSAL_SERVER_CODES.find((code) =>
+        refusedWith(response, code)
+      )
+      if (refusal === undefined) return response
+      lifecycle.wake()
+      return { status: 'not_canceled', code: refusal }
+    }
+    lifecycle.wake()
+    return { status: response.value.data.status }
+  }
+
   return {
     subscribe,
     previewSubscribe,
     resubscribe,
     cancelSubscription: () => settle('cancel', issueCancel),
+    cancelOperation,
     openPaymentPortal
   }
 }

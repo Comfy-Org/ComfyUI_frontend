@@ -159,14 +159,14 @@ test.describe('Wan 3.0 launch page — zh-CN', () => {
     const hero = page.locator('section').filter({
       has: page.getByRole('heading', {
         level: 1,
-        name: t('wan3.hero.title', 'zh-CN')
+        name: t('wan3.hero.title', {}, { locale: 'zh-CN' })
       })
     })
     await expect(hero.getByRole('link').first()).toContainText(/[一-鿿]/)
 
     const faq = page.getByRole('heading', {
       level: 2,
-      name: t('wan3.faq.heading', 'zh-CN')
+      name: t('wan3.faq.heading', {}, { locale: 'zh-CN' })
     })
     await faq.scrollIntoViewIfNeeded()
     await expect(faq).toBeVisible()
@@ -176,13 +176,17 @@ test.describe('Wan 3.0 launch page — zh-CN', () => {
     page
   }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: t('ui.breadcrumb', 'zh-CN') })
-      .getByRole('link', { name: t('models.breadcrumb.models', 'zh-CN') })
+      .getByRole('navigation', {
+        name: t('ui.breadcrumb', {}, { locale: 'zh-CN' })
+      })
+      .getByRole('link', {
+        name: t('models.breadcrumb.models', {}, { locale: 'zh-CN' })
+      })
     await expect(modelsCrumb).toHaveAttribute('href', getRoutes('zh-CN').models)
 
     const footerLink = page
       .locator('footer')
-      .getByRole('link', { name: t('footer.wan3', 'zh-CN') })
+      .getByRole('link', { name: t('footer.wan3', {}, { locale: 'zh-CN' }) })
     await expect(footerLink).toHaveAttribute('href', getRoutes('zh-CN').wan3)
   })
 })
