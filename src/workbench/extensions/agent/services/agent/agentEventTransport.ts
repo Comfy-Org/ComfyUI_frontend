@@ -378,7 +378,7 @@ export function createAgentEventTransport(
     data: AgentAskResolvedEvent['data']
   ): boolean {
     const parts = retireAskParts(message.parts, data.ask_id, {
-      answered: data.status === 'answered',
+      status: data.status === 'answered' ? 'answered' : 'closed',
       selected: data.selected ?? []
     })
     if (parts === message.parts) return false

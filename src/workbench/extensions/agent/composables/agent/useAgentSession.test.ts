@@ -208,7 +208,7 @@ const runApproval = (id: string, askId = 'turn-1:call-1') =>
 const askResolved = (
   id: string,
   askId = 'turn-1:call-1',
-  selected: string[] = ['run']
+  selected: string[] | null = ['run']
 ) =>
   wire({
     type: 'agent_ask_resolved',
@@ -1739,14 +1739,41 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
       expect(card()).toMatchObject({
-        resolution: { answered: true, selected: ['sdxl'], otherText: 'a LoRA' }
+        resolution: { status: 'answered', selected: ['sdxl'] }
       })
+      // The frame names the ids but not the text, so ours is not echoed back
+      // as the committed answer.
+      expect(card()).not.toHaveProperty('resolution.otherText')
       expect(session.notices.value).toEqual([])
     })
 
-    // Another tab answered first: the card must read back the answer that
-    // won, never pair our free text with someone else's choice.
-    it('shows the winning answer, without our text, when another answer won', async () => {
+    it('reads as answered, naming nothing, when the frame names no selection', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', null))
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: [] }
+      })
+    })
+
+    it('marks the outcome unknown when the answer may have landed', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('backend blip', 500, undefined)
+      )
+
+      await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'unknown', selected: [] }
+      })
+    })
+
+    // Another tab answered first: only the server knows what was committed,
+    // so the card reads as answered without naming ours or theirs.
+    it('reads as answered, naming nothing, when another answer won', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', {
         selected: ['sdxl'],
@@ -1756,9 +1783,8 @@ describe('useAgentSession (v1 composition root)', () => {
       emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
 
       expect(card()).toMatchObject({
-        resolution: { answered: true, selected: ['flux'] }
+        resolution: { status: 'answered', selected: [] }
       })
-      expect(card()).not.toHaveProperty('resolution.otherText')
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
@@ -1774,7 +1800,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
 
       expect(card()).toMatchObject({
-        resolution: { answered: false, selected: [] }
+        resolution: { status: 'closed', selected: [] }
       })
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
     })

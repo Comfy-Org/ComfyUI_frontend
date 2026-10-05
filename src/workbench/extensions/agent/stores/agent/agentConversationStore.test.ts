@@ -925,7 +925,7 @@ describe('useAgentConversationStore', () => {
       )
       expect(askUserCards(store)).toEqual([
         expect.objectContaining({
-          resolution: { answered: true, selected: ['ink'] }
+          resolution: { status: 'answered', selected: ['ink'] }
         })
       ])
       expect(store.isStreaming).toBe(true)
@@ -961,7 +961,7 @@ describe('useAgentConversationStore', () => {
       store.setThreadId('th')
       store.hydrate(askUserTranscript())
       store.retireAsk('turn-1:call-1', undefined, {
-        answered: true,
+        status: 'answered',
         selected: [],
         otherText: 'watercolor'
       })
@@ -971,7 +971,11 @@ describe('useAgentConversationStore', () => {
       expect(askUserCards(store)).toEqual([
         expect.objectContaining({
           askId: 'turn-1:call-1',
-          resolution: { answered: true, selected: [], otherText: 'watercolor' }
+          resolution: {
+            status: 'answered',
+            selected: [],
+            otherText: 'watercolor'
+          }
         })
       ])
       expect(store.activeTurnId).toBe('assistant-message-1')
