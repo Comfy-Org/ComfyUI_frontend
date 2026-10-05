@@ -166,6 +166,28 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
     return true
   }
 
+  function handlePublishFailure(error: unknown, generation: number) {
+    if (error instanceof SkillPacksApiError && error.status === 404) {
+      store.markUnavailable()
+      if (generation === formGeneration) visible.value = false
+      return
+    }
+    if (!(error instanceof SkillPacksApiError)) {
+      reportError(error, {
+        errorType: 'error_publishing_agent_skill_pack',
+        surface: 'agent'
+      })
+    }
+    if (generation !== formGeneration) return
+    if (error instanceof SkillPacksApiError && error.status === 409) {
+      budgetError.value = error.message
+    } else if (error instanceof SkillPacksApiError) {
+      fieldError.value = error.message
+    } else {
+      fieldError.value = t('g.unknownError')
+    }
+  }
+
   async function handleSubmit() {
     if (loading.value || !visible.value) return
     if (!validate()) return
@@ -183,25 +205,7 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       onSaved()
       visible.value = false
     } catch (error) {
-      if (error instanceof SkillPacksApiError && error.status === 404) {
-        store.markUnavailable()
-        if (generation === formGeneration) visible.value = false
-        return
-      }
-      if (!(error instanceof SkillPacksApiError)) {
-        reportError(error, {
-          errorType: 'error_publishing_agent_skill_pack',
-          surface: 'agent'
-        })
-      }
-      if (generation !== formGeneration) return
-      if (error instanceof SkillPacksApiError && error.status === 409) {
-        budgetError.value = error.message
-      } else if (error instanceof SkillPacksApiError) {
-        fieldError.value = error.message
-      } else {
-        fieldError.value = t('g.unknownError')
-      }
+      handlePublishFailure(error, generation)
     } finally {
       loading.value = false
     }
