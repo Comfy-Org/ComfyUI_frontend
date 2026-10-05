@@ -191,18 +191,54 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
+/**
+ * Deep-copies one widget value once for each of the two serialized registers,
+ * from a single read and a single encode of the live value.
+ *
+ * Reading twice would not be equivalent. `widget.value` is a public extension
+ * surface — `BaseDOMWidgetImpl` forwards it to a custom node's
+ * `options.getValue()` — and `JSON.stringify` invokes any `toJSON` the value
+ * carries, so two reads or two encodes can yield two different snapshots. The
+ * registers would then disagree about one widget: which value the user gets
+ * back on reload depends on `LiteGraph.namedValuesRestore`, and
+ * `reportNamedValuesShadowDiff` reports a mismatch that nothing caused.
+ *
+ * Decoding twice is deliberate and is what keeps the registers independent: a
+ * consumer that rewrites one in place cannot reach the other.
+ */
+function cloneWidgetValuePerRegister(
+  value: TWidgetValue
+): [TWidgetValue, TWidgetValue] {
+  if (value == null || typeof value !== 'object') {
+    const primitive = value ?? null
+    return [primitive, primitive]
+  }
+  const encoded = JSON.stringify(value)
+  return [
+    JSON.parse(encoded) as TWidgetValue,
+    JSON.parse(encoded) as TWidgetValue
+  ]
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
-  const named: Record<string, TWidgetValue> = {}
+  // Null-prototype while accumulating, so a widget legitimately named
+  // `__proto__` becomes an own key instead of reaching the inherited
+  // `__proto__` setter. That setter drops a primitive value silently and
+  // promotes an object value to this register's prototype, where
+  // `JSON.stringify` omits it. Either way the key is not an own key, so
+  // `getRestoredWidgetValue` returns undefined — it does not fall back to the
+  // positional register once a named one is present — and the widget reloads
+  // at its construction default. Keeping the null prototype also prevents
+  // absent names such as `constructor` from resolving to inherited values.
+  const named: Record<string, TWidgetValue> = Object.create(null)
+
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
-    positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
+    // One snapshot of the live value, one independent copy per register.
+    const [forPositional, forNamed] = cloneWidgetValuePerRegister(widget.value)
+    positional.push(forPositional)
+    named[widget.name] = forNamed
   }
   return { widgets_values: positional, widgets_values_named: named }
 }
