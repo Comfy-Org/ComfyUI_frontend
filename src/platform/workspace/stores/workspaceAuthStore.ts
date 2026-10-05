@@ -697,6 +697,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     getUnifiedSessionClient,
     getUnifiedMintWorkspaceId,
     clearWorkspaceContext,
+    clearUnifiedContext,
     dropDeniedWorkspace
   }
 })
