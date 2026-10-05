@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import Tree from './Tree.vue'
 import TreeItem from './TreeItem.vue'
@@ -38,39 +39,64 @@ const Harness = defineComponent({
         <TreeItem
           v-for="item in flattenedItems"
           :key="item._id"
-          v-slot="{ handleToggle }"
           :value="item.value"
           :level="item.level"
+          :has-children="item.hasChildren"
         >
-          <button @click="handleToggle()">
-            {{ item.value.label }}
-          </button>
+          {{ item.value.label }}
         </TreeItem>
       </template>
     </Tree>
   `
 })
 
-describe('Tree', () => {
-  it('expands, selects, and exposes tree ARIA state', async () => {
-    const user = userEvent.setup()
-    render(Harness)
+function renderTree() {
+  return render(Harness, {
+    global: {
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en: { g: { collapse: 'Collapse', expand: 'Expand' } } }
+        })
+      ]
+    }
+  })
+}
 
-    const folder = screen.getByRole('treeitem', { name: 'Folder' })
-    expect(folder).toHaveAttribute('aria-expanded', 'false')
+describe('Tree', () => {
+  it('toggles a parent from its chevron without selecting it', async () => {
+    const user = userEvent.setup()
+    renderTree()
+    const folder = screen.getByRole('treeitem', { name: /Folder/ })
+
+    await user.click(within(folder).getByRole('button', { name: 'Expand' }))
+
+    expect(folder).toHaveAttribute('aria-expanded', 'true')
+    expect(folder).toHaveAttribute('aria-selected', 'false')
+    expect(within(folder).getByRole('button', { name: 'Collapse' })).toBe(
+      within(folder).getByRole('button')
+    )
+    const leaf = screen.getByRole('treeitem', { name: 'Leaf' })
+    expect(within(leaf).queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('selects a row on click without toggling it', async () => {
+    const user = userEvent.setup()
+    renderTree()
+    const folder = screen.getByRole('treeitem', { name: /Folder/ })
 
     await user.click(folder)
 
-    expect(folder).toHaveAttribute('aria-expanded', 'true')
     expect(folder).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('treeitem', { name: 'Leaf' })).toBeInTheDocument()
+    expect(folder).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('supports arrow-key expansion and navigation', async () => {
     const user = userEvent.setup()
-    render(Harness)
+    renderTree()
 
-    const folder = screen.getByRole('treeitem', { name: 'Folder' })
+    const folder = screen.getByRole('treeitem', { name: /Folder/ })
     folder.focus()
     await user.keyboard('{ArrowRight}')
 

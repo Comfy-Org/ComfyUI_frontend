@@ -1,23 +1,70 @@
 <template>
   <RekaTreeItem
-    v-slot="slotProps"
+    v-slot="{ isExpanded, isSelected, handleToggle }"
     :value
     :level
     as-child
     @toggle="preventPointerToggle"
+    @select="emit('select', $event)"
   >
-    <slot v-bind="slotProps" />
+    <div
+      v-bind="$attrs"
+      :class="
+        cn(
+          'group/tree-node flex min-w-0 cursor-pointer items-center gap-1 rounded-sm py-(--tree-item-padding) pr-(--tree-item-padding) outline-none hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover',
+          isSelected && 'bg-secondary-background-selected',
+          className
+        )
+      "
+      :style="{
+        paddingLeft: `calc(var(--tree-item-padding) + ${(level - 1) * 16}px)`
+      }"
+    >
+      <button
+        v-if="hasChildren"
+        type="button"
+        tabindex="-1"
+        class="flex size-5 shrink-0 items-center justify-center"
+        :aria-label="isExpanded ? $t('g.collapse') : $t('g.expand')"
+        @click.stop="handleToggle"
+      >
+        <i
+          :class="
+            cn(
+              'icon-[lucide--chevron-right] size-4 transition-transform',
+              isExpanded && 'rotate-90'
+            )
+          "
+        />
+      </button>
+      <span v-else class="size-5 shrink-0" />
+      <slot :is-expanded :is-selected />
+    </div>
   </RekaTreeItem>
 </template>
 
 <script setup lang="ts" generic="T extends object">
-import type { TreeItemToggleEvent } from 'reka-ui'
+import type { TreeItemSelectEvent, TreeItemToggleEvent } from 'reka-ui'
 import { TreeItem as RekaTreeItem } from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
 
-const { value, level } = defineProps<{
+import { cn } from '@comfyorg/tailwind-utils'
+
+defineOptions({ inheritAttrs: false })
+
+const {
+  value,
+  level,
+  hasChildren = false,
+  class: className
+} = defineProps<{
   value: T
   level: number
+  hasChildren?: boolean
+  class?: HTMLAttributes['class']
 }>()
+
+const emit = defineEmits<{ select: [event: TreeItemSelectEvent<T>] }>()
 
 function preventPointerToggle(event: TreeItemToggleEvent<T>) {
   if (event.detail.originalEvent instanceof PointerEvent) {

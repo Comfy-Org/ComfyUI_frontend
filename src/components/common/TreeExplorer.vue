@@ -3,7 +3,12 @@
     v-bind="$attrs"
     v-model:expanded="expandedNodeKeys"
     v-model:selected="selectedNode"
-    :class="cn('tree-explorer bg-transparent px-2 py-0', className)"
+    :class="
+      cn(
+        'tree-explorer bg-transparent px-2 py-0 [--tree-item-padding:var(--comfy-tree-explorer-item-padding)]',
+        className
+      )
+    "
     :items="renderedRoot.children ?? []"
     :get-key="(node) => node.key"
     :get-children="
@@ -14,69 +19,34 @@
       <UiTreeItem
         v-for="item in items"
         :key="item._id"
-        v-slot="{ isExpanded, isSelected, handleToggle }"
+        class="tree-explorer-item"
         :value="item.value"
         :level="item.level"
+        :has-children="item.hasChildren"
+        :data-tree-key="item.value.key"
+        :data-parent-key="item.parentItem?.key"
+        :data-parent-label="item.parentItem?.label"
+        :data-tree-node-type="item.value.type"
         @select="preventUnboundSelection"
+        @click="onNodeContentClick($event, item.value, item.hasChildren)"
+        @contextmenu="handleContextMenu($event, item.value)"
       >
-        <div
+        <i
           :class="
-            cn(
-              'tree-explorer-item group/tree-node flex min-w-0 cursor-pointer items-center gap-1 rounded-sm py-(--comfy-tree-explorer-item-padding) pr-(--comfy-tree-explorer-item-padding) outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered',
-              isSelected && 'bg-node-component-surface-selected'
-            )
+            cn(item.value.icon, 'tree-explorer-node-icon size-4 shrink-0')
           "
-          :data-tree-key="item.value.key"
-          :data-parent-key="item.parentItem?.key"
-          :data-parent-label="item.parentItem?.label"
-          :data-tree-node-type="item.value.type"
-          :style="{
-            paddingLeft: `calc(var(--comfy-tree-explorer-item-padding) + ${(item.level - 1) * 16}px)`
-          }"
-          @click="
-            onNodeContentClick(
-              $event,
-              item.value,
-              item.hasChildren ? handleToggle : undefined
-            )
-          "
-          @contextmenu="handleContextMenu($event, item.value)"
-        >
-          <button
-            v-if="item.hasChildren"
-            type="button"
-            tabindex="-1"
-            class="flex size-5 shrink-0 items-center justify-center"
-            :aria-label="isExpanded ? $t('g.collapse') : $t('g.expand')"
-            @click.stop="handleToggle"
+        />
+        <div class="flex min-w-0 flex-1 items-center">
+          <slot
+            v-if="item.value.type === 'folder'"
+            name="folder"
+            :node="item.value"
           >
-            <i
-              :class="
-                cn(
-                  'icon-[lucide--chevron-right] size-4 transition-transform',
-                  isExpanded && 'rotate-90'
-                )
-              "
-            />
-          </button>
-          <span v-else class="size-5 shrink-0" />
-          <i
-            :class="
-              cn(item.value.icon, 'tree-explorer-node-icon size-4 shrink-0')
-            "
-          />
-          <div class="flex min-w-0 flex-1 items-center">
-            <slot
-              v-if="item.value.type === 'folder'"
-              name="folder"
-              :node="item.value"
-            >
-              <TreeExplorerTreeNode :node="item.value" />
-            </slot>
-            <slot v-else name="node" :node="item.value">
-              <TreeExplorerTreeNode :node="item.value" />
-            </slot>
-          </div>
+            <TreeExplorerTreeNode :node="item.value" />
+          </slot>
+          <slot v-else name="node" :node="item.value">
+            <TreeExplorerTreeNode :node="item.value" />
+          </slot>
         </div>
       </UiTreeItem>
     </template>
@@ -209,12 +179,15 @@ const fillNodeInfo = (
 const onNodeContentClick = async (
   e: MouseEvent,
   node: RenderedTreeExplorerNode<T>,
-  handleToggle?: () => void
+  hasChildren: boolean
 ) => {
   if (node.handleClick) {
     await node.handleClick(e)
-  } else {
-    handleToggle?.()
+  } else if (hasChildren) {
+    expandedKeys.value = {
+      ...expandedKeys.value,
+      [node.key]: !expandedKeys.value[node.key]
+    }
   }
   emit('nodeClick', node, e)
 }
