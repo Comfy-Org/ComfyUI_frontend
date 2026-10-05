@@ -207,6 +207,44 @@ describe('useUploadModelWizard', () => {
     expect(wizard.currentStep.value).toBe(1)
   })
 
+  it('refreshes model caches when a synchronous import finishes after reset', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    let finishUpload!: (value: AsyncUploadResponse) => void
+    vi.mocked(assetService.uploadAssetAsync).mockReturnValue(
+      new Promise((resolve) => {
+        finishUpload = resolve
+      })
+    )
+    vi.spyOn(useModelToNodeStore(), 'getAllNodeProviders').mockReturnValue([
+      fromPartial({ nodeDef: { name: 'CheckpointLoaderSimple' } })
+    ])
+    const refresh = vi
+      .spyOn(useAssetsStore(), 'updateModelsForNodeType')
+      .mockResolvedValue(undefined)
+
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/stale-sync'
+    wizard.selectedModelType.value = 'checkpoints'
+    const upload = wizard.uploadModel()
+    await vi.waitFor(() => {
+      expect(assetService.uploadAssetAsync).toHaveBeenCalledOnce()
+    })
+    wizard.resetWizard()
+    finishUpload({
+      type: 'sync',
+      asset: fromPartial({
+        id: 'asset-after-reset',
+        name: 'model.safetensors',
+        tags: ['models', 'checkpoints']
+      })
+    })
+
+    await expect(upload).resolves.toBeNull()
+    expect(refresh).toHaveBeenCalledWith('CheckpointLoaderSimple')
+    expect(wizard.currentStep.value).toBe(1)
+  })
+
   it('does not let a stale failure overwrite a replacement upload', async () => {
     const { assetService } =
       await import('@/platform/assets/services/assetService')

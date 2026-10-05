@@ -1,6 +1,6 @@
 import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import type {
   DownloadFileResult,
@@ -250,7 +250,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const reconcilingTasks = new Map<TaskId, Promise<void>>()
   const dismissedPendingDownloads = new Map<TaskId, string | undefined>()
   const taskNotFoundAttempts = new Map<TaskId, number>()
-  const unavailableTaskIds = new Set<TaskId>()
+  const unavailableTaskIds = reactive(new Set<TaskId>())
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
