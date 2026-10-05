@@ -117,8 +117,8 @@
 
   --color-muted: var(--theme-text-muted);
   --color-highlight: var(--theme-primary);
-  --color-link: #60a5fa;
-  --color-node-accent: #3b82f6;
+  --color-link: var(--color-blue-400);
+  --color-node-accent: var(--color-blue-500);
 
   /* Special Colors (temporary) */
   --color-dark-elevation-1-5: rgba(from white r g b / 0.015);
@@ -153,19 +153,19 @@
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
 
-  --theme-primary: #3b82f6;
-  --theme-primary-contrast: #fff;
-  --theme-text: #334155;
-  --theme-text-muted: #64748b;
-  --theme-content-background: #fff;
-  --theme-content-border: #e2e8f0;
-  --theme-form-border: #cbd5e1;
-  --theme-surface-100: #f1f5f9;
-  --theme-surface-300: #cbd5e1;
-  --theme-surface-700: #334155;
-  --theme-surface-800: #1e293b;
-  --theme-surface-900: #0f172a;
-  --theme-highlight-background: #eff6ff;
+  --theme-primary: var(--color-blue-500);
+  --theme-primary-contrast: var(--color-white);
+  --theme-text: var(--color-slate-700);
+  --theme-text-muted: var(--color-slate-500);
+  --theme-content-background: var(--color-white);
+  --theme-content-border: var(--color-slate-200);
+  --theme-form-border: var(--color-slate-300);
+  --theme-surface-100: var(--color-slate-100);
+  --theme-surface-300: var(--color-slate-300);
+  --theme-surface-700: var(--color-slate-700);
+  --theme-surface-800: var(--color-slate-800);
+  --theme-surface-900: var(--color-slate-900);
+  --theme-highlight-background: var(--color-blue-50);
 
   --button-surface: var(--color-white);
   --button-surface-contrast: var(--color-black);
@@ -329,18 +329,18 @@
   --content-hover-bg: #222;
   --content-hover-fg: #fff;
 
-  --theme-primary: #60a5fa;
-  --theme-primary-contrast: #18181b;
-  --theme-text: #fff;
-  --theme-text-muted: #a1a1aa;
-  --theme-content-background: #18181b;
-  --theme-content-border: #3f3f46;
-  --theme-form-border: #52525b;
-  --theme-surface-100: #f4f4f5;
-  --theme-surface-300: #d4d4d8;
-  --theme-surface-700: #3f3f46;
-  --theme-surface-800: #27272a;
-  --theme-surface-900: #18181b;
+  --theme-primary: var(--color-blue-400);
+  --theme-primary-contrast: var(--color-zinc-900);
+  --theme-text: var(--color-white);
+  --theme-text-muted: var(--color-zinc-400);
+  --theme-content-background: var(--color-zinc-900);
+  --theme-content-border: var(--color-zinc-700);
+  --theme-form-border: var(--color-zinc-600);
+  --theme-surface-100: var(--color-zinc-100);
+  --theme-surface-300: var(--color-zinc-300);
+  --theme-surface-700: var(--color-zinc-700);
+  --theme-surface-800: var(--color-zinc-800);
+  --theme-surface-900: var(--color-zinc-900);
   --theme-highlight-background: color-mix(
     in srgb,
     var(--theme-primary),
