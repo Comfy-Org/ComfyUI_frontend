@@ -7,7 +7,7 @@
       aria-labelledby="agent-panel-title"
       :class="
         cn(
-          'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]',
+          'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden',
           isOverlay
             ? 'fixed inset-y-0 right-0 z-1100 max-w-full bg-base-background shadow-lg'
             : 'relative h-full'
