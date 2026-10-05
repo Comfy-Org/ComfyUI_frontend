@@ -178,6 +178,10 @@ describe('useAssetDownloadStore', () => {
         taskId: 'task-123',
         modelType: 'checkpoints'
       })
+      const completionTimestamp = store.lastCompletedDownload?.timestamp
+      await vi.advanceTimersByTimeAsync(1)
+      dispatch(createDownloadMessage({ status: 'completed', progress: 1 }))
+      expect(store.lastCompletedDownload?.timestamp).toBe(completionTimestamp)
 
       // Late progress after a terminal frame is still part of the dismissed
       // task and must not reopen the toast.
@@ -801,6 +805,24 @@ describe('useAssetDownloadStore', () => {
       expect(store.downloadList[0].status).toBe('cancellation_pending')
     })
 
+    it('recovers a task-unavailable row from new active progress', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: false,
+        error: new TaskNotFoundError('task-123')
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await vi.advanceTimersByTimeAsync(20_000)
+      expect(store.finishedDownloads[0].status).toBe('failed')
+
+      dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
+
+      expect(store.activeDownloads[0]).toMatchObject({
+        status: 'running',
+        progress: 75
+      })
+    })
+
     it('keeps reconciling a failed task so a backend retry can recover', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.getTask)
@@ -826,6 +848,27 @@ describe('useAssetDownloadStore', () => {
 
       expect(taskService.getTask).toHaveBeenCalledTimes(3)
       expect(store.finishedDownloads[0].status).toBe('completed')
+    })
+
+    it('bounds polling for a permanently failed task', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({
+          status: 'failed',
+          result: undefined,
+          error_message: 'Download failed'
+        })
+      })
+      dispatch(createDownloadMessage({ status: 'failed' }))
+
+      await vi.advanceTimersByTimeAsync(300_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(30)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(30)
+
+      dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
+      expect(store.activeDownloads).toHaveLength(1)
     })
 
     it('accepts retry progress after an authoritative failed snapshot', async () => {
