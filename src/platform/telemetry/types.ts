@@ -125,7 +125,11 @@ export interface BootstrapCompleteMetadata {
   total_ms: number
   outcome: 'completed' | 'failed' | 'timed_out'
   phase_count: number
-  /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
+  /**
+   * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
+   * `bootstrap/object-info`). Nested phases intentionally overlap their
+   * aggregate parent, so consumers must not sum entries across the map.
+   */
   phases: Record<string, number>
   /** Phases still running when this row was emitted. Only set for `timed_out`. */
   pending?: string[]
