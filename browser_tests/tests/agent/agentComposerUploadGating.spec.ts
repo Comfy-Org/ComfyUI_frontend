@@ -36,10 +36,16 @@ test.describe(
       const uploadsHeld = new Promise<void>((resolve) => {
         releaseUploads = resolve
       })
+      let uploadNumber = 0
       await page.route('**/api/upload/image', async (route) => {
+        const currentUpload = ++uploadNumber
         await uploadsHeld
         await route.fulfill(
-          jsonRoute({ name: 'uploaded.png', subfolder: '', type: 'input' })
+          jsonRoute({
+            name: `uploaded-${currentUpload}.png`,
+            subfolder: '',
+            type: 'input'
+          })
         )
       })
 
@@ -80,7 +86,10 @@ test.describe(
         // Asserting the refs, not just the count: a send that leaked past the
         // gate would carry the staged empty refs and still be three long.
         expect(JSON.parse(postedMessages[0]).attachments).toEqual(
-          Array.from({ length: ATTACHMENT_COUNT }, () => 'uploaded.png')
+          Array.from(
+            { length: ATTACHMENT_COUNT },
+            (_, index) => `uploaded-${index + 1}.png`
+          )
         )
       } finally {
         releaseUploads()
