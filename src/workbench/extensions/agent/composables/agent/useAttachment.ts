@@ -64,6 +64,19 @@ function attachmentMediaKind(file: File): MediaKind {
   return getMediaTypeFromFilename(file.name)
 }
 
+function localPreview(
+  file: File,
+  kind: MediaKind
+): Pick<ComposerAttachment, 'previewUrl' | 'mediaUrl'> {
+  const playable = kind === 'video' || kind === 'audio'
+  const url =
+    kind === 'image' || playable ? URL.createObjectURL(file) : undefined
+  return {
+    previewUrl: kind === 'image' ? url : undefined,
+    mediaUrl: playable ? url : undefined
+  }
+}
+
 function uploadedPreview(
   kind: MediaKind,
   url?: string
@@ -136,16 +149,10 @@ export function useAttachment(options: UseAttachmentOptions) {
     try {
       if (cancelled.has(id)) return false
       const mediaKind = attachmentMediaKind(file)
-      const playable = mediaKind === 'video' || mediaKind === 'audio'
-      const localUrl =
-        mediaKind === 'image' || playable
-          ? URL.createObjectURL(file)
-          : undefined
       options.update(id, {
         name: file.name,
         mediaKind,
-        previewUrl: mediaKind === 'image' ? localUrl : undefined,
-        mediaUrl: playable ? localUrl : undefined
+        ...localPreview(file, mediaKind)
       })
       const controller = new AbortController()
       inFlight.set(id, controller)
