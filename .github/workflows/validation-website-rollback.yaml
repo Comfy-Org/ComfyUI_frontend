@@ -39,6 +39,36 @@ jobs:
       - name: Pull Vercel project information
         run: vercel pull --yes --environment=production
 
+      - name: Verify the captured deployment
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
+        run: |
+          if [[ ! "$TARGET_DEPLOYMENT" =~ ^dpl_[A-Za-z0-9]+$ ]]; then
+            echo "::error::Invalid Vercel deployment ID"
+            exit 1
+          fi
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Expected SHA must be a full lowercase Git commit SHA"
+            exit 1
+          fi
+          DEPLOYMENT=$(curl -fsS --retry 3 \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v13/deployments/$TARGET_DEPLOYMENT?teamId=$VERCEL_ORG_ID")
+          TARGET_URL=$(jq -er \
+            --arg deploymentId "$TARGET_DEPLOYMENT" \
+            --arg projectId "$VERCEL_PROJECT_ID" \
+            'select(.id == $deploymentId and (.projectId // .project.id) == $projectId) | .url' \
+            <<< "$DEPLOYMENT")
+          ACTUAL_SHA=$(curl -fsS \
+            -H 'Cache-Control: no-cache' \
+            "https://$TARGET_URL/__build.json?preflight=$GITHUB_RUN_ID" |
+            jq -er '.sha')
+          if [[ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]]; then
+            echo "::error::Deployment $TARGET_DEPLOYMENT serves $ACTUAL_SHA, expected $EXPECTED_SHA"
+            exit 1
+          fi
+
       - name: Roll back to the captured deployment
         env:
           TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}

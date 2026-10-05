@@ -200,16 +200,22 @@ jobs:
 
       - name: Capture the current production deployment
         id: previous-production
-        env:
-          CANONICAL_BUILD_URL: https://comfy.org/__build.json
         run: |
           ALIAS=$(curl -fsS --retry 3 \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID")
           PREVIOUS_DEPLOYMENT_ID=$(jq -er '.deploymentId' <<< "$ALIAS")
+          DEPLOYMENT=$(curl -fsS --retry 3 \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v13/deployments/$PREVIOUS_DEPLOYMENT_ID?teamId=$VERCEL_ORG_ID")
+          PREVIOUS_DEPLOYMENT_URL=$(jq -er \
+            --arg deploymentId "$PREVIOUS_DEPLOYMENT_ID" \
+            --arg projectId "$VERCEL_PROJECT_ID" \
+            'select(.id == $deploymentId and (.projectId // .project.id) == $projectId) | .url' \
+            <<< "$DEPLOYMENT")
           PREVIOUS_SHA=$(curl -fsS \
             -H 'Cache-Control: no-cache' \
-            "$CANONICAL_BUILD_URL?before=$GITHUB_RUN_ID" |
+            "https://$PREVIOUS_DEPLOYMENT_URL/__build.json?before=$GITHUB_RUN_ID" |
             jq -r '.sha // empty') || true
           echo "deployment-id=$PREVIOUS_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
           echo "sha=${PREVIOUS_SHA:-unavailable}" >> "$GITHUB_OUTPUT"

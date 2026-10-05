@@ -123,6 +123,16 @@ void test('only each non-app reviewer latest state can actively block', () => {
     ]),
     true
   )
+  assert.equal(
+    hasActiveChangeRequest([
+      {
+        state: 'CHANGES_REQUESTED',
+        user: { login: 'DrJKL', type: 'User' }
+      },
+      { state: 'COMMENTED', user: { login: 'DrJKL', type: 'User' } }
+    ]),
+    true
+  )
 })
 
 void test('fork pull requests are not eligible', () => {

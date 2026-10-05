@@ -5,6 +5,11 @@ import { fileURLToPath } from 'node:url'
 const API_VERSION = '2022-11-28'
 const PAGE_SIZE = 100
 const HOLD_LABEL = 'website-fast-lane:hold'
+const DECISIVE_REVIEW_STATES = new Set([
+  'APPROVED',
+  'CHANGES_REQUESTED',
+  'DISMISSED'
+])
 
 export function parseApprovedAuthors(raw) {
   let authors
@@ -73,6 +78,7 @@ export function hasActiveChangeRequest(reviews) {
     if (!login || review.user?.type === 'Bot' || login.endsWith('[bot]')) {
       continue
     }
+    if (!DECISIVE_REVIEW_STATES.has(review.state)) continue
     latestStateByReviewer.set(login, review.state)
   }
   return [...latestStateByReviewer.values()].includes('CHANGES_REQUESTED')
