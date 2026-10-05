@@ -148,7 +148,7 @@ defineExpose({ hide, show, toggle, visible })
         :style="contentStyle"
         :side-offset="2"
         align="start"
-        update-position-strategy="always"
+        :update-position-strategy="reference ? 'always' : 'optimized'"
         @close-auto-focus.prevent
         @focus-outside.prevent
       >
