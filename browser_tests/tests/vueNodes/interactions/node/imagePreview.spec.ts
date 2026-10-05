@@ -29,6 +29,7 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
 
     const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
     await node.waitForImageLoaded('image64x64.webp')
+    await expect(node.imagePreview).toContainText('64 x 64')
 
     return node
   }

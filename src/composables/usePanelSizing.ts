@@ -111,29 +111,32 @@ export function usePanelSizing(
     { flush: 'post' }
   )
   let gesture:
-    | {
+    | Array<{
         index: number
         element: HTMLElement
         width: number
         key: string
-      }
+      }>
     | undefined
 
   function capturePanel(panelId: string) {
-    if (gesture && !gesture.element.isConnected) gesture = undefined
+    if (gesture?.some(({ element }) => !element.isConnected))
+      gesture = undefined
     if (gesture) return
-    const element = document.querySelector(`[data-panel-id="${panelId}"]`)
-    if (!(element instanceof HTMLElement)) return
-    const index = storedPanels.findIndex((panel) => panel.id === panelId)
-    if (index < 0) return
-    const panel = storedPanels[index]
-    if (!toValue(panel.visible)) return
-    gesture = {
-      index,
-      element,
-      width: element.getBoundingClientRect().width,
-      key: toValue(panel.storageKey)
-    }
+    if (!storedPanels.some((panel) => panel.id === panelId)) return
+    gesture = storedPanels.flatMap((panel, index) => {
+      if (!toValue(panel.visible)) return []
+      const element = document.querySelector(`[data-panel-id="${panel.id}"]`)
+      if (!(element instanceof HTMLElement)) return []
+      return [
+        {
+          index,
+          element,
+          width: element.getBoundingClientRect().width,
+          key: toValue(panel.storageKey)
+        }
+      ]
+    })
   }
 
   function onResizeStart(event: Event) {
@@ -158,15 +161,17 @@ export function usePanelSizing(
 
   function onResizeEnd() {
     if (!gesture) return
-    const panel = storedPanels[gesture.index]
-    const width = gesture.element.getBoundingClientRect().width
-    if (
-      gesture.element.isConnected &&
-      width > 0 &&
-      width !== gesture.width &&
-      toValue(panel.storageKey) === gesture.key
-    ) {
-      panel.width.value = width
+    for (const captured of gesture) {
+      const panel = storedPanels[captured.index]
+      const width = captured.element.getBoundingClientRect().width
+      if (
+        captured.element.isConnected &&
+        width > 0 &&
+        width !== captured.width &&
+        toValue(panel.storageKey) === captured.key
+      ) {
+        panel.width.value = width
+      }
     }
     gesture = undefined
   }

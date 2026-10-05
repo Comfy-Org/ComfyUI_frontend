@@ -29,7 +29,8 @@
             @layout="saveMainSplitterLayout"
           >
             <SplitterPanel
-              v-if="firstPanelRendered"
+              v-if="firstPanelMounted"
+              v-show="firstPanelRendered"
               id="first-side-panel"
               :key="isSelectMode ? mainSplitterStateKey : 'first-side-panel'"
               :ref="panelRefs.first"
@@ -64,10 +65,13 @@
               />
             </SplitterPanel>
             <SplitterResizeHandle
-              v-if="firstPanelRendered"
+              v-if="firstPanelMounted"
+              :disabled="!firstPanelRendered"
+              :tabindex="firstPanelRendered ? 0 : -1"
               :class="
                 cn(
                   'pointer-events-auto',
+                  !firstPanelRendered && 'hidden',
                   sidebarLocation === 'left' && 'bg-interface-stroke/50'
                 )
               "
@@ -108,24 +112,18 @@
                   <slot name="graph-canvas-panel" />
                 </SplitterPanel>
                 <SplitterResizeHandle
+                  :disabled="!bottomPanelRendered"
+                  :tabindex="bottomPanelRendered ? 0 : -1"
                   :class="
                     cn(
                       'pointer-events-auto translate-y-1 rounded-t-lg',
-                      !(
-                        bottomPanelVisible &&
-                        !focusMode &&
-                        !agentNodeSelectionActive
-                      ) && 'hidden'
+                      !bottomPanelRendered && 'hidden'
                     )
                   "
                   @dragging="!$event && flushLayouts()"
                 />
                 <SplitterPanel
-                  v-show="
-                    bottomPanelVisible &&
-                    !focusMode &&
-                    !agentNodeSelectionActive
-                  "
+                  v-show="bottomPanelRendered"
                   id="bottom-panel"
                   :order="2"
                   :default-size="bottomPanelDefaultSizes[1]"
@@ -137,17 +135,21 @@
             </SplitterPanel>
 
             <SplitterResizeHandle
-              v-if="lastPanelRendered"
+              v-if="lastPanelMounted"
+              :disabled="!lastPanelRendered"
+              :tabindex="lastPanelRendered ? 0 : -1"
               :class="
                 cn(
                   'pointer-events-auto',
+                  !lastPanelRendered && 'hidden',
                   sidebarLocation === 'right' && 'bg-interface-stroke/50'
                 )
               "
               @dragging="onResizeDragging($event, 'last-side-panel')"
             />
             <SplitterPanel
-              v-if="lastPanelRendered"
+              v-if="lastPanelMounted"
+              v-show="lastPanelRendered"
               id="last-side-panel"
               :key="isSelectMode ? mainSplitterStateKey : 'last-side-panel'"
               :ref="panelRefs.last"
@@ -303,19 +305,33 @@ const firstPanelVisible = computed(
 const lastPanelVisible = computed(
   () => sidebarLocation.value === 'right' || oppositeSidePanelVisible.value
 )
-const firstPanelRendered = computed(
+const firstPanelMounted = computed(
   () =>
     firstPanelVisible.value &&
-    !focusMode.value &&
-    !agentNodeSelectionActive.value &&
     (sidebarLocation.value === 'right' || sidebarPanelVisible.value)
+)
+const lastPanelMounted = computed(
+  () =>
+    lastPanelVisible.value &&
+    (sidebarLocation.value === 'left' || sidebarPanelVisible.value)
+)
+const firstPanelRendered = computed(
+  () =>
+    firstPanelMounted.value &&
+    !focusMode.value &&
+    !agentNodeSelectionActive.value
 )
 const lastPanelRendered = computed(
   () =>
-    lastPanelVisible.value &&
+    lastPanelMounted.value &&
     !focusMode.value &&
-    !agentNodeSelectionActive.value &&
-    (sidebarLocation.value === 'left' || sidebarPanelVisible.value)
+    !agentNodeSelectionActive.value
+)
+const bottomPanelRendered = computed(
+  () =>
+    bottomPanelVisible.value &&
+    !focusMode.value &&
+    !agentNodeSelectionActive.value
 )
 
 const bothSidePanelsVisible = computed(
@@ -378,7 +394,7 @@ const mainSplitterStateKey = computed(() =>
     : sidebarStateKey.value
 )
 const mainPanelCount = computed(
-  () => 1 + Number(firstPanelRendered.value) + Number(lastPanelRendered.value)
+  () => 1 + Number(firstPanelMounted.value) + Number(lastPanelMounted.value)
 )
 const savedMainPanelSizes = shallowRef<number[]>()
 const persistMainLayout = debounce(saveSplitterSizes, 100)

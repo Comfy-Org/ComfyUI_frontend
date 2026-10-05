@@ -13,11 +13,6 @@
           :style="{ backgroundColor: getItemColor(item) }"
         />
         <i v-else-if="item.icon" :class="cn(item.icon, 'size-4')" />
-        <i
-          v-else-if="item.checked"
-          class="icon-[lucide--check] size-4 shrink-0"
-        />
-        <span v-else-if="isShapeSubmenuItem(item)" class="w-4 shrink-0" />
         <span class="flex-1">{{ item.label }}</span>
         <span
           v-if="item.shortcut"
@@ -40,9 +35,11 @@ import { useElementBounding, useRafFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import { getMenuAnchorPosition } from '@/components/ui/menu/menuAnchor'
 import type {
   MenuItem,
   MenuItemAction,
+  MenuItemRadioGroup,
   MenuItemSeparator,
   MenuItemSubmenu
 } from '@/components/ui/menu/types'
@@ -63,7 +60,6 @@ const canvasStore = useCanvasStore()
 
 interface NodeMenuMetadata {
   color?: string
-  isShapeSubmenuItem?: boolean
 }
 
 type NodeMenuAction = MenuItemAction & NodeMenuMetadata
@@ -73,7 +69,11 @@ type NodeMenuSubmenu = Omit<MenuItemSubmenu, 'items'> &
     items: NodeMenuItem[]
   }
 
-type NodeMenuItem = MenuItemSeparator | NodeMenuAction | NodeMenuSubmenu
+type NodeMenuItem =
+  | MenuItemSeparator
+  | NodeMenuAction
+  | NodeMenuSubmenu
+  | MenuItemRadioGroup
 
 function getItemColor(item: MenuItem): string | undefined {
   return 'color' in item && typeof item.color === 'string'
@@ -81,32 +81,20 @@ function getItemColor(item: MenuItem): string | undefined {
     : undefined
 }
 
-function isShapeSubmenuItem(item: MenuItem): boolean {
-  return 'isShapeSubmenuItem' in item && item.isShapeSubmenuItem === true
-}
-
-// World position (canvas coordinates) where menu was opened
 const worldPosition = ref({ x: 0, y: 0 })
 
-// Get canvas bounding rect reactively
 const lgCanvas = canvasStore.getCanvas()
 const { left: canvasLeft, top: canvasTop } = useElementBounding(lgCanvas.canvas)
 
-// Track last canvas transform to detect actual changes
 let lastScale = 0
 let lastOffsetX = 0
 let lastOffsetY = 0
 
-// Update menu position based on canvas transform
 const updateMenuPosition = () => {
   if (!isOpen.value) return
 
-  const menuEl = contextMenu.value?.container?.$el
-  if (!menuEl) return
-
   const { scale, offset } = lgCanvas.ds
 
-  // Only update if canvas transform actually changed
   if (
     scale === lastScale &&
     offset[0] === lastOffsetX &&
@@ -119,21 +107,16 @@ const updateMenuPosition = () => {
   lastOffsetX = offset[0]
   lastOffsetY = offset[1]
 
-  // Convert world position to screen position
   const screenX = (worldPosition.value.x + offset[0]) * scale + canvasLeft.value
   const screenY = (worldPosition.value.y + offset[1]) * scale + canvasTop.value
 
-  // Update menu position
-  menuEl.style.left = `${screenX}px`
-  menuEl.style.top = `${screenY}px`
+  contextMenu.value?.updatePosition({ x: screenX, y: screenY })
 }
 
-// Sync with canvas transform using requestAnimationFrame
 const { resume: startSync, pause: stopSync } = useRafFn(updateMenuPosition, {
   immediate: false
 })
 
-// Start/stop syncing based on menu visibility
 watchEffect(() => {
   if (isOpen.value) {
     startSync()
@@ -145,6 +128,21 @@ watchEffect(() => {
 function convertToMenuItem(option: MenuOption): NodeMenuItem {
   if (option.type === 'divider') return { separator: true }
 
+  if (option.isShapePicker && option.submenu) {
+    return {
+      label: option.label,
+      icon: option.icon,
+      radioGroup: {
+        value: getCurrentShape()?.localizedName ?? '',
+        options: option.submenu.map((sub) => ({
+          value: sub.label,
+          label: sub.label,
+          command: sub.action
+        }))
+      }
+    }
+  }
+
   if (option.hasSubmenu && option.submenu) {
     return {
       label: option.label,
@@ -155,10 +153,6 @@ function convertToMenuItem(option: MenuOption): NodeMenuItem {
         label: sub.label,
         icon: sub.icon,
         color: sub.color,
-        checked: option.isShapePicker
-          ? getCurrentShape()?.localizedName === sub.label
-          : undefined,
-        isShapeSubmenuItem: Boolean(option.isShapePicker),
         disabled: sub.disabled,
         command: sub.action
       }))
@@ -174,21 +168,17 @@ function convertToMenuItem(option: MenuOption): NodeMenuItem {
   }
 }
 
-// Build menu items
 const menuItems = computed<MenuItem[]>(() =>
   menuOptions.value.map(convertToMenuItem)
 )
 
-// Show context menu
-function show(event: MouseEvent) {
+function prepareMenu(event: Event) {
   bump()
 
-  // Convert screen position to world coordinates
-  // Screen position relative to canvas = event position - canvas offset
-  const screenX = event.clientX - canvasLeft.value
-  const screenY = event.clientY - canvasTop.value
+  const { x, y } = getMenuAnchorPosition(event)
+  const screenX = x - canvasLeft.value
+  const screenY = y - canvasTop.value
 
-  // Convert to world coordinates using canvas transform
   const { scale, offset } = lgCanvas.ds
   worldPosition.value = {
     x: screenX / scale - offset[0],
@@ -198,22 +188,20 @@ function show(event: MouseEvent) {
   lastScale = scale
   lastOffsetX = offset[0]
   lastOffsetY = offset[1]
+}
 
-  isOpen.value = true
+function show(event: MouseEvent) {
+  prepareMenu(event)
   contextMenu.value?.show(event)
 }
 
-// Hide context menu
 function hide() {
   contextMenu.value?.hide()
 }
 
 function toggle(event: Event) {
-  if (isOpen.value) {
-    hide()
-  } else if (event instanceof MouseEvent) {
-    show(event)
-  }
+  prepareMenu(event)
+  contextMenu.value?.toggle(event)
 }
 
 defineExpose({ toggle, hide, isOpen, show })

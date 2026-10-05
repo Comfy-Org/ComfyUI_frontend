@@ -112,7 +112,7 @@ export class ContextMenu {
   async openShapeSubmenu(): Promise<Locator> {
     await this.menuItem('Shape').click()
     const submenu = this.page.getByRole('menu').filter({
-      has: this.page.getByRole('menuitemcheckbox', {
+      has: this.page.getByRole('menuitemradio', {
         name: 'Box',
         exact: true
       })
@@ -123,7 +123,7 @@ export class ContextMenu {
 
   async selectShape(name: string): Promise<void> {
     const submenu = await this.openShapeSubmenu()
-    await submenu.getByRole('menuitemcheckbox', { name, exact: true }).click()
+    await submenu.getByRole('menuitemradio', { name, exact: true }).click()
   }
 
   /**

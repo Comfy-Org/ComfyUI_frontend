@@ -1,52 +1,55 @@
 <template>
+  <DefineTrigger>
+    <button
+      ref="wrapperRef"
+      v-tooltip.bottom="{
+        value: tooltipText,
+        showDelay: 512
+      }"
+      type="button"
+      :data-testid="`subgraph-breadcrumb-item-${item.key}`"
+      :data-active="isActive ? '' : undefined"
+      draggable="false"
+      :class="
+        cn(
+          'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit]',
+          isActive &&
+            'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
+          menuOpen && 'p-breadcrumb-item-link-menu-visible'
+        )
+      "
+      @click="handleClick"
+      @keydown="handleKeydown"
+    >
+      <i
+        v-if="hasMissingNodes && isRoot"
+        data-testid="subgraph-breadcrumb-missing-nodes-icon"
+        class="icon-[lucide--triangle-alert] text-warning-background"
+      />
+      <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
+        {{ item.label }}
+      </span>
+      <Badge
+        v-if="item.isBlueprint"
+        data-testid="subgraph-breadcrumb-blueprint-tag"
+        severity="primary"
+      >
+        {{ t('breadcrumbsMenu.blueprint') }}
+      </Badge>
+      <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
+    </button>
+  </DefineTrigger>
   <Menu
+    v-if="isActive"
     :open="menuOpen"
     :items="menuItems"
     :data-testid="`subgraph-breadcrumb-menu-${item.key}`"
-    @update:open="menuOpen = Boolean($event && isActive && !isEditing)"
+    @update:open="menuOpen = Boolean($event && !isEditing)"
     @close-auto-focus="onMenuCloseAutoFocus"
   >
-    <template #trigger>
-      <button
-        ref="wrapperRef"
-        v-tooltip.bottom="{
-          value: tooltipText,
-          showDelay: 512
-        }"
-        type="button"
-        :data-testid="`subgraph-breadcrumb-item-${item.key}`"
-        :data-active="isActive ? '' : undefined"
-        draggable="false"
-        :class="
-          cn(
-            'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit]',
-            isActive &&
-              'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
-            menuOpen && 'p-breadcrumb-item-link-menu-visible'
-          )
-        "
-        @click="handleClick"
-        @keydown="handleKeydown"
-      >
-        <i
-          v-if="hasMissingNodes && isRoot"
-          data-testid="subgraph-breadcrumb-missing-nodes-icon"
-          class="icon-[lucide--triangle-alert] text-warning-background"
-        />
-        <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
-          {{ item.label }}
-        </span>
-        <Badge
-          v-if="item.isBlueprint"
-          data-testid="subgraph-breadcrumb-blueprint-tag"
-          severity="primary"
-        >
-          {{ t('breadcrumbsMenu.blueprint') }}
-        </Badge>
-        <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
-      </button>
-    </template>
+    <template #trigger><ReuseTrigger /></template>
   </Menu>
+  <ReuseTrigger v-else />
   <Input
     v-if="isEditing"
     ref="itemInputRef"
@@ -62,6 +65,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { createReusableTemplate } from '@vueuse/core'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -95,6 +99,7 @@ interface Props {
 }
 
 const { item, isActive } = defineProps<Props>()
+const [DefineTrigger, ReuseTrigger] = createReusableTemplate()
 
 const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(

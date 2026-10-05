@@ -1,5 +1,5 @@
 <template>
-  <Menu :items="menuItems" class="min-w-56">
+  <Menu v-model:open="open" :items="menuItems" class="min-w-56">
     <template #trigger>
       <button
         :class="
@@ -22,12 +22,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -42,6 +42,7 @@ const { setMode } = useAppMode()
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const { toastErrorHandler } = useErrorHandling()
+const open = ref(false)
 
 const menuItems = computed<MenuItem[]>(() => [
   {
@@ -64,11 +65,13 @@ const menuItems = computed<MenuItem[]>(() => [
   }
 ])
 
-async function onSave() {
+async function onSave({ originalEvent }: MenuItemCommandEvent) {
+  originalEvent.preventDefault()
   const workflow = workflowStore.activeWorkflow
   if (!workflow) return
   try {
-    await workflowService.saveWorkflow(workflow)
+    const saved = await workflowService.saveWorkflow(workflow)
+    if (saved) open.value = false
   } catch (error) {
     toastErrorHandler(error)
   }

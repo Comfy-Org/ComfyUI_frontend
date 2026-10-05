@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { openMoreOptionsMenu } from '@e2e/fixtures/utils/selectionToolboxMoreOptions'
@@ -78,6 +80,10 @@ test.describe(
       await comfyPage.contextMenu.selectShape('Card')
 
       await expect(rootMenu).toBeHidden()
+      const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      expect(await node.getProperty<RenderShape>('shape')).toBe(
+        RenderShape.CARD
+      )
     })
 
     test('clicking More options again closes the menu', async ({

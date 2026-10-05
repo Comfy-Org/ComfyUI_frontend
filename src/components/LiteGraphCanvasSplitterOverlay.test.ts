@@ -194,7 +194,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     expect(screen.getByTestId('workflow-tabs')).toBeInTheDocument()
     expect(screen.getByTestId('side-toolbar')).toBeInTheDocument()
     expect(screen.getByTestId('topmenu')).toBeInTheDocument()
-    expect(screen.queryByTestId('right-panel')).not.toBeInTheDocument()
+    expect(screen.getByTestId('right-panel')).not.toBeVisible()
     expect(screen.getByTestId('bottom-panel')).not.toBeVisible()
     expect(screen.getByTestId('graph')).toBeInTheDocument()
     expect(screen.getByTestId('agent-panel')).toBeInTheDocument()

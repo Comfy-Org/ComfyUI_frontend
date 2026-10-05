@@ -1,6 +1,6 @@
 <template>
   <div class="shrink-0 self-center">
-    <Menu :items="menuItems" class="max-h-[40vh] overflow-auto">
+    <Menu :items="menuItems" max-height="viewport">
       <template #trigger>
         <Button
           v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"

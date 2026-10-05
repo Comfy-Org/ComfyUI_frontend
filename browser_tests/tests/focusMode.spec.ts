@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 test.describe('Focus Mode', { tag: '@ui' }, () => {
   test('Focus mode hides UI chrome', async ({ comfyPage }) => {
@@ -59,27 +60,31 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
     await expect(comfyPage.menu.sideToolbar).toBeHidden()
   })
 
-  test('Focus mode toggle preserves properties panel width', async ({
+  test('Focus mode preserves side-panel filters and width', async ({
     comfyPage
   }) => {
-    // Open the properties panel
-    await comfyPage.actionbar.propertiesButton.click()
-    await expect(comfyPage.menu.propertiesPanel.root).toBeVisible()
+    const sidebar = comfyPage.menu.nodeLibraryTabV2
+    const properties = new PropertiesPanelHelper(comfyPage.page)
+    await sidebar.open()
+    await sidebar.searchInput.fill('KSampler')
+    await properties.open(comfyPage.actionbar.propertiesButton)
+    await properties.searchWidgets('seed')
 
-    // Record the initial panel width
-    const initialBox = await comfyPage.menu.propertiesPanel.root.boundingBox()
+    const initialBox = await properties.root.boundingBox()
     expect(initialBox).not.toBeNull()
     const initialWidth = initialBox!.width
 
-    // Toggle focus mode on then off
     await comfyPage.setFocusMode(true)
+    await expect(sidebar.panel).toBeHidden()
+    await expect(properties.root).toBeHidden()
     await comfyPage.setFocusMode(false)
 
-    // Properties panel should be visible again with the same width
-    await expect(comfyPage.menu.propertiesPanel.root).toBeVisible()
+    await expect(sidebar.searchInput).toHaveValue('KSampler')
+    await expect(properties.searchBox).toHaveValue('seed')
+    await expect(properties.root).toBeVisible()
     await expect
       .poll(async () => {
-        const box = await comfyPage.menu.propertiesPanel.root.boundingBox()
+        const box = await properties.root.boundingBox()
         return box ? Math.abs(box.width - initialWidth) : Infinity
       })
       .toBeLessThan(2)

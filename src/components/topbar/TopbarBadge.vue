@@ -3,7 +3,7 @@
     <PopoverTrigger as-child>
       <button
         type="button"
-        :aria-label="badge.text"
+        :aria-label="triggerShowsLabel ? undefined : badge.text"
         :class="
           cn(
             'relative flex h-full shrink-0 cursor-pointer items-center border-0 bg-transparent transition-opacity hover:opacity-80',

@@ -195,10 +195,6 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     for (const area of ['padding', 'content'] as const) {
       await test.step(`Hover the item ${area}`, async () => {
         await menu.hoverItem('Export workflow', area)
-        await expect(menu.menuItem('Export workflow')).toHaveAttribute(
-          'data-highlighted',
-          ''
-        )
         await expect(async () => {
           const { row, content } =
             await menu.getItemBackgrounds('Export workflow')

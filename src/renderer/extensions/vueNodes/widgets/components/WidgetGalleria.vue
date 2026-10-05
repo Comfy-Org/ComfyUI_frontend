@@ -3,7 +3,7 @@
     <div
       class="max-w-full overflow-hidden rounded-lg border border-border-default"
       role="region"
-      :aria-label="t('g.galleryImage')"
+      :aria-label="t('g.imageGallery')"
     >
       <div class="relative flex items-center justify-center">
         <img
@@ -40,33 +40,43 @@
       </div>
 
       <div v-if="images.length > 1" class="overflow-x-auto px-2 py-4">
-        <div class="flex min-w-max items-center justify-center gap-1">
-          <button
+        <RovingFocusGroup
+          :current-tab-stop-id="`gallery-thumbnail-${activeIndex}`"
+          orientation="horizontal"
+          class="flex min-w-max items-center justify-center gap-1"
+        >
+          <RovingFocusItem
             v-for="(image, index) in images"
             :key="`${image}-${index}`"
-            type="button"
-            :class="
-              cn(
-                'size-12 shrink-0 overflow-hidden rounded-lg border-0 bg-transparent p-1 opacity-50 transition-opacity hover:opacity-100',
-                index === activeIndex && 'opacity-100'
-              )
-            "
-            :aria-label="
-              t('g.galleryThumbnailPosition', {
-                index: index + 1,
-                total: images.length
-              })
-            "
-            :aria-current="index === activeIndex ? 'true' : undefined"
-            @click="activeIndex = index"
+            as-child
+            :tab-stop-id="`gallery-thumbnail-${index}`"
           >
-            <img
-              :src="image"
-              alt=""
-              class="size-full rounded-lg object-cover"
-            />
-          </button>
-        </div>
+            <button
+              type="button"
+              :class="
+                cn(
+                  'size-12 shrink-0 overflow-hidden rounded-lg border-0 bg-transparent p-1 opacity-50 transition-opacity hover:opacity-100',
+                  index === activeIndex && 'opacity-100'
+                )
+              "
+              :aria-label="
+                t('g.galleryThumbnailPosition', {
+                  index: index + 1,
+                  total: images.length
+                })
+              "
+              :aria-current="index === activeIndex ? 'true' : undefined"
+              @focus="activeIndex = index"
+              @click="activeIndex = index"
+            >
+              <img
+                :src="image"
+                alt=""
+                class="size-full rounded-lg object-cover"
+              />
+            </button>
+          </RovingFocusItem>
+        </RovingFocusGroup>
       </div>
     </div>
   </div>
@@ -75,8 +85,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'
 
 import { cn } from '@comfyorg/tailwind-utils'
+
+defineOptions({ inheritAttrs: false })
 
 const modelValue = defineModel<unknown>({ required: true })
 const images = computed(() =>

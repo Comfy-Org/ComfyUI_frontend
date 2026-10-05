@@ -1,5 +1,8 @@
 export function getMenuAnchorPosition(event: Event) {
-  if (event instanceof MouseEvent) {
+  if (
+    event instanceof MouseEvent &&
+    !(event.type === 'click' && event.detail === 0)
+  ) {
     return { x: event.clientX, y: event.clientY }
   }
   const target = event.currentTarget ?? event.target

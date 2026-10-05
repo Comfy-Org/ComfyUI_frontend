@@ -531,8 +531,7 @@ describe('Menu', () => {
     })
     await user.hover(await screen.findByRole('menuitem', { name: 'More' }))
     const child = await screen.findByRole('menuitem', { name: 'Child' })
-    child.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    await nextTick()
+    await user.pointer({ keys: '[MouseLeft>]', target: child })
 
     expect(screen.getByRole('menuitem', { name: 'Child' })).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'More' })).toBeVisible()

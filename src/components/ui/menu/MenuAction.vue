@@ -60,6 +60,7 @@ function select(event: Event) {
     return
   }
   void item.command({ originalEvent: event, item })
+  if (event.defaultPrevented) return
   if (item.pressAndHoldInterval !== undefined) {
     event.preventDefault()
     return

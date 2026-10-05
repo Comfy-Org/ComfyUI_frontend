@@ -128,7 +128,14 @@ function onLogsAdded() {
 }
 
 whenever(latestTaskLogLines, onLogsAdded, { flush: 'post', deep: true })
-whenever(() => isExpanded.value, scrollContentToBottom, { flush: 'post' })
+whenever(
+  () => isExpanded.value,
+  () => {
+    scrollContentToBottom()
+    scrollLatestLogToBottom()
+  },
+  { flush: 'post' }
+)
 whenever(() => !isExpanded.value, resetUserScrolling)
 
 function closeToast() {

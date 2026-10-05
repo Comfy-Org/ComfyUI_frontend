@@ -6,7 +6,6 @@ import {
   DropdownMenuTrigger
 } from 'reka-ui'
 import { useEventListener } from '@vueuse/core'
-import type { ComponentPublicInstance } from 'vue'
 import { nextTick, ref, useId, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -26,7 +25,6 @@ const { id: providedId, model } = defineProps<{
 }>()
 const emit = defineEmits<{ show: []; hide: [] }>()
 
-const content = useTemplateRef<ComponentPublicInstance>('content')
 const trigger = useTemplateRef<HTMLElement>('trigger')
 const visible = ref(false)
 const generatedId = useId()
@@ -108,7 +106,11 @@ function updateOpen(value: boolean) {
   setOpen(value)
 }
 
-defineExpose({ container: content, hide, show, toggle, visible })
+function updatePosition(position: { x: number; y: number }) {
+  anchorPosition.value = position
+}
+
+defineExpose({ hide, show, toggle, visible, updatePosition })
 </script>
 
 <template>
@@ -127,7 +129,6 @@ defineExpose({ container: content, hide, show, toggle, visible })
     <DropdownMenuPortal>
       <DropdownMenuContent
         :id="providedId ?? generatedId"
-        ref="content"
         :data-menu-owner="ownerId"
         :class="
           cn(
@@ -139,6 +140,7 @@ defineExpose({ container: content, hide, show, toggle, visible })
         :style="contentStyle"
         :side-offset="2"
         align="start"
+        update-position-strategy="always"
         @close-auto-focus.prevent
         @focus-outside.prevent
       >

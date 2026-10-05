@@ -201,6 +201,7 @@ const onRemoveFilter = async (
   event.stopPropagation()
   event.preventDefault()
   emit('removeFilter', filterAndValue)
+  await nextTick()
   await reFocusInput()
 }
 const setHoverSuggestion = (suggestion: ComfyNodeDefImpl | undefined) => {

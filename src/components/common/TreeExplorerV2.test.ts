@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { injectTreeRootContext } from 'reka-ui'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -80,12 +80,16 @@ async function renderTree() {
     },
     props: { root, showContextMenu: true }
   })
-  const treeItem = await screen.findByRole('treeitem', { name: /Test Node/ })
+  await nextTick()
+  const treeItem = screen.getByRole('treeitem', { name: /Test Node/ })
   vi.useFakeTimers()
   onTestFinished(() => {
     vi.useRealTimers()
   })
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  const user = userEvent.setup({
+    advanceTimers: vi.advanceTimersByTime,
+    delay: 1
+  })
   await user.pointer({
     keys: '[TouchA>]',
     target: treeItem,
@@ -107,7 +111,7 @@ describe('TreeExplorerV2 touch context menu', () => {
   it('stays closed after a short touch', async () => {
     const { treeItem, user } = await renderTree()
 
-    await vi.advanceTimersByTimeAsync(699)
+    await vi.advanceTimersByTimeAsync(350)
     await user.pointer({ keys: '[/TouchA]', target: treeItem })
     await vi.advanceTimersByTimeAsync(700)
 

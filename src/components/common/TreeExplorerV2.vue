@@ -1,47 +1,66 @@
 <template>
-  <TreeRoot
-    :expanded="[...expandedKeys]"
-    :items="root.children ?? []"
-    :get-key="(item) => item.key"
-    :get-children="
-      (item) => (item.children?.length ? item.children : undefined)
-    "
-    class="m-0 min-w-0 p-0 px-2 pb-2"
-    @contextmenu="handleContextMenu"
-  >
-    <TreeVirtualizer
-      v-slot="{ item }"
-      :estimate-size="36"
-      :text-content="(item) => item.value.label ?? ''"
-    >
-      <TreeExplorerV2Node
-        :item="
-          item as FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
+  <ContextMenuRoot :modal="false">
+    <ContextMenuTrigger as-child :disabled="!showContextMenu">
+      <TreeRoot
+        :expanded="[...expandedKeys]"
+        :items="root.children ?? []"
+        :get-key="(item) => item.key"
+        :get-children="
+          (item) => (item.children?.length ? item.children : undefined)
         "
-        @node-click="
-          (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>, e: MouseEvent) =>
-            emit('nodeClick', node, e)
-        "
+        class="m-0 min-w-0 p-0 px-2 pb-2"
+        @contextmenu="preventEmptyContextMenu"
+        @pointerdown="preventEmptyContextMenu"
       >
-        <template #folder="{ node }">
-          <slot name="folder" :node="node" />
-        </template>
-        <template #node="{ node }">
-          <slot name="node" :node="node" />
-        </template>
-      </TreeExplorerV2Node>
-    </TreeVirtualizer>
-  </TreeRoot>
-  <ContextMenu ref="contextMenu" :model="menuItems" />
+        <TreeVirtualizer
+          v-slot="{ item }"
+          :estimate-size="36"
+          :text-content="(item) => item.value.label ?? ''"
+        >
+          <TreeExplorerV2Node
+            :item="
+              item as FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
+            "
+            @node-click="
+              (
+                node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
+                e: MouseEvent
+              ) => emit('nodeClick', node, e)
+            "
+          >
+            <template #folder="{ node }">
+              <slot name="folder" :node="node" />
+            </template>
+            <template #node="{ node }">
+              <slot name="node" :node="node" />
+            </template>
+          </TreeExplorerV2Node>
+        </TreeVirtualizer>
+      </TreeRoot>
+    </ContextMenuTrigger>
+    <ContextMenuPortal>
+      <ContextMenuContent :class="menuContentClass">
+        <MenuItems :items="menuItems" />
+      </ContextMenuContent>
+    </ContextMenuPortal>
+  </ContextMenuRoot>
 </template>
 
 <script setup lang="ts">
 import type { FlattenedItem } from 'reka-ui'
-import { TreeRoot, TreeVirtualizer } from 'reka-ui'
-import { computed, provide, ref, useTemplateRef } from 'vue'
+import {
+  ContextMenuRoot,
+  ContextMenuTrigger,
+  ContextMenuPortal,
+  ContextMenuContent,
+  TreeRoot,
+  TreeVirtualizer
+} from 'reka-ui'
+import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import MenuItems from '@/components/ui/menu/MenuItems.vue'
+import { menuContentClass } from '@/components/ui/menu/menuStyles'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -74,7 +93,6 @@ provide(InjectKeyContextMenuNode, contextMenuNode)
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 const subgraphStore = useSubgraphStore()
-const contextMenu = useTemplateRef('contextMenu')
 const { t } = useI18n()
 
 const isCurrentNodeBookmarked = computed(() => {
@@ -106,12 +124,8 @@ const menuItems = computed<MenuItem[]>(() => [
   }
 ])
 
-function handleContextMenu(event: MouseEvent) {
-  if (showContextMenu && contextMenuNode.value?.data) {
-    contextMenu.value?.show(event)
-  } else {
-    contextMenu.value?.hide()
-  }
+function preventEmptyContextMenu(event: Event) {
+  if (!contextMenuNode.value?.data) event.preventDefault()
 }
 
 function handleToggleBookmark() {

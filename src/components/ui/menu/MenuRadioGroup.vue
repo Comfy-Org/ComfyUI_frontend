@@ -15,10 +15,12 @@ defineProps<{
 }>()
 
 const selected = defineModel<T>({ required: true })
+const emit = defineEmits<{ select: [event: Event] }>()
 
-function select(option: { value: T; command?: () => unknown }) {
+function select(option: { value: T; command?: () => unknown }, event: Event) {
   selected.value = option.value
   option.command?.()
+  emit('select', event)
 }
 </script>
 
@@ -29,7 +31,7 @@ function select(option: { value: T; command?: () => unknown }) {
       :key="option.value"
       v-tooltip="{ value: option.tooltip, showDelay: 600 }"
       :value="option.value"
-      @select="select(option)"
+      @select="select(option, $event)"
     >
       <MenuItemContent
         :item="{

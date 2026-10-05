@@ -807,27 +807,14 @@ test.describe('Assets sidebar - bulk actions', () => {
   })
 
   test('Selection bar stays capped, not stretched, on a wide panel', async ({
-    comfyPage
+    comfyPage,
+    comfyMouse
   }) => {
     await comfyPage.page.setViewportSize({ width: 1600, height: 900 })
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    const gutter = comfyPage.page.getByRole('separator').first()
-    await expect(gutter).toBeVisible()
-    const gutterBox = await gutter.boundingBox()
-    if (!gutterBox) {
-      throw new Error('sidebar splitter gutter has no bounding box')
-    }
-    await comfyPage.page.mouse.move(
-      gutterBox.x + gutterBox.width / 2,
-      gutterBox.y + gutterBox.height / 2
-    )
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(900, gutterBox.y + gutterBox.height / 2, {
-      steps: 12
-    })
-    await comfyPage.page.mouse.up()
+    await tab.resize(comfyMouse, 600)
 
     await tab.assetCards.first().click()
     await expect(tab.selectionFooter).toBeVisible()

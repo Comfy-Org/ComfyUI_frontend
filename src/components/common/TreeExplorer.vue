@@ -254,7 +254,7 @@ defineExpose({
   width: 100%;
   display: flex;
   align-items: center;
-  margin-left: 0.5rem;
+  margin-left: var(--p-tree-node-gap);
   flex-grow: 1;
 }
 

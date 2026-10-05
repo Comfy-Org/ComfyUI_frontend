@@ -40,6 +40,7 @@
       <MenuRadioGroup
         :model-value="selectedQueueMode"
         :options="queueModeMenuItems"
+        @select.prevent
       />
     </Menu>
   </ButtonGroup>

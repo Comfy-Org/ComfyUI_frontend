@@ -138,7 +138,7 @@ test.describe('Sidebar splitter width independence', () => {
 
     await comfyPage.workflow.reloadAndWaitForApp()
     await comfyPage.menu.nodeLibraryTab.open()
-    await comfyPage.actionbar.propertiesButton.click()
+    await expect(properties).toBeVisible()
     await expect
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
       .toBeCloseTo(sidebarWidth, 0)
@@ -256,13 +256,8 @@ agentTest.describe(
 
     async function widenSidebar(comfyPage: ComfyPage, comfyMouse: ComfyMouse) {
       const sidebar = sidebarPanel(comfyPage)
-      const gutter = comfyPage.page.getByRole('separator').first()
-      const box = await gutter.boundingBox()
-      if (!box) throw new Error('Sidebar gutter is not visible')
       const widthBeforeDrag = await widthOf(sidebar)
-      const x = box.x + box.width / 2
-      const y = box.y + box.height / 2
-      await comfyMouse.dragAndDrop({ x, y }, { x: x + 80, y })
+      await comfyPage.menu.assetsTab.resize(comfyMouse, 80)
       await expect
         .poll(() => widthOf(sidebar))
         .toBeGreaterThan(widthBeforeDrag + 40)

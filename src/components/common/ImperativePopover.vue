@@ -106,8 +106,10 @@ function onScroll(event: Event) {
   }
 }
 
-useEventListener(window, 'scroll', onScroll, { capture: true })
-useEventListener(window, 'resize', hide)
+useEventListener(() => (open.value ? window : undefined), 'scroll', onScroll, {
+  capture: true
+})
+useEventListener(() => (open.value ? window : undefined), 'resize', hide)
 
 function toggle(event: Event, target?: EventTarget | null) {
   if (open.value) hide()

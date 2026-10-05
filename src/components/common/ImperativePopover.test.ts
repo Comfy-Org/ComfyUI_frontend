@@ -28,6 +28,16 @@ afterEach(() => {
 })
 
 describe('ImperativePopover', () => {
+  it('does not listen for viewport changes while closed', async () => {
+    const listen = vi.spyOn(window, 'addEventListener')
+    renderPopover()
+    await nextTick()
+
+    expect(
+      listen.mock.calls.filter(([type]) => ['scroll', 'resize'].includes(type))
+    ).toEqual([])
+  })
+
   it('opens at its target and dismisses with Escape', async () => {
     renderPopover()
     const user = userEvent.setup({ pointerEventsCheck: 0 })

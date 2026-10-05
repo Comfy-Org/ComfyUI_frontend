@@ -25,7 +25,6 @@
         <MenuRadioGroup
           v-model="selectedWorkflowFilter"
           :options="workflowFilterOptions"
-          @update:model-value="trackFeatureUsed()"
         />
       </Menu>
       <Menu>
@@ -39,11 +38,7 @@
             :indicator="selectedSortMode !== 'mostRecent'"
           />
         </template>
-        <MenuRadioGroup
-          v-model="selectedSortMode"
-          :options="sortOptions"
-          @update:model-value="trackFeatureUsed()"
-        />
+        <MenuRadioGroup v-model="selectedSortMode" :options="sortOptions" />
       </Menu>
       <Button
         v-if="showAssetsAction"
@@ -114,17 +109,20 @@ const searchPlaceholderText = computed(
 const workflowFilterOptions = computed(() => [
   {
     value: 'all' as const,
-    label: t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
+    label: t('sideToolbar.queueProgressOverlay.filterAllWorkflows'),
+    command: trackFeatureUsed
   },
   {
     value: 'current' as const,
-    label: t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
+    label: t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow'),
+    command: trackFeatureUsed
   }
 ])
 const sortOptions = computed(() =>
   jobSortModes.map((value) => ({
     value,
-    label: sortLabel(value)
+    label: sortLabel(value),
+    command: trackFeatureUsed
   }))
 )
 

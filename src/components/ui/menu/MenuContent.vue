@@ -25,7 +25,7 @@ const {
   DropdownMenuContentProps & {
     class?: HTMLAttributes['class']
     width?: 'default' | 'trigger' | 'compact'
-    maxHeight?: 'available' | 'compact'
+    maxHeight?: 'available' | 'compact' | 'viewport'
   }
 >()
 const emits = defineEmits<DropdownMenuContentEmits>()
@@ -47,6 +47,8 @@ const contentStyle = useModalLiftedZIndex(rootContext.open)
         maxHeight === 'available' &&
           'max-h-(--reka-dropdown-menu-content-available-height)',
         maxHeight === 'compact' && 'max-h-64',
+        maxHeight === 'viewport' &&
+          'max-h-[min(40vh,var(--reka-dropdown-menu-content-available-height))]',
         className
       )
     "
