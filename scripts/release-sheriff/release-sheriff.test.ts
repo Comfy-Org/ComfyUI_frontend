@@ -297,20 +297,18 @@ describe('runAssignment', () => {
 
     const candidate = pr({ number: 42, labels: [{ name: 'backport' }] })
     let listed = false
-    vi.mocked(execFileSync).mockImplementation(((
-      _file: string,
-      args: string[]
-    ) => {
-      if (args[0] === 'pr' && args[1] === 'list') {
+    vi.mocked(execFileSync).mockImplementation((_file, args) => {
+      const argv = args ?? []
+      if (argv[0] === 'pr' && argv[1] === 'list') {
         if (listed) return '[]'
         listed = true
         return JSON.stringify([candidate])
       }
-      if (args.some((arg) => arg.endsWith('/assignees'))) {
+      if (argv.some((arg) => arg.endsWith('/assignees'))) {
         return JSON.stringify(issueAfterPost)
       }
       return ''
-    }) as unknown as typeof execFileSync)
+    })
 
     try {
       runAssignment('owner/repo', 'thedatalife', 'christian-byrne', 'config')
@@ -319,7 +317,10 @@ describe('runAssignment', () => {
         degraded: existsSync(file) ? readFileSync(file, 'utf8') : ''
       }
     } finally {
-      process.env.GITHUB_OUTPUT = priorFile
+      // Assigning undefined would set the literal string 'undefined', leaving
+      // a later test writing its output to a path named that.
+      if (priorFile === undefined) delete process.env.GITHUB_OUTPUT
+      else process.env.GITHUB_OUTPUT = priorFile
       process.exitCode = priorCode
       vi.mocked(execFileSync).mockReset()
       rmSync(dir, { recursive: true, force: true })
