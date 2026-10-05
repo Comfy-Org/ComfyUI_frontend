@@ -47,7 +47,7 @@ const video = {
   thumbnailUrl: `${site}/thumb.webp`,
   uploadDate: '2026-07-16T00:00:00+00:00'
 }
-const crumbs = (items: object[]) => ({
+const crumbs = (items: unknown[]) => ({
   '@type': 'BreadcrumbList',
   '@id': `${canonical}#breadcrumb`,
   itemListElement: items
@@ -59,7 +59,10 @@ describe('validateHtml', () => {
     { rule: 'honesty', bad: { ...product, review: [] } },
     { rule: 'offer', bad: offer('') },
     { rule: 'offer', bad: { '@type': 'Offer', price: '5' } },
+    { rule: 'offer', bad: offer('-20') },
+    { rule: 'offer', bad: offer('Infinity') },
     { rule: 'product', bad: { ...product, image: undefined } },
+    { rule: 'product', bad: { ...product, offers: [] } },
     { rule: 'product', bad: { ...product, brand: { name: 'Comfy' } } },
     { rule: 'video', bad: { ...video, uploadDate: '2026-07-16' } },
     { rule: 'video', bad: { ...video, uploadDate: undefined } },
@@ -78,6 +81,10 @@ describe('validateHtml', () => {
       bad: { '@type': 'ImageObject', contentUrl: `${site}/a.mov?v=1` }
     },
     {
+      rule: 'imagesAreImages',
+      bad: { '@type': 'ImageObject', contentUrl: [`${site}/a.mp4`] }
+    },
+    {
       rule: 'breadcrumb',
       bad: crumbs([
         { '@type': 'ListItem', position: 1, name: 'Home', item: `${site}/` },
@@ -92,6 +99,14 @@ describe('validateHtml', () => {
       ])
     },
     {
+      rule: 'breadcrumb',
+      bad: crumbs([
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${site}/` },
+        null,
+        { '@type': 'ListItem', position: 2, name: 'Page' }
+      ])
+    },
+    {
       rule: 'itemList',
       bad: {
         '@type': 'ItemList',
@@ -102,6 +117,7 @@ describe('validateHtml', () => {
     { rule: 'idsOnSite', bad: { ...video, '@id': '/example/#video' } },
     { rule: 'noPlaceholders', bad: { ...video, name: 'undefined' } },
     { rule: 'noPlaceholders', bad: { ...video, description: ' ' } },
+    { rule: 'noPlaceholders', bad: { ...video, sameAs: ['undefined'] } },
     {
       rule: 'idRefs',
       bad: { ...video, isPartOf: { '@id': `${site}/#missing` } }
@@ -162,6 +178,17 @@ describe('validateHtml', () => {
   it('flags a WebPage whose @id or url drifts from the canonical', () => {
     const violations = validateHtml(html([org, webPage], `${site}/other/`), '/')
     expect(violations.map(({ rule }) => rule)).toEqual(['webPage', 'webPage'])
+  })
+
+  it('reads the canonical whatever the attribute order', () => {
+    const page = html([org, webPage]).replace(
+      `<link rel="canonical" href="${canonical}">`,
+      `<link href="${site}/other/" rel="canonical">`
+    )
+    expect(validateHtml(page, '/').map(({ rule }) => rule)).toEqual([
+      'webPage',
+      'webPage'
+    ])
   })
 
   it('reports unparseable JSON-LD', () => {

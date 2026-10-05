@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
 import { collectGraphIds } from '@/utils/jsonLd'
@@ -8,12 +8,14 @@ import { isDirectExecution } from './script-entry-point'
 const SITE_ORIGIN = 'https://comfy.org'
 const JSON_LD_BLOCK =
   /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
-const CANONICAL = /<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i
+const CANONICAL =
+  /<link\b(?=[^>]*\brel=["']canonical["'])[^>]*\bhref=["']([^"']+)["']/i
 const FULL_DATE_TIME =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?([+-]\d{2}:\d{2}|Z)$/
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 const VIDEO_FILE = /\.(mp4|webm|mov)(\?|#|$)/i
 const PLACEHOLDER = /^(undefined|null|NaN)$/
+const DECIMAL = /^\d+(\.\d+)?$/
 const WEB_PAGE_TYPES = [
   'WebPage',
   'AboutPage',
@@ -56,6 +58,7 @@ function asList(value: unknown): unknown[] {
 }
 
 function isBlank(value: unknown): boolean {
+  if (Array.isArray(value)) return value.every(isBlank)
   return value == null || (typeof value === 'string' && value.trim() === '')
 }
 
@@ -97,12 +100,12 @@ const honesty: Rule = (node) => {
 
 const offer: Rule = (node, page) => {
   if (!typesOf(node).includes('Offer')) return []
-  const price = isBlank(node.price) ? NaN : Number(String(node.price).trim())
-  if (Number.isNaN(price) || isBlank(node.priceCurrency)) {
+  const priceText = String(node.price ?? '').trim()
+  if (!DECIMAL.test(priceText) || isBlank(node.priceCurrency)) {
     return ['Offer missing priceCurrency or a concrete price']
   }
-  if (isModelPage(page.pagePath) && price <= 0) {
-    return [`model page Offer has a non-positive price ${String(node.price)}`]
+  if (isModelPage(page.pagePath) && Number(priceText) === 0) {
+    return [`model page Offer has a zero price ${String(node.price)}`]
   }
   return []
 }
@@ -145,7 +148,7 @@ const imagesAreImages: Rule = (node) => {
   const urls = [
     ...asList(node.image),
     ...asList(node.thumbnailUrl),
-    ...(isImageObject ? [node.url, node.contentUrl] : [])
+    ...(isImageObject ? [...asList(node.url), ...asList(node.contentUrl)] : [])
   ].filter((url): url is string => typeof url === 'string')
   return urls
     .filter((url) => VIDEO_FILE.test(url))
@@ -154,8 +157,11 @@ const imagesAreImages: Rule = (node) => {
 
 const breadcrumb: Rule = (node) => {
   if (!typesOf(node).includes('BreadcrumbList')) return []
-  const items = asList(node.itemListElement).filter(isRecord)
+  const items = asList(node.itemListElement)
   return items.flatMap((item, index) => {
+    if (!isRecord(item)) {
+      return [`BreadcrumbList item ${index + 1} is not a ListItem`]
+    }
     const problems: string[] = []
     if (item.position !== index + 1) {
       problems.push(
@@ -207,13 +213,13 @@ const idsOnSite: Rule = (node) => {
     : [`@id ${id} is not an absolute ${SITE_ORIGIN} URL`]
 }
 
+const isPlaceholder = (value: unknown): boolean =>
+  typeof value === 'string' &&
+  (value.trim() === '' || PLACEHOLDER.test(value.trim()))
+
 const noPlaceholders: Rule = (node) =>
   Object.entries(node)
-    .filter(
-      ([, value]) =>
-        typeof value === 'string' &&
-        (value.trim() === '' || PLACEHOLDER.test(value.trim()))
-    )
+    .filter(([, value]) => asList(value).some(isPlaceholder))
     .map(([key, value]) => `${key} is ${JSON.stringify(value)}`)
 
 const RULES: Record<string, Rule> = {
@@ -295,6 +301,7 @@ export function validateHtml(html: string, pagePath: string): Violation[] {
 }
 
 function htmlFiles(dir: string): string[] {
+  if (!existsSync(dir)) return []
   return readdirSync(dir, { recursive: true })
     .map(String)
     .filter((entry) => entry.endsWith('.html'))
