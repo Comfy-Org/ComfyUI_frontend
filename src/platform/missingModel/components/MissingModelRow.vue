@@ -271,11 +271,13 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import {
+  downloadModel,
   isModelDownloadable,
   isTrustedHuggingFaceUrl,
   toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
 import { formatSize } from '@/utils/formatUtil'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const {
   model,
@@ -297,6 +299,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const toastStore = useToastStore()
 const { copyToClipboard } = useCopyToClipboard()
 
 const modelKey = computed(() =>
@@ -337,7 +340,6 @@ const {
   fileSizeFor,
   gatedRepoUrlFor,
   prefetchModelMetadata,
-  downloadMissingModel,
   openModelAccessPage
 } = useMissingModelDownload()
 
@@ -438,14 +440,25 @@ onMounted(() => {
   }
 })
 
-function handleDownload() {
+async function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    downloadMissingModel({
-      name: rep.name,
-      url: rep.url,
-      directory: rep.directory
-    })
+    try {
+      await downloadModel(
+        { name: rep.name, url: rep.url, directory: rep.directory },
+        store.folderPaths,
+        modelKey.value
+      )
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn('[MissingModelRow] Download failed:', error)
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: message,
+        life: 8000
+      })
+    }
   } else {
     console.warn('[MissingModelRow] Cannot download: missing url or directory')
   }

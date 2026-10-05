@@ -13,6 +13,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import type { AssetDownload } from '@/stores/assetDownloadStore'
 
 /**
  * Missing model error state and interaction state.
@@ -97,6 +98,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const folderPaths = ref<Record<string, string[]>>({})
   const fileSizes = ref<Record<string, number>>({})
   const gatedRepoUrls = ref<Record<string, string>>({})
+  const directDownloads = ref<Record<string, AssetDownload>>({})
 
   let _verificationAbortController: AbortController | null = null
 
@@ -253,6 +255,17 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     folderPaths.value = paths
   }
 
+  function setDirectDownload(key: string, download: AssetDownload) {
+    directDownloads.value = { ...directDownloads.value, [key]: download }
+  }
+
+  function clearDirectDownload(key: string) {
+    if (!(key in directDownloads.value)) return
+    const next = { ...directDownloads.value }
+    delete next[key]
+    directDownloads.value = next
+  }
+
   function setFileSize(url: string, size: number) {
     fileSizes.value[url] = size
   }
@@ -271,6 +284,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     folderPaths.value = {}
     fileSizes.value = {}
     gatedRepoUrls.value = {}
+    directDownloads.value = {}
   }
 
   function isAbortError(error: unknown) {
@@ -331,8 +345,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     folderPaths,
     fileSizes,
     gatedRepoUrls,
+    directDownloads,
 
     setFolderPaths,
+    setDirectDownload,
+    clearDirectDownload,
     setFileSize,
     setGatedRepoUrl
   }
