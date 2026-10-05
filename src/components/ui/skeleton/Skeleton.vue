@@ -27,6 +27,7 @@ const style = computed(() => ({
 
 <template>
   <div
+    data-slot="skeleton"
     :class="
       cn(
         'animate-pulse bg-secondary-background',
