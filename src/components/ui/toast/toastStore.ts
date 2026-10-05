@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { markRaw, ref, watch } from 'vue'
 import type { Component } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
@@ -98,9 +99,9 @@ export const useToast = defineStore('toast', () => {
     return add('loading', title, options)
   }
 
-  function custom(
-    component: Component,
-    props?: Record<string, unknown>,
+  function custom<C extends Component>(
+    component: C,
+    props: Omit<ComponentProps<C>, 'toastId'>,
     options: CustomToastOptions = {}
   ) {
     const id = nextId++
