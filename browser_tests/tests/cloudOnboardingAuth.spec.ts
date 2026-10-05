@@ -12,6 +12,7 @@ import {
   mockCloudBoot,
   preselectCloudUser
 } from '@e2e/fixtures/utils/cloudBootMocks'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const APP_ROOT = new RegExp(
@@ -114,7 +115,9 @@ test.describe('Cloud onboarding — live auth', { tag: '@cloud' }, () => {
     await page.locator('#cloud-sign-in-password').blur()
     await page.getByRole('button', { name: 'Sign in' }).click()
 
-    await expect(page.getByText('Invalid login credentials')).toBeVisible()
+    await expect(
+      new ToastHelper(page).withText('Invalid login credentials')
+    ).toBeVisible()
     await expect(page).toHaveURL(/\/cloud\/login/)
   })
 

@@ -394,7 +394,9 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
 
         await page.goto(APP_URL)
         await waitForCloudApp(page)
-        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
+        await expect(
+          new ToastHelper(page).withText(SUBSCRIPTION_ACTION_REQUIRED)
+        ).toBeVisible()
 
         await page.reload()
         await waitForCloudApp(page)

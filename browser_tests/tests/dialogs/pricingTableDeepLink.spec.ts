@@ -747,7 +747,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await expect(backButton).toBeEnabled()
     await expect(
-      page.getByText('Subscription verification timed out', { exact: true })
+      new ToastHelper(page).withText('Subscription verification timed out')
     ).toBeVisible()
     const pollCountAfterTimeout = operationPollRequests.length
 

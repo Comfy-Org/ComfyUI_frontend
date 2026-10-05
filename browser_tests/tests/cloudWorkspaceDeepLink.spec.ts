@@ -7,6 +7,7 @@ import {
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Cloud app support for `?workspace=` deep links
@@ -54,7 +55,9 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
       const page = comfyPage.page
 
       await expect(
-        page.getByText(`You're still in ${PERSONAL_WORKSPACE_NAME}`)
+        new ToastHelper(page).withText(
+          `You're still in ${PERSONAL_WORKSPACE_NAME}`
+        )
       ).toBeVisible()
       expect(new URL(page.url()).searchParams.has('workspace')).toBe(false)
 
@@ -82,7 +85,9 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
     await comfyPage.waitForAppReady()
 
     await expect(
-      page.getByText(`You're still in ${PERSONAL_WORKSPACE_NAME}`)
+      new ToastHelper(page).withText(
+        `You're still in ${PERSONAL_WORKSPACE_NAME}`
+      )
     ).toBeVisible()
     expect(new URL(page.url()).searchParams.has('workspace')).toBe(false)
   })

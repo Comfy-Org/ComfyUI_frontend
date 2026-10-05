@@ -30,6 +30,7 @@ import {
   mockWorkspaceList,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Recovery on the billing SDK rails with the embedded checkout off: a hosted
@@ -726,7 +727,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       await confirmUpgrade(page)
 
       await expect(
-        page.getByText(
+        new ToastHelper(page).withText(
           'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
         )
       ).toBeVisible()
