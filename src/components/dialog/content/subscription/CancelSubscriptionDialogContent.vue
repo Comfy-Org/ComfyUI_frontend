@@ -51,9 +51,13 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
+import {
+  createCancelFlowReporter,
+  getSubscriptionCancellationMetadata
+} from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -63,10 +67,12 @@ import { getErrorMessage } from '@/utils/errorUtil'
 const {
   cancelAt,
   flowAlreadyOpened = false,
+  flowAlreadyConfirmed = false,
   isScopeCurrent = () => true
 } = defineProps<{
   cancelAt?: string
   flowAlreadyOpened?: boolean
+  flowAlreadyConfirmed?: boolean
   isScopeCurrent?: () => boolean
 }>()
 
@@ -83,6 +89,14 @@ const telemetry = useTelemetry()
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
 const didScopeAbort = ref(false)
+const cancelReport = createCancelFlowReporter(
+  telemetry,
+  () => ({
+    duration: subscription.value?.duration,
+    tier: tier.value
+  }),
+  { confirmed: flowAlreadyConfirmed }
+)
 
 function cancellationMetadata() {
   return getSubscriptionCancellationMetadata({
@@ -99,11 +113,13 @@ onMounted(() => {
     'flow_opened',
     cancellationMetadata()
   )
+  cancelReport.intent()
 })
 
 onUnmounted(() => {
   if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
   telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
+  cancelReport.abandoned()
 })
 
 const formattedEndDate = computed(() => {
@@ -145,6 +161,9 @@ async function onConfirmCancel() {
   }
 
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
+  cancelReport.confirmed({
+    operationFollows: shouldUseWorkspaceBilling.value
+  })
   isLoading.value = true
   try {
     await cancelSubscription(isScopeCurrent)
@@ -152,6 +171,7 @@ async function onConfirmCancel() {
     const errorMessage = getErrorMessage(error)
     if (!shouldUseWorkspaceBilling.value) {
       telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
+      cancelReport.failed(categorizeBillingApiError(error))
     }
     toast.add({
       severity: 'error',

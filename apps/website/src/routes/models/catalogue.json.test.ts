@@ -1,10 +1,10 @@
 import { expect, it, vi } from 'vitest'
 
-import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
-import { isWorkshopModelDisabled } from '../../config/workshop-model-availability'
-import { appModels } from '../../config/workshop-app-content'
-import { authoredWorkshopModels } from '../../config/workshop-browse-content'
-import { workshopPages } from '../../config/workshop-page-content'
+import { fetchModelsCatalogue } from '@/config/models-catalogue-data'
+import { isWorkshopModelDisabled } from '@/config/workshop-model-availability'
+import { appModels } from '@/config/workshop-app-content'
+import { authoredWorkshopModels } from '@/config/workshop-browse-content'
+import { workshopPages } from '@/config/workshop-page-content'
 import { GET } from './catalogue.json'
 
 it('serves the catalogue cards, apps included, as JSON', async () => {

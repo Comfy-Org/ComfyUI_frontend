@@ -621,13 +621,13 @@ describe('useFeatureFlags', () => {
     it('resolveFlag falls through to server when no override is set', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.ASSET_RENAME_ENABLED) return true
+          if (path === ServerFeatureFlag.ASSET_DELETION_ENABLED) return true
           return defaultValue
         }
       )
 
       const { flags } = useFeatureFlags()
-      expect(flags.assetRenameEnabled).toBe(true)
+      expect(flags.assetDeletionEnabled).toBe(true)
     })
 
     it('direct server flags delegate override to api.getServerFeature', () => {

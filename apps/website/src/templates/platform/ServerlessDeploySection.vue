@@ -1,34 +1,43 @@
 <script setup lang="ts">
 import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
+import { computed } from 'vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import { deployPromptFor } from '@/config/deploy-prompt'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 // The prompt to paste into a coding agent; the copy button puts it on the
-// clipboard verbatim.
-const deployPrompt = `Install comfy-cli and read its build skill:
-
-\`pip install -U comfy-cli\`, then \`comfy skills show comfy-build\`.
-
-It covers packaging a local ComfyUI install — models, custom nodes, dependency pins — into a build on platform.comfy.org and cutting a release. \`comfy skills show comfy-deploy\` covers running that release as a serverless endpoint.`
-const deployTranscript = deployPrompt.split('\n')
+// clipboard verbatim. Kept out of translations.ts (which every page bundles)
+// since it's only ever used here — see deploy-prompt.ts for why.
+const deployPrompt = computed(() => deployPromptFor(locale))
 const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
+
+// What the terminal actually shows: the three commands a run of the deploy
+// prompt produces, not the prompt's own prose (that's what the copy button
+// puts on the clipboard). Real commands rather than prose, so — like the
+// code samples elsewhere on this page — it isn't translated per-locale.
+const DEPLOY_TRANSCRIPT = [
+  '$ comfy build init',
+  '✓ Scanned this ComfyUI install - custom nodes, models, pinned deps',
+  '$ comfy build push --release'
+]
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 pt-10 pb-4 lg:pt-14 lg:pb-6">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.serverlessDeploy.shipHeading', locale) }}
+      {{ t('platform.serverlessDeploy.shipHeading') }}
       <template #subtitle>
         <p
           class="mx-auto mt-4 max-w-2xl text-sm whitespace-pre-line text-smoke-700"
         >
-          {{ t('platform.serverlessDeploy.shipSubtitle', locale) }}
+          {{ t('platform.serverlessDeploy.shipSubtitle') }}
         </p>
       </template>
     </SectionHeader>
@@ -41,8 +50,7 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
           t(
             copied
               ? 'platform.serverlessDeploy.copied'
-              : 'platform.serverlessDeploy.copy',
-            locale
+              : 'platform.serverlessDeploy.copy'
           )
         "
         @click="copy()"
@@ -54,9 +62,9 @@ const { copy, copied } = useClipboard({ source: deployPrompt, legacy: true })
         />
       </button>
       <LiveTerminal
-        class="[&_pre]:pt-14"
-        :lines="deployTranscript"
-        :label="t('platform.serverlessDeploy.heading', locale)"
+        :lines="DEPLOY_TRANSCRIPT"
+        :label="t('platform.serverlessDeploy.heading')"
+        :typewriter="false"
       />
     </div>
   </section>

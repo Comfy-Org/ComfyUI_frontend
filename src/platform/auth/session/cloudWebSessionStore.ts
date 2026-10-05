@@ -1,6 +1,7 @@
+import { until } from '@vueuse/core'
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { onScopeDispose, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import type {
   WebSessionAccountChange,
@@ -10,17 +11,23 @@ import type {
 } from '@comfyorg/account-core/webSessionIdentity'
 import type {
   WebSession,
+  WebSessionCommandResult,
   WebSessionErrorCode,
   WebSessionOptions
 } from '@comfyorg/account-core/webSession'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type {
+  SessionTokenFailure,
+  SessionTokenResult
+} from '@comfyorg/account-core/sessionTokenMint'
 import {
   createSessionTokenMint,
   SessionTokenError
 } from '@comfyorg/account-core/sessionTokenMint'
-import { readWebSession } from '@comfyorg/account-core/webSession'
+import { revokeAllWebSessions } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
+import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import {
   createWebCrossTabRefreshPort,
   createWebVisibilityPort
@@ -42,6 +49,7 @@ import {
   provideWebSessionRequests,
   WebSessionTokenError
 } from '@/platform/auth/session/webSessionFetch'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -53,9 +61,18 @@ interface InteractiveSignIn {
   readonly getProof: () => Promise<string>
 }
 
-const UNSETTLED_PHASES: ReadonlySet<WebSessionIdentityState['phase']> = new Set(
-  ['idle', 'reading', 'restoring']
-)
+type Phase = WebSessionIdentityState['phase']
+
+const BOOTING_PHASES: ReadonlySet<Phase> = new Set([
+  'idle',
+  'reading',
+  'restoring'
+])
+const UNDECIDED_PHASES: ReadonlySet<Phase> = new Set([
+  ...BOOTING_PHASES,
+  'retry_wait'
+])
+const RECONNECTING_AFTER_MS = 10_000
 
 type TokenFailureMessageKey =
   `auth.webSession.token.${keyof (typeof enMessages)['auth']['webSession']['token']}`
@@ -73,16 +90,23 @@ const TOKEN_FAILURE_COPY: Readonly<
   SESSION_REQUEST_REFUSED: 'auth.webSession.token.refused'
 }
 
+export function webSessionFailureMessage(code: WebSessionErrorCode): string {
+  return t(TOKEN_FAILURE_COPY[code])
+}
+
 const LIFECYCLE_RACES: ReadonlySet<WebSessionErrorCode> = new Set([
   'NO_SESSION',
   'IDENTITY_CHANGED'
 ])
 
-async function whenSettled(identity: WebSessionIdentity): Promise<void> {
+async function whenSettled(
+  identity: WebSessionIdentity,
+  unsettled: ReadonlySet<Phase>
+): Promise<void> {
   let stop = () => {}
   await new Promise<void>((resolve) => {
     stop = identity.subscribe((state) => {
-      if (!UNSETTLED_PHASES.has(state.phase)) resolve()
+      if (!unsettled.has(state.phase)) resolve()
     })
   })
   stop()
@@ -126,11 +150,16 @@ function createCloudIdentity(): WebSessionIdentity {
         currentUserId: async () => firebaseIdentity.currentUser()?.uid ?? null,
         getProof: async () =>
           (await firebaseIdentity.currentUser()?.getIdToken()) ?? null,
-        signOutLocally: () => firebaseIdentity.signOut()
+        signOutLocally: async () => {
+          if (firebaseIdentity.currentUser()) await firebaseIdentity.signOut()
+        }
       }
     },
     origin: window.location.origin,
     onAccountChanged: resetForAccountChange,
+    ...webSessionTelemetryHooks((event) =>
+      useTelemetry()?.trackWebSessionEvent(event)
+    ),
     ...(visibility && {
       heartbeat: { visibility, ...(crossTab && { crossTab }) }
     })
@@ -145,21 +174,42 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let decided = false
   let identity: WebSessionIdentity | null = null
   let ready: Promise<void> = Promise.resolve()
+  let creating: Promise<void> = Promise.resolve()
+  let decidedForRequests: Promise<void> = Promise.resolve()
+  let reconnectTimer: ReturnType<typeof setTimeout> | undefined
   let pendingSignIn: InteractiveSignIn | null = null
-  let reread: WebSession | null = null
   let releaseRequests = () => {}
-  const signedInUserId = shallowRef<string>()
+  const state = shallowRef<WebSessionIdentityState>({ phase: 'idle' })
+  const signedInUser = computed(() =>
+    state.value.phase === 'signed_in' ? state.value.session.user : undefined
+  )
 
   watch(
     () =>
-      signedInUserId.value &&
-      JSON.stringify([signedInUserId.value, teamWorkspaceId()]),
+      signedInUser.value?.id &&
+      JSON.stringify([signedInUser.value.id, teamWorkspaceId()]),
     (socketScope) => {
       if (socketScope) void api.reconnectSocket()
     }
   )
 
+  const reconnecting = shallowRef(false)
+  const readsFailing = computed(
+    () => 'failures' in state.value && state.value.failures > 0
+  )
+
+  watch(readsFailing, (failing) => {
+    clearTimeout(reconnectTimer)
+    reconnecting.value = false
+    if (failing) {
+      reconnectTimer = setTimeout(() => {
+        reconnecting.value = true
+      }, RECONNECTING_AFTER_MS)
+    }
+  })
+
   onScopeDispose(() => {
+    clearTimeout(reconnectTimer)
     releaseRequests()
     identity?.dispose()
   })
@@ -202,10 +252,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     if (!useFeatureFlags().flags.unifiedWebSessionEnabled) return false
     const session = createCloudIdentity()
     identity = session
-    session.subscribe((state) => {
-      reread = null
-      signedInUserId.value =
-        state.phase === 'signed_in' ? state.session.user.id : undefined
+    session.subscribe((next) => {
+      state.value = next
     })
     const mint = createSessionTokenMint({
       ...sessionOptions(),
@@ -218,7 +266,10 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       scope: requestScope,
       workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
-      workspaceToken: ({ workspaceId }) => mint.mint(workspaceId),
+      workspaceToken: async (scope) =>
+        settleScopedToken(scope, await mint.mint(scope.workspaceId)),
+      remintWorkspaceToken: async (scope) =>
+        settleScopedToken(scope, await mint.remint(scope.workspaceId)),
       authorizeResource: async ({ session }) => {
         try {
           const { headers } = await authorize(
@@ -242,12 +293,13 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
           }
           throw new WebSessionTokenError(
             error,
-            t(TOKEN_FAILURE_COPY[failure.code])
+            webSessionFailureMessage(failure.code)
           )
         }
       }
     })
-    ready = whenSettled(session)
+    ready = whenSettled(session, BOOTING_PHASES)
+    decidedForRequests = whenSettled(session, UNDECIDED_PHASES)
     void bootAfter(session, pendingSignIn)
     pendingSignIn = null
     return true
@@ -257,7 +309,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   function signedInInteractively(user: User): void {
     const getProof = () => user.getIdToken()
     if (isCloud) markInteractiveSignIn(user.uid)
-    if (identity) void createSession(identity, getProof)
+    if (identity) creating = createSession(identity, getProof)
     else if (!decided) pendingSignIn = { uid: user.uid, getProof }
   }
 
@@ -273,15 +325,56 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     })
   }
 
+  async function revokeAllSessions(): Promise<WebSessionCommandResult> {
+    const session = currentSession()
+    if (!session) {
+      return { status: 'error', code: 'NO_SESSION', retryable: false }
+    }
+    return revokeAllWebSessions(sessionOptions(), session.csrfToken)
+  }
+
   function currentSession(): WebSession | undefined {
     const state = identity?.getState()
-    if (state?.phase !== 'signed_in') return undefined
-    return reread?.user.id === state.session.user.id ? reread : state.session
+    return state?.phase === 'signed_in' ? state.session : undefined
+  }
+
+  /** The epoch moves on every account change, so it pins the scope's user. */
+  function staleScopeFailure(
+    scope: WebSessionRequestScope
+  ): SessionTokenFailure | undefined {
+    if (!currentSession()) {
+      return { status: 'error', code: 'NO_SESSION', retryable: false }
+    }
+    if (identity?.getEpoch() === scope.epoch) return undefined
+    return { status: 'error', code: 'IDENTITY_CHANGED', retryable: false }
+  }
+
+  function settleScopedToken(
+    scope: WebSessionRequestScope,
+    result: SessionTokenResult
+  ): SessionTokenResult {
+    const stale = staleScopeFailure(scope)
+    if (stale) return stale
+    dropRefusedWorkspace(scope, result)
+    return result
+  }
+
+  function dropRefusedWorkspace(
+    { workspaceId }: WebSessionRequestScope,
+    result: SessionTokenResult
+  ): void {
+    if (
+      workspaceId !== undefined &&
+      result.status === 'error' &&
+      result.code === 'WORKSPACE_ACCESS_DENIED'
+    ) {
+      useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)
+    }
   }
 
   /** Undefined unless this tab is signed in on the session. */
   async function requestScope(): Promise<WebSessionRequestScope | undefined> {
-    await ready
+    await decidedForRequests
     const session = currentSession()
     if (!identity || !session) return undefined
     const workspaceId = teamWorkspaceId()
@@ -292,15 +385,13 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     }
   }
 
-  async function rereadFor(
+  async function refreshFor(
     scope: WebSessionRequestScope
   ): Promise<WebSessionRequestScope | undefined> {
-    const result = await readWebSession(sessionOptions(), {
-      expectedUserId: scope.session.user.id
-    })
-    if (result.status !== 'ok' || identity?.getEpoch() !== scope.epoch) return
-    reread = result.session
-    return { ...scope, session: result.session }
+    const next = await identity?.refresh(scope.session.user.id)
+    if (next?.phase !== 'signed_in' || next.session === scope.session) return
+    if (identity?.getEpoch() !== scope.epoch) return
+    return { ...scope, session: next.session }
   }
 
   function send(
@@ -311,17 +402,30 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   ): Promise<Response> {
     return fetchOnWebSession(url, init, scope, {
       authorize,
-      reread: rereadFor,
+      refresh: refreshFor,
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId)
     })
   }
 
+  async function whenDecided(): Promise<'signed_in' | 'signed_out'> {
+    await until(state).toMatch(
+      ({ phase }) => phase === 'signed_in' || phase === 'signed_out'
+    )
+    return state.value.phase === 'signed_in' ? 'signed_in' : 'signed_out'
+  }
+
   return {
     start,
+    state,
+    signedInUser,
+    reconnecting,
     isActive: () => identity !== null,
     whenReady: () => ready,
+    whenSessionCreated: () => creating,
+    whenDecided,
     signedInInteractively,
-    signOut
+    signOut,
+    revokeAllSessions
   }
 })

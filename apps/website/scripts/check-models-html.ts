@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { workshopModels } from '../src/config/workshop-browse-content'
-import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { workshopModels } from '@/config/workshop-browse-content'
+import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import { auditExampleGallery } from './models-gallery-audit'
 import { auditMediaLabels, auditModelPage } from './models-html-audit'
 
@@ -23,7 +23,7 @@ const errors = pagedModels.flatMap((model) => {
   return [
     ...auditModelPage(html, model.name),
     ...auditMediaLabels(html),
-    ...auditExampleGallery(html, examplesOf(model.slug))
+    ...auditExampleGallery(html, examplesOf(model.slug).length)
   ].map((error) => `${model.href}: ${error}`)
 })
 

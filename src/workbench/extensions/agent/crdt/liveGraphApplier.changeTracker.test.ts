@@ -41,9 +41,7 @@ vi.mock(import('@/scripts/api'), () => ({
     removeEventListener: vi.fn()
   })
 }))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {

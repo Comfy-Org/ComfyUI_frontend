@@ -15,9 +15,11 @@ import type {
   RailView
 } from '@/checkout/checkoutPage'
 import type { KeepSubscriptionCopy } from '@/checkout/keepSubscription'
+import type { PlanPurchase } from '@/checkout/summaryLedger'
 import { isLocked, railView, submitPhaseOf } from '@/checkout/checkoutPage'
 import type { PayContext } from '@/components/fullPage/CheckoutPayAction.vue'
 import CheckoutPayAction from '@/components/fullPage/CheckoutPayAction.vue'
+import MethodOnFile from '@/components/fullPage/MethodOnFile.vue'
 import PaymentFormError from '@/components/fullPage/PaymentFormError.vue'
 import PaymentTabsRail from '@/components/fullPage/PaymentTabsRail.vue'
 import type { PayChoice } from '@/composables/useFullPageCheckout'
@@ -34,9 +36,9 @@ const {
   publishableKey,
   canPay,
   reopening,
-  canCancel = false,
   keepSubscription,
-  savedMethods = []
+  savedMethods = [],
+  purchase = 'subscribe'
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
@@ -44,10 +46,10 @@ const {
   canPay: boolean
   /** The page is re-opening the challenge on its own, so Complete verification waits. */
   reopening: boolean
-  canCancel?: boolean
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
+  purchase?: PlanPurchase | 'credits'
 }>()
 
 const emit = defineEmits<{
@@ -154,12 +156,12 @@ const copy = computed<StripePaymentCopy>(() => ({
           />
         </div>
         <CheckoutPayAction
+          :purchase
           disabled
           :loading="locked"
           :locked
           :reopening
           :phase
-          :can-cancel="canCancel"
           @cancel="emit('cancel')"
           @continue-verification="emit('continueVerification')"
         />
@@ -173,14 +175,15 @@ const copy = computed<StripePaymentCopy>(() => ({
         class="flex flex-col gap-6"
         @submit.prevent="emit('pay', undefined)"
       >
+        <MethodOnFile :methods="savedMethods" />
         <CheckoutPayAction
+          :purchase
           v-bind="payContext"
           :disabled="!canPay"
           :loading="locked"
           :locked
           :reopening
           :phase
-          :can-cancel="canCancel"
           @confirm-reactivation="emit('confirmReactivation', $event)"
           @consent-missing="emit('consentMissing')"
           @cancel="emit('cancel')"
@@ -206,13 +209,13 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #pay>
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled="!canPay"
               :loading="locked"
               :locked
               :reopening
               :phase
-              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
               @cancel="emit('cancel')"
@@ -240,13 +243,13 @@ const copy = computed<StripePaymentCopy>(() => ({
         >
           <template #submit="{ disabled, loading }">
             <CheckoutPayAction
+              :purchase
               v-bind="payContext"
               :disabled
               :loading
               :locked
               :reopening
               :phase="formShown ? phase : undefined"
-              :can-cancel="canCancel"
               @confirm-reactivation="emit('confirmReactivation', $event)"
               @consent-missing="emit('consentMissing')"
               @cancel="emit('cancel')"

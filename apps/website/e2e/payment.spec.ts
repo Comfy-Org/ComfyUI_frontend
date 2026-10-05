@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { externalLinks } from '../src/config/routes'
+import { externalLinks } from '@/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 
 const CLOUD_URL = externalLinks.cloud

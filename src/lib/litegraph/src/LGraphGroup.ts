@@ -468,7 +468,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       {
         content: 'Font size',
         property: 'font_size',
-        type: 'Number',
         callback: LGraphCanvas.onShowPropertyEditor
       },
       null,

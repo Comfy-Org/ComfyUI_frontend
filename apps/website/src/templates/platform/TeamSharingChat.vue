@@ -7,13 +7,14 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
 const visibility = useDocumentVisibility()
@@ -159,7 +160,7 @@ watchEffect(() => {
               )
             "
           >
-            <span>{{ t(message.text, locale) }}</span>
+            <span>{{ t(message.text) }}</span>
             <div
               v-if="message.endpoint"
               class="mt-1 break-all text-primary-comfy-yellow"
@@ -168,9 +169,9 @@ watchEffect(() => {
             </div>
             <div
               v-if="message.snippet"
-              class="mt-2 overflow-x-auto rounded-lg bg-primary-comfy-ink/60 px-2 py-1.5 font-mono text-2xs whitespace-pre-wrap text-primary-warm-white/90"
+              class="mt-2 overflow-x-auto rounded-lg bg-primary-comfy-ink/60 px-2 py-1.5 font-mono text-2xs break-all whitespace-pre-wrap text-primary-warm-white/90"
             >
-              {{ t(message.snippet, locale) }}
+              {{ t(message.snippet) }}
             </div>
           </div>
         </div>

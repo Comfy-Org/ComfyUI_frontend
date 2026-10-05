@@ -3,28 +3,28 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { FilterBadgeType } from '../../composables/useHubStore'
-import { useHubStore } from '../../composables/useHubStore'
-import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
+import type { FilterBadgeType } from '@/composables/useHubStore'
+import { useHubStore } from '@/composables/useHubStore'
+import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
 import {
   USE_CASES,
   filterWorkshopModels,
   sortWorkshopModels,
   useCasesFor
-} from '../../config/models-catalogue'
-import { workshopModels as defaultWorkshopModels } from '../../config/workshop-browse-content'
-import { groupModels } from '../../config/model-family'
-import hubTemplates from '../../data/hubTemplates.json'
-import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
+} from '@/config/models-catalogue'
+import { workshopModels as defaultWorkshopModels } from '@/config/workshop-browse-content'
+import { groupModels } from '@/config/model-family'
+import hubTemplates from '@/data/hubTemplates.json'
+import { hubWorkflowPath } from '@/lib/hub/workflow-detail'
 import {
   partnerModelFor,
   useCaseForTemplate
-} from '../../lib/hub/template-use-case'
-import { tagDisplayName } from '../../lib/hub/tag-aliases'
-import { withFacetFields } from '../../lib/hub/facet-fields'
-import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/lib/hub/template-use-case'
+import { tagDisplayName } from '@/lib/hub/tag-aliases'
+import { withFacetFields } from '@/lib/hub/facet-fields'
+import type { HubTemplate } from '@/lib/hub/types'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import type {
   FacetGroupConfig,
   SortOption,
@@ -33,9 +33,9 @@ import type {
 import HubUseCaseNav from './HubUseCaseNav.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
-import WorkshopHero from '../workshop/WorkshopHero.vue'
-import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
-import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
+import WorkshopHero from '@/components/workshop/WorkshopHero.vue'
+import WorkshopModelCard from '@/components/workshop/WorkshopModelCard.vue'
+import WorkshopSearchField from '@/components/workshop/WorkshopSearchField.vue'
 
 const {
   locale = 'en',
@@ -48,6 +48,7 @@ const {
   models?: readonly WorkshopModel[]
   templates?: readonly HubTemplate[]
 }>()
+const { t } = translationsFor(locale)
 
 const facetedTemplates = computed(() =>
   templates.map((template) => withFacetFields(template, models))
@@ -95,7 +96,10 @@ const totalIn = (value: UseCase | 'all') => {
 // names use cases, it is not a report.
 const useCaseTabs = computed(() =>
   ['all' as const, ...USE_CASES.filter((value) => totalIn(value) > 0)].map(
-    (value) => ({ value, label: t(useCaseLabelKey[value], locale) })
+    (value) => ({
+      value,
+      label: t(useCaseLabelKey[value])
+    })
   )
 )
 
@@ -116,33 +120,48 @@ onMounted(() => {
 })
 
 const toolbarLabels: ToolbarLabels = {
-  all: t('workshop.hub.kind.all', locale),
-  nodeGraphs: t('workshop.hub.kind.graph', locale),
-  comfyApps: t('workshop.hub.kind.app', locale),
-  models: t('workshop.hub.kind.models', locale),
-  filter: t('workshop.filter.label', locale),
-  clearAll: t('workshop.hub.facets.clearAll', locale),
-  searchPlaceholder: t('workshop.hub.facets.search', locale),
-  noResults: t('workshop.hub.facets.noResults', locale),
-  typeAll: t('workshop.hub.kind.all', locale),
-  less: t('workshop.hub.facets.less', locale),
-  selected: (n) => t('workshop.hub.facets.selected', locale, { n }),
-  showResults: (n) => t('workshop.hub.facets.show', locale, { n }),
-  showModels: (n) => t('workshop.search.show', locale, { n }),
-  resize: t('workshop.filter.resize', locale)
+  all: t('workshop.hub.kind.all'),
+  nodeGraphs: t('workshop.hub.kind.graph'),
+  comfyApps: t('workshop.hub.kind.app'),
+  models: t('workshop.hub.kind.models'),
+  filter: t('workshop.filter.label'),
+  clearAll: t('workshop.hub.facets.clearAll'),
+  searchPlaceholder: t('workshop.hub.facets.search'),
+  noResults: t('workshop.hub.facets.noResults'),
+  typeAll: t('workshop.hub.kind.all'),
+  less: t('workshop.hub.facets.less'),
+  selected: (n) => t('workshop.hub.facets.selected', { n }),
+  showResults: (n) => t('workshop.hub.facets.show', { n }),
+  showModels: (n) => t('workshop.search.show', { n }),
+  resize: t('workshop.filter.resize')
 }
 // Workflows are dated and models are priced, so a tab offers what the things
 // it lists can actually be ordered by.
 const WORKFLOW_SORTS: SortOption[] = [
-  { value: 'popular', label: t('workshop.sort.popular', locale) },
-  { value: 'newest', label: t('workshop.hub.sort.newest', locale) },
-  { value: 'name', label: t('workshop.sort.name', locale) }
+  {
+    value: 'popular',
+    label: t('workshop.sort.popular')
+  },
+  {
+    value: 'newest',
+    label: t('workshop.hub.sort.newest')
+  },
+  { value: 'name', label: t('workshop.sort.name') }
 ]
 const MODEL_SORTS: SortOption[] = [
-  { value: 'popular', label: t('workshop.sort.popular', locale) },
-  { value: 'name', label: t('workshop.sort.name', locale) },
-  { value: 'priceAsc', label: t('workshop.sort.priceAsc', locale) },
-  { value: 'priceDesc', label: t('workshop.sort.priceDesc', locale) }
+  {
+    value: 'popular',
+    label: t('workshop.sort.popular')
+  },
+  { value: 'name', label: t('workshop.sort.name') },
+  {
+    value: 'priceAsc',
+    label: t('workshop.sort.priceAsc')
+  },
+  {
+    value: 'priceDesc',
+    label: t('workshop.sort.priceDesc')
+  }
 ]
 const sortOptions = computed(() =>
   store.activeTab.value === 'models' ? MODEL_SORTS : WORKFLOW_SORTS
@@ -158,38 +177,38 @@ const facetsConfig: FacetGroupConfig[] = [
   {
     key: 'media',
     type: 'media',
-    label: t('workshop.filter.outputGroup', locale),
+    label: t('workshop.filter.outputGroup'),
     display: 'segmented',
-    allLabel: t('workshop.hub.kind.all', locale)
+    allLabel: t('workshop.hub.kind.all')
   },
   {
     key: 'categories',
     type: 'tag',
-    label: t('workshop.filter.capabilityGroup', locale),
+    label: t('workshop.filter.capabilityGroup'),
     display: 'chips',
-    allLabel: t('workshop.hub.facets.allTasks', locale)
+    allLabel: t('workshop.hub.facets.allTasks')
   },
   {
     key: 'models',
     type: 'model',
-    label: t('workshop.hub.models', locale),
+    label: t('workshop.hub.models'),
     display: 'select',
-    allLabel: t('workshop.hub.facets.allModels', locale)
+    allLabel: t('workshop.hub.facets.allModels')
   },
   {
     key: 'partners',
     type: 'partner',
-    label: t('workshop.hub.facets.partner', locale),
+    label: t('workshop.hub.facets.partner'),
     display: 'select',
-    allLabel: t('workshop.hub.facets.allPartners', locale)
+    allLabel: t('workshop.hub.facets.allPartners')
   }
 ]
 const gridLabels: GridLabels = {
-  tryNow: t('workshop.hub.tryNow', locale),
-  loadMore: t('workshop.hub.loadMore', locale),
-  empty: t('workshop.hub.empty', locale),
-  emptyHint: t('workshop.hub.emptyHint', locale),
-  showing: (shown, total) => t('workshop.hub.showing', locale, { shown, total })
+  tryNow: t('workshop.hub.tryNow'),
+  loadMore: t('workshop.hub.loadMore'),
+  empty: t('workshop.hub.empty'),
+  emptyHint: t('workshop.hub.emptyHint'),
+  showing: (shown, total) => t('workshop.hub.showing', { shown, total })
 }
 
 // A Hub entry tagged as a partner node whose model matches a Workshop model
@@ -242,8 +261,8 @@ const filteredTemplates = computed(() => {
   <section :class="cn(!embedded && 'pb-32')" data-testid="workshop-hub">
     <WorkshopHero
       v-if="!embedded"
-      :eyebrow="t('workshop.hero.eyebrow', locale)"
-      :heading="t('workshop.hub.title', locale)"
+      :eyebrow="t('workshop.hero.eyebrow')"
+      :heading="t('workshop.hub.title')"
       data-testid="hub-heading"
     />
 
@@ -260,7 +279,7 @@ const filteredTemplates = computed(() => {
           rail-beside
           :entries="useCaseTabs"
           :current="useCase"
-          :label="t('workshop.media.label', locale)"
+          :label="t('workshop.media.label')"
           @select="useCase = $event"
         />
       </aside>

@@ -15,9 +15,11 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
+  AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
   AgentStopMethod
 } from '@/platform/telemetry/types'
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -37,12 +39,14 @@ import type { ConversationEntry } from '../../stores/agent/agentConversationStor
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import type { AgentPanelView } from '../../stores/agent/agentPanelStore'
+import { deriveSessionTitle } from '../../utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
+import FreeUseNotice from './FreeUseNotice.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
@@ -79,7 +83,8 @@ const {
   historyGroups,
   selectHistory = async () => false,
   editableTurnId = null,
-  answeringAskIds = new Set<string>()
+  answeringAskIds = new Set<string>(),
+  freeUsePlacement = 'control'
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -119,6 +124,7 @@ const {
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
+  freeUsePlacement?: FreeUseVariant
 }>()
 const emit = defineEmits<{
   send: [
@@ -152,6 +158,7 @@ const emit = defineEmits<{
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
+  freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
 }>()
 
 const targetNotice = computed(() => {
@@ -257,14 +264,7 @@ function onWorkflowTargetRequired(): void {
 
 const { t } = useI18n()
 
-const sessionTitle = computed(() => {
-  if (customTitle) return customTitle
-  const firstUser = entries.find(
-    (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
-      entry.role === 'user'
-  )
-  return firstUser?.text.trim().slice(0, 60) || undefined
-})
+const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
 
 const renaming = ref(false)
 const renameDraft = ref('')
@@ -346,6 +346,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
       @close="onClose"
+    />
+
+    <FreeUseNotice
+      v-if="!showHistory && freeUsePlacement === 'top-banner'"
+      placement="top-banner"
+      @notice="emit('freeUseNotice', $event)"
     />
 
     <template v-if="showHistory">
@@ -503,6 +509,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :context="targetNotice"
             @show-target="emit('showTarget')"
           />
+          <FreeUseNotice
+            v-if="freeUsePlacement === 'near-composer'"
+            placement="near-composer"
+            @notice="emit('freeUseNotice', $event)"
+          />
           <Composer
             ref="composerRef"
             :streaming
@@ -543,6 +554,20 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
+              />
+            </template>
+            <template #aboveInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'above-input'"
+                placement="above-input"
+                @notice="emit('freeUseNotice', $event)"
+              />
+            </template>
+            <template #insideInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'inside-input'"
+                placement="inside-input"
+                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>

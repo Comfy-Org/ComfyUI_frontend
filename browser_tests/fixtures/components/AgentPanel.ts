@@ -1,11 +1,17 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { escapeRegExp } from 'es-toolkit'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import frMessages from '@/locales/fr/main.json' with { type: 'json' }
+
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class AgentPanel {
   public readonly root: Locator
+  public readonly dockedPanel: Locator
   public readonly openButton: Locator
+  public readonly closeButton: Locator
   public readonly debugHeading: Locator
   public readonly serverLogsSwitch: Locator
   public readonly settingsSwitch: Locator
@@ -19,14 +25,28 @@ export class AgentPanel {
   public readonly composer: Locator
   public readonly composerPromptArea: Locator
   public readonly sendButton: Locator
+  public readonly stopButton: Locator
+  public readonly creditsExhaustedPaywall: Locator
+  public readonly workSummary: Locator
   public readonly nodeSelectionBanner: Locator
+  public readonly activityRows: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
+    this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.closeButton = this.root
+      .locator('header')
+      .getByRole('button', { name: enMessages.g.close, exact: true })
+      .or(
+        this.root.locator('header').getByRole('button', {
+          name: frMessages.g.close,
+          exact: true
+        })
+      )
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.serverLogsSwitch = this.root.getByRole('switch', {
       name: 'Server logs'
@@ -50,7 +70,24 @@ export class AgentPanel {
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
+    this.stopButton = this.root.getByRole('button', {
+      name: enMessages.agent.stop,
+      exact: true
+    })
+    this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
+      hasText: enMessages.agent.paywall.title
+    })
+    this.workSummary = this.root.getByRole('button', {
+      name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
+    this.activityRows = this.root
+      .getByTestId(TestIds.agent.activityTrace)
+      .getByRole('listitem')
+  }
+
+  activityRow(label: string): Locator {
+    return this.activityRows.getByText(label, { exact: true })
   }
 
   /**
@@ -107,10 +144,45 @@ export class AgentPanel {
     return this.root
   }
 
-  async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
+  async close(): Promise<void> {
+    await this.closeButton.click()
+    await expect(this.root).toHaveCount(0)
+  }
+
+  async expectPanelSize(expected: { x: number; width: number }): Promise<void> {
+    await expect
+      .poll(async () => {
+        const box = await this.dockedPanel.boundingBox()
+        return box && { x: box.x, width: box.width }
+      })
+      .toEqual(expected)
+  }
+
+  /**
+   * Picks the target without waiting for the picker label, which settles only
+   * once the target's save completes.
+   */
+  async chooseWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
     await this.workflowPicker.click()
     await this.page.getByRole('menuitemradio', { name, exact: true }).click()
+  }
+
+  async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
+    await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  async openWorkSummary(): Promise<void> {
+    await this.workSummary.click()
+    await expect(this.workSummary).toHaveAttribute('aria-expanded', 'true')
+  }
+
+  async reload(): Promise<void> {
+    await this.page.reload()
+    await expect(
+      this.page.getByTestId(TestIds.topbar.integratedTabBarActions)
+    ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
+    await expect(this.root).toBeVisible({ timeout: 30_000 })
   }
 
   /** Clicks the empty bottom-left corner of the prompt area, below any text. */
