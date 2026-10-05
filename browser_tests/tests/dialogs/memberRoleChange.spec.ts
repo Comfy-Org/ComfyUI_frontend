@@ -13,6 +13,7 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
@@ -191,9 +192,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       .click()
     await page.getByRole('button', { name: 'Make owner' }).click()
 
-    await expect(
-      page.getByTestId('toast').getByText('Role updated')
-    ).toBeVisible()
+    await expect(new ToastHelper(page).withText('Role updated')).toBeVisible()
     await expect(janeRow.getByText('Owner', { exact: true })).toBeVisible()
     await expect(emails).toHaveText([
       CREATOR.email,
@@ -269,7 +268,9 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
 
     // US10 — error toast, dialog stays open, role unchanged.
     await expect(
-      page.getByTestId('toast').getByText('Failed to update role')
+      new ToastHelper(page).toastErrors.filter({
+        hasText: 'Failed to update role'
+      })
     ).toBeVisible()
     await expect(
       page.getByRole('heading', { name: 'Make Jane an owner?' })

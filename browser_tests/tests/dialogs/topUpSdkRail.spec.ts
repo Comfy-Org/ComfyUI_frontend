@@ -16,6 +16,7 @@ import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Buying credits across the billing SDK rail — FE-2475.
@@ -206,8 +207,6 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
 
     await expect.poll(() => routes.purchaseRequests.length).toBe(1)
     expect(transport(routes.purchaseRequests[0])).toBe('fetch')
-    await expect(
-      page.getByTestId('toast').and(page.locator('[data-toast-kind="error"]'))
-    ).toBeVisible()
+    await expect(new ToastHelper(page).toastErrors).toBeVisible()
   })
 })

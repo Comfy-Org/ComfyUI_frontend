@@ -1056,10 +1056,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
-    const successToast = comfyPage.page
-      .getByTestId('toast')
-      .and(comfyPage.page.locator('[data-toast-kind="success"]'))
-    await expect(successToast).toBeVisible()
+    await expect(comfyPage.toast.toastSuccesses).toBeVisible()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {

@@ -64,9 +64,7 @@ comfyPageFixture.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
   }) => {
     // Expect a warning toast to be shown
     await expect(
-      comfyPage.page
-        .getByTestId('toast')
-        .getByText('Version Compatibility Warning')
+      comfyPage.toast.withText('Version Compatibility Warning')
     ).toBeVisible()
   })
 
@@ -75,9 +73,7 @@ comfyPageFixture.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     async ({ comfyPage }) => {
       // Expect no warning toast to be shown
       await expect(
-        comfyPage.page
-          .getByTestId('toast')
-          .getByText('Version Compatibility Warning')
+        comfyPage.toast.withText('Version Compatibility Warning')
       ).toBeHidden()
     }
   )
@@ -88,12 +84,9 @@ comfyPageFixture.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     test.setTimeout(30_000)
 
     // Locate the warning toast and dismiss it
-    const warningToast = comfyPage.page.getByTestId('toast').filter({
-      hasText: 'Version Compatibility'
-    })
-    await warningToast.waitFor({ state: 'visible' })
-    const dismissButton = warningToast.getByRole('button', { name: 'Close' })
-    await dismissButton.click()
+    const warningToast = comfyPage.toast.withText('Version Compatibility')
+    await expect(warningToast).toBeVisible()
+    await comfyPage.toast.dismiss(warningToast)
 
     // Wait for the dismissed state to be persisted
     await comfyPage.page.waitForFunction(
@@ -105,9 +98,7 @@ comfyPageFixture.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
 
     // The same warning from same versions should not be shown to the user again
     await expect(
-      comfyPage.page
-        .getByTestId('toast')
-        .getByText('Version Compatibility Warning')
+      comfyPage.toast.withText('Version Compatibility Warning')
     ).toBeHidden()
   })
 })
