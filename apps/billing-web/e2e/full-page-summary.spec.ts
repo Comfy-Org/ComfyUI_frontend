@@ -52,6 +52,25 @@ test('a new subscription reads its charge, allowance and renewal from the quote'
   ])
 })
 
+test('a quote without credit counts leaves the credits line out instead of converting the cents', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const {
+    credits_today: _today,
+    credits_next_period: _nextPeriod,
+    ...uncounted
+  } = cloud.scenario.preview
+  cloud.scenario.preview = uncounted
+  await signIn(CHECKOUT)
+
+  await expectSummary(page, ['Subscribe to Pro Plan · Personal', '$50 USD'])
+  await expect(
+    page.getByRole('region', { name: 'Order summary' })
+  ).not.toContainText('credits')
+})
+
 test('a tier upgrade itemizes the remaining time and the unused-time credit, with a dated credits delta', async ({
   page,
   cloud,
@@ -68,6 +87,8 @@ test('a tier upgrade itemizes the remaining time and the unused-time credit, wit
     proration_unused_cents: 1250,
     credits_today_cents: 3250,
     credits_next_period_cents: 10_000,
+    credits_today: 6858,
+    credits_next_period: 21_100,
     renewal_amount_cents: 10_000,
     renewal_at: RENEWAL_AT,
     current_plan: {
@@ -257,6 +278,8 @@ test('744-15697: an account balance the server applied is the last deduction, an
     balance_applied_cents: 500,
     credits_today_cents: 3250,
     credits_next_period_cents: 10_000,
+    credits_today: 6858,
+    credits_next_period: 21_100,
     renewal_amount_cents: 10_000,
     renewal_at: RENEWAL_AT,
     current_plan: {

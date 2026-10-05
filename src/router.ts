@@ -146,8 +146,20 @@ if (isCloud) {
       delay(PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS).then(() => 'signed_out' as const)
     ])
   }
+  const watchedSessions = new WeakSet<object>()
+  /** Re-runs this guard on the current route, which then sends the tab to sign-in. */
+  function rerouteWhenSignedOutElsewhere(): void {
+    const webSession = useCloudWebSessionStore()
+    if (watchedSessions.has(webSession)) return
+    watchedSessions.add(webSession)
+    webSession.onSignedOutElsewhere(() => {
+      const { path, query, hash } = router.currentRoute.value
+      void router.replace({ path, query, hash, force: true })
+    })
+  }
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {
+    rerouteWhenSignedOutElsewhere()
     const authStore = useAuthStore()
 
     // Wait for Firebase auth to initialize
