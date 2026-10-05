@@ -30,7 +30,6 @@ const baseRoutes = {
   affiliates: '/affiliates/',
   affiliateTerms: '/affiliates/terms/',
   contact: '/contact/',
-  models: '/p/supported-models/',
   mcp: '/mcp/',
   agent: '/agent/',
   platform: '/platform/',
@@ -80,9 +79,6 @@ type Routes = Readonly<Record<RouteKey, string>>
 // Customer Agreement template), same reasoning. See the comment header
 // in src/pages/enterprise-msa.astro.
 //
-// models: the supported-models catalog only exists at /p/supported-models;
-// there is no /<locale>/p/supported-models page, so a prefixed link 404s.
-//
 // minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
@@ -99,7 +95,6 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
-  'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
   'hubWorkflows',

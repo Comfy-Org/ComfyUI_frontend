@@ -81,7 +81,3 @@ for (const model of models) {
     )
   }
 }
-
-export function getModelBySlug(slug: string): Model | undefined {
-  return models.find((m) => m.slug === slug)
-}

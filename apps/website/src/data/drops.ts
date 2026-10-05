@@ -259,7 +259,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/p/supported-models/', 'zh-CN': '/p/supported-models/' }
+      href: { en: '/hub/models/', 'zh-CN': '/hub/models/' }
     }
   },
   {

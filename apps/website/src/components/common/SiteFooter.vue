@@ -68,10 +68,6 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         href: routes.workshop
       },
       {
-        label: t('nav.supportedModels'),
-        href: routes.models
-      },
-      {
         label: t('footer.minimaxH3'),
         href: routes.minimax
       },

@@ -14,7 +14,7 @@ const HERO_SECONDARY_CTA = t('wan3.hero.secondaryCta')
 const FAQ_HEADING = t('wan3.faq.heading')
 const RUN_OPTIONS_HEADING = t('wan3.runOptions.heading')
 const REVIEWS_HEADING = t('wan3.reviews.heading')
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 const WAN3_TEMPLATE = 'https://cloud.comfy.org/?template=api_wan3_0_t2v'
 
 // Counts are the launch requirement rather than a snapshot of the config:
@@ -182,7 +182,10 @@ test.describe('Wan 3.0 launch page — zh-CN', () => {
       .getByRole('link', {
         name: t('models.breadcrumb.models', {}, { locale: 'zh-CN' })
       })
-    await expect(modelsCrumb).toHaveAttribute('href', getRoutes('zh-CN').models)
+    await expect(modelsCrumb).toHaveAttribute(
+      'href',
+      getRoutes('zh-CN').workshop
+    )
 
     const footerLink = page
       .locator('footer')

@@ -128,13 +128,7 @@ export async function writeFullText(
   site = 'https://comfy.org'
 ): Promise<string> {
   const english = twinPaths
-    .filter(
-      (path) =>
-        !path.startsWith('/zh-CN/') &&
-        path !== '/404.md' &&
-        path !== '/p/supported-models.md' &&
-        !path.startsWith('/p/supported-models/')
-    )
+    .filter((path) => !path.startsWith('/zh-CN/') && path !== '/404.md')
     .sort((a, b) =>
       a === '/index.md' ? -1 : b === '/index.md' ? 1 : a.localeCompare(b)
     )
@@ -144,7 +138,7 @@ export async function writeFullText(
   const header = [
     '# Comfy: full site text',
     '',
-    `> Every English page on comfy.org as markdown, in one file, except the supported-models directory, which has its own catalog at https://comfy.org/p/supported-models/llms.txt. The curated index is ${SITE_INDEX_URL}; each page below starts with its canonical URL.`,
+    `> Every English page on comfy.org as markdown, in one file. The curated index is ${SITE_INDEX_URL}; each page below starts with its canonical URL.`,
     ''
   ].join('\n')
   const parts = twins.map((twin) => {

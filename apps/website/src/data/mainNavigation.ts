@@ -140,10 +140,6 @@ export function getMainNavigation(
               href: routes.launches
             },
             {
-              label: t('nav.supportedModels'),
-              href: routes.models
-            },
-            {
               label: t('nav.docs'),
               href: externalLinks.docs,
               external: true

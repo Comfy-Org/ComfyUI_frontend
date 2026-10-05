@@ -12,7 +12,7 @@ const RUN_OPTIONS_HEADING = t('flux3.runOptions.heading', {}, { locale: 'en' })
 const CTA_HEADING = t('flux3.cta.heading', {}, { locale: 'en' })
 const FAQ_COUNT = flux3Page.faq?.items.length ?? 0
 const CARD_COUNT = flux3Page.gallery?.cards.length ?? 0
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 
 test.describe('Flux 3 page @smoke', () => {
   test.beforeEach(async ({ page }) => {

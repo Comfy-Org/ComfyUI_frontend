@@ -100,29 +100,6 @@ describe('writeFullText', () => {
     expect(full).not.toContain('CLI 中文')
     expect(full).not.toContain('# 404')
   })
-
-  it('leaves the supported-models directory to its own catalog', async () => {
-    const root = await seed()
-    await mkdir(join(root, 'p', 'supported-models'), { recursive: true })
-    await writeFile(
-      join(root, 'p', 'supported-models.md'),
-      twin('Supported Models', 'Directory.', '# Supported Models')
-    )
-    await writeFile(
-      join(root, 'p', 'supported-models', 'flux.md'),
-      twin('Flux in ComfyUI', 'Model.', '# Flux in ComfyUI')
-    )
-
-    await writeFullText(root, [
-      ...twins,
-      '/p/supported-models.md',
-      '/p/supported-models/flux.md'
-    ])
-
-    const full = await readFile(join(root, 'llms-full.txt'), 'utf8')
-    expect(full).not.toContain('Flux in ComfyUI')
-    expect(full).not.toContain('# Supported Models')
-  })
 })
 
 describe('twins with missing or malformed front matter', () => {

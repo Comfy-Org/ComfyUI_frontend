@@ -2373,7 +2373,6 @@
     "badgeBeta": "BETA",
     "badgeComingSoon": "COMING SOON",
     "mcpServer": "Comfy MCP",
-    "supportedModels": "Supported Models",
     "colFeatures": "Features",
     "colPrograms": "Programs",
     "colConnect": "Connect",
@@ -3346,79 +3345,6 @@
     "next": "Next"
   },
   "models": {
-    "hero": {
-      "eyebrow": "AI Model",
-      "primaryCta": "TRY IN COMFY",
-      "secondaryCta": "DOWNLOAD MODEL",
-      "cloudCta": "RUN ON CLOUD",
-      "tutorialCta": "VIEW TUTORIAL",
-      "blogLink": "Read blog post",
-      "workflowCount": "{count} workflows use this model"
-    },
-    "whatIs": {
-      "heading": "What is {name}?",
-      "tutorialLink": "Read the full tutorial →"
-    },
-    "llms": {
-      "button": "LLMs",
-      "copy": "Copy page as Markdown",
-      "view": "View as Markdown",
-      "catalog": "llms.txt — model catalog",
-      "openClaude": "Open in Claude",
-      "openChatgpt": "Open in ChatGPT"
-    },
-    "faq": {
-      "heading": "Frequently Asked Questions",
-      "whatIs": {
-        "question": "What is {name}?",
-        "localAnswer": "{name} is {description}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect {name} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are {count} community workflow templates using {name} on Comfy Workflows, ready to load and customize.",
-        "cloudAnswer": "{name} is {description}. You can access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect {name} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are {count} community workflow templates using {name} on Comfy Workflows, ready to load and customize."
-      },
-      "howToUse": {
-        "question": "How do I use {name} in ComfyUI?",
-        "withDocs": "Follow the step-by-step tutorial at {url}. You can also load {templates} directly in ComfyUI.",
-        "withoutDocs": "Open ComfyUI and browse {templates}. Load one as a starting point, then customize the nodes and parameters to fit your use case."
-      },
-      "templates": {
-        "singular": "the community workflow template that uses {name}",
-        "plural": "any of the {count} community workflow templates that use {name}"
-      },
-      "workflowCount": {
-        "question": "How many ComfyUI workflows use {name}?",
-        "singular": "There is {count} community workflow template that uses {name} on Comfy Workflows. It is ready to run in ComfyUI and can be customized to suit your project.",
-        "plural": "There are {count} community workflow templates that use {name} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project."
-      },
-      "isFree": {
-        "question": "Is {name} free to use in ComfyUI?",
-        "localAnswer": "ComfyUI is free and open source. {name} weights are available to download from Hugging Face. You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.",
-        "cloudAnswer": "This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/pricing"
-      }
-    },
-    "dirDescription": {
-      "diffusion_models": "a diffusion model that generates images or video from text and image prompts",
-      "checkpoints": "an all-in-one checkpoint model that bundles a diffusion model, text encoder, and VAE",
-      "loras": "a LoRA (Low-Rank Adaptation) that fine-tunes an existing model for a specific style or subject",
-      "controlnet": "a ControlNet that steers image generation using structural guides like depth maps, edges, or poses",
-      "clip_vision": "a CLIP Vision encoder that converts images into embeddings for conditioning or style transfer",
-      "vae": "a VAE (Variational Autoencoder) that encodes and decodes latent representations",
-      "text_encoders": "a text encoder that converts prompts into embeddings used to guide generation",
-      "audio_encoders": "an audio encoder that converts audio into embeddings for audio-conditioned generation",
-      "geometry_estimation": "a geometry estimation model that predicts depth, surface normals, or 3D structure from images",
-      "background_removal": "a background removal model that separates subjects from their backgrounds with a clean matte",
-      "detection": "a detection model that locates objects, faces, or regions in an image for downstream nodes",
-      "frame_interpolation": "a frame interpolation model that generates in-between frames for smoother, higher-FPS video",
-      "optical_flow": "an optical flow model that estimates per-pixel motion between frames for video processing",
-      "upscale_models": "an upscale model that increases image resolution while preserving or enhancing detail",
-      "latent_upscale_models": "a latent upscale model that refines latents at higher resolution before decoding",
-      "style_models": "a style model that transfers artistic style onto generated images",
-      "model_patches": "a model patch that modifies or extends the behavior of an existing base model",
-      "partner_nodes": "a cloud API model accessible through ComfyUI partner nodes without local hardware requirements",
-      "default": "an AI model"
-    },
-    "index": {
-      "title": "Supported Models",
-      "subtitle": "Run the world's leading AI models in ComfyUI"
-    },
     "breadcrumb": {
       "models": "Supported Models"
     },

@@ -17,9 +17,9 @@ describe('localizeHref', () => {
     { href: '/#features', locale: 'ja', expected: '/ja/#features' },
     { href: '/about#team', locale: 'ja', expected: '/about#team' },
     {
-      href: '/p/supported-models/grok-imagine',
+      href: '/hub/models/veo-3-text-to-video',
       locale: 'zh-CN',
-      expected: '/p/supported-models/grok-imagine'
+      expected: '/hub/models/veo-3-text-to-video'
     },
     {
       href: '/terms-of-service#scope',
@@ -110,12 +110,6 @@ describe('getRoutes', () => {
 
   it('keeps localized routes slash-terminated', () => {
     expect(getRoutes('zh-CN').pricing).toBe('/zh-CN/pricing/')
-  })
-})
-
-describe('getRoutes models', () => {
-  it('serves the models catalog at its canonical path for zh-CN', () => {
-    expect(getRoutes('zh-CN').models).toBe('/p/supported-models/')
   })
 })
 

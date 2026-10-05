@@ -2750,67 +2750,6 @@
     "breadcrumb": {
       "models": "支持的模型"
     },
-    "dirDescription": {
-      "audio_encoders": "一个将音频转换为嵌入向量、用于音频条件生成的音频编码器",
-      "background_removal": "一个将主体从背景中干净分离出来的背景移除模型",
-      "checkpoints": "一个集扩散模型、文本编码器和 VAE 于一体的全能 checkpoint 模型",
-      "clip_vision": "一个将图像转换为嵌入向量、用于条件控制或风格迁移的 CLIP Vision 编码器",
-      "controlnet": "一个通过深度图、边缘或姿态等结构化引导来控制图像生成的 ControlNet",
-      "default": "一个 AI 模型",
-      "detection": "一个在图像中定位物体、人脸或区域并供下游节点使用的检测模型",
-      "diffusion_models": "一个根据文本和图像提示生成图像或视频的扩散模型",
-      "frame_interpolation": "一个生成中间帧以获得更流畅、更高帧率视频的插帧模型",
-      "geometry_estimation": "一个从图像预测深度、表面法线或三维结构的几何估计模型",
-      "latent_upscale_models": "一个在解码前以更高分辨率优化潜在特征的潜空间放大模型",
-      "loras": "一个用于针对特定风格或主题微调现有模型的 LoRA（低秩适应）",
-      "model_patches": "一个修改或扩展现有基础模型行为的模型补丁",
-      "optical_flow": "一个估计帧间逐像素运动、用于视频处理的光流模型",
-      "partner_nodes": "一个无需本地硬件、可通过 ComfyUI 合作伙伴节点访问的云端 API 模型",
-      "style_models": "一个将艺术风格迁移到生成图像上的风格模型",
-      "text_encoders": "一个将提示词转换为嵌入向量、用于指导生成的文本编码器",
-      "upscale_models": "一个在提升图像分辨率的同时保留或增强细节的放大模型",
-      "vae": "一个用于编码和解码潜在表示的 VAE（变分自编码器）"
-    },
-    "faq": {
-      "heading": "常见问题",
-      "howToUse": {
-        "question": "如何在 ComfyUI 中使用 {name}？",
-        "withDocs": "按照 {url} 上的分步教程操作。您也可以直接在 ComfyUI 中加载{templates}。",
-        "withoutDocs": "打开 ComfyUI，浏览{templates}。加载其中一个作为起点，然后自定义节点和参数以满足您的需求。"
-      },
-      "isFree": {
-        "cloudAnswer": "此模型仅在 Comfy Cloud 上运行。按算力用量付费，详情请参阅 comfy.org/pricing。",
-        "localAnswer": "ComfyUI 是免费且开源的。{name} 的权重文件可从 Hugging Face 下载。仅在 Comfy Cloud 上运行时才需要为算力付费；在您自己的硬件上进行本地推理始终是免费的。",
-        "question": "在 ComfyUI 中使用 {name} 是免费的吗？"
-      },
-      "templates": {
-        "plural": "{count} 个使用 {name} 的社区工作流模板",
-        "singular": "使用 {name} 的社区工作流模板"
-      },
-      "whatIs": {
-        "cloudAnswer": "{name} 是{description}。您可以通过 Comfy Cloud 访问它。ComfyUI 基于节点的工作流编辑器可以让您将 {name} 与 ControlNet、LoRA、放大模型和自定义节点连接起来，构建您需要的任何工作流程。Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板，可随时加载和自定义。",
-        "localAnswer": "{name} 是{description}。您可以在 ComfyUI 中本地运行它，完全掌控每一个参数，也可以通过 Comfy Cloud 访问它。ComfyUI 基于节点的工作流编辑器可以让您将 {name} 与 ControlNet、LoRA、放大模型和自定义节点连接起来，构建您需要的任何工作流程。Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板，可随时加载和自定义。",
-        "question": "什么是 {name}？"
-      },
-      "workflowCount": {
-        "plural": "Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板。每个模板都可以在 ComfyUI 中直接运行，并可根据您的项目进行自定义。",
-        "question": "有多少个 ComfyUI 工作流使用 {name}？",
-        "singular": "Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板。该模板可以在 ComfyUI 中直接运行，并可根据您的项目进行自定义。"
-      }
-    },
-    "hero": {
-      "blogLink": "阅读博客文章",
-      "cloudCta": "云端运行",
-      "eyebrow": "AI 模型",
-      "primaryCta": "在 Comfy 中试用",
-      "secondaryCta": "下载模型",
-      "tutorialCta": "查看教程",
-      "workflowCount": "{count} 个工作流使用此模型"
-    },
-    "index": {
-      "subtitle": "在 ComfyUI 中运行世界领先的 AI 模型",
-      "title": "支持的模型"
-    },
     "list": {
       "card": {
         "workflows": "{count} 个工作流"
@@ -2829,14 +2768,6 @@
       "heroTitleBefore": "",
       "label": "模型"
     },
-    "llms": {
-      "button": "LLMs",
-      "catalog": "llms.txt — 模型目录",
-      "copy": "复制本页 Markdown",
-      "openChatgpt": "在 ChatGPT 中打开",
-      "openClaude": "在 Claude 中打开",
-      "view": "查看 Markdown 版"
-    },
     "showcase": {
       "card": {
         "grokImagine": "Grok Imagine",
@@ -2849,10 +2780,6 @@
       "heading": "运行全球领先的\nAI 模型",
       "label": "AI 模型",
       "subtitle": "新模型发布后会第一时间上线。"
-    },
-    "whatIs": {
-      "heading": "什么是 {name}？",
-      "tutorialLink": "阅读完整教程 →"
     },
     "hub": {
       "meta": {
@@ -2940,7 +2867,6 @@
     "roleOwner": "所有者",
     "signIn": "登录",
     "signOut": "退出登录",
-    "supportedModels": "支持的模型",
     "switchWorkspace": "切换工作区",
     "toggleMenu": "切换菜单",
     "upgrade": "升级",

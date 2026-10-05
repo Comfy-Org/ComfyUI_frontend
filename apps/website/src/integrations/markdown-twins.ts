@@ -111,9 +111,9 @@ export async function writeMarkdownTwins(
       continue
     }
     if (await exists(target)) {
-      // A page endpoint (e.g. supported-models' [slug].md.ts) already wrote
-      // this twin. It is a real, current twin — section indexes and
-      // llms-full.txt must still include it, just not regenerate it here.
+      // A page endpoint already wrote this twin. It is a real, current twin:
+      // section indexes and llms-full.txt must still include it, just not
+      // regenerate it here.
       // Checked ahead of readBuiltPage: a page can ship a markdown twin with
       // no HTML counterpart at all, and that twin is still real content.
       report.existing.push(twinPath)

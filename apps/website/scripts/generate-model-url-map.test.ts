@@ -142,7 +142,7 @@ describe('model URL map', () => {
         matchesRoute(pattern, `/hub/models/${slug}/`)
       )
     )
-    expect(patterns).toContain('/p/supported-models/[slug]')
+    expect(patterns).toContain('/learning/[slug]')
     expect(collisions).toEqual([])
   })
 })
