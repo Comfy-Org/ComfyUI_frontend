@@ -274,57 +274,16 @@ jobs:
           GIT_COMMIT_SHA: ${{ github.sha }}
           GIT_REPO: ${{ github.repository }}
         run: |
-          URL=$(vercel deploy --prebuilt --prod --archive=tgz \
+          URL=$(vercel deploy --prebuilt --archive=tgz \
             --meta githubCommitSha="$GIT_COMMIT_SHA" \
             --meta githubRepo="$GIT_REPO" \
             --meta githubRunId="$GITHUB_RUN_ID")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-      - name: Verify immutable and canonical production identity
+      - name: Capture staged deployment identity
+        id: deployed-production
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-          EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}
-          EXPECTED_RUN_ID: ${{ github.run_id }}
-          EXPECTED_SHA: ${{ github.sha }}
-        timeout-minutes: 12
-        run: |
-          verify_marker() {
-            local base_url="$1"
-            local attempts="$2"
-            local delay="$3"
-            for ((attempt = 1; attempt <= attempts; attempt += 1)); do
-              if MARKER=$(curl -fsS \
-                -H 'Cache-Control: no-cache' \
-                "${base_url%/}/__build.json?run=$GITHUB_RUN_ID-$attempt") &&
-                jq -e \
-                  --arg sha "$EXPECTED_SHA" \
-                  --arg runId "$EXPECTED_RUN_ID" \
-                  --arg runAttempt "$EXPECTED_RUN_ATTEMPT" \
-                  '.sha == $sha and .runId == $runId and .runAttempt == $runAttempt' \
-                  <<< "$MARKER" >/dev/null; then
-                return 0
-              fi
-              sleep "$delay"
-            done
-            return 1
-          }
-
-          verify_marker "$DEPLOY_URL" 30 5 || {
-            echo "::error::Immutable deployment did not serve expected SHA $EXPECTED_SHA"
-            exit 1
-          }
-          verify_marker https://comfy.org 60 10 || {
-            echo "::error::Canonical production did not promote expected SHA $EXPECTED_SHA"
-            exit 1
-          }
-          curl -fsS -o /dev/null https://comfy.org/
-
-      - name: Retain production transition evidence
-        env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-          PREVIOUS_DEPLOYMENT_ID: ${{ steps.previous-production.outputs.deployment-id }}
-          PREVIOUS_SHA: ${{ steps.previous-production.outputs.sha }}
-          DEPLOYED_SHA: ${{ github.sha }}
         run: |
           DEPLOYMENT_HOST=${DEPLOY_URL#https://}
           if [[ ! "$DEPLOYMENT_HOST" =~ ^[A-Za-z0-9.-]+\.vercel\.app$ ]]; then
@@ -338,6 +297,41 @@ jobs:
             --arg projectId "$VERCEL_PROJECT_ID" \
             'select((.projectId // .project.id) == $projectId) | .id' \
             <<< "$DEPLOYMENT")
+          echo "deployment-id=$DEPLOYED_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Verify staged production identity
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}
+          EXPECTED_RUN_ID: ${{ github.run_id }}
+          EXPECTED_SHA: ${{ github.sha }}
+        timeout-minutes: 12
+        run: |
+          for attempt in {1..30}; do
+            if MARKER=$(curl -fsS \
+              -H 'Cache-Control: no-cache' \
+              "${DEPLOY_URL%/}/__build.json?staged=$GITHUB_RUN_ID-$attempt") &&
+              jq -e \
+                --arg sha "$EXPECTED_SHA" \
+                --arg runId "$EXPECTED_RUN_ID" \
+                --arg runAttempt "$EXPECTED_RUN_ATTEMPT" \
+                '.sha == $sha and .runId == $runId and .runAttempt == $runAttempt' \
+                <<< "$MARKER" >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Staged deployment did not serve expected build identity"
+          exit 1
+
+      - name: Retain production transition evidence
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          DEPLOYED_DEPLOYMENT_ID: ${{ steps.deployed-production.outputs.deployment-id }}
+          PREVIOUS_DEPLOYMENT_ID: ${{ steps.previous-production.outputs.deployment-id }}
+          PREVIOUS_SHA: ${{ steps.previous-production.outputs.sha }}
+          DEPLOYED_SHA: ${{ github.sha }}
+        run: |
           mkdir -p temp/website-production-transition
           jq -n \
             --arg previousDeploymentId "$PREVIOUS_DEPLOYMENT_ID" \
@@ -363,3 +357,43 @@ jobs:
           path: temp/website-production-transition/transition.json
           retention-days: 7
           if-no-files-found: error
+
+      - name: Promote the staged deployment to production
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          vercel promote "$DEPLOY_URL" \
+            --timeout=10m \
+            --non-interactive \
+            --scope="$VERCEL_SCOPE"
+
+      - name: Verify canonical production identity
+        env:
+          EXPECTED_DEPLOYMENT_ID: ${{ steps.deployed-production.outputs.deployment-id }}
+          EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}
+          EXPECTED_RUN_ID: ${{ github.run_id }}
+          EXPECTED_SHA: ${{ github.sha }}
+        timeout-minutes: 12
+        run: |
+          for attempt in {1..60}; do
+            MARKER=$(curl -fsS \
+              -H 'Cache-Control: no-cache' \
+              "https://comfy.org/__build.json?promoted=$GITHUB_RUN_ID-$attempt") || true
+            ALIAS_DEPLOYMENT_ID=$(curl -fsS --retry 3 \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID" |
+              jq -r '.deploymentId // empty') || true
+            if jq -e \
+              --arg sha "$EXPECTED_SHA" \
+              --arg runId "$EXPECTED_RUN_ID" \
+              --arg runAttempt "$EXPECTED_RUN_ATTEMPT" \
+              '.sha == $sha and .runId == $runId and .runAttempt == $runAttempt' \
+              <<< "${MARKER:-{}}" >/dev/null &&
+              [[ "$ALIAS_DEPLOYMENT_ID" == "$EXPECTED_DEPLOYMENT_ID" ]]; then
+              curl -fsS -o /dev/null https://comfy.org/
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Canonical production did not serve the promoted deployment identity"
+          exit 1

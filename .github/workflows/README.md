@@ -40,13 +40,16 @@ rejects other base branches and fork pull requests, rechecks the live head, and 
 
 The `website-fast-lane:hold` label, draft state, an active non-app reviewer change request, a base
 or head change, or a path outside `apps/website/**` stops approval and withdraws an existing
-current-head policy approval. The review body identifies the verdict as policy-only; it must not be
-interpreted as a diff review.
+current-head policy approval when the trusted workflow evaluates the PR. A human change request
+submitted after policy approval blocks merge immediately through GitHub's review rules; the next
+trusted PR event reevaluates and withdraws the policy approval. The review body identifies the
+verdict as policy-only; it must not be interpreted as a diff review.
 
 The initial author allowlist contains only `bertfy`. Expand it by reviewing a
-change to `WEBSITE_AUTO_APPROVE_AUTHORS` in the workflow. A repository
-administrator must provide the bot's classic PAT as the Actions secret
-`WEBSITE_APPROVAL_TOKEN`; missing or mismatched credentials fail closed.
+change to `WEBSITE_AUTO_APPROVE_AUTHORS` in the workflow. A repository administrator must configure
+a `website-approval` environment whose deployment branch restriction allows only the protected
+default branch, then provide the bot's classic PAT as that environment's
+`WEBSITE_APPROVAL_TOKEN` secret. Missing or mismatched credentials fail closed.
 
 ## Website production identity and validation rollback
 
