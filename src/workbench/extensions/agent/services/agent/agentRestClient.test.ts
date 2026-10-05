@@ -642,7 +642,7 @@ describe('error mapping', () => {
       'cloud-auth-header'
     )
     await makeClient()
-      .answerAsk('t-secret', 'ask-secret', ['run'])
+      .answerAsk('t-secret', 'ask-secret', { selected: ['run'] })
       .catch((e: unknown) => e)
 
     expect(reportedTags()).toEqual({
