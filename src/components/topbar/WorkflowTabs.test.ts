@@ -674,44 +674,32 @@ describe('WorkflowTabs scrolling', () => {
       deltaX: 0,
       deltaY: 7,
       deltaMode: WheelEvent.DOM_DELTA_PIXEL,
-      expectedLeft: 7,
-      prevented: true
+      expectedLeft: 7
     },
     {
       name: 'line',
       deltaX: 0,
       deltaY: 2,
       deltaMode: WheelEvent.DOM_DELTA_LINE,
-      expectedLeft: 32,
-      prevented: true
+      expectedLeft: 32
     },
     {
       name: 'page',
       deltaX: 0,
       deltaY: 1,
       deltaMode: WheelEvent.DOM_DELTA_PAGE,
-      expectedLeft: 320,
-      prevented: true
-    },
-    {
-      name: 'horizontal',
-      deltaX: 7,
-      deltaY: 0,
-      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
-      expectedLeft: null,
-      prevented: false
+      expectedLeft: 320
     },
     {
       name: 'vertical-dominant diagonal',
       deltaX: 2,
       deltaY: 7,
       deltaMode: WheelEvent.DOM_DELTA_PIXEL,
-      expectedLeft: 7,
-      prevented: true
+      expectedLeft: 7
     }
   ])(
     'handles $name wheel input once',
-    ({ deltaX, deltaY, deltaMode, expectedLeft, prevented }) => {
+    ({ deltaX, deltaY, deltaMode, expectedLeft }) => {
       renderComponent()
       const tabStrip = screen.getByTestId('workflow-tab-strip')
       const scrollBy = vi.fn()
@@ -726,11 +714,26 @@ describe('WorkflowTabs scrolling', () => {
 
       tabStrip.dispatchEvent(event)
 
-      if (expectedLeft === null) expect(scrollBy).not.toHaveBeenCalled()
-      else expect(scrollBy).toHaveBeenCalledWith({ left: expectedLeft })
-      expect(event.defaultPrevented).toBe(prevented)
+      expect(scrollBy).toHaveBeenCalledWith({ left: expectedLeft })
+      expect(event.defaultPrevented).toBe(true)
     }
   )
+
+  it('preserves horizontal wheel input', () => {
+    renderComponent()
+    const tabStrip = screen.getByTestId('workflow-tab-strip')
+    const scrollBy = vi.fn()
+    tabStrip.scrollBy = scrollBy
+    const event = new WheelEvent('wheel', {
+      deltaX: 7,
+      cancelable: true
+    })
+
+    tabStrip.dispatchEvent(event)
+
+    expect(scrollBy).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
+  })
 
   it.for(['ctrlKey', 'metaKey'] as const)(
     'preserves %s-modified wheel input',
