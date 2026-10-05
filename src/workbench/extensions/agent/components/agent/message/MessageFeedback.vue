@@ -105,7 +105,7 @@ async function downloadAssets(): Promise<void> {
     <div
       class="flex h-6 w-14 rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground has-data-[state=open]:bg-secondary-background-hover has-data-[state=open]:text-base-foreground"
     >
-      <Tooltip :ignore-non-keyboard-focus="false" disable-closing-trigger>
+      <Tooltip disable-closing-trigger>
         <TooltipTrigger as-child>
           <Button
             type="button"

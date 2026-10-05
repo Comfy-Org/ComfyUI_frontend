@@ -252,7 +252,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
       >
         <span class="icon-[lucide--pencil] size-3" />
       </Button>
-      <Tooltip :ignore-non-keyboard-focus="false" disable-closing-trigger>
+      <Tooltip disable-closing-trigger>
         <TooltipTrigger as-child>
           <Button
             type="button"

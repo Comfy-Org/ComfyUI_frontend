@@ -695,7 +695,7 @@ defineExpose({
 
         <div class="flex items-center gap-1">
           <RunModePopover />
-          <Tooltip :ignore-non-keyboard-focus="false" disable-closing-trigger>
+          <Tooltip>
             <TooltipTrigger as-child>
               <Button
                 type="button"
