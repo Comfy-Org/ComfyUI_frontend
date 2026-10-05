@@ -7,10 +7,10 @@
           v-reka-z-index
           :class="
             cn(
-              'top-1/4 translate-y-0 border-0 bg-transparent p-0 shadow-none duration-100',
+              'border-0 bg-transparent p-0 shadow-none duration-100',
               useSearchBoxV2
                 ? 'w-full max-w-4xl min-w-lg overflow-visible max-md:min-w-0 sm:max-w-4xl'
-                : 'ml-[200px] w-3/5 max-w-3xl min-w-96 max-md:ml-0'
+                : 'top-1/4 ml-[200px] w-3/5 max-w-3xl min-w-96 translate-y-0 max-md:ml-0 sm:max-w-3xl'
             )
           "
           @pointer-down-outside="onPointerDownOutside"
