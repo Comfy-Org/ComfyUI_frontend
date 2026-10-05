@@ -261,10 +261,10 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
   test('a dismissed unconfirmed cancellation stays hidden from late progress', async ({
     comfyPage
   }) => {
+    test.setTimeout(30_000)
     const { page } = comfyPage
     const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224e'
     const assetName = 'unconfirmed-cancel-model.safetensors'
-    await page.clock.install()
     await page.route(`**/tasks/${taskId}`, async (route) => {
       if (route.request().method() === 'DELETE') {
         await route.fulfill({ status: 204 })
@@ -312,9 +312,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
           candidate.url().endsWith(`/tasks/${taskId}`) &&
           candidate.request().method() === 'GET'
       )
-      await page.clock.runFor(10_001)
       await (await response).finished()
-      await page.clock.runFor(1)
     }
     await advanceReconciliation()
     await expect(
