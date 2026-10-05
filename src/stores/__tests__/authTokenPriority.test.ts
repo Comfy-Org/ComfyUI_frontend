@@ -327,15 +327,19 @@ describe('auth token priority chain', () => {
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
 
-    it('fails queue authentication closed after workspace initialization errors', async () => {
+    it('falls back to the Firebase token when workspace initialization errors', async () => {
+      // On a remote non-Cloud origin the workspaces request is CORS-blocked
+      // (#17271); queue execution must still carry a credential so the
+      // backend can resolve the user's personal workspace instead of 401ing.
       mockDistributionTypes.isCloud = false
       useTeamWorkspaceStore().initState = 'uninitialized'
       vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(
         new Error('Network error')
       )
 
-      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe(
+        'firebase-token'
+      )
       expect(
         vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
       ).not.toHaveBeenCalled()
