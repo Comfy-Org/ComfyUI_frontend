@@ -15,10 +15,13 @@ export interface ToastOptions {
   closable?: boolean
 }
 
+type ToastPlacement = 'stack' | 'dock'
+
 interface CustomToastOptions {
   duration?: number
   closable?: boolean
   role?: ToastRole
+  placement?: ToastPlacement
 }
 
 interface ToastBase {
@@ -38,11 +41,18 @@ interface CustomToast extends ToastBase {
   kind: 'custom'
   component: Component
   props?: Record<string, unknown>
+  placement: ToastPlacement
 }
 
 type Toast = StandardToast | CustomToast
 
 const PERSISTENT = Number.POSITIVE_INFINITY
+
+export function isDocked(
+  toast: Toast
+): toast is CustomToast & { placement: 'dock' } {
+  return toast.kind === 'custom' && toast.placement === 'dock'
+}
 
 export const useToast = defineStore('toast', () => {
   const agentNodeSelectionStore = useCanvasStore()
@@ -112,7 +122,8 @@ export const useToast = defineStore('toast', () => {
       props,
       duration: options.duration ?? PERSISTENT,
       closable: options.closable ?? true,
-      role: options.role ?? 'status'
+      role: options.role ?? 'status',
+      placement: options.placement ?? 'stack'
     })
     return id
   }
@@ -123,8 +134,8 @@ export const useToast = defineStore('toast', () => {
   }
 
   function dismissAll() {
-    toasts.value = []
-    queuedToasts.value = []
+    toasts.value = toasts.value.filter(isDocked)
+    queuedToasts.value = queuedToasts.value.filter(isDocked)
   }
 
   return {

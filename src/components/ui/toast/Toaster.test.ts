@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -124,5 +124,24 @@ describe('Toaster', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(screen.queryByText('Check settings')).not.toBeInTheDocument()
+  })
+
+  it('renders docked toasts outside the notification stack', async () => {
+    renderToaster()
+
+    useToast().custom(
+      { template: '<div>Downloading models</div>' },
+      {},
+      { placement: 'dock' }
+    )
+    await nextTick()
+
+    expect(screen.getByText('Downloading models')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('toast-viewport')).queryByText(
+        'Downloading models'
+      )
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('toast')).not.toBeInTheDocument()
   })
 })

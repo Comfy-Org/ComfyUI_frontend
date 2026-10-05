@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -20,8 +20,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 const assetDownloadStore = useAssetDownloadStore()
 const { toastErrorHandler } = useErrorHandling()
-
-const visible = computed(() => assetDownloadStore.hasDownloads)
 
 const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
@@ -111,7 +109,7 @@ async function cancelDownload(taskId: TaskId) {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded">
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -282,5 +280,5 @@ async function cancelDownload(taskId: TaskId) {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>

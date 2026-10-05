@@ -4,6 +4,7 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import ToastClose from './ToastClose.vue'
@@ -12,7 +13,7 @@ import ToastProvider from './ToastProvider.vue'
 import ToastRoot from './ToastRoot.vue'
 import ToastTitle from './ToastTitle.vue'
 import ToastViewport from './ToastViewport.vue'
-import { useToast } from './toastStore'
+import { isDocked, useToast } from './toastStore'
 import type { ToastId } from './toastStore'
 
 const toast = useToast()
@@ -20,7 +21,12 @@ const { toasts } = storeToRefs(toast)
 const { isPickingNodes: agentNodeSelectionActive } = storeToRefs(
   useCanvasStore()
 )
-const latestToastId = computed(() => toasts.value.at(-1)?.id)
+const stackedToasts = computed(() =>
+  toasts.value.filter((message) => !isDocked(message))
+)
+const dockedToasts = computed(() => toasts.value.filter(isDocked))
+const latestToastId = computed(() => stackedToasts.value.at(-1)?.id)
+const latestDockedToastId = computed(() => dockedToasts.value.at(-1)?.id)
 let escapeToastId: ToastId | undefined
 
 function preserveToastOnEscape(id: ToastId) {
@@ -48,7 +54,7 @@ const icons = {
 <template>
   <ToastProvider>
     <ToastRoot
-      v-for="message in toasts"
+      v-for="message in stackedToasts"
       :key="message.id"
       :open="true"
       :duration="message.duration"
@@ -85,4 +91,26 @@ const icons = {
       data-testid="toast-viewport"
     />
   </ToastProvider>
+  <TransitionGroup
+    v-reka-z-index="latestDockedToastId"
+    tag="div"
+    enter-active-class="transition-all duration-300 ease-out"
+    enter-from-class="translate-y-full opacity-0"
+    leave-active-class="transition-all duration-200 ease-in"
+    leave-to-class="translate-y-full opacity-0"
+    :class="
+      cn(
+        'pointer-events-none fixed inset-x-4 bottom-6 flex flex-col items-center gap-2 *:pointer-events-auto sm:inset-x-0',
+        agentNodeSelectionActive && 'hidden'
+      )
+    "
+  >
+    <component
+      :is="message.component"
+      v-for="message in dockedToasts"
+      :key="message.id"
+      v-bind="message.props"
+      :toast-id="message.id"
+    />
+  </TransitionGroup>
 </template>

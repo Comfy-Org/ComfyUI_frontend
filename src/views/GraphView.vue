@@ -21,10 +21,7 @@
   </div>
 
   <Toaster />
-  <ModelImportProgressDialog />
-  <AssetExportProgressDialog />
   <PartnerNodesEducationCard v-if="!isCloud" />
-  <ManagerProgressToast />
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
@@ -71,9 +68,8 @@ import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { setActiveLocale } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
-import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
-import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { useAssetProgressToasts } from '@/platform/assets/composables/useAssetProgressToasts'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
@@ -113,11 +109,13 @@ import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
-import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
+import { useManagerProgressToast } from '@/workbench/extensions/manager/composables/useManagerProgressToast'
 
 setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
+useAssetProgressToasts()
+useManagerProgressToast()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()

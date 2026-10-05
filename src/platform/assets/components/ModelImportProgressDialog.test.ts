@@ -81,7 +81,6 @@ describe('ModelImportProgressDialog cancellation', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     await waitFor(() => expect(store.hasDownloads).toBe(false))
-    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('restores the close control once a cancellation settles', async () => {
@@ -108,7 +107,7 @@ describe('ModelImportProgressDialog cancellation', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
-    expect(screen.queryByRole('status')).toBeNull()
+    expect(store.hasDownloads).toBe(false)
   })
 
   it('dismisses a failed download while reconciliation continues', async () => {
@@ -120,6 +119,6 @@ describe('ModelImportProgressDialog cancellation', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
-    expect(screen.queryByRole('status')).toBeNull()
+    expect(store.hasDownloads).toBe(false)
   })
 })
