@@ -43,13 +43,16 @@ const suggestions = computed(() =>
     : []
 )
 
-function thumbnailKind(model: WorkshopModel) {
-  if (!model.thumbnailUrl) return undefined
-  return (
-    model.thumbnail?.kind ??
-    (isVideoUrl(model.thumbnailUrl) ? 'video' : 'image')
-  )
+function thumbnailOf(model: WorkshopModel) {
+  const url = model.thumbnailUrl
+  if (!url) return undefined
+  const kind = model.thumbnail?.kind ?? (isVideoUrl(url) ? 'video' : 'image')
+  return kind === 'audio' ? undefined : { url, kind }
 }
+
+const rows = computed(() =>
+  suggestions.value.map((model) => ({ model, thumbnail: thumbnailOf(model) }))
+)
 
 function sourceOf(model: WorkshopModel): string | undefined {
   if (model.type === 'APP') return t('workshop.card.comfyApp')
@@ -84,7 +87,7 @@ function sourceOf(model: WorkshopModel): string | undefined {
         <span class="tabular-nums opacity-60">({{ matching.length }})</span>
       </p>
       <button
-        v-for="model in suggestions"
+        v-for="{ model, thumbnail } in rows"
         :key="model.slug"
         type="button"
         class="flex cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4"
@@ -93,8 +96,8 @@ function sourceOf(model: WorkshopModel): string | undefined {
         @click="emit('pick', model)"
       >
         <video
-          v-if="model.thumbnailUrl && thumbnailKind(model) === 'video'"
-          :src="videoPosterUrl(model.thumbnailUrl)"
+          v-if="thumbnail?.kind === 'video'"
+          :src="videoPosterUrl(thumbnail.url)"
           class="size-10 shrink-0 rounded-lg object-cover"
           aria-hidden="true"
           data-testid="workshop-search-model-video"
@@ -103,8 +106,8 @@ function sourceOf(model: WorkshopModel): string | undefined {
           preload="metadata"
         />
         <img
-          v-else-if="model.thumbnailUrl && thumbnailKind(model) === 'image'"
-          :src="model.thumbnailUrl"
+          v-else-if="thumbnail"
+          :src="thumbnail.url"
           alt=""
           class="size-10 shrink-0 rounded-lg object-cover"
           loading="lazy"
