@@ -1,9 +1,18 @@
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import {
+  ModelNodeProvider,
+  useModelToNodeStore
+} from '@/stores/modelToNodeStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
+import {
+  canCreateNodeForAsset,
+  resolveModelNodeFromAsset
+} from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
 
@@ -48,6 +57,39 @@ function mockProvider(
 beforeEach(() => {
   vi.mocked(useModelToNodeStore().getNodeProvider).mockImplementation(
     mockGetNodeProvider
+  )
+})
+
+describe('canCreateNodeForAsset', () => {
+  it('rejects an asset with no usable category before the registry is ready', () => {
+    expect(canCreateNodeForAsset(createMockAsset({ tags: ['models'] }))).toBe(
+      false
+    )
+  })
+
+  it('fails open while node definitions are unavailable', () => {
+    expect(canCreateNodeForAsset(createMockAsset())).toBe(true)
+  })
+
+  it.for([
+    { providerCategory: 'checkpoints', expected: true },
+    { providerCategory: 'vae', expected: false }
+  ])(
+    'returns $expected when the registry provider category is $providerCategory',
+    ({ providerCategory, expected }) => {
+      useNodeDefStore().nodeDefsByName = {
+        TestNode: fromPartial<ComfyNodeDefImpl>({ name: 'TestNode' })
+      }
+      useModelToNodeStore().registerNodeProvider(
+        providerCategory,
+        new ModelNodeProvider(
+          fromPartial<ComfyNodeDefImpl>({ name: 'TestNode' }),
+          'model_name'
+        )
+      )
+
+      expect(canCreateNodeForAsset(createMockAsset())).toBe(expected)
+    }
   )
 })
 

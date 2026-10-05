@@ -3,12 +3,18 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import * as resolveModelNodeFromAsset from '@/platform/assets/utils/resolveModelNodeFromAsset'
+
+vi.mock(import('@/platform/assets/utils/resolveModelNodeFromAsset'), () => ({
+  canCreateNodeForAsset: vi.fn(() => true)
+}))
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
@@ -41,7 +47,10 @@ function createDisplayAsset(
   })
 }
 
-function renderCard(asset: AssetDisplayItem) {
+function renderCard(
+  asset: AssetDisplayItem,
+  { requireNodeProvider = false }: { requireNodeProvider?: boolean } = {}
+) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -50,7 +59,7 @@ function renderCard(asset: AssetDisplayItem) {
     fallbackWarn: false
   })
   return render(AssetCard, {
-    props: { asset, interactive: true },
+    props: { asset, interactive: true, requireNodeProvider },
     global: {
       plugins: [i18n],
       stubs: {
@@ -66,6 +75,9 @@ function renderCard(asset: AssetDisplayItem) {
 }
 
 beforeEach(() => {
+  vi.mocked(resolveModelNodeFromAsset.canCreateNodeForAsset).mockReturnValue(
+    true
+  )
   vi.mocked(useSettingStore().get).mockImplementation(() => 0)
   vi.mocked(useAssetDownloadStore().isDownloadedThisSession).mockImplementation(
     () => false
@@ -77,6 +89,49 @@ beforeEach(() => {
 })
 
 describe('AssetCard', () => {
+  it('allows widget assignment without a node provider', async () => {
+    const user = userEvent.setup()
+    vi.mocked(resolveModelNodeFromAsset.canCreateNodeForAsset).mockReturnValue(
+      false
+    )
+
+    const { emitted } = renderCard(createDisplayAsset())
+    await user.click(screen.getByRole('button', { name: 'g.use' }))
+
+    expect(emitted()).toHaveProperty('select')
+  })
+
+  it('exposes and blocks node creation when the asset has no provider', async () => {
+    const user = userEvent.setup()
+    vi.mocked(resolveModelNodeFromAsset.canCreateNodeForAsset).mockReturnValue(
+      false
+    )
+
+    const { emitted } = renderCard(createDisplayAsset(), {
+      requireNodeProvider: true
+    })
+    const useButton = screen.getByRole('button', {
+      name: 'g.use: assetBrowser.useDisabledNoProvider'
+    })
+
+    expect(useButton).toHaveAttribute('aria-disabled', 'true')
+    await user.click(useButton)
+    expect(emitted()).not.toHaveProperty('select')
+    expect(emitted()).toHaveProperty('focus')
+  })
+
+  it('keeps keyboard selection from acknowledging a newly imported asset', async () => {
+    const user = userEvent.setup()
+    const acknowledgeAsset = vi.mocked(useAssetDownloadStore().acknowledgeAsset)
+    const { emitted } = renderCard(createDisplayAsset())
+
+    screen.getByTestId('asset-card').focus()
+    await user.keyboard('{Enter}')
+
+    expect(emitted()).toHaveProperty('select')
+    expect(acknowledgeAsset).not.toHaveBeenCalled()
+  })
+
   describe('FE-228: filename rendering', () => {
     it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()

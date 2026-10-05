@@ -100,6 +100,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
@@ -1162,6 +1163,7 @@ export class ComfyApp {
       nodeDefArray
     )
     nodeDefStore.updateNodeDefs(nodeDefArray)
+    useModelToNodeStore().registerDefaults()
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {

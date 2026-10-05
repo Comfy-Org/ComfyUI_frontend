@@ -455,6 +455,23 @@ describe('useModelToNodeStore', () => {
       expect(secondCheckpointCount).toBe(firstCheckpointCount)
     })
 
+    it('registers defaults added after an earlier partial node definition set', () => {
+      const nodeDefStore = useNodeDefStore()
+      nodeDefStore.nodeDefsByName = {
+        CheckpointLoaderSimple: mockNodeDefsByName.CheckpointLoaderSimple
+      }
+      const modelToNodeStore = useModelToNodeStore()
+
+      modelToNodeStore.registerDefaults()
+      expect(modelToNodeStore.getNodeProvider('vae')).toBeUndefined()
+
+      nodeDefStore.nodeDefsByName = mockNodeDefsByName
+
+      expect(modelToNodeStore.getNodeProvider('vae')?.nodeDef.name).toBe(
+        'VAELoader'
+      )
+    })
+
     it('should not register when nodeDefStore is empty', () => {
       useNodeDefStore().nodeDefsByName = {}
       const modelToNodeStore = useModelToNodeStore()

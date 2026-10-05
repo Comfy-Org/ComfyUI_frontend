@@ -23,7 +23,9 @@ export class ModelNodeProvider {
 export const useModelToNodeStore = defineStore('modelToNode', () => {
   const modelToNodeMap = ref<Partial<Record<string, ModelNodeProvider[]>>>({})
   const nodeDefStore = useNodeDefStore()
-  const haveDefaultsLoaded = ref(false)
+  const isReady = computed(
+    () => Object.keys(nodeDefStore.nodeDefsByName).length > 0
+  )
 
   /** Internal computed for reactive caching of registered node types */
   const registeredNodeTypes = computed<Record<string, string>>(() => {
@@ -107,6 +109,13 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     return findProvidersWithFallback(modelType)?.[0]
   }
 
+  function hasNodeProvider(modelType: unknown): boolean {
+    return (
+      typeof modelType === 'string' &&
+      findProvidersWithFallback(modelType) !== undefined
+    )
+  }
+
   /**
    * Get the list of all valid node providers for the given model type name.
    * Supports hierarchical lookups: if "parent/child" has no match, falls back to "parent".
@@ -146,24 +155,32 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   }
 
   function registerDefaults() {
-    if (haveDefaultsLoaded.value) {
-      return
-    }
     if (Object.keys(nodeDefStore.nodeDefsByName).length === 0) {
       return
     }
-    haveDefaultsLoaded.value = true
 
     for (const [modelType, nodeClass, key] of MODEL_NODE_MAPPINGS) {
-      quickRegister(modelType, nodeClass, key)
+      if (!Object.hasOwn(nodeDefStore.nodeDefsByName, nodeClass)) continue
+      const nodeDef = nodeDefStore.nodeDefsByName[nodeClass]
+
+      const providers = (modelToNodeMap.value[modelType] ??= [])
+      const alreadyRegistered = providers.some(
+        (provider) =>
+          provider.nodeDef.name === nodeDef.name && provider.key === key
+      )
+      if (!alreadyRegistered) {
+        providers.push(new ModelNodeProvider(nodeDef, key))
+      }
     }
   }
 
   return {
     modelToNodeMap,
+    isReady,
     getRegisteredNodeTypes,
     getCategoryForNodeType,
     getNodeProvider,
+    hasNodeProvider,
     getAllNodeProviders,
     registerNodeProvider,
     quickRegister,

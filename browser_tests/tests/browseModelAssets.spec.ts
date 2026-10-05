@@ -17,7 +17,13 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT]
+const UNSUPPORTED_QWEN_TTS: Asset = {
+  ...STABLE_CHECKPOINT,
+  id: 'test-qwen-tts-001',
+  name: 'Qwen3-TTS-12Hz-0.6B-CustomVoice.safetensors',
+  tags: ['models', 'qwen-tts/Qwen3-TTS-12Hz-0.6B-CustomVoice']
+}
+const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT, UNSUPPORTED_QWEN_TTS]
 
 const test = createCloudAssetsFixture(CLOUD_ASSETS)
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -72,6 +78,29 @@ test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
     expect(loader).toBeDefined()
     const widget = await loader.getWidgetByName('ckpt_name')
     expect(await widget.getValue()).toBe(STABLE_CHECKPOINT.name)
+  })
+
+  test('disables Use for a model category without a node provider', async ({
+    comfyPage
+  }) => {
+    await comfyPage.command.executeCommand('Comfy.BrowseModelAssets')
+
+    const modal = comfyPage.page.locator(
+      '[data-component-id="AssetBrowserModal"]'
+    )
+    const card = modal.locator(
+      `[data-component-id="AssetCard"][data-asset-id="${UNSUPPORTED_QWEN_TTS.id}"]`
+    )
+    const useButton = card.getByRole('button', {
+      name: 'Use: This model type is not supported yet'
+    })
+
+    await expect(card).toBeVisible()
+    await expect(useButton).toHaveAttribute('aria-disabled', 'true')
+    await card.focus()
+    await card.press('Enter')
+    await expect(modal).toBeVisible()
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
   })
 })
 
