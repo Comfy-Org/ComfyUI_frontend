@@ -32,7 +32,8 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
       exact: true
     })
     await expect(openButton).toBeVisible()
-    await new AgentPanel(page).open()
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
 
     await expect(panelRoot).toHaveCount(1)
     await expect(panelRoot).toBeVisible()
@@ -42,17 +43,30 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
       )
       .toBe('true')
 
+    await expect(agentPanel.dockedPanelShell).toHaveCSS(
+      'border-left-width',
+      '0px'
+    )
+
     // Enter app mode: the docked panel re-hosts under LinearView.
     await comfyPage.appMode.toggleAppMode()
     await expect(panelRoot).toHaveCount(1)
     await expect(panelRoot).toBeVisible()
     await expect.poll(activeWorkflowPath).toBe(selectedWorkflowPath)
+    await expect(agentPanel.dockedPanelShell).toHaveCSS(
+      'border-left-width',
+      '1px'
+    )
 
     // Return to graph mode: the docked panel re-hosts under GraphCanvas.
     await comfyPage.appMode.toggleAppMode()
     await expect(panelRoot).toHaveCount(1)
     await expect(panelRoot).toBeVisible()
     await expect.poll(activeWorkflowPath).toBe(selectedWorkflowPath)
+    await expect(agentPanel.dockedPanelShell).toHaveCSS(
+      'border-left-width',
+      '0px'
+    )
   })
 
   test('keeps a user-closed panel hidden when toggling app mode and back', async ({
