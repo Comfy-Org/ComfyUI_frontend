@@ -1,8 +1,8 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import { workshopModels } from '../../config/workshop-browse-content'
-import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { workshopModels } from '@/config/workshop-browse-content'
+import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import { modelsHubMeta } from './models-hub-meta'
 import { modelsByProvider } from './models-directory'
 
@@ -15,7 +15,7 @@ const directory = modelsByProvider(
 
 <BaseLayout {title} {description} preloadFonts={['Medium']}>
   <script>
-    import '../../scripts/hubNavigation'
+    import '@/scripts/hubNavigation'
   </script>
   <ModelsPage
     section="models"

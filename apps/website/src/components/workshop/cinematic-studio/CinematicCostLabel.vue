@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
-import { formatCreditRange } from '../../../lib/workshop/cinematic-studio/estimate'
-import type { Locale } from '../../../i18n/translations'
+import type { ShotEstimate } from '@/lib/workshop/cinematic-studio/estimate'
+import { formatCreditRange } from '@/lib/workshop/cinematic-studio/estimate'
+import type { Locale } from '@/i18n/translations'
 
 const {
   estimate,
