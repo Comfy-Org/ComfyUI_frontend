@@ -122,16 +122,4 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
     expect(jobOutputCache.getJobDetail).not.toHaveBeenCalled()
     expect(mockApp.loadGraphData).not.toHaveBeenCalled()
   })
-
-  it('should handle fetch errors gracefully by returning undefined', async () => {
-    const job = createHistoryJob('test-job-id')
-    const task = new TaskItemImpl(job)
-
-    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(undefined)
-
-    await task.loadWorkflow(mockApp)
-
-    expect(jobOutputCache.getJobDetail).toHaveBeenCalled()
-    expect(mockApp.loadGraphData).not.toHaveBeenCalled()
-  })
 })

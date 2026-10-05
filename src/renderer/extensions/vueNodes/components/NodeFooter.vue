@@ -9,7 +9,8 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none pt-9 pb-3',
+          errorColorClass,
           errorRadiusClass
         )
       "
@@ -17,7 +18,7 @@
       @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.error') }}</span>
+        <span class="truncate">{{ errorLabel }}</span>
         <i class="icon-[lucide--info] size-4 shrink-0" />
       </div>
     </Button>
@@ -58,7 +59,8 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none pt-9 pb-3',
+          errorColorClass,
           errorRadiusClass
         )
       "
@@ -66,7 +68,7 @@
       @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.error') }}</span>
+        <span class="truncate">{{ errorLabel }}</span>
         <i class="icon-[lucide--info] size-4 shrink-0" />
       </div>
     </Button>
@@ -112,7 +114,8 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
+          'box-border w-full rounded-none pt-9 pb-3',
+          errorColorClass,
           footerRadiusClass
         )
       "
@@ -120,7 +123,7 @@
       @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.error') }}</span>
+        <span class="truncate">{{ errorLabel }}</span>
         <i class="icon-[lucide--info] size-4 shrink-0" />
       </div>
     </Button>
@@ -213,7 +216,7 @@ const { t } = useI18n()
 
 interface Props {
   isSubgraph: boolean
-  hasAnyError: boolean
+  errorSeverity: 'none' | 'missing' | 'error'
   showErrorsTabEnabled: boolean
   showAdvancedInputsButton?: boolean
   showAdvancedState?: boolean
@@ -223,7 +226,7 @@ interface Props {
 
 const {
   isSubgraph,
-  hasAnyError,
+  errorSeverity,
   showErrorsTabEnabled,
   showAdvancedInputsButton,
   showAdvancedState,
@@ -236,6 +239,16 @@ const emit = defineEmits<{
   openErrors: []
   toggleAdvanced: []
 }>()
+
+const hasAnyError = computed(() => errorSeverity !== 'none')
+const errorLabel = computed(() =>
+  t(errorSeverity === 'missing' ? 'rightSidePanel.errors' : 'g.error')
+)
+const errorColorClass = computed(() =>
+  errorSeverity === 'missing'
+    ? 'bg-warning-background text-warning-on-background hover:bg-warning-background-hover'
+    : 'bg-destructive-background text-white hover:bg-destructive-background-hover'
+)
 
 let suppressNextClick = false
 

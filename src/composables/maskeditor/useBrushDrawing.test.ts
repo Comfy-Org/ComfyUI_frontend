@@ -63,9 +63,7 @@ vi.mock(import('./useBrushAdjustment'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { registerExtension: vi.fn() }
-}))
+vi.mock(import('@/scripts/app'))
 
 import { useGPUResources } from './useGPUResources'
 import { useBrushDrawing } from './useBrushDrawing'

@@ -2,13 +2,19 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useDialogService } from '@/services/dialogService'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTelemetry } from '@/platform/telemetry'
 import type { TeamCreditStopSummary } from '@/platform/workspace/api/workspaceApi'
+import { useCustomerEventsService } from '@/services/customerEventsService'
 
 type Balance = Pick<
   BalanceInfo,
@@ -18,7 +24,6 @@ type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
 type TeamStop = TeamCreditStopSummary
-type CustomerEventsResult = { events: { event_type: string }[] } | null
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
@@ -31,90 +36,26 @@ const state = vi.hoisted(() => ({
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   type: 'workspace' as 'workspace' | 'legacy',
-  fetchBalance: vi.fn(),
-  fetchStatus: vi.fn(),
-  showPricingTable: vi.fn(),
-
-  trackAddApiCreditButtonClicked: vi.fn(),
-  trackApiCreditTopupSucceeded: vi.fn(),
-  telemetryUnavailable: false,
-  getMyEvents: vi.fn(
-    async (): Promise<CustomerEventsResult> => ({ events: [] })
-  ),
-  customerEventsError: null as string | null,
-  toastErrorHandler: vi.fn()
+  telemetryUnavailable: false
 }))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync:
-      <TArgs extends unknown[], TReturn>(
-        action: (...args: TArgs) => Promise<TReturn> | TReturn
-      ) =>
-      async (...args: TArgs): Promise<TReturn | undefined> => {
-        try {
-          return await action(...args)
-        } catch (e) {
-          state.toastErrorHandler(e)
-        }
-      }
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    balance: computed(() => state.balance),
-    subscription: computed(() => state.subscription),
-    canAccessSubscriptionFeatures: computed(
-      () => state.canAccessSubscriptionFeatures
-    ),
-    isFreeTier: computed(() => state.isFreeTier),
-    isTeamPlan: computed(() => state.isTeamPlan),
-    tier: computed(() => state.tier),
-    currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
-    isLoading: computed(() => state.isLoading),
-    type: computed(() => state.type),
-    fetchBalance: state.fetchBalance,
-    fetchStatus: state.fetchStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ showPricingTable: state.showPricingTable })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: () => ({
-      isYearlySubscription: computed(() => state.personalIsYearly)
-    })
-  })
-)
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    state.telemetryUnavailable
-      ? null
-      : {
-          trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked,
-          trackApiCreditTopupSucceeded: state.trackApiCreditTopupSucceeded
-        }
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
-  useCustomerEventsService: () => ({
-    getMyEvents: state.getMyEvents,
-    error: computed(() => state.customerEventsError)
-  })
-}))
+vi.mock(import('@/services/customerEventsService'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -147,6 +88,10 @@ const i18n = createI18n({
         usedAfterMonthly: 'Used after monthly runs out',
         usedAfterYearly: 'Used after yearly runs out',
         reactivateToUseCredits: 'Reactivate your plan to use these credits',
+        salesManagedInactiveCreditsNote:
+          'Spendable once your plan is restored.',
+        salesManagedCreditsEndedNote:
+          'Plan credits ended with your subscription.',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
         yearlyCreditsUsedUpTitle: 'Yearly credits are used up. Refills {date}',
@@ -169,10 +114,7 @@ function renderTile(props: Record<string, unknown> = {}) {
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: () => {} },
-      stubs: {
-        Skeleton: { template: '<div role="status" aria-label="Loading"></div>' }
-      }
+      directives: { tooltip: () => {} }
     }
   })
 }
@@ -203,6 +145,52 @@ function createDeferred() {
 
 describe('CreditsTile', () => {
   beforeEach(() => {
+    const errorHandling = useErrorHandling()
+    errorHandling.wrapWithErrorHandlingAsync =
+      (action, errorHandler) =>
+      async (...args) => {
+        try {
+          return await action(...args)
+        } catch (error) {
+          ;(errorHandler ?? errorHandling.toastErrorHandler)(error)
+        }
+      }
+    const billing = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+    billing.balance = computed(() =>
+      state.balance ? { currency: 'USD', ...state.balance } : null
+    )
+    billing.subscription = computed(() =>
+      state.subscription
+        ? {
+            isActive: state.canAccessSubscriptionFeatures,
+            planSlug: null,
+            scheduledChange: null,
+            endDate: null,
+            isCancelled: false,
+            hasFunds: true,
+            agentHasFunds: true,
+            ...state.subscription
+          }
+        : null
+    )
+    billing.canAccessSubscriptionFeatures = computed(
+      () => state.canAccessSubscriptionFeatures
+    )
+    billing.isFreeTier = computed(() => state.isFreeTier)
+    billing.isTeamPlan = computed(() => state.isTeamPlan)
+    billing.tier = computed(() => state.tier)
+    billing.currentTeamCreditStop = computed(() => state.currentTeamCreditStop)
+    billing.isLoading = computed(() => state.isLoading)
+    billing.type = computed(() => state.type)
+    useSubscription().isYearlySubscription = computed(
+      () => state.personalIsYearly
+    )
+    const telemetry = useTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    vi.mocked(useTelemetry).mockImplementation(() =>
+      state.telemetryUnavailable ? null : telemetry
+    )
     state.balance = null
     state.subscription = null
     state.personalIsYearly = false
@@ -214,7 +202,6 @@ describe('CreditsTile', () => {
     state.isLoading = false
 
     state.type = 'workspace'
-    state.customerEventsError = null
     state.telemetryUnavailable = false
     mockIsCloud.value = true
   })
@@ -414,6 +401,40 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('253,200 left of 253,200')
   })
 
+  it('shows no credit pool total or allowance bar when the duration is unknown', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: null,
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 120000,
+      cloudCreditBalanceMicros: 120000
+    }
+    const { container } = renderTile()
+    expect(container.textContent).not.toContain('left of')
+    expect(container.textContent).not.toContain('Used after')
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
+  it('still flags an exhausted allowance when the duration is unknown', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'PRO',
+      duration: null,
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain("You're out of credits")
+    expect(container.textContent).not.toContain('left of')
+  })
+
   it('formats the renewal date in the local timezone, not UTC', () => {
     activeProSubscription()
     expect(renderTile().container.textContent).toContain('Refills Feb 20')
@@ -471,10 +492,11 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('keeps Add credits and the real balance on an inactive sales-managed plan', () => {
+  it('gives an inactive sales-managed plan the disabled shape with account-manager copy', () => {
     activeProSubscription()
-    // A sales-managed plan has no self-serve reactivation to sell, so the
-    // reactivate-to-use-credits treatment must not apply.
+    // cloud#8001 closes can_top_up for terminal sales-managed plans, so the
+    // old keep-the-live-tile exclusion left a bare balance; the route back is
+    // the account manager, not a Reactivate button, and the copy says so.
     state.tier = 'ENTERPRISE'
     state.subscription = {
       tier: 'ENTERPRISE',
@@ -483,10 +505,38 @@ describe('CreditsTile', () => {
     }
     const { container } = renderTile({ inactivePlan: true })
 
+    expect(container.textContent).toContain('Additional credits')
+    // The retained prepaid balance stays visible — a note promising the
+    // credits are spendable once restored must not sit beside a zero.
+    expect(container.textContent).toContain('633')
+    expect(container.textContent).toContain(
+      'Spendable once your plan is restored.'
+    )
     expect(container.textContent).not.toContain(
       'Reactivate your plan to use these credits'
     )
-    expect(screen.getByText('Add credits')).toBeInTheDocument()
+    expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('states the ending plainly when an inactive sales-managed plan retains nothing', () => {
+    activeProSubscription()
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).toContain(
+      'Plan credits ended with your subscription.'
+    )
+    expect(screen.queryByText('Add credits')).toBeNull()
   })
 
   it('does not borrow a catalog monthly pool for an Enterprise plan', () => {
@@ -609,8 +659,12 @@ describe('CreditsTile', () => {
     activeProSubscription()
     renderTile()
     await userEvent.click(screen.getByText('Add credits'))
-    expect(state.trackAddApiCreditButtonClicked).toHaveBeenCalledOnce()
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).toHaveBeenCalledOnce()
+    expect(
+      useDialogService().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
   })
 
   it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
@@ -621,7 +675,7 @@ describe('CreditsTile', () => {
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))
-    expect(state.showPricingTable).toHaveBeenCalledOnce()
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledOnce()
   })
 
   it('keeps offering add-credits on the free tier for non-cloud distributions', () => {
@@ -643,13 +697,13 @@ describe('CreditsTile', () => {
   it('refreshes balance and status from the facade on mount and on demand', async () => {
     activeProSubscription()
     renderTile()
-    expect(state.fetchBalance).toHaveBeenCalledOnce()
-    expect(state.fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
     await userEvent.click(
       screen.getByRole('button', { name: 'Refresh credits' })
     )
-    expect(state.fetchBalance).toHaveBeenCalledTimes(2)
-    expect(state.fetchStatus).toHaveBeenCalledTimes(2)
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
   })
 
   it('keeps refreshing on focus until a pending top-up is confirmed', async () => {
@@ -659,11 +713,15 @@ describe('CreditsTile', () => {
     renderTile()
 
     window.dispatchEvent(new Event('focus'))
-    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
+    )
 
     window.dispatchEvent(new Event('focus'))
-    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(3))
-    expect(state.fetchStatus).toHaveBeenCalledTimes(3)
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(3)
+    )
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(3)
     expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
   })
 
@@ -671,61 +729,73 @@ describe('CreditsTile', () => {
     activeProSubscription()
     state.type = 'legacy'
     renderTile()
-    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    )
     await new Promise((resolve) => setTimeout(resolve, 0))
     vi.clearAllMocks()
 
     const balanceRefresh = createDeferred()
     const statusRefresh = createDeferred()
-    state.fetchBalance
+    vi.mocked(useBillingContext().fetchBalance)
       .mockImplementationOnce(() => balanceRefresh.promise)
       .mockResolvedValue(undefined)
-    state.fetchStatus
+    vi.mocked(useBillingContext().fetchStatus)
       .mockImplementationOnce(() => statusRefresh.promise)
       .mockResolvedValue(undefined)
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
 
     window.dispatchEvent(new Event('focus'))
-    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    )
     window.dispatchEvent(new Event('focus'))
-    expect(state.fetchBalance).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
 
     balanceRefresh.resolve()
     statusRefresh.resolve()
 
-    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(2))
-    expect(state.fetchStatus).toHaveBeenCalledTimes(2)
-    expect(state.getMyEvents).toHaveBeenCalledTimes(2)
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
+    )
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
+    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(2)
   })
 
   it('waits for a failed refresh to settle before its trailing refresh', async () => {
     activeProSubscription()
     state.type = 'legacy'
     renderTile()
-    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    )
     await new Promise((resolve) => setTimeout(resolve, 0))
     vi.clearAllMocks()
 
     const statusRefresh = createDeferred()
-    state.fetchBalance
+    vi.mocked(useBillingContext().fetchBalance)
       .mockRejectedValueOnce(new Error('balance unavailable'))
       .mockResolvedValue(undefined)
-    state.fetchStatus
+    vi.mocked(useBillingContext().fetchStatus)
       .mockImplementationOnce(() => statusRefresh.promise)
       .mockResolvedValue(undefined)
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
 
     window.dispatchEvent(new Event('focus'))
-    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    )
     window.dispatchEvent(new Event('focus'))
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(state.fetchBalance).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
 
     statusRefresh.resolve()
 
-    await waitFor(() => expect(state.fetchBalance).toHaveBeenCalledTimes(2))
-    expect(state.fetchStatus).toHaveBeenCalledTimes(2)
-    expect(state.getMyEvents).toHaveBeenCalledOnce()
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
+    )
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
+    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledOnce()
   })
 
   it('clears a confirmed legacy top-up before the next focus', async () => {
@@ -738,25 +808,68 @@ describe('CreditsTile', () => {
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    state.getMyEvents.mockResolvedValueOnce({ events })
+    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
+      events
+    })
 
     renderTile()
 
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
-    expect(state.trackApiCreditTopupSucceeded).toHaveBeenCalled()
+    expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
     vi.clearAllMocks()
 
     window.dispatchEvent(new Event('focus'))
 
-    await waitFor(() => expect(state.fetchBalance).not.toHaveBeenCalled())
-    expect(state.getMyEvents).not.toHaveBeenCalled()
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
+    )
+    expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
+  })
+
+  it('closes a confirmed legacy top-up with one succeeded event measured from its start', async () => {
+    const confirmedAtMs = Date.parse('2024-06-15T12:30:00Z')
+    vi.spyOn(Date, 'now').mockReturnValue(confirmedAtMs)
+    activeProSubscription()
+    state.type = 'legacy'
+    localStorage.setItem(
+      'pending_topup_timestamp',
+      String(confirmedAtMs - 90_000)
+    )
+    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
+      events: [
+        {
+          event_type: 'credit_added',
+          createdAt: new Date(confirmedAtMs - 1000).toISOString()
+        }
+      ]
+    })
+
+    renderTile()
+
+    await waitFor(() =>
+      expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
+    )
+    const telemetry = useTelemetry()
+    assert.exists(telemetry)
+    expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual([
+      [
+        {
+          operation: 'topup',
+          stage: 'succeeded',
+          outcome: 'success',
+          duration_ms: 90_000
+        }
+      ]
+    ])
   })
 
   it('refreshes and reconciles a pending legacy top-up when telemetry is unavailable', async () => {
     activeProSubscription()
     state.type = 'legacy'
+    const telemetry = useTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
     state.telemetryUnavailable = true
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     const events = [
@@ -765,35 +878,37 @@ describe('CreditsTile', () => {
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    state.getMyEvents.mockResolvedValueOnce({ events })
+    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
+      events
+    })
 
     renderTile()
 
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
-    expect(state.fetchBalance).toHaveBeenCalled()
-    expect(state.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalled()
+    expect(telemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
   })
 
   it('retries legacy completion reconciliation after a request failure', async () => {
     activeProSubscription()
     state.type = 'legacy'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
-    state.customerEventsError = 'events unavailable'
+    useCustomerEventsService().error.value = 'events unavailable'
     const retryEvents = [
       {
         event_type: 'credit_added',
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    state.getMyEvents
+    vi.mocked(useCustomerEventsService().getMyEvents)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ events: retryEvents })
 
     renderTile()
     await waitFor(() =>
-      expect(state.toastErrorHandler).toHaveBeenCalledWith(
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(
         new Error('events unavailable')
       )
     )
@@ -804,16 +919,16 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
-    expect(state.getMyEvents).toHaveBeenCalledTimes(2)
+    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(2)
   })
 
   it('surfaces a failure toast when a refresh rejects', async () => {
     activeProSubscription()
     const failure = new Error('network down')
-    state.fetchBalance.mockRejectedValueOnce(failure)
+    vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
     renderTile()
     await waitFor(() =>
-      expect(state.toastErrorHandler).toHaveBeenCalledWith(failure)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(failure)
     )
   })
 })

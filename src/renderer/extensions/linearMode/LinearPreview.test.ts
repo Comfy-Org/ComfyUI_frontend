@@ -3,7 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { computed, defineComponent } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -17,8 +17,7 @@ const outputHistoryState = vi.hoisted(() => ({
 }))
 
 const spies = vi.hoisted(() => ({
-  cancelActiveWorkflowJobs: vi.fn(),
-  deleteAssets: vi.fn()
+  cancelActiveWorkflowJobs: vi.fn()
 }))
 
 vi.mock(import('@/composables/useAppMode'))
@@ -37,23 +36,16 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/assets/composables/useMediaAssetActions'),
-  () => ({
-    useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
-  })
-)
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: { id: 'root' }, loadGraphData: vi.fn() }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      g: { download: 'Download' },
+      g: { download: 'Download', moreOptions: 'More Options' },
       linearMode: {
         rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
@@ -69,6 +61,20 @@ function renderPreview(
   props: { mobile?: boolean } = {},
   emitSelection?: OutputSelection
 ) {
+  // happy-dom focuses Reka's non-focusable wrapper: https://github.com/unovue/reka-ui/issues/2803
+  const preventAutofocus = (event: Event) => event.preventDefault()
+  document.addEventListener(
+    'focusScope.autoFocusOnMount',
+    preventAutofocus,
+    true
+  )
+  onTestFinished(() =>
+    document.removeEventListener(
+      'focusScope.autoFocusOnMount',
+      preventAutofocus,
+      true
+    )
+  )
   const user = userEvent.setup()
   const outputHistoryStub = emitSelection
     ? defineComponent({
@@ -92,7 +98,6 @@ function renderPreview(
         LinearWelcome: { template: '<div data-testid="linear-welcome" />' },
         LinearArrange: { template: '<div data-testid="linear-arrange" />' },
         MediaOutputPreview: true,
-        Popover: { template: '<div data-testid="output-popover" />' },
         OutputHistory: outputHistoryStub
       }
     }
@@ -159,7 +164,10 @@ describe('LinearPreview', () => {
 
     expect(await screen.findByTestId('linear-output-info')).toBeInTheDocument()
     expect(screen.getByTestId('image-preview')).toBeInTheDocument()
-    expect(screen.getByTestId('output-popover')).toBeInTheDocument()
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'More Options' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Delete all')
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
   })

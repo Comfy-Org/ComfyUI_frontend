@@ -8,10 +8,10 @@
       <div
         v-if="visible"
         data-testid="selection-toolbox"
-        class="selection-toolbox pointer-events-auto rounded-lg border border-interface-stroke bg-interface-panel-surface"
+        class="selection-toolbox pointer-events-auto floating-panel"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
-        <div class="flex h-10 flex-row gap-1 p-1">
+        <div class="flex h-8 flex-row gap-1">
           <DeleteButton v-if="showDelete" />
           <VerticalDivider v-if="canOpenNodeInfo && showAnyPrimaryActions" />
           <InfoButton v-if="canOpenNodeInfo" />

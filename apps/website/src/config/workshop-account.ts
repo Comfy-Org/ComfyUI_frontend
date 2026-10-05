@@ -19,7 +19,7 @@ import {
 import {
   captureAuthRefreshFailed,
   captureAuthRefreshSucceeded
-} from '../scripts/posthog'
+} from '@/scripts/posthog'
 import { createBalanceReader } from './workshop-balance'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 

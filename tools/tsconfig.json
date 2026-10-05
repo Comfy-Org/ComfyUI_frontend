@@ -3,7 +3,7 @@
   "compilerOptions": {
     /* Tooling runs on Node, outside the browser app's program */
     "noEmit": true,
-    "incremental": false,
+    "tsBuildInfoFile": "../node_modules/.cache/tsbuildinfo/tools.tsbuildinfo",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

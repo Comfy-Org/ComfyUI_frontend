@@ -1,4 +1,5 @@
 import { useDialogService } from '@/services/dialogService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
@@ -25,7 +26,9 @@ import { useAuthStore } from '@/stores/authStore'
  * reaches another origin (fetch strips Authorization on a cross-origin
  * redirect, but not an API-key header).
  */
-export async function withAgentAuth(init: RequestInit): Promise<RequestInit> {
+export async function withAgentAuth<T extends RequestInit>(
+  init: T
+): Promise<T & RequestInit> {
   const header = await useAuthStore().getUserAuthHeader()
   if (!header) return init
   const headers = new Headers(init.headers)
@@ -45,6 +48,18 @@ export async function agentSocketToken(): Promise<string | undefined> {
   return 'X-API-KEY' in header
     ? header['X-API-KEY']
     : header.Authorization.slice('Bearer '.length)
+}
+
+/**
+ * Whether the user already holds a credential the agent accepts: a signed-in
+ * session or, with none, a stored API key. Synchronous, so a send that is
+ * already signed in pins its turn in the tick it was clicked.
+ */
+export function hasAgentCredential(): boolean {
+  return (
+    useAuthStore().isAuthenticated ||
+    useApiKeyAuthStore().getAuthHeader() !== null
+  )
 }
 
 /**

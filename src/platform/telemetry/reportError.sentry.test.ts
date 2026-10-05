@@ -22,16 +22,23 @@ it('suppresses a report raised by real Sentry payload normalization', async () =
   const toJSON = vi
     .fn(() => ({}))
     .mockImplementationOnce(() => {
-      reportError(nested, { errorType: 'graph_serialization_state_mismatch' })
+      reportError(nested, {
+        surface: 'platform',
+        errorType: 'graph_serialization_state_mismatch'
+      })
       return {}
     })
 
   try {
     reportError(new Error('bad subgraph'), {
+      surface: 'platform',
       errorType: 'subgraph_load_failure',
       context: { graph: { toJSON } }
     })
-    reportError(new Error('later'), { errorType: 'http_error' })
+    reportError(new Error('later'), {
+      surface: 'platform',
+      errorType: 'http_error'
+    })
     await client?.flush()
 
     expect(toJSON).toHaveBeenCalled()

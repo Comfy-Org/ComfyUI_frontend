@@ -1,4 +1,4 @@
-import type { OpenAI } from 'openai'
+import type { Reasoning } from 'openai/resources/shared'
 
 export interface OutputLocale {
   code: string
@@ -10,7 +10,7 @@ export interface TranslationPipelineConfig {
   entry: string
   output: string
   model: string
-  reasoningEffort: NonNullable<OpenAI.ChatCompletionReasoningEffort>
+  reasoningEffort: NonNullable<Reasoning['effort']>
   maxItemsPerRequest: number
   maxSourceCharsPerRequest: number
   maxTruncationSplitDepth: number

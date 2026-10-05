@@ -16,9 +16,7 @@
       >
         {{ t('auth.login.cloudSignUp') }}
       </RouterLink>
-      <span>
-        {{ ' ' + t('auth.login.freeRunsSuffix', { count: 5 }) }}
-      </span>
+      <span v-if="freeRunsSuffix">{{ ' ' + freeRunsSuffix }}</span>
     </p>
 
     <Message v-if="!isSecureContext" severity="warning" class="mt-4 w-full">
@@ -60,6 +58,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
@@ -69,11 +68,21 @@ import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInF
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
 import { CLOUD_AUTH_LINK_BUTTON_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData } from '@/schemas/signInSchema'
 
 const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
+
+const freeRunsSuffix = computed(() => {
+  const offer = remoteConfig.value.free_tier_offer
+  if (!offer) return null
+  const key = offer.requires_google_sign_in
+    ? 'auth.login.freeRunsSuffixGoogle'
+    : 'auth.login.freeRunsSuffix'
+  return t(key, { count: offer.job_allowance })
+})
 
 const {
   authError,

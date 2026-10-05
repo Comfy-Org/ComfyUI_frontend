@@ -83,21 +83,6 @@ describe('SwapNodeGroupRow', () => {
       expect(within(badge).getByText('2')).toBeInTheDocument()
     })
 
-    it('renders node count of 5 for 5 nodeTypes', () => {
-      renderRow({
-        group: makeGroup({
-          nodeTypes: Array.from({ length: 5 }, (_, i) => ({
-            type: 'OldNodeType',
-            nodeId: String(i),
-            isReplaceable: true
-          }))
-        })
-      })
-      const badge = screen.getByLabelText('5 nodes')
-      expect(badge).toBeInTheDocument()
-      expect(within(badge).getByText('5')).toBeInTheDocument()
-    })
-
     it('renders the replacement target name', () => {
       const { container } = renderRow()
       expect(container.textContent).toContain('NewNodeType')

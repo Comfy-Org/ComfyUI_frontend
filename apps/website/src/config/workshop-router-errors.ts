@@ -16,10 +16,26 @@ interface WorkshopRouterErrorOptions extends ErrorOptions {
   readonly requestSettlement?: WorkshopRequestSettlement
 }
 
+function bodyErrorType(body: string): string | null {
+  if (!body.trim().startsWith('{')) return null
+  try {
+    const payload: unknown = JSON.parse(body)
+    const errorType =
+      payload !== null && typeof payload === 'object'
+        ? Reflect.get(payload, 'error_type')
+        : undefined
+    return typeof errorType === 'string' && errorType ? errorType : null
+  } catch {
+    return null
+  }
+}
+
+/** The Router's error bucket, from its header or, failing that, the body. */
 export function workshopResponseDetails(response: Response, body = '') {
   return {
     status: response.status,
-    errorType: response.headers.get('X-Comfy-Error-Type'),
+    errorType:
+      response.headers.get('X-Comfy-Error-Type') ?? bodyErrorType(body),
     retryAfter: response.headers.get('Retry-After'),
     concurrencyLimit: response.headers.get('X-Concurrency-Limit'),
     concurrencyCurrent: response.headers.get('X-Concurrency-Current'),

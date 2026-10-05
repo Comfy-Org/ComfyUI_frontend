@@ -116,9 +116,9 @@ function clearQueueButton(comfyPage: ComfyPage) {
 }
 
 async function openSidebarClearHistoryDialog(comfyPage: ComfyPage) {
-  await jobHistorySidebar(comfyPage)
-    .getByLabel(/More options/i)
-    .click()
+  const sidebar = jobHistorySidebar(comfyPage)
+  await sidebar.getByText('Job History', { exact: true }).hover()
+  await sidebar.getByLabel(/More options/i).click()
   await comfyPage.page.getByTestId(TestIds.queue.clearHistoryAction).click()
 }
 
@@ -161,7 +161,7 @@ test.describe('Job history sidebar', { tag: '@ui' }, () => {
       await openJobHistorySidebar(comfyPage)
 
       await comfyPage.page
-        .getByRole('button', { name: 'Completed', exact: true })
+        .getByRole('tab', { name: 'Completed', exact: true })
         .click()
 
       const row = jobRow(comfyPage)
@@ -170,7 +170,7 @@ test.describe('Job history sidebar', { tag: '@ui' }, () => {
       await expect(row('queue-running')).toBeHidden()
 
       await comfyPage.page
-        .getByRole('button', { name: 'Failed', exact: true })
+        .getByRole('tab', { name: 'Failed', exact: true })
         .click()
 
       await expect(row('history-failed')).toBeVisible()
@@ -182,7 +182,7 @@ test.describe('Job history sidebar', { tag: '@ui' }, () => {
       await openJobHistorySidebar(comfyPage)
 
       const row = jobRow(comfyPage)
-      const searchInput = comfyPage.page.getByPlaceholder('Search...')
+      const searchInput = comfyPage.page.getByPlaceholder('Search Jobs...')
 
       await searchInput.fill('history-failed')
       await expect(row('history-failed')).toBeVisible()

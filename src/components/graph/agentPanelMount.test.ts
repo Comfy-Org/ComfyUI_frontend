@@ -48,7 +48,7 @@ describe('the graph-side agent panel mount', () => {
     // The dock sits directly after the column that carries the workspace, so
     // the flex-row parent lays them out side by side. Sibling order is the
     // behavior under test, which Testing Library queries cannot express.
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const column = dock.previousElementSibling
     expect(column?.contains(workspace)).toBe(true)
   })

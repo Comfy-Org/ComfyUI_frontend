@@ -12,9 +12,8 @@ import { mapAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodePacks } from '@/workbench/extensions/manager/composables/nodePack/useNodePacks'
 
 export type WorkflowPack = {
-  id:
-    | ComfyWorkflowJSON['nodes'][number]['properties']['cnr_id']
-    | ComfyWorkflowJSON['nodes'][number]['properties']['aux_id']
+  id: ComfyWorkflowJSON['nodes'][number]['properties']['cnr_id']
+
   version: ComfyWorkflowJSON['nodes'][number]['properties']['ver']
 }
 

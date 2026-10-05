@@ -1,13 +1,13 @@
 import { z } from 'astro/zod'
 
-import { workshopCreatorFormSchema } from '../src/config/workshop-creator-form'
+import { workshopCreatorFormSchema } from '@/config/workshop-creator-form'
 import type {
   WorkshopCreatorFile,
   WorkshopCreatorForm
-} from '../src/config/workshop-creator-form'
-import type { WorkshopInputDefinition } from '../src/config/workshop-input-definition'
-import { deriveWorkshopFields } from '../src/config/workshop-fields'
-import { resolveSchemaReference } from '../src/config/workshop-router-openapi'
+} from '@/config/workshop-creator-form'
+import type { WorkshopInputDefinition } from '@/config/workshop-input-definition'
+import { deriveWorkshopFields } from '@/config/workshop-fields'
+import { resolveSchemaReference } from '@/config/workshop-router-openapi'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 
 const object = z.record(z.string(), z.json())
@@ -171,14 +171,21 @@ export function createCreatorFields(
       scalarRules
     )
     const inputs: Record<string, WorkshopInputDefinition> = { ...form.inputs }
-    for (const field of files)
+    for (const field of files) {
+      const rule = Object.hasOwn(rules, field.name) ? rules[field.name] : {}
       inputs[field.name] = {
         label: field.label,
-        help: rules[field.name]?.help ?? '',
+        help: rule.help ?? '',
+        ...(rule.formConstraint ? { formConstraint: rule.formConstraint } : {}),
+        ...(rule.imageAspectRatio
+          ? { imageAspectRatio: rule.imageAspectRatio }
+          : {}),
+        ...(rule.urlUpload ? { urlUpload: rule.urlUpload } : {}),
         control: 'media',
         hidden: false,
         advanced: false
       }
+    }
     return workshopCreatorFormSchema.parse({
       parameters: form.inputSchema,
       inputs,

@@ -2,6 +2,11 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  PM_1150_JOB_ID,
+  pm1150Job,
+  pm1150JobDetail
+} from '@e2e/fixtures/data/pm1150AgentJob'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   createRouteMockJob,
@@ -650,6 +655,52 @@ test.describe('FE-910 marquee selection and select all', () => {
 
     await comfyPage.page.evaluate(() => {
       document.getElementById('test-modal')?.remove()
+    })
+  })
+})
+
+test.describe('Assets sidebar - agent-submitted job workflow open', () => {
+  test.beforeEach(async ({ jobsRoutes, page }) => {
+    await jobsRoutes.mockJobsHistory([pm1150Job])
+    await jobsRoutes.mockJobDetail(PM_1150_JOB_ID, pm1150JobDetail)
+    await mockInputFiles(page, [])
+    await mockViewFiles(page, { 'agent_job_output.png': {} })
+  })
+
+  test('PM-1150 — opens an agent-submitted job as a workflow via the stored API graph fallback', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await test.step('open the agent job as a workflow', async () => {
+      await tab.open()
+      await tab.rightClickAsset('agent_job_output')
+      await tab.contextMenuItem('Open as workflow in new tab').click()
+    })
+
+    await test.step('verify the rebuilt workflow loads and renders', async () => {
+      await expect(comfyPage.toast.toastSuccesses).toBeVisible()
+      await expect(comfyPage.toast.toastWarnings).toBeHidden({
+        timeout: 1500
+      })
+
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe('agent_job_output')
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(7)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            window.app!.graph.nodes.map((node) => node.type)
+          )
+        )
+        .toEqual(
+          expect.arrayContaining([
+            'CheckpointLoaderSimple',
+            'KSampler',
+            'SaveImage'
+          ])
+        )
     })
   })
 })

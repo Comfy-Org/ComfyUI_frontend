@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
-import { mintLinkId } from '../idAllocation'
+import { linkIdReservations, mintLinkId } from '../idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type {
@@ -58,7 +58,10 @@ export class SubgraphOutput extends SubgraphSlot {
       subgraph.beforeChange()
     }
 
-    const linkId = mintLinkId(subgraph.state)
+    const linkId = mintLinkId(
+      subgraph.state,
+      linkIdReservations(subgraph.rootGraph)
+    )
 
     const link = new LLink(
       linkId,

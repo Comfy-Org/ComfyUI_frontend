@@ -2,10 +2,10 @@ import type {
   ModalityFilter,
   TaskInput,
   WorkshopModel
-} from '../../config/models-catalogue'
-import { modalityOf, splitTask } from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/models-catalogue'
+import { modalityOf, splitTask } from '@/config/models-catalogue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const modalityLabelKey: Record<
   Exclude<ModalityFilter, 'all'>,
@@ -29,10 +29,35 @@ const taskInputKey: Record<TaskInput, TranslationKey> = {
 // "Image to Video" where the schema says what goes in and what comes out, and
 // the plain modality where it only says what comes out.
 export function taskLabelFor(model: WorkshopModel, locale: Locale): string {
+  const { t } = translationsFor(locale)
   const task = model.task ? splitTask(model.task) : undefined
   return task && task.output !== 'other'
-    ? t('workshop.task.label', locale)
-        .replace('{input}', t(taskInputKey[task.input], locale))
-        .replace('{output}', t(modalityLabelKey[task.output], locale))
-    : t(modalityLabelKey[modalityOf(model)], locale)
+    ? t('workshop.task.label', {
+        input: t(taskInputKey[task.input]),
+        output: t(modalityLabelKey[task.output])
+      })
+    : t(modalityLabelKey[modalityOf(model)])
+}
+
+/**
+ * The name without the tail the card's own task pill already says. Catalogue
+ * names often end in the task they perform — "Seedream 5.0 Pro Text-to-Image"
+ * over a pill reading "Text to Image" — and only the tail that matches that
+ * pill is dropped, so a name that ends in anything else is left alone.
+ */
+export function nameWithoutTask(name: string, taskLabel: string): string {
+  const flatten = (text: string) =>
+    text
+      .toLowerCase()
+      .replaceAll(/[\s‐-―-]+/g, ' ')
+      .trim()
+  const tail = flatten(taskLabel)
+  if (tail === '') return name
+
+  const words = tail.split(' ').length
+  const parts = name.split(/([\s‐-―-]+)/)
+  const spoken = parts.filter((_, index) => index % 2 === 0)
+  if (spoken.length <= words) return name
+  if (flatten(spoken.slice(-words).join(' ')) !== tail) return name
+  return parts.slice(0, (spoken.length - words) * 2 - 1).join('')
 }

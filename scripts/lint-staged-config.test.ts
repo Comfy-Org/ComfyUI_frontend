@@ -10,6 +10,9 @@ async function freshConfig() {
   return lintStaged
 }
 
+const typecheckCommandsOf = (commands: string | string[]) =>
+  [commands].flat().filter((command) => command.startsWith('pnpm typecheck'))
+
 describe('lint-staged config', () => {
   it('hands a repo-wide command to the first chunk that asks', async () => {
     const lintStaged = await freshConfig()
@@ -17,10 +20,17 @@ describe('lint-staged config', () => {
     const first = lintStaged(chunkOf('a', 12))
     const second = lintStaged(chunkOf('b', 12))
 
-    expect(first).toContain('pnpm lint')
-    expect(first).toContain('pnpm typecheck')
-    expect(second).not.toContain('pnpm lint')
-    expect(second).not.toContain('pnpm typecheck')
+    expect(first).toContain('pnpm typecheck:app')
+    expect(second).not.toContain('pnpm typecheck:app')
+  })
+
+  it('lints staged files individually however many there are', async () => {
+    const lintStaged = await freshConfig()
+
+    const commands = [lintStaged(chunkOf('a', 12))].flat()
+
+    expect(commands).not.toContain('pnpm lint')
+    expect(commands.some((command) => command.includes('eslint '))).toBe(true)
   })
 
   it.for([
@@ -38,17 +48,63 @@ describe('lint-staged config', () => {
     }
   )
 
+  it.for([
+    ['src/stores/appStore.ts', ['pnpm typecheck:app']],
+    ['vite.config.mts', ['pnpm typecheck:app']],
+    ['browser_tests/example.spec.ts', ['pnpm typecheck:browser']],
+    ['scripts/check-frozen-dirs.ts', ['pnpm typecheck:scripts']],
+    ['tools/eslint-plugins/astro.ts', ['pnpm typecheck:tools']],
+    ['apps/billing-web/src/main.ts', ['pnpm typecheck:billing-web']],
+    [
+      'packages/account-core/src/index.ts',
+      ['pnpm typecheck:app', 'pnpm typecheck:account-core']
+    ],
+    ['packages/design-system/src/index.ts', ['pnpm typecheck:app']],
+    ['src/styles.css', []]
+  ] as const)(
+    'typechecks only the programs that own %s',
+    async ([fileName, expected]) => {
+      const lintStaged = await freshConfig()
+
+      expect(typecheckCommandsOf(lintStaged([fileName]))).toEqual(expected)
+    }
+  )
+
+  it('spawns ESLint only for the files it lints', async () => {
+    const lintStaged = await freshConfig()
+
+    const commands = [
+      lintStaged([
+        'scripts/check-frozen-dirs.ts',
+        'src/stores/appStore.test.ts',
+        'src/components/Button.vue',
+        'src/components/button.variants.ts'
+      ])
+    ].flat()
+
+    expect(commands).toContain(
+      `${stagedEslint} "src/components/Button.vue" "src/components/button.variants.ts"`
+    )
+  })
+
+  it('skips ESLint when no staged file is in its scope', async () => {
+    const lintStaged = await freshConfig()
+
+    const commands = [lintStaged(['scripts/check-frozen-dirs.ts'])].flat()
+
+    expect(commands.some((command) => command.includes('eslint '))).toBe(false)
+  })
+
   it('keeps per-file commands scoped to their own chunk', async () => {
     const lintStaged = await freshConfig()
 
-    const first = lintStaged(['src/one.ts'])
-    const second = lintStaged(['src/two.ts'])
+    const first = lintStaged(['src/One.vue'])
+    const second = lintStaged(['src/Two.vue'])
 
-    expect(first).toContain(
-      'pnpm exec eslint --cache --fix --no-warn-ignored "src/one.ts"'
-    )
-    expect(second).toContain(
-      'pnpm exec eslint --cache --fix --no-warn-ignored "src/two.ts"'
-    )
+    expect(first).toContain(`${stagedEslint} "src/One.vue"`)
+    expect(second).toContain(`${stagedEslint} "src/Two.vue"`)
   })
 })
+
+const stagedEslint =
+  "pnpm exec eslint --cache --concurrency auto --fix --no-warn-ignored --rule 'better-tailwindcss/enforce-canonical-classes: off' --report-unused-disable-directives-severity off"

@@ -105,10 +105,16 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 ## Development Workflow
 
 1. Make code changes
-2. Run relevant tests
-3. Run `pnpm typecheck`, `pnpm lint`, `pnpm format`
+2. Run the tests for what you changed: `pnpm test:unit path/to/file`
+3. Lint what you changed: `pnpm lint:unstaged:fix`
 4. Check if README updates are needed
 5. Suggest docs.comfy.org updates for user-facing changes
+
+Do not run repo-wide checks to verify your work: `pnpm lint`, `pnpm typecheck`,
+`pnpm knip`, `pnpm build`, or `pnpm test:unit` without a path. They load every
+core, and chained together they take minutes. The pre-commit hook already
+formats, lints, and typechecks what you stage, the pre-push hook runs knip, and
+CI runs everything.
 
 ## Git Conventions
 
@@ -171,7 +177,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
   - Keep it extremely concise and information-dense
   - Don't use emojis or add excessive headers/sections
   - Follow the PR description template in the `.github/` folder.
-- Quality gates:
+- Quality gates, enforced by the git hooks and CI (see Development Workflow):
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm knip`

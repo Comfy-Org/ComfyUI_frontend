@@ -181,7 +181,20 @@ jobs:
           WORKSHOP_IN_BUILD: '1'
           PUBLIC_WORKSHOP_ROUTER_RUN: '1'
           PUBLIC_WORKSHOP_CLOUD_ENV: prod
+          WEBSITE_INDEXABLE: '1'
         run: NODE_ENV=production VERCEL_ENV=production vercel build --prod
+
+      - name: Verify the production build is indexable
+        run: |
+          INDEX=.vercel/output/static/index.html
+          if [ ! -f "$INDEX" ]; then
+            echo "::error title=Production build output missing::$INDEX was not built, so indexability cannot be checked."
+            exit 1
+          fi
+          if grep -q 'name="robots"' "$INDEX"; then
+            echo "::error title=Production build is noindex::$INDEX has a robots meta. VERCEL_ENV=production did not reach the Astro build. See apps/website/src/config/indexing.ts."
+            exit 1
+          fi
 
       - name: Deploy project artifacts to Vercel
         id: deploy

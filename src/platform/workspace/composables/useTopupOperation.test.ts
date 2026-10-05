@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import {
@@ -35,18 +36,11 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-const mockContextTopup = vi.hoisted(() =>
-  vi.fn<(amountCents: number) => Promise<CreateTopupResponse | undefined>>()
-)
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ topup: mockContextTopup })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackBillingEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
 vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
@@ -57,6 +51,8 @@ let harness: ReturnType<typeof fakeBillingSdk>
 
 beforeEach(() => {
   stubAccountIdentityPort()
+  const billingContext = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.unifiedCloudAuthEnabled = true
@@ -123,7 +119,7 @@ describe('useTopupOperation', () => {
       status: 'completed',
       amount_cents: 1000
     }
-    mockContextTopup.mockResolvedValue(response)
+    vi.mocked(useBillingContext().topup).mockResolvedValue(response)
 
     await expect(useTopupOperation().topup(1000)).resolves.toBe(response)
 
@@ -149,7 +145,7 @@ describe('useTopupOperation', () => {
     expect(harness.sdk.topup.createTopupCheckout).toHaveBeenCalledWith({
       amountCents: 1000
     })
-    expect(mockContextTopup).not.toHaveBeenCalled()
+    expect(useBillingContext().topup).not.toHaveBeenCalled()
   })
 
   it.for([

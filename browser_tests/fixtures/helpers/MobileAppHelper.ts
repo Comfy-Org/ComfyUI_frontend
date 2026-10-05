@@ -14,7 +14,7 @@ export class MobileAppHelper {
   constructor(comfyPage: ComfyPage) {
     this.page = comfyPage.page
     this.view = this.page.getByTestId(TestIds.linear.mobile)
-    this.contentPanel = this.page.getByRole('tabpanel')
+    this.contentPanel = this.view.getByRole('tabpanel').first()
     this.navigation = this.page.getByRole('tablist').filter({ hasText: 'Run' })
     this.navigationTabs = this.navigation.getByRole('tab')
     this.workflows = this.view.getByTestId(TestIds.linear.mobileWorkflows)

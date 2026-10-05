@@ -24,6 +24,7 @@ function createBillingContextMock(): BillingContext {
     subscriptionStatus: computed(() => null),
     tier: computed(() => null),
     renewalDate: computed(() => null),
+    renewalInvoice: computed(() => null),
     isLegacyTeamPlan: computed(() => false),
     isTeamPlan: computed(() => false),
     canRunWorkflows: computed(() => false),
@@ -41,7 +42,8 @@ function createBillingContextMock(): BillingContext {
     fetchPlans: vi.fn(async () => {}),
     requireActiveSubscription: vi.fn(async () => {}),
     showSubscriptionDialog: vi.fn(),
-    reconcileSubscriptionSuccess: vi.fn(async () => {})
+    reconcileSubscriptionSuccess: vi.fn(async () => {}),
+    readCheckoutOperation: vi.fn(async () => false)
   }
 }
 

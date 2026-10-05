@@ -1,64 +1,50 @@
 <template>
-  <Form
-    v-slot="$form"
-    class="flex flex-col gap-6"
-    :resolver="zodResolver(signInSchema)"
-    @submit="onSubmit"
-  >
-    <!-- Email Field -->
-    <div class="flex flex-col gap-2">
-      <label
-        class="mb-1 text-base text-primary-comfy-canvas/70"
-        :for="emailInputId"
-      >
-        {{ t('auth.login.emailLabel') }}
-      </label>
-      <InputText
-        :id="emailInputId"
-        autocomplete="email"
-        :class="CLOUD_AUTH_FIELD_CLASS"
-        name="email"
-        type="text"
-        :placeholder="t('auth.login.emailPlaceholder')"
-        :invalid="$form.email?.invalid"
-      />
-      <small v-if="$form.email?.invalid" class="text-red-500">{{
-        $form.email.error.message
-      }}</small>
-    </div>
+  <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
+    <VeeField v-slot="{ componentField, errors }" name="email">
+      <Field :data-invalid="!!errors.length">
+        <FieldLabel :for="emailInputId" :class="CLOUD_AUTH_LABEL_CLASS">
+          {{ t('auth.login.emailLabel') }}
+        </FieldLabel>
+        <Input
+          v-bind="componentField"
+          :id="emailInputId"
+          autocomplete="email"
+          :class="CLOUD_AUTH_FIELD_CLASS"
+          type="text"
+          :placeholder="t('auth.login.emailPlaceholder')"
+          :aria-invalid="!!errors.length"
+        />
+        <FieldError v-if="errors.length" :errors />
+      </Field>
+    </VeeField>
 
-    <!-- Password Field -->
-    <div class="flex flex-col gap-2">
-      <label
-        class="mb-1 text-base text-primary-comfy-canvas/70"
-        for="cloud-sign-in-password"
-      >
-        {{ t('auth.login.passwordLabel') }}
-      </label>
-      <Password
-        input-id="cloud-sign-in-password"
-        pt:pc-input-text:root:autocomplete="current-password"
-        :pt:pc-input-text:root:class="CLOUD_AUTH_FIELD_CLASS"
-        name="password"
-        :feedback="false"
-        toggle-mask
-        :placeholder="t('auth.login.passwordPlaceholder')"
-        :class="{ 'p-invalid': $form.password?.invalid }"
-        fluid
-      />
-      <small v-if="$form.password?.invalid" class="text-red-500">{{
-        $form.password.error.message
-      }}</small>
+    <VeeField v-slot="{ componentField, errors }" name="password">
+      <Field :data-invalid="!!errors.length">
+        <FieldLabel
+          for="cloud-sign-in-password"
+          :class="CLOUD_AUTH_LABEL_CLASS"
+        >
+          {{ t('auth.login.passwordLabel') }}
+        </FieldLabel>
+        <PasswordInput
+          v-bind="componentField"
+          id="cloud-sign-in-password"
+          autocomplete="current-password"
+          :placeholder="t('auth.login.passwordPlaceholder')"
+          :class="CLOUD_AUTH_FIELD_CLASS"
+          :aria-invalid="!!errors.length"
+        />
+        <FieldError v-if="errors.length" :errors />
 
-      <router-link
-        :to="{ name: 'cloud-forgot-password' }"
-        class="mt-1 self-start text-sm text-primary-comfy-canvas/70 underline"
-      >
-        {{ t('auth.login.forgotPassword') }}
-      </router-link>
-    </div>
+        <router-link
+          :to="{ name: 'cloud-forgot-password' }"
+          class="mt-1 self-start text-sm text-primary-comfy-canvas/70 underline"
+        >
+          {{ t('auth.login.forgotPassword') }}
+        </router-link>
+      </Field>
+    </VeeField>
 
-    <!-- Auth Error Message -->
     <Message v-if="authError" severity="error">
       {{ authError }}
     </Message>
@@ -69,25 +55,30 @@
       size="brand"
       class="mt-2 w-full"
       :loading="loading"
-      :disabled="!$form.valid"
+      :disabled="!meta.valid"
     >
       {{ t('auth.login.loginButton') }}
     </Button>
-  </Form>
+  </form>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
+import { toTypedSchema } from '@vee-validate/zod'
+import { Field as VeeField, useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Field from '@/components/ui/field/Field.vue'
+import FieldError from '@/components/ui/field/FieldError.vue'
+import FieldLabel from '@/components/ui/field/FieldLabel.vue'
+import Input from '@/components/ui/input/Input.vue'
+import PasswordInput from '@/components/ui/input/PasswordInput.vue'
 import Message from '@/components/ui/message/Message.vue'
-import { CLOUD_AUTH_FIELD_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
+import {
+  CLOUD_AUTH_FIELD_CLASS,
+  CLOUD_AUTH_LABEL_CLASS
+} from '@/platform/cloud/onboarding/constants/authClasses'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
@@ -107,9 +98,10 @@ const emit = defineEmits<{
 
 const emailInputId = 'cloud-sign-in-email'
 
-const onSubmit = (event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignInData)
-  }
-}
+const { handleSubmit, meta } = useForm({
+  validationSchema: toTypedSchema(signInSchema),
+  initialValues: { email: '', password: '' }
+})
+
+const onSubmit = handleSubmit((values) => emit('submit', values))
 </script>

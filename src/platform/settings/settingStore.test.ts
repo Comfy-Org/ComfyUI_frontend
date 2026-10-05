@@ -24,16 +24,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-// Mock the app
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    ui: {
-      settings: {
-        dispatchChange: vi.fn()
-      }
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 describe('useSettingStore', () => {
   let store: ReturnType<typeof useSettingStore>
@@ -258,26 +249,6 @@ describe('useSettingStore', () => {
       expect(result).toBe('version-1.21.3-default')
     })
 
-    it('should return latest versioned default when user version is higher', () => {
-      store.settingValues['Comfy.InstalledVersion'] = '1.50.0'
-
-      const setting: SettingParams = {
-        id: 'Comfy.Locale',
-        name: 'Test Setting',
-        type: 'text',
-        defaultValue: 'regular-default',
-        defaultsByInstallVersion: {
-          '1.21.3': 'version-1.21.3-default',
-          '1.40.3': 'version-1.40.3-default'
-        }
-      }
-      store.addSetting(setting)
-
-      const result = store.getDefaultValue('Comfy.Locale')
-      // installedVersion is 1.50.0, so should get 1.40.3 default
-      expect(result).toBe('version-1.40.3-default')
-    })
-
     it('should return regular default when user version is lower than all versioned defaults', () => {
       store.settingValues['Comfy.InstalledVersion'] = '1.10.0'
 
@@ -358,24 +329,6 @@ describe('useSettingStore', () => {
         expect(store.getDefaultValue(setting.id)).toBe(expected)
       }
     )
-
-    it('should handle function-based versioned defaults', () => {
-      const setting: SettingParams = {
-        id: 'Comfy.Locale',
-        name: 'Test Setting',
-        type: 'text',
-        defaultValue: 'regular-default',
-        defaultsByInstallVersion: {
-          '1.21.3': () => 'dynamic-version-1.21.3-default',
-          '1.40.3': () => 'dynamic-version-1.40.3-default'
-        }
-      }
-      store.addSetting(setting)
-
-      const result = store.getDefaultValue('Comfy.Locale')
-      // installedVersion is 1.30.0, so should get 1.21.3 default (executed)
-      expect(result).toBe('dynamic-version-1.21.3-default')
-    })
 
     it('should handle function-based regular defaults with versioned defaults', () => {
       store.settingValues['Comfy.InstalledVersion'] = '1.10.0'

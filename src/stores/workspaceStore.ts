@@ -56,10 +56,9 @@ function workspaceStoreSetup() {
   const authStore = useAuthStore()
   const apiKeyStore = useApiKeyAuthStore()
 
-  const firebaseUser = computed(() => authStore.currentUser)
   const isApiKeyLogin = computed(() => apiKeyStore.isAuthenticated)
   const isLoggedIn = computed(
-    () => isApiKeyLogin.value || firebaseUser.value !== null
+    () => isApiKeyLogin.value || authStore.isAuthenticated
   )
   const partialUserStore = {
     isLoggedIn

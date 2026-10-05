@@ -164,7 +164,7 @@ onMounted(() => {
 
 <template>
   <div
-    class="bg-comfy-menu-secondary-bg flex size-full items-center justify-center"
+    class="flex size-full items-center justify-center bg-comfy-menu-secondary"
   >
     <div class="flex flex-col items-center gap-4">
       <img

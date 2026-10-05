@@ -1486,6 +1486,25 @@
       }
     }
   },
+  "ByteDance2DraftToFinalVideoNode": {
+    "description": "輸出 Seedance 2.5 草稿的 1080p 最終影片。最終影片會保留草稿的場景與動作，並重複使用其提示詞、參考資料、時長、長寬比與音訊設定。",
+    "display_name": "ByteDance Seedance 2.5 草稿轉最終影片",
+    "inputs": {
+      "draft_task_id": {
+        "name": "draft_task_id",
+        "tooltip": "使用 Seedance 2.5 Draft 模型執行之 Seedance 2.5 節點輸出的 draft_task_id，或貼上的草稿任務 ID。將該節點的種子控制設為固定；否則下次執行會產生新的草稿，而非重複使用您審閱過的草稿。草稿建立後可在 7 天內輸出。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在影片中加入浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0，從首幀圖像與可選的末幀圖像產生影片。",
     "display_name": "ByteDance Seedance 2.0 首末幀轉影片",
@@ -1511,7 +1530,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 適用於最新模型、最長 30 秒的影片，以及 mp4/mov 輸出；Seedance 2.0 適用於最高品質與 4k；Fast 針對速度最佳化；Mini 則提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -1540,6 +1559,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 草稿轉最終影片節點，以輸出 1080p 最終影片。"
       }
     }
   },
@@ -1552,7 +1575,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 適用於最新模型、最長 30 秒的影片，以及 mp4/mov 輸出；Seedance 2.0 適用於最高品質與 4k；Fast 針對速度最佳化；Mini 則提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -1605,7 +1628,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 適用於最新模型、最長 30 秒的影片，以及 mp4/mov 輸出；Seedance 2.0 適用於最高品質與 4k；Fast 針對速度最佳化；Mini 則提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -1646,6 +1669,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 草稿轉最終影片節點，以輸出 1080p 最終影片。"
       }
     }
   },
@@ -1658,7 +1685,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.0 提供最高品質與 4K；Fast 針對速度最佳化；Mini 可提供最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -1690,6 +1717,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "draft_task_id",
+        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 草稿轉最終影片節點，以輸出 1080p 最終影片。"
       }
     }
   },
@@ -1932,7 +1963,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "將一張圖片分解為背景底圖以及最多 16 個可重新定位的透明圖層，每個圖層具有堆疊順序、邊界框、名稱與描述。",
-    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離",
+    "display_name": "ByteDance Seedream 5.0 Pro 圖層分離（舊版）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -1990,6 +2021,62 @@
       "5": {
         "name": "圖層堆疊",
         "tooltip": "可編輯的圖層文件（供 Create Layered Image 使用）：基底底圖加上每個元素作為獨立命名、緊密裁切的圖層，保留其實際位置與堆疊順序。可直接連接，或用 Add Layer 擴充。"
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "將影像拆解為一張背景底板，以及最多 16 個可重新定位的透明圖層；每個圖層均具有堆疊順序、邊界框、名稱和描述。",
+    "display_name": "ByteDance Seedream 5.0 圖層分離",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      },
+      "model_watermark": {
+        "name": "浮水印"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "圖層會堆疊於其上的基礎影像（背景底板）。"
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "基礎影像的透明度（1 = 透明，遵循 LoadImage 慣例）；目前一律完全不透明。"
+      },
+      "2": {
+        "name": "圖層",
+        "tooltip": "由下至上排序的透明圖層。完整畫布模式：依其邊界框位置放置於與基礎影像同尺寸的黑色畫布上。最小尺寸模式：裁切至各自的邊界框，以左上角為錨點，並填補至最大圖層的尺寸。"
+      },
+      "3": {
+        "name": "遮罩",
+        "tooltip": "每個圖層的透明度，索引與圖層批次對齊（1 = 透明，遵循 LoadImage 慣例）。若使用 ImageCompositeMasked 風格的合成，請先加入 InvertMask。"
+      },
+      "4": {
+        "name": "邊界框",
+        "tooltip": "每個圖層各有一個放置框，索引與圖層批次對齊（將兩者連同遮罩一起輸入「從邊界框建立圖層」，以重建每個圖層的位置）：{x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}。content_rect = [left, top, width, height] 是圖層在自身影格內的內容區域；它會以框的位置加上該偏移量，放置到畫布上。"
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "可直接編輯的圖層文件，供「建立分層影像」使用：包含基礎底板，以及每個元素各自作為具名稱、緊密裁切、位於其實際位置且具正確堆疊順序的圖層。可直接連接，或使用「新增圖層」擴充。"
       }
     }
   },
@@ -7676,6 +7763,67 @@
       }
     }
   },
+  "HeyGenImageToVideoNode": {
+    "description": "使用 HeyGen Video 1.0 將圖像製作成具有同步對話與聲音的影片。該圖像會作為第一個影格使用。",
+    "display_name": "HeyGen Video 1.0 圖像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "使用 HeyGen Video 1.0 根據文字提示詞生成具有同步對話與聲音的影片。可選擇連接最多 12 張參考圖像、影片和音訊片段，並在提示詞中以 {'@'}Image1、{'@'}Video1、{'@'}Audio1 提及它們。",
+    "display_name": "HeyGen Video 1.0 參考資料轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenTalkingPhotoNode": {
     "description": "將任何人物圖像動畫化為對嘴同步的說話影片（HeyGen Avatar IV）。可用文字腳本或自有音訊驅動。",
     "display_name": "HeyGen 說話照片",
@@ -7955,6 +8103,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "使用 Tencent 的 Hunyuan Image 模型，依文字提示編輯或合併最多 5 張參考影像。",
+    "display_name": "Tencent HY Image：編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_reference_detail": {
+        "name": "參考細節"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_watermark": {
+        "name": "浮水印"
+      },
+      "model_width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "使用 Tencent 的 Hunyuan Image 模型，根據文字提示生成影像。",
+    "display_name": "Tencent HY Image：文字轉影像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_watermark": {
+        "name": "浮水印"
+      },
+      "model_width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -8208,6 +8437,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "使用 Ideogram 4.5，依據文字提示詞編輯或合併最多 5 張圖像。會重新繪製整張圖像，且可變更其尺寸或長寬比；若要讓未修改的像素維持不變，請使用 Ideogram 4.5 精確編輯。",
+    "display_name": "Ideogram 4.5 編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      },
+      "model_width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "使用 P-Image（Ideogram 的快速文字轉圖像模型）生成圖像。具備強大的字體排版與寫實效果；支援 Ideogram 4.0 結構化 JSON 標註，可精確控制文字、顏色與版面配置。",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8247,6 +8512,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "實際用於生成圖像的提示（若啟用 prompt_upsampling 則為重寫後的結構化標註，否則為原始提示）。如需重現此圖像，請將其與 prompt_upsampling OFF 及相同種子再次輸入。"
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "使用 Ideogram 4.5 精確編輯功能，依據文字提示詞編輯圖像：只有提示詞要求的部分會變更，未修改的像素會保持完全相同，輸出會維持圖像 1 的尺寸（超過約 4 MP 的圖像會先縮小）。最多可接受 4 張參考圖像。",
+    "display_name": "Ideogram 4.5 精確編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "使用 Ideogram 4.5 根據文字提示詞生成圖像。",
+    "display_name": "Ideogram 4.5 文字轉圖像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "影像生成所依據的結構化描述。將其回饋輸入，並將 magic_prompt 設為 'off'，再使用相同的種子即可重現該影像。"
       }
     }
   },
@@ -8410,12 +8739,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "轉換 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）及 HDR PQ（Rec.2020 PQ）。線性 1.0 使用與 sRGB 相同的 203 尼特參考白；HLG 使用 1000 尼特參考顯示器。線性輸出與線性轉 HDR 的轉換會保留延伸值，不進行色調對應。SDR 輸出及 PQ 轉 HLG 會對整個批次的過量亮度進行色調對應，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中介裝置與資料型別。非預乘 alpha 不會進行色彩轉換。",
+    "description": "在 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3 與 HDR ACEScct 之間轉換。LogC3 使用 EI 800 曲線、Rec.709 原色，且編碼值會限制於 [0, 1]。ACEScct 使用 AP1 原色與 D60 白點，並透過 Bradford 適應轉換至 D65。儲存 EXR 時，請將 LogC3 或 ACEScct 轉換為線性。線性 1.0 使用與 sRGB 相同的 203 尼特參考白點；HLG 使用 1000 尼特參考顯示器。線性和 ACEScct 輸出會保留延伸值。線性轉 HDR 的轉換會在不進行色調映射的情況下保留高光；HLG 和 PQ 輸出會裁切負值色彩通道。SDR 輸出及 PQ 轉 HLG 會針對整個批次對超出範圍的亮度進行色調映射，並壓縮色域外色彩。轉換會以 float32 計算，並回傳中間結果的裝置與 dtype。未預乘 alpha 不會進行色彩轉換。",
     "display_name": "轉換影像色彩空間",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。"
+        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。在儲存 EXR 前，請將 LogC3 或 ACEScct 轉換為線性；在儲存影片前，請轉換為 sRGB/HDR/HDR PQ。"
       },
       "image": {
         "name": "image"
@@ -9137,6 +9466,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "從文字中第一個有效的 JSON 物件擷取鍵的值，包括 Markdown 程式碼區塊。",
     "display_name": "從 JSON 擷取字串",
     "inputs": {
       "json_string": {
@@ -16811,7 +17141,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在回答前進行多少推理。'default' 會將選擇權交由模型。支援的等級因模型而異：GPT-6 Astra low-max、GPT-5.6 none-max（不含 minimal）、GPT-5.5 none-xhigh、GPT-5.5 Pro medium-xhigh、GPT-5 minimal-high、o-series low-high；GPT-4.1 不具推理能力。不支援的等級會在傳送請求前遭到拒絕。"
+        "tooltip": "模型在回答前進行多少推理。'default' 會將選擇權交給模型。支援的等級依模型而異：GPT-6 Astra 為 low-max，GPT-6 Sol/Luna 和 GPT-5.6 為 none-max（不含 minimal），GPT-5.5 為 none-xhigh，GPT-5.5 Pro 為 medium-xhigh，GPT-5 為 minimal-high，o-series 為 low-high；GPT-4.1 沒有推理功能。不支援的等級會在傳送請求前遭到拒絕。"
       },
       "truncation": {
         "name": "truncation",
@@ -16971,40 +17301,6 @@
       "file": {
         "name": "file",
         "tooltip": "要作為模型上下文包含的輸入文件。目前僅接受文字 (.txt) 和 PDF (.pdf) 文件。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIVideoSora2": {
-    "description": "OpenAI 影片和音訊生成。",
-    "display_name": "OpenAI Sora - 影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image": {
-        "name": "image"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "引導文字；如果存在輸入圖像，可以為空。"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "決定節點是否應重新運行的種子；無論種子如何，實際結果都是非確定性的。"
-      },
-      "size": {
-        "name": "size"
       }
     },
     "outputs": {
@@ -18365,6 +18661,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "推理強度",
+        "tooltip": "模型在繪製前投入的推理量。較高等級可提升細節，但會消耗更多 Token。僅由 Arrow 2 模型使用。"
+      },
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
@@ -18403,6 +18703,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "對期望 SVG 輸出的文字描述。"
+      },
+      "reasoning_effort": {
+        "name": "推理強度",
+        "tooltip": "模型在繪製前投入的推理量。較高等級可提升細節，但會消耗更多 Token。僅由 Arrow 2 模型使用。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -18444,6 +18748,9 @@
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "image"
       },
@@ -18455,6 +18762,9 @@
       },
       "model_patch": {
         "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "strength"
@@ -19074,7 +19384,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支援任何風格。"
       },
       "model_size": {
         "name": "size"
@@ -23798,6 +24108,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "文字編碼 Ming 影像編輯",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "可選的參考影像，文字編碼器可看見這些影像，並將其作為乾淨影格附加至潛在序列。後續影像會調整為與第一張影像相同的大小，且採樣的潛在空間應符合該尺寸。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "若沒有 VAE，影像只會透過視覺塔來為文字編碼器提供條件。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "文字編碼 Qwen Image 2.1",
     "inputs": {
@@ -23967,6 +24301,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "系統提示詞",
+        "tooltip": "取代模型聊天範本中的系統提示詞。未使用預設範本時會忽略此設定。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "若模型支援，則以思考模式運作。"
@@ -23983,6 +24321,10 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24033,6 +24375,10 @@
       "sampling_mode_top_p": {
         "name": "Top-P"
       },
+      "system_prompt": {
+        "name": "系統提示詞",
+        "tooltip": "取代模型聊天範本中的系統提示詞。未使用預設範本時會忽略此設定。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "若模型支援，則以思考模式運作。"
@@ -24049,6 +24395,10 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -28627,6 +28977,10 @@
       "positive": {
         "name": "正向"
       },
+      "ref_pad_image": {
+        "name": "ref_pad_image",
+        "tooltip": "以此影像而非灰色填滿影像條件的填補影格，在不固定影格的情況下錨定身分特徵（SVI 式防漂移填補，由 ID-V2V 等模型使用）。"
+      },
       "start_image": {
         "name": "起始影像"
       },
@@ -29607,8 +29961,12 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "description": "套用以 Load Model Patch 載入的 Z-Image 或 Qwen Image 2.1 Fun ControlNet。",
+    "display_name": "套用 Fun ControlNet",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
       "image": {
         "name": "影像"
       },
@@ -29623,6 +29981,9 @@
       },
       "model_patch": {
         "name": "模型補丁"
+      },
+      "start_percent": {
+        "name": "start_percent"
       },
       "strength": {
         "name": "強度"

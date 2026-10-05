@@ -51,7 +51,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     },
     moveToTeam() {
       this.moveTo(authenticated(credential({ workspace: TEAM })))
@@ -141,6 +141,7 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
       can_downgrade_to_personal: false,
       can_invite_members: false,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_subscribe_self_serve: false,
       can_top_up: true
     },

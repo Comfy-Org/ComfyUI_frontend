@@ -10,7 +10,7 @@
         {{ $t('subscription.cancelDialog.title') }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         :disabled="isLoading"
         @click="onClose"
@@ -51,18 +51,29 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
+import {
+  createCancelFlowReporter,
+  getSubscriptionCancellationMetadata
+} from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-const { cancelAt, flowAlreadyOpened = false } = defineProps<{
+const {
+  cancelAt,
+  flowAlreadyOpened = false,
+  flowAlreadyConfirmed = false,
+  isScopeCurrent = () => true
+} = defineProps<{
   cancelAt?: string
   flowAlreadyOpened?: boolean
+  flowAlreadyConfirmed?: boolean
+  isScopeCurrent?: () => boolean
 }>()
 
 const { t } = useI18n()
@@ -77,6 +88,15 @@ const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
+const didScopeAbort = ref(false)
+const cancelReport = createCancelFlowReporter(
+  telemetry,
+  () => ({
+    duration: subscription.value?.duration,
+    tier: tier.value
+  }),
+  { confirmed: flowAlreadyConfirmed }
+)
 
 function cancellationMetadata() {
   return getSubscriptionCancellationMetadata({
@@ -93,11 +113,13 @@ onMounted(() => {
     'flow_opened',
     cancellationMetadata()
   )
+  cancelReport.intent()
 })
 
 onUnmounted(() => {
-  if (didCancelSucceed.value || isLoading.value) return
+  if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
   telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
+  cancelReport.abandoned()
 })
 
 const formattedEndDate = computed(() => {
@@ -120,6 +142,15 @@ function onClose() {
 }
 
 async function onConfirmCancel() {
+  if (!isScopeCurrent()) {
+    didScopeAbort.value = true
+    toast.add({
+      severity: 'warn',
+      summary: t('subscription.cancelDialog.workspaceChanged')
+    })
+    dialogStore.closeDialog({ key: 'cancel-subscription' })
+    return
+  }
   if (
     shouldUseWorkspaceBilling.value &&
     !(isCloud
@@ -130,13 +161,17 @@ async function onConfirmCancel() {
   }
 
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
+  cancelReport.confirmed({
+    operationFollows: shouldUseWorkspaceBilling.value
+  })
   isLoading.value = true
   try {
-    await cancelSubscription()
+    await cancelSubscription(isScopeCurrent)
   } catch (error) {
     const errorMessage = getErrorMessage(error)
     if (!shouldUseWorkspaceBilling.value) {
       telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
+      cancelReport.failed(categorizeBillingApiError(error))
     }
     toast.add({
       severity: 'error',

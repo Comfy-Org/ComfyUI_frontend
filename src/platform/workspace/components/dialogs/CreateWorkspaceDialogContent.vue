@@ -10,7 +10,7 @@
         {{ $t('workspacePanel.createWorkspaceDialog.title') }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -30,7 +30,7 @@
         <input
           v-model="workspaceName"
           type="text"
-          class="focus:ring-secondary-foreground h-10 w-full rounded-lg border-none bg-secondary-background px-4 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
+          class="h-10 w-full rounded-lg border-none bg-secondary-background px-4 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border-default focus:outline-none"
           :placeholder="
             $t('workspacePanel.createWorkspaceDialog.namePlaceholder')
           "

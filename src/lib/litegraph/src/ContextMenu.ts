@@ -285,11 +285,6 @@ export class ContextMenu<TValue = unknown> {
       }
     }
 
-    this.root.append(element)
-    if (!disabled) element.addEventListener('click', inner_onclick)
-    if (!disabled && options.autoopen)
-      element.addEventListener('pointerenter', inner_over)
-
     const setAriaExpanded = () => {
       const entries = this.root.querySelectorAll(
         'div.litemenu-entry.has_submenu'
@@ -300,23 +295,12 @@ export class ContextMenu<TValue = unknown> {
       element.setAttribute('aria-expanded', 'true')
     }
 
-    function inner_over(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
-      const value = this.value
-      if (!value || !(value as IContextMenuValue).has_submenu) return
-
-      // if it is a submenu, autoopen like the item was clicked
-      inner_onclick.call(this, e)
-      setAriaExpanded()
-    }
-
     // menu option clicked
-
-    const that = this
-    function inner_onclick(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
-      const value = this.value
+    const inner_onclick = (e: MouseEvent) => {
+      const value = element.value
       let close_parent = true
 
-      that.current_submenu?.close(e)
+      this.current_submenu?.close(e)
       if (
         (value as IContextMenuValue).has_submenu ||
         (value as IContextMenuValue).submenu
@@ -327,11 +311,11 @@ export class ContextMenu<TValue = unknown> {
       // global callback
       if (options.callback) {
         const r = options.callback.call(
-          this,
+          element,
           value,
           options,
           e,
-          that,
+          this,
           options.node
         )
         if (r === true) close_parent = false
@@ -346,20 +330,20 @@ export class ContextMenu<TValue = unknown> {
         ) {
           // item callback
           const r = value.callback.call(
-            this,
+            element,
             value,
             options,
             e,
-            that,
+            this,
             options.extra
           )
           if (r === true) close_parent = false
         }
         if (value.submenu) {
-          new that.constructor(value.submenu.options, {
+          new this.constructor(value.submenu.options, {
             callback: value.submenu.callback,
             event: e,
-            parentMenu: that,
+            parentMenu: this,
             ignore_item_callbacks: value.submenu.ignore_item_callbacks,
             title: value.submenu.title,
             extra: value.submenu.extra,
@@ -369,8 +353,22 @@ export class ContextMenu<TValue = unknown> {
         }
       }
 
-      if (close_parent && !that.lock) that.close()
+      if (close_parent && !this.lock) this.close()
     }
+
+    const inner_over = (e: MouseEvent) => {
+      const value = element.value
+      if (!value || !(value as IContextMenuValue).has_submenu) return
+
+      // if it is a submenu, autoopen like the item was clicked
+      inner_onclick(e)
+      setAriaExpanded()
+    }
+
+    this.root.append(element)
+    if (!disabled) element.addEventListener('click', inner_onclick)
+    if (!disabled && options.autoopen)
+      element.addEventListener('pointerenter', inner_over)
 
     return element
   }

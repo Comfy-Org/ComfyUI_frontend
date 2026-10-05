@@ -1,11 +1,18 @@
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
+import { isContractIdentifier } from '@comfyorg/billing-contract'
+
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingPlansResponse,
+  BillingStatusResponse,
+  PreviewSubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -50,9 +57,36 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   has_funds: true
 }
 
-/** Every request the app made for a provider portal URL, in order. */
-async function mockCloudBoot(page: Page): Promise<Request[]> {
+const STANDARD_YEARLY_PLAN = createPlan({
+  slug: 'standard-yearly',
+  tier: 'STANDARD',
+  duration: 'ANNUAL',
+  priceCents: 16_000,
+  monthlyCredits: 4_200
+})
+
+const NEW_STANDARD_SUBSCRIPTION: PreviewSubscribeResponse = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 16_000,
+  cost_next_period_cents: 16_000,
+  credits_today_cents: STANDARD_YEARLY_PLAN.credits_cents,
+  credits_next_period_cents: STANDARD_YEARLY_PLAN.credits_cents,
+  new_plan: STANDARD_YEARLY_PLAN
+}
+
+interface CloudBootRequests {
+  /** Every request the app made for a provider portal URL, in order. */
+  portalRequests: Request[]
+  /** Every request the app made for billing status, in order. */
+  statusRequests: Request[]
+}
+
+async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
   const portalRequests: Request[] = []
+  const statusRequests: Request[] = []
 
   await page.route('**/api/features', (r) =>
     r.fulfill(
@@ -90,9 +124,10 @@ async function mockCloudBoot(page: Page): Promise<Request[]> {
     r.fulfill(jsonRoute({ workspaces: [workspace('personal', 'owner')] }))
   )
 
-  await page.route('**/api/billing/status', (r) =>
-    r.fulfill(jsonRoute(ACTIVE_BILLING_STATUS))
-  )
+  await page.route('**/api/billing/status', (r) => {
+    statusRequests.push(r.request())
+    return r.fulfill(jsonRoute(ACTIVE_BILLING_STATUS))
+  })
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
   )
@@ -115,12 +150,13 @@ async function mockCloudBoot(page: Page): Promise<Request[]> {
     return r.fulfill(jsonRoute({ url: PROVIDER_PORTAL_URL }))
   })
 
-  return portalRequests
+  return { portalRequests, statusRequests }
 }
 
-async function bootApp(page: Page) {
+async function bootApp(page: Page, options: { blockPopups?: boolean } = {}) {
+  const { blockPopups = false } = options
   await new CloudAuthHelper(page).mockAuth()
-  await page.addInitScript(() => {
+  await page.addInitScript((blockPopups) => {
     localStorage.setItem('Comfy.userId', 'test-user-e2e')
     const recordDestination = (url: string) => {
       document.documentElement.dataset.openedUrl = url
@@ -149,12 +185,14 @@ async function bootApp(page: Page) {
     // Records the destination instead of opening a tab the test would have to
     // dismiss. The handle follows the spec: a `noopener` open always yields
     // null, while a plain one returns a window and keeps the app's
-    // portal-return refresh armed.
+    // portal-return refresh armed. `blockPopups` simulates the browser's own
+    // popup blocker, which yields null regardless of `noopener`.
     window.open = (url, _target, features) => {
       if (url) recordDestination(String(url))
+      if (blockPopups) return null
       return (features ?? '').includes('noopener') ? null : standInTab
     }
-  })
+  }, blockPopups)
   await page.goto(APP_URL)
   await page.waitForFunction(() => !!window.app?.extensionManager, null, {
     timeout: 45_000
@@ -181,6 +219,25 @@ function openedUrl(page: Page) {
   return page.locator('html').getAttribute('data-opened-url')
 }
 
+/**
+ * The opened billing-web entry, with its `correlation_id` checked against the
+ * contract's identifier rule rather than by value: an entry with no checkout
+ * journey mints a fresh one on every open.
+ */
+async function openedBillingEntry(page: Page) {
+  const url = await openedUrl(page)
+  if (url === null) return null
+  const { origin, pathname, searchParams } = new URL(url)
+  const correlationId = searchParams.get('correlation_id')
+  searchParams.delete('correlation_id')
+  return {
+    route: `${origin}${pathname}`,
+    query: Object.fromEntries(searchParams),
+    carriesReadableJourney:
+      correlationId !== null && isContractIdentifier(correlationId)
+  }
+}
+
 /** The avatar menu's Plans and pricing entry. */
 async function clickPlansAndPricing(page: Page) {
   await page.getByRole('button', { name: 'Current user' }).click()
@@ -198,12 +255,38 @@ const pricingHeading = (page: Page) =>
 const pricingDialog = (page: Page) =>
   page.locator('[data-dialog-key="subscription-required"]')
 
+/** The Standard tier's card action, whether it reads "Subscribe to" or "Change to". */
+const standardTierButton = (page: Page) =>
+  page.getByRole('button', { name: /Standard Yearly/ })
+
+const confirmPaymentHeading = (page: Page) =>
+  page.getByRole('heading', { name: 'Confirm your payment' })
+
+/** `/api/billing/plans` and `/api/billing/preview-subscribe`, mocked for a
+ * fresh Standard-yearly subscribe: the billing_web handoff never reaches
+ * preview-subscribe, but the embedded fallback tests do. */
+async function mockStandardPlan(page: Page): Promise<Request[]> {
+  const previewRequests: Request[] = []
+  await page.route('**/api/billing/plans', (r) =>
+    r.fulfill(
+      jsonRoute({
+        plans: [STANDARD_YEARLY_PLAN]
+      } satisfies BillingPlansResponse)
+    )
+  )
+  await page.route('**/api/billing/preview-subscribe', (r) => {
+    previewRequests.push(r.request())
+    return r.fulfill(jsonRoute(NEW_STANDARD_SUBSCRIPTION))
+  })
+  return previewRequests
+}
+
 test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
   test('opens the provider portal while the destination is stripe', async ({
     page
   }) => {
     test.setTimeout(60_000)
-    const portalRequests = await mockCloudBoot(page)
+    const { portalRequests } = await mockCloudBoot(page)
     await bootApp(page)
 
     const content = await openPlanAndCredits(page)
@@ -213,11 +296,11 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     expect(portalRequests).toHaveLength(1)
   })
 
-  test('mints the billing-web payment-methods entry while the destination is billing_web', async ({
+  test('mints the billing-web payment-methods entry with the active workspace while the destination is billing_web', async ({
     page
   }) => {
     test.setTimeout(60_000)
-    const portalRequests = await mockCloudBoot(page)
+    const { portalRequests } = await mockCloudBoot(page)
     await bootApp(page)
     await new FeatureFlagHelper(page).setServerFlagsPersistent({
       hosted_billing_destination: 'billing_web'
@@ -227,44 +310,182 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace`
-      )
+      .poll(() => openedBillingEntry(page))
+      .toEqual({
+        route: `${BILLING_WEB_ORIGIN}/v1/payment-methods`,
+        query: {
+          product: 'comfyui',
+          return_to: 'comfyui_workspace',
+          workspace: 'ws-personal'
+        },
+        carriesReadableJourney: true
+      })
     expect(portalRequests).toHaveLength(0)
   })
 
-  test('opens the in-app pricing table from the avatar menu while the destination is stripe', async ({
+  test('tells the customer and mints no portal session when the hosted payment-methods tab is blocked', async ({
     page
   }) => {
     test.setTimeout(60_000)
-    await mockCloudBoot(page)
-    await bootApp(page)
+    const { portalRequests } = await mockCloudBoot(page)
+    await bootApp(page, { blockPopups: true })
+    await new FeatureFlagHelper(page).setServerFlagsPersistent({
+      hosted_billing_destination: 'billing_web'
+    })
 
-    await clickPlansAndPricing(page)
+    const content = await openPlanAndCredits(page)
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
-    await expect(pricingHeading(page)).toBeVisible()
-    expect(await openedUrl(page)).toBeNull()
+    await expect(
+      page.getByText(
+        "Couldn't open the billing page. Allow pop-ups for this site and try again."
+      )
+    ).toBeVisible()
+    expect(portalRequests).toHaveLength(0)
   })
 
-  test('opens the billing-web pricing entry alone from the avatar menu while the destination is billing_web', async ({
+  test('tells the customer and mints no portal session when the provider portal tab is blocked', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { portalRequests } = await mockCloudBoot(page)
+    await bootApp(page, { blockPopups: true })
+
+    const content = await openPlanAndCredits(page)
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+
+    await expect(
+      page.getByText(
+        "Couldn't open the billing page. Allow pop-ups for this site and try again."
+      )
+    ).toBeVisible()
+    expect(portalRequests).toHaveLength(0)
+  })
+
+  test('refetches billing status when the hosted payment-methods tab regains focus', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { statusRequests } = await mockCloudBoot(page)
+    await bootApp(page)
+    await new FeatureFlagHelper(page).setServerFlagsPersistent({
+      hosted_billing_destination: 'billing_web'
+    })
+
+    const content = await openPlanAndCredits(page)
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+    await expect
+      .poll(() => openedBillingEntry(page))
+      .toEqual({
+        route: `${BILLING_WEB_ORIGIN}/v1/payment-methods`,
+        query: {
+          product: 'comfyui',
+          return_to: 'comfyui_workspace',
+          workspace: 'ws-personal'
+        },
+        carriesReadableJourney: true
+      })
+
+    const requestsBeforeReturn = statusRequests.length
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+
+    await expect
+      .poll(() => statusRequests.length)
+      .toBeGreaterThan(requestsBeforeReturn)
+  })
+
+  /**
+   * Plan selection stays in the app regardless of the destination: billing-web's
+   * `/v1/pricing` has no personal/team tabs, cycle toggle, or credit slider
+   * (G7), and a per-credit Team plan 400s there (FE-2642). Only a Subscribe
+   * click inside this table hands off to billing-web — see the "Hosted
+   * billing checkout handoff" describe below.
+   */
+  for (const destination of ['stripe', 'billing_web'] as const) {
+    test(`opens the in-app pricing table from the avatar menu while the destination is ${destination}`, async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      await mockCloudBoot(page)
+      await bootApp(page)
+      if (destination === 'billing_web') {
+        await new FeatureFlagHelper(page).setServerFlagsPersistent({
+          hosted_billing_destination: 'billing_web'
+        })
+      }
+
+      await clickPlansAndPricing(page)
+
+      await expect(pricingHeading(page)).toBeVisible()
+      expect(await openedUrl(page)).toBeNull()
+    })
+  }
+})
+
+test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
+  test('opens the billing-web checkout entry with the selected plan and workspace while the destination is billing_web', async ({
     page
   }) => {
     test.setTimeout(60_000)
     await mockCloudBoot(page)
+    const previewRequests = await mockStandardPlan(page)
     await bootApp(page)
     await new FeatureFlagHelper(page).setServerFlagsPersistent({
       hosted_billing_destination: 'billing_web'
     })
 
     await clickPlansAndPricing(page)
+    await expect(pricingHeading(page)).toBeVisible()
+    await standardTierButton(page).click()
 
     await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/pricing?product=comfyui&return_to=comfyui_workspace`
-      )
+      .poll(() => openedBillingEntry(page))
+      .toEqual({
+        route: `${BILLING_WEB_ORIGIN}/v1/checkout`,
+        query: {
+          product: 'comfyui',
+          return_to: 'comfyui_workspace',
+          plan: 'standard-yearly',
+          workspace: 'ws-personal',
+          source: 'avatar_menu_plans'
+        },
+        carriesReadableJourney: true
+      })
+    expect(previewRequests).toHaveLength(0)
     await expect(pricingDialog(page)).toHaveCount(0)
-    await expect(pricingHeading(page)).toBeHidden()
+  })
+
+  test('falls back to the embedded confirm step when the checkout tab is blocked', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await mockCloudBoot(page)
+    await mockStandardPlan(page)
+    await bootApp(page, { blockPopups: true })
+    await new FeatureFlagHelper(page).setServerFlagsPersistent({
+      hosted_billing_destination: 'billing_web'
+    })
+
+    await clickPlansAndPricing(page)
+    await expect(pricingHeading(page)).toBeVisible()
+    await standardTierButton(page).click()
+
+    await expect(confirmPaymentHeading(page)).toBeVisible()
+  })
+
+  test('stays on the embedded confirm step and opens no tab while the destination is stripe', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await mockCloudBoot(page)
+    await mockStandardPlan(page)
+    await bootApp(page)
+
+    await clickPlansAndPricing(page)
+    await expect(pricingHeading(page)).toBeVisible()
+    await standardTierButton(page).click()
+
+    await expect(confirmPaymentHeading(page)).toBeVisible()
+    expect(await openedUrl(page)).toBeNull()
   })
 })

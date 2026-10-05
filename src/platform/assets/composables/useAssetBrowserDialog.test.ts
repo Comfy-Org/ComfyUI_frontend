@@ -8,14 +8,7 @@ import type AssetBrowserModal from '@/platform/assets/components/AssetBrowserMod
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock<unknown>(import('@/i18n'), () => ({
-  t: (key: string, params?: Record<string, string>) => {
-    if (params) {
-      return `${key}:${JSON.stringify(params)}`
-    }
-    return key
-  }
-}))
+vi.mock(import('@/i18n'))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return fromPartial({

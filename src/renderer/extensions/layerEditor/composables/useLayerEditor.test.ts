@@ -7,9 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { useLayerEditor } from './useLayerEditor'
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 beforeEach(() => {
   vi.mocked(useToastStore().add).mockImplementation(() => undefined)
@@ -21,7 +19,7 @@ beforeEach(() => {
 describe('useLayerEditor', () => {
   it('does nothing without a node', () => {
     useLayerEditor().openLayerEditor(null)
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('toasts instead of opening when the node has fewer than 2 output images', () => {
@@ -30,8 +28,8 @@ describe('useLayerEditor', () => {
       'only-one.png'
     ])
     useLayerEditor().openLayerEditor(node)
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'info',
         detail: 'layerEditor.needsTwoImages'
@@ -46,7 +44,7 @@ describe('useLayerEditor', () => {
       'b.png'
     ])
     useLayerEditor().openLayerEditor(node)
-    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
+    expect(useDialogStore().showDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'global-layer-editor',
         props: { node }

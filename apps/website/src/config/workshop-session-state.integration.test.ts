@@ -5,7 +5,7 @@ import type { User } from 'firebase/auth'
 import type { SessionSnapshot } from '@comfyorg/account-core/session'
 
 let { identifyWorkshopUser, useWorkshopAuthFlag } =
-  await import('../scripts/posthog')
+  await import('@/scripts/posthog')
 import {
   mintBody,
   okFetch,
@@ -17,7 +17,7 @@ import { REMEMBERED_WORKSPACE_KEY } from './workshop-session-state'
 
 let deliver: ((user: User | null) => void) | undefined
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 const user = testFirebaseUser({ uid: 'user-1' })
@@ -61,7 +61,7 @@ async function firebaseAnswers(answer: User | null): Promise<void> {
 beforeEach(async () => {
   vi.resetModules()
   ;({ identifyWorkshopUser, useWorkshopAuthFlag } =
-    await import('../scripts/posthog'))
+    await import('@/scripts/posthog'))
   ;({ workshopIdentity } = await import('./workshop-firebase'))
 
   sessionStorage.clear()

@@ -57,7 +57,23 @@ function isBatchable(op: Op): boolean {
 }
 
 function wireSize(op: Op): number {
-  return new TextEncoder().encode(JSON.stringify(op)).length
+  const json = JSON.stringify(op)
+  if (typeof json !== 'string')
+    throw new TypeError('Operation did not serialize to JSON')
+  if (json.charCodeAt(0) !== 123)
+    throw new TypeError('Operation did not serialize to a wire object')
+  if (typeof (op as Op & { toJSON?: unknown }).toJSON !== 'function')
+    return new TextEncoder().encode(json).length
+  const serialized: unknown = JSON.parse(json)
+  if (
+    typeof serialized !== 'object' ||
+    serialized === null ||
+    Array.isArray(serialized) ||
+    !('op_id' in serialized) ||
+    typeof serialized.op_id !== 'string'
+  )
+    throw new TypeError('Operation did not serialize to a wire object')
+  return new TextEncoder().encode(json).length
 }
 
 /**
@@ -79,12 +95,15 @@ export function chunkWireOps(ops: Op[]): Op[][] {
   }
 
   for (const op of ops) {
+    // Validate every operation at the transport boundary, including `clear`.
+    // Non-batchable ops still have to survive the enclosing frame's
+    // JSON.stringify before they can be considered deliverable.
+    const bytes = wireSize(op)
     if (!isBatchable(op)) {
       flush()
       batches.push([op])
       continue
     }
-    const bytes = wireSize(op)
     const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
     const overBytes =
       current.length > 0 && currentBytes + bytes > WIRE_MAX_BATCH_BYTES

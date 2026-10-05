@@ -69,8 +69,10 @@ describe('URL and Base64 request inputs', () => {
     expect(input.image_url_2).toBe(second)
   })
 
-  it('passes existing URLs unchanged and encodes Base64 image arrays without contacting storage', async () => {
-    const upload = vi.fn()
+  it('passes URL inputs unchanged and uploads Gemini image arrays once', async () => {
+    const upload = vi.fn(
+      async (file: File) => `https://storage.example/${await file.text()}.png`
+    )
     const urlModel = setup('wavespeed/seedvr2')
     expect(
       await prepareWorkshopRouterInput(
@@ -81,18 +83,19 @@ describe('URL and Base64 request inputs', () => {
         upload
       )
     ).toMatchObject({ image: 'https://example.com/source.png' })
-    const base64Model = setup('vertexai/gemini-3-pro-image')
+    expect(upload).not.toHaveBeenCalled()
+    const geminiModel = setup('vertexai/gemini-3-pro-image')
     const body = await prepareWorkshopRouterInput(
-      base64Model.contract,
+      geminiModel.contract,
       {
-        ...base64Model.values,
+        ...geminiModel.values,
         prompt: 'Combine images',
         images: [
           selected('first'),
           selected('second', 'image.jpg', 'image/jpeg')
         ]
       },
-      base64Model.signal,
+      geminiModel.signal,
       undefined,
       upload
     )
@@ -101,13 +104,23 @@ describe('URL and Base64 request inputs', () => {
         {
           parts: [
             { text: 'Combine images' },
-            { inlineData: { data: btoa('first'), mimeType: 'image/png' } },
-            { inlineData: { data: btoa('second'), mimeType: 'image/jpeg' } }
+            {
+              fileData: {
+                fileUri: 'https://storage.example/first.png',
+                mimeType: 'image/png'
+              }
+            },
+            {
+              fileData: {
+                fileUri: 'https://storage.example/second.png',
+                mimeType: 'image/jpeg'
+              }
+            }
           ]
         }
       ]
     })
-    expect(upload).not.toHaveBeenCalled()
+    expect(upload).toHaveBeenCalledTimes(2)
   })
 
   it('preflights every URL file before starting uploads, using real file MIME rather than metadata', async () => {

@@ -99,6 +99,66 @@ describe('commandStore', () => {
       await store.execute('err.test', { errorHandler: handler })
       expect(handler).toHaveBeenCalledWith(error)
     })
+
+    it.for([
+      { selectOnly: false, calls: 1 },
+      { selectOnly: true, calls: 0 }
+    ])(
+      'executes graph mutations $calls times while selectOnly=$selectOnly',
+      async ({ selectOnly, calls }) => {
+        const fn = vi.fn()
+        const store = useCommandStore()
+        store.setInteractionMode({ isSelectOnly: () => selectOnly })
+        store.registerCommand({
+          id: 'graph.mutation',
+          function: fn,
+          mutatesGraph: true
+        })
+
+        await store.execute('graph.mutation')
+
+        expect(fn).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it.for([
+      { selectOnlyAtDispatch: true, selectOnlyBeforeResume: false, calls: 0 },
+      { selectOnlyAtDispatch: false, selectOnlyBeforeResume: true, calls: 1 }
+    ])(
+      'decides at dispatch: selectOnly=$selectOnlyAtDispatch then $selectOnlyBeforeResume before the promise resumes runs $calls times',
+      async ({ selectOnlyAtDispatch, selectOnlyBeforeResume, calls }) => {
+        let selectOnly = selectOnlyAtDispatch
+        const fn = vi.fn()
+        const store = useCommandStore()
+        store.setInteractionMode({ isSelectOnly: () => selectOnly })
+        store.registerCommand({
+          id: 'graph.mutation',
+          function: fn,
+          mutatesGraph: true
+        })
+
+        const execution = store.execute('graph.mutation')
+        selectOnly = selectOnlyBeforeResume
+        await execution
+
+        expect(fn).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it('evaluates conditional graph mutation capabilities at dispatch', async () => {
+      const fn = vi.fn()
+      const store = useCommandStore()
+      store.setInteractionMode({ isSelectOnly: () => true })
+      store.registerCommand({
+        id: 'conditional.mutation',
+        function: fn,
+        mutatesGraph: () => false
+      })
+
+      await store.execute('conditional.mutation')
+
+      expect(fn).toHaveBeenCalledOnce()
+    })
   })
 
   describe('isRegistered', () => {

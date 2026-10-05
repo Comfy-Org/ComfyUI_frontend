@@ -27,10 +27,7 @@ const mockDistributionTypes = vi.hoisted(() => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-// Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 // Add mock for api at the top of the file
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -45,7 +42,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 vi.mock(import('@/services/dialogService'))
 
-// Mock comfyApp globally for the store setup
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {

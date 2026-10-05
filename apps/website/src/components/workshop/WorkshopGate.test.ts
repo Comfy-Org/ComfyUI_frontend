@@ -4,14 +4,14 @@ import { readonly, ref, Teleport, createSSRApp, h, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import { htmlToTwin } from '../../lib/markdown-twin'
+import { htmlToTwin } from '@/lib/markdown-twin'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import WorkshopGate from './WorkshopGate.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>
@@ -24,6 +24,35 @@ beforeEach(() => {
 })
 
 describe('WorkshopGate', () => {
+  it('restores a caller-owned recovery view while new admission is disabled', async () => {
+    const view = render(WorkshopGate, {
+      props: { allowRecovery: true },
+      slots: {
+        default: '<h1>Saved run</h1>',
+        fallback: '<h1>Public models</h1>'
+      }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Saved run' })
+    ).toBeVisible()
+    await view.rerender({ allowRecovery: false })
+    expect(screen.getByRole('heading', { name: 'Public models' })).toBeVisible()
+  })
+  it('retains an existing recovery view after admission is disabled but never grants a new visit', async () => {
+    const view = render(WorkshopGate, {
+      props: { keepMounted: true, retainGranted: true },
+      slots: { default: '<h1>My run</h1>', fallback: '<h1>Public models</h1>' }
+    })
+    await nextTick()
+    expect(screen.getByRole('heading', { name: 'Public models' })).toBeVisible()
+    enabled.value = true
+    await nextTick()
+    enabled.value = false
+    await nextTick()
+    expect(screen.getByRole('heading', { name: 'My run' })).toBeVisible()
+    await view.rerender({ retainGranted: false })
+    expect(screen.getByRole('heading', { name: 'Public models' })).toBeVisible()
+  })
   it('keeps gated sections out of public HTML and Markdown exports', async () => {
     const html = await renderToString(
       createSSRApp({

@@ -6,6 +6,7 @@ import {
   fakeBillingSdk,
   pendingSubscription
 } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useSubscriptionOperationView } from '@/platform/workspace/composables/useSubscriptionRail'
@@ -13,23 +14,10 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
-const flagState = vi.hoisted(() => ({ subscriptionRailEnabled: false }))
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      billingSdkTopupRailEnabled: false,
-      embeddedCheckoutEnabled: false,
-      get billingSdkSubscriptionRailEnabled() {
-        return flagState.subscriptionRailEnabled
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackBillingEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
 vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
@@ -53,7 +41,7 @@ beforeEach(() => {
 
 describe('useSubscriptionOperationView', () => {
   it('reads the poller while the rail is off', () => {
-    flagState.subscriptionRailEnabled = false
+    vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = false
     Object.assign(useBillingOperationStore(), {
       isSettingUp: true,
       subscriptionActionOperation: billingOperation({
@@ -70,7 +58,7 @@ describe('useSubscriptionOperationView', () => {
   })
 
   it('reads the SDK lifecycle while the rail is on, and not the poller', () => {
-    flagState.subscriptionRailEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = true
     Object.assign(useBillingOperationStore(), {
       isSettingUp: false,
       subscriptionActionOperation: undefined
@@ -89,7 +77,7 @@ describe('useSubscriptionOperationView', () => {
   // here would assert the value it just assigned. `billingOperationStore`'s
   // suite holds that side; this holds the projection the rail publishes.
   it('offers no hosted step for another workspace on the SDK rail', () => {
-    flagState.subscriptionRailEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = true
 
     const view = useSubscriptionOperationView()
     harness.publish(pendingSubscription({ actionUrl: HOSTED_STEP }))
@@ -105,7 +93,7 @@ describe('useSubscriptionOperationView', () => {
   })
 
   it('refuses a hosted step that is not https on the SDK rail', () => {
-    flagState.subscriptionRailEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = true
 
     const view = useSubscriptionOperationView()
     harness.publish(pendingSubscription({ actionUrl: 'javascript:alert(1)' }))

@@ -18,6 +18,14 @@ import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
+interface SubgraphDefinitionRow {
+  name: string
+  nodes: number
+  links: number
+}
+
+type SubgraphDefinitionInventory = SubgraphDefinitionRow[]
+
 export class SubgraphHelper {
   public readonly editor: SubgraphEditor
 
@@ -580,6 +588,66 @@ export class SubgraphHelper {
     })
     if (!id) throw new Error('No subgraph node found in current graph')
     return id
+  }
+
+  /** Descends `levels` times, requiring exactly one subgraph node at each level. */
+  async descendSubgraphs(levels: number): Promise<void> {
+    for (let level = 0; level < levels; level++) {
+      await expect.poll(() => this.countSubgraphNodes()).toBe(1)
+      const parentGraphId = await this.getActiveGraphId()
+      await this.enterSubgraphWithFallback(await this.findSubgraphNodeId())
+      await expect.poll(() => this.getActiveGraphId()).not.toBe(parentGraphId)
+    }
+  }
+
+  /** Number of subgraph host nodes in the graph currently shown on the canvas. */
+  async countSubgraphNodes(): Promise<number> {
+    return this.page.evaluate(
+      () =>
+        window.app!.canvas.graph!.nodes.filter((node) => node.isSubgraphNode())
+          .length
+    )
+  }
+
+  /**
+   * Interior node and link counts of every subgraph definition, one row per
+   * definition sorted by name, then node count, then link count. Definitions
+   * sharing a name stay as separate rows, because `Convert to Subgraph` names
+   * every new definition 'New Subgraph'.
+   */
+  async getDefinitionInventory(): Promise<SubgraphDefinitionInventory> {
+    return this.page.evaluate(() =>
+      [...window.app!.rootGraph.subgraphs.values()]
+        .map((definition) => ({
+          name: definition.name,
+          nodes: definition.nodes.length,
+          links: definition.links.size
+        }))
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(b.name) ||
+            a.nodes - b.nodes ||
+            a.links - b.links
+        )
+    )
+  }
+
+  /** Same inventory, read back from a serialized workflow rather than live state. */
+  async getSerializedDefinitionInventory(): Promise<SubgraphDefinitionInventory> {
+    return this.page.evaluate(() =>
+      (window.app!.rootGraph.asSerialisable().definitions?.subgraphs ?? [])
+        .map((definition) => ({
+          name: definition.name,
+          nodes: definition.nodes?.length ?? 0,
+          links: definition.links?.length ?? 0
+        }))
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(b.name) ||
+            a.nodes - b.nodes ||
+            a.links - b.links
+        )
+    )
   }
 
   async getBoundaryLinkSnapshot() {

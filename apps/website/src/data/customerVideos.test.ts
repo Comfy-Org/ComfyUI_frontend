@@ -27,10 +27,17 @@ describe('customerVideoStories', () => {
     }
   })
 
-  it('does not assert a fabricated duration or upload date', () => {
+  it('does not assert a fabricated duration', () => {
     for (const story of customerVideoStories) {
       expect(story.durationSeconds).toBeUndefined()
-      expect(story.uploadDate).toBeUndefined()
+    }
+  })
+
+  it('gives every story a full ISO datetime upload date', () => {
+    for (const story of customerVideoStories) {
+      expect(story.uploadDate).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/
+      )
     }
   })
 })
@@ -48,7 +55,9 @@ describe('getCustomerVideoStory', () => {
 
 describe('customerVideoPath', () => {
   it('builds the watch-page path from a slug', () => {
-    expect(customerVideoPath('black-math')).toBe('/customers/videos/black-math')
+    expect(customerVideoPath('black-math')).toBe(
+      '/customers/videos/black-math/'
+    )
   })
 })
 

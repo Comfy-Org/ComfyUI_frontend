@@ -26,14 +26,12 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 /**
- * Regression: `setWidgetValue` in
- * `src/workbench/extensions/agent/crdt/liveWidgetProjection.ts` skips the
+ * Regression: the follower's widget write used to skip the
  * `widget.value = value` assignment whenever the preceding store write
  * already left `widget.value` reporting the new value. A `DynamicCombo`
  * widget's value getter (`dynamicComboWidget` in
  * `src/core/graph/widgets/dynamicWidgets.ts`) always does, so its setter —
- * which mounts the option's nested sub-widgets — never runs. See
- * `liveWidgetProjection.test.ts` for the unit-level regression.
+ * which mounts the option's nested sub-widgets — never ran.
  */
 
 const NODE_TYPE = 'TestMagnificSkinEnhancer'

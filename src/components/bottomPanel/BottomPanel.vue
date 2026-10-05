@@ -26,7 +26,7 @@
                     'p-3 rounded-lg': true,
                     'pointer-events-none':
                       bottomPanelStore.bottomPanelTabs.length === 1,
-                    'bg-secondary-background text-secondary-foreground':
+                    'bg-secondary-background text-base-foreground':
                       x.context.active &&
                       bottomPanelStore.bottomPanelTabs.length > 1,
                     'text-muted-foreground':

@@ -10,7 +10,7 @@ const { findProjectRoot } = vi.hoisted(() => ({
   findProjectRoot: vi.fn()
 }))
 
-vi.mock('../recorder/runner', () => ({ findProjectRoot }))
+vi.mock(import('../recorder/runner'), () => ({ findProjectRoot }))
 
 const tempDirs: string[] = []
 

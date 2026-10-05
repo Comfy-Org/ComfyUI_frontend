@@ -5,6 +5,7 @@ import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
+import { isAbortError } from '@/utils/typeGuardUtil'
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'
 
 const HISTORY_MEDIA_ASSETS_PAGE_SIZE = 200
@@ -14,9 +15,10 @@ interface MediaPathDetectionOptions {
   allowCompactSuffix: boolean
 }
 
+/** `null` marks a source whose fetch failed, so its candidates stay unresolved. */
 export interface MissingMediaAssetSources {
-  inputAssets: readonly AssetItem[]
-  generatedAssets: readonly AssetItem[]
+  inputAssets: readonly AssetItem[] | null
+  generatedAssets: readonly AssetItem[] | null
 }
 
 export interface ResolveMissingMediaAssetSourcesOptions {
@@ -51,32 +53,46 @@ export async function resolveMissingMediaAssetSources({
   }
 
   try {
-    const [inputAssets, generatedAssets] = await Promise.all([
-      abortSiblingsOnFailure(
-        useFeatureFlags().flags.assetsEnabled
-          ? assetService.getAllAssetsByTag('input', true, {
-              signal: controller.signal
-            })
-          : Promise.resolve<AssetItem[]>([]),
-        controller
-      ),
-      abortSiblingsOnFailure(
-        includeGeneratedAssets
-          ? fetchGeneratedAssets(controller.signal, {
-              isCloud,
-              generatedMatchNames,
-              generatedHashRequiredNames,
-              pathOptions
-            })
-          : Promise.resolve<AssetItem[]>([]),
-        controller
-      )
+    const [inputResult, generatedResult] = await Promise.allSettled([
+      useFeatureFlags().flags.assetsEnabled
+        ? assetService.getAllAssetsByTag('input', true, {
+            signal: controller.signal
+          })
+        : Promise.resolve<AssetItem[]>([]),
+      includeGeneratedAssets
+        ? fetchGeneratedAssets(controller.signal, {
+            isCloud,
+            generatedMatchNames,
+            generatedHashRequiredNames,
+            pathOptions
+          })
+        : Promise.resolve<AssetItem[]>([])
     ])
 
-    return { inputAssets, generatedAssets }
+    return {
+      inputAssets: unwrapAssetSource(inputResult, 'input'),
+      generatedAssets: unwrapAssetSource(generatedResult, 'generated')
+    }
   } finally {
     signal?.removeEventListener('abort', abortFromCaller)
   }
+}
+
+/**
+ * Input and generated assets come from independent endpoints, so one failing
+ * leaves only its own candidates unresolved instead of discarding the other.
+ */
+function unwrapAssetSource(
+  result: PromiseSettledResult<AssetItem[]>,
+  source: 'input' | 'generated'
+): AssetItem[] | null {
+  if (result.status === 'fulfilled') return result.value
+  if (isAbortError(result.reason)) throw result.reason
+  console.warn(
+    `[missingMedia] ${source} asset fetch failed; leaving its candidates unresolved.`,
+    result.reason
+  )
+  return null
 }
 
 interface FetchGeneratedAssetsOptions {
@@ -91,7 +107,8 @@ export function getAssetDetectionNames(
   options: MediaPathDetectionOptions
 ): string[] {
   const names = new Set<string>()
-  // Treat names and hashes as opaque match keys because Cloud may use either in widget values.
+  // Widget values predate `file_path` and may hold any of these shapes.
+  addPathDetectionNames(names, asset.file_path, options)
   addPathDetectionNames(names, asset.hash, options)
   addPathDetectionNames(names, asset.name, options)
 
@@ -224,18 +241,6 @@ async function fetchGeneratedHistoryAssets(
     }
 
     offset = requestedOffset + historyPage.jobs.length
-  }
-}
-
-async function abortSiblingsOnFailure<T>(
-  promise: Promise<T>,
-  controller: AbortController
-): Promise<T> {
-  try {
-    return await promise
-  } catch (err) {
-    if (!controller.signal.aborted) controller.abort(err)
-    throw err
   }
 }
 

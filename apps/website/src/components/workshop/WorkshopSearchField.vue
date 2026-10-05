@@ -6,17 +6,18 @@ import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
-import { filterWorkshopModels } from '../../config/models-catalogue'
-import { useVisualViewport } from '../../composables/useVisualViewport'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { filterWorkshopModels } from '@/config/models-catalogue'
+import { useVisualViewport } from '@/composables/useVisualViewport'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 
 const {
   models,
   inputId = 'workshop-search',
   compact = false,
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
@@ -24,11 +25,31 @@ const {
   /** In a crowded toolbar a phone gets a button, and the field fills the
    * screen once it is tapped. */
   compact?: boolean
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const query = defineModel<string>({ required: true })
 const mounted = useMounted()
+const label = computed(() =>
+  t(kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search')
+)
+const shortLabel = computed(() =>
+  t(
+    kind === 'models'
+      ? 'workshop.search.short'
+      : 'workshop.catalogue.searchWorkflows'
+  )
+)
+const showLabel = computed(() =>
+  t(
+    kind === 'models'
+      ? 'workshop.search.show'
+      : 'workshop.catalogue.showWorkflows',
+    { n: matches.value }
+  )
+)
 
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
@@ -66,13 +87,13 @@ const clearButtonClass =
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative" data-testid="workshop-search-field">
     <button
       v-if="compact"
       ref="sheetTrigger"
       type="button"
       :disabled="!mounted"
-      :aria-label="t('workshop.search.label', locale)"
+      :aria-label="label"
       data-testid="workshop-search-button"
       :class="
         cn(
@@ -84,13 +105,13 @@ const clearButtonClass =
     >
       <Search class="size-4 shrink-0" aria-hidden="true" />
       <span class="truncate">
-        {{ query || t('workshop.search.short', locale) }}
+        {{ query || shortLabel }}
       </span>
     </button>
 
     <div :class="cn('relative', compact && 'max-sm:hidden')">
       <label :for="inputId" class="sr-only">
-        {{ t('workshop.search.label', locale) }}
+        {{ label }}
       </label>
       <Search :class="leadingIconClass" aria-hidden="true" />
       <input
@@ -98,17 +119,15 @@ const clearButtonClass =
         v-model="query"
         type="search"
         :disabled="!mounted"
-        :placeholder="
-          t(compact ? 'workshop.search.short' : 'workshop.search.label', locale)
-        "
-        :aria-label="t('workshop.search.label', locale)"
+        :placeholder="compact ? shortLabel : label"
+        :aria-label="label"
         data-testid="workshop-search"
         :class="fieldClass"
       />
       <button
         v-if="query"
         type="button"
-        :aria-label="t('workshop.search.clear', locale)"
+        :aria-label="t('workshop.search.clear')"
         data-testid="workshop-search-clear"
         :class="clearButtonClass"
         @click="query = ''"
@@ -127,9 +146,7 @@ const clearButtonClass =
           @open-auto-focus.prevent="sheetInput?.focus()"
           @close-auto-focus.prevent="sheetTrigger?.focus()"
         >
-          <DialogTitle class="sr-only">{{
-            t('workshop.search.label', locale)
-          }}</DialogTitle>
+          <DialogTitle class="sr-only">{{ label }}</DialogTitle>
           <div
             class="flex items-center gap-3 border-b border-transparency-white-t8 p-3"
           >
@@ -139,15 +156,15 @@ const clearButtonClass =
                 ref="sheetInput"
                 v-model="query"
                 type="search"
-                :placeholder="t('workshop.search.label', locale)"
-                :aria-label="t('workshop.search.label', locale)"
+                :placeholder="label"
+                :aria-label="label"
                 data-testid="workshop-search-sheet-input"
                 :class="fieldClass"
               />
               <button
                 v-if="query"
                 type="button"
-                :aria-label="t('workshop.search.clear', locale)"
+                :aria-label="t('workshop.search.clear')"
                 :class="clearButtonClass"
                 @click="query = ''"
               >
@@ -156,7 +173,7 @@ const clearButtonClass =
             </div>
             <button
               type="button"
-              :aria-label="t('workshop.search.close', locale)"
+              :aria-label="t('workshop.search.close')"
               class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-white/8 text-primary-warm-gray hover:text-primary-warm-white"
               data-testid="workshop-search-sheet-close"
               @click="sheetOpen = false"
@@ -168,6 +185,7 @@ const clearButtonClass =
           <WorkshopSearchPanel
             :models
             :query
+            :kind
             :locale
             variant="sheet"
             @pick="
@@ -188,7 +206,7 @@ const clearButtonClass =
               data-testid="workshop-search-sheet-clear"
               @click="clearSheet"
             >
-              {{ t('workshop.filter.clearAll', locale) }}
+              {{ t('workshop.filter.clearAll') }}
             </button>
             <button
               type="button"
@@ -196,9 +214,7 @@ const clearButtonClass =
               data-testid="workshop-search-sheet-apply"
               @click="sheetOpen = false"
             >
-              {{
-                t('workshop.search.show', locale).replace('{n}', `${matches}`)
-              }}
+              {{ showLabel }}
             </button>
           </div>
         </DialogContent>

@@ -119,11 +119,8 @@ test.describe('Publish dialog - Describe step', () => {
     await expect(publishDialog.root.getByText('upscale')).toBeVisible()
   })
 
-  // TODO(#11548): Tag click emits update:tags but the tag does not appear in
-  // the active list during E2E. Needs investigation of the parent state
-  // binding.
-  test.fixme('clicking a tag suggestion adds it', async ({ publishDialog }) => {
-    await publishDialog.root.getByText('anime').click()
+  test('clicking a tag suggestion adds it', async ({ publishDialog }) => {
+    await publishDialog.tagSuggestion('anime').click()
 
     await expect(publishDialog.tagsInput.getByText('anime')).toBeVisible()
   })

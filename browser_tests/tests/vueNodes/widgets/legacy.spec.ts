@@ -116,7 +116,9 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
     const initialRenderedWidth = await getRenderedWidth()
     const initialWidgetWidth = await getWidgetWidth()
 
-    const gutter = comfyPage.page.getByRole('separator')
+    const gutter = comfyPage.page
+      .getByRole('separator')
+      .and(comfyPage.page.locator('.p-splitter-gutter'))
 
     await expect(gutter).toBeVisible()
     await comfyMouse.dragElementBy(gutter, { x: -200 })

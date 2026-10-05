@@ -198,7 +198,7 @@ function handleVideoLoad(event: Event) {
         {{ label ?? name }}
       </span>
       <!-- Meta Data -->
-      <span v-if="actualDimensions" class="text-secondary block text-xs">
+      <span v-if="actualDimensions" class="block text-xs text-muted-foreground">
         {{ actualDimensions }}
       </span>
     </div>

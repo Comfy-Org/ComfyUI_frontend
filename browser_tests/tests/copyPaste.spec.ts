@@ -191,6 +191,46 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     })
   })
 
+  test('Sparse clipboard widget values keep their original indices', async ({
+    comfyPage
+  }) => {
+    const originalNodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    const originalIds = new Set(originalNodes.map(({ id }) => id))
+
+    await comfyPage.page.evaluate(() => {
+      const node = window
+        .app!.graph.serialize()
+        .nodes.find(({ type }) => type === 'KSampler')
+      if (!node) throw new Error('KSampler node not found')
+      const clipboardNode = {
+        ...node,
+        widgets_values: { 0: 123, 2: 47, length: 3 }
+      }
+      const encoded = btoa(JSON.stringify({ nodes: [clipboardNode] }))
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'text/html',
+        `<meta charset="utf-8"><div><span data-comfy-metadata="${encoded}"></span></div><span style="white-space:pre-wrap;">Text</span>`
+      )
+      document.dispatchEvent(
+        new ClipboardEvent('paste', {
+          clipboardData: dataTransfer,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    })
+
+    await expect
+      .poll(async () => {
+        const nodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+        const pasted = nodes.find(({ id }) => !originalIds.has(id))
+        if (!pasted) return undefined
+        return await (await pasted.getWidget(2)).getValue()
+      })
+      .toBe(47)
+  })
+
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {

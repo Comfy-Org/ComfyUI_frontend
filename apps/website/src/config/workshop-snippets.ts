@@ -50,7 +50,7 @@ export function buildWorkshopInput(
   return input
 }
 
-function pythonLiteral(value: unknown, depth = 0): string {
+export function pythonLiteral(value: unknown, depth = 0): string {
   const pad = '    '.repeat(depth)
   const childPad = '    '.repeat(depth + 1)
   if (value === null) return 'None'

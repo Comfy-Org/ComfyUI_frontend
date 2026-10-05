@@ -1,6 +1,7 @@
 <template>
   <router-view />
   <GlobalDialog />
+  <SessionReconnecting v-if="isCloud" />
   <div
     v-show="isLoading"
     ref="loadingOverlay"
@@ -23,7 +24,8 @@ import {
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import config from '@/config'
-import { isDesktop } from '@/platform/distribution/types'
+import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   reportPreloadError,
   reportResourceLoadError

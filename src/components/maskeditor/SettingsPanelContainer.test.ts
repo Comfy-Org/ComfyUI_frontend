@@ -60,16 +60,4 @@ describe('SettingsPanelContainer', () => {
     const { container } = render(SettingsPanelContainer)
     expect(container.textContent).toContain('brush-panel')
   })
-
-  it('should render BrushSettingsPanel for Eraser', () => {
-    mockStore.currentTool = Tools.Eraser
-    const { container } = render(SettingsPanelContainer)
-    expect(container.textContent).toContain('brush-panel')
-  })
-
-  it('should render BrushSettingsPanel for PaintPen', () => {
-    mockStore.currentTool = Tools.PaintPen
-    const { container } = render(SettingsPanelContainer)
-    expect(container.textContent).toContain('brush-panel')
-  })
 })

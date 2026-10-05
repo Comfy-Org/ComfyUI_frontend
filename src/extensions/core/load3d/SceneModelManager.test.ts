@@ -8,6 +8,8 @@ import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapterCapabilities } from './ModelAdapter'
 import { SceneModelManager } from './SceneModelManager'
 import type { EventManagerInterface } from './interfaces'
+import { QuadWireframeOverlay } from './quadWireframe/QuadWireframeManager'
+import { registerFaceSizes } from './quadWireframe/faceSizesRegistry'
 
 function createMockEventManager(): EventManagerInterface {
   return {
@@ -15,6 +17,13 @@ function createMockEventManager(): EventManagerInterface {
     removeEventListener: vi.fn(),
     emitEvent: vi.fn()
   }
+}
+
+function quadWireframeOf(mesh: THREE.Mesh): QuadWireframeOverlay | undefined {
+  return mesh.children.find(
+    (child): child is QuadWireframeOverlay =>
+      child instanceof QuadWireframeOverlay
+  )
 }
 
 function createManager(
@@ -95,6 +104,13 @@ function createMeshModel(name = 'TestModel'): THREE.Group {
   group.name = name
   group.add(mesh)
   return group
+}
+
+function createQuadMeshModel(): { model: THREE.Group; mesh: THREE.Mesh } {
+  const geometry = new THREE.BoxGeometry(1, 1, 1)
+  registerFaceSizes(geometry, new Uint32Array(6).fill(4))
+  const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial())
+  return { model: new THREE.Group().add(mesh), mesh }
 }
 
 function createPointsModel(name = 'TestModel'): THREE.Group {
@@ -220,7 +236,8 @@ describe('SceneModelManager', () => {
       expect(spy).toHaveBeenCalledWith('wireframe')
       // The final material mode visible on the mesh should be wireframe.
       const mesh = model.children[0] as THREE.Mesh
-      expect((mesh.material as THREE.MeshBasicMaterial).wireframe).toBe(true)
+      expect(mesh.material).toBe(manager.occluderMaterial)
+      expect(quadWireframeOf(mesh)).toBeDefined()
     })
 
     it('snapshots original materials before applying materialMode so restore is correct', async () => {
@@ -451,7 +468,7 @@ describe('SceneModelManager', () => {
       )
     })
 
-    it('switches to wireframe material', async () => {
+    it('outlines static meshes with occluded triangle edges', async () => {
       const { manager, eventManager } = createManager()
       const model = createMeshModel()
       await manager.setupModel(model)
@@ -459,12 +476,63 @@ describe('SceneModelManager', () => {
       manager.setMaterialMode('wireframe')
 
       const mesh = model.children[0] as THREE.Mesh
-      expect(mesh.material).toBeInstanceOf(THREE.MeshBasicMaterial)
-      expect((mesh.material as THREE.MeshBasicMaterial).wireframe).toBe(true)
+      expect(mesh.material).toBe(manager.occluderMaterial)
+      expect(quadWireframeOf(mesh)).toBeDefined()
       expect(eventManager.emitEvent).toHaveBeenCalledWith(
         'materialModeChange',
         'wireframe'
       )
+    })
+
+    it('keeps deforming meshes on the native triangle wireframe', async () => {
+      const { manager } = createManager()
+      const geometry = new THREE.BoxGeometry()
+      geometry.morphAttributes.position = [geometry.getAttribute('position')]
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial())
+      await manager.setupModel(new THREE.Group().add(mesh))
+
+      manager.setMaterialMode('wireframe')
+
+      expect(mesh.material).toBe(manager.wireframeMaterial)
+      expect(quadWireframeOf(mesh)).toBeUndefined()
+    })
+
+    it('clearQuadWireframe removes overlays and releases their edges', async () => {
+      const { manager } = createManager()
+      const { model, mesh } = createQuadMeshModel()
+      await manager.setupModel(model)
+      manager.setMaterialMode('wireframe')
+      const edges = quadWireframeOf(mesh)!.geometry
+      const dispose = vi.spyOn(edges, 'dispose')
+
+      manager.clearQuadWireframe()
+
+      expect(quadWireframeOf(mesh)).toBeUndefined()
+      expect(dispose).toHaveBeenCalledOnce()
+    })
+
+    it('replaces the triangle wireframe with polygon edges', async () => {
+      const { manager } = createManager()
+      const { model, mesh } = createQuadMeshModel()
+      const originalMaterial = mesh.material
+      await manager.setupModel(model)
+
+      manager.setMaterialMode('wireframe')
+
+      expect(
+        quadWireframeOf(mesh)!.geometry.getAttribute('position').count
+      ).toBe(24)
+      expect(mesh.material).toBe(manager.occluderMaterial)
+      expect(manager.occluderMaterial.colorWrite).toBe(false)
+      expect(manager.occluderMaterial.depthWrite).toBe(true)
+      expect(quadWireframeOf(mesh)!.renderOrder).toBeGreaterThan(
+        mesh.renderOrder
+      )
+
+      manager.setMaterialMode('original')
+
+      expect(quadWireframeOf(mesh)).toBeUndefined()
+      expect(mesh.material).toBe(originalMaterial)
     })
 
     it('switches to depth material', async () => {

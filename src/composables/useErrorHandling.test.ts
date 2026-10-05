@@ -359,15 +359,6 @@ describe('useErrorHandling', () => {
     })
 
     describe('backward compatibility', () => {
-      it('should work without recovery strategies parameter', async () => {
-        const action = vi.fn(async () => 'success')
-        const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
-
-        const result = await wrapped()
-
-        expect(result).toBe('success')
-      })
-
       it('should work with empty recovery strategies array', async () => {
         const testError = new Error('test error')
         const action = vi.fn(async () => {

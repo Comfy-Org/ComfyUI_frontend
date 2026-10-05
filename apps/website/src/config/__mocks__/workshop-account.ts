@@ -3,7 +3,7 @@ import { vi } from 'vitest'
 import { createTestIdentity } from '@comfyorg/account-core/testing'
 import type { User } from 'firebase/auth'
 
-import type * as realAccount from '../workshop-account'
+import type * as realAccount from '@/config/workshop-account'
 
 type Account = typeof realAccount
 type SessionClient = Account['workshopSessionClient']

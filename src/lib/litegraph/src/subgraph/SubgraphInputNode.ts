@@ -2,7 +2,7 @@ import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { mintLinkId } from '../idAllocation'
+import { linkIdReservations, mintLinkId } from '../idAllocation'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
@@ -108,7 +108,10 @@ export class SubgraphInputNode
     if (outputIndex === -1 || inputIndex === -1)
       throw new Error('Invalid slot indices.')
 
-    const linkId = mintLinkId(subgraph.state)
+    const linkId = mintLinkId(
+      subgraph.state,
+      linkIdReservations(subgraph.rootGraph)
+    )
 
     return new LLink(
       linkId,

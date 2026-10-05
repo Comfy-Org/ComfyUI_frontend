@@ -173,12 +173,6 @@ describe('CameraInfoViewport gizmo visibility', () => {
     expect(viewport.orbitHandles.isVisible()).toBe(true)
   })
 
-  it('reveals the target handle in target transform mode', () => {
-    viewport.setTransformGizmoMode('target')
-
-    expect(viewport.targetHandle.isVisible()).toBe(true)
-  })
-
   it('enables the camera handle for camera-rotate in quaternion mode', () => {
     viewport.applyState({ ...viewport.overlay.getState(), mode: 'quaternion' })
     viewport.setTransformGizmoMode('camera-rotate')

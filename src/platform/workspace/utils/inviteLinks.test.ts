@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import {
   buildInviteLink,
   copyTextSilently,
@@ -12,6 +14,8 @@ function stubClipboard(writeText: (text: string) => Promise<void>) {
     configurable: true
   })
 }
+
+vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
 
 describe('buildInviteLink', () => {
   it('builds an ?invite=TOKEN link on the current origin', () => {
@@ -99,6 +103,28 @@ describe('copyTextSilently', () => {
     await copyTextSilently('hello again')
 
     expect(document.body.querySelectorAll('textarea')).toHaveLength(0)
+  })
+
+  it('reports a false legacy command result to telemetry', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
+        writeText: vi.fn().mockRejectedValue(new Error('denied'))
+      },
+      configurable: true
+    })
+    Object.defineProperty(document, 'execCommand', {
+      value: vi.fn().mockReturnValue(false),
+      configurable: true
+    })
+
+    vi.mocked(reportError).mockImplementation(() => undefined)
+
+    await expect(copyTextSilently('text')).resolves.toBe(false)
+    expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'error_copying_invite_link' })
+    )
+    Reflect.deleteProperty(document, 'execCommand')
   })
 
   it('reports failure without throwing when the Clipboard API is unavailable', async () => {

@@ -34,7 +34,7 @@ describe('safeReturnPath', () => {
     expect(
       safeReturnPath(raw),
       'the browser strips C0 control chars before parsing, so /<TAB>//evil.com resolves cross-origin'
-    ).toBe('/models/')
+    ).toBe('/hub/models/')
   })
 })
 
@@ -204,7 +204,7 @@ describe('requestedReturnPath', () => {
       requestedReturnPath('?returnTo=%2Fworkshop%2Fmodels%2Fflux%2F')
     ).toBe('/workshop/models/flux/')
     expect(requestedReturnPath('?returnTo=https%3A%2F%2Fevil.com')).toBe(
-      '/models/'
+      '/hub/models/'
     )
   })
 })

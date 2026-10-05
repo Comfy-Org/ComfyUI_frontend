@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -17,9 +18,33 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const refreshSpy = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
+// Held as a real ref so a test can revoke billing access after mount and the
+// panel's own watcher reacts, the way a workspace switch does. The ref is
+// created inside the factory because `vi.hoisted` runs before Vue is loaded.
+const permission = vi.hoisted(() => ({
+  canManage: null as unknown as Ref<boolean>
+}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  async () => {
+    const { computed, ref } = await import('vue')
+    permission.canManage = ref(true)
+    return {
+      useWorkspaceUI: () => ({
+        permissions: computed(() => ({
+          canManageSubscription: permission.canManage.value
+        }))
+      })
+    }
+  }
+)
+
 const stubs = {
   SubscriptionPanelContentWorkspace: {
     template: '<section aria-label="Plan and credits overview" />'
+  },
+  WorkspaceInvoicesContent: {
+    template: '<section aria-label="Invoices" />'
   },
   CreditsPanel: {
     props: ['embedded'],
@@ -45,6 +70,10 @@ function renderPanel({ cloud = true } = {}) {
   })
   return render(PlanCreditsPanelContent, { global: { plugins: [i18n], stubs } })
 }
+
+beforeEach(() => {
+  permission.canManage.value = true
+})
 
 describe('PlanCreditsPanelContent', () => {
   it('shows Credits and Activity tabs with Credits active by default', () => {
@@ -80,6 +109,46 @@ describe('PlanCreditsPanelContent', () => {
       screen.queryByRole('region', { name: 'Plan and credits overview' })
     ).toBeNull()
     await waitFor(() => expect(refreshSpy).toHaveBeenCalledOnce())
+  })
+
+  it('opens the Invoices tab for a billing manager', async () => {
+    renderPanel()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Invoices' }))
+
+    expect(screen.getByRole('region', { name: 'Invoices' })).toBeTruthy()
+    expect(
+      screen.queryByRole('region', { name: 'Plan and credits overview' })
+    ).toBeNull()
+  })
+
+  it('hides Invoices from members who cannot manage billing', () => {
+    permission.canManage.value = false
+    renderPanel()
+
+    expect(screen.queryByRole('button', { name: 'Invoices' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Activity' })).toBeTruthy()
+  })
+
+  it('leaves the Invoices view when billing access is revoked', async () => {
+    renderPanel()
+    await userEvent.click(screen.getByRole('button', { name: 'Invoices' }))
+    expect(screen.getByRole('region', { name: 'Invoices' })).toBeTruthy()
+
+    permission.canManage.value = false
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Invoices' })).toBeNull()
+    )
+    expect(screen.queryByRole('button', { name: 'Invoices' })).toBeNull()
+    expect(
+      screen.getByRole('region', { name: 'Plan and credits overview' })
+    ).toBeTruthy()
+  })
+
+  it('hides Invoices off cloud, where there is no upcoming charge to show', () => {
+    renderPanel({ cloud: false })
+
+    expect(screen.queryByRole('button', { name: 'Invoices' })).toBeNull()
   })
 
   it('reports usage-log refresh failures', async () => {

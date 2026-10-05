@@ -139,7 +139,10 @@ import { useConflictDetection } from '@/workbench/extensions/manager/composables
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import { IsInstallingKey } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import {
+  IsInstallingKey,
+  isMergedNodePack
+} from '@/workbench/extensions/manager/types/comfyManagerTypes'
 import type {
   ConflictDetail,
   ConflictDetectionResult
@@ -226,9 +229,7 @@ provide(ImportFailedKey, {
 })
 
 const nodeNames = computed(() => {
-  // @ts-expect-error comfy_nodes is an Algolia-specific field
-  const { comfy_nodes } = nodePack
-  return comfy_nodes ?? []
+  return isMergedNodePack(nodePack) ? (nodePack.comfy_nodes ?? []) : []
 })
 
 const infoItems = computed<InfoItem[]>(() => [

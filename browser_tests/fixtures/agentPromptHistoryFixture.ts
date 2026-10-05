@@ -12,18 +12,24 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 
 export const promptHistoryTest = base.extend<{
+  agentPanel: AgentPanel
   promptHistory: {
     requests: AgentPostMessageRequest[]
     historyReads: () => number
     historyRequestThreadIds: string[]
+    completeLatestTurn: (content: AgentMessage['content']) => void
   }
 }>({
+  agentPanel: async ({ page }, use) => {
+    await use(new AgentPanel(page))
+  },
   promptHistory: async ({ page, workflowSelection, getAgentSocket }, use) => {
     // Workflow selection boots the app before these agent-specific routes.
     void workflowSelection
@@ -108,7 +114,7 @@ export const promptHistoryTest = base.extend<{
           .split('/')
           .at(-2)!
         const message = messages.find(({ id }) => id === messageId)
-        if (message) message.status = 'interrupted'
+        if (message?.status === 'streaming') message.status = 'interrupted'
         const accepted: AgentCancelAccepted = { status: 'cancelling' }
         await route.fulfill(jsonRoute(accepted))
         const done: AgentWsEvent = {
@@ -122,7 +128,13 @@ export const promptHistoryTest = base.extend<{
     await use({
       requests,
       historyReads: () => historyReads,
-      historyRequestThreadIds
+      historyRequestThreadIds,
+      completeLatestTurn: (content) => {
+        const turn = messages.findLast(({ role }) => role === 'assistant')
+        if (!turn) throw new Error('No turn has been sent yet')
+        turn.status = 'complete'
+        turn.content = content
+      }
     })
   }
 })

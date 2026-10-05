@@ -89,22 +89,14 @@ describe('useMissingModelDownload', () => {
   })
 
   it('opens a trusted access page through the Desktop bridge', async () => {
-    let receiver: unknown
-    let openedUrl: string | undefined
-    const bridge = {
-      isRemote: () => true,
-      async openModelAccessPage(this: unknown, url: string) {
-        receiver = this
-        openedUrl = url
-        return true
-      }
-    }
+    const openModelAccessPage = vi.fn(async (_url: string) => true)
+    const bridge = { isRemote: () => true, openModelAccessPage }
     window.__comfyDesktop2 = bridge
 
     await useMissingModelDownload().openModelAccessPage(repoUrl)
 
-    expect(receiver).toBe(bridge)
-    expect(openedUrl).toBe(repoUrl)
+    expect(openModelAccessPage.mock.contexts[0]).toBe(bridge)
+    expect(openModelAccessPage).toHaveBeenCalledWith(repoUrl)
     expect(mocks.openGatedRepoPage).not.toHaveBeenCalled()
   })
 

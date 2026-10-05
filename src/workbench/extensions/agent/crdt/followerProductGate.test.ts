@@ -1,9 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
-import type { GraphMutations } from './graphMutations'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
@@ -22,7 +20,7 @@ it('gates real document transport and removes reconnect listeners on revocation'
       setup() {
         follower = useAgentCrdtFollower(
           workflowId,
-          fromPartial<GraphMutations>({}),
+          undefined,
           undefined,
           undefined,
           undefined,

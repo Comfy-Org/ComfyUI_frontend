@@ -160,7 +160,7 @@ describe('JobContextMenu', () => {
     await nextTick()
     expect(screen.getByTestId('popover')).toBeInTheDocument()
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.pointerDown(outside)
     await nextTick()
 
@@ -179,7 +179,7 @@ describe('JobContextMenu', () => {
     await nextTick()
     expect(screen.getByTestId('popover')).toBeInTheDocument()
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.pointerDown(trigger)
     await nextTick()
     expect(screen.getByTestId('popover')).toBeInTheDocument()

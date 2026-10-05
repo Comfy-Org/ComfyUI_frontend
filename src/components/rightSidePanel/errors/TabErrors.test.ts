@@ -16,14 +16,15 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 import { toNodeId } from '@/types/nodeId'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import TabErrors from './TabErrors.vue'
+import { app } from '@/scripts/app'
 vi.mock(import('@/services/comfyRegistryService'), () => ({
   useComfyRegistryService: () =>
     fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
@@ -33,24 +34,11 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
     })
 }))
 
-const { mockFocusNode, mockRefreshMissingModels } = vi.hoisted(() => ({
-  mockFocusNode: vi.fn(),
-  mockRefreshMissingModels: vi.fn()
+const { mockFocusNode } = vi.hoisted(() => ({
+  mockFocusNode: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => {
-  const rootGraph = {
-    serialize: vi.fn(() => ({})),
-    getNodeById: vi.fn()
-  }
-  return {
-    app: {
-      refreshMissingModels: mockRefreshMissingModels,
-      rootGraph,
-      rootGraphOrUndefined: rootGraph
-    }
-  }
-})
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(() => []),
@@ -155,13 +143,7 @@ describe('TabErrors.vue', () => {
     seed?.(pinia)
     render(TabErrors, {
       global: {
-        plugins: [PrimeVue, i18n, pinia],
-        stubs: {
-          AsyncSearchInput: {
-            template:
-              '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
-          }
-        }
+        plugins: [PrimeVue, i18n, pinia]
       }
     })
     return { user }
@@ -495,7 +477,7 @@ describe('TabErrors.vue', () => {
 
     await user.click(screen.getByTestId('missing-model-header-refresh'))
 
-    expect(mockRefreshMissingModels).toHaveBeenCalledWith({ silent: true })
+    expect(app.refreshMissingModels).toHaveBeenCalledWith({ silent: true })
   })
 
   it('counts missing models per file when several share one directory', () => {
@@ -1126,10 +1108,8 @@ describe('TabErrors.vue', () => {
       })
     )
 
-    let canvasStore!: ReturnType<typeof useCanvasStore>
     let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
     renderComponent((pinia) => {
-      canvasStore = useCanvasStore(pinia)
       executionErrorStore = useExecutionErrorStore(pinia)
       executionErrorStore.recordNodeErrors({
         '1': nodeError(
@@ -1174,7 +1154,7 @@ describe('TabErrors.vue', () => {
 
     const missingMediaNode = new LGraphNode('LoadImage')
     missingMediaNode.id = toNodeId(3)
-    canvasStore.selectedItems = [missingMediaNode]
+    setCanvasSelection([missingMediaNode])
     await nextTick()
 
     expect(errorChip).toHaveAttribute('aria-pressed', 'false')
@@ -1190,10 +1170,8 @@ describe('TabErrors.vue', () => {
       })
     )
 
-    let canvasStore!: ReturnType<typeof useCanvasStore>
     let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
     renderComponent((pinia) => {
-      canvasStore = useCanvasStore(pinia)
       executionErrorStore = useExecutionErrorStore(pinia)
       executionErrorStore.recordNodeErrors({
         '1': nodeError(
@@ -1223,7 +1201,7 @@ describe('TabErrors.vue', () => {
 
     const missingMediaNode = new LGraphNode('LoadImage')
     missingMediaNode.id = toNodeId(3)
-    canvasStore.selectedItems = [missingMediaNode]
+    setCanvasSelection([missingMediaNode])
     await nextTick()
 
     const user = userEvent.setup()

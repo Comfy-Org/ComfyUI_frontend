@@ -14,7 +14,7 @@ test('an entry link without a session goes through sign-in and comes back to the
   ).toBeVisible()
   await expect(
     page.getByRole('link', { name: 'Return to ComfyUI' })
-  ).toHaveAttribute('href', 'https://testcloud.comfy.org/')
+  ).toHaveAttribute('href', 'https://testcloud.comfy.org/?workspace=ws_e2e')
   await expect(page.getByText('Current plan: Creator · Monthly')).toBeVisible()
   const mint = cloud.requests.find((request) => request.path === '/auth/token')
   expect(mint?.authorization).toBe('Bearer e2e-firebase-id-token')

@@ -3,7 +3,7 @@ import { useElementVisibility, useRafFn } from '@vueuse/core'
 
 import { computed, onMounted, ref, useId, watch } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { ElementKey } from './graphLayout'
 import { FLOW, PORTS, portPoint } from './graphLayout'
 

@@ -1,6 +1,5 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -24,33 +23,6 @@ vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('primevue/inputtext'),
-
-  () => ({
-    default: { name: 'InputText', template: '<input />' }
-  })
-)
-vi.mock<unknown>(import('primevue/password'), () => ({
-  default: { name: 'Password', template: '<input type="password" />' }
-}))
-
-vi.mock<unknown>(import('@/components/ui/select/Select.vue'), () => ({
-  default: { name: 'Select', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/select/SelectContent.vue'), () => ({
-  default: { name: 'SelectContent', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/select/SelectItem.vue'), () => ({
-  default: { name: 'SelectItem', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/select/SelectTrigger.vue'), () => ({
-  default: { name: 'SelectTrigger', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/select/SelectValue.vue'), () => ({
-  default: { name: 'SelectValue', template: '<span />' }
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -70,7 +42,7 @@ describe('SecretFormDialog z-index stacking', () => {
 
   it('renders above a modal that is already open', async () => {
     render(SecretFormDialog, {
-      global: { plugins: [PrimeVue, i18n] },
+      global: { plugins: [i18n] },
       props: { visible: true }
     })
 

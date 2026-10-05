@@ -2,16 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useTelemetry } from '@/platform/telemetry'
 
-const trackNamedValuesShadowDiffMismatch = vi.fn()
-const trackNamedValuesShadowDiffSummary = vi.fn()
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackNamedValuesShadowDiffMismatch,
-    trackNamedValuesShadowDiffSummary
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: () => undefined
@@ -64,7 +57,9 @@ describe('LGraphNode configure named values shadow diff', () => {
     node.configure(mismatchInfo())
 
     expect(node.widgets!.map((w) => w.value)).toStrictEqual([30, 12345])
-    expect(trackNamedValuesShadowDiffMismatch).toHaveBeenCalledExactlyOnceWith(
+    expect(
+      useTelemetry()?.trackNamedValuesShadowDiffMismatch
+    ).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         mismatch_widget_count: 1,
         checked_widget_count: 2
@@ -78,7 +73,9 @@ describe('LGraphNode configure named values shadow diff', () => {
     expect(() => node.configure(mismatchInfo())).not.toThrow()
 
     expect(node.widgets!.map((w) => w.value)).toStrictEqual([15, 12345])
-    expect(trackNamedValuesShadowDiffMismatch).toHaveBeenCalledExactlyOnceWith(
+    expect(
+      useTelemetry()?.trackNamedValuesShadowDiffMismatch
+    ).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         mismatch_widget_count: 1,
         checked_widget_count: 2
@@ -91,7 +88,9 @@ describe('LGraphNode configure named values shadow diff', () => {
 
     node.configure(agreeingInfo())
 
-    expect(trackNamedValuesShadowDiffMismatch).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackNamedValuesShadowDiffMismatch
+    ).not.toHaveBeenCalled()
   })
 
   it('reports has_on_serialize_hook and has_on_configure_hook as false with no hooks set', () => {
@@ -99,7 +98,9 @@ describe('LGraphNode configure named values shadow diff', () => {
 
     node.configure(mismatchInfo())
 
-    expect(trackNamedValuesShadowDiffMismatch).toHaveBeenCalledExactlyOnceWith(
+    expect(
+      useTelemetry()?.trackNamedValuesShadowDiffMismatch
+    ).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         has_on_serialize_hook: false,
         has_on_configure_hook: false
@@ -114,7 +115,9 @@ describe('LGraphNode configure named values shadow diff', () => {
 
     node.configure(mismatchInfo())
 
-    expect(trackNamedValuesShadowDiffMismatch).toHaveBeenCalledExactlyOnceWith(
+    expect(
+      useTelemetry()?.trackNamedValuesShadowDiffMismatch
+    ).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         has_on_serialize_hook: true,
         has_on_configure_hook: true

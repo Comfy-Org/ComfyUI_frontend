@@ -65,14 +65,17 @@ export function createNodeShellState(
   }
 }
 
-/** Writes a shell-state field, emitting `node:property:changed` on change. */
+/**
+ * Writes a shell-state field, emitting `node:property:changed` on change.
+ * Returns whether the value changed.
+ */
 export function setTrackedNodeState<K extends keyof NodeState>(
   node: LGraphNode,
   property: K,
   value: NodeState[K]
-): void {
+): boolean {
   const oldValue = node._state[property]
-  if (oldValue === value) return
+  if (oldValue === value) return false
 
   node._state[property] = value
   node.graph?.trigger('node:property:changed', {
@@ -81,6 +84,7 @@ export function setTrackedNodeState<K extends keyof NodeState>(
     oldValue,
     newValue: value
   })
+  return true
 }
 
 /**

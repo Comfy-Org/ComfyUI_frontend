@@ -1,15 +1,18 @@
 import vue from '@vitejs/plugin-vue'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
+
+import { repoRoot } from './paths'
 
 export default defineConfig({
   plugins: [vue()],
   resolve: {
+    tsconfigPaths: true,
     alias: {
       'astro:env/client': fileURLToPath(
         new URL('./src/test/astroEnv.ts', import.meta.url)
-      ),
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      )
     }
   },
   test: {
@@ -30,7 +33,11 @@ export default defineConfig({
     },
     include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
     globals: false,
-    setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts'],
+    setupFiles: [
+      join(repoRoot, 'vitest.network.setup.ts'),
+      join(repoRoot, 'vitest.timer.setup.ts'),
+      './src/test/setup.ts'
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
@@ -45,7 +52,6 @@ export default defineConfig({
         'src/**/__fixtures__/**',
         'src/test/**',
         'src/content/**',
-        'src/i18n/**',
         'src/content.config.ts',
         // Thin Firebase SDK boundary: pure provisioning behavior is tested in
         // workshop-firebase.test.ts, while popup/listener wiring is exercised

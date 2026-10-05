@@ -54,9 +54,9 @@
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { isCloud } from '@/platform/distribution/types'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const {
   showInvoiceHistory = true,
@@ -82,11 +82,7 @@ async function handleInvoiceHistory() {
 }
 
 function handleFullUsageActivity() {
-  window.open(
-    `${getComfyPlatformBaseUrl()}/profile/usage`,
-    '_blank',
-    'noopener'
-  )
+  window.open(platformLink('/profile/usage'), '_blank', 'noopener')
 }
 
 function handleOpenPartnerNodesInfo() {

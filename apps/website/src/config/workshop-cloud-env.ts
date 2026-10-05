@@ -18,9 +18,9 @@ export function isWorkshopCloudEnv(
 
 /**
  * Unset means staging, so local development needs no configuration and
- * lands on a family that cannot touch production. Deployed builds that include
- * Workshop never rely on this default: `assertWorkshopCloudEnvForBuild` makes
- * them name a family and rejects anything misspelt before the build starts.
+ * lands on a family that cannot touch production. Deployed builds never rely
+ * on this default: `assertWorkshopCloudEnvForBuild` makes them name a family
+ * and rejects anything misspelt before the build starts.
  */
 export function resolveWorkshopCloudEnv(
   value: string | undefined

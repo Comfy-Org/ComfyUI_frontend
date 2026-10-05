@@ -1,36 +1,36 @@
 ---
-import PackDetail from '../../components/cloud-nodes/PackDetail.vue'
-import { localizeHref } from '../../config/routes'
-import type { Pack } from '../../data/cloudNodes'
-import { t } from '../../i18n/translations'
-import BaseLayout from '../../layouts/BaseLayout.astro'
+import PackDetail from '@/components/cloud-nodes/PackDetail.vue'
+import { localizeHref } from '@/config/routes'
+import type { Pack } from '@/data/cloudNodes'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 import {
   absoluteUrl,
   jsonLdId,
   pageContext,
   softwareApplicationNode
-} from '../../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 interface Props {
   pack: Pack
 }
 
 const { pack } = Astro.props
+const { t } = Astro.locals
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
 )
-const fallbackDescription = t('cloudNodes.card.unavailableDescription', locale)
+const fallbackDescription = t('cloudNodes.card.unavailableDescription')
 const description = pack.description || fallbackDescription
-const title = t('cloudNodes.detail.metaTitle', locale).replace(
-  '{pack}',
-  pack.displayName
-)
-const metaDescription = t('cloudNodes.detail.metaDescription', locale)
-  .replace('{pack}', pack.displayName)
-  .replace('{nodeCount}', String(pack.nodes.length))
-  .replace('{description}', description)
+const title = t('cloudNodes.detail.metaTitle', {
+  pack: pack.displayName
+})
+const metaDescription = t('cloudNodes.detail.metaDescription', {
+  pack: pack.displayName,
+  nodeCount: pack.nodes.length,
+  description
+})
 
 const softwareId = jsonLdId(url, 'software')
 const software = softwareApplicationNode({
@@ -46,7 +46,9 @@ const software = softwareApplicationNode({
   softwareVersion: pack.latestVersion,
   license: pack.license,
   codeRepository: pack.repoUrl,
-  authorName: pack.publisher?.name,
+  author: pack.publisher?.name
+    ? { type: 'Person', name: pack.publisher.name }
+    : undefined,
   isFree: true
 })
 ---
@@ -58,18 +60,18 @@ const software = softwareApplicationNode({
   mainEntityId={softwareId}
   breadcrumbs={[
     {
-      name: t('breadcrumb.home', locale),
+      name: t('breadcrumb.home'),
       url: absoluteUrl(Astro.site, localizeHref('/', locale))
     },
     {
       name: 'Comfy Cloud',
-      url: absoluteUrl(Astro.site, localizeHref('/cloud', locale))
+      url: absoluteUrl(Astro.site, localizeHref('/cloud/', locale))
     },
     {
-      name: t('breadcrumb.supportedNodes', locale),
+      name: t('breadcrumb.supportedNodes'),
       url: absoluteUrl(
         Astro.site,
-        localizeHref('/cloud/supported-nodes', locale)
+        localizeHref('/cloud/supported-nodes/', locale)
       )
     },
     { name: pack.displayName }

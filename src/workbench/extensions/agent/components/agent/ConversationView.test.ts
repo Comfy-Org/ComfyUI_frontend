@@ -1,14 +1,15 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useIntersectionObserver } from '@vueuse/core'
+import { useIntersectionObserver, useResizeObserver } from '@vueuse/core'
 
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
+const resizeCallbacks = vi.hoisted(() => [] as (() => void)[])
 vi.mock(import('@vueuse/core'), { spy: true })
 vi.mocked(useIntersectionObserver).mockImplementation((_target, callback) => {
   intersectionCallbacks.push((entries) =>
@@ -19,17 +20,30 @@ vi.mocked(useIntersectionObserver).mockImplementation((_target, callback) => {
   )
   return fromPartial({ stop: vi.fn() })
 })
+vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
+  resizeCallbacks.push(() => callback([], fromPartial({})))
+  return fromPartial({ stop: vi.fn() })
+})
 
 import { i18n } from '@/i18n'
-import type { TurnId } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 
 import ConversationView from './ConversationView.vue'
 
-const T = 'msg-1' as TurnId
+const T = toTurnId('msg-1')
+const assistantMessage = (
+  overrides: Partial<AssistantMessage> = {}
+): AssistantMessage => ({
+  id: toTurnId('msg-1'),
+  role: 'assistant',
+  parts: [{ type: 'text', text: 'hello', state: 'done' }],
+  streaming: false,
+  thinking: false,
+  ...overrides
+})
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
   chat({
@@ -86,8 +100,13 @@ describe('ConversationView', () => {
         return fromPartial({ stop: vi.fn() })
       }
     )
-    Element.prototype.scrollIntoView = vi.fn()
+    vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
+      resizeCallbacks.push(() => callback([], fromPartial({})))
+      return fromPartial({ stop: vi.fn() })
+    })
+    Element.prototype.scrollTo = vi.fn()
     intersectionCallbacks.length = 0
+    resizeCallbacks.length = 0
   })
 
   it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, work summary', async () => {
@@ -122,62 +141,118 @@ describe('ConversationView', () => {
     store.startTurn(T)
     await settle()
 
-    const scrollIntoView = vi.fn()
-    Element.prototype.scrollIntoView = scrollIntoView
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
 
     // a new part
     store.ingest(thinking('msg-1', 'pondering'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // the tail part growing
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(delta('msg-1', 'Here is a cat'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // a tool call starting
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(toolCall('msg-1', 'add_node', 'running'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // the same tool call settling
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(toolCall('msg-1', 'add_node', 'success'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // a tool call settling behind a text tail
     store.ingest(toolCall('msg-1', 'ls_nodes', 'running'))
     store.ingest(delta('msg-1', 'Checking the graph'))
     await settle()
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(toolCall('msg-1', 'ls_nodes', 'success'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
 
     // the turn settling with a text tail
     store.ingest(delta('msg-1', 'Done.'))
     await settle()
-    scrollIntoView.mockClear()
+    scrollTo.mockClear()
     store.ingest(done('msg-1'))
     await settle()
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
+  })
+
+  it('starts a restored conversation at the latest message', async () => {
+    const assistant = assistantMessage({
+      parts: [{ type: 'text', text: 'latest reply', state: 'done' }]
+    })
+    render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollTo: { value: undefined },
+      scrollHeight: { value: 512 },
+      scrollTop: { value: 0, writable: true }
+    })
+    await nextTick()
+
+    expect(scrollContainer.scrollTop).toBe(512)
+  })
+
+  it('does not follow new content after the user scrolls up', async () => {
+    const { store } = mountHarness()
+    store.recordUser(T, 'make a cat')
+    store.startTurn(T)
+    await nextTick()
+    await nextTick()
+
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    let scrollHeight = 1_000
+    let scrollTop = 100
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { get: () => scrollHeight },
+      scrollTop: { get: () => scrollTop },
+      clientHeight: { value: 500 }
+    })
+    await nextTick()
+    for (const callback of resizeCallbacks) callback()
+    for (const callback of resizeCallbacks) callback()
+    scrollHeight = 1_200
+    scrollTop = 490
+    await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
+    await fireEvent.scroll(scrollContainer)
+    scrollTo.mockClear()
+    for (const callback of resizeCallbacks) callback()
+
+    store.ingest(delta('msg-1', 'Here is a cat'))
+    await nextTick()
+    await nextTick()
+
+    expect(scrollTo).not.toHaveBeenCalled()
   })
 
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
-    const assistant: AssistantMessage = {
-      id: 'msg-1' as TurnId,
-      role: 'assistant',
-      parts: [{ type: 'text', text: 'hello', state: 'done' }],
-      streaming: false,
-      thinking: false
-    }
-    const scrollIntoView = vi.fn()
-    Element.prototype.scrollIntoView = scrollIntoView
+    const assistant = assistantMessage()
+    let scrollTop = 100
+    const scrollTo = vi.fn(
+      (optionsOrX?: ScrollToOptions | number, y?: number) => {
+        const top =
+          typeof optionsOrX === 'number'
+            ? (y ?? optionsOrX)
+            : (optionsOrX?.top ?? 0)
+        scrollTop = Math.min(top, 500)
+      }
+    )
+    Element.prototype.scrollTo = scrollTo
 
-    render(ConversationView, {
+    const { rerender } = render(ConversationView, {
       props: { entries: [assistant] },
       global: { plugins: [i18n] }
     })
@@ -186,35 +261,223 @@ describe('ConversationView', () => {
       screen.queryByRole('button', { name: 'Latest' })
     ).not.toBeInTheDocument()
 
-    for (const cb of intersectionCallbacks) cb([{ isIntersecting: false }])
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { get: () => scrollTop },
+      clientHeight: { value: 500 }
+    })
+    await nextTick()
+    scrollTop = 100
+    await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
+    await fireEvent.scroll(scrollContainer)
     const jump = await screen.findByRole('button', { name: 'Latest' })
     expect(jump).toHaveTextContent('')
 
     await userEvent.click(jump)
-    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollTo).toHaveBeenCalled()
+    expect(scrollContainer.scrollTop).toBe(500)
+    await fireEvent.scroll(scrollContainer)
+    expect(
+      screen.queryByRole('button', { name: 'Latest' })
+    ).not.toBeInTheDocument()
+
+    scrollTo.mockClear()
+    await rerender({
+      entries: [
+        {
+          ...assistant,
+          parts: [{ type: 'text', text: 'hello again', state: 'done' }]
+        }
+      ]
+    })
+    await nextTick()
+    expect(scrollTo).toHaveBeenCalled()
+  })
+
+  it('resumes following when the conversation identity changes', async () => {
+    const assistant = assistantMessage({
+      parts: [{ type: 'text', text: 'first thread', state: 'done' }]
+    })
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const { rerender } = render(ConversationView, {
+      props: { entries: [assistant], conversationId: 'thread-1' },
+      global: { plugins: [i18n] }
+    })
+
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { value: 100 },
+      clientHeight: { value: 500 }
+    })
+    await nextTick()
+    await fireEvent.scroll(scrollContainer)
+    expect(
+      await screen.findByRole('button', { name: 'Latest' })
+    ).toBeInTheDocument()
+
+    scrollTo.mockClear()
+    await rerender({
+      conversationId: 'thread-2',
+      entries: [assistant]
+    })
+    await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
+    await fireEvent.scroll(scrollContainer)
+    await rerender({
+      conversationId: 'thread-2',
+      entries: [
+        {
+          ...assistant,
+          id: toTurnId('msg-2'),
+          parts: [{ type: 'text', text: 'other thread', state: 'done' }]
+        }
+      ]
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(
+      screen.queryByRole('button', { name: 'Latest' })
+    ).not.toBeInTheDocument()
+    expect(scrollTo).toHaveBeenCalled()
+  })
+
+  it('does not re-enable following when a new conversation receives its id', async () => {
+    const assistant = assistantMessage({
+      parts: [{ type: 'text', text: 'first reply', state: 'done' }],
+      streaming: true
+    })
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const { rerender } = render(ConversationView, {
+      props: { entries: [assistant], conversationId: null },
+      global: { plugins: [i18n] }
+    })
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { value: 100 },
+      clientHeight: { value: 500 }
+    })
+    await nextTick()
+    await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
+    await fireEvent.scroll(scrollContainer)
+    scrollTo.mockClear()
+
+    await rerender({ entries: [assistant], conversationId: 'thread-1' })
+    await rerender({
+      conversationId: 'thread-1',
+      entries: [
+        {
+          ...assistant,
+          parts: [
+            { type: 'text', text: 'first reply continued', state: 'done' }
+          ]
+        }
+      ]
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
+  })
+
+  it.for([
+    { distance: 0.5, follows: true },
+    { distance: 1.1, follows: false },
+    { distance: 16.4, follows: false }
+  ])(
+    'follows only within the intent tolerance at $distance px',
+    async ({ distance, follows }) => {
+      const assistant = assistantMessage()
+      const scrollTo = vi.fn()
+      Element.prototype.scrollTo = scrollTo
+      const { rerender } = render(ConversationView, {
+        props: { entries: [assistant] },
+        global: { plugins: [i18n] }
+      })
+      const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+      Object.defineProperties(scrollContainer, {
+        scrollHeight: { value: 1_000 },
+        scrollTop: { value: 500 - distance },
+        clientHeight: { value: 500 }
+      })
+      await nextTick()
+      await userEvent.pointer([
+        { target: scrollContainer, keys: '[MouseLeft>]' }
+      ])
+      await fireEvent.scroll(scrollContainer)
+
+      scrollTo.mockClear()
+      await rerender({
+        entries: [
+          {
+            ...assistant,
+            parts: [{ type: 'text', text: 'hello again', state: 'done' }]
+          }
+        ]
+      })
+      await nextTick()
+
+      expect(Boolean(screen.queryByRole('button', { name: 'Latest' }))).toBe(
+        !follows
+      )
+      expect(scrollTo).toHaveBeenCalledTimes(follows ? 1 : 0)
+    }
+  )
+
+  it('preserves a scroll-away while the content watcher waits to render', async () => {
+    const assistant = assistantMessage({ streaming: true })
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const { rerender } = render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+    let scrollTop = 500
+    const scrollContainer = screen.getByTestId('agent-conversation-scroll')
+    Object.defineProperties(scrollContainer, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { get: () => scrollTop },
+      clientHeight: { value: 500 }
+    })
+    await nextTick()
+    scrollTo.mockClear()
+
+    const rendering = rerender({
+      entries: [
+        {
+          ...assistant,
+          parts: [{ type: 'text', text: 'hello again', state: 'done' }]
+        }
+      ]
+    })
+    scrollTop = 480
+    scrollContainer.dispatchEvent(new Event('scroll'))
+    await rendering
+    await nextTick()
+
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
   })
 
   it('fades only the edges where content continues past the view', async () => {
-    const assistant: AssistantMessage = {
-      id: 'msg-1' as TurnId,
-      role: 'assistant',
-      parts: [{ type: 'text', text: 'hello', state: 'done' }],
-      streaming: false,
-      thinking: false
-    }
+    const assistant = assistantMessage()
 
     const { container } = render(ConversationView, {
       props: { entries: [assistant] },
       global: { plugins: [i18n] }
     })
 
-    // eslint-disable-next-line testing-library/no-node-access -- scroll container has no queryable role; mask classes are the behavior under test
+    // oxlint-disable-next-line testing-library/no-node-access -- scroll container has no queryable role; mask classes are the behavior under test
     const scroll = container.firstElementChild?.firstElementChild as HTMLElement
     const topMask = 'mask-t-from-[calc(100%-2rem)]'
     const bottomMask = 'mask-b-from-[calc(100%-2rem)]'
 
-    // ConversationView registers the bottom observer before the top one.
-    const [fireBottom, fireTop] = intersectionCallbacks
+    const [fireTop] = intersectionCallbacks
 
     expect(scroll.classList.contains(topMask)).toBe(false)
     expect(scroll.classList.contains(bottomMask)).toBe(false)
@@ -228,8 +491,12 @@ describe('ConversationView', () => {
     await nextTick()
     expect(scroll.classList.contains(topMask)).toBe(false)
 
-    fireBottom([{ isIntersecting: false }])
-    await nextTick()
+    Object.defineProperties(scroll, {
+      scrollHeight: { value: 1_000 },
+      scrollTop: { value: 100 },
+      clientHeight: { value: 500 }
+    })
+    await fireEvent.scroll(scroll)
     expect(scroll.classList.contains(bottomMask)).toBe(true)
     expect(scroll.classList.contains(topMask)).toBe(false)
   })

@@ -1,10 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import type { InputTextProps } from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
 import { describe, expect, it, vi } from 'vitest'
 
+import Input from '@/components/ui/input/Input.vue'
+import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -14,7 +12,7 @@ import { createMockWidget } from './widgetTestUtils'
 describe('WidgetInputText Value Binding', () => {
   const createInputTextWidget = (
     value: string = 'default',
-    options: Partial<InputTextProps> & IWidgetOptions = {},
+    options: IWidgetOptions = {},
     callback?: (value: string) => void
   ) =>
     createMockWidget({
@@ -31,8 +29,7 @@ describe('WidgetInputText Value Binding', () => {
   ) => {
     return render(WidgetInputText, {
       global: {
-        plugins: [PrimeVue],
-        components: { InputText, Textarea }
+        components: { Input, Textarea }
       },
       props: {
         widget,
@@ -51,7 +48,7 @@ describe('WidgetInputText Value Binding', () => {
     if (trigger === 'blur') {
       await fireEvent.blur(input)
     } else {
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.keyDown(input, { key: 'Enter' })
     }
     return input
@@ -155,18 +152,13 @@ describe('WidgetInputText Value Binding', () => {
   })
 
   describe('Component Rendering', () => {
-    it('always renders InputText component', () => {
+    it('renders a single-line text input', () => {
       const widget = createInputTextWidget('test value')
-      const { container } = renderComponent(widget, 'test value')
+      renderComponent(widget, 'test value')
 
-      // WidgetInputText always uses InputText, not Textarea
       const input = screen.getByRole('textbox')
       expect(input).toBeInTheDocument()
-
-      // Should not render textarea (that's handled by WidgetTextarea component)
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const textarea = container.querySelector('textarea')
-      expect(textarea).not.toBeInTheDocument()
+      expect(input.tagName).toBe('INPUT')
     })
 
     it('marks the text input as invalid', () => {

@@ -5,16 +5,17 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Load3D from '@/components/load3d/Load3D.vue'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComponentWidget } from '@/scripts/domWidget'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { resolveNode } from '@/utils/litegraphUtil'
 
-const { load3dState, resolveNodeMock } = vi.hoisted(() => ({
+const { load3dState } = vi.hoisted(() => ({
   load3dState: {
     current: null as ReturnType<typeof buildLoad3dStub> | null
-  },
-  resolveNodeMock: vi.fn()
+  }
 }))
 
 function buildLoad3dStub() {
@@ -65,9 +66,7 @@ vi.mock<unknown>(import('@/composables/useLoad3d'), () => ({
   useLoad3d: () => load3dState.current
 }))
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  resolveNode: resolveNodeMock
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 const i18n = createI18n({
   legacy: false,
@@ -87,7 +86,12 @@ type RenderOptions = {
   enable3DViewer?: boolean
 }
 
-const MOCK_NODE = { id: 'node', type: 'Load3D' }
+function createMockNode() {
+  const node = new LGraphNode('Load3D')
+  node.id = toNodeId('node')
+  node.type = 'Load3D'
+  return node
+}
 
 function renderLoad3D(options: RenderOptions = {}) {
   const stub = buildLoad3dStub()
@@ -103,7 +107,7 @@ function renderLoad3D(options: RenderOptions = {}) {
     ...render(Load3D, {
       props: {
         widget: (options.widget ?? {
-          node: MOCK_NODE
+          node: createMockNode()
         }) as unknown as ComponentWidget<string[]>,
         nodeId: options.nodeId
       },
@@ -143,23 +147,23 @@ describe('Load3D', () => {
 
   describe('node resolution', () => {
     it('uses widget.node when the widget is a ComponentWidget', () => {
-      renderLoad3D({ widget: { node: MOCK_NODE } })
+      renderLoad3D({ widget: { node: createMockNode() } })
 
       expect(screen.getByTestId('load3d-scene')).toBeInTheDocument()
-      expect(resolveNodeMock).not.toHaveBeenCalled()
+      expect(resolveNode).not.toHaveBeenCalled()
     })
 
     it('falls back to resolveNode(nodeId) when the widget lacks a node', async () => {
       const nodeId = toNodeId(42)
-      resolveNodeMock.mockReturnValue(MOCK_NODE)
+      vi.mocked(resolveNode).mockReturnValue(createMockNode())
       renderLoad3D({ widget: {}, nodeId })
 
-      expect(resolveNodeMock).toHaveBeenCalledWith(nodeId)
+      expect(resolveNode).toHaveBeenCalledWith(nodeId)
       expect(await screen.findByTestId('load3d-scene')).toBeInTheDocument()
     })
 
     it('does not render Load3DScene when no node can be resolved', async () => {
-      resolveNodeMock.mockReturnValue(null)
+      vi.mocked(resolveNode).mockReturnValue(undefined)
       renderLoad3D({ widget: {}, nodeId: toNodeId(99) })
 
       await Promise.resolve()
@@ -204,7 +208,7 @@ describe('Load3D', () => {
     })
 
     it('hides ViewerControls when there is no node even if the setting is on', () => {
-      resolveNodeMock.mockReturnValue(null)
+      vi.mocked(resolveNode).mockReturnValue(undefined)
       renderLoad3D({
         widget: {},
         nodeId: toNodeId(1),

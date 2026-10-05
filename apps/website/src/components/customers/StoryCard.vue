@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import type { StoryCard } from '../../utils/customers'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { StoryCard } from '@/utils/customers'
 
 const { story, locale = 'en' } = defineProps<{
   story: StoryCard
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
 </script>
 
 <template>
   <a
-    :href="`${prefix}/customers/${story.slug}`"
+    :href="`${prefix}/customers/${story.slug}/`"
     class="group flex flex-col overflow-hidden rounded-3xl bg-transparency-white-t4 transition-colors hover:bg-white/8"
   >
     <div class="m-2 aspect-video overflow-hidden rounded-2xl">
@@ -49,7 +50,7 @@ const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
           <img src="/icons/arrow-right.svg" alt="" class="ml-0.5 size-3" />
         </span>
         <span class="text-primary-comfy-canvas">
-          {{ t('customers.story.viewArticle', locale) }}
+          {{ t('customers.story.viewArticle') }}
         </span>
       </div>
     </div>

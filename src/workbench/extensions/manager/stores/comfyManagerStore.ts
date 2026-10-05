@@ -449,7 +449,10 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
         await switchPack(pack, policy)
       }
     } catch (error) {
-      reportError(error, { errorType: 'failure_updating_node_packs' })
+      reportError(error, {
+        surface: 'platform',
+        errorType: 'failure_updating_node_packs'
+      })
       toastStore.add({
         severity: 'error',
         summary: t('manager.update'),

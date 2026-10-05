@@ -1,12 +1,21 @@
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+import {
+  getBillingTelemetryEventName,
+  getCheckoutJourneyTelemetryEventName,
+  getCloudAppBillingTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import type {
   AuthMetadata,
-  BillingTelemetryEvent,
-  CheckoutJourneyTelemetryEvent,
   ExecutionOutcomeMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
@@ -14,13 +23,7 @@ import type {
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata
 } from '../../types'
-import {
-  getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload,
-  getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
-  TelemetryEvents
-} from '../../types'
+import { TelemetryEvents } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   private isWatchingLogout = false
@@ -66,6 +69,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    datadogRum.addAction(event.name, event.properties)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
@@ -80,14 +87,14 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
   trackBillingEvent(event: BillingTelemetryEvent): void {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),
-      getBillingTelemetryEventPayload(event)
+      getCloudAppBillingTelemetryEventPayload(event)
     )
   }
 
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     datadogRum.addAction(
       getCheckoutJourneyTelemetryEventName(event),
-      getCheckoutJourneyTelemetryEventPayload(event)
+      getCloudAppCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 
@@ -149,7 +156,7 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
         ...(executionStageStartedAt !== undefined && {
           execution_duration_ms: workflowEndedAt - executionStageStartedAt
         }),
-        ...(workflowContext ?? {}),
+        ...workflowContext,
         ...(originViewId && { origin_view_id: originViewId })
       }
     })

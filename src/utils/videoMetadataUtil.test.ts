@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
 import {
   clearVideoMetadataCache,
   extractVideoMetadata,
@@ -10,11 +11,13 @@ import {
   snapToStandardFrameRate
 } from '@/utils/videoMetadataUtil'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (path: string) => `http://localhost:8188/api${path}`
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
+})
 
 function bufferSource(bytes: Uint8Array) {
   return new BufferSource(bytes)

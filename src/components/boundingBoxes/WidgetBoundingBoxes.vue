@@ -82,7 +82,7 @@
               'flex-1 self-stretch px-2 text-xs transition-colors',
               activeRegion.type === 'obj'
                 ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
-                : 'text-node-text-muted hover:text-node-text'
+                : 'text-muted-foreground hover:text-base-foreground'
             )
           "
           @click="setActiveType('obj')"
@@ -97,7 +97,7 @@
               'flex-1 self-stretch px-2 text-xs transition-colors',
               activeRegion.type === 'text'
                 ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
-                : 'text-node-text-muted hover:text-node-text'
+                : 'text-muted-foreground hover:text-base-foreground'
             )
           "
           @click="setActiveType('text')"
@@ -149,7 +149,7 @@
         />
       </div>
     </div>
-    <div v-else-if="hasRegions" class="text-node-text-muted px-1 text-xs">
+    <div v-else-if="hasRegions" class="px-1 text-xs text-muted-foreground">
       {{ $t('boundingBoxes.clickRegionToEdit') }}
     </div>
   </div>

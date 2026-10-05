@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, readonly, ref } from 'vue'
 
 let { identifyWorkshopUser, useWorkshopAuthFlag } =
-  await import('../scripts/posthog')
+  await import('@/scripts/posthog')
 import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 let { workshopIdentity, workshopSessionClient } =
   await import('./workshop-account')
@@ -19,7 +19,7 @@ function publish(next: Snapshot) {
   listeners.forEach((listener) => listener(next))
 }
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-account'))
 
 const okSession: WorkshopSession = {
@@ -61,7 +61,7 @@ async function bootSession() {
 beforeEach(async () => {
   vi.resetModules()
   ;({ identifyWorkshopUser, useWorkshopAuthFlag } =
-    await import('../scripts/posthog'))
+    await import('@/scripts/posthog'))
   ;({ workshopIdentity, workshopSessionClient } =
     await import('./workshop-account'))
 
@@ -395,6 +395,26 @@ describe('useWorkshopSession', () => {
       vi.mocked(workshopIdentity.deactivate).mock.calls.length,
       'flag-off must release the identity'
     ).toBeGreaterThan(deactivationsBefore)
+  })
+
+  it('stops the session on request without dropping the stored credential, and can start again', async () => {
+    const s = await bootSession()
+    publish(authenticatedSnapshot())
+    await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
+    const mod = await import('./workshop-session-state')
+
+    mod.stopWorkshopSession()
+
+    expect(workshopIdentity.deactivate).toHaveBeenCalled()
+    expect(s.session.value).toBeUndefined()
+    expect(workshopSessionClient.clearStoredCredential).not.toHaveBeenCalled()
+    publish(authenticatedSnapshot())
+    expect(s.session.value).toBeUndefined()
+
+    mod.useWorkshopSession()
+    await vi.waitFor(() =>
+      expect(workshopIdentity.activate).toHaveBeenCalledTimes(2)
+    )
   })
 
   it('allows remembered-workspace restoration after the flag settles off and turns on again', async () => {

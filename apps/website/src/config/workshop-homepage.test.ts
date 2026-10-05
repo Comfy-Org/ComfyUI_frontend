@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
 import { FEATURED_WORKSHOP_MODEL_IDS } from './workshop-featured'
 import { resolveHomepageWorkshopModels } from './workshop-homepage'
 

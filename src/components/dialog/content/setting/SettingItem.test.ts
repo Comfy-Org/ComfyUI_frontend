@@ -51,7 +51,7 @@ describe('SettingItem', () => {
   }
 
   function getFormItemData(container: Element) {
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const el = container.querySelector('[data-testid="form-item-data"]')
     return JSON.parse(el!.textContent)
   }

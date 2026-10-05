@@ -17,18 +17,14 @@ import { app } from '@/scripts/app'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
-import {
-  getNodeByLocatorId,
-  locatorIdFromState
-} from '@/utils/graphTraversalUtil'
+import { getNodeByState } from '@/utils/graphTraversalUtil'
 
 export { computeProcessedWidgets }
 export type { ProcessedWidget }
 
 function getHostNode(nodeData: NodeState): LGraphNode | null {
   if (!app.isGraphReady) return null
-  const locatorId = locatorIdFromState(nodeData, app.rootGraph.id)
-  return locatorId ? getNodeByLocatorId(app.rootGraph, locatorId) : null
+  return getNodeByState(app.rootGraph, nodeData)
 }
 
 export function useProcessedWidgets(

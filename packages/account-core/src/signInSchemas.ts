@@ -3,7 +3,7 @@ import { z } from 'zod'
 /**
  * The exact message keys the schemas emit, so a host wires every one of them
  * or the compiler says which is missing. Both hosts already carry these keys:
- * the app in `src/locales/en/main.json`, the website in its translations map.
+ * the app in `src/locales/en/main.json`, the website in `apps/website/src/locales/en/main.json`.
  */
 export type AuthSchemaMessageKey =
   | 'validation.prefix'

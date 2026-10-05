@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 
 const models: WorkshopModel[] = [
@@ -41,6 +41,22 @@ describe('WorkshopSearchPanel', () => {
       screen.getByRole('button', { name: 'Zeta Provider B' })
     ])
     expect(screen.queryByText(/popular|\d+.*runs/i)).toBeNull()
+  })
+
+  it('names a Workshop app as a Comfy app, not a provider', () => {
+    const app: WorkshopModel = {
+      type: 'APP',
+      appId: 'reshoot',
+      slug: 'apps/reshoot',
+      name: 'Re-shoot a video',
+      href: '/hub/apps/reshoot/',
+      workflowCount: 0,
+      capabilities: []
+    }
+    render(WorkshopSearchPanel, { props: { models: [app], query: 're-shoot' } })
+    expect(
+      screen.getByRole('button', { name: 'Re-shoot a video Comfy app' })
+    ).toBeTruthy()
   })
 
   it('shows an empty state for a query without matches', () => {

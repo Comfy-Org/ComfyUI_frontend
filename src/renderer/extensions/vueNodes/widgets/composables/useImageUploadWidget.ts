@@ -21,11 +21,16 @@ import {
 const isImageFile = (file: File) => file.type.startsWith('image/')
 const isVideoFile = (file: File) => file.type.startsWith('video/')
 
+type ImageUploadComboWidget = Omit<IComboWidget, 'value' | 'callback'> & {
+  value: string | number | string[]
+  callback?: (value: string | number | string[]) => void
+}
+
 const findFileComboWidget = (
   node: LGraphNode,
   inputName: string
-): IComboWidget | undefined =>
-  node.widgets?.find((w): w is IComboWidget => w.name === inputName)
+): ImageUploadComboWidget | undefined =>
+  node.widgets?.find((w): w is ImageUploadComboWidget => w.name === inputName)
 
 export const useImageUploadWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
@@ -90,7 +95,6 @@ export const useImageUploadWidget = () => {
         const newValue = allow_batch ? annotated : annotated[0]
         const oldValue = fileComboWidget.value
 
-        // @ts-expect-error litegraph combo value type does not support arrays yet
         fileComboWidget.value = newValue
         fileComboWidget.callback?.(newValue)
         node.onWidgetChanged?.(

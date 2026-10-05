@@ -1,6 +1,7 @@
+import { setTelemetryRegistry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { useAuthStore } from '@/stores/authStore'
-
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   BillingOpStatusResponse,
@@ -31,9 +32,7 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key: string) => key)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('./workspaceApiUrl'), () => ({
   workspaceApiUrl: (path: string) => `/api${path}`
@@ -57,6 +56,87 @@ describe('workspaceApi', () => {
     )
     vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockResolvedValue(
       AUTH_HEADER
+    )
+  })
+
+  describe('billing request dispatch telemetry', () => {
+    const record = vi.fn()
+
+    beforeEach(() => {
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackBillingEvent: record })
+      setTelemetryRegistry(registry)
+    })
+    afterEach(() => setTelemetryRegistry(null))
+
+    it.for(['pending_payment', 'needs_payment_method', 'subscribed'] as const)(
+      'records subscription checkout response %s without calling it payment success',
+      async (status) => {
+        const response = { billing_op_id: 'op-subscription', status }
+        mockAxiosInstance.post.mockResolvedValueOnce({ data: response })
+        await expect(
+          workspaceApi.subscribe('standard-monthly')
+        ).resolves.toEqual(response)
+        expect(record).toHaveBeenLastCalledWith({
+          operation: 'subscription_checkout',
+          stage: 'checkout_received',
+          outcome: 'pending',
+          billing_op_id: 'op-subscription',
+          checkout_status: status
+        })
+        expect(record).toHaveBeenCalledTimes(2)
+      }
+    )
+
+    it.for(['pending', 'failed', 'completed'] as const)(
+      'records top-up checkout response %s without calling it payment success',
+      async (status) => {
+        const response = {
+          billing_op_id: 'op-topup',
+          topup_id: 'op-topup',
+          status,
+          amount_cents: 5000
+        }
+        mockAxiosInstance.post.mockResolvedValueOnce({ data: response })
+        await expect(workspaceApi.createTopup(5000)).resolves.toEqual(response)
+        expect(record).toHaveBeenLastCalledWith({
+          operation: 'topup',
+          stage: 'checkout_received',
+          outcome: 'pending',
+          billing_op_id: 'op-topup',
+          checkout_status: status
+        })
+        expect(record).toHaveBeenCalledTimes(2)
+      }
+    )
+
+    it.for(['subscription_checkout', 'topup'] as const)(
+      'records %s dispatch before its response, but not when authentication fails',
+      async (operation) => {
+        const send = () =>
+          operation === 'topup'
+            ? workspaceApi.createTopup(5000)
+            : workspaceApi.subscribe('standard-monthly')
+        const error = new Error('request rejected')
+        mockAxiosInstance.post.mockImplementationOnce(() => {
+          expect(record).toHaveBeenCalledExactlyOnceWith({
+            operation,
+            stage: 'request_sent',
+            outcome: 'pending'
+          })
+          return Promise.reject(error)
+        })
+        await expect(send()).rejects.toBe(error)
+
+        record.mockClear()
+        mockAxiosInstance.post.mockClear()
+        vi.mocked(
+          useAuthStore().getWorkspaceAuthHeaderOrThrow
+        ).mockRejectedValueOnce(error)
+        await expect(send()).rejects.toBe(error)
+        expect(record).not.toHaveBeenCalled()
+        expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+      }
     )
   })
 
@@ -421,34 +501,42 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
-    it('getChurnkeyAuth() returns validated Stripe-provider credentials', async () => {
-      const data = {
-        customer_id: 'cus_test_1',
-        auth_hash: 'hash-1',
-        mode: 'test'
-      }
-      mockAxiosInstance.get.mockResolvedValue({ data })
-
-      await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        '/api/billing/churnkey/auth',
-        { headers: AUTH_HEADER }
-      )
-    })
-
-    it('getChurnkeyAuth() rejects malformed credentials', async () => {
-      mockAxiosInstance.get.mockResolvedValue({
-        data: {
+    it.for([undefined, 'sub_offer_1'])(
+      'getChurnkeyAuth() retains the optional offer subscription %s',
+      async (offerSubscriptionId) => {
+        const data = {
           customer_id: 'cus_test_1',
-          auth_hash: '',
-          mode: 'test'
+          auth_hash: 'hash-1',
+          mode: 'test',
+          offer_subscription_id: offerSubscriptionId
         }
-      })
+        mockAxiosInstance.get.mockResolvedValue({ data })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
-        name: 'ZodError'
-      })
-    })
+        await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
+        expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+          '/api/billing/churnkey/auth',
+          { headers: AUTH_HEADER }
+        )
+      }
+    )
+
+    it.for([{ auth_hash: '' }, { offer_subscription_id: '' }])(
+      'getChurnkeyAuth() rejects malformed credentials %j',
+      async (malformed) => {
+        mockAxiosInstance.get.mockResolvedValue({
+          data: {
+            customer_id: 'cus_test_1',
+            auth_hash: 'hash',
+            mode: 'test',
+            ...malformed
+          }
+        })
+
+        await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+          name: 'ZodError'
+        })
+      }
+    )
 
     it('getChurnkeyAuth() normalizes Axios failures', async () => {
       mockAxiosInstance.get.mockRejectedValue({

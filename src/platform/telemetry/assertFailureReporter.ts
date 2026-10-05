@@ -28,6 +28,7 @@ export function reportAssertFailure(
   if (!REPORTABLE_OCCURRENCE_COUNTS.has(occurrenceCount)) return
 
   reportError(new Error(message), {
+    surface: 'platform',
     errorType: 'invariant_assert',
     context: { ...context, occurrenceCount },
     logToConsole: false

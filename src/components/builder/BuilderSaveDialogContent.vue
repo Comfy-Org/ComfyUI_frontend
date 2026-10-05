@@ -15,7 +15,7 @@
         v-model="filename"
         autofocus
         type="text"
-        class="focus-visible:ring-ring flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary-background pl-4 text-sm text-base-foreground"
+        class="flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary-background pl-4 text-sm text-base-foreground focus-visible:ring-border-default"
         @keydown.enter="
           filename.trim() && emit('save', filename.trim(), openAsApp)
         "

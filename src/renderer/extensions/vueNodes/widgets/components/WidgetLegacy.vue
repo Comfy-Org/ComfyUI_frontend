@@ -92,7 +92,6 @@ function draw() {
   }
   containerHeight.value = height
   // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
-  // @ts-expect-error canvasHeight is a custom property used by some extensions
   node.canvasHeight = height
   widgetInstance.y = 0
   widgetInstance.width = width
@@ -128,7 +127,7 @@ function handleMove(e: PointerEvent) {
 </script>
 <template>
   <div
-    class="relative mx-[-12px] w-full min-w-0"
+    class="relative -mx-3 w-full min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas

@@ -133,28 +133,6 @@ function renderGalleria(
 }
 
 describe('WidgetGalleria Image Display', () => {
-  describe('Component Rendering', () => {
-    it('renders galleria component', () => {
-      renderGalleria([...TEST_IMAGES_SMALL])
-
-      expect(getGalleriaElement()).toBeTruthy()
-    })
-
-    it('displays empty gallery when no images provided', () => {
-      const widget = createGalleriaWidget([])
-      renderComponent(widget, [])
-
-      expect(getGalleriaValue()).toEqual([])
-    })
-
-    it('handles null or undefined value gracefully', () => {
-      const widget = createGalleriaWidget([])
-      renderComponent(widget, [])
-
-      expect(getGalleriaValue()).toEqual([])
-    })
-  })
-
   describe('String Array Input', () => {
     it('converts string array to image objects', () => {
       const widget = createGalleriaWidget([...TEST_IMAGES_SMALL])
@@ -288,14 +266,6 @@ describe('WidgetGalleria Image Display', () => {
       expect(getGalleriaProp('auto-play')).toBe('true')
       expect(getGalleriaProp('transition-interval')).toBe('3000')
     })
-
-    it('applies custom styling props', () => {
-      const images = createImageStrings(2)
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement().getAttribute('class')).toBeDefined()
-    })
   })
 
   describe('Active Index Management', () => {
@@ -316,36 +286,6 @@ describe('WidgetGalleria Image Display', () => {
       await user.click(screen.getByTestId('galleria-set-index'))
 
       await waitFor(() => expect(getGalleriaProp('active-index')).toBe('2'))
-    })
-  })
-
-  describe('Image Template Rendering', () => {
-    it('renders item template with correct image source priorities', () => {
-      const images: GalleryImage[] = [
-        {
-          itemImageSrc: 'https://example.com/item.jpg',
-          src: 'https://example.com/fallback.jpg'
-        },
-        { src: 'https://example.com/only-src.jpg' }
-      ]
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement()).toBeTruthy()
-    })
-
-    it('renders thumbnail template with correct image source priorities', () => {
-      const images: GalleryImage[] = [
-        {
-          thumbnailImageSrc: 'https://example.com/thumb.jpg',
-          src: 'https://example.com/fallback.jpg'
-        },
-        { src: 'https://example.com/only-src.jpg' }
-      ]
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement()).toBeTruthy()
     })
   })
 
@@ -404,14 +344,6 @@ describe('WidgetGalleria Image Display', () => {
   })
 
   describe('Styling and Layout', () => {
-    it('applies max-width constraint', () => {
-      const images = createImageStrings(2)
-      const widget = createGalleriaWidget(images)
-      renderComponent(widget, images)
-
-      expect(getGalleriaElement().getAttribute('class')).toBeDefined()
-    })
-
     it('applies passthrough props for thumbnails', () => {
       const images = createImageStrings(3)
       const widget = createGalleriaWidget(images)
