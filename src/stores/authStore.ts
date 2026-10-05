@@ -454,7 +454,13 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         await teamWorkspaceStore.initialize()
       } catch {
-        return undefined
+        // A remote non-Cloud origin (e.g. a proxied self-hosted instance)
+        // cannot reach cloud.comfy.org/api/workspaces: the browser blocks the
+        // cross-origin request, so workspace discovery fails regardless of
+        // retries. The signed-in user still has a valid Firebase ID token and
+        // the backend resolves the personal workspace from it, so fall back
+        // to it rather than sending no credential and 401ing node execution.
+        return (await getIdToken()) ?? undefined
       }
     }
 

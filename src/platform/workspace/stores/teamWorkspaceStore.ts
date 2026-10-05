@@ -159,6 +159,9 @@ function clearLastWorkspaceId(): void {
 const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
+// After a failed init, reject immediate re-init attempts for this long so
+// repeated token requests don't each re-run the full retry/backoff cycle.
+export const INIT_RETRY_COOLDOWN_MS = 30_000
 
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const initState = ref<InitState>('uninitialized')
@@ -179,6 +182,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   let identityGeneration = 0
   let initializationPromise: Promise<void> | null = null
   let pendingWorkspaceSwitch: Promise<void> | null = null
+  let lastInitFailureAt: number | null = null
 
   function isStaleIdentity(generation: number): boolean {
     return generation !== identityGeneration
@@ -447,6 +451,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         ) {
           error.value = e instanceof Error ? e : new Error('Unknown error')
           initState.value = 'error'
+          lastInitFailureAt = Date.now()
           isFetchingWorkspaces.value = false
           throw e
         }
@@ -466,10 +471,26 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     isFetchingWorkspaces.value = false
   }
 
-  function initialize(): Promise<void> {
+  function initialize(options?: { force?: boolean }): Promise<void> {
     if (initializationPromise) return initializationPromise
     if (initState.value !== 'uninitialized' && initState.value !== 'error') {
       return Promise.resolve()
+    }
+
+    // Cooldown after a failed init: re-running the full retry/backoff cycle
+    // on every token request would stall each submission behind up to
+    // MAX_INIT_RETRIES doomed attempts. Reject until the cooldown expires;
+    // initState stays 'error', so callers fall back to their error path.
+    // An explicit retry (e.g. the WorkspaceAuthGate retry button) bypasses
+    // the cooldown: the user decided to retry now, and the gate is already
+    // showing the error rather than blocking a submission behind a cycle.
+    if (
+      !options?.force &&
+      initState.value === 'error' &&
+      lastInitFailureAt !== null &&
+      Date.now() - lastInitFailureAt < INIT_RETRY_COOLDOWN_MS
+    ) {
+      return Promise.reject(error.value ?? new Error('Workspace init failed'))
     }
 
     const promise = performInitialization()
@@ -1023,6 +1044,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     mutableWorkspaceTransitionGeneration.value++
     pendingWorkspaceSwitch = null
     initializationPromise = null
+    lastInitFailureAt = null
     initState.value = 'uninitialized'
     workspaces.value = []
     mutableActiveWorkspaceId.value = null

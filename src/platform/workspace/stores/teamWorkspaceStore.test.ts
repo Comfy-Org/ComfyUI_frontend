@@ -8,7 +8,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
-import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
+import {
+  INIT_RETRY_COOLDOWN_MS,
+  sortWorkspaces,
+  useTeamWorkspaceStore
+} from './teamWorkspaceStore'
 
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
@@ -354,7 +358,38 @@ describe('useTeamWorkspaceStore', () => {
       await expect(store.initialize()).rejects.toThrow(
         'No workspaces available'
       )
+      // The failed init starts a 30s cooldown; a retry inside it rejects
+      // immediately instead of re-running the full cycle.
+      await expect(store.initialize()).rejects.toThrow(
+        'No workspaces available'
+      )
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(INIT_RETRY_COOLDOWN_MS)
       await store.initialize()
+
+      expect(store.initState).toBe('ready')
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
+    })
+
+    it('an explicit retry bypasses the cooldown after a failure', async () => {
+      mockWorkspaceApi.list.mockResolvedValueOnce({ workspaces: [] })
+      const store = useTeamWorkspaceStore()
+
+      await expect(store.initialize()).rejects.toThrow(
+        'No workspaces available'
+      )
+      // An implicit retry inside the cooldown still rejects immediately...
+      await expect(store.initialize()).rejects.toThrow(
+        'No workspaces available'
+      )
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+
+      // ...but an explicit retry (e.g. the WorkspaceAuthGate retry button)
+      // starts a new initialization right away instead of re-throwing the
+      // old error for the rest of the cooldown.
+      await store.initialize({ force: true })
 
       expect(store.initState).toBe('ready')
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)

@@ -581,6 +581,32 @@ describe('WorkspaceAuthGate', () => {
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledTimes(2)
     })
 
+    it('passes force to the store retry from the retry button', async () => {
+      const user = userEvent.setup()
+      const initialize = vi.mocked(useTeamWorkspaceStore().initialize)
+      initialize
+        .mockImplementationOnce(async () => {
+          Object.assign(useTeamWorkspaceStore(), { initState: 'error' })
+          throw new Error('Workspace init failed')
+        })
+        .mockImplementationOnce(async () => {
+          Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+        })
+
+      mountComponent()
+      const retryButton = await screen.findByRole('button', {
+        name: 'Try again'
+      })
+      await user.click(retryButton)
+
+      // The boot init is implicit (no options); the retry button must pass
+      // { force: true } so the store's post-failure cooldown cannot turn the
+      // click into an instant re-throw of the old error.
+      await vi.waitFor(() =>
+        expect(initialize).toHaveBeenNthCalledWith(2, { force: true })
+      )
+    })
+
     it('keeps the retry action named while retrying', async () => {
       const user = userEvent.setup()
       let resolveRetry: (() => void) | undefined
