@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "Code de langue ISO-639-1 ou ISO-639-3 (ex. : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+        "tooltip": "Code de langue ISO 639-1 (p. ex., « en », « es », « ja »). Laissez vide pour la détection automatique."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "code langue",
-        "tooltip": "Code langue ISO-639-1 ou ISO-639-3 (ex : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+        "tooltip": "Code de langue ISO 639-1 (p. ex., « en », « es », « ja »). Laissez vide pour la détection automatique."
       },
       "model": {
         "name": "modèle",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "augmentation de similarité"
-      },
-      "model_speed": {
-        "name": "vitesse"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "utiliser le speaker boost"
       },
       "output_format": {
         "name": "format de sortie",
@@ -5834,6 +5825,52 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "Génère une image avec FLUX 3 à partir d’un prompt, ou modifie et combine jusqu’à 10 images de référence. Dans le prompt, faites référence aux images comme image 1, image 2, etc.",
+    "display_name": "Image Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "« auto » suit la première image de référence ou choisit un rapport à partir du prompt."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Boîtes facultatives de Create Bounding Boxes qui placent des objets ou du texte dans la sortie. Les positions sont relatives au canevas ; indiquez-lui donc le rapport de la sortie."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Permet au modèle d’effectuer des recherches sur le prompt sur le Web et parmi les images avant de générer."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence facultatives, jusqu’à 10 au total, d’au moins 256x256 pixels chacune."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ce qu’il faut générer, ou la modification à effectuer. Le prompt est interprété et développé avant la génération."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Taille de sortie selon le rapport sélectionné : 0.75K correspond à environ 0,6 mégapixel, 1K à 1 MP, 1.5K à 2,4 MP, 2K à 4,2 MP, 4K à 16,8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolérance de modération ; 0 est le niveau le plus strict."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine permettant de déterminer si le nœud doit être réexécuté ; FLUX 3 choisit sa propre graine, les résultats réels sont donc non déterministes quelle que soit cette valeur."
       }
     },
     "outputs": {
@@ -7434,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "rapport d'aspect",
-        "tooltip": "Le rapport d'aspect de la vidéo générée."
+        "tooltip": "Le rapport largeur/hauteur de la vidéo de sortie. Ignoré lorsqu’une image d’entrée est fournie ; la vidéo suit le rapport largeur/hauteur de l’image."
       },
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -7453,11 +7490,11 @@
       },
       "prompt": {
         "name": "invite",
-        "tooltip": "Description textuelle de la vidéo souhaitée. Facultative pour grok-imagine-video-1.5 lorsqu’une image d’entrée est fournie."
+        "tooltip": "Description textuelle de la vidéo souhaitée. Facultatif pour les modèles grok-imagine-video-1.5 lorsqu’une image d’entrée est fournie."
       },
       "resolution": {
         "name": "résolution",
-        "tooltip": "La résolution de la vidéo de sortie. Le 1080p est uniquement disponible pour grok-imagine-video-1.5."
+        "tooltip": "La résolution de la vidéo de sortie. 1080p n’est pas disponible pour grok-imagine-video."
       },
       "seed": {
         "name": "graine",
@@ -18481,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "contrôle après génération"
       },
       "value": {
@@ -22372,7 +22409,7 @@
   "SeedNode": {
     "display_name": "Graine",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "contrôle après génération"
       },
       "seed": {

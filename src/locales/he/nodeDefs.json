@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "קוד שפה",
-        "tooltip": "קוד שפה לפי ISO-639-1 או ISO-639-3 (למשל, 'en', 'es', 'fra'). השאר ריק לזיהוי אוטומטי."
+        "tooltip": "קוד שפה בתקן ISO 639-1 (למשל, 'en', 'es', 'ja'). השאירו ריק לזיהוי אוטומטי."
       },
       "model": {
         "name": "מודל",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "קוד שפה לפי ISO-639-1 או ISO-639-3 (למשל, 'en', 'es', 'fra'). השאר ריק לזיהוי אוטומטי."
+        "tooltip": "קוד שפה בתקן ISO 639-1 (למשל, 'en', 'es', 'ja'). השאירו ריק לזיהוי אוטומטי."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5825,52 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "יוצר תמונה באמצעות FLUX 3 מפרומפט, או עורך ומשלב עד 10 תמונות ייחוס. יש להפנות לתמונות הייחוס בפרומפט כתמונה 1, תמונה 2 וכן הלאה.",
+    "display_name": "תמונת Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס גובה-רוחב",
+        "tooltip": "'auto' פועל לפי תמונת הייחוס הראשונה, או בוחר יחס מתוך הפרומפט."
+      },
+      "bounding_boxes": {
+        "name": "תיבות תוחמות",
+        "tooltip": "תיבות אופציונליות מ-Create Bounding Boxes, הממקמות אובייקטים או טקסט בפלט. המיקומים יחסיים לקנבס, לכן יש לספק לו את יחס הגובה-רוחב של הפלט."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "grounding": {
+        "name": "עיגון",
+        "tooltip": "לאפשר למודל לחקור את הפרומפט באמצעות חיפוש באינטרנט ובתמונות לפני היצירה."
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "תמונות ייחוס אופציונליות, עד 10 בסך הכול, בגודל של 256x256 פיקסלים לפחות כל אחת."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "מה ליצור, או איזו עריכה לבצע. הפרומפט מפורש ומורחב לפני היצירה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "גודל הפלט ביחס הגובה-רוחב שנבחר: 0.75K הוא כ־0.6 מגה-פיקסל, 1K הוא 1 MP, 1.5K הוא 2.4 MP, 2K הוא 4.2 MP, 4K הוא 16.8 MP."
+      },
+      "safety_tolerance": {
+        "name": "סבילות בטיחות",
+        "tooltip": "רמת הסבילות של מנגנון המיתון; 0 היא המחמירה ביותר."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע לקביעה אם הצומת צריך לפעול מחדש; FLUX 3 בוחר זרע משלו, ולכן התוצאות בפועל אינן דטרמיניסטיות ללא קשר לערך זה."
       }
     },
     "outputs": {
@@ -7434,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "יחס הגובה-רוחב של הווידאו המופק."
+        "tooltip": "יחס הגובה-רוחב של סרטון הפלט. הוא אינו נלקח בחשבון כאשר מסופקת תמונת קלט; הסרטון פועל לפי יחס הגובה-רוחב של התמונה."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7490,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "תיאור טקסטואלי של הווידאו הרצוי. אופציונלי עבור grok-imagine-video-1.5 כאשר מסופקת תמונת קלט."
+        "tooltip": "תיאור טקסטואלי של הסרטון הרצוי. אופציונלי עבור מודלי grok-imagine-video-1.5 כאשר מסופקת תמונת קלט."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "הרזולוציה של הווידאו המופק. 1080p זמין רק עבור grok-imagine-video-1.5."
+        "tooltip": "רזולוציית סרטון הפלט. 1080p אינו זמין עבור grok-imagine-video."
       },
       "seed": {
         "name": "seed",
@@ -18481,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "מספר שלם",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "שליטה לאחר יצירה"
       },
       "value": {
@@ -22372,7 +22409,7 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "שליטה לאחר יצירה"
       },
       "seed": {

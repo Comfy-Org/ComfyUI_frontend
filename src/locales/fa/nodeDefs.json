@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان بر اساس ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای شناسایی خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO 639-1 (برای مثال، «en»، «es»، «ja»). برای تشخیص خودکار خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای تشخیص خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO 639-1 (برای مثال، «en»، «es»، «ja»). برای تشخیص خودکار خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5825,52 @@
       },
       "width": {
         "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "با FLUX ۳ از روی یک prompt تصویر تولید می‌کند، یا تا ۱۰ تصویر مرجع را ویرایش و ترکیب می‌کند. در prompt به مراجع با عنوان تصویر ۱، تصویر ۲ و به همین ترتیب اشاره کنید.",
+    "display_name": "تصویر Flux ۳",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' از نخستین تصویر مرجع پیروی می‌کند یا نسبتی را از prompt انتخاب می‌کند."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "کادرهای اختیاری از Create Bounding Boxes که اشیا یا متن را در خروجی جای‌گذاری می‌کنند. موقعیت‌ها نسبت به بوم هستند؛ بنابراین نسبت ابعاد خروجی را به آن بدهید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "به مدل اجازه می‌دهد پیش از تولید، prompt را با جست‌وجوی وب و تصویر بررسی کند."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "تصاویر مرجع اختیاری، در مجموع تا ۱۰ تصویر، که هرکدام دست‌کم ۲۵۶×۲۵۶ پیکسل باشند."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "چیزی که باید تولید شود، یا ویرایشی که باید انجام شود. prompt پیش از تولید تفسیر و بسط داده می‌شود."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "اندازهٔ خروجی در نسبت ابعاد انتخاب‌شده: 0.75K حدود ۰٫۶ مگاپیکسل، 1K برابر ۱ مگاپیکسل، 1.5K برابر ۲٫۴ مگاپیکسل، 2K برابر ۴٫۲ مگاپیکسل و 4K برابر ۱۶٫۸ مگاپیکسل است."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "میزان تحمل تعدیل محتوا؛ ۰ سخت‌گیرانه‌ترین حالت است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed برای تعیین اینکه node باید دوباره اجرا شود یا نه؛ FLUX ۳ seed خودش را انتخاب می‌کند، بنابراین نتایج واقعی صرف‌نظر از این مقدار غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -7434,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "نسبت ابعاد",
-        "tooltip": "نسبت ابعاد ویدیوی خروجی."
+        "tooltip": "نسبت ابعاد ویدیوی خروجی. هنگامی که تصویر ورودی ارائه شده باشد نادیده گرفته می‌شود؛ ویدیو از نسبت ابعاد تصویر پیروی می‌کند."
       },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -7453,11 +7490,11 @@
       },
       "prompt": {
         "name": "راهنما",
-        "tooltip": "توضیح متنی ویدیوی موردنظر. هنگامی که یک تصویر ورودی ارائه شده باشد، برای grok-imagine-video-1.5 اختیاری است."
+        "tooltip": "توضیح متنی ویدیوی موردنظر. برای مدل‌های grok-imagine-video-1.5، هنگامی که تصویر ورودی ارائه شده باشد، اختیاری است."
       },
       "resolution": {
         "name": "وضوح",
-        "tooltip": "وضوح ویدیوی خروجی. 1080p فقط برای grok-imagine-video-1.5 در دسترس است."
+        "tooltip": "وضوح ویدیوی خروجی. 1080p برای grok-imagine-video در دسترس نیست."
       },
       "seed": {
         "name": "بذر",
@@ -18481,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "عدد صحیح",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
       "value": {
@@ -22372,7 +22409,7 @@
   "SeedNode": {
     "display_name": "بذر",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
       "seed": {
