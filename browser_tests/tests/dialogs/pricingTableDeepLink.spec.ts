@@ -24,6 +24,7 @@ import {
 } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -588,12 +589,12 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       })
     }, SUBSCRIPTION_IN_PROGRESS_DETAIL)
 
-    const toast = page
-      .getByTestId('toast')
-      .and(page.locator('[data-toast-kind="error"]'))
-      .filter({ hasText: SUBSCRIPTION_IN_PROGRESS_DETAIL })
+    const toasts = new ToastHelper(page)
+    const toast = toasts.toastErrors.filter({
+      hasText: SUBSCRIPTION_IN_PROGRESS_DETAIL
+    })
     await expect(toast).toBeVisible()
-    await toast.getByTestId('toast-close').click()
+    await toasts.dismiss(toast)
 
     await expect(toast).toHaveCount(0)
     await expect(pricingHeading(page)).toBeVisible()

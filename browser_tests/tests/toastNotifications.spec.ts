@@ -20,7 +20,9 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
   test('Error toast appears when triggered', async ({ comfyPage }) => {
     await triggerErrorToast(comfyPage)
 
-    await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
+    await expect(
+      comfyPage.toast.toastErrors.filter({ hasText: 'Test execution error' })
+    ).toBeVisible()
   })
 
   test('Graph toast fallback respects the workspace inset', async ({
@@ -43,9 +45,7 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
 
     await triggerErrorToast(comfyPage)
 
-    const graphToast = comfyPage.page
-      .getByTestId('toast')
-      .filter({ hasText: 'Test execution error' })
+    const graphToast = comfyPage.toast.withText('Test execution error')
     await expect(graphToast).toBeVisible()
 
     const bounds = await graphToast.boundingBox()
@@ -57,22 +57,21 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     )
   })
 
-  test('Toast shows correct error severity class', async ({ comfyPage }) => {
+  test('Error toast is announced as an alert', async ({ comfyPage }) => {
     await triggerErrorToast(comfyPage)
 
-    const errorToast = comfyPage.page
-      .getByTestId('toast')
-      .and(comfyPage.page.locator('[data-toast-kind="error"]'))
-    await expect(errorToast.first()).toBeVisible()
+    await expect(
+      comfyPage.toast.alerts.filter({ hasText: 'Test execution error' })
+    ).toBeVisible()
+    await expect(comfyPage.toast.toastErrors).toHaveCount(1)
   })
 
   test('Toast can be dismissed via close button', async ({ comfyPage }) => {
     await triggerErrorToast(comfyPage)
+    const errorToast = comfyPage.toast.withText('Test execution error')
+    await expect(errorToast).toBeVisible()
 
-    await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
-
-    const closeButton = comfyPage.page.getByTestId('toast-close').first()
-    await closeButton.click()
+    await comfyPage.toast.dismiss(errorToast)
 
     await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
   })
@@ -87,16 +86,24 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
   })
 
-  test('Toast error count is accurate', async ({ comfyPage }) => {
-    await triggerErrorToast(comfyPage)
+  test('Legacy extension toast messages still render and dismiss', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.evaluate(() => {
+      const message = {
+        severity: 'warn',
+        summary: 'Legacy summary',
+        detail: 'Legacy detail',
+        life: 30000
+      } as const
+      window.app!.extensionManager.toast.add(message)
+      window.app!.extensionManager.toast.addAlert('Legacy alert')
+      window.app!.extensionManager.toast.remove(message)
+    })
 
     await expect(
-      comfyPage.page
-        .getByTestId('toast')
-        .and(comfyPage.page.locator('[data-toast-kind="error"]'))
-        .first()
+      comfyPage.toast.toastWarnings.filter({ hasText: 'Legacy alert' })
     ).toBeVisible()
-
-    await expect(comfyPage.toast.toastErrors).not.toHaveCount(0)
+    await expect(comfyPage.toast.withText('Legacy detail')).toHaveCount(0)
   })
 })

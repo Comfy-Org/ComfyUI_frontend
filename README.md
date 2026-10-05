@@ -478,6 +478,9 @@ methods with the same `(title, options?)` signature. Toasts persist when
 `duration` is omitted. Use `dismiss(id)` to remove one toast or `dismissAll()`
 to remove every toast.
 
+The earlier `add({ severity, summary, detail, life })`, `remove(message)`,
+`removeAll()`, and `addAlert(message)` calls still work but are deprecated.
+
 ![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
 
 </details>
