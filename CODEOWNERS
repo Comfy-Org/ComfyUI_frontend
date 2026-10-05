@@ -80,9 +80,6 @@
 /apps/website/src/config/workshop-balance.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
 /apps/website/src/config/workshop-credits.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
 
-# In-app agent
-# Owned by the agent developers team and the comfy-standard-approver team.
-# agent_devs must exist as a GitHub team for its entries to take effect.
 /src/workbench/extensions/agent/                  @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
 /src/extensions/core/agentPanel.ts                @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
 /src/extensions/core/agentPanel.test.ts           @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
