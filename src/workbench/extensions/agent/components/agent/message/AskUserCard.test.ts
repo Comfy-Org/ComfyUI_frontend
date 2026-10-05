@@ -260,7 +260,7 @@ describe('AskUserCard', () => {
         maxSelections: 2,
         allowOther: true,
         resolution: {
-          answered: true,
+          status: 'answered',
           selected: ['sd15', 'sdxl'],
           otherText: 'a LoRA'
         }
@@ -282,7 +282,7 @@ describe('AskUserCard', () => {
     })
 
     it('says the question closed when it ended without an answer', () => {
-      renderCard({ resolution: { answered: false, selected: [] } })
+      renderCard({ resolution: { status: 'closed', selected: [] } })
 
       expect(screen.getByRole('status')).toHaveTextContent(
         'This question was closed without an answer.'
@@ -290,14 +290,20 @@ describe('AskUserCard', () => {
       expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     })
 
-    it('says another place answered it when there is no answer to read back', () => {
-      renderCard({ resolution: { answered: true, selected: [] } })
+    it('reads as answered, naming nothing, when the server named no answer', () => {
+      renderCard({ resolution: { status: 'answered', selected: [] } })
+
+      expect(screen.getByRole('status')).toHaveTextContent('Answered')
+      expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+    })
+
+    it('says the answer could not be confirmed when the outcome is unknown', () => {
+      renderCard({ resolution: { status: 'unknown', selected: [] } })
 
       expect(screen.getByRole('status')).toHaveTextContent(
-        'This question was answered somewhere else.'
+        "We couldn't confirm your answer was received."
       )
-      expect(screen.queryByText('Answered')).not.toBeInTheDocument()
-      expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+      expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     })
 
     it('turns read-only in place when the resolution arrives', async () => {
@@ -313,7 +319,7 @@ describe('AskUserCard', () => {
           minSelections: 1,
           maxSelections: 1,
           allowOther: false,
-          resolution: { answered: true, selected: ['flux'] }
+          resolution: { status: 'answered', selected: ['flux'] }
         }
       })
 

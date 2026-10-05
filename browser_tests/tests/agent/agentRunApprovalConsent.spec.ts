@@ -401,9 +401,8 @@ test.describe('Agent ask_user question', { tag: ['@cloud', '@agent'] }, () => {
         hasText: t('agent.askUser.answered')
       })
       await expect(record).toContainText('Oil painting')
-      await expect(record).toContainText(
-        t('agent.askUser.otherAnswer', { text: 'watercolor' })
-      )
+      // The frame names the ids, not the free text, so ours is not echoed.
+      await expect(record).not.toContainText('watercolor')
       await expect(submit).toHaveCount(0)
       expect(answers()).toHaveLength(1)
     })
