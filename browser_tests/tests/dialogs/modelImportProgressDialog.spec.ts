@@ -301,7 +301,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
         candidate.request().method() === 'DELETE'
     )
     await toast.getByRole('button', { name: 'Cancel Download' }).click()
-    await (await cancellation).finished()
+    await cancellation
 
     const advanceReconciliation = async () => {
       const response = page.waitForResponse(
