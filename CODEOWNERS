@@ -80,26 +80,26 @@
 /apps/website/src/config/workshop-balance.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
 /apps/website/src/config/workshop-credits.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
 
-/src/workbench/extensions/agent/                  @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/extensions/core/agentPanel.ts                @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/extensions/core/agentPanel.test.ts           @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/stores/agentNodeSelectionStore.ts            @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/stores/agentNodeSelectionStore.test.ts       @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/components/graph/agentPanelMount.test.ts     @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/components/topbar/AgentEntryButton.vue       @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/components/topbar/AgentEntryButton.stories.ts @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/components/topbar/WorkflowAgentTargetIndicator.vue @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/platform/settings/constants/agent.ts         @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/platform/telemetry/utils/getAgentPanelOpen.ts      @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/src/platform/telemetry/utils/getAgentPanelOpen.test.ts @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/browser_tests/tests/agent/                       @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/browser_tests/assets/agent/                      @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/browser_tests/fixtures/data/agent/               @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/browser_tests/fixtures/**/*gent*                 @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/browser_tests/tests/dialogs/dialogAgentPanelInset.spec.ts @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/browser_tests/tests/load3d/load3dAgentUpdate.spec.ts      @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/browser_tests/tests/performance/agentComposer.spec.ts     @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
-/browser_tests/tests/sidebar/agentVideoAsset.spec.ts       @Comfy-Org/comfy-standard-approver @Comfy-Org/agent_devs
+/src/workbench/extensions/agent/                  @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/extensions/core/agentPanel.ts                @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/extensions/core/agentPanel.test.ts           @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/stores/agentNodeSelectionStore.ts            @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/stores/agentNodeSelectionStore.test.ts       @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/components/graph/agentPanelMount.test.ts     @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/components/topbar/AgentEntryButton.vue       @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/components/topbar/AgentEntryButton.stories.ts @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/components/topbar/WorkflowAgentTargetIndicator.vue @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/platform/settings/constants/agent.ts         @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/platform/telemetry/utils/getAgentPanelOpen.ts      @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/src/platform/telemetry/utils/getAgentPanelOpen.test.ts @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/browser_tests/tests/agent/                       @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/browser_tests/assets/agent/                      @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/browser_tests/fixtures/data/agent/               @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/browser_tests/fixtures/**/*gent*                 @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/browser_tests/tests/dialogs/dialogAgentPanelInset.spec.ts @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/browser_tests/tests/load3d/load3dAgentUpdate.spec.ts      @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/browser_tests/tests/performance/agentComposer.spec.ts     @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
+/browser_tests/tests/sidebar/agentVideoAsset.spec.ts       @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_agent_approvers
 
 # Translations - native-language reviewers
 # NOTE: GitHub only honors a code owner that has WRITE access to this repo.
