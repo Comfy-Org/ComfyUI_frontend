@@ -607,6 +607,46 @@ function ghAssign(path: string, login: string): boolean {
   }
 }
 
+function assignSheriff(
+  repo: string,
+  { number }: SheriffAction,
+  sheriff: string
+): boolean {
+  const path = `repos/${repo}/issues/${number}/assignees`
+  if (ghAssign(path, sheriff)) {
+    summary(`- Assigned #${number}`)
+    return true
+  }
+  warn(`Could not confirm #${number} was assigned to ${sheriff}`)
+  return false
+}
+
+function requestReviewFrom(
+  repo: string,
+  { number }: SheriffAction,
+  reviewer: string
+) {
+  const path = `repos/${repo}/pulls/${number}/requested_reviewers`
+  if (ghPost(path, `reviewers[]=${reviewer}`)) {
+    summary(`- Requested review from \`${reviewer}\` on #${number}`)
+  } else {
+    warn(`Could not request review from ${reviewer} on #${number}`)
+  }
+}
+
+// Reported once rather than per PR: `degraded` is a single workflow output, and
+// appending a second record for one key is how a heredoc output misparses.
+function reportUnconfirmed(sheriff: string, unconfirmed: number[]) {
+  if (unconfirmed.length === 0) return
+  output(
+    'degraded',
+    `GitHub did not record \`${sheriff}\` as assignee on ` +
+      `${unconfirmed.map((number) => `#${number}`).join(', ')}. It ignores an ` +
+      'assignee without push access and still reports success.'
+  )
+  process.exitCode = 1
+}
+
 function runAssignment(
   repo: string,
   sheriff: string,
@@ -626,60 +666,21 @@ function runAssignment(
     )
   }
 
-  const unconfirmed: number[] = []
-  for (const { number, assign, requestReview, reviewer } of actions) {
-    if (assign) {
-      const path = `repos/${repo}/issues/${number}/assignees`
-      if (ghAssign(path, sheriff)) {
-        summary(`- Assigned #${number}`)
-      } else {
-        warn(`Could not confirm #${number} was assigned to ${sheriff}`)
-        unconfirmed.push(number)
-      }
-    }
-
+  const unconfirmed = actions.flatMap((action) => {
+    const assigned = !action.assign || assignSheriff(repo, action, sheriff)
     // A failed review request (e.g. fork PRs) must not undo the assignment.
-    if (requestReview && reviewer) {
-      const path = `repos/${repo}/pulls/${number}/requested_reviewers`
-      if (ghPost(path, `reviewers[]=${reviewer}`)) {
-        summary(`- Requested review from \`${reviewer}\` on #${number}`)
-      } else {
-        warn(`Could not request review from ${reviewer} on #${number}`)
-      }
+    if (action.requestReview && action.reviewer) {
+      requestReviewFrom(repo, action, action.reviewer)
     }
-  }
-
-  // Reported once rather than per PR: `degraded` is a single workflow output,
-  // and appending a second record for the same key is how a heredoc output
-  // gets misparsed.
-  if (unconfirmed.length > 0) {
-    output(
-      'degraded',
-      `GitHub did not record \`${sheriff}\` as assignee on ` +
-        `${unconfirmed.map((number) => `#${number}`).join(', ')}. It ignores ` +
-        'an assignee without push access and still reports success.'
-    )
-    process.exitCode = 1
-  }
+    return assigned ? [] : [action.number]
+  })
+  reportUnconfirmed(sheriff, unconfirmed)
 }
 
-async function main() {
-  const repo = process.env.GH_REPO
-  if (!repo) throw new Error('GH_REPO is required')
-
-  const declared = loadSheriffConfig()
-  if (declared.error) {
-    warn(declared.error)
-    output('degraded', declared.error)
-    process.exitCode = 1
-    return
-  }
-  if (declared.config) {
-    const { sheriff, backupReviewer } = declared.config
-    runAssignment(repo, sheriff, backupReviewer, SHERIFF_CONFIG_PATH)
-    return
-  }
-
+// The pre-config path: resolve the sheriff from the Datadog on-call rota.
+// Runs only while .github/release-sheriff.json is absent, and is removed
+// with the rest of the Datadog lookup.
+async function runFromDatadogRota(repo: string) {
   const credentials = {
     apiKey: process.env.DATADOG_API_KEY,
     appKey: process.env.DATADOG_APP_KEY
@@ -752,6 +753,26 @@ async function main() {
   }
 
   runAssignment(repo, login, nextInRotation(directory.rotation, login), source)
+}
+
+async function main() {
+  const repo = process.env.GH_REPO
+  if (!repo) throw new Error('GH_REPO is required')
+
+  const declared = loadSheriffConfig()
+  if (declared.error) {
+    warn(declared.error)
+    output('degraded', declared.error)
+    process.exitCode = 1
+    return
+  }
+  if (!declared.config) {
+    await runFromDatadogRota(repo)
+    return
+  }
+
+  const { sheriff, backupReviewer } = declared.config
+  runAssignment(repo, sheriff, backupReviewer, SHERIFF_CONFIG_PATH)
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
