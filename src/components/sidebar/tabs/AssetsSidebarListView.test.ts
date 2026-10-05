@@ -103,7 +103,7 @@ describe('AssetsSidebarListView', () => {
 
     const { container } = renderListView([buildOutputItem(videoAsset)])
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const stubs = container.querySelectorAll('[data-testid="assets-list-item"]')
     const assetListItem = stubs[stubs.length - 1]
 
@@ -123,7 +123,7 @@ describe('AssetsSidebarListView', () => {
 
     const { container } = renderListView([buildOutputItem(textAsset)])
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const stubs = container.querySelectorAll('[data-testid="assets-list-item"]')
     const assetListItem = stubs[stubs.length - 1]
 
@@ -144,11 +144,11 @@ describe('AssetsSidebarListView', () => {
       'onPreview-asset': onPreviewAsset
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const trigger = container.querySelector(
       '[data-testid="preview-click-trigger"]'
     )!
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(trigger)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
@@ -166,9 +166,9 @@ describe('AssetsSidebarListView', () => {
       'onPreview-asset': onPreviewAsset
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const stub = container.querySelector('[data-testid="assets-list-item"]')!
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(stub)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
@@ -188,7 +188,7 @@ describe('AssetsSidebarListView', () => {
 
     function renderDraggableRow() {
       const { container } = renderListView([buildOutputItem(dragAsset)])
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the draggable row intentionally has no interactive role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the draggable row intentionally has no interactive role
       const row = container.querySelector('[data-testid="assets-list-item"]')!
       return row
     }

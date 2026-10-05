@@ -26,7 +26,7 @@ export interface WebSessionRequestScope {
 
 export interface WebSessionFetchPorts {
   /** A fresh session for the same user and epoch, or undefined to abandon. */
-  readonly reread: (
+  readonly refresh: (
     scope: WebSessionRequestScope
   ) => Promise<WebSessionRequestScope | undefined>
   readonly workspaceDenied: (workspaceId: string) => void
@@ -76,7 +76,7 @@ export async function fetchOnWebSession(
   if (code !== 'csrf_invalid' || init.body instanceof ReadableStream) {
     return response
   }
-  const fresh = await ports.reread(scope)
+  const fresh = await ports.refresh(scope)
   return fresh ? send(fresh) : response
 }
 
@@ -119,6 +119,11 @@ export function provideWebSessionRequests(
 
 export function webSessionRequests(): WebSessionRequests | undefined {
   return provided
+}
+
+/** True when the session is on and this tab is signed in on it. */
+export async function signedInOnWebSession(): Promise<boolean> {
+  return (await provided?.scope()) !== undefined
 }
 
 export type WebSessionSend = (

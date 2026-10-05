@@ -1,20 +1,19 @@
 ---
-import BenefitsGrid01 from '../../../components/blocks/BenefitsGrid01.vue'
-import BuildConfiguratorSplit01 from '../../../components/blocks/BuildConfiguratorSplit01.vue'
-import CardSplitContent02 from '../../../components/blocks/CardSplitContent02.vue'
-import CompareTable01 from '../../../components/blocks/CompareTable01.vue'
-import CtaBands01 from '../../../components/blocks/CtaBands01.vue'
-import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
-import FeatureRows02 from '../../../components/blocks/FeatureRows02.vue'
-import HeroProduct01 from '../../../components/blocks/HeroProduct01.vue'
-import StepsCards01 from '../../../components/blocks/StepsCards01.vue'
-import IndustriesSection from '../../../components/home/IndustriesSection.vue'
-import DistributionsScene from '../../../components/product/enterprise/DistributionsScene.vue'
-import { t } from '../../../i18n/translations'
-import BaseLayout from '../../../layouts/BaseLayout.astro'
-import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
-import { absoluteUrl, pageContext } from '../../../utils/jsonLd'
-import { buildFaqPageNode } from '../../enterprise/_faqMetadata'
+import BenefitsGrid01 from '@/components/blocks/BenefitsGrid01.vue'
+import BuildConfiguratorSplit01 from '@/components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '@/components/blocks/CardSplitContent02.vue'
+import CompareTable01 from '@/components/blocks/CompareTable01.vue'
+import CtaBands01 from '@/components/blocks/CtaBands01.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
+import HeroProduct01 from '@/components/blocks/HeroProduct01.vue'
+import StepsCards01 from '@/components/blocks/StepsCards01.vue'
+import IndustriesSection from '@/components/home/IndustriesSection.vue'
+import DistributionsScene from '@/components/product/enterprise/DistributionsScene.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import ClosingCtaSection from '@/templates/platform/ClosingCtaSection.vue'
+import { absoluteUrl, pageContext } from '@/utils/jsonLd'
+import { buildFaqPageNode } from '@/pages/enterprise/_faqMetadata'
 
 const faqs = [
   {
@@ -290,9 +289,8 @@ const faqPage = buildFaqPageNode(url, faqs)
 
   <ClosingCtaSection
     locale="zh-CN"
-    heading-after-badge={t(
-      'enterprise.managedBuilds.closing.headingAfterBadge',
-      'zh-CN'
+    heading-after-badge={Astro.locals.t(
+      'enterprise.managedBuilds.closing.headingAfterBadge'
     )}
     client:visible
   />

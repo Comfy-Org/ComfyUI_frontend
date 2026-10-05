@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const base: WorkshopModel = {
@@ -224,5 +224,31 @@ describe('WorkshopModelCard', () => {
   ])('leaves fallback and unlabelled artwork unmarked', (card) => {
     render(WorkshopModelCard, { props: { model: card } })
     expect(screen.queryByTestId('model-thumbnail-label')).toBeNull()
+  })
+
+  it.for([
+    {
+      kind: 'a workflow, whose name is a sentence',
+      model: {
+        type: 'CLOUD',
+        workflowId: 'workflows/upscale-a-video',
+        slug: 'workflows/upscale-a-video',
+        name: 'Upscale a video',
+        href: '/models/workflows/upscale-a-video/',
+        workflowCount: 1,
+        capabilities: [],
+        models: ['Topaz'],
+        modality: 'video'
+      },
+      shown: 'Upscale a video'
+    },
+    {
+      kind: 'a model, whose name repeats its task as a suffix',
+      model: { ...base, name: 'Flux Image-to-Image' },
+      shown: 'Flux'
+    }
+  ] as const)('shows the whole name of $kind', ({ model, shown }) => {
+    render(WorkshopModelCard, { props: { model } })
+    expect(screen.getByTestId('model-card-name').textContent).toBe(shown)
   })
 })

@@ -16,11 +16,11 @@ import type {
   TurnstileRenderOptions
 } from '@comfyorg/account-core/turnstileScript'
 
-import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
+import { removeAllToasts, useAuthToasts } from '@/config/auth-toast-state'
 import {
   testCredential,
   testFirebaseUser
-} from '../../config/__fixtures__/workshopSessionFakes'
+} from '@/config/__fixtures__/workshopSessionFakes'
 import {
   isNewWorkshopUser,
   isWorkshopProvisioningError,
@@ -30,16 +30,16 @@ import {
   signInWorkshopWithGoogle,
   signOutWorkshop,
   signUpWorkshopWithEmail
-} from '../../config/workshop-firebase'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-firebase'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { t } from '@/i18n/translations'
 import {
   captureAuthCompleted,
   captureAuthFailed,
   captureSignupOpened,
   useWorkshopAuthFlag,
   useWorkshopTurnstileMode
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import AuthSignIn from './AuthSignIn.vue'
 import AuthToast from './AuthToast.vue'
 
@@ -48,9 +48,9 @@ const handles = vi.hoisted(() => ({
   embedded: false
 }))
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-firebase'))
-vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-firebase'))
+vi.mock(import('@/config/workshop-session-state'))
 
 const authFlag = ref(true)
 const authUser = ref<User | null>(null)
@@ -336,7 +336,7 @@ describe('AuthSignIn', () => {
     expect(alert.getAttribute('data-severity')).toBe('warn')
     expect(alert.textContent).toContain('Warning')
     expect(alert.textContent).toContain(
-      t('auth.errors.auth/popup-closed-by-user', 'en')
+      t('auth.errors.auth/popup-closed-by-user', {}, { locale: 'en' })
     )
     expect(toasts.value).toHaveLength(1)
     expect(
@@ -965,7 +965,7 @@ describe('AuthSignIn', () => {
     expect(
       alert.textContent,
       'user-not-found collapses to the neutral invalid-credential line so the toast never confirms whether the email has an account'
-    ).toContain(t('auth.errors.auth/invalid-credential', 'en'))
+    ).toContain(t('auth.errors.auth/invalid-credential', {}, { locale: 'en' }))
     expect(toasts.value[0].life).toBeUndefined()
     expect(replace).not.toHaveBeenCalled()
   })
@@ -1648,7 +1648,9 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'a hung email request recovers with a message rather than silently re-enabling'
     ).toHaveLength(1)
-    expect(toasts.value[0].detail).toBe(t('auth.errors.generic', 'en'))
+    expect(toasts.value[0].detail).toBe(
+      t('auth.errors.generic', {}, { locale: 'en' })
+    )
     expect(
       screen.getByRole('button', { name: /^sign in$/i }),
       'a bounded email request frees the controls at its deadline'

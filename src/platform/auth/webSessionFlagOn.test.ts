@@ -38,6 +38,7 @@ import {
   webSessionResourceHeader,
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -154,6 +155,12 @@ const { default: router } = await import('@/router')
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 
+const cookieRevokeAll = {
+  authorization: null,
+  client: COMFY_CLIENT,
+  csrf: 'csrf-user-a'
+}
+
 const USER_A = fromPartial<User>({
   uid: 'user-a',
   getIdToken: async () => 'firebase-id-token'
@@ -217,6 +224,12 @@ function installServer(
     session: initial,
     requests: [] as SessionRequest[],
     dropPosts: false,
+    revokeAllStatus: 200,
+    revokeAllRequests: [] as {
+      authorization: string | null
+      client: string | null
+      csrf: string | null
+    }[],
     featureReads: [] as {
       credentials: RequestCredentials | null
       client: string | null
@@ -252,6 +265,21 @@ function installServer(
     return answerRead()
   }
 
+  const answerRevokeAll = (init: RequestInit | undefined): Response => {
+    const headers = new Headers(init?.headers)
+    server.revokeAllRequests.push({
+      authorization: headers.get('authorization'),
+      client: headers.get('x-comfy-client'),
+      csrf: headers.get('x-csrf-token')
+    })
+    if (server.revokeAllStatus !== 200) {
+      const error = { code: 'unavailable', message: 'down' }
+      return jsonResponse(error, server.revokeAllStatus)
+    }
+    server.session = 'revoked'
+    return jsonResponse({ revoked: 2 })
+  }
+
   const answerFeatures = (init: RequestInit | undefined): Response => {
     const client = new Headers(init?.headers).get('x-comfy-client')
     const credentials = init?.credentials ?? null
@@ -274,6 +302,9 @@ function installServer(
       const url = new URL(String(input), location.href)
       const method = (init?.method ?? 'GET').toUpperCase()
       if (url.pathname === '/api/features') return answerFeatures(init)
+      if (url.pathname === '/api/auth/sessions/revoke-all') {
+        return answerRevokeAll(init)
+      }
       if (url.pathname !== '/api/auth/session') {
         return jsonResponse({ id: 'customer-1' }, 201)
       }
@@ -363,40 +394,99 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
       name: '200 for the remembered user signs in as is',
       session: { userId: 'user-a' },
       requests: ['GET'],
-      signsOutLocally: false
+      signsOutLocally: false,
+      outcome: 'signed_in'
     },
     {
       name: '200 for another user signs the remembered login out',
       session: { userId: 'user-b' },
       requests: ['GET'],
-      signsOutLocally: true
+      signsOutLocally: true,
+      outcome: 'signed_in'
     },
     {
       name: '401 session_revoked signs out and never restores',
       session: 'revoked',
       requests: ['GET'],
-      signsOutLocally: true
+      signsOutLocally: true,
+      outcome: 'revoked'
     },
     {
       name: '401 no_session restores once from the remembered login',
       session: 'none',
       requests: ['GET', 'POST', 'GET'],
-      signsOutLocally: false
+      signsOutLocally: false,
+      outcome: 'restored'
     }
   ] satisfies {
     name: string
     session: ServerSession
     requests: string[]
     signsOutLocally: boolean
-  }[])('boot: $name', async ({ session, requests, signsOutLocally }) => {
-    const server = installServer(session)
+    outcome: string
+  }[])(
+    'boot: $name',
+    async ({ session, requests, signsOutLocally, outcome }) => {
+      const server = installServer(session)
+      await refreshRemoteConfig({ useAuth: false })
+      identity.signIn(USER_A)
+
+      await useSessionCookie().ensureSessionCookie()
+
+      expect(methodsOf(server.requests)).toEqual(requests)
+      expect(firebaseSignOut).toHaveBeenCalledTimes(signsOutLocally ? 1 : 0)
+      expect(
+        useTelemetry()?.trackWebSessionEvent
+      ).toHaveBeenCalledExactlyOnceWith({
+        name: 'session_bootstrap',
+        properties: { outcome, origin: location.origin }
+      })
+    }
+  )
+
+  it('reports a session revoked under a signed-in tab as signed out remotely', async () => {
+    const server = installServer({ userId: 'user-a' })
     await refreshRemoteConfig({ useAuth: false })
     identity.signIn(USER_A)
-
     await useSessionCookie().ensureSessionCookie()
 
-    expect(methodsOf(server.requests)).toEqual(requests)
-    expect(firebaseSignOut).toHaveBeenCalledTimes(signsOutLocally ? 1 : 0)
+    server.session = 'revoked'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    expect(useTelemetry()?.trackWebSessionEvent).toHaveBeenLastCalledWith({
+      name: 'session_signed_out_remotely',
+      properties: { origin: location.origin }
+    })
+  })
+
+  it.for([
+    { name: 'ok revokes every session', status: 200, result: { status: 'ok' } },
+    {
+      name: 'a server failure is returned, not thrown',
+      status: 503,
+      result: { status: 'error', code: 'SESSION_UNAVAILABLE' }
+    }
+  ])('revoke-all: $name', async ({ status, result }) => {
+    const server = installServer({ userId: 'user-a' })
+    server.revokeAllStatus = status
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    const webSession = useCloudWebSessionStore()
+
+    expect(await webSession.revokeAllSessions()).toMatchObject(result)
+    expect(server.revokeAllRequests).toEqual([cookieRevokeAll])
+  })
+
+  it('revoke-all works on a session-only tab with no Firebase login', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    await useSessionCookie().ensureSessionCookie()
+    const webSession = useCloudWebSessionStore()
+    expect(webSession.state.phase).toBe('signed_in')
+
+    expect(await webSession.revokeAllSessions()).toEqual({ status: 'ok' })
+    expect(server.revokeAllRequests).toEqual([cookieRevokeAll])
   })
 
   it('resets the tab and tells the user when another account takes the session', async () => {
@@ -488,6 +578,7 @@ function capabilitiesResponse({
       can_top_up: true,
       can_cancel: true,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_change_seats: false,
       can_invite_members: false,
       can_downgrade_to_personal: false
@@ -543,6 +634,7 @@ function installIngest(features: Record<string, boolean> = {}) {
   const ingest = {
     userId: 'user-a',
     csrfToken: 'csrf-1',
+    sessionDown: false,
     refusals: [] as string[],
     mintRefusal: undefined as (() => Response) | undefined,
     mintGate: undefined as Promise<void> | undefined,
@@ -610,14 +702,17 @@ function installIngest(features: Record<string, boolean> = {}) {
     )
   }
 
+  const answerSession = (): Response =>
+    ingest.sessionDown
+      ? jsonResponse({ code: 'unavailable', message: 'down' }, 503)
+      : jsonResponse({
+          ...sessionBody(ingest.userId),
+          csrf_token: ingest.csrfToken
+        })
+
   const respond = (request: ApiRequest, body: unknown): Response => {
     const { path, headers } = request
-    if (path === '/api/auth/session') {
-      return jsonResponse({
-        ...sessionBody(ingest.userId),
-        csrf_token: ingest.csrfToken
-      })
-    }
+    if (path === '/api/auth/session') return answerSession()
     if (path === '/api/auth/token') return mint(body)
     if (path === '/api/workspaces/current') {
       if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
@@ -756,31 +851,46 @@ describe('cloud API requests on the shared web session', () => {
     {
       name: 'the same user is re-read once and retried once with the fresh token',
       sessionUser: 'user-a',
+      sessionDown: false,
       status: 200,
       tokens: ['csrf-1', 'session', 'csrf-2', 'csrf-2']
     },
     {
-      name: 'a changed user abandons the request',
+      name: 'a changed user abandons the request and the tab follows the new account',
       sessionUser: 'user-b',
+      sessionDown: false,
+      status: 403,
+      tokens: ['csrf-1', 'session', 'csrf-2']
+    },
+    {
+      name: 'a failed re-read abandons the request',
+      sessionUser: 'user-a',
+      sessionDown: true,
       status: 403,
       tokens: ['csrf-1', 'session', 'csrf-1']
     }
-  ])('csrf_invalid: $name', async ({ sessionUser, status, tokens }) => {
-    const ingest = await bootOnSession()
-    ingest.refusals.push('csrf_invalid')
-    ingest.userId = sessionUser
-    ingest.csrfToken = 'csrf-2'
+  ])(
+    'csrf_invalid: $name',
+    async ({ sessionUser, sessionDown, status, tokens }) => {
+      const ingest = await bootOnSession()
+      ingest.refusals.push('csrf_invalid')
+      ingest.userId = sessionUser
+      ingest.sessionDown = sessionDown
+      ingest.csrfToken = 'csrf-2'
 
-    const response = await postPrompt()
-    await postPrompt()
+      const response = await postPrompt()
+      const signedInAfterRefusal = useCloudWebSessionStore().signedInUser?.id
+      await postPrompt()
 
-    expect(response.status).toBe(status)
-    expect(
-      ingest.requests.map(({ path, headers }) =>
-        path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
-      )
-    ).toEqual(tokens)
-  })
+      expect(response.status).toBe(status)
+      expect(signedInAfterRefusal).toBe(sessionUser)
+      expect(
+        ingest.requests.map(({ path, headers }) =>
+          path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
+        )
+      ).toEqual(tokens)
+    }
+  )
 
   it('workspace_access_denied drops the selection and is never replayed', async () => {
     const ingest = await bootOnSession()
@@ -1800,6 +1910,111 @@ describe.for([{ unified: false }, { unified: true }])(
   }
 )
 
+describe('a sibling tab under unified_cloud_auth', () => {
+  const openChannels = new Set<InMemoryChannel>()
+
+  class InMemoryChannel extends EventTarget {
+    constructor(readonly name: string) {
+      super()
+      openChannels.add(this)
+    }
+
+    postMessage(data: unknown) {
+      for (const peer of openChannels) {
+        if (peer !== this && peer.name === this.name) {
+          peer.dispatchEvent(new MessageEvent('message', { data }))
+        }
+      }
+    }
+
+    close() {
+      openChannels.delete(this)
+    }
+  }
+
+  const followerLocks = fromPartial<LockManager>({
+    request: (_name: string, options: LockOptions) =>
+      new Promise((_resolve, reject) => {
+        options.signal?.addEventListener('abort', () =>
+          reject(new DOMException('abandoned', 'AbortError'))
+        )
+      })
+  })
+
+  const publishFromSibling = () => {
+    const sibling = new InMemoryChannel(
+      'comfy-account-refresh:user-a:ws-personal'
+    )
+    sibling.postMessage({
+      token: 'sibling-jwt',
+      expiresAt: Date.now() + 60 * 60_000,
+      uid: 'user-a',
+      workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
+      role: 'owner',
+      permissions: []
+    })
+    sibling.close()
+  }
+
+  const firebaseExchanges = () =>
+    vi
+      .mocked(fetch)
+      .mock.calls.map(([input, init]) => recordApiRequest(input, init))
+      .filter(
+        ({ path, headers }) =>
+          path === '/api/auth/token' &&
+          headers.authorization === 'Bearer firebase-id-token'
+      )
+
+  beforeEach(() => {
+    identity.reset()
+    openChannels.clear()
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.stubGlobal('BroadcastChannel', InMemoryChannel)
+    vi.spyOn(navigator, 'locks', 'get').mockReturnValue(followerLocks)
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+  })
+
+  it('leaves a session tab on its own workspace, and its Run carries that workspace', async () => {
+    const ingest = await bootOnSession({ unified_cloud_auth: true })
+    const workspaceAuth = useWorkspaceAuthStore()
+
+    await workspaceAuth.mintAtLogin()
+    await workspaceAuth.switchWorkspace('ws-team')
+    publishFromSibling()
+    await postPrompt()
+
+    expect(workspaceAuth.currentWorkspace?.id).toBe('ws-team')
+    expect(ingest.requests.at(-1)).toEqual(
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-team',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
+    )
+    expect(firebaseExchanges()).toEqual([])
+  })
+
+  it('still mints at login and adopts the sibling token with the web session off', async () => {
+    await bootOnSession({
+      unified_cloud_auth: true,
+      unified_web_session: false
+    })
+    const workspaceAuth = useWorkspaceAuthStore()
+
+    await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
+    publishFromSibling()
+
+    expect(firebaseExchanges()).toHaveLength(1)
+    expect(workspaceAuth.currentWorkspace?.id).toBe('ws-personal')
+    expect(workspaceAuth.getUnifiedToken()).toBe('sibling-jwt')
+  })
+})
+
 describe('billing on a tab that arrived by session', () => {
   const bootSessionOnly = async () => {
     const ingest = installIngest()
@@ -2384,6 +2599,63 @@ describe.for([{ unified: false }, { unified: true }])(
         identity.resolve(null)
 
         await expect(enterApp()).resolves.toBe('/cloud/login')
+      })
+
+      describe('once the tab is in the app', () => {
+        const stopRecording: (() => void)[] = []
+
+        afterEach(() => {
+          stopRecording.splice(0).forEach((stop) => stop())
+        })
+
+        const enterAppRecordingNavigations = async () => {
+          const { server } = await install({ userId: 'user-a' })
+          identity.resolve(null)
+          await expect(enterApp()).resolves.toBe('/user-select')
+          const started: string[] = []
+          const landings: string[] = []
+          stopRecording.push(
+            router.beforeEach((to) => {
+              started.push(to.path)
+            }),
+            router.afterEach((to) => {
+              landings.push(to.path)
+            })
+          )
+          return { server, started, landings }
+        }
+
+        it.for<{ name: string; session: ServerSession }>([
+          { name: 'its heartbeat reads session_revoked', session: 'revoked' },
+          {
+            name: 'its heartbeat finds no session and no login to restore',
+            session: 'none'
+          }
+        ])(
+          'sends the tab to the login page once, keeping its path, when $name',
+          async ({ session }) => {
+            const { server, landings } = await enterAppRecordingNavigations()
+
+            server.session = session
+            await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+            await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
+            await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+            expect(landings).toEqual(['/cloud/login'])
+            expect(router.currentRoute.value.query.previousFullPath).toBe(
+              encodeURIComponent('/user-select')
+            )
+          }
+        )
+
+        it('leaves the navigation of a sign-out in this tab to the sign-out flow', async () => {
+          const { started } = await enterAppRecordingNavigations()
+
+          await useAuthStore().logout()
+          await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+          expect(started).toEqual([])
+        })
       })
 
       it('waits out an outage instead of sending the tab to the login page', async () => {

@@ -385,8 +385,19 @@ export type UsageTimeSeries = {
   buckets: Array<UsageBucket>
   ending_before: string
   granularity: 'hour' | 'day' | 'month'
-  group_by: 'model' | 'endpoint' | 'product'
+  group_by:
+    | 'model'
+    | 'endpoint'
+    | 'product'
+    | 'product_line'
+    | 'person'
+    | 'source'
+  /**
+   * One entry per value in `groups` for `product_line`, `person` and `source`; absent for the other groupings.
+   */
+  group_labels?: Array<UsageGroupLabel>
   groups: Array<string>
+  not_available?: UsageNotAvailable
   starting_on: string
   summary: UsageSummary
 }
@@ -401,6 +412,44 @@ export type UsageBalance = {
 export type UsageSummary = {
   balance?: UsageBalance
   spend_micros: number
+}
+
+/**
+ * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ */
+export type UsageNotAvailable = {
+  reason: 'no_attribution_source'
+}
+
+export type UsageGroupLabel = {
+  /**
+   * Human-readable name for the key: a person's name, a product line's label, or the key's owner and prefix.
+   */
+  display_name?: string
+  /**
+   * The value as it appears in `groups`, `buckets` and `breakdown`.
+   */
+  key: string
+  /**
+   * Only for `source` when the key is known to this workspace.
+   */
+  key_name?: string
+  /**
+   * Only for `source` when kind is `api_key`.
+   */
+  key_prefix?: string
+  /**
+   * Only for `source`.
+   */
+  kind?: 'api_key' | 'session' | 'deployment'
+  /**
+   * Only for `source` when the key's owner is known.
+   */
+  owner_display_name?: string
+  /**
+   * Only for `source` when the key is known to this workspace.
+   */
+  owner_user_id?: string
 }
 
 export type UsageBucket = {
@@ -640,7 +689,7 @@ export type TasksListResponse = {
  */
 export type TaskEntry = {
   /**
-   * When task completed or failed (null if not finished)
+   * When task completed, failed, or was cancelled (null if not finished)
    */
   completed_at?: string
   /**
@@ -658,7 +707,7 @@ export type TaskEntry = {
   /**
    * Current task status
    */
-  status: 'created' | 'running' | 'completed' | 'failed'
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
   /**
    * Task type name (e.g., model_upload)
    */
@@ -708,7 +757,7 @@ export type TaskResponse = {
   /**
    * Current task status
    */
-  status: 'created' | 'running' | 'completed' | 'failed'
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
   /**
    * Task type name (e.g., model_upload)
    */
@@ -865,6 +914,17 @@ export type SubscriptionDiscount = {
    *
    */
   name?: string
+  /**
+   * How long the discount applies, as the checkout should state it.
+   * this_payment: a one-time code on a change to a monthly plan, which
+   * covers only today's charge. first_month / first_year: a one-time
+   * code on a new monthly or yearly subscription, or on a change to a
+   * yearly plan. months: a repeating discount, for duration_in_months
+   * months. ongoing: a forever discount. Absent when the term is not
+   * known.
+   *
+   */
+  term?: 'this_payment' | 'first_month' | 'first_year' | 'months' | 'ongoing'
 }
 
 /**
@@ -1239,6 +1299,24 @@ export type RevokeAllSessionsResponse = {
 }
 
 /**
+ * Response after accepting a scheduled-change revert.
+ */
+export type RevertScheduledChangeResponse = {
+  billing_op_id: string
+  /**
+   * `pending`: poll GET /api/billing/ops/{id}.
+   */
+  status: 'reverted' | 'pending'
+}
+
+/**
+ * Request body for undoing a pending scheduled plan change.
+ */
+export type RevertScheduledChangeRequest = {
+  idempotency_key?: string
+}
+
+/**
  * Response after accepting a resubscribe request.
  */
 export type ResubscribeResponse = {
@@ -1269,7 +1347,7 @@ export type ResubscribeRequest = {
 }
 
 /**
- * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, or on the legacy_stripe billing rail while billing_status is payment_failed and its legacy subscription is past_due or unpaid, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
  */
 export type RenewalInvoice = {
   /**
@@ -1591,9 +1669,25 @@ export type PreviewSubscribeResponse = {
    */
   cost_today_cents: number
   /**
+   * Credits granted at the next billing period, as a whole credit count,
+   * resolved the same way as credits_today. Absent when the quote was not
+   * priced against Stripe.
+   *
+   */
+  credits_next_period?: number
+  /**
    * Credits that will be granted at next billing period in cents
    */
   credits_next_period_cents: number
+  /**
+   * Credits granted today, as a whole credit count. Resolved from the
+   * Stripe price metadata by the same rule the invoice grant uses, so it
+   * equals credits_added on the succeeded operation. Display this rather
+   * than converting credits_today_cents, which rounds. Absent when the
+   * quote was not priced against Stripe.
+   *
+   */
+  credits_today?: number
   /**
    * Credits granted today in cents (prorated for mid-period upgrades)
    */
@@ -2279,7 +2373,7 @@ export type ModelFile = {
  */
 export type Member = {
   /**
-   * User's email address
+   * User's email address, or an empty string if none is on file.
    */
   email: string
   /**
@@ -3324,7 +3418,7 @@ export type HistoryDetailResponse = {
 }
 
 /**
- * History entry with full prompt data
+ * History entry with full prompt data. The workflow graph (extra_data.extra_pnginfo) is omitted from records persisted after it stopped being stored; older records may still contain it.
  */
 export type HistoryDetailEntry = {
   /**
@@ -3344,7 +3438,7 @@ export type HistoryDetailEntry = {
    */
   prompt?: {
     /**
-     * Additional execution data
+     * Additional execution data. extra_pnginfo (the workflow graph) is omitted from records persisted after it stopped being stored; older records may still contain it.
      */
     extra_data?: {
       [key: string]: unknown
@@ -4532,10 +4626,54 @@ export type BillingCapabilityRolloutDefaults = {
 }
 
 /**
+ * Why a capability resolved false, keyed by the capability. The value
+ * names the policy branch that decided, not customer-facing wording: the
+ * client owns the message.
+ *
+ * The invariant runs one way only. **Presence implies refusal**: a key is
+ * present only alongside `capabilities.<key> == false`, reconciled before
+ * the response is built, so a reason never accompanies a granted
+ * capability. **Absence implies nothing** -- it means no recognised
+ * explanation, not that the capability was granted. Consult
+ * `capabilities`, which stays authoritative for what the client may offer.
+ *
+ * A key is absent for a refused capability whenever this service is
+ * talking to a billing-api that predates the field, and whenever it drops
+ * a reason it does not recognise rather than forwarding a value outside
+ * the enum below. Both are supported states, so a client must never infer
+ * a capability's value from a missing reason -- only from `capabilities`.
+ *
+ * This endpoint omits the entire `denied_reasons` object when no recognised
+ * reason survives. The billing-api endpoint may emit `{}` for the same
+ * logical state, so object presence must not be used to detect support.
+ *
+ */
+export type BillingCapabilityDenials = {
+  /**
+   * not_a_member is unreachable through this endpoint -- a non-member is
+   * answered 403 before capabilities resolve. subscription_not_started
+   * is a subscription row reserved before payment that never began.
+   * subscription_change_in_progress means the current subscription
+   * already has a successor scheduled for a future billing boundary.
+   * subscription_status_unrecognized is the server having no guidance
+   * for the row, as distinct from a deliberate refusal.
+   *
+   */
+  can_subscribe_self_serve?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'tier_not_self_serve'
+    | 'subscription_not_started'
+    | 'subscription_change_in_progress'
+    | 'subscription_status_unrecognized'
+}
+
+/**
  * Effective billing UI guidance for one authenticated user and workspace.
  */
 export type BillingCapabilitiesResponse = {
   capabilities: BillingCapabilities
+  denied_reasons?: BillingCapabilityDenials
   /**
    * Time after which the client must refetch this snapshot.
    */
@@ -4550,6 +4688,14 @@ export type BillingCapabilitiesResponse = {
    */
   revision: number
   rollout_defaults_applied: BillingCapabilityRolloutDefaults
+  /**
+   * Whether a missing subscription row authoritatively means the
+   * workspace has no paid plan. False means a legacy Stripe plan may
+   * exist outside the local projection. The field is absent when
+   * talking to a billing-api version that predates this signal.
+   *
+   */
+  subscription_state_authoritative?: boolean
 }
 
 /**
@@ -4563,6 +4709,10 @@ export type BillingCapabilities = {
   can_downgrade_to_personal: boolean
   can_invite_members: boolean
   can_reactivate: boolean
+  /**
+   * Stripe-billed only; false within 1 hour of the change.
+   */
+  can_revert_scheduled_change: boolean
   can_subscribe_self_serve: boolean
   can_top_up: boolean
 }
@@ -4706,7 +4856,7 @@ export type AssetDownloadResponse = {
   /**
    * Current task status
    */
-  status: 'created' | 'running' | 'completed' | 'failed'
+  status: 'created' | 'running' | 'completed' | 'failed' | 'cancelled'
   /**
    * Task ID for tracking download progress via GET /api/tasks/{task_id}
    */
@@ -5037,6 +5187,24 @@ export type AgentDraftSnapshot = {
    * Monotonic draft version; compare against draft_patch base_version/version to detect gaps.
    */
   version: number
+}
+
+/**
+ * A stop whose cancellation request did not land, or could not be confirmed as landed, on the durable engine. The turn is unaffected and still streaming, so the same request may be retried; cancellation is idempotent per turn. Distinct from the 500, which means the failure was one the service could not classify and a retry may never work.
+ */
+export type AgentCancelUnconfirmed = {
+  /**
+   * `cancel_not_requested` — the engine positively reports no cancellation recorded against a run it can still see, so the stop provably did not land. `cancel_outcome_unknown` — neither answer could be established; the stop may or may not have landed.
+   */
+  code: 'cancel_not_requested' | 'cancel_outcome_unknown'
+  /**
+   * Human-readable error message.
+   */
+  error: string
+  /**
+   * Always true on this response; retrying the same stop is safe.
+   */
+  retryable: boolean
 }
 
 /**
@@ -6175,6 +6343,10 @@ export type AgentCancelMessageErrors = {
    */
   403: ErrorResponse | AgentError
   /**
+   * The turn is no longer running, so there is nothing left to cancel. Two different situations answer this way and they do not repeat alike. Either the durable turn reached its terminal state before (or during) this stop — its terminal message state has already been announced, and a repeat gets the 409 above — or the message row itself no longer exists (a thread deletion or an erasure racing the stop), in which case nothing was announced and a repeat gets the 403 above, because the ownership lookup cannot tell a deleted row from one in another workspace. Not retryable either way.
+   */
+  404: AgentError
+  /**
    * The message is not a running assistant turn
    */
   409: AgentError
@@ -6190,6 +6362,10 @@ export type AgentCancelMessageErrors = {
    * Agent service unavailable
    */
   502: ErrorResponse
+  /**
+   * The cancellation request did not reach the durable engine, or reaching it could not be confirmed. The turn is still running and still stoppable: retry the same request. `code` says which of the two it was, and `Retry-After` carries the suggested delay in seconds.
+   */
+  503: AgentCancelUnconfirmed
 }
 
 export type AgentCancelMessageError =
@@ -8403,6 +8579,48 @@ export type ResubscribeResponses = {
 export type ResubscribeResponse2 =
   ResubscribeResponses[keyof ResubscribeResponses]
 
+export type RevertScheduledChangeData = {
+  body: RevertScheduledChangeRequest
+  path?: never
+  query?: never
+  url: '/api/billing/subscription/revert-scheduled-change'
+}
+
+export type RevertScheduledChangeErrors = {
+  /**
+   * `NO_SCHEDULED_CHANGE`, `SCHEDULED_CHANGE_REVERT_CLOSED`,
+   * `SUBSCRIPTION_CHANGE_IN_PROGRESS`, `BILLING_RECONCILIATION_REQUIRED`,
+   * `PREVIOUS_OPERATION_FAILED`, `TRANSITION_NOT_ALLOWED`.
+   *
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type RevertScheduledChangeError =
+  RevertScheduledChangeErrors[keyof RevertScheduledChangeErrors]
+
+export type RevertScheduledChangeResponses = {
+  /**
+   * Revert accepted
+   */
+  200: RevertScheduledChangeResponse
+}
+
+export type RevertScheduledChangeResponse2 =
+  RevertScheduledChangeResponses[keyof RevertScheduledChangeResponses]
+
 export type CreateTopupData = {
   body: CreateTopupRequest
   path?: never
@@ -8535,7 +8753,23 @@ export type GetBillingUsageTimeSeriesData = {
   body?: never
   path?: never
   query?: {
-    group_by?: 'model' | 'endpoint' | 'product'
+    /**
+     * `product_line` folds products into the customer-facing lines (Agent,
+     * Third-Party Partner API, Comfy Cloud, Serverless) plus an
+     * `unattributed` bucket that is always counted in the total.
+     * `person` and `source` attribute spend to the member or to the API
+     * key (`spend_source`) that caused it; until a data source serves
+     * them the response is an empty series with `not_available` set.
+     * Group keys for those three carry a matching entry in `group_labels`.
+     *
+     */
+    group_by?:
+      | 'model'
+      | 'endpoint'
+      | 'product'
+      | 'product_line'
+      | 'person'
+      | 'source'
     granularity?: 'hour' | 'day' | 'month'
     starting_on?: string
     ending_before?: string
@@ -8827,6 +9061,16 @@ export type GetFeaturesResponses = {
      */
     billing_web_url?: string
     /**
+     * Whether a partner/API-node workflow from THIS authenticated caller could run. It is ingest's own submit-time account-level decision published as a capability, resolved from the same authority ExecutePrompt uses, so a consumer never re-derives it from a tier table.
+     * The two values are NOT symmetric, and a consumer that treats them as symmetric will be wrong.
+     * false is sound: a partner-node submission from this caller would be refused. Usually that refusal is PARTNER_NODE_PAYMENT_REQUIRED, but a caller who is FREE for a further reason (an API key, a non-Google session under FreeTierRequireGoogleSignIn, or no job allowance on the legacy rail) is refused earlier and by a different code. Either way the workflow does not run, which is what the field answers.
+     * true is narrower than it reads: the partner-node paywall is not what refuses this caller. Another gate still might — an inactive subscription, a blocked workspace and a BlockedSubscriptionTiers entry all report true, because their refusal is account-wide rather than about partner nodes, and so do the exemptions and the fail-open outcomes that make ExecutePrompt admit a submission at all (a partner-execution workspace, a disabled subscription check, a failed subscription lookup). Two per-prompt refusals are not modelled here at all, because this field is per-account and they are not: FreeTierBlockedModels (MODEL_PAYMENT_REQUIRED, named open-weights models) and the workspace partner-provider governance gate, which keys on which providers a prompt names and answers 403 for an enforcing workspace or 503 when its policy cannot be verified. A paid caller in a governance-restricted workspace therefore reads true here and is still refused at submit.
+     * So: read false as "do not build with partner nodes" and true as "the partner gate will not stop you". Do not read true as "this caller can submit".
+     * Absent for an unauthenticated caller (the decision is per-identity and there is none) and absent while AgentPartnerCapabilityEnabled is off, which is its default — resolving it costs an account-level authority read that this endpoint does not otherwise make. A consumer must treat absence as "unknown" and fail open, never as false.
+     * Because absence carries that meaning, the field is only ever the authority's answer: unlike the flags beside it, it cannot be set from dynamic configuration, and it is removed from the response rather than left at a configured value when it is unresolvable. It is likewise absent from the WebSocket feature_flags push, which resolves no capability, so a client refreshing from the socket reads "unknown" and fails open rather than inheriting a stale answer.
+     */
+    can_run_partner_nodes?: boolean
+    /**
      * Free-tier job allowance for an authenticated non-paid (FREE-tier) user in the rollout. Absent for paid users and unauthenticated requests. Synthesized from config before a grant row exists so a brand-new user still sees their full allowance.
      */
     free_tier_balance?: {
@@ -8844,9 +9088,26 @@ export type GetFeaturesResponses = {
       used: number
     }
     /**
+     * The free-tier job allowance offered to new users, so a signed-out visitor sees the real offer before signing up. Same value for authenticated and unauthenticated requests. Absent when the free-tier allowance is disabled or zero.
+     */
+    free_tier_offer?: {
+      /**
+       * Number of free jobs granted to a new FREE-tier user
+       */
+      job_allowance: number
+      /**
+       * True when only Google-authenticated sessions receive the allowance; email/password signups get none.
+       */
+      requires_google_sign_in: boolean
+    }
+    /**
      * Maximum upload size in bytes
      */
     max_upload_size?: number
+    /**
+     * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
+     */
+    new_free_tier_subscriptions?: boolean
     /**
      * Stripe publishable key (pk_...) for the environment's Stripe account. Public by design (the secret key is never exposed here). Absent when STRIPE_PUBLISHABLE_KEY is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */
@@ -9991,6 +10252,20 @@ export type InterruptJobErrors = {
    */
   403: ForbiddenError
   /**
+   * `prompt_id` is not one of the caller's jobs in this workspace, or
+   * is not a job ID (a 36-character UUID) at all. Code NOT_FOUND;
+   * nothing was cancelled.
+   *
+   */
+  404: ErrorResponse
+  /**
+   * The job interrupt would act on runs on a Build's deployment and
+   * cannot be interrupted from here yet. Code GATEWAY_JOB_NOT_CANCELLABLE;
+   * the message names that job, and nothing was cancelled.
+   *
+   */
+  409: ErrorResponse
+  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -10000,7 +10275,9 @@ export type InterruptJobError = InterruptJobErrors[keyof InterruptJobErrors]
 
 export type InterruptJobResponses = {
   /**
-   * Success - first active job cancelled, or no active job found
+   * Success - the job was cancelled, was already finished or
+   * cancelling, or (without `prompt_id`) no active job was found
+   *
    */
   200: unknown
 }
@@ -10350,6 +10627,13 @@ export type CancelJobErrors = {
    */
   404: ErrorResponse
   /**
+   * The job runs on a Build's deployment, is still pending or running,
+   * and cannot be cancelled from here yet. Code
+   * GATEWAY_JOB_NOT_CANCELLABLE; nothing was cancelled.
+   *
+   */
+  409: ErrorResponse
+  /**
    * Internal server error - cancellation failed
    */
   500: ErrorResponse
@@ -10390,6 +10674,14 @@ export type CancelJobsErrors = {
    * One or more job IDs not found for this user (no jobs cancelled)
    */
   404: ErrorResponse
+  /**
+   * One or more jobs run on a Build's deployment, are still pending or
+   * running, and cannot be cancelled from here yet. Code
+   * GATEWAY_JOB_NOT_CANCELLABLE; the message names those jobs, and no
+   * jobs were cancelled.
+   *
+   */
+  409: ErrorResponse
   /**
    * Internal server error - cancellation failed
    */
@@ -10722,6 +11014,14 @@ export type ManageQueueErrors = {
    * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
+  /**
+   * A job listed in `delete` runs on a Build's deployment, is still
+   * pending or running, and cannot be cancelled from here yet. Code
+   * GATEWAY_JOB_NOT_CANCELLABLE; the message names those jobs, and no
+   * jobs were cancelled.
+   *
+   */
+  409: ErrorResponse
   /**
    * Internal server error
    */
@@ -11369,6 +11669,57 @@ export type ListTasksResponses = {
 }
 
 export type ListTasksResponse = ListTasksResponses[keyof ListTasksResponses]
+
+export type CancelTaskData = {
+  body?: never
+  path: {
+    task_id: string
+  }
+  query?: never
+  url: '/api/tasks/{task_id}'
+}
+
+export type CancelTaskErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Task not found
+   */
+  404: ErrorResponse
+  /**
+   * Task cannot be cancelled
+   */
+  409: ErrorResponse
+  /**
+   * Cancellation failed
+   */
+  500: ErrorResponse
+  /**
+   * Task queue unavailable
+   */
+  503: ErrorResponse
+}
+
+export type CancelTaskError = CancelTaskErrors[keyof CancelTaskErrors]
+
+export type CancelTaskResponses = {
+  /**
+   * Cancellation accepted
+   */
+  204: void
+}
+
+export type CancelTaskResponse = CancelTaskResponses[keyof CancelTaskResponses]
 
 export type GetTaskData = {
   body?: never
@@ -14217,7 +14568,7 @@ export type PostOAuthAuthorizeErrors = {
    */
   400: ErrorResponse
   /**
-   * From the handler, `code` `scope_broadening`: the requested scopes broaden a prior consent, so a fresh consent flow is required. From the auth policy, before the handler runs: `cross_site_request` when the `WebSessionAuth` or `CookieAuth` cookie comes on a request the browser labels cross-site, `origin_not_allowed` when it comes from any other origin than this page's own, a trusted one included, with no `Origin`, or with repeated `Origin` or `Sec-Fetch-Site` headers; or `workspace_access_denied`: the session's workspace selector names a workspace the user cannot use (see the `WebSessionAuth` scheme).
+   * From the auth policy, before the handler runs: `cross_site_request` when the `WebSessionAuth` or `CookieAuth` cookie comes on a request the browser labels cross-site, `origin_not_allowed` when it comes from any other origin than this page's own, a trusted one included, with no `Origin`, or with repeated `Origin` or `Sec-Fetch-Site` headers; or `workspace_access_denied`: the session's workspace selector names a workspace the user cannot use (see the `WebSessionAuth` scheme). The handler itself never returns 403.
    */
   403: ErrorResponse
   /**

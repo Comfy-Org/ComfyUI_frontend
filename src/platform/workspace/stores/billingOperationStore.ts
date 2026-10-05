@@ -1,3 +1,9 @@
+import type {
+  BillingTelemetryEvent,
+  BillingTelemetryFailure,
+  SubscriptionCheckoutTier,
+  SubscriptionCheckoutType
+} from '@comfyorg/account-core/billing'
 import type { ToastMessageOptions } from 'primevue/toast'
 import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -15,13 +21,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type {
-  BillingFailure,
-  BillingTelemetryEvent,
-  PaymentIntentSource,
-  SubscriptionCheckoutTier,
-  SubscriptionCheckoutType
-} from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
@@ -43,7 +43,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   clearCheckoutJourney,
-  getActiveCheckoutJourney
+  getActiveCheckoutJourney,
+  getCheckoutJourneyPaymentIntentSource
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -344,7 +345,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       tier: metadata?.tier,
       cycle: metadata?.cycle,
       checkoutType: metadata?.checkoutType,
-      paymentIntentSource: metadata?.paymentIntentSource,
+      paymentIntentSource:
+        metadata?.paymentIntentSource ??
+        getCheckoutJourneyPaymentIntentSource(opId),
       autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
       phase: null,
       downgradeToPersonal: metadata?.downgradeToPersonal,
@@ -1203,7 +1206,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     type: OperationType,
     errorMessage: string | null,
     isZeroPaymentOperation: boolean
-  ): BillingFailure['failure_category'] {
+  ): BillingTelemetryFailure['failure_category'] {
     if (type === 'cancel' || isZeroPaymentOperation) return 'api_rejected'
 
     if (errorMessage && /network|connection|unreachable/i.test(errorMessage)) {

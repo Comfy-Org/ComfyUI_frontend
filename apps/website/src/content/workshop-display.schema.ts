@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
-import { workshopInputDefinitionSchema } from '../config/workshop-input-definition'
-import { workshopTemplateSchema } from '../config/workshop-workflow-definition'
+import { workshopInputDefinitionSchema } from '@/config/workshop-input-definition'
+import { workshopTemplateSchema } from '@/config/workshop-workflow-definition'
 
 /**
  * How a media asset should be presented. Carried explicitly rather than

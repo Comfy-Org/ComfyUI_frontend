@@ -41,6 +41,7 @@ export function capabilitiesWith(
       can_downgrade_to_personal: false,
       can_invite_members: false,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_subscribe_self_serve: true,
       can_top_up: true,
       ...overrides
@@ -187,6 +188,8 @@ export function defaultScenario(): CloudScenario {
       cost_next_period_cents: 5000,
       credits_today_cents: 10_000,
       credits_next_period_cents: 10_000,
+      credits_today: 21_100,
+      credits_next_period: 21_100,
       amount_due_cents: 5000,
       quote_id: 'quote_e2e',
       quote_version: 1,
@@ -252,6 +255,8 @@ export function switchToYearly(scenario: CloudScenario): void {
     renewal_amount_cents: 26_880,
     credits_today_cents: 82_800,
     credits_next_period_cents: 82_800,
+    credits_today: 174_708,
+    credits_next_period: 174_708,
     current_plan: {
       slug: monthly.slug,
       tier: monthly.tier,

@@ -17,85 +17,85 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
-import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
-import { sameFormValues } from '../../lib/workshop/form-values'
-import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
-import { leaveForSignIn } from '../../config/workshop-return'
-import { useSignInHref } from '../../composables/useSignInHref'
-import { usePersonalWorkspaceSwitch } from '../../composables/usePersonalWorkspaceSwitch'
-import { useTablist } from '../../composables/useTablist'
-import type { WorkshopModelDetail } from '../../config/models-catalogue'
-import type { SnippetLanguage } from '../../config/models-snippets'
+import { useWorkshopFormDraft } from '@/composables/useWorkshopFormDraft'
+import { useWorkshopDelivery } from '@/composables/useWorkshopDelivery'
+import { sameFormValues } from '@/lib/workshop/form-values'
+import { validateWorkshopMediaInputs } from '@/config/workshop-media-validation'
+import { leaveForSignIn } from '@/config/workshop-return'
+import { useSignInHref } from '@/composables/useSignInHref'
+import { usePersonalWorkspaceSwitch } from '@/composables/usePersonalWorkspaceSwitch'
+import { useTablist } from '@/composables/useTablist'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
 import type {
   FieldErrors,
   FormValues,
   PlaygroundExample
-} from '../../config/workshop-playground'
+} from '@/config/workshop-playground'
 import {
   exampleAlt,
   isVideoUrl,
   schemaForModel,
   validateForm
-} from '../../config/workshop-playground'
+} from '@/config/workshop-playground'
 import {
   initialWorkshopPageState,
   workshopExampleState,
   workshopPageSchema
-} from '../../config/workshop-page-state'
-import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
-import { IDLE, transition } from '../../config/workshop-run'
-import { refreshWorkshopCredits } from '../../config/workshop-credits'
-import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import { stopWorkshopAccountSource } from '../../config/workshop-account-source'
-import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import type { RouterRenderResult } from '../../config/router-render'
-import { router_render } from '../../config/router-render'
-import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
+} from '@/config/workshop-page-state'
+import type { RunOutput, RunRecord, RunState } from '@/config/workshop-run'
+import { IDLE, transition } from '@/config/workshop-run'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { stopWorkshopAccountSource } from '@/config/workshop-account-source'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import type { RouterRenderResult } from '@/config/router-render'
+import { router_render } from '@/config/router-render'
+import { createWorkshopUrlUploader } from '@/config/workshop-url-upload'
 import {
   WorkshopRouterError,
   workshopRunMayStillSettle
-} from '../../config/workshop-router-errors'
-import { releaseRouterOutputs } from '../../config/workshop-response'
-import { retainRunHistory } from '../../config/workshop-run-history'
-import { reportWorkshopRun } from '../../config/workshop-run-state'
-import { modelDocsHref } from '../../lib/workshop/model-docs'
-import { linkLeavingPage } from '../../lib/workshop/leaving-link'
-import { routerSavesAssets } from '../../lib/workshop/asset-saving'
-import type { WorkshopSession } from '../../config/workshop-session-state'
+} from '@/config/workshop-router-errors'
+import { releaseRouterOutputs } from '@/config/workshop-response'
+import { retainRunHistory } from '@/config/workshop-run-history'
+import { reportWorkshopRun } from '@/config/workshop-run-state'
+import { modelDocsHref } from '@/lib/workshop/model-docs'
+import { linkLeavingPage } from '@/lib/workshop/leaving-link'
+import { routerSavesAssets } from '@/lib/workshop/asset-saving'
+import type { WorkshopSession } from '@/config/workshop-session-state'
 import {
   stopWorkshopSession,
   useWorkshopSession
-} from '../../config/workshop-session-state'
-import { workshopIdempotencyKey } from '../../config/workshop-snippets'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-session-state'
+import { workshopIdempotencyKey } from '@/config/workshop-snippets'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopAuthFlag
-} from '../../scripts/posthog'
-import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
+} from '@/scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
 import {
   workshopFailureAnalytics,
   workshopFieldErrorCodes,
   workshopModelAnalytics
-} from '../../scripts/workshop-analytics'
+} from '@/scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import {
   frameRatioRule,
   refusesRealFaces
-} from '../../config/workshop-model-restrictions'
+} from '@/config/workshop-model-restrictions'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
 import SavedAssetsStrip from './SavedAssetsStrip.vue'
-import { WORKSHOP_LEAVE_RUNNING } from '../../config/workshop-router-queue'
-import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
+import { WORKSHOP_LEAVE_RUNNING } from '@/config/workshop-router-queue'
+import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
 
 const {
   model,
@@ -109,6 +109,7 @@ const {
    * while they are filled in. The workflow pages ask for it; a model page has
    * a shorter form that reads fine as one list. */
 }>()
+const { t } = translationsFor(locale)
 
 const slots = useSlots()
 const modelAnalytics = workshopModelAnalytics(model)
@@ -396,7 +397,7 @@ useEventListener(
     const from = protectedHistoryIndex.value
     const to = historyIndex(event.state)
     if (from === undefined || to === undefined || from === to) return
-    if (globalThis.window.confirm(t('workshop.run.leavePage', locale))) {
+    if (globalThis.window.confirm(t('workshop.run.leavePage'))) {
       protectedHistoryIndex.value = to
       approvedTraversal = true
       queueMicrotask(() => {
@@ -881,7 +882,7 @@ function useInCode() {
     >
       <div
         role="tablist"
-        :aria-label="t('workshop.title', locale)"
+        :aria-label="t('workshop.title')"
         class="scrollbar-hide flex min-w-0 gap-8 overflow-x-auto max-sm:gap-5"
         data-testid="model-tabs"
         @keydown="onTabKeydown"
@@ -906,7 +907,7 @@ function useInCode() {
           "
           @click="activeSection = section"
         >
-          {{ t(sectionLabel[section], locale) }}
+          {{ t(sectionLabel[section]) }}
         </button>
       </div>
       <a
@@ -917,7 +918,7 @@ function useInCode() {
         class="ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow"
         data-testid="model-docs-link"
       >
-        {{ t('workshop.hub.docs', locale) }}
+        {{ t('workshop.hub.docs') }}
         <ExternalLink class="size-4" aria-hidden="true" />
       </a>
     </div>
@@ -937,7 +938,7 @@ function useInCode() {
         <header
           class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
         >
-          <span>{{ t('workshop.input.title', locale) }}</span>
+          <span>{{ t('workshop.input.title') }}</span>
           <button
             v-if="
               model.execution &&
@@ -950,7 +951,7 @@ function useInCode() {
             class="cursor-pointer rounded-sm px-2 py-1 hover:bg-transparency-white-t8 disabled:cursor-not-allowed"
             @click="nativeJson = !nativeJson"
           >
-            {{ t('workshop.form.nativeJson', locale) }}
+            {{ t('workshop.form.nativeJson') }}
           </button>
         </header>
 
@@ -980,7 +981,7 @@ function useInCode() {
             role="status"
             class="text-sm text-primary-warm-gray"
           >
-            {{ t('workshop.form.draftRestoreFailed', locale) }}
+            {{ t('workshop.form.draftRestoreFailed') }}
           </p>
         </div>
 
@@ -999,7 +1000,7 @@ function useInCode() {
             data-gate="signedOut"
             @click="leaveForSignIn($event, signInHref)"
           >
-            {{ t('workshop.run.signIn', locale) }}
+            {{ t('workshop.run.signIn') }}
           </Button>
           <!-- The MVP rail (DES-1015): buying happens on platform, in a new
                tab, so this page and its inputs stay alive and the return is a
@@ -1011,7 +1012,7 @@ function useInCode() {
               data-testid="gate-note"
             >
               {{
-                t('workshop.error.noCreditsCloud', locale, {
+                t('workshop.error.noCreditsCloud', {
                   workspace: session?.workspace.name ?? ''
                 })
               }}
@@ -1023,17 +1024,17 @@ function useInCode() {
               data-gate="noCredits"
               @click="requestWorkshopBuyCredits"
             >
-              {{ t('workshop.run.buyCredits', locale) }}
+              {{ t('workshop.run.buyCredits') }}
             </Button>
           </template>
           <template v-else-if="gate === 'memberNoCredits'">
             <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
               <p class="text-sm font-bold text-content-secondary">
-                {{ t('workshop.error.creditsTitle', locale) }}
+                {{ t('workshop.error.creditsTitle') }}
               </p>
               <p class="text-xs text-content-secondary">
                 {{
-                  t('workshop.error.memberNoCredits', locale, {
+                  t('workshop.error.memberNoCredits', {
                     workspace: session?.workspace.name ?? ''
                   })
                 }}
@@ -1052,8 +1053,7 @@ function useInCode() {
                 t(
                   personalSwitchPending
                     ? 'workshop.run.preparingSession'
-                    : 'workshop.run.switchPersonal',
-                  locale
+                    : 'workshop.run.switchPersonal'
                 )
               }}
             </Button>
@@ -1062,7 +1062,7 @@ function useInCode() {
               class="text-xs text-red-400"
               role="alert"
             >
-              {{ t('nav.workspaceSwitchError', locale) }}
+              {{ t('nav.workspaceSwitchError') }}
             </p>
           </template>
           <p
@@ -1070,13 +1070,13 @@ function useInCode() {
             class="flex min-h-14 flex-wrap items-center justify-center gap-x-1.5 px-2 text-center text-xs text-content-secondary sm:text-sm"
             data-testid="run-rollout-note"
           >
-            {{ t('workshop.run.rollingOut', locale) }}
+            {{ t('workshop.run.rollingOut') }}
             <button
               type="button"
               class="cursor-pointer font-bold text-primary-warm-white underline underline-offset-2 hover:text-primary-comfy-yellow"
               @click="activeSection = 'api'"
             >
-              {{ t('workshop.run.rollingOutApi', locale) }}
+              {{ t('workshop.run.rollingOutApi') }}
             </button>
           </p>
           <Button
@@ -1090,9 +1090,7 @@ function useInCode() {
             <template v-if="!isRunning" #prepend>
               <Play class="size-5 fill-current" aria-hidden="true" />
             </template>
-            {{
-              t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run', locale)
-            }}
+            {{ t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run') }}
           </Button>
           <Button
             v-else
@@ -1102,7 +1100,7 @@ function useInCode() {
             data-testid="run-button"
             :data-gate="gate"
           >
-            {{ t(blockedRunLabel, locale) }}
+            {{ t(blockedRunLabel) }}
           </Button>
         </div>
       </div>
@@ -1121,7 +1119,7 @@ function useInCode() {
           :locale
           :policy-message="
             refusesRealFaces(model.slug)
-              ? t('workshop.error.policyRealFaces', locale)
+              ? t('workshop.error.policyRealFaces')
               : undefined
           "
           :member-workspace="
@@ -1144,7 +1142,7 @@ function useInCode() {
             class="text-xs text-primary-warm-gray"
             data-testid="output-expires"
           >
-            {{ t('workshop.output.expires', locale) }}
+            {{ t('workshop.output.expires') }}
           </p>
           <!-- The id is for the rare conversation with support, so it keeps
             to itself and the copy comes to hand when the reader reaches for
@@ -1154,12 +1152,12 @@ function useInCode() {
               class="text-2xs break-all text-primary-warm-gray/70"
               data-testid="router-request-id"
             >
-              {{ t('workshop.run.requestId', locale) }} {{ requestId }}
+              {{ t('workshop.run.requestId') }} {{ requestId }}
             </p>
             <CopyTextButton
               :value="requestId"
-              :label="t('workshop.run.copyRequestId', locale)"
-              :copied-label="t('workshop.api.copied', locale)"
+              :label="t('workshop.run.copyRequestId')"
+              :copied-label="t('workshop.api.copied')"
               icon-class="size-3.5"
               class="h-7 min-w-7 rounded-lg px-1.5 transition-opacity can-hover:opacity-0 can-hover:group-focus-within/request:opacity-100 can-hover:group-hover/request:opacity-100"
             />
@@ -1187,7 +1185,7 @@ function useInCode() {
           data-testid="clone-button"
         >
           <Download class="size-3.5" aria-hidden="true" />
-          {{ t('workshop.workflow.cloneCta', locale) }}
+          {{ t('workshop.workflow.cloneCta') }}
         </a>
       </div>
     </section>

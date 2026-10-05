@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { collectGraphIds } from '../src/utils/jsonLd'
+import { collectGraphIds } from '@/utils/jsonLd'
 
 const DIST_DIR = join(process.cwd(), 'dist')
 const JSON_LD_BLOCK =

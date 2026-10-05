@@ -23,26 +23,26 @@ import type {
   AuthSignInEvent,
   AuthSignInProvider,
   AuthSignInState
-} from '../../config/auth-sign-in-state'
+} from '@/config/auth-sign-in-state'
 import {
   authSignInTransition,
   signInErrorMessage
-} from '../../config/auth-sign-in-state'
-import { addToast } from '../../config/auth-toast-state'
+} from '@/config/auth-sign-in-state'
+import { addToast } from '@/config/auth-toast-state'
 import {
   isSwitchingAccount,
   requestedReturnPath
-} from '../../config/workshop-return'
-import type { WorkshopSessionUser } from '../../config/workshop-session-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-return'
+import type { WorkshopSessionUser } from '@/config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import {
   captureAuthCompleted,
   captureAuthFailed,
   captureSignupOpened,
   useWorkshopAuthFlag
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import type { AuthMode } from './AuthSignInPanel.vue'
 
 const HOME = '/'
@@ -86,8 +86,9 @@ interface AuthSignInControllerOptions {
 
 export function useAuthSignInController(options: AuthSignInControllerOptions) {
   const { mode, locale, resetTurnstile, onSwitchMode } = options
+  const { t } = translationsFor(locale)
 
-  const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
+  const loadWorkshopFirebase = () => import('@/config/workshop-firebase')
   type WorkshopFirebase = Awaited<ReturnType<typeof loadWorkshopFirebase>>
 
   const enabled = useWorkshopAuthFlag()
@@ -212,7 +213,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     const severity = severityForAuthError(classification)
     addToast({
       severity,
-      summary: t(severity === 'warn' ? 'g.warning' : 'g.error', locale),
+      summary: t(severity === 'warn' ? 'g.warning' : 'g.error'),
       detail: signInErrorMessage(classification, locale, hostname)
     })
   }

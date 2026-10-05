@@ -650,7 +650,7 @@ describe('PackVersionSelectorPopover', () => {
 
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
       const warningIcons = container.querySelectorAll(
         '.icon-\\[lucide--triangle-alert\\]'
       )
@@ -670,7 +670,7 @@ describe('PackVersionSelectorPopover', () => {
 
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- VerifiedIcon renders SVG without accessible role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- VerifiedIcon renders SVG without accessible role
       const verifiedIcons = container.querySelectorAll('svg')
       expect(verifiedIcons.length).toBeGreaterThan(0)
     })
@@ -713,7 +713,7 @@ describe('PackVersionSelectorPopover', () => {
 
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
       const warningIcons = container.querySelectorAll(
         '.icon-\\[lucide--triangle-alert\\]'
       )

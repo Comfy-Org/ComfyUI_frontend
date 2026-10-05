@@ -1,6 +1,5 @@
 import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
-import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { longDate, monthDay } from '@/checkout/longDate'
 
@@ -24,6 +23,8 @@ interface LedgerRow {
   readonly amount: string
   readonly comparedRate?: ComparedRate
   readonly sublines: readonly string[]
+  /** A credit the server subtracts, muted like a deduction. */
+  readonly credit?: true
 }
 
 /**
@@ -104,7 +105,6 @@ const BY_DURATION = {
     rate: `${S}.rate.monthly`,
     itemRate: `${S}.item.rateMonthly`,
     comparedRate: `${S}.item.comparedMonthly`,
-    onceTerm: `${S}.discount.firstMonth`,
     perPeriod: `${S}.credits.perMonth`,
     refillAfter: `${S}.credits.refillMonthlyAfter`,
     refillsTo: `${S}.item.refillsMonthly`,
@@ -115,7 +115,6 @@ const BY_DURATION = {
     rate: `${S}.rate.yearly`,
     itemRate: `${S}.item.rateYearly`,
     comparedRate: `${S}.item.comparedYearly`,
-    onceTerm: `${S}.discount.firstYear`,
     perPeriod: `${S}.credits.perYear`,
     refillAfter: `${S}.credits.refillYearlyAfter`,
     refillsTo: `${S}.item.refillsYearly`,
@@ -174,6 +173,10 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
   const plan = planLabel(next, cadenceChanges)
   const action = t(`${S}.verb.${verbOf(quote, commitChange)}`, { plan })
   const dueCents = quote.amount_due_cents ?? quote.cost_today_cents
+  const formatCount = (count: number | undefined) =>
+    count === undefined
+      ? undefined
+      : new Intl.NumberFormat(locale).format(count)
 
   return {
     quote,
@@ -192,10 +195,20 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
     monthDay: (iso: string) => monthDay(iso, locale),
     headlineMoney: (cents: number) =>
       formatHeadlineMoney(cents, currency, locale),
-    credits: (cents: number) =>
-      new Intl.NumberFormat(locale).format(centsToCredits(cents)),
+    /**
+     * The server's whole credit counts, absent from a quote not priced
+     * against Stripe. The `_cents` siblings round, so they are never
+     * converted back; a missing count leaves its line out.
+     */
+    creditsToday: formatCount(quote.credits_today),
+    creditsNextPeriod: formatCount(quote.credits_next_period),
     currency: currency.toUpperCase(),
     dueCents,
+    /**
+     * Today's charge before promotions and account balance: the server's
+     * subtotal when it itemizes them. `cost_today_cents` is already net.
+     */
+    itemCents: quote.subtotal_cents ?? quote.cost_today_cents,
     recurringCents: quote.renewal_amount_cents ?? quote.cost_next_period_cents,
     /**
      * The discounts that get a row. A `plan` discount is a catalog coupon the
@@ -224,29 +237,27 @@ function renewalLine(r: QuoteReading): string {
       })
 }
 
-function refillsToLine(r: QuoteReading): string {
-  return r.t(r.byNew.refillsTo, {
-    credits: r.credits(r.quote.credits_next_period_cents)
-  })
+function refillsToLine({ t, byNew, creditsNextPeriod }: QuoteReading) {
+  return creditsNextPeriod === undefined
+    ? []
+    : [t(byNew.refillsTo, { credits: creditsNextPeriod })]
 }
 
 /**
- * A money row renders only when the total reconciles with it: today's
- * charge equals the row, or a discount or balance row itemizes the
+ * Money rows render only when the total reconciles with them: today's
+ * charge equals their net, or a discount or balance row itemizes the
  * difference. A $0 first period or a credit the quote does not itemize would
- * leave the row contradicting the total, so it comes off and the total
+ * leave the rows contradicting the total, so they come off and the total
  * stands on its own.
  */
 function moneyItems(
   r: QuoteReading,
-  cents: number,
-  row: Omit<LedgerRow, 'amount'>
-): LedgerRow[] {
+  netCents: number,
+  rows: readonly LedgerRow[]
+): readonly LedgerRow[] {
   const itemized =
     r.promotions.length > 0 || r.quote.balance_applied_cents !== undefined
-  return cents === r.dueCents || itemized
-    ? [{ ...row, amount: r.money(cents) }]
-    : []
+  return netCents === r.dueCents || itemized ? rows : []
 }
 
 function scheduledLedger(r: QuoteReading): FamilyLedger {
@@ -260,10 +271,13 @@ function scheduledLedger(r: QuoteReading): FamilyLedger {
       currency: r.currency,
       rate: r.t(r.byNew.rate, {})
     },
-    credits: {
-      count: r.credits(r.quote.credits_next_period_cents),
-      qualifier: r.t(r.byNew.refillAfter, { date: startsAt })
-    },
+    credits:
+      r.creditsNextPeriod === undefined
+        ? undefined
+        : {
+            count: r.creditsNextPeriod,
+            qualifier: r.t(r.byNew.refillAfter, { date: startsAt })
+          },
     items: [
       {
         label: r.plan,
@@ -309,9 +323,10 @@ function keptPlanLine(r: QuoteReading, current: Plan, until: string): string {
 
 /** Today's grant, dated by the server's renewal when it carries one. */
 function grantedToday(r: QuoteReading): SummaryLedger['credits'] {
+  if (r.creditsToday === undefined) return undefined
   const expiresAt = r.quote.renewal_at
   return {
-    count: r.credits(r.quote.credits_today_cents),
+    count: r.creditsToday,
     qualifier:
       expiresAt === undefined
         ? r.t(`${S}.credits.addedToday`, {})
@@ -321,22 +336,53 @@ function grantedToday(r: QuoteReading): SummaryLedger['credits'] {
   }
 }
 
+/**
+ * A quote that itemizes its proration reads as the remaining time on the new
+ * plan and the unused-time credit from the old one, at the server's amounts.
+ * Otherwise one net row stands for both.
+ */
+function proratedItems(r: QuoteReading): LedgerRow[] {
+  const remainingCents = r.quote.proration_remaining_cents
+  const unusedCents = r.quote.proration_unused_cents
+  if (remainingCents === undefined || unusedCents === undefined)
+    return [
+      {
+        label: r.t(`${S}.item.prorated`, { plan: r.plan }),
+        amount: r.money(r.itemCents),
+        sublines: [
+          r.t(`${S}.item.remainingTime`, {
+            plan: r.tierName(r.next.tier),
+            current: r.tierName(r.current?.tier ?? r.next.tier)
+          }),
+          ...refillsToLine(r)
+        ]
+      }
+    ]
+  const current = r.current ?? r.next
+  return [
+    {
+      label: r.t(`${S}.item.remainingTimeOn`, { plan: r.plan }),
+      amount: r.money(remainingCents),
+      sublines: refillsToLine(r)
+    },
+    {
+      label: r.t(`${S}.item.unusedTimeOn`, {
+        plan: r.planLabel(current, r.cadenceChanges)
+      }),
+      amount: deduction(r, unusedCents),
+      sublines: [],
+      credit: true
+    }
+  ]
+}
+
 function proratedLedger(r: QuoteReading): FamilyLedger {
   return {
     ...r.shared,
     family: 'prorated_change',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: grantedToday(r),
-    items: moneyItems(r, r.quote.cost_today_cents, {
-      label: r.t(`${S}.item.prorated`, { plan: r.plan }),
-      sublines: [
-        r.t(`${S}.item.remainingTime`, {
-          plan: r.tierName(r.next.tier),
-          current: r.tierName(r.current?.tier ?? r.next.tier)
-        }),
-        refillsToLine(r)
-      ]
-    }),
+    items: moneyItems(r, r.itemCents, proratedItems(r)),
     trailing: [
       r.t(`${S}.trailing.creditsKept`, {}),
       renewalLine(r),
@@ -352,8 +398,9 @@ function proratedLedger(r: QuoteReading): FamilyLedger {
  */
 function chargeNowCredits(r: QuoteReading): SummaryLedger['credits'] {
   if (!grantIsAllowance(r)) return grantedToday(r)
+  if (r.creditsToday === undefined) return undefined
   return {
-    count: r.credits(r.quote.credits_today_cents),
+    count: r.creditsToday,
     qualifier: r.t(
       r.cadenceChanges ? `${S}.credits.bare` : r.byNew.perPeriod,
       {}
@@ -361,8 +408,11 @@ function chargeNowCredits(r: QuoteReading): SummaryLedger['credits'] {
   }
 }
 
-function grantIsAllowance(r: QuoteReading): boolean {
-  return r.quote.credits_today_cents === r.quote.credits_next_period_cents
+function grantIsAllowance({ quote }: QuoteReading): boolean {
+  return (
+    quote.credits_today !== undefined &&
+    quote.credits_today === quote.credits_next_period
+  )
 }
 
 function chargeNowTrailing(r: QuoteReading): string[] {
@@ -443,23 +493,21 @@ function cadenceLineOf(r: QuoteReading): string {
 function chargeNowLedger(r: QuoteReading): FamilyLedger {
   const rateLine = rateLineOf(r)
   const refills =
-    r.cadenceChanges || !grantIsAllowance(r) ? [refillsToLine(r)] : []
+    r.cadenceChanges || !grantIsAllowance(r) ? refillsToLine(r) : []
   return {
     ...r.shared,
     family: 'charge_now',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: chargeNowCredits(r),
-    items: moneyItems(
-      r,
-      r.quote.cost_today_cents,
-      'comparedRate' in rateLine
-        ? {
-            label: r.plan,
-            comparedRate: rateLine.comparedRate,
-            sublines: refills
-          }
-        : { label: r.plan, sublines: [rateLine.subline, ...refills] }
-    ),
+    items: moneyItems(r, r.itemCents, [
+      {
+        label: r.plan,
+        amount: r.money(r.itemCents),
+        ...('comparedRate' in rateLine
+          ? { comparedRate: rateLine.comparedRate, sublines: refills }
+          : { sublines: [rateLine.subline, ...refills] })
+      }
+    ]),
     trailing: chargeNowTrailing(r)
   }
 }
@@ -492,6 +540,19 @@ function familyLedger(r: QuoteReading): FamilyLedger {
   return chargeNowLedger(r)
 }
 
+/**
+ * What Pay commits a plan quote to, which names the button: a new
+ * subscription, an upgrade charged today, or any other change to the plan.
+ */
+export type PlanPurchase = 'subscribe' | 'upgrade' | 'change'
+
+export function planPurchaseOf(quote: SubscriptionPreview): PlanPurchase {
+  if (quote.transition_type === 'new_subscription') return 'subscribe'
+  return quote.is_immediate && quote.transition_type === 'upgrade'
+    ? 'upgrade'
+    : 'change'
+}
+
 /** The server refuses a code on a change that charges nothing today. */
 export function acceptsPromoCode(quote: SubscriptionPreview): boolean {
   return quote.is_immediate
@@ -503,42 +564,37 @@ type Discount = NonNullable<SubscriptionPreview['discounts']>[number]
 export interface DeductionFormat {
   readonly t: Translate
   readonly money: (cents: number) => string
-  /** The plan's cadence, which bounds a `once` coupon; unknown leaves it unbounded. */
-  readonly duration: Duration | undefined
 }
 
 const deduction = (format: DeductionFormat, cents: number) =>
   format.t(`${S}.discount.amount`, { amount: format.money(cents) })
 
-/**
- * How long a coupon keeps applying, stated as bounds only: `once` covers the
- * first period, or only today's charge when `thisPaymentOnly`, `repeating`
- * its months, and `forever` needs no subline.
- */
-function discountTerm(
-  format: DeductionFormat,
-  discount: Pick<Discount, 'duration' | 'duration_in_months'>,
-  thisPaymentOnly = false
-): string | undefined {
-  if (discount.duration === 'once') {
-    if (thisPaymentOnly) return format.t(`${S}.discount.thisPaymentOnly`, {})
-    return format.duration === undefined
+type DiscountTerm = NonNullable<Discount['term']>
+
+/** How long a discount keeps applying, worded from the term the server reported. */
+const TERM_LINE = {
+  this_payment: (t) => t(`${S}.discount.thisPaymentOnly`, {}),
+  first_month: (t) => t(`${S}.discount.firstMonth`, {}),
+  first_year: (t) => t(`${S}.discount.firstYear`, {}),
+  months: (t, months) =>
+    months === undefined
       ? undefined
-      : format.t(BY_DURATION[format.duration].onceTerm, {})
-  }
-  const months = discount.duration_in_months
-  if (discount.duration !== 'repeating' || months === undefined)
-    return undefined
-  return format.t(`${S}.discount.forMonths`, { count: months }, months)
-}
+      : t(`${S}.discount.forMonths`, { count: months }, months),
+  ongoing: () => undefined
+} satisfies Record<
+  DiscountTerm,
+  (t: Translate, months: number | undefined) => string | undefined
+>
 
 export function discountRow(
   format: DeductionFormat,
-  discount: Pick<Discount, 'name' | 'duration' | 'duration_in_months'>,
-  amountCents: number | undefined,
-  thisPaymentOnly = false
+  discount: Pick<Discount, 'name' | 'term' | 'duration_in_months'>,
+  amountCents: number | undefined
 ): DiscountRow {
-  const subline = discountTerm(format, discount, thisPaymentOnly)
+  const subline =
+    discount.term === undefined
+      ? undefined
+      : TERM_LINE[discount.term](format.t, discount.duration_in_months)
   return {
     label: discount.name ?? format.t(`${S}.discount.fallbackLabel`, {}),
     ...(amountCents === undefined
@@ -587,16 +643,13 @@ function discountSlots(r: QuoteReading, moneyRows: number): DiscountSlots {
     (discount) => discount.code.toUpperCase() !== enteredCode
   )
   const subtotal = subtotalOf(r, moneyRows, r.promotions.length)
-  const format = { t: r.t, money: r.money, duration: r.next.duration }
-  const thisPaymentOnly =
-    r.quote.transition_type !== 'new_subscription' &&
-    r.next.duration === 'MONTHLY'
+  const format = { t: r.t, money: r.money }
   const balanceCents = r.quote.balance_applied_cents
   const balance =
     balanceCents === undefined ? undefined : balanceRow(format, balanceCents)
   return {
     discounts: r.promotions.map((discount) =>
-      discountRow(format, discount, discount.amount_off_cents, thisPaymentOnly)
+      discountRow(format, discount, discount.amount_off_cents)
     ),
     ...(subtotal === undefined ? {} : { subtotal }),
     ...(balance === undefined ? {} : { balance }),
