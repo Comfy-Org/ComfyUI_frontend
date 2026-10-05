@@ -427,9 +427,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * for who already has it. A widget spliced off the node still answers to the
    * entry it registered, and `dynamicWidgets.ts` depends on exactly that: it
    * removes a group's widgets from `node.widgets` and *then* reads
-   * `widget.widgetId` to delete each entry. Answering `undefined` there because
-   * a same-named widget is still on the node leaks the entry, and the next
-   * widget of that name and type silently inherits its value.
+   * `widget.widgetId` to delete each entry. Answering `undefined` there — either
+   * because a same-named widget is still on the node or because this one is no
+   * longer listed — leaks the entry, and the next widget of that name and type
+   * silently inherits its value.
+   *
+   * Asking the store rather than the array is also what lets
+   * {@link ownedWidgetNameKey} refuse a non-member outright instead of falling
+   * open: the two questions are answered in the two places that can answer
+   * them.
    *
    * A widget that never registered — a refused duplicate, whose name belongs to
    * the widget that kept it — is not bound to anything, so it still answers

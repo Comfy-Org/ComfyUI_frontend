@@ -408,6 +408,18 @@ describe('ownedWidgetNameKey', () => {
 
     expect(ownedWidgetNameKey([hostile, ordinary], ordinary)).toBe('seed')
   })
+
+  it('refuses a widget the node does not list, rather than falling open', () => {
+    // Nobody holds the name, so a fall-through would grant ownership to a
+    // widget that is not this node's at all — the write `LGraphNode.addWidget`
+    // already refuses by hand. Whether a widget *already* holds an id off the
+    // array is a question for the store, and `BaseWidget.boundWidgetId` is
+    // where it is asked.
+    const stranger = { name: 'seed' }
+
+    expect(ownedWidgetNameKey([{ name: 'cfg' }], stranger)).toBeUndefined()
+    expect(ownedWidgetNameKey([], stranger)).toBeUndefined()
+  })
 })
 
 describe('widgetId', () => {

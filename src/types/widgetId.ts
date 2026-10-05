@@ -25,18 +25,17 @@ export function widgetId(
 }
 
 /**
- * Whether `name` can be written on {@link widget} at all — a structural
- * property of the object, not of whether a particular write landed.
- *
- * This is the criterion {@link ensureUniqueWidgetNames} uses to decide whether
- * it may rename at all, and it is deliberately the same one
- * {@link dropUnrenamableDuplicateWidgets} uses to decide whether a rename that
- * failed is fatal. The two must agree: one walk removing a widget the other
- * calls renamable would be destroying widgets over a disagreement between two
- * copies of one rule.
+ * Whether `name` can be written on {@link widget} at all: a structural property
+ * of the object, not of whether a particular write landed. Both the rename gate
+ * and the removal criterion read it, deliberately, so the two cannot disagree
+ * about the same widget.
  */
 function nameIsWritable(widget: { name: string }): boolean {
   try {
+    // The whole chain: `BaseWidget` declares `name` as a class accessor, so an
+    // instance has no own descriptor and would fall through to extensibility,
+    // which answers whether properties can be *added*. That reads "writable"
+    // for an inherited getter with no setter, which is unaddressable.
     for (
       let target: object | null = widget;
       target;
@@ -46,54 +45,16 @@ function nameIsWritable(widget: { name: string }): boolean {
       if (!descriptor) continue
       return 'writable' in descriptor ? !!descriptor.writable : !!descriptor.set
     }
+    // Nothing on the chain defines `name`, so a write would create it.
     return Object.isExtensible(widget)
   } catch {
+    // Every call above runs a proxy trap, mid-walk inside `LGraph.add`. A
+    // widget whose traps throw is exactly what removal is for, so answer here
+    // rather than abort the walk with the node half-attached.
     return false
   }
 }
 
-/**
- * The name key {@link widget} may mint a {@link WidgetId} from on a node whose
- * widgets are {@link widgets}, or `undefined` when it may not — which is when
- * an *earlier* widget in the array already holds that name.
- *
- * Returning the key rather than a boolean is deliberate. The caller mints the
- * id from the value this answer was computed on, so a `name` accessor that
- * answers differently on a second read cannot pass the check under one name and
- * mint under another. It also cannot throw at the mint: an accessor that throws
- * answers `undefined` here instead of escaping the `widgetId` getter.
- *
- * This is deliberately a per-widget question, and
- * {@link ensureUniqueWidgetNames} answers a different, whole-node one. A node
- * that still carries an ambiguous pair after every rename was attempted has
- * exactly one widget per name that may own the identity: the first to hold it.
- * Gating registration on the whole-node answer instead withholds an id from
- * *every* widget on the node, including widgets that share a name with nothing
- * — so one unresolvable pair erases the node's entire widget order, and a Vue
- * node renders no widgets at all (`getNodeWidgetIds` is what it draws from).
- *
- * The identity invariant is unchanged by answering per widget: one name still
- * resolves to one {@link WidgetId} held by one widget, so a later duplicate is
- * never registered and can never be handed the first widget's state. It is the
- * collateral loss that goes away.
- *
- * Names are compared through {@link readName}, so the comparison is on the
- * **key** an id would be built from rather than on the raw value — a widget
- * named `1` and one named `'1'` are one identity however different they look.
- * {@link dropUnrenamableDuplicateWidgets} reads names the same way, so the walk
- * that decides *which* widget is the duplicate and this predicate agree on what
- * a duplicate is. ({@link ensureUniqueWidgetNames} still compares raw values,
- * so it calls that pair unambiguous and renames nothing. The disagreement is
- * safe in this direction and only in this direction: this predicate withholds
- * an id, it never removes a widget, so the pair is kept and under-registered
- * rather than destroyed.)
- *
- * A widget whose `name` cannot be read owns nothing: that is the
- * `unreadable-name` refusal's own case, and it mints no id anyway. An
- * unreadable name on *another* widget is likewise that widget's problem and
- * must not decide whether this one has an identity, which is why the read is
- * guarded per candidate rather than around the loop.
- */
 /**
  * The key {@link widget}'s current `name` would build an id from, or
  * `undefined` when no id can be derived from it at all.
@@ -108,6 +69,35 @@ export function widgetNameKey(widget: { name: string }): string | undefined {
   return key === UNREADABLE_NAME ? undefined : key
 }
 
+/**
+ * The key {@link widget} may mint a {@link WidgetId} from on a node whose
+ * widgets are {@link widgets}, or `undefined` when an *earlier* widget in the
+ * array already holds that name — or when the array does not hold
+ * {@link widget} at all, which is a node that does not list it.
+ *
+ * Per widget, where {@link ensureUniqueWidgetNames} answers a whole-node
+ * question. A node still carrying an ambiguous pair after every rename was
+ * attempted has one widget per name that may own the identity — the first to
+ * hold it — so gating registration on the whole-node answer withholds an id
+ * from every widget on the node, including widgets that collide with nothing.
+ * A Vue node draws from the registered order (`getNodeWidgetIds`), so it then
+ * draws nothing. The invariant is unchanged either way: one name still resolves
+ * to one id held by one widget, and the later duplicate still registers
+ * nothing. Only the collateral loss goes away (ADR-ECS-0008).
+ *
+ * Returns the key rather than a boolean so the caller mints from the value this
+ * answer was computed on: an accessor that answers differently on a second read
+ * cannot pass under one name and mint under another, and one that throws
+ * answers `undefined` here instead of escaping the `widgetId` getter.
+ *
+ * Names are compared as {@link readName} keys, not raw values, so a widget
+ * named `1` and one named `'1'` are one identity — the same reading
+ * {@link dropUnrenamableDuplicateWidgets} uses to decide which widget is the
+ * duplicate. {@link ensureUniqueWidgetNames} still compares raw values and
+ * calls that pair unambiguous, which is FE-3036's keying question and not this
+ * gate's; the disagreement is safe in this direction only, because this
+ * withholds an id and never removes a widget.
+ */
 export function ownedWidgetNameKey(
   widgets: readonly { name: string }[],
   widget: { name: string }
@@ -125,20 +115,22 @@ export function ownedWidgetNameKey(
     if (readName(candidate) === key) return undefined
   }
 
-  // Not on the array at all, and no widget on it holds this name — which is a
-  // widget the node has just removed, and it keeps its id on purpose.
-  // `dynamicWidgets.ts` splices a group's widgets off `node.widgets` and *then*
-  // reads `widget.widgetId` to delete each store entry (`updateWidgets`, and
-  // again when an input is removed). Answering `undefined` there would leak
-  // every one of those entries, and a later widget of the same name and type
-  // silently inherits the stale value — the #13073 family.
+  // Not on the array at all, so the node does not list it and it may not take
+  // an identity on that node. Answering with the key here would fail open: a
+  // widget that was never this node's would be granted the right to mint an id
+  // on it, which is the write `LGraphNode.addWidget` already refuses by hand
+  // ("Registering one the node no longer has would write over the widget that
+  // kept the name").
   //
-  // This is not the fail-open it looks like. A widget the *refusal walk*
-  // removed shares its name with the widget that kept it, so it exits through
-  // the loop above with no key and cannot reach that entry at all. Before this
-  // gate existed it could, which made `deleteWidget(widget.widgetId)` on a
-  // refused duplicate destroy the keeper's value.
-  return key
+  // A widget that is bound to an entry keeps answering with it — but that is a
+  // different question, asked of the store rather than of the array, and
+  // `BaseWidget.boundWidgetId` is where it is answered. `dynamicWidgets.ts`
+  // depends on that: it splices a group's widgets off `node.widgets` and *then*
+  // reads `widget.widgetId` to delete each store entry (`updateWidgets`, and
+  // again when an input is removed), so an unconditional `undefined` would leak
+  // every one of those entries and a later widget of the same name and type
+  // would inherit the stale value — the #13073 family.
+  return undefined
 }
 
 export function ensureUniqueWidgetNames(
@@ -178,21 +170,12 @@ export function ensureUniqueWidgetNames(
       return false
     }
 
-    // The write is read back, and a write that did not land makes this `false`.
-    //
-    // An unconditional `true` reported success over a node that still carries
-    // two widgets under one name. `BaseWidget`'s own `name` setter declines
-    // the write whenever the store declines the move — which is exactly the
-    // state `dropUnrenamableDuplicateWidgets` leaves behind when it keeps an
-    // unresolved duplicate rather than deleting the user's widget — so this
-    // answered "unambiguous" precisely where it was wrong, and the callers
-    // that act on it (`litegraphUtil`'s widget-value sync) acted on that.
-    //
-    // It is no longer what decides whether a widget may be registered: that is
-    // per widget, and {@link ownedWidgetNameKey} answers it.
-    //
-    // Every rename is still attempted before answering: one declined write
-    // must not strand the collisions that would have resolved cleanly.
+    // Read back, because a `true` over a node that still carries one name
+    // twice reports it unambiguous to the callers that act on that answer
+    // (`litegraphUtil`'s widget-value sync). It no longer decides whether a
+    // widget may register — that is per widget, and {@link ownedWidgetNameKey}
+    // answers it. Every rename is attempted first, so one declined write does
+    // not strand the collisions that would have resolved.
     let unique = true
     for (const { widget, name } of renames) {
       try {
@@ -209,39 +192,83 @@ export function ensureUniqueWidgetNames(
   }
 }
 
+/**
+ * A `name` from which no identity can be derived — the accessor threw, the
+ * value would not coerce to a string, or the result is not something
+ * {@link widgetId} can encode. Distinct from a widget whose name *is*
+ * `undefined`: that one has an identity, a bad one, and two of them collide
+ * with each other.
+ */
 const UNREADABLE_NAME = Symbol('unreadable widget name')
 
-export type RefusedWidget<T> =
-  | { widget: T; cause: 'unreadable-name'; name: undefined }
-  | { widget: T; cause: 'duplicate-name'; name: string }
-  | { widget: T; cause: 'unresolved-duplicate'; name: string }
+/**
+ * Why a widget could not be given a unique name on its node.
+ *
+ * `unresolved-duplicate` is the one cause that does **not** remove the widget:
+ * the rename did not land, but the write was structurally possible, so the
+ * failure is recoverable and losing the widget would be worse than carrying
+ * the ambiguity. See {@link nameIsWritable}.
+ */
+type WidgetRefusalCause =
+  | 'unreadable-name'
+  | 'duplicate-name'
+  | 'unresolved-duplicate'
 
-function readName(widget: { name: unknown }): string | typeof UNREADABLE_NAME {
+/**
+ * A widget the walk could not name uniquely. The cause and the name come from
+ * the walk rather than from another read of the accessor: a hostile one need
+ * not answer twice the same way, and the walk may have written to it.
+ */
+export interface RefusedWidget<T> {
+  widget: T
+  cause: WidgetRefusalCause
+  /** Whether the walk removed {@link widget} from the array it was given. */
+  removed: boolean
+  /** The key the walk read, or `undefined` when no key could be derived. */
+  name: string | undefined
+}
+
+/**
+ * The identity key `name` claims, or {@link UNREADABLE_NAME}. It is the key
+ * rather than the raw value because `widgetId` keys on
+ * `encodeURIComponent(String(name))`, so names that differ as values and
+ * coincide as strings are one identity and have to collide here.
+ *
+ * An empty name is deliberately readable: it mints an id the store declines to
+ * key on, which costs the widget nothing, and `addWidget('text', '', …)` is an
+ * ordinary unlabeled widget that node packs ship (ADR-ECS-0008).
+ */
+function readName(widget: { name: string }): string | typeof UNREADABLE_NAME {
   try {
-    const raw = widget.name
-    if (typeof raw === 'symbol') return UNREADABLE_NAME
+    const raw: unknown = widget.name
     const key = String(raw)
-    encodeURIComponent(key)
+    // The raw value, as `widgetId` encodes it: a Symbol survives `String()`
+    // and throws here.
+    encodeURIComponent(raw as string)
     return key
   } catch {
     return UNREADABLE_NAME
   }
 }
 
-function tryRename(widget: { name: unknown }, name: string): boolean {
+/** @returns whether {@link widget} now answers to {@link name}. */
+function tryRename(widget: { name: string }, name: string): boolean {
   try {
     widget.name = name
+    // A setter is free to ignore the write, and only a read proves it did not.
     return widget.name === name
   } catch {
     return false
   }
 }
 
-export function isWidgetNameUnreadable(widget: { name: unknown }): boolean {
+/** Whether no identity key can be read from {@link widget}'s `name`. */
+export function isWidgetNameUnreadable(widget: { name: string }): boolean {
   return readName(widget) === UNREADABLE_NAME
 }
 
-function readableNames(widgets: readonly { name: unknown }[]): Set<string> {
+/** Every name key the array already holds outright, skipping unreadable ones. */
+function readableNames(widgets: readonly { name: string }[]): Set<string> {
   const names = new Set<string>()
   for (const widget of widgets) {
     const name = readName(widget)
@@ -250,58 +277,124 @@ function readableNames(widgets: readonly { name: unknown }[]): Set<string> {
   return names
 }
 
+/**
+ * The first `name#n` no set in {@link taken} claims — so a generated name never
+ * collides with one a widget further down the array holds outright.
+ */
 function freeSuffixedName(
   name: string,
-  isTaken: (candidate: string) => boolean
+  taken: readonly ReadonlySet<string>[]
 ): string {
   let index = 1
-  while (isTaken(`${name}#${index}`)) index++
+  while (taken.some((names) => names.has(`${name}#${index}`))) index++
   return `${name}#${index}`
 }
 
-function resolveCollision(
-  widget: { name: unknown },
-  key: string,
-  used: Set<string>,
-  reserved: Set<string>,
-  isNameTaken: (name: string) => boolean
-): 'renamed' | 'unresolved-duplicate' | 'duplicate-name' {
-  const candidate = freeSuffixedName(
-    key,
-    (name) => used.has(name) || reserved.has(name) || isNameTaken(name)
-  )
-  if (tryRename(widget, candidate)) {
-    used.add(candidate)
-    reserved.add(candidate)
-    return 'renamed'
+/**
+ * How many names a colliding widget is offered before the pair is reported
+ * unresolved. More than one, because `BaseWidget`'s setter declines a move onto
+ * an id the store already holds, so one stale entry can reject a candidate the
+ * widget would otherwise take.
+ */
+const RENAME_ATTEMPTS = 4
+
+/**
+ * Renames {@link widget} to the first free `name#n` that the write actually
+ * takes, setting aside each candidate the setter rejects so the next attempt
+ * offers a different one.
+ *
+ * @returns the name it now answers to, or `undefined` if no attempt stuck.
+ */
+function renameApart(
+  widget: { name: string },
+  name: string,
+  used: ReadonlySet<string>,
+  reserved: ReadonlySet<string>
+): string | undefined {
+  // Rejected candidates are tracked per widget, not reserved globally: a name
+  // this widget's setter would not take is still free for the next widget.
+  const rejected = new Set<string>()
+  for (let attempt = 0; attempt < RENAME_ATTEMPTS; attempt++) {
+    const candidate = freeSuffixedName(name, [used, reserved, rejected])
+    if (tryRename(widget, candidate)) return candidate
+    rejected.add(candidate)
   }
-  return nameIsWritable(widget) ? 'unresolved-duplicate' : 'duplicate-name'
+  return undefined
 }
 
-export function dropUnrenamableDuplicateWidgets<T extends { name: unknown }>(
-  widgets: T[],
-  isNameTaken: (name: string) => boolean = () => false
+/**
+ * Renamed apart and kept, kept but reported, or refused. Adds to
+ * `used`/`reserved` when an attempt sticks.
+ *
+ * A rename that did not land is not proof of an unaddressable widget, so
+ * {@link nameIsWritable} decides removal and the unresolved pair is reported
+ * instead (ADR-ECS-0008).
+ */
+function resolveCollision(
+  widget: { name: string },
+  key: string,
+  used: Set<string>,
+  reserved: Set<string>
+): { keep: boolean; cause?: WidgetRefusalCause } {
+  const unique = renameApart(widget, key, used, reserved)
+  if (unique !== undefined) {
+    used.add(unique)
+    reserved.add(unique)
+    return { keep: true }
+  }
+  if (nameIsWritable(widget)) {
+    return { keep: true, cause: 'unresolved-duplicate' }
+  }
+  return { keep: false, cause: 'duplicate-name' }
+}
+
+/**
+ * Renames the duplicates it can, removes the ones it cannot address at all,
+ * and keeps the first occurrence of each name either way. Mutates
+ * {@link widgets} in place. The invariant and the remove-or-keep criterion are
+ * ADR-ECS-0008's, under "Widget identity keys on `name`".
+ *
+ * Unlike {@link ensureUniqueWidgetNames} this reads each write back, so a
+ * setter that accepts and ignores it cannot report success, and a widget it
+ * cannot rename does not strand the collisions that would have resolved.
+ *
+ * @returns every widget it could not name uniquely, with the cause and whether
+ * it was removed, in array order.
+ */
+export function dropUnrenamableDuplicateWidgets<T extends { name: string }>(
+  widgets: T[]
 ): RefusedWidget<T>[] {
   const kept: T[] = []
   const refused: RefusedWidget<T>[] = []
   const used = new Set<string>()
   const reserved = readableNames(widgets)
+  /** Every widget already walked, against whether that walk kept it. */
   const verdicts = new Map<T, boolean>()
 
   for (const widget of widgets) {
+    // The same widget object may occupy a second slot mid-reorder. That is one
+    // widget, not a collision — but it has to follow the verdict its first
+    // occurrence got, or a refused widget is re-admitted by its own repeat.
     const previous = verdicts.get(widget)
     if (previous !== undefined) {
       if (previous) kept.push(widget)
       continue
     }
 
-    const key = readName(widget)
-    if (key === UNREADABLE_NAME) {
+    const name = readName(widget)
+    if (name === UNREADABLE_NAME) {
       verdicts.set(widget, false)
-      refused.push({ widget, cause: 'unreadable-name', name: undefined })
+      refused.push({
+        widget,
+        cause: 'unreadable-name',
+        removed: true,
+        name: undefined
+      })
       continue
     }
 
+    // `readName` already returned the key, not the raw value.
+    const key = name
     if (!used.has(key)) {
       used.add(key)
       verdicts.set(widget, true)
@@ -309,12 +402,18 @@ export function dropUnrenamableDuplicateWidgets<T extends { name: unknown }>(
       continue
     }
 
-    const outcome = resolveCollision(widget, key, used, reserved, isNameTaken)
-    const keep = outcome !== 'duplicate-name'
-    verdicts.set(widget, keep)
-    if (keep) kept.push(widget)
-    if (outcome !== 'renamed')
-      refused.push({ widget, cause: outcome, name: key })
+    const outcome = resolveCollision(widget, key, used, reserved)
+    verdicts.set(widget, outcome.keep)
+    if (outcome.keep) kept.push(widget)
+    if (outcome.cause) {
+      // `key`, not a re-read: the walk may have written to the name since.
+      refused.push({
+        widget,
+        cause: outcome.cause,
+        removed: !outcome.keep,
+        name: key
+      })
+    }
   }
 
   if (refused.length) widgets.splice(0, widgets.length, ...kept)
