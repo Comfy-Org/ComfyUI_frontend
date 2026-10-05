@@ -396,14 +396,52 @@ describe('DynamicGroup widgets', () => {
     }
   )
 
+  it('updates promoted labels across multiple instances of the same subgraph', () => {
+    const { widget, innerHost, outerInput } = setupTwiceDeepPromotion()
+    const rootGraph = innerHost.subgraph.rootGraph
+    const otherOuterSubgraph = createTestSubgraph({ rootGraph })
+    const otherOuterHost = createTestSubgraphNode(otherOuterSubgraph)
+    rootGraph.add(otherOuterHost)
+    const otherInnerHost = createTestSubgraphNode(innerHost.subgraph, {
+      parentGraph: otherOuterSubgraph
+    })
+    otherOuterSubgraph.add(otherInnerHost)
+    const otherInnerPromoted = promotedInputWidget(otherInnerHost.inputs[0])
+    assert.exists(otherInnerPromoted)
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        otherOuterHost,
+        otherInnerHost,
+        otherInnerPromoted
+      ).ok
+    ).toBe(true)
+    const otherOuterInput = otherOuterHost.inputs[0]
+    expect(promotedInputWidget(otherOuterInput)?.label).toBe('LoRA #2 strength')
+
+    widget('loras.0').callback?.(undefined)
+
+    expect(
+      [
+        innerHost.inputs[0],
+        otherInnerHost.inputs[0],
+        outerInput,
+        otherOuterInput
+      ].map((input) => promotedInputWidget(input)?.label)
+    ).toEqual([
+      'LoRA #1 strength',
+      'LoRA #1 strength',
+      'LoRA #1 strength',
+      'LoRA #1 strength'
+    ])
+  })
+
   it('removes a field promoted through two boundaries when its row is removed', async () => {
     const { widget, innerHost, outerInput } = setupTwiceDeepPromotion()
 
     widget('loras.1').callback?.(undefined)
-    await Promise.resolve()
 
     expect(innerHost.inputs[0].link).toBeNull()
-    expect(promotedInputWidget(outerInput)).toBeNull()
+    await vi.waitFor(() => expect(promotedInputWidget(outerInput)).toBeNull())
   })
 
   it.for([
