@@ -39,6 +39,7 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -264,15 +265,19 @@ onBeforeUnmount(stopNodeCatalogRefresh)
 
 // Signing out or switching accounts must not leave the agent socket
 // authenticated as the previous account, nor canvas ops stamped with its
-// actor: reconnect with a fresh token and look the identity up again.
+// actor: reconnect with a fresh token and look the identity up again. The
+// agent authenticates the signed-in session or, with none, a stored API key
+// (see withAgentAuth), so the account is whichever of those it is: the user
+// id, never the key itself. Replacing the key clears its user first.
 const authStore = useAuthStore()
-watch(
-  () => authStore.userId ?? null,
-  () => {
-    events.reconnect()
-    agentIdentity.reset()
-  }
+const apiKeyAuthStore = useApiKeyAuthStore()
+const agentAccountId = computed(
+  () => authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null
 )
+watch(agentAccountId, () => {
+  events.reconnect()
+  agentIdentity.reset()
+})
 
 function onPaywallAction(
   action: AgentPaywallAction,
