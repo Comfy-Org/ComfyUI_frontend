@@ -303,7 +303,9 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
           candidate.url().endsWith(`/tasks/${taskId}`) &&
           candidate.request().method() === 'GET'
       )
-      await page.clock.runFor(10_001)
+      // Release branches can schedule the first interval tick before the
+      // cancellation timestamp is old enough; allow the following tick too.
+      await page.clock.runFor(20_001)
       await (await response).finished()
       await page.clock.runFor(1)
     }
