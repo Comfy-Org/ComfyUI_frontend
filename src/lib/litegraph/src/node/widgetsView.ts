@@ -5,7 +5,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-import { reportError } from '@/platform/telemetry/reportError'
 import type { RefusedWidget } from '@/types/widgetId'
 import {
   dropUnrenamableDuplicateWidgets,
@@ -19,38 +18,25 @@ import { isNodeBindable } from '../utils/type'
 import { getWidgetIds } from '../utils/widget'
 import { BaseWidget } from '../widgets/BaseWidget'
 
-const REFUSAL_TEARDOWN_ERROR_TYPE = 'failure_tearing_down_refused_widget'
+export type WidgetRefusalReport =
+  | { kind: 'refusal'; finding: RefusedWidget<IBaseWidget> }
+  | { kind: 'teardown-failure'; error: unknown }
+
+type WidgetRefusalReporter = (report: WidgetRefusalReport) => void
+const ignoreWidgetRefusal: WidgetRefusalReporter = () => {}
 
 interface WidgetsViewState {
   target: IBaseWidget[]
   view: IBaseWidget[]
   present: boolean
   commit: (widgets: IBaseWidget[]) => void
+  reporter?: WidgetRefusalReporter
 }
 
 const reportedUnresolved = new WeakMap<LGraphNode, Set<IBaseWidget>>()
 
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
 const widgetsViewGetters = new WeakSet<() => IBaseWidget[] | undefined>()
-
-function safeRead(read: () => unknown): string | undefined {
-  try {
-    const value = read()
-    return value === undefined ? undefined : String(value)
-  } catch {
-    return undefined
-  }
-}
-
-function reportTeardownFailure(node: LGraphNode, error: unknown): void {
-  reportError(error, {
-    errorType: REFUSAL_TEARDOWN_ERROR_TYPE,
-    surface: 'graph',
-    level: 'warning',
-    tags: { node_type: node.type },
-    context: { nodeId: String(node.id) }
-  })
-}
 
 function inputBindsWidget(
   input: INodeInputSlot,
@@ -77,32 +63,34 @@ function clearRefusedSlotBindings(
 function releaseRefusedWidget(
   node: LGraphNode,
   widget: IBaseWidget | undefined,
-  name: string | undefined
+  name: string | undefined,
+  report: WidgetRefusalReporter
 ): void {
   if (!widget) return
 
   try {
     clearRefusedSlotBindings(node, widget, name)
   } catch (error) {
-    reportTeardownFailure(node, error)
+    report({ kind: 'teardown-failure', error })
   }
 
   try {
     widget.onRemove?.()
   } catch (error) {
-    reportTeardownFailure(node, error)
+    report({ kind: 'teardown-failure', error })
   }
 
   try {
     if (widget instanceof BaseWidget) widget.releaseRegisteredState()
   } catch (error) {
-    reportTeardownFailure(node, error)
+    report({ kind: 'teardown-failure', error })
   }
 }
 
 function refuseAmbiguousWidgets(
   node: LGraphNode,
-  widgets: IBaseWidget[]
+  widgets: IBaseWidget[],
+  report = states.get(node)?.reporter ?? ignoreWidgetRefusal
 ): ReadonlySet<IBaseWidget> {
   const graphId = node.graph?.rootGraph.id
   const store = useWidgetValueStore()
@@ -126,57 +114,15 @@ function refuseAmbiguousWidgets(
   for (const finding of refused) {
     if (finding.cause === 'unresolved-duplicate') {
       if (!previouslyUnresolved?.has(finding.widget)) {
-        reportRefusal(node, finding)
+        report({ kind: 'refusal', finding })
       }
       continue
     }
     removed.add(finding.widget)
-    releaseRefusedWidget(node, finding.widget, finding.name)
-    reportRefusal(node, finding)
+    releaseRefusedWidget(node, finding.widget, finding.name, report)
+    report({ kind: 'refusal', finding })
   }
   return removed
-}
-
-const REFUSAL_ALERTS: Record<
-  RefusedWidget<IBaseWidget>['cause'],
-  {
-    errorType: string
-    message: (nodeId: LGraphNode['id'], name: string | undefined) => string
-  }
-> = {
-  'unreadable-name': {
-    errorType: 'failure_reading_widget_name',
-    message: (nodeId) =>
-      `Refused a widget on node ${nodeId}: no widget identity can be derived from its name`
-  },
-  'unresolved-duplicate': {
-    errorType: 'failure_resolving_widget_duplicate_name',
-    message: (nodeId, name) =>
-      `Kept a widget named "${name}" that node ${nodeId} already has under that name: the rename was declined rather than impossible, so the widget is left in place and the pair is unresolved for now`
-  },
-  'duplicate-name': {
-    errorType: 'failure_renaming_widget_duplicate_name',
-    message: (nodeId, name) =>
-      `Refused a widget named "${name}": node ${nodeId} already has a widget of that name and the duplicate cannot be renamed`
-  }
-}
-
-function reportRefusal(
-  node: LGraphNode,
-  { widget, cause, name }: RefusedWidget<IBaseWidget>
-): void {
-  const alert = REFUSAL_ALERTS[cause]
-  reportError(new Error(alert.message(node.id, name)), {
-    errorType: alert.errorType,
-    surface: 'graph',
-    level: 'warning',
-    tags: { node_type: node.type },
-    context: {
-      nodeId: String(node.id),
-      widgetName: name,
-      widgetType: safeRead(() => widget.type)
-    }
-  })
 }
 
 function commitsThroughWidgetsView(node: LGraphNode): boolean {
@@ -191,11 +137,17 @@ export function wasWidgetRefused(
   return commitsThroughWidgetsView(node) && !node.widgets?.includes(widget)
 }
 
-export function refuseAmbiguousNodeWidgets(node: LGraphNode): void {
+export function refuseAmbiguousNodeWidgets(
+  node: LGraphNode,
+  report: WidgetRefusalReporter
+): void {
   if (!commitsThroughWidgetsView(node)) return
-  const target = states.get(node)?.target
-  if (!target?.length) return
-  refuseAmbiguousWidgets(node, target)
+  const state = states.get(node)
+  if (!state) return
+  state.reporter = report
+  const target = state.target
+  if (!target.length) return
+  refuseAmbiguousWidgets(node, target, report)
 }
 
 function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
