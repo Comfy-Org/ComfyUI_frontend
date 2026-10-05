@@ -3372,14 +3372,14 @@
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
-        "personalBody": "Your subscription is paused. Update your payment method to resume.",
-        "personalPaymentFailedBody": "Your payment didn't go through. Update your payment method to resume.",
         "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {
         "title": "Out of credits",
         "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
         "bodyNoDate": "Your team has used all its credits. Add more credits.",
+        "personalBody": "You've used all your credits. Add more credits or wait until credits refill on {date}.",
+        "personalBodyNoDate": "You've used all your credits. Add more credits.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
@@ -3387,8 +3387,10 @@
       },
       "ending": {
         "title": "Your Team plan ends on {date}",
-        "body": "Members keep full access until then. Resume your plan to keep your team's shared credits.",
+        "body": "You won't be charged again. Members keep full access until then. Resume your plan to keep your team's shared credits.",
         "memberBody": "You can run workflows until then.",
+        "personalTitle": "Your {plan} plan ends on {date}",
+        "personalBody": "You won't be charged again. Resume your plan to keep your monthly credits.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume plan",
@@ -3398,6 +3400,9 @@
         "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "personalTitle": "Your {plan} plan ended on {date}",
+        "personalTitleNoDate": "Your {plan} plan has ended",
+        "personalBody": "Resubscribe to run workflows and get monthly credits again.",
         "enterpriseTitle": "Your Enterprise plan ended on {date}",
         "enterpriseBody": "Contact sales to start a new Enterprise plan.",
         "planTitle": "Your plan ended on {date}",
