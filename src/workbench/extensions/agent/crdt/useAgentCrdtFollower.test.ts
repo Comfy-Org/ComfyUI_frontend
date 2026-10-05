@@ -1259,6 +1259,58 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('PM-1874: does not attribute a prior turn’s late-materializing node to a later unrelated turn', () => {
+      // Turn A adds node 99, which does not resolve via graph.getNodeById
+      // while turn A is live, so it stays in the pending set. Turn B starts
+      // and adds its own 3 nodes. Node 99 only becomes resolvable once turn
+      // B's own frame lands (a plausible race: a deferred render, or node 99
+      // sharing a tick with turn B's materialization). The toast for turn B
+      // must report exactly its own 3 nodes, not node 99 plus 3 — node 99
+      // belongs to turn A and should have been flushed when turn A ended.
+      const onMaterialized = vi.fn()
+      const liveNodeIds = new Set<NodeId>()
+      const graph = fromPartial<LGraph>({
+        getNodeById: (id: NodeId) => (liveNodeIds.has(id) ? {} : null)
+      })
+      const { unmount } = mountFollower('wf-1', true, () => graph, {
+        onMaterialized
+      })
+
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['99'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        actor: 'agent:thread:turnA',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      // Node 99 becomes resolvable late — at the same moment turn B's own
+      // nodes do, which is exactly the race that lets a stale id ride along.
+      liveNodeIds.add(toNodeId(99))
+      liveNodeIds.add(toNodeId(1))
+      liveNodeIds.add(toNodeId(2))
+      liveNodeIds.add(toNodeId(3))
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['1', '2', '3'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        actor: 'agent:thread:turnB',
+        catchUp: false
+      })
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: 'agent:thread:turnB',
+        nodeIds: [toNodeId(1), toNodeId(2), toNodeId(3)]
+      })
+      unmount()
+    })
+
     it('does not attribute a human recreation after a pending node was deleted', () => {
       const onMaterialized = vi.fn()
       const graph = shallowRef<LGraph | null>(null)
