@@ -1106,6 +1106,35 @@ describe('createBillingOperationLifecycle', () => {
       }
     )
 
+    it('keeps a revisit quiet across a second reload while the operation is still pending', async () => {
+      const storage = await settleOwnOperation([
+        httpOk(opStatus()),
+        httpOk(opStatus({ status: 'reconciliation_needed' }))
+      ])
+      const revisit = harness({
+        storage,
+        retainSettled: true,
+        answers: [httpOk(opStatus())]
+      })
+      await revisit.lifecycle.recover({ includeSettled: true })
+      revisit.lifecycle.dispose()
+
+      expect(storedPointer(storage)).toMatchObject({
+        settled: 'reconciliation_needed'
+      })
+
+      const reloaded = harness({
+        storage,
+        retainSettled: true,
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+      await reloaded.lifecycle.recover({ includeSettled: true })
+      await flush()
+
+      expect(revisit.telemetry).toEqual([])
+      expect(reloaded.telemetry).toEqual([])
+    })
+
     it('marks an operation this tab issued and left pending as awaited here when it comes back settled', async () => {
       const storage = memoryStorage()
       const left = harness({ storage, retainSettled: true })

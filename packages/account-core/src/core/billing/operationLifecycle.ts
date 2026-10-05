@@ -257,8 +257,8 @@ interface OperationRecord {
   state: BillingOperationState
   readonly context: BillingScopeContext
   readonly resumed: boolean
-  /** This tab already reported the operation's start and end; a revisit says nothing new. */
-  readonly alreadyReported: boolean
+  /** The end this tab already reported, kept on every pointer rewrite; a revisit says nothing new. */
+  readonly reportedAs: BillingOperationPointer['settled']
   delayMs: number | undefined
   /** When the operation last became blocked on the customer with no action here. */
   waitingWithoutActionSince: number | undefined
@@ -284,7 +284,7 @@ interface AdoptInput {
   readonly initialStatus?: BillingOpStatus
   /** The hosted step a redirect left this page for; adopting it is the return. */
   readonly returnedFrom?: BillingOperationPointer['redirect']
-  readonly alreadyReported?: boolean
+  readonly reportedAs?: BillingOperationPointer['settled']
 }
 
 type ResumedAttempt = Pick<
@@ -294,7 +294,7 @@ type ResumedAttempt = Pick<
   | 'resumed'
   | 'awaitedHere'
   | 'returnedFrom'
-  | 'alreadyReported'
+  | 'reportedAs'
 >
 
 /** The attempt a pointer remembers, picked up again by this tab. */
@@ -304,7 +304,7 @@ function resumedFrom(pointer: BillingOperationPointer): ResumedAttempt {
     attemptStartedAt: pointer.attemptStartedAt,
     resumed: true,
     awaitedHere: pointer.awaited === true,
-    alreadyReported: pointer.settled !== undefined,
+    ...(pointer.settled === undefined ? {} : { reportedAs: pointer.settled }),
     ...(pointer.redirect === undefined
       ? {}
       : { returnedFrom: pointer.redirect })
@@ -468,7 +468,7 @@ export function createBillingOperationLifecycle(
     record: OperationRecord,
     event: BillingOperationTelemetryEvent
   ) {
-    if (!record.alreadyReported) onTelemetry?.(event)
+    if (record.reportedAs === undefined) onTelemetry?.(event)
   }
 
   function emitTerminalTelemetry(record: OperationRecord) {
@@ -567,17 +567,18 @@ export function createBillingOperationLifecycle(
   }
 
   function writePointer(
-    scope: BillingScope,
-    state: BillingOperationState,
+    record: OperationRecord,
     redirect?: BillingOperationPointer['redirect']
   ) {
-    pointers.write(scope, {
+    const { state, reportedAs } = record
+    pointers.write(record.context.scope, {
       operationId: state.id,
       kind: state.kind,
       presentation: state.presentation,
       attemptStartedAt: state.attemptStartedAt,
       ...(state.awaitedHere ? { awaited: true } : {}),
-      ...(redirect === undefined ? {} : { redirect })
+      ...(redirect === undefined ? {} : { redirect }),
+      ...(reportedAs === undefined ? {} : { settled: reportedAs })
     })
   }
 
@@ -700,7 +701,7 @@ export function createBillingOperationLifecycle(
       state,
       context: input.context,
       resumed: input.resumed,
-      alreadyReported: input.alreadyReported === true,
+      reportedAs: input.reportedAs,
       delayMs: undefined,
       waitingWithoutActionSince: undefined,
       timer: undefined,
@@ -710,7 +711,7 @@ export function createBillingOperationLifecycle(
       resolveSettled
     }
     operations.set(input.id, record)
-    writePointer(input.context.scope, state)
+    writePointer(record)
     report(record, {
       name: BILLING_OPERATION_TELEMETRY_EVENT.started,
       billing_op_id: input.id,
@@ -1071,11 +1072,7 @@ export function createBillingOperationLifecycle(
     const refusal = refusedSwitch(state, presentation)
     if (refusal !== undefined) return refusal
     dispatch(record, switchEvent(presentation))
-    writePointer(
-      record.context.scope,
-      record.state,
-      savedRedirect(record.context.scope, operationId)
-    )
+    writePointer(record, savedRedirect(record.context.scope, operationId))
     record.delayMs = undefined
     schedule(record)
     return 'switched'
@@ -1108,7 +1105,7 @@ export function createBillingOperationLifecycle(
     } as const
     const visit = { ...redirect, navigation }
     if (navigation === 'redirect') {
-      writePointer(record.context.scope, state, redirect)
+      writePointer(record, redirect)
     } else {
       record.awaitingReturn = visit
     }
