@@ -65,6 +65,8 @@ describe('buildSummaryLedger', () => {
         renewal_at: JULY_28,
         credits_today_cents: 70_000,
         credits_next_period_cents: 70_000,
+        credits_today: 147_700,
+        credits_next_period: 147_700,
         new_plan: planOf('TEAM', 'MONTHLY', 70_000)
       },
       ledger: {
@@ -96,6 +98,8 @@ describe('buildSummaryLedger', () => {
         renewal_at: JUNE_28_2027,
         credits_today_cents: 840_000,
         credits_next_period_cents: 840_000,
+        credits_today: 1_772_400,
+        credits_next_period: 1_772_400,
         new_plan: planOf('TEAM', 'ANNUAL', 756_000)
       },
       ledger: {
@@ -127,6 +131,8 @@ describe('buildSummaryLedger', () => {
         renewal_at: JUNE_28_2027,
         credits_today_cents: 840_000,
         credits_next_period_cents: 840_000,
+        credits_today: 1_772_400,
+        credits_next_period: 1_772_400,
         new_plan: planOf('TEAM', 'ANNUAL', 756_000)
       },
       ledger: {
@@ -156,6 +162,8 @@ describe('buildSummaryLedger', () => {
         renewal_at: JULY_28,
         credits_today_cents: 3250,
         credits_next_period_cents: 10_000,
+        credits_today: 6858,
+        credits_next_period: 21_100,
         current_plan: planOf('CREATOR', 'MONTHLY', 3500),
         new_plan: planOf('PRO', 'MONTHLY', 10_000)
       },
@@ -197,6 +205,8 @@ describe('buildSummaryLedger', () => {
         renewal_at: JULY_28,
         credits_today_cents: 3250,
         credits_next_period_cents: 10_000,
+        credits_today: 6858,
+        credits_next_period: 21_100,
         current_plan: planOf('CREATOR', 'MONTHLY', 3500),
         new_plan: planOf('PRO', 'MONTHLY', 10_000)
       },
@@ -236,6 +246,8 @@ describe('buildSummaryLedger', () => {
         renewal_at: JUNE_28_2027,
         credits_today_cents: 42_000,
         credits_next_period_cents: 42_000,
+        credits_today: 88_620,
+        credits_next_period: 88_620,
         current_plan: planOf('CREATOR', 'MONTHLY', 3500, {
           period_end: JULY_28
         }),
@@ -273,6 +285,8 @@ describe('buildSummaryLedger', () => {
         renewal_at: JUNE_28_2027,
         credits_today_cents: 120_000,
         credits_next_period_cents: 120_000,
+        credits_today: 253_200,
+        credits_next_period: 253_200,
         current_plan: planOf('CREATOR', 'MONTHLY', 3500, {
           period_end: JULY_28
         }),
@@ -312,6 +326,8 @@ describe('buildSummaryLedger', () => {
         renewal_amount_cents: 3500,
         credits_today_cents: 0,
         credits_next_period_cents: 3507,
+        credits_today: 0,
+        credits_next_period: 7400,
         current_plan: planOf('PRO', 'MONTHLY', 10_000),
         new_plan: planOf('CREATOR', 'MONTHLY', 3500)
       },
@@ -348,6 +364,8 @@ describe('buildSummaryLedger', () => {
         renewal_amount_cents: 3500,
         credits_today_cents: 0,
         credits_next_period_cents: 3507,
+        credits_today: 0,
+        credits_next_period: 7400,
         current_plan: planOf('CREATOR', 'ANNUAL', 33_600),
         new_plan: planOf('CREATOR', 'MONTHLY', 3500)
       },
@@ -384,6 +402,8 @@ describe('buildSummaryLedger', () => {
         renewal_amount_cents: 70_000,
         credits_today_cents: 0,
         credits_next_period_cents: 70_000,
+        credits_today: 0,
+        credits_next_period: 147_700,
         current_plan: planOf('TEAM', 'MONTHLY', 140_000),
         new_plan: planOf('TEAM', 'MONTHLY', 70_000)
       },
@@ -422,6 +442,8 @@ describe('buildSummaryLedger', () => {
         renewal_at: JULY_28,
         credits_today_cents: 5000,
         credits_next_period_cents: 140_000,
+        credits_today: 10_550,
+        credits_next_period: 295_400,
         current_plan: planOf('TEAM', 'MONTHLY', 70_000),
         new_plan: planOf('TEAM', 'MONTHLY', 140_000)
       },
@@ -892,6 +914,8 @@ describe('buildSummaryLedger server-reported fields', () => {
         cost_today_cents: 756_000,
         credits_today_cents: 0,
         credits_next_period_cents: 0,
+        credits_today: 0,
+        credits_next_period: 0,
         new_plan: planOf('TEAM', duration, 756_000, {
           list_price_cents: 840_000
         })
@@ -951,6 +975,8 @@ describe('buildSummaryLedger server-reported fields', () => {
       cost_today_cents: 756_000,
       credits_today_cents: 0,
       credits_next_period_cents: 0,
+      credits_today: 0,
+      credits_next_period: 0,
       new_plan: planOf('TEAM', 'ANNUAL', 756_000, extra)
     }).items
 
@@ -1011,6 +1037,7 @@ describe('buildSummaryLedger itemized proration', () => {
     proration_unused_cents: 1750,
     renewal_at: JULY_28,
     credits_next_period_cents: 10_000,
+    credits_next_period: 21_100,
     current_plan: planOf('CREATOR', 'MONTHLY', 3500),
     new_plan: planOf('PRO', 'MONTHLY', 10_000)
   }
@@ -1209,7 +1236,7 @@ describe('buildSummaryLedger credit counts', () => {
       }
     },
     {
-      name: "only today's count: it stays dated against the refill the cents convert to",
+      name: "only today's count: it stays dated, with no refill line",
       quote: {
         transition_type: 'new_subscription',
         credits_today_cents: 1991,
@@ -1219,14 +1246,11 @@ describe('buildSummaryLedger credit counts', () => {
       },
       expected: {
         credits: { count: '4,200', qualifier: 'credits added today' },
-        sublines: [
-          '$20 /mo, billed monthly',
-          'Credits refill to 4,201 each month'
-        ]
+        sublines: ['$20 /mo, billed monthly']
       }
     },
     {
-      name: "only the refill's count: today's converted grant stays dated against it",
+      name: "only the refill's count: no credits line for today, the refill still reads",
       quote: {
         transition_type: 'new_subscription',
         credits_today_cents: 1991,
@@ -1235,11 +1259,60 @@ describe('buildSummaryLedger credit counts', () => {
         ...NEXT_PERIOD_COUNT_ONLY
       },
       expected: {
-        credits: { count: '4,201', qualifier: 'credits added today' },
+        credits: undefined,
         sublines: [
           '$20 /mo, billed monthly',
           'Credits refill to 4,200 each month'
         ]
+      }
+    },
+    {
+      name: 'no counts: the rounded cents are never converted, so no credit line renders',
+      quote: {
+        transition_type: 'new_subscription',
+        credits_today_cents: 1991,
+        credits_next_period_cents: 1991,
+        new_plan: planOf('STANDARD', 'MONTHLY', 2000)
+      },
+      expected: {
+        credits: undefined,
+        sublines: ['$20 /mo, billed monthly']
+      }
+    },
+    {
+      name: 'no counts on a prorated upgrade: neither the grant nor the refill renders',
+      quote: {
+        transition_type: 'upgrade',
+        proration_at: PRICED_AT,
+        renewal_at: JULY_28,
+        amount_due_cents: 1200,
+        cost_today_cents: 1200,
+        credits_today_cents: 1200,
+        credits_next_period_cents: 8010,
+        current_plan: planOf('STANDARD', 'MONTHLY', 2000),
+        new_plan: planOf('PRO', 'MONTHLY', 8009)
+      },
+      expected: {
+        credits: undefined,
+        sublines: [
+          'Remaining time for Pro plan, less unused time from Standard plan'
+        ]
+      }
+    },
+    {
+      name: 'no counts on a scheduled change: no refill line',
+      quote: {
+        transition_type: 'downgrade',
+        is_immediate: false,
+        effective_at: JULY_28,
+        credits_today_cents: 0,
+        credits_next_period_cents: 8010,
+        current_plan: planOf('PRO', 'MONTHLY', 10_000),
+        new_plan: planOf('TEAM', 'MONTHLY', 8009)
+      },
+      expected: {
+        credits: undefined,
+        sublines: ['Starts July\u00A028,\u00A02026, billed monthly']
       }
     }
   ])('$name', ({ quote, expected }) => {
