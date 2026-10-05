@@ -1,5 +1,6 @@
 import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
+import 'primeicons/primeicons.css'
 import { createApp } from 'vue'
 
 import { setAssertReporter } from '@/base/assert'
