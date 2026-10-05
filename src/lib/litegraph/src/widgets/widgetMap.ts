@@ -25,6 +25,7 @@ import { BoundingBoxesWidget } from './BoundingBoxesWidget'
 import { ColorsWidget } from './ColorsWidget'
 import { CompositorWidget } from './CompositorWidget'
 import { PainterWidget } from './PainterWidget'
+import { TextOverlayPreviewWidget } from './TextOverlayPreviewWidget'
 import { RangeWidget } from './RangeWidget'
 import { VideoEditWidget } from './VideoEditWidget'
 import { ImageCropWidget } from './ImageCropWidget'
@@ -70,6 +71,7 @@ export type WidgetTypeMap = {
   videoedit: VideoEditWidget
   boundingboxes: BoundingBoxesWidget
   colors: ColorsWidget
+  textoverlaypreview: TextOverlayPreviewWidget
   [key: string]: BaseWidget
 }
 
@@ -273,6 +275,8 @@ function instantiateConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toWidgetClass(BoundingBoxesWidget, narrowedWidget, node)
     case 'colors':
       return toWidgetClass(ColorsWidget, narrowedWidget, node)
+    case 'textoverlaypreview':
+      return toWidgetClass(TextOverlayPreviewWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toWidgetClass(LegacyWidget, widget, node)
     }

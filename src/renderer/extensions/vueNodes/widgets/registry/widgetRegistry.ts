@@ -92,6 +92,9 @@ const WidgetColors = defineAsyncComponent(
 const WidgetResolutionPreview = defineAsyncComponent(
   () => import('../components/WidgetResolutionPreview.vue')
 )
+const WidgetTextOverlayPreview = defineAsyncComponent(
+  () => import('@/components/textOverlay/WidgetTextOverlayPreview.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -316,6 +319,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['RESOLUTION_PREVIEW'],
       essential: false
     }
+  ],
+  [
+    'textoverlaypreview',
+    {
+      component: WidgetTextOverlayPreview,
+      aliases: [],
+      essential: false
+    }
   ]
 ]
 
@@ -357,7 +368,8 @@ const EXPANDING_TYPES = [
   'imagecompare',
   'range',
   'boundingboxes',
-  'videoedit'
+  'videoedit',
+  'textoverlaypreview'
 ] as const
 
 export function shouldExpand(type: string): boolean {

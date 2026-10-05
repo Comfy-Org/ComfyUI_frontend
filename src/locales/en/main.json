@@ -2213,6 +2213,9 @@
     "errorMessage": "Failed to copy to clipboard",
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
+  "textOverlay": {
+    "runToPreview": "Run the workflow to preview on the input image"
+  },
   "imageCompare": {
     "afterAlt": "After image",
     "batchLabelA": "A:",
@@ -3674,7 +3677,8 @@
       "SelectButton": "Select button",
       "ImageCompare": "Image compare",
       "Markdown": "Markdown",
-      "MultiSelect": "Multi-select"
+      "MultiSelect": "Multi-select",
+      "TextOverlayPreview": "Text overlay preview"
     },
     "boolean": {
       "true": "true",
