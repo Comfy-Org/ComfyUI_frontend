@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { PlaygroundExample } from '../../config/workshop-playground'
+import type { PlaygroundExample } from '@/config/workshop-playground'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import ExamplesTab from './ExamplesTab.vue'
 
 const example = (overrides: Partial<PlaygroundExample>): PlaygroundExample => ({

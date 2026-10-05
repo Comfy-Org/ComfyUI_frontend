@@ -9,13 +9,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useMounted } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { authSchemasFor } from '../../config/auth-schemas'
-import { signInErrorMessage } from '../../config/auth-sign-in-state'
-import { addToast } from '../../config/auth-toast-state'
-import { requestedReturnPath } from '../../config/workshop-return'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { captureAuthFailed, useWorkshopAuthFlag } from '../../scripts/posthog'
+import { authSchemasFor } from '@/config/auth-schemas'
+import { signInErrorMessage } from '@/config/auth-sign-in-state'
+import { addToast } from '@/config/auth-toast-state'
+import { requestedReturnPath } from '@/config/workshop-return'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { captureAuthFailed, useWorkshopAuthFlag } from '@/scripts/posthog'
 import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 import {
   AUTH_BRAND_SOLID_BUTTON_CLASS,
@@ -40,7 +40,7 @@ const mounted = useMounted()
 const email = ref('')
 const errorMessage = ref('')
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
-const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
+const loadWorkshopFirebase = () => import('@/config/workshop-firebase')
 
 type ResetState = 'idle' | 'sending' | 'sent' | 'error'
 const state = ref<ResetState>('idle')

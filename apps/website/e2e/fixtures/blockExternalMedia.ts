@@ -1,19 +1,17 @@
 import { once } from 'node:events'
 import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
 import type { Route } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 
-function assetPath(relativePath: string) {
-  return fileURLToPath(new URL(relativePath, import.meta.url))
-}
+import { websiteRoot } from '@website/paths'
 
-const IMAGE_PLACEHOLDER = assetPath('../assets/placeholder-1x1.webp')
-const VIDEO_PLACEHOLDER = assetPath('../assets/placeholder.webm')
+const IMAGE_PLACEHOLDER = join(websiteRoot, 'e2e/assets/placeholder-1x1.webp')
+const VIDEO_PLACEHOLDER = join(websiteRoot, 'e2e/assets/placeholder.webm')
 const INTER_FONT = readFileSync(
-  assetPath('../assets/inter-latin.woff2')
+  join(websiteRoot, 'e2e/assets/inter-latin.woff2')
 ).toString('base64')
 
 const ANALYTICS_HOSTS = new Set([
