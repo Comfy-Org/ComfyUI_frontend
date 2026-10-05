@@ -101,14 +101,20 @@ function resolveExportDownloadUrl(
   if (
     !trimmedUrl ||
     trimmedUrl.startsWith('//') ||
-    trimmedUrl.startsWith('\\\\')
+    trimmedUrl.startsWith('\\\\') ||
+    trimmedUrl.startsWith('/\\')
   ) {
     return { ok: false, error: t('exportToast.unsupportedDownloadUrl') }
   }
   const resolvedUrl = trimmedUrl.startsWith('/')
     ? api.apiURL(trimmedUrl)
     : trimmedUrl
-  const parsedUrl = new URL(resolvedUrl, document.baseURI)
+  let parsedUrl: URL
+  try {
+    parsedUrl = new URL(resolvedUrl, document.baseURI)
+  } catch {
+    return { ok: false, error: t('exportToast.unsupportedDownloadUrl') }
+  }
   if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
     return { ok: false, error: t('exportToast.unsupportedDownloadUrl') }
   }
