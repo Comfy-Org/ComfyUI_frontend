@@ -74,6 +74,12 @@ identity. When that owner changes, it resets the team workspace store before
 publishing the new storage identity. Persistence therefore cannot conclude a
 new user's fence using the previous user's `ready` workspace state.
 
+When a previously resolved identity changes, workflow persistence also clears
+the active workflow and open tabs while the write gate is deferred. A later
+graph change therefore cannot adopt the departing owner's live workflow into
+the replacement owner's scope. Persisted workflow metadata remains available
+for the replacement workspace to refresh or reopen.
+
 ### Logout removes one captured scope
 
 The logout command captures the resolved scope before authentication is

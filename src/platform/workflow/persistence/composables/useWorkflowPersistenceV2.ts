@@ -79,6 +79,8 @@ export function useWorkflowPersistenceV2() {
   let hasPendingPersistence = false
   let pendingPersistenceOwnerId: string | null = null
   let graphChangeRevision = 0
+  let tabStateRestored = false
+  let resumeTabStateAfterIdentityResolution = false
 
   watch(workflowPersistenceEnabled, (enabled) => {
     if (!enabled) {
@@ -182,6 +184,11 @@ export function useWorkflowPersistenceV2() {
       if (identity === observedStorageIdentity) return
       observedStorageIdentity = identity
       resetPersistenceForIdentityChange(hasResolvedStorageIdentity)
+      if (hasResolvedStorageIdentity) {
+        tabStateRestored = false
+        resumeTabStateAfterIdentityResolution = true
+        workflowStore.resetForIdentityChange()
+      }
       if (identity !== null) hasResolvedStorageIdentity = true
     },
     { flush: 'sync' }
@@ -190,6 +197,10 @@ export function useWorkflowPersistenceV2() {
   watch(
     getStorageWriteGate,
     (gate) => {
+      if (gate === 'open' && resumeTabStateAfterIdentityResolution) {
+        resumeTabStateAfterIdentityResolution = false
+        tabStateRestored = true
+      }
       if (
         gate === 'open' &&
         hasPendingPersistence &&
@@ -373,17 +384,17 @@ export function useWorkflowPersistenceV2() {
     return activeWorkflow.value
   }
 
-  // Track whether tab state has been properly restored to avoid
-  // overwriting with stale data during initialization
-  let tabStateRestored = false
-
-  watch(restoreState, ({ paths, activeIndex }) => {
-    // Only persist after tab state has been restored to avoid
-    // writing leaked data from wrong workspace during init
-    if (workflowPersistenceEnabled.value && tabStateRestored) {
-      tabState.setOpenPaths(paths, activeIndex)
-    }
-  })
+  watch(
+    restoreState,
+    ({ paths, activeIndex }) => {
+      // Only persist after tab state has been restored to avoid
+      // writing leaked data from wrong workspace during init
+      if (workflowPersistenceEnabled.value && tabStateRestored) {
+        tabState.setOpenPaths(paths, activeIndex)
+      }
+    },
+    { flush: 'sync' }
+  )
 
   /**
    * Restores saved workflow tabs after initializeWorkflow skips the single-workflow fallback.

@@ -1117,13 +1117,77 @@ describe('useWorkflowPersistenceV2', () => {
     Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
     await nextTick()
 
+    const destinationWorkflow = await workflowStore
+      .createTemporary('DestinationAfterLogout.json')
+      .load()
+    workflowStore.activeWorkflow = destinationWorkflow
+    workflowStore.openWorkflowsInBackground({
+      right: [destinationWorkflow.path]
+    })
     mocks.state.currentGraph = { marker: 'destination-edit' }
     mocks.state.graphChangedHandler?.()
     await vi.runAllTimersAsync()
 
+    const destinationOwnedPayloadKey = StorageKeys.draftPayload(
+      destinationWorkflow.path,
+      scope(`user-b:${destinationWorkspaceId}`)
+    )
     expect(localStorage.getItem(sourcePayloadKey)).toBeNull()
     expect(localStorage.getItem(personalPayloadKey)).toBeNull()
-    expect(localStorage.getItem(destinationPayloadKey)).not.toBeNull()
+    expect(localStorage.getItem(destinationPayloadKey)).toBeNull()
+    expect(localStorage.getItem(destinationOwnedPayloadKey)).not.toBeNull()
+  })
+
+  it('does not adopt live workflows during a direct identity replacement', async () => {
+    distributionMocks.isCloud = true
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('AccountA.json').load()
+    workflowStore.activeWorkflow = workflow
+    workflowStore.openWorkflowsInBackground({ right: [workflow.path] })
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    vi.spyOn(teamWorkspaceStore, 'initialize').mockResolvedValue()
+    mountWorkflowPersistence()
+
+    resolveUser('user-a')
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-1',
+      initState: 'ready'
+    })
+    await nextTick()
+
+    mocks.state.currentGraph = { marker: 'account-a' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const sourcePayloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      scope('user-a:workspace-1')
+    )
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      scope('user-b:workspace-1')
+    )
+    expect(localStorage.getItem(sourcePayloadKey)).not.toBeNull()
+
+    resolveUser('user-b')
+    Object.assign(teamWorkspaceStore, {
+      activeWorkspaceId: 'workspace-1',
+      initState: 'ready'
+    })
+    await nextTick()
+
+    mocks.state.currentGraph = { marker: 'must-not-cross-owners' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    expect(workflowStore.activeWorkflow).toBeNull()
+    expect(workflowStore.openWorkflows).toEqual([])
+    expect(localStorage.getItem(destinationPayloadKey)).toBeNull()
+    expect(
+      localStorage.getItem(
+        StorageKeys.lastOpenPaths(scope('user-b:workspace-1'))
+      )
+    ).toBeNull()
   })
 
   it('drops edits made in a post-identity null gap before the next owner resolves', async () => {
@@ -1161,16 +1225,31 @@ describe('useWorkflowPersistenceV2', () => {
     )
     expect(localStorage.getItem(destinationPayloadKey)).toBeNull()
 
+    const destinationWorkflow = await workflowStore
+      .createTemporary('Destination.json')
+      .load()
+    workflowStore.activeWorkflow = destinationWorkflow
+    workflowStore.openWorkflowsInBackground({
+      right: [destinationWorkflow.path]
+    })
     mocks.state.currentGraph = { marker: 'destination-edit' }
     mocks.state.graphChangedHandler?.()
     await vi.runAllTimersAsync()
 
+    const destinationOwnedPayloadKey = StorageKeys.draftPayload(
+      destinationWorkflow.path,
+      scope('user-b:workspace-b')
+    )
     const destinationPayloadJson = localStorage.getItem(destinationPayloadKey)
-    expect(destinationPayloadJson).not.toBeNull()
-    if (destinationPayloadJson === null) {
+    expect(destinationPayloadJson).toBeNull()
+    const destinationOwnedPayloadJson = localStorage.getItem(
+      destinationOwnedPayloadKey
+    )
+    expect(destinationOwnedPayloadJson).not.toBeNull()
+    if (destinationOwnedPayloadJson === null) {
       throw new Error('Expected destination draft payload')
     }
-    expect(JSON.parse(JSON.parse(destinationPayloadJson).data)).toEqual({
+    expect(JSON.parse(JSON.parse(destinationOwnedPayloadJson).data)).toEqual({
       marker: 'destination-edit'
     })
   })
