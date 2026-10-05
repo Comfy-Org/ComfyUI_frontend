@@ -23,6 +23,21 @@ test.describe('Node library sidebar V2', () => {
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
   })
 
+  test('Clicking a folder focuses it for keyboard navigation', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.nodeLibraryTabV2
+
+    await tab.expandFolder('model')
+    await expect(tab.getFolder('model')).toBeFocused()
+
+    await comfyPage.page.keyboard.press('ArrowLeft')
+    await expect(tab.getFolder('model')).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
+  })
+
   test('Search filters nodes in All tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
