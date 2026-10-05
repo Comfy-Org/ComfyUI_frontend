@@ -61,7 +61,7 @@ export function startAssetDrag(
         }),
     attachment_ref: getAssetUrlFilename(asset),
     media_kind: mediaKind,
-    preview_url: mediaKind === 'image' ? previewUrl?.toString() : undefined
+    preview_url: (mediaKind === 'image' ? previewUrl : fileUrl)?.toString()
   }
   dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))
 

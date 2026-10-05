@@ -166,6 +166,21 @@ describe('MediaAssetCard', () => {
       )
     })
 
+    it('uses the asset content URL to preview a dragged video attachment', () => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+      const { container } = renderCard({ asset: jobGroupedVideo })
+
+      const { add } = dispatchDragStart(container, {
+        assetId: jobGroupedVideo.id
+      })
+      const payload = add.mock.calls[0]?.[0]
+
+      expect(JSON.parse(String(payload))).toMatchObject({
+        media_kind: 'video',
+        preview_url: `http://localhost:3000/api/assets/${videoAssetId}/content`
+      })
+    })
+
     it.for([
       {
         kind: 'a job-grouped image with a self-preview',
