@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="bg-base-raised-surface group relative rounded-lg border border-border-default"
-  >
+  <div class="group relative rounded-lg border border-border-default">
     <Button
       variant="textonly"
       size="unset"
@@ -26,7 +24,7 @@
       />
       <div
         v-else
-        class="pointer-events-none flex items-center gap-2 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 touch:pointer-events-auto touch:opacity-100"
+        class="pointer-events-none flex items-center gap-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100 touch:pointer-events-auto touch:opacity-100"
       >
         <Button
           variant="muted-textonly"
