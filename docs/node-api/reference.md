@@ -207,6 +207,7 @@ See [Nodes and definitions](./nodes.md).
 | `nodesOfType(type)`  | `readonly NodeHandle[]`         |
 | `links()`            | `readonly LinkInfo[]`           |
 | `groups()`           | `readonly GroupHandle[]`        |
+| `groupSelection()`   | `readonly GroupHandle[]`        |
 | `selection()`        | `readonly NodeHandle[]`         |
 | `root()`             | `GraphScopeHandle \| undefined` |
 | `subgraphs()`        | `readonly GraphScopeHandle[]`   |
@@ -236,8 +237,8 @@ Read-only graph scope with `id`, optional `name`, `nodes()`, `node(id)`,
 
 ### `GroupHandle`
 
-Provides `id`, title and color getter/setters, `nodes()`, `getBounds()`, and
-`centerOn()`.
+Provides `id`, title and color getter/setters, `nodes()`, `getBounds()`,
+`setBounds(bounds)`, and `centerOn()`.
 
 `NodeInit` accepts optional `title` and `position`. `Point` is `{ x, y }`,
 `Size` is `{ width, height }`, and `Bounds` is `{ x, y, width, height }`.

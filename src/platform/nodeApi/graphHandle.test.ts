@@ -743,6 +743,96 @@ describe('groups', () => {
     handle.setTitle('New')
     expect(group.title).toBe('New')
   })
+
+  it('moves and resizes a live group as one undoable mutation', () => {
+    const graph = new LGraph()
+    const canvas = testCanvas(graph)
+    const beforeChange = vi.fn()
+    const afterChange = vi.fn()
+    canvas.onBeforeChange = beforeChange
+    canvas.onAfterChange = afterChange
+    const group = new LGraphGroup('Resizable')
+    graph.add(group)
+    const [handle] = createGraphApi(() => graph).groups()
+
+    handle.setBounds({ x: -20, y: 30, width: 320, height: 180 })
+
+    expect(handle.getBounds()).toEqual({
+      x: -20,
+      y: 30,
+      width: 320,
+      height: 180
+    })
+    expect(beforeChange).toHaveBeenCalledOnce()
+    expect(afterChange).toHaveBeenCalledOnce()
+  })
+
+  it('rejects invalid, stale, and cross-graph group bounds', () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    let current = first
+    const group = new LGraphGroup('Scoped')
+    first.add(group)
+    const [handle] = createGraphApi(() => current).groups()
+
+    expect(() =>
+      handle.setBounds({ x: 0, y: 0, width: Number.NaN, height: 100 })
+    ).toThrow(/finite, positive, bounded/)
+    expect(() =>
+      handle.setBounds({ x: 0, y: 0, width: -1, height: 100 })
+    ).toThrow(/finite, positive, bounded/)
+    expect(() =>
+      handle.setBounds({ x: 1_000_001, y: 0, width: 200, height: 100 })
+    ).toThrow(/finite, positive, bounded/)
+
+    current = second
+    expect(() =>
+      handle.setBounds({ x: 0, y: 0, width: 200, height: 100 })
+    ).toThrow(/stale or belongs to another graph/)
+
+    current = first
+    first.remove(group)
+    expect(() =>
+      handle.setBounds({ x: 0, y: 0, width: 200, height: 100 })
+    ).toThrow(/stale or belongs to another graph/)
+  })
+
+  it('reports only selected groups from the current graph', () => {
+    const graph = new LGraph()
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    const node = new LGraphNode('Node', 'TestNode')
+    const first = new LGraphGroup('First')
+    const second = new LGraphGroup('Second')
+    graph.add(node)
+    graph.add(first)
+    graph.add(second)
+    const api = createGraphApi(() => graph)
+    expect(api.groupSelection()).toEqual([])
+
+    api.select([api.node(String(node.id))!])
+    canvas.selectedItems.add(first)
+
+    expect(api.selection().map((item) => item.id)).toEqual([String(node.id)])
+    expect(api.groupSelection().map((item) => item.getTitle())).toEqual([
+      'First'
+    ])
+
+    canvas.selectedItems.add(second)
+    expect(api.groupSelection().map((item) => item.getTitle())).toEqual([
+      'First',
+      'Second'
+    ])
+
+    const other = new LGraph()
+    const foreign = new LGraphGroup('Foreign')
+    other.add(foreign)
+    canvas.selectedItems.add(foreign)
+    expect(api.groupSelection().map((item) => item.getTitle())).toEqual([
+      'First',
+      'Second'
+    ])
+  })
 })
 
 describe('zoom', () => {

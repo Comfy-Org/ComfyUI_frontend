@@ -5,7 +5,11 @@
  * This is the only module that knows how the pieces fit together; everything
  * below it is independently testable.
  */
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphGroup,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
@@ -66,6 +70,8 @@ export interface GraphHandle {
    * Selection is a property of the document, so it is asked of the graph.
    */
   selection(): readonly NodeHandle[]
+  /** The groups selected in the current visible graph. */
+  groupSelection(): readonly GroupHandle[]
   /**
    * Replaces the selection with these nodes. An empty list clears it.
    *
@@ -308,7 +314,7 @@ export function createGraphApi(
   const handleFor = (nodeId: string) =>
     nodeHandles.handleFor(nodeId) as NodeHandle
 
-  const groupHandle = createGroupHandles(handleFor)
+  const groupHandle = createGroupHandles(getGraph, handleFor, runAsBatch)
   const graphScopeHandle = createGraphScopeHandles(getResolvers, getSuppliers)
 
   const requireGraph = (action: string): LGraph => {
@@ -571,6 +577,23 @@ export function createGraphApi(
         Object.keys(canvas?.selected_nodes ?? {})
           .map((id) => handleFor(id))
           .filter((n): n is NodeHandle => Boolean(n))
+      )
+    },
+
+    groupSelection() {
+      const graph = getGraph()
+      if (!graph) return Object.freeze([])
+      const canvas = graph.list_of_graphcanvas?.[0]
+      if (!canvas) return Object.freeze([])
+      return Object.freeze(
+        [...canvas.selectedItems]
+          .filter(
+            (item): item is LGraphGroup =>
+              item instanceof LGraphGroup &&
+              item.graph === graph &&
+              graph._groups.includes(item)
+          )
+          .map(groupHandle)
       )
     },
 

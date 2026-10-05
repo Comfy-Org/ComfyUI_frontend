@@ -155,6 +155,8 @@ pixel ratio.
 for (const group of comfy.graph.groups()) {
   console.info(group.id, group.getTitle(), group.nodes().length)
 }
+
+const selectedGroups = comfy.graph.groupSelection()
 ```
 
 `GroupHandle` provides:
@@ -163,11 +165,20 @@ for (const group of comfy.graph.groups()) {
 - `getColor()` / `setColor()`;
 - `nodes()` for the nodes geometrically contained by the group;
 - `getBounds()` in graph space;
+- `setBounds({ x, y, width, height })` for one undoable move and resize;
 - `centerOn()` for the visible view.
 
 Groups are derived rectangles, not parents that own a stored child list. Ask
 `nodes()` again after layout changes. A subgraph scope's `groups()` reads groups
 inside that definition.
+
+`setBounds()` accepts finite coordinates and positive dimensions within the
+host geometry limit. The host applies the normal group minimum dimensions and
+rejects a stale handle or one from another graph.
+
+`groupSelection()` returns only groups selected in the visible graph. Node and
+group selection can coexist; use `selection()` and `groupSelection()` together
+when an action requires exactly one selected graph item.
 
 ## Structural version token
 

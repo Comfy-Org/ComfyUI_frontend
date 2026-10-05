@@ -10,11 +10,15 @@
  * overlaps at the moment you ask. That is why `nodes()` is a method. A node
  * dragged out of a group leaves it, with nothing recorded anywhere.
  */
-import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 
+import { ComfyApiError } from './errors'
 import type { Bounds, NodeHandle } from './nodeHandle'
+
+const MAX_GROUP_GEOMETRY = 1_000_000
 
 export interface GroupHandle {
   readonly id: string
@@ -32,12 +36,16 @@ export interface GroupHandle {
   nodes(): readonly NodeHandle[]
   /** The group's rectangle in graph space, title bar included. */
   getBounds(): Bounds
+  /** Moves and resizes the group as one undoable graph mutation. */
+  setBounds(bounds: Bounds): void
   /** Pans the view so this group is in the middle of it. Zoom is unchanged. */
   centerOn(): void
 }
 
 export function createGroupHandles(
-  handleFor: (nodeId: string) => NodeHandle | undefined
+  getGraph: () => LGraph | null | undefined,
+  handleFor: (nodeId: string) => NodeHandle | undefined,
+  mutate: (mutation: () => void) => void
 ) {
   const cache = new WeakMap<LGraphGroup, GroupHandle>()
   return function groupHandle(group: LGraphGroup): GroupHandle {
@@ -48,6 +56,15 @@ export function createGroupHandles(
       // draws rather than a rectangle test that drifts from it.
       group.recomputeInsideNodes()
       return group._nodes
+    }
+    const requireLiveGroup = () => {
+      const graph = getGraph()
+      if (!graph || group.graph !== graph || !graph._groups.includes(group)) {
+        throw new ComfyApiError(
+          `Cannot resize group '${String(group.id)}': the handle is stale or belongs to another graph.`
+        )
+      }
+      return graph
     }
 
     const handle = Object.freeze({
@@ -69,6 +86,32 @@ export function createGroupHandles(
       getBounds: () => {
         const [x, y, width, height] = group._bounding
         return Object.freeze({ x, y, width, height })
+      },
+      setBounds: (bounds: Bounds) => {
+        requireLiveGroup()
+        const values = [bounds.x, bounds.y, bounds.width, bounds.height]
+        if (
+          values.some((value) => !Number.isFinite(value)) ||
+          Math.abs(bounds.x) > MAX_GROUP_GEOMETRY ||
+          Math.abs(bounds.y) > MAX_GROUP_GEOMETRY ||
+          bounds.width <= 0 ||
+          bounds.height <= 0 ||
+          bounds.width > MAX_GROUP_GEOMETRY ||
+          bounds.height > MAX_GROUP_GEOMETRY
+        ) {
+          throw new ComfyApiError(
+            'Group bounds must contain finite, positive, bounded geometry.'
+          )
+        }
+        mutate(() => {
+          group._bounding.set([
+            bounds.x,
+            bounds.y,
+            Math.max(LGraphGroup.minWidth, bounds.width),
+            Math.max(LGraphGroup.minHeight, bounds.height)
+          ])
+          group.recomputeInsideNodes()
+        })
       },
       centerOn: () => {
         const canvas = extensionValue(LGraphCanvas.active_canvas)
