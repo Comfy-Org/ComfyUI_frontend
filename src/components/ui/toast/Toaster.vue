@@ -123,7 +123,7 @@ const icons = {
         (hotkey: string) =>
           t('toastMessages.notificationsViewportLabel', { hotkey })
       "
-      :z-index-version="latestToastId"
+      :latest-toast-id
       data-testid="toast-viewport"
     />
   </ToastProvider>

@@ -1,13 +1,12 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { MODAL_Z_BASE, vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import type { ToastId } from '@/types/toastId'
+import { topModalZIndex } from '@/utils/modalLayerStack'
 
 import Toaster from './Toaster.vue'
 import { useToast } from './toastStore'
@@ -150,8 +149,25 @@ describe('Toaster', () => {
     useToast().dismiss(id)
     await nextTick()
 
-    expect(ZIndex.getCurrent('modal')).toBeLessThan(MODAL_Z_BASE)
+    expect(topModalZIndex()).toBe(0)
     expect(screen.queryByTestId('toast-viewport')).not.toBeInTheDocument()
+  })
+
+  it('lifts the next notification above a dialog opened after the previous one', async () => {
+    renderToaster()
+    const toast = useToast()
+    toast.info('First')
+    await nextTick()
+    render({
+      directives: { rekaZIndex: vRekaZIndex },
+      template: '<div v-reka-z-index data-testid="dialog" />'
+    })
+    toast.info('Second')
+    await nextTick()
+
+    expect(
+      Number(screen.getByTestId('toast-viewport').style.zIndex)
+    ).toBeGreaterThan(Number(screen.getByTestId('dialog').style.zIndex))
   })
 
   it('automatically dismisses a timed notification', async () => {
