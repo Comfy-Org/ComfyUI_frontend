@@ -2,10 +2,13 @@ import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 
 import ts from 'typescript'
+import { z } from 'zod'
 
-export type ExpectedFailureKind = 'playwright' | 'vitest'
+import { isMainModule } from '../isMainModule'
 
-export interface ExpectedFailure {
+type ExpectedFailureKind = 'playwright' | 'vitest'
+
+interface ExpectedFailure {
   id: string
   kind: ExpectedFailureKind
   file: string
@@ -13,28 +16,19 @@ export interface ExpectedFailure {
   title: string
 }
 
-interface BaselineEntry {
-  id: string
-  classification: 'infrastructure-assertion' | 'live-defect'
-}
+const baselineEntrySchema = z.object({
+  id: z.string().min(1),
+  classification: z.enum(['infrastructure-assertion', 'live-defect'])
+})
+const baselineSchema = z.object({ entries: z.array(baselineEntrySchema) })
+type BaselineEntry = z.infer<typeof baselineEntrySchema>
+
+const LIVE_DEFECT_CEILING = 25
 
 const SOURCE_ROOTS = ['browser_tests', 'src']
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx'])
 
-const propertyCall = (
-  node: ts.CallExpression
-): { object: string; property: string } | undefined => {
-  if (!ts.isPropertyAccessExpression(node.expression)) {
-    return
-  }
-
-  return {
-    object: node.expression.expression.getText(),
-    property: node.expression.name.text
-  }
-}
-
-const isTestExpression = (expression: ts.Expression): boolean => {
+function isTestExpression(expression: ts.Expression): boolean {
   if (ts.isIdentifier(expression)) {
     return expression.text === 'it' || expression.text === 'test'
   }
@@ -47,7 +41,26 @@ const isTestExpression = (expression: ts.Expression): boolean => {
   )
 }
 
-const testTitle = (node: ts.Node): string => {
+function literalTitle(node: ts.Expression | undefined): string | undefined {
+  return node &&
+    (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+    ? node.text
+    : undefined
+}
+
+function hasTestBody(node: ts.CallExpression): boolean {
+  const body = node.arguments.at(-1)
+  return Boolean(
+    body && (ts.isArrowFunction(body) || ts.isFunctionExpression(body))
+  )
+}
+
+function testTitle(node: ts.CallExpression): string {
+  if (hasTestBody(node)) {
+    const declaredTitle = literalTitle(node.arguments.at(0))
+    if (declaredTitle) return declaredTitle
+  }
+
   for (
     let parent = node.parent;
     parent !== node.getSourceFile();
@@ -57,40 +70,64 @@ const testTitle = (node: ts.Node): string => {
 
     if (!isTestExpression(parent.expression)) continue
 
-    const title = parent.arguments.at(0)
-    if (
-      title &&
-      (ts.isStringLiteral(title) || ts.isNoSubstitutionTemplateLiteral(title))
-    ) {
-      return title.text
-    }
+    const title = literalTitle(parent.arguments.at(0))
+    if (title) return title
   }
 
   return '<declaration-level>'
 }
 
-const expectedFailureKind = (
-  node: ts.CallExpression
-): ExpectedFailureKind | undefined => {
-  const call = propertyCall(node)
-  if (call?.property === 'fails' && ['it', 'test'].includes(call.object)) {
-    return 'vitest'
+function callChain(expression: ts.Expression): {
+  root?: string
+  properties: string[]
+} {
+  if (ts.isIdentifier(expression)) {
+    return { root: expression.text, properties: [] }
   }
-  if (call?.object === 'test' && call.property === 'fail') return 'playwright'
+  if (ts.isCallExpression(expression)) return callChain(expression.expression)
+  if (!ts.isPropertyAccessExpression(expression)) return { properties: [] }
+
+  const chain = callChain(expression.expression)
+  return { ...chain, properties: [...chain.properties, expression.name.text] }
 }
 
-const vitestTitle = (node: ts.CallExpression): string => {
-  const value = node.arguments.at(0)
-  return value &&
-    (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value))
-    ? value.text
-    : '<dynamic-title>'
+function isVitestFailure(root: string | undefined, properties: string[]) {
+  return (
+    root !== undefined &&
+    ['it', 'test'].includes(root) &&
+    properties.includes('fails')
+  )
 }
 
-export const inspectSource = (
-  source: string,
+function isPlaywrightFailure(
+  root: string | undefined,
+  properties: string[],
   file: string
-): ExpectedFailure[] => {
+) {
+  return (
+    root !== undefined &&
+    properties.includes('fail') &&
+    (root === 'test' || file.startsWith('browser_tests/'))
+  )
+}
+
+function expectedFailureKind(
+  node: ts.CallExpression,
+  file: string
+): ExpectedFailureKind | undefined {
+  if (ts.isCallExpression(node.parent) && node.parent.expression === node)
+    return
+
+  const { root, properties } = callChain(node.expression)
+  if (isVitestFailure(root, properties)) return 'vitest'
+  if (isPlaywrightFailure(root, properties, file)) return 'playwright'
+}
+
+function vitestTitle(node: ts.CallExpression): string {
+  return literalTitle(node.arguments.at(0)) ?? '<dynamic-title>'
+}
+
+export function inspectSource(source: string, file: string): ExpectedFailure[] {
   const sourceFile = ts.createSourceFile(
     file,
     source,
@@ -99,13 +136,13 @@ export const inspectSource = (
   )
   const found: Omit<ExpectedFailure, 'id'>[] = []
 
-  const visit = (node: ts.Node) => {
+  function visit(node: ts.Node) {
     if (!ts.isCallExpression(node)) {
       ts.forEachChild(node, visit)
       return
     }
 
-    const kind = expectedFailureKind(node)
+    const kind = expectedFailureKind(node, file)
 
     if (kind) {
       const position = sourceFile.getLineAndCharacterOfPosition(node.getStart())
@@ -126,7 +163,7 @@ export const inspectSource = (
   })
 }
 
-const sourceFiles = async (root: string): Promise<string[]> => {
+async function sourceFiles(root: string): Promise<string[]> {
   const entries = await readdir(root, { withFileTypes: true })
   const nested = await Promise.all(
     entries.map(async (entry) => {
@@ -138,9 +175,9 @@ const sourceFiles = async (root: string): Promise<string[]> => {
   return nested.flat()
 }
 
-export const buildInventory = async (
+async function buildInventory(
   repositoryRoot = process.cwd()
-): Promise<ExpectedFailure[]> => {
+): Promise<ExpectedFailure[]> {
   const files = (
     await Promise.all(
       SOURCE_ROOTS.map((root) => sourceFiles(path.join(repositoryRoot, root)))
@@ -150,7 +187,10 @@ export const buildInventory = async (
   return (
     await Promise.all(
       files.map(async (absoluteFile) => {
-        const file = path.relative(repositoryRoot, absoluteFile)
+        const file = path
+          .relative(repositoryRoot, absoluteFile)
+          .split(path.sep)
+          .join('/')
         return inspectSource(await readFile(absoluteFile, 'utf8'), file)
       })
     )
@@ -159,7 +199,16 @@ export const buildInventory = async (
     .sort((left, right) => left.id.localeCompare(right.id))
 }
 
-const run = async () => {
+function validateBaseline(value: unknown): BaselineEntry[] {
+  const entries = baselineSchema.parse(value).entries
+  const ids = entries.map(({ id }) => id)
+  if (new Set(ids).size !== ids.length) {
+    throw new Error('Expected-failure baseline contains duplicate IDs.')
+  }
+  return entries
+}
+
+async function run() {
   const inventory = await buildInventory()
   if (process.argv.includes('--print')) {
     console.log(JSON.stringify(inventory, null, 2))
@@ -170,27 +219,31 @@ const run = async () => {
     process.cwd(),
     'scripts/cicd/expected-failure-baseline.json'
   )
-  const baseline = JSON.parse(await readFile(baselinePath, 'utf8')) as {
-    entries: BaselineEntry[]
-  }
+  const baseline = validateBaseline(
+    JSON.parse(await readFile(baselinePath, 'utf8')) as unknown
+  )
   const actualIds = new Set(inventory.map(({ id }) => id))
-  const baselineIds = new Set(baseline.entries.map(({ id }) => id))
+  const baselineIds = new Set(baseline.map(({ id }) => id))
   const added = inventory.filter(({ id }) => !baselineIds.has(id))
-  const removed = baseline.entries.filter(({ id }) => !actualIds.has(id))
+  const removed = baseline.filter(({ id }) => !actualIds.has(id))
+  const liveDefects = baseline.filter(
+    ({ classification }) => classification === 'live-defect'
+  ).length
 
-  if (added.length === 0 && removed.length === 0) {
-    const liveDefects = baseline.entries.filter(
-      ({ classification }) => classification === 'live-defect'
-    ).length
+  if (
+    added.length === 0 &&
+    removed.length === 0 &&
+    liveDefects <= LIVE_DEFECT_CEILING
+  ) {
     console.log(
-      `Expected-failure baseline matches: ${liveDefects} live defects, ${baseline.entries.length - liveDefects} infrastructure assertions.`
+      `Expected-failure baseline matches: ${liveDefects} live defects, ${baseline.length - liveDefects} infrastructure assertions.`
     )
     return
   }
 
   for (const entry of added) {
     console.error(
-      `Unclassified expected failure: ${entry.file}:${entry.line} — ${entry.title}`
+      `Unclassified expected failure: ${entry.file}:${entry.line} — ${entry.id}`
     )
   }
   for (const entry of removed) {
@@ -198,10 +251,15 @@ const run = async () => {
       `Resolved or renamed expected failure still in baseline: ${entry.id}`
     )
   }
+  if (liveDefects > LIVE_DEFECT_CEILING) {
+    console.error(
+      `Live-defect count ${liveDefects} exceeds the fixed ceiling ${LIVE_DEFECT_CEILING}.`
+    )
+  }
   console.error(
-    'Classify additions and remove resolved entries in expected-failure-baseline.json.'
+    'Update scripts/cicd/expected-failure-baseline.json: remove resolved entries and classify each addition as "live-defect" or "infrastructure-assertion".'
   )
   process.exitCode = 1
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) await run()
+if (isMainModule(import.meta.url)) await run()

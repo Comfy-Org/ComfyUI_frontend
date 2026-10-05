@@ -5,7 +5,7 @@
       "classification": "live-defect"
     },
     {
-      "id": "playwright:browser_tests/tests/agent/agentNestedOutputSentPreview.spec.ts:<declaration-level>:1",
+      "id": "playwright:browser_tests/tests/agent/agentNestedOutputSentPreview.spec.ts:sends a nested video output by its display name, not its asset id:1",
       "classification": "live-defect"
     },
     {
@@ -38,6 +38,10 @@
     },
     {
       "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:retains the external WebSocket guard:1",
+      "classification": "infrastructure-assertion"
+    },
+    {
+      "id": "playwright:browser_tests/tests/infrastructure/networkIsolation.spec.ts:<declaration-level>:1",
       "classification": "infrastructure-assertion"
     },
     {
