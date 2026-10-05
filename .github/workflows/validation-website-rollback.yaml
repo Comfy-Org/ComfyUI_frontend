@@ -93,13 +93,18 @@ jobs:
         if: inputs.perform_rollback
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
         run: |
           for attempt in {1..60}; do
             ACTUAL_SHA=$(curl -fsS \
               -H 'Cache-Control: no-cache' \
               "https://comfy.org/__build.json?rollback=$GITHUB_RUN_ID-$attempt" |
               jq -r '.sha // empty') || true
-            if [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" ]]; then
+            ALIAS_DEPLOYMENT_ID=$(curl -fsS --retry 3 \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID" |
+              jq -r '.deploymentId // empty') || true
+            if [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" && "$ALIAS_DEPLOYMENT_ID" == "$TARGET_DEPLOYMENT" ]]; then
               curl -fsS -o /dev/null https://comfy.org/
               exit 0
             fi
@@ -122,13 +127,20 @@ jobs:
         if: inputs.perform_rollback
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          TARGET_DEPLOYMENT: ${{ inputs.deployment_id }}
         run: |
           ACTUAL_SHA=$(curl -fsS \
             -H 'Cache-Control: no-cache' \
             "https://comfy.org/__build.json?promote=$GITHUB_RUN_ID" |
             jq -r '.sha // empty')
+          ALIAS_DEPLOYMENT_ID=$(curl -fsS --retry 3 \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID" |
+            jq -er '.deploymentId')
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ALIAS_DEPLOYMENT_ID" = "$TARGET_DEPLOYMENT"
           {
             echo "**Rollback target:** ${{ inputs.deployment_id }}"
             echo "**Verified canonical SHA:** $ACTUAL_SHA"
+            echo "**Verified canonical deployment:** $ALIAS_DEPLOYMENT_ID"
           } >> "$GITHUB_STEP_SUMMARY"

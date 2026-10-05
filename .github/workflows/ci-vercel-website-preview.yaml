@@ -283,6 +283,8 @@ jobs:
       - name: Verify immutable and canonical production identity
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}
+          EXPECTED_RUN_ID: ${{ github.run_id }}
           EXPECTED_SHA: ${{ github.sha }}
         timeout-minutes: 12
         run: |
@@ -291,11 +293,15 @@ jobs:
             local attempts="$2"
             local delay="$3"
             for ((attempt = 1; attempt <= attempts; attempt += 1)); do
-              ACTUAL_SHA=$(curl -fsS \
+              if MARKER=$(curl -fsS \
                 -H 'Cache-Control: no-cache' \
-                "${base_url%/}/__build.json?run=$GITHUB_RUN_ID-$attempt" |
-                jq -r '.sha // empty') || true
-              if [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" ]]; then
+                "${base_url%/}/__build.json?run=$GITHUB_RUN_ID-$attempt") &&
+                jq -e \
+                  --arg sha "$EXPECTED_SHA" \
+                  --arg runId "$EXPECTED_RUN_ID" \
+                  --arg runAttempt "$EXPECTED_RUN_ATTEMPT" \
+                  '.sha == $sha and .runId == $runId and .runAttempt == $runAttempt' \
+                  <<< "$MARKER" >/dev/null; then
                 return 0
               fi
               sleep "$delay"
