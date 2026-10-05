@@ -51,7 +51,6 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
         component,
         props: known,
         dialogComponentProps: {
-          renderer: 'reka',
           headless: true,
           contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
         }

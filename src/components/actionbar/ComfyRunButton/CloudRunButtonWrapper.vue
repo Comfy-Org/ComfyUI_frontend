@@ -138,7 +138,6 @@ function showPaymentRecoveryDialog() {
       onUpdatePayment: updatePayment
     },
     dialogComponentProps: {
-      renderer: 'reka',
       headless: true,
       contentClass:
         'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'

@@ -204,7 +204,6 @@ export function useAgentConsent() {
           }
         },
         dialogComponentProps: {
-          renderer: 'reka',
           dismissableMask: true,
           closeOnEscape: true,
           modal: true,

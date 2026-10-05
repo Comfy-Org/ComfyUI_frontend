@@ -67,7 +67,7 @@ function openModal(
     key,
     title: key,
     component,
-    dialogComponentProps: { renderer: 'reka', modal: true }
+    dialogComponentProps: { modal: true }
   })
 }
 

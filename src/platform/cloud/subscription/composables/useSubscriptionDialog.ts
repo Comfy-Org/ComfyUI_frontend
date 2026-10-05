@@ -110,7 +110,6 @@ export const useSubscriptionDialog = () => {
       ),
       props: { onClose: hide },
       dialogComponentProps: {
-        renderer: 'reka',
         contentClass:
           'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
       }
@@ -127,7 +126,6 @@ export const useSubscriptionDialog = () => {
     trackPaywallShown(paymentIntentSource)
 
     const legacyPricingDialogProps = {
-      renderer: 'reka',
       size: 'full',
       dismissableMask: false,
       contentClass:
@@ -204,7 +202,6 @@ export const useSubscriptionDialog = () => {
           // `md` frame. `w-fit` lets each step hug its content -- the pricing
           // table fills its 1280px content while the compact confirm/success
           // steps shrink (the content root sets its own width per checkoutStep).
-          renderer: 'reka',
           size: 'full',
           // A scrim click mid-checkout would silently discard typed card
           // details and any pending 3DS state; the X is the only close.
