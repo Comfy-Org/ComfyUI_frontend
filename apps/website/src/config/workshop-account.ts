@@ -98,3 +98,5 @@ export function subscribeAuthRefreshTelemetry(): () => void {
     }
   })
 }
+
+// Ruleset verification fixture: website-scoped change for ProtectMain.
