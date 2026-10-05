@@ -222,6 +222,25 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       await page.keyboard.press('Escape')
     })
 
+    test('Context menu opens at the pointer inside the settings dialog', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+
+      await searchKeybindings(page, SINGLE_BINDING_COMMAND)
+      const label = getCommandRow(page, SINGLE_BINDING_COMMAND).locator(
+        `[title="${SINGLE_BINDING_COMMAND}"]`
+      )
+      const labelBox = await label.boundingBox()
+      if (!labelBox) throw new Error('Command label has no bounding box')
+      const pointer = { x: labelBox.x + 10, y: labelBox.y + 5 }
+      await label.click({ button: 'right', position: { x: 10, y: 5 } })
+
+      await expect
+        .poll(() => comfyPage.contextMenu.distanceFrom(pointer))
+        .toBeLessThan(16)
+    })
+
     test("Context menu 'Add new keybinding' opens add dialog", async ({
       comfyPage
     }) => {
