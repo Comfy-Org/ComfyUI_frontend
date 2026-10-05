@@ -1,0 +1,135 @@
+name: 'Release: QA Draft'
+
+on:
+  create:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Candidate cloud/X.Y branch or full commit SHA'
+        required: true
+        type: string
+      base:
+        description: 'Previously shipped ref or SHA; blank resolves production runtime'
+        required: false
+        type: string
+      environment:
+        description: 'QA environment (deployment must be confirmed before handoff)'
+        type: choice
+        default: testcloud
+        options: [testcloud, stagingcloud]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-qa-draft-${{ inputs.target || github.event.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      ((github.event_name == 'create' && github.event.ref_type == 'branch' &&
+      startsWith(github.event.ref, 'cloud/')) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      target: ${{ steps.context.outputs.target }}
+      version: ${{ steps.context.outputs.version }}
+      environment: ${{ steps.context.outputs.environment }}
+      artifact_url: ${{ steps.artifact.outputs.artifact-url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Resolve release context
+        id: context
+        env:
+          TARGET_REF: ${{ inputs.target || github.sha }}
+          BASE_REF: ${{ inputs.base }}
+          QA_ENVIRONMENT: ${{ inputs.environment || 'testcloud' }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/cicd/release-qa-context.ts
+      - name: Checkout candidate for inspection
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.context.outputs.target }}
+          fetch-depth: 0
+          path: candidate
+          persist-credentials: false
+      - name: Load pinned test-plan skills
+        uses: actions/checkout@v7
+        with:
+          repository: christian-byrne/comfy-skills
+          ref: 6b821c5ddc04527e83b5fd88e7e9ebccd3c438bc
+          path: release-skills
+          persist-credentials: false
+      - name: Generate draft
+        uses: anthropics/claude-code-action@239e3a730883eeb5c53db12b0fc9573b3024b126 # v1.0.191
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: Read .github/prompts/release-qa-draft.md and follow its draft-only instructions.
+          settings: '{"disableAllHooks": true}'
+          claude_args: >-
+            --max-turns 80
+            --permission-mode dontAsk
+            --tools "Read,Write,Edit,Glob,Grep"
+            --disallowedTools "Bash,Read(//proc/**),Read(//sys/**),Read(//dev/**)"
+            --allowedTools "Read(/candidate/**),Read(/release-skills/**),Read(/temp/plans/**),Read(/.github/prompts/release-qa-draft.md),Edit(/temp/plans/release-qa.md),Glob,Grep"
+      - name: Validate draft
+        env:
+          QA_BASE_SHA: ${{ steps.context.outputs.base }}
+          QA_TARGET_SHA: ${{ steps.context.outputs.target }}
+        run: node scripts/cicd/release-qa-context.ts validate
+      - uses: actions/upload-artifact@v6
+        id: artifact
+        with:
+          name: release-qa-${{ steps.context.outputs.target }}
+          path: |
+            temp/plans/release-qa.md
+            temp/plans/release-context.json
+            temp/plans/release-commits.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Link draft in run summary
+        env:
+          ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
+        run: printf 'Draft ready for scope and flag review. [Download plan](%s)\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+
+  notify:
+    needs: generate
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Notify release reviewers
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          CHANNEL: ${{ vars.SLACK_FRONTEND_RELEASES_CHANNEL_ID }}
+          TARGET: ${{ needs.generate.outputs.target }}
+          VERSION: ${{ needs.generate.outputs.version }}
+          ENVIRONMENT: ${{ needs.generate.outputs.environment }}
+          ARTIFACT_URL: ${{ needs.generate.outputs.artifact_url }}
+        run: |
+          set -euo pipefail
+          test -n "$CHANNEL" || { echo '::error::SLACK_FRONTEND_RELEASES_CHANNEL_ID is required'; exit 1; }
+          TEXT="QA draft ${VERSION} ready for scope and flag/setup review. Environment: ${ENVIRONMENT}. Candidate: ${TARGET}. Deployment and smoke results still need confirmation. <${ARTIFACT_URL}|Download draft>"
+          BODY=$(jq -n --arg channel "$CHANNEL" --arg text "$TEXT" '{channel: $channel, text: $text, unfurl_links: false, unfurl_media: false}')
+          RESPONSE=$(curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 30 \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H 'Content-Type: application/json' \
+            -d "$BODY" https://slack.com/api/chat.postMessage)
+          if ! jq -e '.ok == true' <<<"$RESPONSE" >/dev/null; then
+            echo "::error::Slack notification failed: $(jq -r '.error // "invalid response"' <<<"$RESPONSE")"
+            exit 1
+          fi
