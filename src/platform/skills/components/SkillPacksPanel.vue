@@ -42,15 +42,11 @@
       />
     </div>
 
-    <SkillPackFormDialog
-      v-model:visible="createDialogVisible"
-      @saved="fetchSkillPacks"
-    />
+    <SkillPackFormDialog v-model:visible="createDialogVisible" />
 
     <SkillPackFormDialog
       v-model:visible="editDialogVisible"
       :pack="selectedPack"
-      @saved="fetchSkillPacks"
     />
   </div>
 </template>

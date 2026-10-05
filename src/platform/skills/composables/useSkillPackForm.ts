@@ -92,11 +92,14 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
   resetForm()
   watch(
     () => visible.value,
-    (isVisible) => {
-      formGeneration++
-      if (isVisible) resetForm()
-    },
+    () => formGeneration++,
     { flush: 'sync' }
+  )
+  watch(
+    () => visible.value,
+    (isVisible) => {
+      if (isVisible) resetForm()
+    }
   )
   onScopeDispose(() => formGeneration++)
 

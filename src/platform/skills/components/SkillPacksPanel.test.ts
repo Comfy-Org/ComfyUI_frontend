@@ -1,13 +1,15 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import en from '@/locales/en/main.json'
 import {
   deleteSkillPack as deleteSkillPackApi,
-  listSkillPacks
+  listSkillPacks,
+  publishSkillPack
 } from '@/platform/skills/api/skillsApi'
 import SkillPacksPanel from '@/platform/skills/components/SkillPacksPanel.vue'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -90,6 +92,36 @@ describe('SkillPacksPanel', () => {
     vi.mocked(deleteSkillPackApi).mockResolvedValue(undefined)
     vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
     mockShowConfirmDialog.mockReturnValue(DIALOG_HANDLE)
+  })
+
+  it('preserves edited data and restores row focus after saving', async () => {
+    const user = userEvent.setup()
+    const saved = { ...mockPack, body: 'updated instructions' }
+    vi.mocked(publishSkillPack).mockResolvedValue(saved)
+    render(SkillPacksPanel, {
+      global: {
+        plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+      }
+    })
+    const row = await screen.findByRole('button', { name: mockPack.name })
+    await user.click(row)
+    const instructions = await screen.findByRole('textbox', {
+      name: 'Instructions'
+    })
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      mockPack.name
+    )
+    expect(screen.getByRole('textbox', { name: 'Trigger line' })).toHaveValue(
+      mockPack.description
+    )
+    await user.clear(instructions)
+    await user.type(instructions, 'updated instructions')
+    await user.click(screen.getByRole('button', { name: 'Publish' }))
+    await waitFor(() => expect(publishSkillPack).toHaveBeenCalledOnce())
+
+    await waitFor(() => expect(row).toHaveFocus())
+    expect(useSkillPacksStore().packs).toEqual([saved])
+    expect(listSkillPacks).toHaveBeenCalledOnce()
   })
 
   it('opens the existing editor with full instructions when a row is clicked', async () => {
