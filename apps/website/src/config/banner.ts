@@ -62,6 +62,7 @@ export const bannerConfig: BannerConfig = {
 export const challengeBannerConfig: BannerConfig = {
   id: 'dev-platform-challenge',
   isActive: true,
+  endsAt: '2026-10-20T00:00:00-07:00',
   targetSections: ['sitewide'],
   titleKey: 'platform.challengeBanner.label',
   descriptionKey: 'platform.challengeBanner.line',

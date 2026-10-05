@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { evaluateBannerVisibility } from '@/utils/banner'
+
 import { challengeBannerConfig, getBannerData } from './banner'
 
 describe('challengeBannerConfig', () => {
@@ -18,5 +20,18 @@ describe('challengeBannerConfig', () => {
       target: '_blank',
       rel: 'noopener noreferrer'
     })
+  })
+
+  it.for([
+    { now: '2026-10-19T23:59:00-07:00', visible: true },
+    { now: '2026-10-20T00:01:00-07:00', visible: false }
+  ])('has visibility $visible at $now', ({ now, visible }) => {
+    expect(
+      evaluateBannerVisibility(challengeBannerConfig, {
+        currentLocale: 'en',
+        currentSection: 'sitewide',
+        now: new Date(now)
+      })
+    ).toBe(visible)
   })
 })

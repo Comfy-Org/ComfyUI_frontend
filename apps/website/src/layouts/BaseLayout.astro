@@ -26,7 +26,7 @@ import {
   BANNER_DISMISS_ATTR,
   BANNER_STORAGE_KEY,
   createBannerVersion,
-  evaluateBannerVisibility
+  firstVisibleBanner
 } from '@/utils/banner'
 import { fetchGitHubStars, formatStarCount } from '@/utils/github'
 import {
@@ -107,14 +107,15 @@ const githubStars = rawStars ? formatStarCount(rawStars) : ''
 // Announcement banner — build-time visibility gate + content-hash version key.
 // A promo never advertises the page you are already on, so the banner is
 // suppressed when its CTA points at the current path.
-const bannerData = getBannerData(banner, locale)
+const activeBanner = firstVisibleBanner([banner, bannerConfig], {
+  currentLocale: locale,
+  currentSection: 'sitewide',
+  now: new Date()
+})
+const bannerData = getBannerData(activeBanner ?? bannerConfig, locale)
 const bannerVisible =
   !hideAnnouncementBanner &&
-  evaluateBannerVisibility(banner, {
-    currentLocale: locale,
-    currentSection: 'sitewide',
-    now: new Date()
-  }) &&
+  activeBanner !== undefined &&
   !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
