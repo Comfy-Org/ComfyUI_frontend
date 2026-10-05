@@ -10,6 +10,7 @@ import {
   parseGithubLogins,
   parseOnCallEmails,
   parseRotationKeys,
+  parseSheriffConfig,
   planActions,
   resolveSheriff,
   singleLine
@@ -140,6 +141,61 @@ describe('parseGithubLogins', () => {
 
     expect(result.githubLoginByUser).toEqual({ bo: 'bo-gh' })
     expect(result.warning).toMatch(/1 conflicting key \(ann\)/)
+  })
+})
+
+describe('parseSheriffConfig', () => {
+  it('reads the sheriff and the backup reviewer, trimming each', () => {
+    expect(
+      parseSheriffConfig(
+        '{"sheriff":" thedatalife ","backupReviewer":"christian-byrne"}'
+      )
+    ).toEqual({
+      config: { sheriff: 'thedatalife', backupReviewer: 'christian-byrne' },
+      error: null
+    })
+  })
+
+  it('ignores unknown fields so the file can carry its own documentation', () => {
+    expect(
+      parseSheriffConfig(
+        '{"_comment":["why this exists"],"sheriff":"a","backupReviewer":"b"}'
+      ).config
+    ).toEqual({ sheriff: 'a', backupReviewer: 'b' })
+  })
+
+  const malformed: [label: string, raw: string, expected: RegExp][] = [
+    ['text that is not JSON', 'not json', /not valid JSON/],
+    ['a JSON array', '[]', /not a JSON object/],
+    ['null', 'null', /not a JSON object/],
+    ['a missing sheriff', '{"backupReviewer":"b"}', /no usable "sheriff"/],
+    [
+      'a blank sheriff',
+      '{"sheriff":" ","backupReviewer":"b"}',
+      /no usable "sheriff"/
+    ],
+    ['a missing backup', '{"sheriff":"a"}', /no usable "backupReviewer"/],
+    [
+      'a blank backup',
+      '{"sheriff":"a","backupReviewer":""}',
+      /no usable "backupReviewer"/
+    ]
+  ]
+
+  it.for(malformed)('rejects %s', ([, raw, expected]) => {
+    const { config, error } = parseSheriffConfig(raw)
+
+    expect(config).toBeNull()
+    expect(error).toMatch(expected)
+  })
+
+  it('rejects a backup reviewer who is the sheriff, ignoring case', () => {
+    const { config, error } = parseSheriffConfig(
+      '{"sheriff":"thedatalife","backupReviewer":"TheDataLife"}'
+    )
+
+    expect(config).toBeNull()
+    expect(error).toMatch(/same login as both "sheriff" and "backupReviewer"/)
   })
 })
 
@@ -528,7 +584,7 @@ describe('planActions', () => {
       author: { login: 'Sheriff' }
     })
 
-    expect(planActions([own], 'sheriff', ['a', 'sheriff', 'b'])).toEqual([
+    expect(planActions([own], 'sheriff', 'b')).toEqual([
       { number: 3, assign: true, requestReview: true, reviewer: 'b' }
     ])
   })

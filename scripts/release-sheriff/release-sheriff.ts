@@ -2,7 +2,7 @@
 // automation-authored PRs. Run by pr-assign-release-sheriff.yaml; details in
 // docs/release-process.md.
 import { execFileSync } from 'node:child_process'
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 export const CONFIG = {
@@ -32,6 +32,78 @@ function warn(message: string) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+// Who the sheriff is, declared in a reviewed file in this repo rather than read
+// off the Datadog on-call rota: on-call pages for incidents and hands over
+// weekly, the sheriff shepherds releases. Details in docs/release-process.md.
+const SHERIFF_CONFIG_PATH = '.github/release-sheriff.json'
+
+export interface SheriffConfig {
+  sheriff: string
+  backupReviewer: string
+}
+
+export interface SheriffConfigParse {
+  config: SheriffConfig | null
+  error: string | null
+}
+
+// Returns an error rather than falling back to someone: an unreadable sheriff
+// declaration is a fault a human must fix, and assigning *somebody* while the
+// file is wrong is how the previous placeholder config survived for weeks.
+export function parseSheriffConfig(raw: string): SheriffConfigParse {
+  const invalid = (reason: string): SheriffConfigParse => ({
+    config: null,
+    error: `${SHERIFF_CONFIG_PATH} ${reason}.`
+  })
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return invalid('is not valid JSON')
+  }
+  if (!isRecord(parsed) || Array.isArray(parsed)) {
+    return invalid('is not a JSON object')
+  }
+
+  const usable = (value: unknown): value is string =>
+    typeof value === 'string' && value.trim() !== ''
+  const { sheriff, backupReviewer } = parsed
+  if (!usable(sheriff)) return invalid('has no usable "sheriff" login')
+  if (!usable(backupReviewer)) {
+    return invalid('has no usable "backupReviewer" login')
+  }
+  // GitHub rejects a self-review request, so a backup who is the sheriff leaves
+  // sheriff-authored backports with nobody asked to review, waiting forever on
+  // the approval backport-auto-merge.yaml gates the merge on. Fail the PR that
+  // writes it rather than discovering it on a stalled release.
+  if (sheriff.trim().toLowerCase() === backupReviewer.trim().toLowerCase()) {
+    return invalid(
+      'names the same login as both "sheriff" and "backupReviewer"'
+    )
+  }
+
+  return {
+    config: { sheriff: sheriff.trim(), backupReviewer: backupReviewer.trim() },
+    error: null
+  }
+}
+
+// An absent file yields no config and no error, so the Datadog path still runs.
+// That branch is transitional and is removed with the Datadog lookup itself.
+export function loadSheriffConfig(): SheriffConfigParse {
+  let raw: string
+  try {
+    raw = readFileSync(
+      new URL(`../../${SHERIFF_CONFIG_PATH}`, import.meta.url),
+      'utf8'
+    )
+  } catch {
+    return { config: null, error: null }
+  }
+  return parseSheriffConfig(raw)
 }
 
 // Users arrive in the JSON:API `included` array (via
@@ -365,10 +437,9 @@ export function nextInRotation(
 export function planActions(
   prs: PullRequestSummary[],
   sheriffLogin: string,
-  rotation: string[] = []
+  standby: string | null = null
 ): SheriffAction[] {
   const normalized = sheriffLogin.toLowerCase()
-  const standby = nextInRotation(rotation, sheriffLogin)
 
   return prs.flatMap((pr) => {
     if (pr.isDraft || !isSheriffPr(pr)) return []
@@ -487,9 +558,63 @@ function ghPost(path: string, field: string): boolean {
   }
 }
 
+function runAssignment(
+  repo: string,
+  sheriff: string,
+  standby: string | null,
+  source: string
+) {
+  const actions = planActions(collectCandidatePrs(), sheriff, standby)
+  summary(`### Release sheriff: \`${sheriff}\` (via ${source})`)
+  if (actions.length === 0) {
+    summary('Nothing to do — every candidate PR already has an owner.')
+    return
+  }
+  if (actions.some((action) => action.reviewer === null)) {
+    warn(
+      `${sheriff} authored some of these PRs and no standby reviewer was ` +
+        'available, so those still need a reviewer picked by hand.'
+    )
+  }
+
+  for (const { number, assign, requestReview, reviewer } of actions) {
+    if (assign) {
+      const path = `repos/${repo}/issues/${number}/assignees`
+      if (ghPost(path, `assignees[]=${sheriff}`)) {
+        summary(`- Assigned #${number}`)
+      } else {
+        warn(`Could not assign #${number} to ${sheriff}`)
+      }
+    }
+
+    // A failed review request (e.g. fork PRs) must not undo the assignment.
+    if (requestReview && reviewer) {
+      const path = `repos/${repo}/pulls/${number}/requested_reviewers`
+      if (ghPost(path, `reviewers[]=${reviewer}`)) {
+        summary(`- Requested review from \`${reviewer}\` on #${number}`)
+      } else {
+        warn(`Could not request review from ${reviewer} on #${number}`)
+      }
+    }
+  }
+}
+
 async function main() {
   const repo = process.env.GH_REPO
   if (!repo) throw new Error('GH_REPO is required')
+
+  const declared = loadSheriffConfig()
+  if (declared.error) {
+    warn(declared.error)
+    output('degraded', declared.error)
+    process.exitCode = 1
+    return
+  }
+  if (declared.config) {
+    const { sheriff, backupReviewer } = declared.config
+    runAssignment(repo, sheriff, backupReviewer, SHERIFF_CONFIG_PATH)
+    return
+  }
 
   const credentials = {
     apiKey: process.env.DATADOG_API_KEY,
@@ -562,36 +687,7 @@ async function main() {
     process.exitCode = 1
   }
 
-  const actions = planActions(collectCandidatePrs(), login, directory.rotation)
-  summary(`### Release sheriff: \`${login}\` (via ${source})`)
-  if (actions.length === 0) {
-    summary('Nothing to do — every candidate PR already has an owner.')
-    return
-  }
-  if (actions.some((action) => action.reviewer === null)) {
-    warn(
-      `${login} authored some of these PRs and the rotation offered no ` +
-        'standby, so those still need a reviewer picked by hand.'
-    )
-  }
-
-  for (const { number, assign, requestReview, reviewer } of actions) {
-    if (assign) {
-      const path = `repos/${repo}/issues/${number}/assignees`
-      if (ghPost(path, `assignees[]=${login}`)) summary(`- Assigned #${number}`)
-      else warn(`Could not assign #${number} to ${login}`)
-    }
-
-    // A failed review request (e.g. fork PRs) must not undo the assignment.
-    if (requestReview && reviewer) {
-      const path = `repos/${repo}/pulls/${number}/requested_reviewers`
-      if (ghPost(path, `reviewers[]=${reviewer}`)) {
-        summary(`- Requested review from \`${reviewer}\` on #${number}`)
-      } else {
-        warn(`Could not request review from ${reviewer} on #${number}`)
-      }
-    }
-  }
+  runAssignment(repo, login, nextInRotation(directory.rotation, login), source)
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
