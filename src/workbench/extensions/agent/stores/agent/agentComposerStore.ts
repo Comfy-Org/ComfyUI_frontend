@@ -483,6 +483,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function invalidateSubmission(): void {
     submission.value = null
+    releaseUnusedAssets()
   }
 
   return {
