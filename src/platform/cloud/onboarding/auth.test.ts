@@ -9,6 +9,7 @@ import {
 } from '@/platform/onboarding/onboardingReplay'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { api } from '@/scripts/api'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import {
   getSurveyCompletedStatus as getSurveyCompletedStatusFor,
@@ -25,6 +26,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
+vi.mock(import('firebase/auth'), { spy: true })
 
 const fetchApi = vi.mocked(api.fetchApi)
 const OWNER_ID = 'account-a'
@@ -38,6 +40,7 @@ vi.mock(import('@sentry/vue'), () => ({
 }))
 
 beforeEach(() => {
+  stubFirebaseAuthHarness()
   identityListeners.clear()
   vi.mocked(firebaseIdentity.onUserChanged).mockImplementation((listener) => {
     identityListeners.add(listener)

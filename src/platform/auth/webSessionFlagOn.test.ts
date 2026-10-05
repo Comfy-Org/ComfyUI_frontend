@@ -30,6 +30,7 @@ import {
   takeInteractiveSignIn
 } from '@/platform/auth/session/interactiveSignInMarker'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { submitSurvey } from '@/platform/cloud/onboarding/auth'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
@@ -2838,3 +2839,177 @@ describe.for([{ unified: false }, { unified: true }])(
     })
   }
 )
+
+describe('an SSO account with no Firebase login (sso_enabled)', () => {
+  const STALE_API_KEY = 'stale-api-key'
+
+  const install = async (
+    session: ServerSession,
+    { sso, apiKey }: { sso: boolean; apiKey: boolean }
+  ) => {
+    const server = installServer(session, { sso_enabled: sso })
+    await refreshRemoteConfig({ useAuth: false })
+    if (apiKey) localStorage.setItem('comfy_api_key', STALE_API_KEY)
+    const authStore = useAuthStore()
+    identity.resolve(null)
+    return { server, authStore }
+  }
+
+  beforeEach(() => {
+    identity.reset()
+    firebaseSignOut.mockReset()
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+  })
+
+  it.for<{
+    name: string
+    sso: boolean
+    session: ServerSession
+    sessionReads: string[]
+    onSession: boolean
+    sessionOnlyUserId: string | undefined
+  }>([
+    {
+      name: 'SSO on: a signed-in session wins over the key',
+      sso: true,
+      session: { userId: 'user-a' },
+      sessionReads: ['GET', 'GET'],
+      onSession: true,
+      sessionOnlyUserId: 'user-a'
+    },
+    {
+      name: 'SSO on: no session falls back to the key',
+      sso: true,
+      session: 'none',
+      sessionReads: ['GET'],
+      onSession: false,
+      sessionOnlyUserId: undefined
+    },
+    {
+      name: 'SSO on: a revoked session falls back to the key',
+      sso: true,
+      session: 'revoked',
+      sessionReads: ['GET'],
+      onSession: false,
+      sessionOnlyUserId: undefined
+    },
+    {
+      name: 'SSO off: the key wins without reading the session',
+      sso: false,
+      session: { userId: 'user-a' },
+      sessionReads: [],
+      onSession: false,
+      sessionOnlyUserId: undefined
+    }
+  ])(
+    'boot with a stored API key: $name',
+    async ({ sso, session, sessionReads, onSession, sessionOnlyUserId }) => {
+      const { server, authStore } = await install(session, {
+        sso,
+        apiKey: true
+      })
+
+      await expect(cloudSignIn()).resolves.toBe('signed_in')
+
+      expect(methodsOf(server.requests)).toEqual(sessionReads)
+      expect(useCloudWebSessionStore().isActive()).toBe(onSession)
+      expect(authStore.sessionOnlyUser?.id).toBe(sessionOnlyUserId)
+      expect(useCurrentUser().isApiKeyLogin.value).toBe(!onSession)
+    }
+  )
+
+  it.for([
+    { name: 'a stored API key', apiKey: true },
+    { name: 'no stored API key', apiKey: false }
+  ])(
+    'SSO on: a session-only tab with $name enters the app as the session user',
+    async ({ apiKey }) => {
+      const { authStore } = await install(
+        { userId: 'user-a' },
+        { sso: true, apiKey }
+      )
+      await router.push('/cloud/login')
+
+      await router.push('/user-select')
+
+      expect(router.currentRoute.value.path).toBe('/user-select')
+      expect(authStore.sessionOnlyUser?.id).toBe('user-a')
+      expect(authStore.userId).toBe('user-a')
+      expect(useCurrentUser().isApiKeyLogin.value).toBe(false)
+    }
+  )
+
+  it.for([
+    { sso: true, sessionOnlyUserId: 'user-a' },
+    { sso: false, sessionOnlyUserId: undefined }
+  ])(
+    'the session user is the session-only identity only with SSO on ($sso)',
+    async ({ sso, sessionOnlyUserId }) => {
+      const { authStore } = await install(
+        { userId: 'user-a' },
+        { sso, apiKey: false }
+      )
+      await bootCloudIdentity()
+
+      expect(authStore.sessionOnlyUser?.id).toBe(sessionOnlyUserId)
+
+      identity.signIn(USER_A)
+      expect(authStore.sessionOnlyUser).toBeUndefined()
+    }
+  )
+
+  describe('the onboarding survey', () => {
+    const bootSessionOnlyTab = async (sso: boolean) => {
+      const { server } = await install(
+        { userId: 'user-a' },
+        { sso, apiKey: false }
+      )
+      await bootCloudIdentity()
+      return server
+    }
+
+    it.for([
+      { sso: true, status: 'stored' },
+      { sso: false, status: 'failed' }
+    ])(
+      'is stored for the session user only with SSO on ($sso)',
+      async ({ sso, status }) => {
+        await bootSessionOnlyTab(sso)
+        const observers = identity.userObservers.size
+
+        const submission = submitSurvey({ q1: 'a' }, 'user-a')
+        expect(identity.userObservers.size).toBe(observers + 1)
+        identity.resolve(null)
+
+        await expect(submission).resolves.toMatchObject({ status })
+      }
+    )
+
+    it('is not stored once the session moves to another account', async () => {
+      const server = await bootSessionOnlyTab(true)
+      const fetchNow = fetch
+      let releaseSettings: () => void = () => {}
+      vi.stubGlobal(
+        'fetch',
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          if (String(input).includes('/settings')) {
+            await new Promise<void>((resolve) => (releaseSettings = resolve))
+          }
+          return fetchNow(input, init)
+        }
+      )
+
+      const submission = submitSurvey({ q1: 'a' }, 'user-a')
+      server.session = { userId: 'user-b' }
+      await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+      releaseSettings()
+
+      await expect(submission).resolves.toMatchObject({ status: 'failed' })
+    })
+  })
+})

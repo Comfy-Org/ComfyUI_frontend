@@ -1,4 +1,6 @@
 import { addBreadcrumb } from '@sentry/vue'
+import { watch } from 'vue'
+
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 
 import {
@@ -7,6 +9,7 @@ import {
 } from '@/platform/onboarding/onboardingReplay'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 import { toError } from '@/utils/errorUtil'
 
 interface UserCloudStatus {
@@ -147,9 +150,20 @@ export async function submitSurvey(
   ownerId: string
 ): Promise<SurveySubmissionResult> {
   const identityChanged = new AbortController()
-  const stopWatchingIdentity = firebaseIdentity.onUserChanged((user) => {
-    if (user?.uid !== ownerId) identityChanged.abort()
-  })
+  const auth = useAuthStore()
+  const abortUnlessOwner = (firebaseUid: string | undefined) => {
+    if ((firebaseUid ?? auth.sessionOnlyUser?.id) !== ownerId) {
+      identityChanged.abort()
+    }
+  }
+  const stopWatchingFirebase = firebaseIdentity.onUserChanged((user) =>
+    abortUnlessOwner(user?.uid)
+  )
+  const stopWatchingSession = watch(
+    () => auth.sessionOnlyUser?.id,
+    () => abortUnlessOwner(auth.currentUser?.uid),
+    { flush: 'sync' }
+  )
 
   try {
     const replaying = isSurveyReplayRequested(ownerId)
@@ -226,6 +240,7 @@ export async function submitSurvey(
     )
     return { status: 'failed', cause: error }
   } finally {
-    stopWatchingIdentity()
+    stopWatchingFirebase()
+    stopWatchingSession()
   }
 }

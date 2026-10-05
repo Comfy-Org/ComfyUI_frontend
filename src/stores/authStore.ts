@@ -152,6 +152,12 @@ export const useAuthStore = defineStore('auth', () => {
     () => sessionUser.value?.email ?? currentUser.value?.email
   )
   const userId = computed(() => sessionUser.value?.id ?? currentUser.value?.uid)
+  /** With SSO on, the session's user when no Firebase user signed this tab in. */
+  const sessionOnlyUser = computed(() =>
+    flags.ssoEnabled && currentUser.value === null
+      ? sessionUser.value
+      : undefined
+  )
 
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
@@ -931,6 +937,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Getters
     isAuthenticated,
     sessionUser,
+    sessionOnlyUser,
     userEmail,
     userId,
 
