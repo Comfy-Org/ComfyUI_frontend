@@ -174,6 +174,11 @@ describe('useAssetDownloadStore', () => {
         taskId: 'task-123',
         modelType: 'checkpoints'
       })
+
+      // A terminal frame consumes the tombstone, so a deliberately reused
+      // task id is no longer muted for the remainder of the session.
+      dispatch(createDownloadMessage({ status: 'running', progress: 0.25 }))
+      expect(store.activeDownloads).toHaveLength(1)
     })
 
     it('does not resurrect a dismissed unconfirmed cancellation on late events', async () => {
