@@ -177,10 +177,9 @@ vi.mock<unknown>(
   import('@/components/builder/BuilderFooterToolbar.vue'),
   () => stubModule
 )
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/components/ManagerProgressToast.vue'),
-
-  () => stubModule
+vi.mock(
+  import('@/workbench/extensions/manager/composables/useManagerProgressToast'),
+  () => ({ useManagerProgressToast: vi.fn() })
 )
 vi.mock<unknown>(
   import('@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'),

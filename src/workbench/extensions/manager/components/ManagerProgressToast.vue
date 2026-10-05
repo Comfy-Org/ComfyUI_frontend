@@ -6,7 +6,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Tabs from '@/components/ui/tabs/Tabs.vue'
 import TabsContent from '@/components/ui/tabs/TabsContent.vue'
@@ -39,8 +39,6 @@ const tabs = computed(() => [
 const activeTabData = computed(
   () => tabs.value.find((tab) => tab.value === activeTab.value) ?? tabs.value[0]
 )
-
-const visible = computed(() => comfyManagerStore.taskLogs.length > 0)
 
 const isInProgress = computed(
   () => comfyManagerStore.isProcessingTasks || isRestarting.value
@@ -162,7 +160,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded">
     <template #default>
       <Tabs
         v-if="isExpanded"
@@ -335,5 +333,5 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>

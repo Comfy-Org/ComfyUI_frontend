@@ -71,4 +71,17 @@ describe('useToast', () => {
       expect.objectContaining({ kind: 'warning', title: 'Missing sample' })
     ])
   })
+
+  it('keeps docked toasts when dismissing all notifications', () => {
+    const toast = useToast()
+    const panel = { template: '<div>Downloads</div>' }
+    const dockedId = toast.custom(panel, {}, { placement: 'dock' })
+    toast.info('Saved')
+
+    toast.dismissAll()
+
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({ id: dockedId, placement: 'dock' })
+    ])
+  })
 })

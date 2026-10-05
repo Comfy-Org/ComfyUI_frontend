@@ -6,7 +6,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import HoneyToast from './HoneyToast.vue'
+import ToastPanel from './ToastPanel.vue'
 
 function createMockJob(overrides: Partial<AssetDownload> = {}): AssetDownload {
   return {
@@ -22,15 +22,16 @@ function createMockJob(overrides: Partial<AssetDownload> = {}): AssetDownload {
   }
 }
 
-const meta: Meta<typeof HoneyToast> = {
-  title: 'Toast/HoneyToast',
-  component: HoneyToast,
+const meta: Meta<typeof ToastPanel> = {
+  title: 'Components/Toast/ToastPanel',
+  component: ToastPanel,
   parameters: {
     layout: 'fullscreen'
   },
   decorators: [
     () => ({
-      template: '<div class="h-screen bg-base-background p-8"><story /></div>'
+      template:
+        '<div class="flex h-screen items-end justify-center bg-base-background p-8"><story /></div>'
     })
   ]
 }
@@ -40,7 +41,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   render: () => ({
-    components: { HoneyToast, Button, ProgressToastItem },
+    components: { ToastPanel, Button, ProgressToastItem },
     setup() {
       const isExpanded = ref(false)
       const jobs = [
@@ -65,7 +66,7 @@ export const Default: Story = {
       return { isExpanded, cn, jobs }
     },
     template: `
-      <HoneyToast v-model:expanded="isExpanded" :visible="true">
+      <ToastPanel v-model:expanded="isExpanded">
         <template #default>
           <div class="flex h-12 items-center justify-between border-b border-border-default px-4">
             <h3 class="text-sm font-bold text-base-foreground">Download Queue</h3>
@@ -93,14 +94,14 @@ export const Default: Story = {
             </div>
           </div>
         </template>
-      </HoneyToast>
+      </ToastPanel>
     `
   })
 }
 
 export const Expanded: Story = {
   render: () => ({
-    components: { HoneyToast, Button, ProgressToastItem },
+    components: { ToastPanel, Button, ProgressToastItem },
     setup() {
       const isExpanded = ref(true)
       const jobs = [
@@ -125,7 +126,7 @@ export const Expanded: Story = {
       return { isExpanded, cn, jobs }
     },
     template: `
-      <HoneyToast v-model:expanded="isExpanded" :visible="true">
+      <ToastPanel v-model:expanded="isExpanded">
         <template #default>
           <div class="flex h-12 items-center justify-between border-b border-border-default px-4">
             <h3 class="text-sm font-bold text-base-foreground">Download Queue</h3>
@@ -153,14 +154,14 @@ export const Expanded: Story = {
             </div>
           </div>
         </template>
-      </HoneyToast>
+      </ToastPanel>
     `
   })
 }
 
 export const Completed: Story = {
   render: () => ({
-    components: { HoneyToast, Button, ProgressToastItem },
+    components: { ToastPanel, Button, ProgressToastItem },
     setup() {
       const isExpanded = ref(false)
       const jobs = [
@@ -184,7 +185,7 @@ export const Completed: Story = {
       return { isExpanded, cn, jobs }
     },
     template: `
-      <HoneyToast v-model:expanded="isExpanded" :visible="true">
+      <ToastPanel v-model:expanded="isExpanded">
         <template #default>
           <div class="flex h-12 items-center justify-between border-b border-border-default px-4">
             <h3 class="text-sm font-bold text-base-foreground">Download Queue</h3>
@@ -212,14 +213,14 @@ export const Completed: Story = {
             </div>
           </div>
         </template>
-      </HoneyToast>
+      </ToastPanel>
     `
   })
 }
 
 export const WithError: Story = {
   render: () => ({
-    components: { HoneyToast, Button, ProgressToastItem },
+    components: { ToastPanel, Button, ProgressToastItem },
     setup() {
       const isExpanded = ref(true)
       const jobs = [
@@ -239,7 +240,7 @@ export const WithError: Story = {
       return { isExpanded, cn, jobs }
     },
     template: `
-      <HoneyToast v-model:expanded="isExpanded" :visible="true">
+      <ToastPanel v-model:expanded="isExpanded">
         <template #default>
           <div class="flex h-12 items-center justify-between border-b border-border-default px-4">
             <h3 class="text-sm font-bold text-base-foreground">Download Queue</h3>
@@ -267,27 +268,7 @@ export const WithError: Story = {
             </div>
           </div>
         </template>
-      </HoneyToast>
-    `
-  })
-}
-
-export const Hidden: Story = {
-  render: () => ({
-    components: { HoneyToast },
-    template: `
-      <div>
-        <p class="text-base-foreground">HoneyToast is hidden when visible=false. Nothing appears at the bottom.</p>
-        
-        <HoneyToast :visible="false">
-          <template #default>
-            <div class="px-4 py-4">Content</div>
-          </template>
-          <template #footer>
-            <div class="h-12 px-4">Footer</div>
-          </template>
-        </HoneyToast>
-      </div>
+      </ToastPanel>
     `
   })
 }
