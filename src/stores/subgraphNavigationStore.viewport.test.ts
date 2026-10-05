@@ -73,7 +73,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     mockCanvas.canvas = createTestCanvasElement({ visible: true })
     mockCanvas.subgraph = undefined
-    mockCanvas.graph = app.graph
+    mockCanvas.graph = app.rootGraph
     mockCanvas.ds.scale = 1
     mockCanvas.ds.offset = [0, 0]
     mockCanvas.ds.state.scale = 1
@@ -171,7 +171,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
 
-      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      const mockGraph = app.rootGraph as { nodes: unknown[]; _nodes: unknown[] }
       mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
       mockGraph._nodes = mockGraph.nodes
 
@@ -187,7 +187,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
 
-      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      const mockGraph = app.rootGraph as { nodes: unknown[]; _nodes: unknown[] }
       mockGraph.nodes = []
       mockGraph._nodes = []
 
@@ -200,7 +200,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
 
-      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      const mockGraph = app.rootGraph as { nodes: unknown[]; _nodes: unknown[] }
       mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
       mockGraph._nodes = mockGraph.nodes
 

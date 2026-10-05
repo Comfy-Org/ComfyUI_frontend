@@ -958,13 +958,17 @@ export const useLitegraphService = () => {
       return node
     }
 
+    // Resolve the destination before constructing anything: the registered
+    // node constructor invokes the `nodeCreated` extension hook, so creating a
+    // node we are about to discard is observable to every extension.
+    const graph = useWorkflowStore().activeSubgraph ?? app.rootGraphOrUndefined
+    if (!graph) return null
+
     const node = LiteGraph.createNode(
       nodeDef.name,
       nodeDef.display_name,
       options
     )
-
-    const graph = useWorkflowStore().activeSubgraph ?? app.graph
     if (!node) return null
 
     graph.add(node, addOptions)

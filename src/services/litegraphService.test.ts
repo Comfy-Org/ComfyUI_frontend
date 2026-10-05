@@ -9,6 +9,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
@@ -40,6 +41,71 @@ describe('useLitegraphService().getCanvasCenter', () => {
       expect(useLitegraphService().getCanvasCenter()).toEqual(center)
     }
   )
+})
+
+describe('useLitegraphService().addNodeOnGraph', () => {
+  const nodeName = 'TestAddNodeOnGraph'
+
+  const nodeDef: ComfyNodeDefV1 = {
+    name: nodeName,
+    display_name: 'Test Add Node On Graph',
+    category: 'testing',
+    python_module: 'nodes',
+    description: '',
+    input: { required: {} },
+    output: ['LATENT'],
+    output_name: ['latent'],
+    output_node: false
+  }
+
+  /**
+   * Titles of the nodes announced to an installed extension via `nodeCreated`.
+   * Recorded as titles rather than nodes so a failure prints the announcement
+   * rather than a serialised node graph. `node.type` is not usable here:
+   * `nodeCreated` fires from the constructor, before litegraph assigns it.
+   */
+  let announced: string[]
+
+  beforeEach(async () => {
+    await useLitegraphService().registerNodeDef(nodeName, nodeDef)
+    announced = []
+    useExtensionStore().registerExtension({
+      name: 'Test.AddNodeOnGraph',
+      nodeCreated: (node) => void announced.push(node.title)
+    })
+  })
+
+  it('adds the node to the root graph once it is assigned', () => {
+    const rootGraph = app.rootGraph
+
+    const node = useLitegraphService().addNodeOnGraph(nodeDef)
+
+    expect(node).not.toBeNull()
+    expect(rootGraph.nodes).toContain(node)
+  })
+
+  it('returns null instead of throwing when the root graph is not yet assigned', () => {
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
+
+    expect(useLitegraphService().addNodeOnGraph(nodeDef)).toBeNull()
+  })
+
+  // The registered node constructor fires `nodeCreated`, so a node that is
+  // created and then discarded is still announced to every installed
+  // extension. The graph has to be resolved before construction, not after.
+  it('announces nodeCreated for the node it adds', () => {
+    expect(useLitegraphService().addNodeOnGraph(nodeDef)).not.toBeNull()
+
+    expect(announced).toEqual([nodeDef.display_name])
+  })
+
+  it('announces nothing when there is no graph to add the node to', () => {
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
+
+    useLitegraphService().addNodeOnGraph(nodeDef)
+
+    expect(announced).toEqual([])
+  })
 })
 
 describe('useLitegraphService().registerNodeDef slot text', () => {

@@ -15,7 +15,8 @@ import {
   getWidgetIdForNode,
   mapLiveWidgetsById,
   migrateWidgetsValues,
-  resolveNode
+  resolveNode,
+  resolveNodeWidget
 } from './litegraphUtil'
 
 const mockBringNodeToFront = vi.fn()
@@ -89,6 +90,26 @@ describe('resolveNode', () => {
 
     const targetNode = sg2._nodes[0]
     expect(resolveNode(targetNode.id, rootGraph)).toBe(targetNode)
+  })
+})
+
+describe('resolveNodeWidget', () => {
+  it.for<{ label: string; graph: LGraph | null | undefined }>([
+    { label: 'null', graph: null },
+    { label: 'undefined', graph: undefined }
+  ])('returns an empty tuple when graph is $label', ({ graph }) => {
+    expect(resolveNodeWidget(1, undefined, graph)).toEqual([])
+    expect(resolveNodeWidget('1:widget', 'seed', graph)).toEqual([])
+  })
+
+  it('finds a widget on a node in the given graph', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('TestNode')
+    const widget = fromPartial<IBaseWidget>({ name: 'seed' })
+    node.widgets = [widget]
+    graph.add(node)
+
+    expect(resolveNodeWidget(node.id, 'seed', graph)).toEqual([node, widget])
   })
 })
 

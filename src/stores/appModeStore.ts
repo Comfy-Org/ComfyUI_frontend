@@ -142,7 +142,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     }
 
     if (typeof storedId === 'string' && storedId.includes(':')) {
-      const [, widget] = resolveNodeWidget(storedId, widgetName)
+      const [, widget] = resolveNodeWidget(storedId, widgetName, rootGraph)
       if (!widget?.widgetId) return null
       return buildEntry(widget.widgetId, widgetName, config)
     }
