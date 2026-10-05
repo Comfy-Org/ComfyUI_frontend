@@ -59,6 +59,41 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 2. `pr-backport.yaml` cherry-picks and creates a backport PR
 3. Conflicts produce a comment with details and an agent prompt
 
+### Watching the label
+
+`pr-notify-needs-backport.yaml` DMs the backport watchers as soon as
+`needs-backport` is added, so a backport decision is heard while its context is
+fresh rather than when the next release cut lists it. The DM says whether
+`pr-backport.yaml` will cherry-pick on merge, is waiting on the merge, or will
+never start — a PR closed unmerged and a base that is not `main` end with
+nothing happening at all, a label naming a branch that has not been cut yet is
+dropped on its own, and no usable label at all fails the backport outright.
+Those are the cases worth hearing about early. The PR and the remote branches
+are read live rather than taken from the label webhook, so what the DM reports
+is true at the moment it is sent.
+
+It fires for a PR into any base branch, and says so when the base is not
+`main` — `pr-backport.yaml` only runs on PRs into `main`, so the label does
+nothing there and that is worth hearing rather than assuming.
+
+The recipients are the repository **variable**
+`SLACK_NEEDS_BACKPORT_WATCHERS`: space- or comma-separated Slack member IDs
+(`U…`, or `W…` on Enterprise Grid — "Copy member ID" in Slack gives you one),
+which is how you subscribe without a PR. An entry that is not a member ID, and
+a DM that Slack rejects, both fail the run rather than passing quietly — so a
+mistyped or stale ID gets noticed and corrected instead of silently dropping
+that person's notification. Everyone else on the list is still notified in the
+same run. Slack merely being unreachable does not fail the run, since nobody
+reading the PR can act on it; that DM is dropped, and the run summary records
+which.
+
+Clearing the variable restores the default watcher — currently `U0BA79D8R1T`
+(@huang47), as set in the workflow — rather than silencing the DM. To stop the
+DMs, set the whole value to `none`, `off` or `disabled`. Anything else
+unrecognised fails the run, as does one of those words alongside a watcher —
+that combination says two opposite things, so it is reported rather than
+guessed at.
+
 ## Release Sheriff Assignment
 
 `pr-assign-release-sheriff.yaml` assigns the on-call release sheriff to any
