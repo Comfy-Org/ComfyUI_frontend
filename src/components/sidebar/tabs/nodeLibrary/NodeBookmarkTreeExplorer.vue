@@ -2,6 +2,7 @@
   <TreeExplorer
     ref="treeExplorerRef"
     class="node-lib-bookmark-tree-explorer"
+    data-testid="node-library-bookmark-tree"
     :root="renderedBookmarkedRoot"
     :expanded-keys="expandedKeys"
   >

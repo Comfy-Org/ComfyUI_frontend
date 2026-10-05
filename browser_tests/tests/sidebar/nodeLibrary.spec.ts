@@ -108,9 +108,7 @@ test.describe('Node library sidebar', () => {
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(2)
 
     // Hover on the bookmark node to display the preview
-    await comfyPage.page
-      .locator('.node-lib-bookmark-tree-explorer .tree-leaf')
-      .hover()
+    await tab.getBookmarkedNode('KSampler (Advanced)').hover()
     await expect(tab.nodePreview).toBeVisible()
   })
 

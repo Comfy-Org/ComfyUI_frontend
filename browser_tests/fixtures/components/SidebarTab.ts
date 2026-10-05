@@ -60,6 +60,7 @@ export class SidebarTab {
 export class NodeLibrarySidebarTab extends SidebarTab {
   public readonly nodeLibrarySearchBoxInput: Locator
   public readonly nodeLibraryTree: Locator
+  public readonly bookmarkTree: Locator
   public readonly nodePreview: Locator
   public readonly tabContainer: Locator
   public readonly newFolderButton: Locator
@@ -68,6 +69,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     super(page, 'node-library')
     this.nodeLibrarySearchBoxInput = page.getByPlaceholder('Search Nodes...')
     this.nodeLibraryTree = page.getByTestId(TestIds.sidebar.nodeLibrary)
+    this.bookmarkTree = page.getByTestId(TestIds.sidebar.nodeLibraryBookmarks)
     this.nodePreview = page.locator('.node-lib-node-preview')
     this.tabContainer = page.locator('.sidebar-content-container')
     this.newFolderButton = this.tabContainer.locator('.new-folder-button')
@@ -101,6 +103,10 @@ export class NodeLibrarySidebarTab extends SidebarTab {
 
   folderSelector(folderName: string): string {
     return `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
+  }
+
+  getBookmarkedNode(nodeName: string) {
+    return this.bookmarkTree.locator(this.nodeSelector(nodeName))
   }
 
   getNodeInFolder(nodeName: string, folderName: string) {
@@ -293,6 +299,16 @@ export class ModelLibrarySidebarTab extends SidebarTab {
 
   getFolderRowByLabel(label: string) {
     return this.getFolderByLabel(label)
+  }
+
+  getLeavesByText(text: string) {
+    return this.leafNodes.filter({ hasText: text })
+  }
+
+  getLeavesInFolder(text: string, folderLabel: string) {
+    return this.getLeavesByText(text).and(
+      this.modelTree.locator(`[data-parent-label="${folderLabel}"]`)
+    )
   }
 }
 

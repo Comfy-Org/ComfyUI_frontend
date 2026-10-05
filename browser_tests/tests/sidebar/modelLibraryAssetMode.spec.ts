@@ -467,28 +467,17 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
     const tab = comfyPage.menu.modelLibraryTab
 
     await tab.getFolderRowByLabel('checkpoints').click()
-    await expect(
-      tab.modelTree
-        .locator('.tree-leaf')
-        .filter({ hasText: 'mid_retag_checkpoint' })
-    ).toHaveCount(1)
+    await expect(tab.getLeavesByText('mid_retag_checkpoint')).toHaveCount(1)
 
     // loras carries a real model_type:loras asset so the folder itself
     // renders (asset mode hides folders that load with zero models) —
     // otherwise an absent 'loras' row would be ambiguous between "correctly
     // empty" and "never loaded".
-    const lorasFolder = tab.getFolderRowByLabel('loras')
-    const lorasKey = await lorasFolder.getAttribute('data-tree-key')
-    expect(lorasKey).not.toBeNull()
-    await lorasFolder.click()
+    await tab.getFolderRowByLabel('loras').click()
     await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
 
     await expect(
-      tab.modelTree
-        .locator(
-          `.tree-explorer-item[data-parent-key="${lorasKey}"] .tree-leaf`
-        )
-        .filter({ hasText: 'mid_retag_checkpoint' })
+      tab.getLeavesInFolder('mid_retag_checkpoint', 'loras')
     ).toHaveCount(0)
   })
 })

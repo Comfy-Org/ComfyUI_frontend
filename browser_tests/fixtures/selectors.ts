@@ -15,6 +15,7 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
+    nodeLibraryBookmarks: 'node-library-bookmark-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
     nodePreviewInputs: 'node-preview-inputs',
