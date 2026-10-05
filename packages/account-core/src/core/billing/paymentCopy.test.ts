@@ -1,10 +1,27 @@
 import { describe, expect, it } from 'vitest'
 
+import type {
+  BillingDeclineReason,
+  BillingRecoveryAction
+} from './operationState.js'
+import type { DeclineDetailKey } from './paymentCopy.js'
 import {
   DEFAULT_PAYMENT_COPY,
   createPaymentCopy,
+  declineDetailKey,
   paymentCopyKeys
 } from './paymentCopy.js'
+import type { PaymentProjection } from './paymentProjection.js'
+
+function failedWithUnknownRecoveryAction(): PaymentProjection {
+  const serverAddedAction: string = 'offer_bank_transfer'
+  return {
+    step: 'declined',
+    reasonKey: 'card_declined',
+    recoveryAction: serverAddedAction as BillingRecoveryAction,
+    noChargeConfirmed: false
+  }
+}
 
 describe('createPaymentCopy', () => {
   it('accepts host overrides but never the safety line', () => {
@@ -51,5 +68,61 @@ describe('paymentCopyKeys', () => {
       header: 'billing.step.verifying.header',
       body: 'billing.step.verifying.body'
     })
+  })
+
+  it('gives a payment the customer did not complete its own reason copy', () => {
+    const keys = paymentCopyKeys({
+      step: 'declined',
+      reasonKey: 'payment_not_completed',
+      recoveryAction: 'retry',
+      noChargeConfirmed: false
+    })
+
+    expect(keys.reason).toBe('billing.reason.payment_not_completed')
+    expect(createPaymentCopy()['billing.reason.payment_not_completed']).toBe(
+      'The payment was not completed.'
+    )
+  })
+
+  it.for([
+    'retry',
+    'replace_payment_method',
+    'authenticate_payment',
+    'contact_support'
+  ] as const)(
+    'reads the body from the server recovery action %s',
+    (recoveryAction) => {
+      expect(
+        paymentCopyKeys({
+          step: 'processing_error',
+          reasonKey: 'generic',
+          recoveryAction,
+          noChargeConfirmed: false
+        }).body
+      ).toBe(`billing.recovery.${recoveryAction}`)
+    }
+  )
+
+  it('falls back to the step body for a recovery action this build does not know', () => {
+    const keys = paymentCopyKeys(failedWithUnknownRecoveryAction())
+
+    expect(keys.body).toBe('billing.step.declined.body')
+    expect(createPaymentCopy()[keys.body]).toBeTruthy()
+  })
+})
+
+describe('declineDetailKey', () => {
+  it.for<[BillingDeclineReason, DeclineDetailKey]>([
+    ['card_declined', 'paymentDeclinedDetail'],
+    ['generic', 'paymentDeclinedDetail'],
+    ['insufficient_funds', 'insufficientFundsDetail'],
+    ['expired_card', 'expiredCardDetail'],
+    ['incorrect_cvc', 'incorrectCvcDetail'],
+    ['authentication_required', 'authenticationFailedDetail'],
+    ['authentication_failed', 'authenticationFailedDetail'],
+    ['payment_not_completed', 'authenticationFailedDetail'],
+    ['processing_error', 'processingErrorDetail']
+  ])('reads a %s decline as %s', ([reason, key]) => {
+    expect(declineDetailKey(reason)).toBe(key)
   })
 })

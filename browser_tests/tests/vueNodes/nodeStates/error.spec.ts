@@ -22,6 +22,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const ERROR_CLASS = /ring-destructive-background/
+const WARNING_CLASS = /ring-warning-background/
 const SLOT_ERROR_CLASS = /before:ring-error/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
@@ -103,14 +104,14 @@ async function setupLoadImageErrorScenario(comfyPage: ComfyPage) {
 }
 
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
-  test('should display error state when node is missing (node from workflow is not installed)', async ({
+  test('should display warning state when node is missing (node from workflow is not installed)', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
 
     await expect(
       comfyPage.vueNodes.getNodeInnerWrapper(UNKNOWN_NODE_ID)
-    ).toHaveClass(ERROR_CLASS)
+    ).toHaveClass(WARNING_CLASS)
   })
 
   test('should display error state when node causes execution error', async ({
@@ -345,7 +346,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       await cleanupFakeModel(comfyPage)
     })
 
-    test('parent subgraph node shows error ring when an interior node is missing', async ({
+    test('parent subgraph node shows warning ring when an interior node is missing', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
@@ -355,10 +356,10 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
       await expect(
         comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
-      ).toHaveClass(ERROR_CLASS)
+      ).toHaveClass(WARNING_CLASS)
     })
 
-    test('parent subgraph node shows error ring when an interior node has a missing model', async ({
+    test('parent subgraph node shows warning ring when an interior node has a missing model', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
@@ -370,7 +371,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
       await expect(
         comfyPage.vueNodes.getNodeInnerWrapper(subgraphParentId)
-      ).toHaveClass(ERROR_CLASS)
+      ).toHaveClass(WARNING_CLASS)
     })
 
     test('parent subgraph node shows error ring when an interior node fails execution', async ({

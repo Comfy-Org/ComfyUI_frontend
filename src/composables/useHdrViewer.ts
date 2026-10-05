@@ -22,6 +22,7 @@ import { getImageFilenameFromUrl } from '@/utils/hdrFormatUtil'
 
 const MIN_ZOOM = 0.05
 const MAX_ZOOM = 64
+const CHECKER_CSS_PX = 8
 
 export type ChannelMode = 'rgb' | 'r' | 'g' | 'b' | 'a' | 'luminance'
 
@@ -97,6 +98,7 @@ export function useHdrViewer() {
   const exposureStops = ref(0)
   const dither = ref(true)
   const clipWarnings = ref(false)
+  const checkerboard = ref(true)
   const gamut = ref<GamutName>('sRGB')
   const channel = ref<ChannelMode>('rgb')
   const loading = ref(true)
@@ -187,6 +189,7 @@ export function useHdrViewer() {
     material.uniforms.uGain.value = Math.pow(2, exposureStops.value)
     material.uniforms.uDither.value = dither.value
     material.uniforms.uClipWarnings.value = clipWarnings.value
+    material.uniforms.uCheckerboard.value = checkerboard.value
     material.uniforms.uChannel.value = CHANNEL_INDEX[channel.value]
     const m = gamutToSrgbMatrix(gamut.value)
     ;(material.uniforms.uGamutToSRGB.value as THREE.Matrix3).set(
@@ -225,7 +228,9 @@ export function useHdrViewer() {
         uChannel: { value: 0 },
         uDither: { value: true },
         uClipWarnings: { value: false },
-        uClipRange: { value: new THREE.Vector2(0, 1) }
+        uClipRange: { value: new THREE.Vector2(0, 1) },
+        uCheckerboard: { value: true },
+        uCheckerSize: { value: CHECKER_CSS_PX * renderer.getPixelRatio() }
       }
     })
 
@@ -419,7 +424,10 @@ export function useHdrViewer() {
     readSample = null
   }
 
-  watch([exposureStops, dither, clipWarnings, gamut, channel], applyUniforms)
+  watch(
+    [exposureStops, dither, clipWarnings, checkerboard, gamut, channel],
+    applyUniforms
+  )
 
   onUnmounted(dispose)
 
@@ -427,6 +435,7 @@ export function useHdrViewer() {
     exposureStops,
     dither,
     clipWarnings,
+    checkerboard,
     gamut,
     channel,
     loading,

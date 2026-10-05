@@ -7,8 +7,9 @@
  * page lifecycle. Conversion goes through the shared
  * creditsUtil rounding so this chip never disagrees with what
  * platform.comfy.org renders for the same balance. Refresh triggers: the
- * session appearing or changing (sign-in, re-mint) and window refocus,
- * which also picks up a balance changed in another tab.
+ * session appearing or changing (sign-in, re-mint), window refocus,
+ * which also picks up a balance changed in another tab, and a finished run
+ * marking the credits dirty.
  */
 import { computed, effectScope, ref, watch } from 'vue'
 
@@ -118,6 +119,7 @@ function start(): void {
         if (isSettled) begin()
         else {
           clearTopUpWatch()
+          stopResync()
           workshopBalanceReader.reset()
         }
       },
@@ -248,6 +250,91 @@ export function watchForTopUp(context: TopUpWatchContext): void {
 
   topUpPoll = setInterval(() => void poll(), TOP_UP_POLL_MS)
   void poll()
+}
+
+/**
+ * Cloud books a run's charge only after the job reports done, and the
+ * balance reflects it seconds to minutes later, so one read at completion
+ * almost always shows the old figure. Each mark owes one charge: the
+ * re-sync re-reads with backoff until it has seen a drop for every mark or
+ * the schedule runs out (free and API-only runs never move the balance).
+ * Every read still publishes, so running out the schedule costs only reads.
+ */
+const RESYNC_DELAYS_MS = [
+  0, 2_000, 5_000, 10_000, 20_000, 40_000, 60_000, 60_000, 60_000, 60_000
+] as const
+
+interface Resync {
+  readonly scope: string
+  readonly owed: number
+  readonly step: number
+  readonly baseline?: number
+}
+
+let resync: Resync | undefined
+let resyncTimer: ReturnType<typeof setTimeout> | undefined
+
+function sessionScope(): string | undefined {
+  const current = useWorkshopSession().session.value
+  return current && JSON.stringify([current.uid, current.workspace.id])
+}
+
+function currentCredits(): number | undefined {
+  return balance.value.status === 'ok' ? balance.value.credits : undefined
+}
+
+function stopResync(): void {
+  clearTimeout(resyncTimer)
+  resyncTimer = undefined
+  resync = undefined
+}
+
+function scheduleResync(): void {
+  clearTimeout(resyncTimer)
+  const delay = resync && RESYNC_DELAYS_MS.at(resync.step)
+  if (delay === undefined) stopResync()
+  else resyncTimer = setTimeout(() => void readResync(), delay)
+}
+
+function afterResyncRead(active: Resync, credits?: number): Resync {
+  const charged =
+    credits !== undefined &&
+    active.baseline !== undefined &&
+    credits < active.baseline
+  return charged
+    ? {
+        ...active,
+        owed: active.owed - 1,
+        step: active.step + 1,
+        baseline: credits
+      }
+    : { ...active, step: active.step + 1, baseline: active.baseline ?? credits }
+}
+
+async function readResync(): Promise<void> {
+  const active = resync
+  if (!active || sessionScope() !== active.scope) {
+    stopResync()
+    return
+  }
+  await refreshWorkshopCredits({ force: true })
+  if (resync !== active) return
+  resync =
+    active.scope === sessionScope()
+      ? afterResyncRead(active, currentCredits())
+      : undefined
+  if (resync && resync.owed > 0) scheduleResync()
+  else stopResync()
+}
+
+export function markWorkshopCreditsDirty(): void {
+  const scope = sessionScope()
+  if (typeof window === 'undefined' || !scope) return
+  resync =
+    resync?.scope === scope
+      ? { ...resync, owed: resync.owed + 1, step: 0 }
+      : { scope, owed: 1, step: 0, baseline: currentCredits() }
+  scheduleResync()
 }
 
 export function useTopUpWatch() {

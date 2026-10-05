@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import content from '../content/workshop-display.json'
+import content from '@/content/workshop-display.json'
 import { workshopContentInputs } from './workshop-content-inputs'
 import { authoredWorkshopModels } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'

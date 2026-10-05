@@ -31,6 +31,16 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
+function toAugmentedPreviewOutput(
+  previewOutput: NonNullable<JobListItem['preview_output']>
+): AugmentedResultItem {
+  return {
+    ...previewOutput,
+    filename: previewOutput.filename ?? '',
+    subfolder: previewOutput.subfolder ?? ''
+  }
+}
+
 export class TaskItemImpl {
   readonly job: JobListItem
   readonly outputs: TaskOutput
@@ -54,7 +64,11 @@ export class TaskItemImpl {
           }
         : {})
     this.outputs = effectiveOutputs
-    this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
+    this.flatOutputs =
+      flatOutputs ??
+      (!outputs && job.preview_output?.mediaType === 'text'
+        ? [toAugmentedPreviewOutput(job.preview_output)]
+        : this.calculateFlatOutputs())
   }
 
   calculateFlatOutputs(): ReadonlyArray<AugmentedResultItem> {
@@ -435,7 +449,8 @@ export const useQueuePendingTaskCountStore = defineStore(
     }),
     actions: {
       update(e: CustomEvent<StatusWsMessageStatus | null>) {
-        this.count = e.detail?.exec_info.queue_remaining || 0
+        const queueRemaining = e.detail?.exec_info?.queue_remaining
+        if (queueRemaining != null) this.count = queueRemaining
       }
     }
   }

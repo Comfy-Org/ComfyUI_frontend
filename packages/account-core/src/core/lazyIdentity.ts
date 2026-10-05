@@ -27,6 +27,22 @@ export interface LazyIdentity<
   deactivate: () => void
 }
 
+/**
+ * An identity that has already settled signed-out: for a `load` that
+ * legitimately has no source to resolve, so the port still delivers once and
+ * a subscriber reaches signed-out instead of hanging in `pending` forever.
+ */
+export function createUnavailableIdentity<
+  TUser extends AccountUser
+>(): AccountIdentity<TUser> {
+  return brandIdentity<TUser>({
+    onUserChanged: (callback) => {
+      callback(null)
+      return () => undefined
+    }
+  })
+}
+
 export function createLazyIdentity<TUser extends AccountUser>(
   load: () => Promise<AccountIdentity<TUser>>
 ): LazyIdentity<TUser> {
@@ -61,7 +77,22 @@ export function createLazyIdentity<TUser extends AccountUser>(
         if (started !== generation) return
         activation = undefined
         settleActivation = undefined
-        reject(error)
+        // A load that can't produce an identity still owes subscribers an
+        // answer: deliver signed-out so nobody is left waiting on a promise
+        // this activation will never settle. A throwing listener must not
+        // swallow the loader's own error, so reject unconditionally; this
+        // runs inside an unawaited .catch(), so a listener's own exception
+        // is reported rather than left to become an unhandled rejection.
+        try {
+          deliver(null)
+        } catch (deliverError) {
+          console.warn(
+            'lazyIdentity: a listener threw delivering signed-out after a load failure',
+            deliverError
+          )
+        } finally {
+          reject(error)
+        }
       })
     })
     return activation

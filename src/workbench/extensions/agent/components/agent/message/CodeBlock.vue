@@ -61,7 +61,7 @@ watchDebounced(
         class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
         <span class="icon-[lucide--file-code] size-3.5" />
-        <span class="font-medium text-base-foreground">{{ lang }}</span>
+        <span class="text-base-foreground">{{ lang }}</span>
       </span>
       <Button
         type="button"

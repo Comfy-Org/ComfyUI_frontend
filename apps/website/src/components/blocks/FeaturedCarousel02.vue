@@ -10,13 +10,13 @@ import { computed, ref, useTemplateRef } from 'vue'
 
 import type { HTMLAttributes } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { resolveRel } from '../../utils/cta'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import Badge from '../ui/badge/Badge.vue'
-import Button from '../ui/button/Button.vue'
+import type { Locale } from '@/i18n/translations'
+import { useCarouselAutoplay } from '@/composables/useCarouselAutoplay'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { resolveRel } from '@/utils/cta'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 type FeaturedSlideMedia = {
   type: 'image' | 'video'
@@ -292,24 +292,34 @@ useCarouselAutoplay({
         </article>
       </div>
 
-      <div
-        v-if="slides.length > 1"
-        class="mt-6 flex items-center justify-center gap-6"
-      >
-        <button
-          v-for="(slide, index) in slides"
-          :key="slide.id"
-          type="button"
-          class="size-3 rounded-full transition-all duration-300"
-          :class="
-            index === activeIndex
-              ? 'scale-125 bg-primary-warm-white'
-              : 'bg-primary-warm-gray/60 hover:bg-primary-warm-gray'
-          "
-          :aria-label="slide.title"
-          :aria-current="index === activeIndex ? 'true' : undefined"
-          @click="goTo(index)"
-        />
+      <div v-if="slides.length > 1" class="mt-6 flex justify-center">
+        <div class="group/pagination relative flex h-8 w-72 items-center">
+          <div
+            aria-hidden="true"
+            class="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary-warm-gray/60 transition-[height] duration-200 group-focus-within/pagination:h-2 group-hover/pagination:h-2"
+          />
+          <button
+            v-for="(slide, index) in slides"
+            :key="slide.id"
+            type="button"
+            class="group relative h-8 flex-1 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow"
+            :aria-label="slide.title"
+            :aria-current="index === activeIndex ? 'true' : undefined"
+            @click="goTo(index)"
+          >
+            <span
+              aria-hidden="true"
+              :class="
+                cn(
+                  'absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full transition-[height,background-color] duration-200 group-focus-within/pagination:h-2 group-hover/pagination:h-2',
+                  index === activeIndex
+                    ? 'bg-primary-comfy-yellow'
+                    : 'group-hover:bg-primary-warm-white/30'
+                )
+              "
+            />
+          </button>
+        </div>
       </div>
     </div>
   </section>

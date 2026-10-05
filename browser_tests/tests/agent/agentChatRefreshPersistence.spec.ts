@@ -1,31 +1,31 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 // PM-679: the transcript must survive a browser refresh with its content and
 // order intact. `promptHistory` mocks `/api/agent/threads*` statefully (POST
 // appends rows an in-memory array, GET replays it), so a `page.reload()` here
 // exercises the real client path: `useAgentSession.start()` reads the
-// persisted `Comfy.Agent.ThreadId` from localStorage and calls
+// persisted workspace-scoped thread ID from localStorage and calls
 // `hydrateFromServer`, which re-fetches this same history and replays it
 // through `agentConversationStore.hydrate()`.
+const THREAD_KEY = StorageKeys.agentThread('personal')
+
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
 test(
-  'keeps the transcript and its order after a browser refresh',
+  'restores the transcript at its latest message after a browser refresh',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
     await expect(
       page.getByTestId('integrated-tab-bar-actions')
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 8_000 })
-    await page
-      .getByRole('button', {
-        name: enMessages.agent.entryButton,
-        exact: true
-      })
-      .click()
+    await new AgentPanel(page).open()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
     await page
@@ -47,7 +47,7 @@ test(
     workflowSelection.finishSave(true)
     const editor = panel.getByRole('textbox')
 
-    const firstMessage = 'What does this workflow do?'
+    const firstMessage = 'Earlier conversation context. '.repeat(80)
     await editor.fill(firstMessage)
     await panel
       .getByRole('button', { name: enMessages.agent.send, exact: true })
@@ -80,19 +80,20 @@ test(
       .getByTestId('user-message-bubble')
       .allTextContents()
     const historyReadsBeforeReload = promptHistory.historyReads()
-    const persistedThreadId = await page.evaluate(() =>
-      localStorage.getItem('Comfy.Agent.ThreadId')
+    const persistedThreadId = await page.evaluate(
+      (threadKey) => localStorage.getItem(threadKey),
+      THREAD_KEY
     )
     expect(persistedThreadId).not.toBeNull()
 
     await page.reload()
+    await expect(
+      page.getByTestId('integrated-tab-bar-actions')
+    ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
     await expect
       .poll(() => promptHistory.historyReads())
       .toBeGreaterThan(historyReadsBeforeReload)
     expect(promptHistory.historyRequestThreadIds.at(-1)).toBe(persistedThreadId)
-    await expect(
-      page.getByTestId('integrated-tab-bar-actions')
-    ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
     const reopenedPanel = page.locator('#agent-panel-root')
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
     await expect(
@@ -114,5 +115,27 @@ test(
     await expect(
       reopenedPanel.getByTestId('user-message-bubble').nth(1)
     ).toHaveText(secondMessage)
+    await expect(
+      reopenedPanel.getByTestId('user-message-bubble').nth(1)
+    ).toBeInViewport()
+    const scrollContainer = reopenedPanel.getByTestId(
+      TestIds.agent.conversationScroll
+    )
+    await expect
+      .poll(() =>
+        scrollContainer.evaluate(
+          (element) => element.scrollHeight > element.clientHeight
+        )
+      )
+      .toBe(true)
+    await expect
+      .poll(() =>
+        scrollContainer.evaluate((element) =>
+          Math.abs(
+            element.scrollHeight - element.scrollTop - element.clientHeight
+          )
+        )
+      )
+      .toBeLessThanOrEqual(1)
   }
 )

@@ -97,6 +97,31 @@ export const Disabled: Story = {
   parameters: { controls: { disable: true } }
 }
 
+export const ChipsViaValueSlot: Story = {
+  render: () => ({
+    components: { MultiSelect },
+    setup() {
+      const selected = ref<SelectOption[]>([sampleOptions[0], sampleOptions[3]])
+      return { selected, sampleOptions }
+    },
+    template: `
+      <MultiSelect v-model="selected" :options="sampleOptions" label="Category">
+        <template #value="{ selected }">
+          <div class="flex min-w-0 gap-1 overflow-hidden">
+            <span
+              v-for="item in selected"
+              :key="item.value"
+              class="truncate rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs"
+            >
+              {{ item.name }}
+            </span>
+          </div>
+        </template>
+      </MultiSelect>`
+  }),
+  parameters: { controls: { disable: true } }
+}
+
 export const WithSearchBox: Story = {
   args: { showSearchBox: true },
   render: (args) => ({

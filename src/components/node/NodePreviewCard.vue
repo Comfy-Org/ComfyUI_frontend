@@ -17,7 +17,7 @@
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
       <!-- Title -->
-      <h3 class="text-foreground m-0 text-xs font-semibold">
+      <h3 class="m-0 text-xs font-semibold text-base-foreground">
         {{ nodeDef.display_name }}
       </h3>
 
@@ -53,6 +53,7 @@
       <div
         v-if="inputs.length > 0 && showInputsAndOutputs"
         class="flex flex-col gap-1"
+        data-testid="node-preview-inputs"
       >
         <h4
           class="m-0 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
@@ -64,7 +65,7 @@
           :key="input.name"
           class="flex items-center justify-between gap-2 text-2xs"
         >
-          <span class="text-foreground shrink-0">{{ input.name }}</span>
+          <span class="shrink-0 text-base-foreground">{{ input.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             input.type
           }}</span>
@@ -86,7 +87,7 @@
           :key="output.name"
           class="flex items-center justify-between gap-2 text-2xs"
         >
-          <span class="text-foreground shrink-0">{{ output.name }}</span>
+          <span class="shrink-0 text-base-foreground">{{ output.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             output.type
           }}</span>

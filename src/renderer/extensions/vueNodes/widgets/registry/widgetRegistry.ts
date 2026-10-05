@@ -58,6 +58,9 @@ const Load3DAdvanced = defineAsyncComponent(
 const CameraInfo = defineAsyncComponent(
   () => import('@/components/cameraInfo/CameraInfo.vue')
 )
+const CameraAngle = defineAsyncComponent(
+  () => import('@/components/cameraAngle/CameraAngle.vue')
+)
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
 )
@@ -108,6 +111,16 @@ interface WidgetDefinition {
 }
 
 const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
+  [
+    'dynamic_group_row',
+    {
+      component: defineAsyncComponent(
+        () => import('../components/WidgetDynamicGroupRow.vue')
+      ),
+      aliases: [],
+      essential: false
+    }
+  ],
   [
     'button',
     { component: WidgetButton, aliases: ['BUTTON'], essential: false }
@@ -213,6 +226,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     {
       component: CameraInfo,
       aliases: ['CAMERA_INFO_STATE'],
+      essential: false
+    }
+  ],
+  [
+    'cameraAngle',
+    {
+      component: CameraAngle,
+      aliases: ['CAMERA_ANGLE_VIEW'],
       essential: false
     }
   ],
@@ -329,6 +350,7 @@ const EXPANDING_TYPES = [
   'load3D',
   'load3DAdvanced',
   'cameraInfo',
+  'cameraAngle',
   'curve',
   'painter',
   'compositor',

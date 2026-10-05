@@ -86,8 +86,8 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         ...globalOptions,
         stubs: {
           ...globalOptions.stubs,
-          UnifiedStripePaymentSelector: {
-            name: 'UnifiedStripePaymentSelector',
+          CheckoutPaymentForm: {
+            name: 'CheckoutPaymentForm',
             props: ['amountCents', 'currency'],
             template:
               '<div data-testid="payment-selector">{{ amountCents }}/{{ currency }}</div>',
@@ -135,7 +135,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         ...globalOptions,
         stubs: {
           ...globalOptions.stubs,
-          UnifiedStripePaymentSelector: {
+          CheckoutPaymentForm: {
             template: '<div data-testid="payment-selector" />'
           }
         }
@@ -164,7 +164,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         ...globalOptions,
         stubs: {
           ...globalOptions.stubs,
-          UnifiedStripePaymentSelector: {
+          CheckoutPaymentForm: {
             template: '<div data-testid="payment-selector" />'
           }
         }
@@ -322,7 +322,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         ...globalOptions,
         stubs: {
           ...globalOptions.stubs,
-          SingleSelect: {
+          CheckoutSavedMethodSelect: {
             props: ['options'],
             emits: ['update:modelValue'],
             template:
@@ -440,6 +440,25 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       })
     )
     expect(emitted().addCreditCard).toBeTruthy()
+  })
+
+  it('locks subscribing while an earlier payment awaits verification', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        actionUrl: 'https://verify.example/sensitive-token'
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.getByText('subscription.preview.pendingVerificationDetail')
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.subscribeToPlan'
+      })
+    ).toBeDisabled()
   })
 
   it('reports failed verification without offering to resume it', () => {

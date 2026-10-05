@@ -1554,7 +1554,7 @@
       },
       "size": {
         "label": "Image size",
-        "help": "",
+        "help": "Separate layers supports Auto, 1K, 1.5K or 2K. For other images, use 1K, 2K or a pixel size.",
         "advanced": false,
         "options": [
           "1024x1024",
@@ -1562,9 +1562,42 @@
           "1024x1536",
           "1920x1080",
           "1080x1920",
-          "2048x2048"
+          "2048x2048",
+          "auto",
+          "1K",
+          "1.5K",
+          "2K"
         ],
-        "default": "1024x1024"
+        "default": "1024x1024",
+        "formConstraint": {
+          "schema": {
+            "if": {
+              "properties": {
+                "layer_decomposition": {
+                  "const": true
+                }
+              },
+              "required": ["layer_decomposition"]
+            },
+            "then": {
+              "properties": {
+                "size": {
+                  "enum": ["auto", "1K", "1.5K", "2K"]
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "size": {
+                  "not": {
+                    "enum": ["auto", "1.5K"]
+                  }
+                }
+              }
+            }
+          },
+          "error": "incompatible"
+        }
       }
     },
     "elevenlabs/eleven_sfx_v2": {
@@ -1780,7 +1813,7 @@
           "pt-PT": "Portuguese (Portugal)",
           "es-ES": "Spanish (Spain)",
           "es-MX": "Spanish (Mexico)",
-          "tr-TR": "Turkish (T\u00fcrkiye)",
+          "tr-TR": "Turkish (Türkiye)",
           "vi-VN": "Vietnamese (Vietnam)"
         }
       },

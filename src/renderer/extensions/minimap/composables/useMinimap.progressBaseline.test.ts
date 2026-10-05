@@ -14,7 +14,8 @@ import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEv
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { api } from '@/scripts/api'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 interface HarnessCounters {
   digestNodeReads: number
@@ -73,7 +74,7 @@ const {
       originSlot: number
       targetSlot: number
     }>,
-    apiListeners: new Map<string, EventListener>(),
+    apiListeners: new Set<string>(),
     pollControl: { current: undefined as (() => void) | undefined }
   }
 })
@@ -109,19 +110,7 @@ function setupVueUseMocks() {
   )
 }
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: (name: string, listener: EventListener) => {
-      counters.listenersAdded++
-      apiListeners.set(name, listener)
-    },
-    removeEventListener: (name: string) => {
-      counters.listenersRemoved++
-      apiListeners.delete(name)
-    },
-    apiURL: (path: string) => path
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: null }
@@ -240,7 +229,7 @@ async function runCell(
   }
 
   const { graph, nodes } = createGraph(graphSize, edgeCount)
-  const context = createMockCanvas2DContext()
+  const context = createMockCanvasRenderingContext2D()
   vi.mocked(context.clearRect).mockImplementation(() => {
     counters.canvasRedraws++
   })
@@ -367,6 +356,14 @@ async function runCell(
 
 beforeEach(() => {
   setupVueUseMocks()
+  vi.mocked(api.addEventListener).mockImplementation((name) => {
+    counters.listenersAdded++
+    apiListeners.add(name)
+  })
+  vi.mocked(api.removeEventListener).mockImplementation((name) => {
+    counters.listenersRemoved++
+    apiListeners.delete(name)
+  })
   Object.assign(useExecutionStore(), {
     nodeLocationProgressStates: useExecutionStore().nodeProgressStates
   })

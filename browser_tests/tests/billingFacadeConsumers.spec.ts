@@ -270,10 +270,6 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
   test('keeps the free-tier quota inside the top action bars', async ({
     page
   }) => {
-    test.fixme(
-      true,
-      'Activates after slice PR 16185 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16185'
-    )
     test.setTimeout(60_000)
 
     const freeTierRemoteConfig = {

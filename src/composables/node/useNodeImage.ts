@@ -1,6 +1,9 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useTelemetry } from '@/platform/telemetry'
+import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
+import type { ImageLoadFailureMetadata } from '@/platform/telemetry/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
@@ -20,6 +23,11 @@ interface NodePreviewOptions<T extends MediaElement> {
   loadElement: (url: string) => Promise<T | null>
   onLoaded?: (elements: T[]) => void
   onFailedLoading?: () => void
+  /** Which canvas surface this is, so the failure can be attributed. */
+  telemetrySource: Extract<
+    ImageLoadFailureMetadata['source'],
+    'canvas_node_image' | 'canvas_node_video'
+  >
 }
 
 interface ShowPreviewOptions {
@@ -36,24 +44,48 @@ const createContainer = () => {
 const createTimeout = (ms: number) =>
   new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
 
+/** Distinguishes "the load stalled" from "the load was rejected"; both otherwise yield `null`. */
+const MEDIA_LOAD_TIMED_OUT = Symbol('media-load-timed-out')
+
 const useNodePreview = <T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
 ) => {
-  const { loadElement, onLoaded, onFailedLoading } = options
+  const { loadElement, onLoaded, onFailedLoading, telemetrySource } = options
   const nodeOutputStore = useNodeOutputStore()
 
   const loadElementWithTimeout = async (
     url: string,
     retryCount = 0
   ): Promise<T | null> => {
-    const result = await Promise.race([
+    // A stalled load and a rejected one both arrive here as `null`, so the
+    // timeout resolves a sentinel instead: a 401 and an 8s hang are different
+    // problems and must not collapse into the same event. The sentinel is
+    // compared rather than a flag set from the timeout's callback — that flag
+    // would record "the timeout eventually fired", which is true even when the
+    // load lost the race by milliseconds.
+    const raced = await Promise.race([
       loadElement(url),
-      createTimeout(MEDIA_LOAD_TIMEOUT)
+      createTimeout(MEDIA_LOAD_TIMEOUT).then(() => MEDIA_LOAD_TIMED_OUT)
     ])
+    const timedOut = raced === MEDIA_LOAD_TIMED_OUT
+    const result: T | null = timedOut ? null : (raced as T | null)
 
     if (result === null && retryCount < MAX_RETRIES) {
       return loadElementWithTimeout(url, retryCount + 1)
+    }
+
+    if (result === null) {
+      // Reported once per URL, after retries are spent — a report per attempt
+      // would inflate the count by exactly `MAX_RETRIES + 1`.
+      void describeImageLoadFailure(url).then((diagnostics) => {
+        useTelemetry()?.trackImageLoadFailed({
+          ...diagnostics,
+          source: telemetrySource,
+          attempts: retryCount + 1,
+          timed_out: timedOut
+        })
+      })
     }
 
     return result
@@ -119,6 +151,7 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
   return useNodePreview(node, {
     loadElement,
     onLoaded,
+    telemetrySource: 'canvas_node_image',
     onFailedLoading: () => {
       node.imgs = undefined
     }
@@ -201,6 +234,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   return useNodePreview(node, {
     loadElement,
     onLoaded,
+    telemetrySource: 'canvas_node_video',
     onFailedLoading: () => {
       node.videoContainer = undefined
     }

@@ -61,7 +61,7 @@
         </ContextMenuItem>
         <ContextMenuItem
           v-if="isCurrentNodeUserBlueprint"
-          class="text-destructive flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none hover:bg-highlight focus:bg-highlight"
+          class="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive-background outline-none select-none hover:bg-highlight focus:bg-highlight"
           @select="handleDeleteBlueprint"
         >
           <i class="icon-[lucide--trash-2] size-4" />

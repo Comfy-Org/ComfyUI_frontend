@@ -5,6 +5,8 @@ import {
   clearRootLinkReveals,
   isLinkRevealed
 } from '@/lib/litegraph/src/canvas/linkRevealState'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -19,21 +21,7 @@ const SCOPE = {
   owningGraphId: toOwningGraphId('root-a')
 }
 
-const mocks = vi.hoisted(() => ({
-  setDirty: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: {
-      graph: {
-        id: 'root-a',
-        rootGraph: { id: 'root-a' }
-      },
-      setDirty: mocks.setDirty
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 function addLink(
   id: number,
@@ -66,6 +54,9 @@ function createReveal(options: Parameters<typeof useSlotLinkReveal>[0]) {
 }
 
 beforeEach(() => {
+  const graph = new LGraph()
+  graph.id = 'root-a'
+  app.canvas.graph = graph
   clearRootLinkReveals(SCOPE.rootGraphId)
 })
 
@@ -84,7 +75,7 @@ describe('useSlotLinkReveal', () => {
     })
     unconnected.reveal.revealLinks()
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(1))).toBe(false)
-    expect(mocks.setDirty).not.toHaveBeenCalled()
+    expect(app.canvas.setDirty).not.toHaveBeenCalled()
     unconnected.scope.stop()
 
     const { reveal, scope } = createReveal({
@@ -99,7 +90,7 @@ describe('useSlotLinkReveal', () => {
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(3))).toBe(false)
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(4))).toBe(false)
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(5))).toBe(true)
-    expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
+    expect(app.canvas.setDirty).toHaveBeenCalledWith(false, true)
     scope.stop()
   })
 
@@ -115,7 +106,7 @@ describe('useSlotLinkReveal', () => {
     })
     unconnected.reveal.revealLinks()
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(7))).toBe(false)
-    expect(mocks.setDirty).not.toHaveBeenCalled()
+    expect(app.canvas.setDirty).not.toHaveBeenCalled()
     unconnected.scope.stop()
 
     const { reveal, scope } = createReveal({
@@ -140,11 +131,11 @@ describe('useSlotLinkReveal', () => {
     })
     reveal.revealLinks()
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(true)
-    mocks.setDirty.mockClear()
+    vi.mocked(app.canvas.setDirty).mockClear()
 
     scope.stop()
 
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(false)
-    expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
+    expect(app.canvas.setDirty).toHaveBeenCalledWith(false, true)
   })
 })

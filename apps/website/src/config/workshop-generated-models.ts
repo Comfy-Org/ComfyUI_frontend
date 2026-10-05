@@ -73,7 +73,8 @@ const generatedExample = z.object({
   sampleOnly: z.boolean().optional(),
   node: node.optional(),
   fields: z.array(generatedField).optional(),
-  values: formValues
+  values: formValues,
+  prompt: z.string().optional()
 })
 export const generatedModelSchema = z.object({
   thumbnailUrl: z.string().optional(),

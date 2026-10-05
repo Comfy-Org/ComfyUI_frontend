@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { onBeforeUnmount, onMounted } from 'vue'
 
-import type { ToastMessage, ToastSeverity } from '../../config/auth-toast-state'
+import type { ToastMessage, ToastSeverity } from '@/config/auth-toast-state'
 
 const { message, closeLabel } = defineProps<{
   message: ToastMessage

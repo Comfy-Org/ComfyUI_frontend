@@ -50,8 +50,10 @@ jobs:
         with:
           node-version-file: pull-request/.nvmrc
 
-      - name: Repair lockfile
-        run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+      - name: Repair and deduplicate lockfile
+        run: |
+          pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+          pnpm dedupe --lockfile-only --ignore-scripts
         working-directory: pull-request
 
       - name: Prepare repair artifact

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
-import { affiliateHowItWorksSteps } from '../../data/affiliateHowItWorks'
-import { t } from '../../i18n/translations'
+import StepsGrid01 from '@/components/blocks/StepsGrid01.vue'
+import { affiliateHowItWorksSteps } from '@/data/affiliateHowItWorks'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const steps = affiliateHowItWorksSteps.map((step) => ({
   id: step.id,
@@ -15,8 +16,5 @@ const steps = affiliateHowItWorksSteps.map((step) => ({
 </script>
 
 <template>
-  <StepsGrid01
-    :heading="t('affiliate.howItWorks.heading', locale)"
-    :steps="steps"
-  />
+  <StepsGrid01 :heading="t('affiliate.howItWorks.heading')" :steps="steps" />
 </template>

@@ -20,6 +20,9 @@ describe('Workshop backend environment', () => {
     expect(env.WORKSHOP_CREDITS_URL).toBe(
       'https://stagingcloud.comfy.org/?settings=plan-credits'
     )
+    expect(env.WORKSHOP_ASSETS_URL).toBe(
+      'https://stagingcloud.comfy.org/?assets=1'
+    )
   })
 
   it('uses production only when explicitly requested', async () => {
@@ -32,6 +35,7 @@ describe('Workshop backend environment', () => {
     expect(env.WORKSHOP_CREDITS_URL).toBe(
       'https://cloud.comfy.org/?settings=plan-credits'
     )
+    expect(env.WORKSHOP_ASSETS_URL).toBe('https://cloud.comfy.org/?assets=1')
   })
 
   it('uses the test family when requested', async () => {
@@ -45,6 +49,9 @@ describe('Workshop backend environment', () => {
     expect(env.WORKSHOP_TURNSTILE_SITE_KEY).toBe('')
     expect(env.WORKSHOP_CREDITS_URL).toBe(
       'https://testcloud.comfy.org/?settings=plan-credits'
+    )
+    expect(env.WORKSHOP_ASSETS_URL).toBe(
+      'https://testcloud.comfy.org/?assets=1'
     )
   })
 

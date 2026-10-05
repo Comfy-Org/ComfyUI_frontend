@@ -7,7 +7,7 @@ import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import AppBuilder from './AppBuilder.vue'
 
@@ -17,16 +17,7 @@ beforeEach(async () => {
   useWorkflowStore().activeWorkflow = workflow
 })
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      id: '11111111-1111-4111-8111-111111111111',
-      nodes: [],
-      events: new EventTarget(),
-      getNodeById: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 

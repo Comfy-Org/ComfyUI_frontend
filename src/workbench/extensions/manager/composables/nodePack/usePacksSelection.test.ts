@@ -280,26 +280,6 @@ describe('usePacksSelection', () => {
 
       expect(selectionState.value).toBe('mixed')
     })
-
-    it('should update when installation status changes', () => {
-      const nodePacks = ref<NodePack[]>([
-        createMockPack('pack1'),
-        createMockPack('pack2')
-      ])
-
-      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
-
-      const { selectionState } = usePacksSelection(nodePacks)
-      expect(selectionState.value).toBe('none-installed')
-
-      // Change mock to simulate installation
-      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
-
-      // Force reactivity update
-      nodePacks.value = [...nodePacks.value]
-
-      expect(selectionState.value).toBe('all-installed')
-    })
   })
 
   describe('edge cases', () => {

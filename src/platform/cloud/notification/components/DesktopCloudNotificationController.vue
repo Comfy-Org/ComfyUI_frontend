@@ -23,6 +23,7 @@ function reportNotificationFailure(
   platform: string
 ) {
   reportError(cause, {
+    surface: 'platform',
     errorType,
     tags: {
       failure_kind: 'caught_unexpected',

@@ -4,7 +4,9 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { AuthStoreError } from '@/stores/authStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
@@ -19,44 +21,18 @@ const state = vi.hoisted(() => ({
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: {
-      get value() {
-        return state.shouldUseWorkspaceBilling
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: {
-        get value() {
-          return {
-            canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-          }
-        }
-      },
-      canReactivatePlan: {
-        get value() {
-          return state.canReactivatePlan
-        }
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: state.toastAdd })
   })
@@ -88,6 +64,17 @@ afterEach(() => {
 
 describe('useResubscribe', () => {
   beforeEach(() => {
+    const billingRouting = vi.mocked(useBillingRouting())
+    billingRouting.shouldUseWorkspaceBilling = computed(
+      () => state.shouldUseWorkspaceBilling
+    )
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+    }))
+    workspaceUI.canReactivatePlan = computed(() => state.canReactivatePlan)
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
     useBillingCapabilities().canReactivate = computed(() => true)
@@ -161,6 +148,13 @@ describe('useResubscribe', () => {
       outcome: 'pending',
       source: 'settings_billing_panel'
     })
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'succeeded',
+      outcome: 'success',
+      source: 'settings_billing_panel',
+      duration_ms: expect.any(Number)
+    })
   })
 
   it('does not report checkout launch as terminal legacy success', async () => {
@@ -212,7 +206,8 @@ describe('useResubscribe', () => {
       stage: 'failed',
       outcome: 'failure',
       source: 'settings_billing_panel',
-      failure_category: 'unknown'
+      failure_category: 'unknown',
+      duration_ms: expect.any(Number)
     })
     expect(isResubscribing.value).toBe(false)
   })

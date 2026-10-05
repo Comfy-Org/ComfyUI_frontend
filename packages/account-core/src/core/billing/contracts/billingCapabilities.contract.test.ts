@@ -20,6 +20,7 @@ function capabilities(): Capabilities {
     can_downgrade_to_personal: false,
     can_invite_members: true,
     can_reactivate: false,
+    can_revert_scheduled_change: false,
     can_subscribe_self_serve: true,
     can_top_up: true
   }
@@ -58,6 +59,7 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_downgrade_to_personal: boolean
   can_invite_members: boolean
   can_reactivate: boolean
+  can_revert_scheduled_change: boolean
   can_subscribe_self_serve: boolean
   can_top_up: boolean
 }>()

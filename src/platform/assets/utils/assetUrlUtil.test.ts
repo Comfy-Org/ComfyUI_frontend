@@ -7,16 +7,18 @@ import {
   getAssetSubfolder,
   getAssetUrl
 } from '@/platform/assets/utils/assetUrlUtil'
+import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-const mockApiURL = vi.hoisted(() =>
-  vi.fn((path: string) => `http://localhost:8188/api${path}`)
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { apiURL: mockApiURL }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
+})
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-1',

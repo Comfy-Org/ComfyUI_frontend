@@ -124,7 +124,7 @@ test.describe(
       // Arbitrary value
       const dragTarget = {
         x: start.x + 180,
-        y: start.y - 140
+        y: start.y + 140
       }
 
       await comfyMouse.move(start)
@@ -132,6 +132,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       try {
+        await expect(comfyPage.page.getByRole('tooltip')).toBeHidden()
         await expect(comfyPage.canvas).toHaveScreenshot(
           'vue-node-dragging-link.png'
         )

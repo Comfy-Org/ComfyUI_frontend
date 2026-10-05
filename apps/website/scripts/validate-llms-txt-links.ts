@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { findCanonicalDrift, parseLlmsTxtLinks } from '../src/lib/llms-txt'
+import { findCanonicalDrift, parseLlmsTxtLinks } from '@/lib/llms-txt'
 
 const DIST_DIR = join(process.cwd(), 'dist')
 const CANONICAL_LINK = /<link\b[^>]*\brel=["']canonical["'][^>]*>/i

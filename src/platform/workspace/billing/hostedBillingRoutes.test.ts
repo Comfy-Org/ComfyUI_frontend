@@ -3,6 +3,8 @@ import type {
   BillingIntent
 } from '@comfyorg/billing-contract'
 
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+
 import { hostedBillingRoute } from './hostedBillingRoutes'
 
 const cloudBaseUrl = vi.hoisted(() => ({
@@ -20,13 +22,14 @@ function entryUrl(
   environment: BillingEnvironment = 'production',
   base: URL = BILLING_WEB
 ): string | undefined {
-  const route = hostedBillingRoute('billing_web', intent, base, environment)
+  const route = hostedBillingRoute('billing_web', intent, {}, base, environment)
   return route.kind === 'billing_web' ? route.url.href : undefined
 }
 
 describe('hostedBillingRoute', () => {
   beforeEach(() => {
     cloudBaseUrl.value = 'https://testcloud.comfy.org'
+    remoteConfig.value = {}
   })
 
   it.for([
@@ -63,14 +66,14 @@ describe('hostedBillingRoute', () => {
     'leaves %s on the provider while the server says stripe',
     (intent) => {
       expect(
-        hostedBillingRoute('stripe', intent, BILLING_WEB, 'production')
+        hostedBillingRoute('stripe', intent, {}, BILLING_WEB, 'production')
       ).toEqual({ kind: 'provider' })
     }
   )
 
   it('stays on the provider when no billing-web origin is configured', () => {
     expect(
-      hostedBillingRoute('billing_web', 'pricing', null, 'production')
+      hostedBillingRoute('billing_web', 'pricing', {}, null, 'production')
     ).toEqual({ kind: 'provider' })
   })
 
@@ -79,10 +82,45 @@ describe('hostedBillingRoute', () => {
       hostedBillingRoute(
         'billing_web',
         'pricing',
+        {},
         new URL('http://billing.example.com'),
         'production'
       )
     ).toEqual({ kind: 'provider' })
+  })
+
+  it('mints workspace and plan when both are supplied', () => {
+    expect(
+      hostedBillingRoute(
+        'billing_web',
+        'pricing',
+        { plan: 'pro-monthly', workspaceId: 'ws-team' },
+        BILLING_WEB,
+        'production'
+      )
+    ).toEqual({
+      kind: 'billing_web',
+      url: new URL(
+        'https://billing.comfy.org/v1/pricing?product=comfyui&return_to=comfyui_workspace&plan=pro-monthly&workspace=ws-team'
+      )
+    })
+  })
+
+  it('mints team_credit_stop_id alongside the plan', () => {
+    expect(
+      hostedBillingRoute(
+        'billing_web',
+        'checkout',
+        { plan: 'team_per_credit_annual', teamCreditStopId: 'stop_700' },
+        BILLING_WEB,
+        'production'
+      )
+    ).toEqual({
+      kind: 'billing_web',
+      url: new URL(
+        'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=team_per_credit_annual&team_credit_stop_id=stop_700'
+      )
+    })
   })
 
   it.for([
@@ -116,6 +154,17 @@ describe('hostedBillingRoute', () => {
 
     expect(hostedBillingRoute('billing_web', 'pricing')).toEqual({
       kind: 'provider'
+    })
+  })
+
+  it('mints an entry against a server-provided billing-web origin', () => {
+    remoteConfig.value = { billing_web_url: 'https://stagingbilling.comfy.org' }
+
+    expect(hostedBillingRoute('billing_web', 'pricing')).toEqual({
+      kind: 'billing_web',
+      url: new URL(
+        'https://stagingbilling.comfy.org/v1/pricing?product=comfyui&return_to=comfyui_workspace'
+      )
     })
   })
 })

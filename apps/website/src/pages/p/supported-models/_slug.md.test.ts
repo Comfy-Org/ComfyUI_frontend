@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { PRICING_URL } from '../../../config/model-pricing'
-import { models } from '../../../config/models'
+import { PRICING_URL } from '@/config/model-pricing'
+import { models } from '@/config/models'
 import { GET, getStaticPaths } from './[slug].md'
 
 type Model = (typeof models)[number]
@@ -51,7 +51,7 @@ describe('GET', () => {
     const body = await render(open, new URL('https://example.org')).text()
     expect(body.startsWith('---\ntitle: "')).toBe(true)
     expect(body).toContain(
-      `canonical: https://example.org/p/supported-models/${open.slug}\nlang: en\nindex: https://example.org/llms.txt\n---`
+      `canonical: https://example.org/p/supported-models/${open.slug}/\nlang: en\nindex: https://example.org/llms.txt\n---`
     )
     expect(body).toContain('https://docs.comfy.org/agent-tools/cli.md')
     expect(body).toContain('https://cloud.comfy.org/mcp')

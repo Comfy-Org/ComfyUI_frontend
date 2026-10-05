@@ -16,7 +16,7 @@
     :data-testid="testid"
     :aria-label="failed ? t('gettingStarted.retryTemplate', { title }) : title"
     :aria-busy="loading"
-    class="group/card focus-visible:ring-ring relative cursor-pointer overflow-hidden rounded-2xl focus-visible:ring-1 focus-visible:outline-none"
+    class="group/card relative cursor-pointer overflow-hidden rounded-2xl focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
     @click="onSelect"
     @keydown.enter.prevent="onSelect"
     @keydown.space.prevent="onSelect"

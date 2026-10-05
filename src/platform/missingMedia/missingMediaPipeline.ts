@@ -38,7 +38,7 @@ export async function runMissingMediaPipeline({
 }: RunMissingMediaPipelineOptions): Promise<void> {
   const missingMediaStore = useMissingMediaStore()
   const activeWf = useWorkspaceStore().workflow.activeWorkflow
-  const allCandidates = scanAllMediaCandidates(rootGraph, isCloud)
+  const allCandidates = scanAllMediaCandidates(rootGraph)
   // Drop candidates whose enclosing subgraph is muted/bypassed.
   const candidates = allCandidates.filter((candidate) =>
     isMissingMediaCandidateScopeActive(rootGraph, candidate)

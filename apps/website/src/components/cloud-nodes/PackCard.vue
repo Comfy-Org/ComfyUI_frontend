@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { GridPack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
+import type { GridPack } from '@/data/cloudNodes'
+import type { Locale } from '@/i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import NodeList from './NodeList.vue'
 import PackBanner from './PackBanner.vue'
 
@@ -10,6 +10,7 @@ const { locale = 'en', pack } = defineProps<{
   locale?: Locale
   pack: GridPack
 }>()
+const { t } = translationsFor(locale)
 
 const detailHref =
   locale === 'zh-CN'
@@ -21,13 +22,13 @@ function nodeCountLabel(nodeCount: number): string {
     new Intl.PluralRules(locale).select(nodeCount) === 'one'
       ? 'cloudNodes.card.nodeCountOne'
       : 'cloudNodes.card.nodeCountOther'
-  return t(key, locale).replace('{count}', String(nodeCount))
+  return t(key, { count: nodeCount })
 }
 </script>
 
 <template>
   <article
-    class="bg-transparency-white-t5 flex h-full flex-col overflow-hidden rounded-3xl border border-primary-warm-gray/20"
+    class="flex h-full flex-col overflow-hidden rounded-3xl border border-primary-warm-gray/20 bg-transparency-white-t4"
     data-testid="cloud-node-pack-card"
   >
     <PackBanner
@@ -48,10 +49,7 @@ function nodeCountLabel(nodeCount: number): string {
           </a>
         </h3>
         <p class="text-sm/relaxed text-primary-warm-gray">
-          {{
-            pack.description ||
-            t('cloudNodes.card.unavailableDescription', locale)
-          }}
+          {{ pack.description || t('cloudNodes.card.unavailableDescription') }}
         </p>
       </div>
 
@@ -63,10 +61,10 @@ function nodeCountLabel(nodeCount: number): string {
           rel="noopener noreferrer"
           class="font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
         >
-          {{ t('cloudNodes.card.viewRepo', locale) }}
+          {{ t('cloudNodes.card.viewRepo') }}
         </a>
         <span v-else class="text-primary-warm-gray">
-          {{ t('cloudNodes.card.viewRepo', locale) }}
+          {{ t('cloudNodes.card.viewRepo') }}
         </span>
         <span class="text-primary-warm-gray">•</span>
         <span class="text-primary-comfy-canvas">{{

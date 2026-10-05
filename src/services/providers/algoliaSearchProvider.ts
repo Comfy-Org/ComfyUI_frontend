@@ -151,19 +151,20 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       strategy: 'none'
     })
 
-    const [nodePacks, querySuggestions = { hits: [] }] = results as [
+    const [nodePacks, querySuggestions] = results as [
       SearchResponse<AlgoliaNodePack>,
-      SearchResponse<NodesIndexSuggestion>
+      SearchResponse<NodesIndexSuggestion>?
     ]
 
     // Convert Algolia hits to RegistryNodePack format
     const registryPacks = nodePacks.hits.map(toRegistryPack)
 
     // Extract query suggestions from search results
-    const suggestions = querySuggestions.hits.map((suggestion) => ({
-      query: suggestion.query,
-      popularity: suggestion.popularity
-    }))
+    const suggestions =
+      querySuggestions?.hits.map((suggestion) => ({
+        query: suggestion.query,
+        popularity: suggestion.popularity
+      })) ?? []
 
     return {
       nodePacks: registryPacks,

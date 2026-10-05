@@ -1,7 +1,7 @@
 import { createContext } from 'astro/middleware'
 import { expect, it } from 'vitest'
 
-import { routerModelSlugAliases } from '../../config/workshop-browse-content'
+import { routerModelSlugAliases } from '@/config/workshop-browse-content'
 import { prepareModelPage } from './model-page'
 import { GET } from './page.json'
 

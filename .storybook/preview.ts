@@ -1,5 +1,6 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
+import type { PaletteDesignToken } from '@primevue/themes/aura'
 import { setup } from '@storybook/vue3'
 import type { Preview, StoryContext, StoryFn } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
@@ -15,8 +16,8 @@ import '@comfyorg/website/src/styles/global.css'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
-    // @ts-expect-error fix me
-    primary: Aura['primitive'].blue
+    primary: (Aura as { primitive: { blue: PaletteDesignToken } }).primitive
+      .blue
   }
 })
 

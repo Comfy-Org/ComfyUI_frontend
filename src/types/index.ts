@@ -20,6 +20,17 @@ import type {
 } from '@/platform/remote/comfyui/execution/types'
 import type { Settings } from '@/platform/settings/types'
 import type { ComfyApp } from '@/scripts/app'
+import type {
+  ContextMenu,
+  DragAndScale,
+  LGraph,
+  LGraphBadge,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LLink,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 
 import type {
   BottomPanelExtension,
@@ -98,6 +109,16 @@ declare global {
 
     /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
     graph?: unknown
+
+    LiteGraph?: typeof LiteGraph
+    LGraph?: typeof LGraph
+    LLink?: typeof LLink
+    LGraphNode?: typeof LGraphNode
+    LGraphGroup?: typeof LGraphGroup
+    DragAndScale?: typeof DragAndScale
+    LGraphCanvas?: typeof LGraphCanvas
+    ContextMenu?: typeof ContextMenu
+    LGraphBadge?: typeof LGraphBadge
 
     /** For use in tests to capture WebSocket messages */
     __capturedMessages?: CapturedMessages

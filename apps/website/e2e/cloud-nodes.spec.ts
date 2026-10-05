@@ -127,7 +127,7 @@ test.describe('Cloud node detail pages @smoke', () => {
       ).toBeVisible()
       await expect(page.getByRole('link', { name: back })).toHaveAttribute(
         'href',
-        `${prefix}/cloud/supported-nodes`
+        `${prefix}/cloud/supported-nodes/`
       )
 
       const jsonLd: unknown = JSON.parse(

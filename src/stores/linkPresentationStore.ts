@@ -92,6 +92,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     const incumbent = bucket?.byId.get(linkId)
     if (incumbent && incumbent.graphId !== scope.owningGraphId) {
       reportError(new Error('Link presentation ownership conflict'), {
+        surface: 'platform',
         errorType: 'link_presentation_ownership_conflict',
         context: {
           linkId,
@@ -157,7 +158,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     const bucket = roots.get(scope.rootGraphId)
     const ownerIds = bucket?.idsByOwner.get(scope.owningGraphId)
     if (!bucket || !ownerIds) return
-    for (const linkId of [...ownerIds]) {
+    for (const linkId of Array.from(ownerIds)) {
       displace(scope.rootGraphId, bucket, linkId, scope.owningGraphId)
     }
   }

@@ -4,6 +4,8 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import {
   compareExecutionId,
+  createLeafNodeExecutionId,
+  createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId,
   getAncestorExecutionIds,
@@ -133,6 +135,38 @@ describe('nodeIdentification', () => {
         expect(createNodeLocatorId(null, toNodeId('node:1'))).toBeNull()
       })
     })
+
+    describe('createLeafNodeLocatorId', () => {
+      it('behaves like createNodeLocatorId for an ordinary, colon-free root id', () => {
+        expect(createLeafNodeLocatorId(null, toNodeId(123))).toBe('123')
+      })
+
+      it('behaves like createNodeLocatorId for an ordinary subgraph-nested id', () => {
+        expect(createLeafNodeLocatorId(validUuid, toNodeId(123))).toBe(
+          validNodeLocatorId
+        )
+      })
+
+      it('keeps a colon-bearing root-level id whole instead of rejecting it (PM-1580)', () => {
+        // comfy-multi-player's insert_workflow remaps every inserted node's
+        // id to a derived string with colons unrelated to subgraph scoping.
+        const rawId = 'insert:abc123:root:node:5'
+        expect(createNodeLocatorId(null, toNodeId(rawId))).toBeNull()
+        expect(createLeafNodeLocatorId(null, rawId)).toBe(rawId)
+      })
+
+      it('still rejects a colon-bearing id when it really is subgraph-nested', () => {
+        // There is no subgraph UUID to disambiguate a colon-bearing id from
+        // in the root-level case, but a node that IS scoped to a subgraph
+        // still goes through the strict, delimiter-aware path.
+        const rawId = 'insert:abc123:root:node:5'
+        expect(createLeafNodeLocatorId(validUuid, rawId)).toBeNull()
+      })
+
+      it('returns null for an empty id', () => {
+        expect(createLeafNodeLocatorId(null, '')).toBeNull()
+      })
+    })
   })
 
   describe('NodeExecutionId', () => {
@@ -239,6 +273,24 @@ describe('nodeIdentification', () => {
         expect(
           createNodeExecutionId([toNodeId(123), toNodeId('node:1')])
         ).toBeNull()
+      })
+    })
+
+    describe('createLeafNodeExecutionId', () => {
+      it('behaves like createNodeExecutionId for an ordinary, colon-free id', () => {
+        expect(createLeafNodeExecutionId(toNodeId(123))).toBe('123')
+      })
+
+      it('keeps a colon-bearing root-level id whole instead of rejecting it (PM-1580)', () => {
+        // comfy-multi-player's insert_workflow remaps every inserted node's
+        // id to a derived string with colons unrelated to subgraph scoping.
+        const rawId = toNodeId('insert:abc123:root:node:5')
+        expect(createNodeExecutionId([rawId])).toBeNull()
+        expect(createLeafNodeExecutionId(rawId)).toBe(rawId)
+      })
+
+      it('returns null for an empty id', () => {
+        expect(createLeafNodeExecutionId(toNodeId(''))).toBeNull()
       })
     })
   })

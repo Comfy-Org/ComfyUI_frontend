@@ -32,7 +32,7 @@ import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
   value: string,
-  getOptionLabel?: ((value?: string | null) => string) | undefined
+  getOptionLabel?: (value?: string | null) => string
 ): string {
   if (!getOptionLabel) return value
 

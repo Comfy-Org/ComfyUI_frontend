@@ -272,7 +272,7 @@ const isVisible = computed(
 watch(
   () => isCardRequested.value && !isForRequestedWorkflow.value,
   (stale) => {
-    if (stale) educationStore.dismissCard()
+    if (stale) educationStore.retireCard()
   }
 )
 </script>

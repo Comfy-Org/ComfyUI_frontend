@@ -22,7 +22,6 @@ function buildGroupedJobItems(): JobGroup[] {
 
 const groupedJobItems = computed<JobGroup[]>(buildGroupedJobItems)
 
-export const jobTabs = ['All', 'Completed', 'Failed'] as const
 export const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
 
 const selectedJobTab = ref<JobTab>('All')

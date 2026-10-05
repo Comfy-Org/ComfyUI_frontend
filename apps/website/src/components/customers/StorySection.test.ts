@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { StoryCard } from '../../utils/customers'
+import type { StoryCard } from '@/utils/customers'
 import StorySection from './StorySection.vue'
 
 const stories: StoryCard[] = [

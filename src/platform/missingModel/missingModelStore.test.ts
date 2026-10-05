@@ -1,6 +1,7 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { st, t } from '@/i18n'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -14,10 +15,7 @@ const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
   vi.fn((nodeLocatorId: string) => nodeLocatorId)
 )
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key: string) => `translated:${key}`),
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -52,6 +50,8 @@ function makeModelCandidate(
 }
 
 beforeEach(() => {
+  vi.mocked(t).mockImplementation((key: unknown) => `translated:${String(key)}`)
+  vi.mocked(st).mockImplementation((_key, fallback) => fallback)
   vi.mocked(
     useWorkflowStore().nodeLocatorIdToNodeExecutionId
   ).mockImplementation((id) =>

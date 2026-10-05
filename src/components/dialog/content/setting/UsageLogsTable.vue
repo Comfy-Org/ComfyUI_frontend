@@ -174,8 +174,18 @@ const loadEvents = async () => {
     // Completion telemetry must run even when a mid-checkout route flip
     // supersedes this load, since legacy and workspace backends emit different
     // top-up events and the winning fetch may not carry the completion yet.
-    if (usePendingTopup().isPendingTopupCompleted(response?.events)) {
-      useTelemetry()?.trackApiCreditTopupSucceeded()
+    const completedTopup = usePendingTopup().consumeCompletedTopup(
+      response?.events
+    )
+    if (completedTopup) {
+      const telemetry = useTelemetry()
+      telemetry?.trackApiCreditTopupSucceeded()
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'succeeded',
+        outcome: 'success',
+        duration_ms: Date.now() - completedTopup.startedAtMs
+      })
     }
 
     if (loadToken !== latestLoadToken) return

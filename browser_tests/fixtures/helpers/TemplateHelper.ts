@@ -137,6 +137,20 @@ export class TemplateHelper {
     )
   }
 
+  /** Serves in-memory workflow data as the named template's graph. */
+  async mockWorkflowData(name: string, workflow: unknown): Promise<void> {
+    await this.page.route(`**/templates/${name}.json`, (route) =>
+      route.fulfill({
+        status: 200,
+        body: JSON.stringify(workflow),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    )
+  }
+
   /** Opens the template browser and loads the named template. */
   async load(name: string): Promise<void> {
     await this.page.evaluate(() => {

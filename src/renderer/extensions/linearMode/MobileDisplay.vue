@@ -76,16 +76,14 @@ function onClick(index: number) {
 }
 
 const workflowsEntries = computed(() => {
-  return [
-    ...workflowStore.openWorkflows.map((w) => ({
-      label: w.filename,
-      icon: w.activeState?.extra?.linearMode
-        ? 'icon-[lucide--panels-top-left] bg-primary-background'
-        : undefined,
-      command: () => workflowService.openWorkflow(w),
-      checked: workflowStore.activeWorkflow === w
-    }))
-  ]
+  return workflowStore.openWorkflows.map((w) => ({
+    label: w.filename,
+    icon: w.activeState?.extra?.linearMode
+      ? 'icon-[lucide--panels-top-left] bg-primary-background'
+      : undefined,
+    command: () => workflowService.openWorkflow(w),
+    checked: workflowStore.activeWorkflow === w
+  }))
 })
 
 const menuEntries = computed<MenuItem[]>(() => [
@@ -232,6 +230,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           :aria-hidden="activeIndex !== 2"
           aria-labelledby="mobile-app-output-tab"
           :inert="activeIndex !== 2"
+          :closable="false"
         />
       </div>
     </div>

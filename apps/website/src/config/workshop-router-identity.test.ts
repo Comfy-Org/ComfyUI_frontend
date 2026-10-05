@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import rawAudit from '../data/workshop-router-identity-audit.json'
-import availability from '../data/workshop-router-availability.json'
-import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
-import catalog from '../content/workshop-models.json'
-import display from '../content/workshop-display.json'
-import packedAliases from '../content/workshop-router-aliases.json'
+import rawAudit from '@/data/workshop-router-identity-audit.json'
+import availability from '@/data/workshop-router-availability.json'
+import rawSnapshots from '@/data/workshop-router-openapi.snapshot.json'
+import catalog from '@/content/workshop-models.json'
+import display from '@/content/workshop-display.json'
+import packedAliases from '@/content/workshop-router-aliases.json'
 import { filterWorkshopModels, countByModality } from './models-catalogue'
 import type { WorkshopModelDetail } from './models-catalogue'
 import {
@@ -25,6 +25,7 @@ import {
   workshopIdentityAuditSchema,
   workshopRouterAliasesSchema
 } from './workshop-router-identity'
+import { hubModelSlugs } from './hub-models'
 
 const audit = workshopIdentityAuditSchema.parse(rawAudit)
 const aliases = workshopRouterAliasesSchema.parse(packedAliases)
@@ -167,7 +168,7 @@ describe('legacy content identity repairs', () => {
         throw new Error('Missing published model detail')
       expect(detail.routerId).toBe(match.routerId)
       expect(detail.slug.startsWith(`${old.slug}--`)).toBe(true)
-      expect(detail.href).toBe(`/models/${detail.slug}/`)
+      expect(detail.href).toBe(`/hub/models/${hubModelSlugs.get(detail.slug)}/`)
       expect(routerWorkshopModelPaths).toContain(old.slug)
       expect(detail.incompleteReason).toBeUndefined()
       expect(detail.execution?.inputSchema).toEqual(contract.inputSchema)

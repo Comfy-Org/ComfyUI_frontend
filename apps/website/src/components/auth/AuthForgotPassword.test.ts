@@ -3,13 +3,13 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, readonly, ref } from 'vue'
 
-import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
-import { sendWorkshopPasswordReset } from '../../config/workshop-firebase'
-import { captureAuthFailed, useWorkshopAuthFlag } from '../../scripts/posthog'
+import { removeAllToasts, useAuthToasts } from '@/config/auth-toast-state'
+import { sendWorkshopPasswordReset } from '@/config/workshop-firebase'
+import { captureAuthFailed, useWorkshopAuthFlag } from '@/scripts/posthog'
 import AuthForgotPassword from './AuthForgotPassword.vue'
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-firebase'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-firebase'))
 
 const flag = ref(true)
 const { messages: toasts } = useAuthToasts()
@@ -422,6 +422,6 @@ describe('AuthForgotPassword', () => {
     expect(
       assign,
       'a cross-origin destination maps to the safe Workshop-home fallback, never the raw value'
-    ).toHaveBeenCalledWith('/login/?returnTo=%2Fmodels%2F')
+    ).toHaveBeenCalledWith('/login/?returnTo=%2Fhub%2Fmodels%2F')
   })
 })

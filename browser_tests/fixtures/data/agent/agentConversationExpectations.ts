@@ -468,6 +468,20 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
       ]
     }
   ],
+  'repro/pm-1135-asset-grid-fragmentation': [
+    {
+      text: 'Version A: Version B:',
+      groups: [
+        [
+          {
+            label: 'Generate image',
+            count: 2,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
   'agent-workflow-editing-05': [
     {
       text: "Done — the side-by-side comparison is on your canvas: the original image and the edited result now go into a stitch node (edited placed to the right of the original, sizes matched), and that combined image is what gets saved. Two things worth knowing: The gap/spacing setting on that node can't be changed from here, so the two images sit flush against each other. You can set a spacing value directly on the node if you want a divider. The rest of this workflow was already incomplete before I touched it — the sampler has no model loaded and no prompt text, and the encode/decode steps have no VAE connected. It won't run until those are filled in. Want me to wire up a checkpoint and prompt boxes for you?",

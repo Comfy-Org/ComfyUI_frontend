@@ -1,4 +1,4 @@
-import type { AiModelCard } from '../../components/product/shared/aiModelCards'
+import type { AiModelCard } from '@/components/product/shared/aiModelCards'
 
 // Recent lineup for /cli. Clips come from each model page's own media
 // (gemini-omni, seedance-2.5, minimax-h3); wan-3-card.webm is a 7s cut of

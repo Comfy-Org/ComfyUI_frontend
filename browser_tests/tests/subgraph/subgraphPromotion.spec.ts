@@ -228,7 +228,6 @@ test.describe(
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
-        test.fail()
         await expect(promotedTextarea).toHaveValue(hostValue)
       })
     })

@@ -39,7 +39,10 @@ vi.mock(
 )
 
 vi.mock(import('@/composables/useStablePrimeVueSplitterSizer'), () => ({
-  useStablePrimeVueSplitterSizer: () => ({ onResizeEnd: vi.fn() })
+  useStablePrimeVueSplitterSizer: () => ({
+    onResizeStart: vi.fn(),
+    onResizeEnd: vi.fn()
+  })
 }))
 
 function setViewport(width: number) {

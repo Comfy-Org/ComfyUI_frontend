@@ -1,0 +1,303 @@
+{
+  "1": {
+    "class_type": "LoadVideo",
+    "_meta": {
+      "title": "Source video"
+    },
+    "inputs": {
+      "file": "input.mp4"
+    }
+  },
+  "2": {
+    "class_type": "CrossViewPrepareClip",
+    "_meta": {
+      "title": "Prepare clip (24 fps, whole clip, aspect, size)"
+    },
+    "inputs": {
+      "video": ["1", 0],
+      "duration": 5.0,
+      "aspect_ratio": "source",
+      "megapixels": 0.5,
+      "multiple": 32
+    }
+  },
+  "3": {
+    "class_type": "LoadMoGeModel",
+    "_meta": {
+      "title": "MoGe model"
+    },
+    "inputs": {
+      "model_name": "moge_2_vitl_normal_fp16.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "MoGeInference",
+    "_meta": {
+      "title": "Depth estimation (MoGe)"
+    },
+    "inputs": {
+      "moge_model": ["3", 0],
+      "image": ["2", 0],
+      "resolution_level": 2,
+      "fov_x_degrees": 0,
+      "batch_size": 4,
+      "force_projection": true,
+      "apply_mask": true,
+      "refine_steps": 3
+    }
+  },
+  "5": {
+    "class_type": "CrossViewWarp",
+    "_meta": {
+      "title": "CrossView Warp (camera from the page)"
+    },
+    "inputs": {
+      "frames": ["2", 0],
+      "moge_geometry": ["4", 0],
+      "azimuth": -30.0,
+      "elevation": 20.0,
+      "distance": 1.0,
+      "hfov": 50.0,
+      "vertical_shift": 0.0,
+      "depth_ratio": 6.0,
+      "smooth_depth": false,
+      "invert_depth": false,
+      "roll_lock": false,
+      "pivot_override": false,
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "pivot_z": 1.05,
+      "use_keyframes": false,
+      "frame_count": 0,
+      "keyframes": "",
+      "interp_motion": "linear",
+      "interpolation": "linear",
+      "keep_source_aim": true,
+      "preview_size": 384,
+      "frame_index": 1
+    }
+  },
+  "10": {
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "H3 ref2va"
+    },
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "11": {
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Turbo LoRA (8 step)"
+    },
+    "inputs": {
+      "model": ["10", 0],
+      "lora_name": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+      "strength_model": 1.0
+    }
+  },
+  "12": {
+    "class_type": "MiniMaxH3SigmaShift",
+    "inputs": {
+      "model": ["11", 0],
+      "shift_video": 12.0,
+      "shift_audio": 3.0
+    }
+  },
+  "13": {
+    "class_type": "ModelAttentionBackend",
+    "inputs": {
+      "model": ["12", 0],
+      "attention": "comfy kitchen attention"
+    }
+  },
+  "14": {
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "CrossView-Warp LoRA"
+    },
+    "inputs": {
+      "model": ["13", 0],
+      "lora_name": "MiniMax-H3_Ref2VA-LoRA-CrossView-Warp_v1_3500.safetensors",
+      "strength_model": 0.8
+    }
+  },
+  "15": {
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Qwen3-VL text encoder"
+    },
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "16": {
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Video VAE"
+    },
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    }
+  },
+  "17": {
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Audio VAE"
+    },
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "20": {
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "_meta": {
+      "title": "Source as <Video 1> reference + trigger caption"
+    },
+    "inputs": {
+      "clip": ["15", 0],
+      "vae": ["16", 0],
+      "audio_vae": ["17", 0],
+      "ref_videos.ref_video_0": ["2", 0],
+      "prompt": "crossview.",
+      "width": ["2", 1],
+      "height": ["2", 2],
+      "length": ["2", 3],
+      "ref_image_size": "match"
+    }
+  },
+  "21": {
+    "class_type": "MiniMaxH3AddGuide",
+    "_meta": {
+      "title": "Warp as aligned guide at frame 0"
+    },
+    "inputs": {
+      "positive": ["20", 0],
+      "latent": ["20", 1],
+      "vae": ["16", 0],
+      "image": ["5", 0],
+      "frame_idx": 0
+    }
+  },
+  "30": {
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "Seed"
+    },
+    "inputs": {
+      "noise_seed": 42
+    }
+  },
+  "31": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "res_multistep"
+    }
+  },
+  "32": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": ["14", 0],
+      "scheduler": "simple",
+      "steps": 8,
+      "denoise": 1.0
+    }
+  },
+  "33": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": ["14", 0],
+      "conditioning": ["21", 0]
+    }
+  },
+  "34": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["30", 0],
+      "guider": ["33", 0],
+      "sampler": ["31", 0],
+      "sigmas": ["32", 0],
+      "latent_image": ["20", 1]
+    }
+  },
+  "35": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["34", 0],
+      "vae": ["16", 0]
+    }
+  },
+  "36": {
+    "class_type": "VAEDecodeAudio",
+    "inputs": {
+      "samples": ["34", 0],
+      "vae": ["17", 0]
+    }
+  },
+  "37": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["35", 0],
+      "audio": ["36", 0],
+      "fps": 24.0
+    }
+  },
+  "38": {
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Result"
+    },
+    "inputs": {
+      "video": ["37", 0],
+      "filename_prefix": "crossview/result",
+      "format": "mp4",
+      "format.codec": "h264"
+    }
+  },
+  "40": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["5", 0],
+      "fps": 24.0
+    }
+  },
+  "41": {
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Warp guide"
+    },
+    "inputs": {
+      "video": ["40", 0],
+      "filename_prefix": "crossview/warp",
+      "format": "mp4",
+      "format.codec": "h264"
+    }
+  },
+  "42": {
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "Result with the original audio"
+    },
+    "inputs": {
+      "images": ["35", 0],
+      "audio": ["2", 4],
+      "fps": 24.0
+    }
+  },
+  "43": {
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Result, original audio"
+    },
+    "inputs": {
+      "video": ["42", 0],
+      "filename_prefix": "crossview/original-audio",
+      "format": "mp4",
+      "format.codec": "h264"
+    }
+  }
+}

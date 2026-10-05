@@ -62,7 +62,7 @@ function getDynamicCSSRulesWithStroke(icon, strokeWidth) {
   if (generated.css.length !== 1) {
     throw new Error(`Cannot find "${icon}". Bad icon name?`)
   }
-  if (SCALE && generated.common?.rules) {
+  if (generated.common?.rules) {
     generated.common.rules.height = SCALE + 'em'
     generated.common.rules.width = SCALE + 'em'
   }

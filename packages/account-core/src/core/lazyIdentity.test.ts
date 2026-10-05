@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createTestIdentity } from '../testing.js'
 import type { AccountIdentity } from './identity.js'
 import type { LazyIdentity } from './lazyIdentity.js'
-import { createLazyIdentity } from './lazyIdentity.js'
+import {
+  createLazyIdentity,
+  createUnavailableIdentity
+} from './lazyIdentity.js'
 import { createSessionClient } from './session.js'
 import type { AccountUser } from './sessionContracts.js'
 
@@ -324,6 +327,35 @@ describe('createLazyIdentity', () => {
     }
   )
 
+  it('delivers signed-out to listeners when the loader rejects, and still rejects activate()', async () => {
+    const load = vi.fn<() => Promise<AccountIdentity>>(() =>
+      Promise.reject(new Error('chunk failed'))
+    )
+    const port = createLazyIdentity(load)
+    const listener = vi.fn()
+    port.onUserChanged(listener)
+
+    await expect(port.activate()).rejects.toThrow('chunk failed')
+
+    expect(listener).toHaveBeenCalledExactlyOnceWith(null)
+  })
+
+  it('rejects activate() with the loader error even when a listener throws on the signed-out delivery', async () => {
+    const load = vi.fn<() => Promise<AccountIdentity>>(() =>
+      Promise.reject(new Error('chunk failed'))
+    )
+    const port = createLazyIdentity(load)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    port.onUserChanged(() => {
+      throw new Error('listener failed')
+    })
+
+    await expect(port.activate()).rejects.toThrow('chunk failed')
+
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('resolves the activation even when a listener throws on the first delivery', async () => {
     const { inner, release, load } = deferredLoader()
     const port = createLazyIdentity(load)
@@ -470,6 +502,27 @@ describe('createLazyIdentity', () => {
     expect(client.getSnapshot().phase).toBe('pending')
     inner.fire(null)
     await activation
+
+    expect(client.getSnapshot().phase).toBe('signed-out')
+  })
+})
+
+describe('createUnavailableIdentity', () => {
+  it('delivers null once to every subscriber, synchronously', () => {
+    const identity = createUnavailableIdentity<AccountUser>()
+    const listener = vi.fn()
+
+    identity.onUserChanged(listener)
+
+    expect(listener).toHaveBeenCalledExactlyOnceWith(null)
+  })
+
+  it('settles a session client to signed-out without a pending wait', async () => {
+    const identity = createUnavailableIdentity<AccountUser>()
+    const client = createSessionClient(
+      { exchangeUrl: 'https://example.test/token', storage: noopStorage },
+      identity
+    )
 
     expect(client.getSnapshot().phase).toBe('signed-out')
   })

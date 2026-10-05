@@ -6,7 +6,6 @@ import type {
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -17,6 +16,7 @@ import {
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
@@ -142,9 +142,7 @@ class TemplatePlacementHarness {
       }
     })
 
-    await this.page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
+    await new AgentPanel(this.page).open()
     const panel = this.page.locator('#agent-panel-root')
     await expect(panel).toBeVisible({ timeout: 30_000 })
     await this.selectWorkflowTarget()

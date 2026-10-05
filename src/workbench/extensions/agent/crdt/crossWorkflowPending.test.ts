@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { GraphMutations } from './graphMutations'
 import { render } from '@testing-library/vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -55,12 +54,19 @@ const clientState = vi.hoisted(() => ({
   })
 }))
 
-const adapterState = vi.hoisted(() => ({
+const projectionState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
+  applyFrame: vi.fn(() => ({
+    applied: false as const,
+    nodes: { added: [], removed: [] }
+  })),
+  applyCollected: vi.fn(() => []),
+  revertRejected: vi.fn(() => []),
+  replaceOnNextFrame: vi.fn(),
+  discardPending: vi.fn(() => ({ added: [], removed: [] })),
+  noteLocalWrites: vi.fn(),
+  settleLocalWrites: vi.fn(),
   destroy: vi.fn()
 }))
 
@@ -85,14 +91,18 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
-  EcsFollowerAdapter: class {
-    bind = adapterState.bind
-    unbind = adapterState.unbind
-    applyFrame = adapterState.applyFrame
-    clearForReset = adapterState.clearForReset
-    discardPending = adapterState.discardPending
-    destroy = adapterState.destroy
+vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
+  AgentCrdtProjection: class {
+    bind = projectionState.bind
+    unbind = projectionState.unbind
+    applyFrame = projectionState.applyFrame
+    applyCollected = projectionState.applyCollected
+    revertRejected = projectionState.revertRejected
+    replaceOnNextFrame = projectionState.replaceOnNextFrame
+    discardPending = projectionState.discardPending
+    noteLocalWrites = projectionState.noteLocalWrites
+    settleLocalWrites = projectionState.settleLocalWrites
+    destroy = projectionState.destroy
   }
 }))
 
@@ -108,8 +118,6 @@ import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
-const graphMutations = {} as GraphMutations
-
 function deleteNode(nodeId: string): GraphOperation {
   return {
     op: 'delete_node',
@@ -123,7 +131,9 @@ function mountFollower(initial: string): {
   workflowId: Ref<string | null>
   enqueue: (operations: GraphOperation[]) => Promise<void>
   status: () => AgentCrdtStatus
+  reconnect: () => void
 } {
+  const agentSocket = createFakeAgentSocket()
   const workflowId = ref<string | null>(initial)
   let enqueue!: (operations: GraphOperation[]) => Promise<void>
   let exposedStatus!: () => AgentCrdtStatus
@@ -131,12 +141,12 @@ function mountFollower(initial: string): {
     setup() {
       const { enqueueHumanOperations, status } = useAgentCrdtFollower(
         workflowId,
-        graphMutations,
         undefined,
         undefined,
         undefined,
         undefined,
-        createFakeAgentSocket().transport
+        undefined,
+        agentSocket.transport
       )
       enqueue = async (operations) => {
         enqueueHumanOperations(operations)
@@ -148,7 +158,13 @@ function mountFollower(initial: string): {
   })
   const { unmount } = render(host)
   onTestFinished(unmount)
-  return { unmount, workflowId, enqueue, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    enqueue,
+    status: exposedStatus,
+    reconnect: () => agentSocket.open()
+  }
 }
 
 async function switchWorkflow(workflowId: Ref<string | null>, next: string) {
@@ -166,19 +182,19 @@ function dispatchOpsResult(detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent('doc_ops_result', { detail }))
 }
 
-describe('R-73 cross-workflow pending operation characterization', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
+beforeEach(() => {
+  useAgentPanelStore().enabled = true
+  bridgeState.current = null
+  bridgeState.transport.up = true
+  clientState.transportUp = true
+  clientState.attempts = []
+  clientState.sent = []
+  clientState.sendOps.mockClear()
+  devLogState.recordDevEvent.mockClear()
+  vi.useFakeTimers()
+})
 
+describe('R-73 cross-workflow pending operations', () => {
   it('cancels pending sends and rejects new operations while the product gate is off', async () => {
     const store = useAgentPanelStore()
     const { enqueue, status } = mountFollower('wf-a')
@@ -354,18 +370,6 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 // racing a doc unbind/resubscribe, this is the mechanism that leaves an
 // orphaned node in the CRDT doc while the client believes the add failed.
 describe('abortIfUnbound settles delivered ops as undeliverable', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
-  })
-
   it('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
     const { workflowId, enqueue } = mountFollower('wf-a')
 
@@ -397,5 +401,95 @@ describe('abortIfUnbound settles delivered ops as undeliverable', () => {
     // the server confirms applying, must never have been reported
     // 'undeliverable'. It was today.
     expect(settlement?.[1].state).not.toBe('undeliverable')
+  })
+})
+
+/**
+ * The FakeBridge's `resubscribe` is a bare vi.fn, so a test that wants the
+ * post-reconnect subscribe ack must play the host's part itself: mark the
+ * workflow subscribed again and forward the `doc_subscribed` ok frame the
+ * bridge would have re-emitted.
+ */
+function ackResubscribe(workflowId: string): void {
+  bridge().subscribedWorkflowId = workflowId
+  bridge().dispatchEvent(
+    new CustomEvent('doc_subscribed', {
+      detail: { workflowId, ok: true, seq: 0 }
+    })
+  )
+}
+
+/**
+ * These pins exercise retry identity and acknowledgment within the active
+ * retry budget. Post-exhaustion retention and replay belong to the separately
+ * reviewed replay-policy change, not this current-behavior pin carrier.
+ */
+describe('a human edit made while the document connection is down', () => {
+  it('does not flush a pending batch on reconnect before the resubscribe ack', async () => {
+    const { enqueue, reconnect } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+    expect(devLogState.recordDevEvent).not.toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({ state: 'undeliverable' })
+    )
+    expect(clientState.sent).toHaveLength(0)
+
+    clientState.transportUp = true
+    reconnect()
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    expect(clientState.sent).toHaveLength(0)
+  })
+
+  it('keeps the original op_id when a transport retry succeeds', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+    const operationId = clientState.attempts[0].ops[0].op_id
+
+    clientState.transportUp = true
+    vi.advanceTimersToNextTimer()
+
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops[0]).toMatchObject({
+      op_id: operationId,
+      op: 'delete_node',
+      node_id: 'edited-during-outage'
+    })
+  })
+
+  it('does not resend an acknowledged retry on a later reconnect', async () => {
+    const { enqueue, reconnect } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+
+    clientState.transportUp = true
+    vi.advanceTimersToNextTimer()
+    expect(clientState.sent).toHaveLength(1)
+    const replayedOperationId = clientState.sent[0].ops[0].op_id
+
+    dispatchOpsResult({
+      workflowId: 'wf-a',
+      ok: true,
+      applied: [replayedOperationId],
+      skipped: []
+    })
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_settled',
+      expect.objectContaining({
+        state: 'acknowledged',
+        ops: [expect.objectContaining({ op_id: replayedOperationId })]
+      })
+    )
+    reconnect()
+    ackResubscribe('wf-a')
+
+    expect(clientState.sent).toHaveLength(1)
   })
 })

@@ -5,9 +5,11 @@
  * here, so the core's option shapes are one file's concern.
  *
  * The workspace a request runs against is the workspace its JWT was minted
- * for, so the transport pins mints to the workspace the session already
- * holds; a target-less mint would resolve the personal workspace and read as
- * the account silently switching itself.
+ * for. The entry binding (`@/entry/workspaceBinding`) is read live, on every
+ * call, so a later entry link that rebinds the tab reaches the very next
+ * request; once no entry has named one, the transport pins mints to the
+ * workspace the session already holds — a target-less mint would resolve the
+ * personal workspace and read as the account silently switching itself.
  *
  * `embeddedCheckoutAvailable` follows the Stripe key: with one configured the
  * checkout form collects a card and drives a challenge in-page. Without one
@@ -17,10 +19,15 @@
  */
 import type {
   BillingOperationPointerStorage,
-  BillingSession
+  BillingScopeSource,
+  BillingSession,
+  BillingTransport,
+  CredentialedWebSession,
+  WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
   createBillingCommands,
+  createCredentialedBillingTransport,
   createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
@@ -30,11 +37,16 @@ import {
   createPlansReader,
   createSessionBillingTransport,
   createTopupCommand,
-  sessionBillingScopeSource
+  createWorkspaceInviteCommands,
+  sessionBillingScopeSource,
+  toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 
-import { CLOUD_BASE_URL, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
+import { CLOUD_BASE_URL } from '@/config/env'
+import { billingWebStripeKey } from '@/config/stripeKey'
+import { boundWorkspaceId } from '@/entry/workspaceBinding'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 /** Tab-local, like the credential cache: a pointer must not outlive the tab. */
 const pointerStorage: BillingOperationPointerStorage = {
@@ -50,13 +62,55 @@ function pinnedWorkspaceId(session: BillingSession): string | undefined {
     : undefined
 }
 
-export function createBillingWebClient(session: BillingSession): BillingClient {
+function targetWorkspaceId(session: BillingSession): string | undefined {
+  return boundWorkspaceId() ?? pinnedWorkspaceId(session)
+}
+
+const resolveUrl = (route: string) => `${CLOUD_BASE_URL}/api${route}`
+
+/**
+ * The billing client plus the workspace's invite commands, over one
+ * transport, so the checkout's team invite goes to the workspace the tab is
+ * billing.
+ */
+export type BillingWebClient = BillingClient & {
+  readonly invites: WorkspaceInviteCommands
+}
+
+export function createBillingWebClient(
+  session: BillingSession
+): BillingWebClient {
   const transport = createSessionBillingTransport({
     session,
-    resolveUrl: (route) => `${CLOUD_BASE_URL}/api${route}`,
-    workspaceId: () => pinnedWorkspaceId(session)
+    resolveUrl,
+    workspaceId: () => targetWorkspaceId(session)
   })
-  const scopeSource = sessionBillingScopeSource(session)
+  return composeBillingWebClient(transport, sessionBillingScopeSource(session))
+}
+
+/**
+ * On the shared web session: the cookie authorizes each request, and the
+ * resolved workspace, which the entry link named, is its workspace header.
+ */
+export function createWebSessionBillingClient(unified: {
+  readonly scopeSource: BillingScopeSource
+  readonly webSession: CredentialedWebSession
+  readonly fetchImpl: typeof fetch
+}): BillingWebClient {
+  const { scopeSource, webSession, fetchImpl } = unified
+  const transport = createCredentialedBillingTransport({
+    resolveUrl,
+    scopeSource,
+    webSession,
+    fetchImpl
+  })
+  return composeBillingWebClient(transport, unified.scopeSource)
+}
+
+function composeBillingWebClient(
+  transport: BillingTransport,
+  scopeSource: BillingScopeSource
+): BillingWebClient {
   const readerOptions = { transport, scopeSource }
   const capabilities = createCapabilitiesReader(readerOptions)
   const credits = createCreditsReader(readerOptions)
@@ -69,7 +123,10 @@ export function createBillingWebClient(session: BillingSession): BillingClient {
     scopeSource,
     statusReader: status,
     pointerStorage,
-    embeddedCheckoutAvailable: () => STRIPE_PUBLISHABLE_KEY !== undefined
+    retainSettledPointer: true,
+    embeddedCheckoutAvailable: () => billingWebStripeKey() !== undefined,
+    onTelemetry: (event) =>
+      billingWebTelemetry.trackBillingEvent(toBillingTelemetryEvent(event))
   })
 
   return {
@@ -81,6 +138,7 @@ export function createBillingWebClient(session: BillingSession): BillingClient {
     paymentMethods,
     events,
     topup: createTopupCommand({ transport, lifecycle, capabilities, credits }),
+    invites: createWorkspaceInviteCommands({ transport }),
     commands: createBillingCommands({
       transport,
       lifecycle,

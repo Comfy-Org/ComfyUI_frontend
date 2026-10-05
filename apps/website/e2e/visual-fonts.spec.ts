@@ -1,12 +1,14 @@
-import { fileURLToPath } from 'node:url'
-
+import { join } from 'node:path'
 import { expect } from '@playwright/test'
+
+import { websiteRoot } from '@website/paths'
 
 import { test } from './fixtures/blockExternalMedia'
 import { waitForPpFormulaLight } from './fixtures/visualFonts'
 
-const ppFormulaLightPath = fileURLToPath(
-  new URL('../public/fonts/PPFormula-Light.woff2', import.meta.url)
+const ppFormulaLightPath = join(
+  websiteRoot,
+  'public/fonts/PPFormula-Light.woff2'
 )
 
 test('waits for the page font without overriding other text', async ({

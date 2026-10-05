@@ -67,6 +67,18 @@ describe('Workshop client boundary', () => {
     ).resolves.toBeDefined()
   })
 
+  it('rejects a prepared workflow graph imported as raw JSONL', async () => {
+    await writeFile(
+      join(root, 'src/content/workshop-workflows.jsonl'),
+      '{"cloud":{"workflow":{"1":{"class_type":"LoadImage"}}}}\n'
+    )
+    await expect(
+      compile(
+        'import data from "./src/content/workshop-workflows.jsonl?raw"; console.log(data)'
+      )
+    ).rejects.toThrow('contains server catalogue data')
+  })
+
   it.for([
     'data/workshop-router-display-names.json',
     'data/workshop-thumbnail-labels.json',

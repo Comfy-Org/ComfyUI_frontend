@@ -1,38 +1,63 @@
 <script setup lang="ts">
 import { ImageOff } from '@lucide/vue'
-import { useMounted, useObjectUrl } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { SourcePreviewProps } from '@/composables/useSourceUrl'
+import { useSourceUrl } from '@/composables/useSourceUrl'
+import { translationsFor } from '@/i18n/translations'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogTrigger from '@/components/ui/dialog/DialogTrigger.vue'
+import SourceLightbox from './SourceLightbox.vue'
 
-const {
-  file,
-  src,
-  name,
-  locale = 'en'
-} = defineProps<{
-  file?: File
-  src?: string
-  name: string
-  locale?: Locale
-}>()
-const mounted = useMounted()
-const objectUrl = useObjectUrl(() => (mounted.value ? file : undefined))
-const source = computed(() => objectUrl.value ?? src)
+const { file, src, name, locale = 'en' } = defineProps<SourcePreviewProps>()
+const { t } = translationsFor(locale)
+
+const source = useSourceUrl(
+  () => file,
+  () => src
+)
 const failedSource = ref<string>()
+const expanded = ref(false)
+const expandLabel = computed(() => `${t('workshop.output.expand')} ${name}`)
 </script>
 
 <template>
-  <img
-    v-if="source && failedSource !== source"
-    :key="source"
-    :src="source"
-    :alt="name"
-    referrerpolicy="no-referrer"
-    class="size-12 shrink-0 rounded-lg bg-transparency-white-t8 object-cover"
-    @error="failedSource = source"
-  />
+  <!-- A thumbnail is too small to judge a source picture by, so it opens to
+    the size the screen allows. -->
+  <Dialog v-if="source && failedSource !== source" v-model:open="expanded">
+    <DialogTrigger as-child>
+      <button
+        type="button"
+        :aria-label="expandLabel"
+        class="size-12 shrink-0 cursor-zoom-in overflow-hidden rounded-lg bg-transparency-white-t8 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+      >
+        <img
+          :key="source"
+          :src="source"
+          :alt="name"
+          referrerpolicy="no-referrer"
+          class="size-full object-cover"
+          @error="failedSource = source"
+        />
+      </button>
+    </DialogTrigger>
+
+    <SourceLightbox
+      :close-label="t('workshop.output.collapse')"
+      data-testid="image-source-dialog"
+      @dismiss="expanded = false"
+    >
+      <DialogTitle class="sr-only">{{ name }}</DialogTitle>
+      <img
+        :key="source"
+        :src="source"
+        :alt="name"
+        referrerpolicy="no-referrer"
+        class="max-h-full max-w-full rounded-2xl bg-black object-contain"
+      />
+    </SourceLightbox>
+  </Dialog>
   <span
     v-else-if="source"
     role="status"
@@ -40,7 +65,7 @@ const failedSource = ref<string>()
   >
     <ImageOff class="size-5 text-primary-warm-gray" aria-hidden="true" />
     <span class="sr-only">{{
-      t('workshop.field.imagePreviewUnavailable', locale)
+      t('workshop.field.imagePreviewUnavailable')
     }}</span>
   </span>
 </template>

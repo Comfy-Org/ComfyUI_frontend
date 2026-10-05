@@ -7,6 +7,20 @@ const alternates = (page: Page) =>
   page.locator('link[rel="alternate"][hreflang]')
 
 test.describe('hreflang alternates', () => {
+  test('Japanese homepage renders both Open Graph locale alternates', async ({
+    page
+  }) => {
+    await page.goto('/ja/')
+    const ogAlternates = page.locator('meta[property="og:locale:alternate"]')
+    await expect(ogAlternates).toHaveCount(2)
+    await expect(
+      page.locator('meta[property="og:locale:alternate"][content="en_US"]')
+    ).toHaveCount(1)
+    await expect(
+      page.locator('meta[property="og:locale:alternate"][content="zh_CN"]')
+    ).toHaveCount(1)
+  })
+
   test('a localized page declares en, zh-CN, and x-default', async ({
     page
   }) => {

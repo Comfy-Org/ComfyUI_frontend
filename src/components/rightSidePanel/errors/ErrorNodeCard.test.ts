@@ -18,7 +18,6 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
-const mockSerialize = vi.fn(() => ({ nodes: [] }))
 const mockGenerateErrorReport = vi.fn(
   (_data?: unknown) => '# ComfyUI Error Report\n...'
 )
@@ -29,13 +28,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      serialize: () => mockSerialize()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)

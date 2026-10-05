@@ -27,6 +27,7 @@ describe('reportAssertFailure', () => {
         message: '[Assertion failed]: graph must exist'
       }),
       {
+        surface: 'platform',
         errorType: 'invariant_assert',
         context: { graphId: 'root', occurrenceCount: 1 },
         logToConsole: false

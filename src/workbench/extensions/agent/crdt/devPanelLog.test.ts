@@ -334,7 +334,10 @@ describe('devPanelLog', () => {
       expect.objectContaining({
         message: 'Failed to sanitize CRDT dev event detail'
       }),
-      { errorType: 'crdt_dev_event_sanitization_failed' }
+      {
+        surface: 'agent',
+        errorType: 'crdt_dev_event_sanitization_failed'
+      }
     )
   })
 

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { externalLinks } from '../../../config/routes'
-import { t } from '../../../i18n/translations'
-import BrandButton from '../../common/BrandButton.vue'
+import { externalLinks } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
 import DownloadLocalButton from './DownloadLocalButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -18,10 +19,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <div class="flex flex-1 flex-col justify-between p-6">
         <div>
           <h2 class="text-3xl font-light text-primary-comfy-canvas lg:text-4xl">
-            {{ t('download.ecosystem.heading', locale) }}
+            {{ t('download.ecosystem.heading') }}
           </h2>
           <p class="mt-6 text-sm text-primary-comfy-canvas/70">
-            {{ t('download.ecosystem.description', locale) }}
+            {{ t('download.ecosystem.description') }}
           </p>
         </div>
 
@@ -35,10 +36,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           >
             <span class="inline-flex items-center gap-2">
               <i
-                class="size-5 -translate-y-px icon-mask mask-[url('/icons/social/github.svg')]"
+                class="size-5 icon-mask mask-[url('/icons/social/github.svg')]"
                 aria-hidden="true"
               />
-              {{ t('download.hero.installGithub', locale) }}
+              {{ t('download.hero.installGithub') }}
             </span>
           </BrandButton>
         </div>

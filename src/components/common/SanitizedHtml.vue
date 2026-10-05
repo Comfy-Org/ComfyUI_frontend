@@ -30,7 +30,9 @@ const sanitizedHtml = computed(() =>
       'poster',
       'target',
       'rel'
-    ]
+    ],
+    FORBID_TAGS: ['form', 'input', 'button'],
+    FORBID_ATTR: ['style']
   })
 )
 </script>

@@ -3,7 +3,7 @@ import { useElementVisibility } from '@vueuse/core'
 import type { AnimationItem } from 'lottie-web'
 import { onScopeDispose, useTemplateRef, watch } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 
 const { src, active = true } = defineProps<{
   /** Path to the Lottie JSON; its `images/` siblings resolve alongside it. */

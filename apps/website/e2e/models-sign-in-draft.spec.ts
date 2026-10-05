@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
 
-const path = '/models/byteplus--seedream-4-5--edit-images/'
+const path = '/hub/models/seedream-4-5-image-edit/'
 
 for (const { entry, randomUUID, failRead } of [
   { entry: 'playground', randomUUID: true, failRead: false },

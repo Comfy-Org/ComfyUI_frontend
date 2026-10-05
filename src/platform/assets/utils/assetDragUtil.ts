@@ -63,9 +63,9 @@ export function startAssetDrag(
     media_kind: mediaKind,
     preview_url: mediaKind === 'image' ? previewUrl?.toString() : undefined
   }
-  dataTransfer.items.add(JSON.stringify(assetInfo), MIME_ASSET_INFO)
+  dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))
 
   if (!fileUrl) return
 
-  dataTransfer.items.add(fileUrl.toString(), 'text/uri-list')
+  dataTransfer.setData('text/uri-list', fileUrl.toString())
 }

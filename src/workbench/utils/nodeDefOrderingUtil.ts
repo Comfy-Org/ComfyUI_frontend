@@ -11,7 +11,7 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
  * @returns Array of InputSpec objects in the correct order
  */
 export function getOrderedInputSpecs(
-  nodeDefImpl: ComfyNodeDefImpl,
+  nodeDefImpl: Pick<ComfyNodeDefImpl, 'input_order'>,
   inputs: Partial<Record<string, InputSpec>>
 ): InputSpec[] {
   const orderedInputSpecs: InputSpec[] = []

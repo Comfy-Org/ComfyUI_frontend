@@ -1,7 +1,14 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
+function shouldUseLegacyContextMenu(
+  canvas: LGraphCanvas,
+  node: LGraphNode | undefined
+) {
+  return Boolean(node) || !LiteGraph.vueNodesMode || !canvas.graph
+}
 
 /**
  * Routes Nodes 2.0 group right-clicks to Vue while nodes, reroutes,
@@ -16,7 +23,7 @@ export function useGroupContextMenu() {
   ): void {
     const [node, event] = args
 
-    if (node || !LiteGraph.vueNodesMode || !this.graph) {
+    if (shouldUseLegacyContextMenu(this, node)) {
       original.apply(this, args)
       return
     }
@@ -34,14 +41,12 @@ export function useGroupContextMenu() {
     const groupIsOnlySelection =
       this.selectedItems.size === 1 && this.selectedItems.has(group)
 
-    if (!groupIsOnlySelection) {
+    if (!groupIsOnlySelection && !this.selectOnly) {
       this.deselectAll()
-      group.selected = true
-      group.recomputeInsideNodes()
-      this.selectedItems.add(group)
-      this.state.selectionChanged = true
+      this.select(group, { selectGroupChildren: false })
+      this.onSelectionChange?.(this.selected_nodes)
+      this.setDirty(true)
     }
-    useCanvasStore().updateSelectedItems()
     showNodeOptions(event)
   }
 

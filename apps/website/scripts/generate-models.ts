@@ -1,13 +1,12 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
+import { repoRoot, websiteRoot } from '@website/paths'
 
 const WORKFLOW_TEMPLATES_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates'
 
-const TEMPLATES_DIR = fileURLToPath(
-  new URL('../../../../workflow_templates/templates', import.meta.url)
-)
+const TEMPLATES_DIR = join(dirname(repoRoot), 'workflow_templates/templates')
 
 const QUANT_SUFFIXES = [
   '_fp8_e4m3fn_scaled',
@@ -489,10 +488,7 @@ function run(): void {
     `  ${withThumbs}/${combined.length} models have thumbnails\n`
   )
 
-  const defaultOut = join(
-    fileURLToPath(new URL('.', import.meta.url)),
-    '../src/config/generated-models.json'
-  )
+  const defaultOut = join(websiteRoot, 'src/config/generated-models.json')
   const outputArg = process.argv[2] ?? defaultOut
   const json = JSON.stringify(combined, null, 2) + '\n'
 

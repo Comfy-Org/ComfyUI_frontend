@@ -20,5 +20,14 @@ test('opens the provider portal for invoices, returning to this page', async ({
   const portal = cloud.requests.find(
     (request) => request.path === '/billing/payment-portal'
   )
-  expect(portal?.body).toStrictEqual({ return_url: `${E2E_ORIGIN}${invoices}` })
+  const portalReturn = entryPath('invoices', { portal: 'return' })
+  expect(portal?.body).toStrictEqual({
+    return_url: `${E2E_ORIGIN}${portalReturn}`
+  })
+
+  await page.goto(portalReturn)
+  await page.waitForURL(`${E2E_ORIGIN}${invoices}`)
+  await expect(
+    page.getByRole('button', { name: 'Open invoices' })
+  ).toBeVisible()
 })

@@ -2,12 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 
-// Mock axios
-vi.mock<unknown>(import('axios'), () => ({
-  default: {
-    get: vi.fn()
-  }
-}))
+vi.mock(import('axios'))
 
 describe('templateRankingStore', () => {
   describe('computeFreshness', () => {

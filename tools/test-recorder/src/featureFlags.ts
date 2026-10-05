@@ -30,7 +30,7 @@ export function buildFfQuery(flags: Record<string, unknown>): string {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(flags)) {
     const encodedValue =
-      value === true ? key : `${key}:${JSON.stringify(value) ?? String(value)}`
+      value === true ? key : `${key}:${JSON.stringify(value)}`
     params.append('ff', encodedValue)
   }
   const query = params.toString()
@@ -68,7 +68,8 @@ function formatString(value: string): string {
 
 function formatValue(value: unknown): string {
   if (typeof value === 'string') return formatString(value)
-  return JSON.stringify(value) ?? 'undefined'
+  if (value === undefined) return 'undefined'
+  return JSON.stringify(value)
 }
 
 export function formatInitialFeatureFlags(

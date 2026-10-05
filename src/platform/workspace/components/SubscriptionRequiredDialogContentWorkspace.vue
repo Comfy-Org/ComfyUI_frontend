@@ -136,11 +136,13 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 const {
   onClose,
   reason,
+  paymentIntentSource,
   isPersonal = false,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   isPersonal?: boolean
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
@@ -175,7 +177,7 @@ const {
   invalidateQuote,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit, reason, {
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
   tierPlanType: isPersonal ? 'personal' : 'team'
 })
 

@@ -5,9 +5,11 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import AgentConsentCard from '@/workbench/extensions/agent/components/agent/AgentConsentCard.vue'
 
 const MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
-const VIDEO_SRC = `${MEDIA_BASE}/agent-consent-1280.webm`
-const VIDEO_SRC_MP4 = `${MEDIA_BASE}/agent-consent-1280.mp4`
-const POSTER_SRC = `${MEDIA_BASE}/agent-consent-poster.jpg`
+const VIDEO_SOURCES = [
+  { src: `${MEDIA_BASE}/agent-consent-v2-1280.webm`, type: 'video/webm' },
+  { src: `${MEDIA_BASE}/agent-consent-v2-1280.mp4`, type: 'video/mp4' }
+]
+const POSTER_SRC = `${MEDIA_BASE}/agent-consent-v2-poster.jpg`
 
 const paragraphs = [
   enMessages.agent.consent.body1,
@@ -23,8 +25,7 @@ const meta: Meta<typeof AgentConsentCard> = {
   args: {
     title: enMessages.agent.consent.title,
     paragraphs,
-    videoSrc: VIDEO_SRC,
-    videoSrcMp4: VIDEO_SRC_MP4,
+    videoSources: VIDEO_SOURCES,
     posterSrc: POSTER_SRC,
     docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent'
   },
@@ -53,7 +54,7 @@ export const InLightApp: Story = {
 }
 
 export const WithoutVideo: Story = {
-  args: { videoSrc: '' }
+  args: { videoSources: [] }
 }
 
 export const SingleParagraph: Story = {

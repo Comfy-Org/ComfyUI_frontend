@@ -203,6 +203,7 @@ async function attempt<T>(label: string, load: () => Promise<T>) {
     return { label, ok: true as const, value }
   } catch (error) {
     reportError(error, {
+      surface: 'agent',
       errorType: 'agent_crdt_debug_report_source_failed',
       tags: { source: label },
       level: 'warning'
@@ -496,8 +497,8 @@ function fitToolCalls(calls: readonly RetainedToolCall[], context: string) {
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
   const calls: RetainedToolCall[] = []
   let total = 0
-  for (const message of messages.toReversed()) {
-    for (const part of message.parts.toReversed()) {
+  for (const message of [...messages].reverse()) {
+    for (const part of [...message.parts].reverse()) {
       if (part.type !== 'tool') continue
       total++
       if (calls.length === MAX_TOOL_CALLS) continue
@@ -511,7 +512,7 @@ function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
       })
     }
   }
-  return { calls: calls.toReversed(), total }
+  return { calls: calls.reverse(), total }
 }
 
 function agentToolSection(messages: readonly AssistantMessage[] | undefined) {

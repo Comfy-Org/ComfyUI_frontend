@@ -1,3 +1,5 @@
+import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
+
 import type { Point, ReadOnlyRect, Rect } from './interfaces'
 import { EaseFunction, Rectangle } from './litegraph'
 
@@ -44,6 +46,7 @@ export class DragAndScale {
   visible_area: Rectangle
   dragging?: boolean
   viewport?: Rect
+  private viewportSize?: [number, number]
 
   onredraw?(das: DragAndScale): void
   onChanged?(scale: number, offset: Point): void
@@ -102,7 +105,7 @@ export class DragAndScale {
       copyState(this.state, this.lastState)
     }
 
-    let { width, height } = this.element
+    let [width, height] = this.getViewportSize()
     let startx = -offset[0]
     let starty = -offset[1]
     if (viewport) {
@@ -116,6 +119,22 @@ export class DragAndScale {
     visible_area[0] = startx
     visible_area[1] = starty
     visible_area.resizeBottomRight(endx, endy)
+  }
+
+  setViewportSize(width: number, height: number): void {
+    this.viewportSize = [width, height]
+  }
+
+  getViewportSize(): [number, number] {
+    if (this.viewportSize) return this.viewportSize
+
+    const rect = this.element.getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0) {
+      return [rect.width, rect.height]
+    }
+
+    const dpr = readBrowserDpr()
+    return [this.element.width / dpr, this.element.height / dpr]
   }
 
   toCanvasContext(ctx: CanvasRenderingContext2D): void {
@@ -186,33 +205,29 @@ export class DragAndScale {
    */
   fitToBounds(
     bounds: ReadOnlyRect,
-    { zoom = 0.75 }: { zoom?: number } = {}
+    { zoom = 0.75, viewport }: { zoom?: number; viewport?: ReadOnlyRect } = {}
   ): void {
     //If element hasn't initialized (browser tab is in background)
     //it has a size of 300x150 and a more reasonable default is used instead.
     const [width, height] =
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]
-        : [this.element.width, this.element.height]
-    const cw = width / window.devicePixelRatio
-    const ch = height / window.devicePixelRatio
+        : this.getViewportSize()
+    const [vx, vy, vw, vh] = viewport ?? [0, 0, width, height]
+    if (!(vw > 0) || !(vh > 0)) return
     let targetScale = this.scale
 
     if (zoom > 0) {
-      const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
-      const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
+      const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
+      const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
 
       // Choose the smaller scale to ensure the node fits into the viewport
       // Ensure we don't go over the max scale
       targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
     }
 
-    const scaledWidth = cw / targetScale
-    const scaledHeight = ch / targetScale
-
-    // Calculate the target position to center the bounds in the viewport
-    const targetX = -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5
-    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
+    const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
+    const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
 
     // Apply the changes immediately
     this.offset[0] = targetX
@@ -245,10 +260,9 @@ export class DragAndScale {
     const easeFunction = easeFunctions[easing]
 
     const startTimestamp = performance.now()
-    const cw = this.element.width / window.devicePixelRatio
-    const ch = this.element.height / window.devicePixelRatio
+    const [cw, ch] = this.getViewportSize()
     const [vx, vy, vw, vh] = viewport ?? [0, 0, cw, ch]
-    if (vw <= 0 || vh <= 0) return
+    if (!(vw > 0) || !(vh > 0)) return
     const startX = this.offset[0]
     const startY = this.offset[1]
     const startX2 = startX - cw / this.scale

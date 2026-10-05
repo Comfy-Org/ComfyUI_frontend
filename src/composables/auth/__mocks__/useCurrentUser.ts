@@ -12,9 +12,11 @@ function createWatchHandle(): ReturnType<
 
 const defaults: ReturnType<typeof realUseCurrentUser> = {
   loading: false,
+  isAuthInitialized: computed(() => true),
   isLoggedIn: computed(() => false),
   isApiKeyLogin: computed(() => false),
   isEmailProvider: computed(() => false),
+  needsFirebaseSignIn: computed(() => false),
   userDisplayName: computed(() => undefined),
   userEmail: computed(() => undefined),
   userPhotoUrl: computed(() => undefined),

@@ -71,6 +71,7 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import {
   remoteConfigErrorStatus,
@@ -106,6 +107,15 @@ function cancelInitialization(): void {
   backgroundInitializationUserId = undefined
 }
 
+/** A tab signed in on the web session carries its workspace on the session. */
+async function requiresUnifiedToken(): Promise<boolean> {
+  return (
+    useFeatureFlags().flags.unifiedCloudAuthEnabled &&
+    useAuthStore().currentUser !== null &&
+    !(await signedInOnWebSession())
+  )
+}
+
 async function initialize(): Promise<void> {
   if (!isCloud) {
     void initializeWorkspacesInBackground()
@@ -118,7 +128,7 @@ async function initialize(): Promise<void> {
   initializationController = controller
 
   const authStore = useAuthStore()
-  const { isInitialized, currentUser } = storeToRefs(authStore)
+  const { isInitialized, isAuthenticated } = storeToRefs(authStore)
 
   try {
     // Step 1: Wait for Firebase auth to resolve
@@ -134,7 +144,7 @@ async function initialize(): Promise<void> {
 
     // Step 2: If not authenticated, nothing more to do
     // Unauthenticated users don't have workspace context
-    if (!currentUser.value) {
+    if (!isAuthenticated.value) {
       initializationState.value = 'ready'
       return
     }
@@ -156,9 +166,10 @@ async function initialize(): Promise<void> {
       throw new Error('Failed to load authenticated remote config')
     }
 
-    const { flags } = useFeatureFlags()
     const workspaceAuthStore = useWorkspaceAuthStore()
-    if (flags.unifiedCloudAuthEnabled) {
+    const needsUnifiedToken = await requiresUnifiedToken()
+    if (generation !== initializationGeneration) return
+    if (needsUnifiedToken) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return
       if (!authenticated) {
@@ -169,10 +180,7 @@ async function initialize(): Promise<void> {
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     void billingCapabilities.initialize(controller.signal)
-    if (
-      flags.unifiedCloudAuthEnabled &&
-      !workspaceAuthStore.getUnifiedToken()
-    ) {
+    if (needsUnifiedToken && !workspaceAuthStore.getUnifiedToken()) {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
@@ -182,6 +190,7 @@ async function initialize(): Promise<void> {
   } catch (error) {
     if (generation !== initializationGeneration) return
     reportError(error, {
+      surface: 'auth',
       errorType: 'workspace_auth_gate_initialization_failure'
     })
     initializationRetryable.value = isRetryableInitializationError(error)

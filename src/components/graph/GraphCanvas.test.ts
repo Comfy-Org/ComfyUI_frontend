@@ -125,12 +125,7 @@ vi.mock<unknown>(import('@/services/colorPaletteService'), () => ({
   useColorPaletteService: () => ({ loadColorPalette: vi.fn() })
 }))
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useCanvasInteractions'),
-  () => ({
-    useCanvasInteractions: () => ({ forwardEventToCanvas: vi.fn() })
-  })
-)
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 
 vi.mock(import('@/composables/useCanvasDrop'), () => ({
   useCanvasDrop: vi.fn()

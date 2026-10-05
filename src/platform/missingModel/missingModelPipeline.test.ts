@@ -1,5 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { ComfyApp } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -255,7 +254,10 @@ describe('missingModelPipeline', () => {
         )
         expect(reportError).toHaveBeenCalledWith(
           new Error('asset service unavailable'),
-          { errorType: 'missing_model_verification_failed' }
+          {
+            surface: 'assets',
+            errorType: 'missing_model_verification_failed'
+          }
         )
       } else {
         expect(useToastStore().add).not.toHaveBeenCalled()
@@ -1106,8 +1108,5 @@ describe('missingModelPipeline', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
 vi.mock(import('firebase/auth'))

@@ -1,4 +1,6 @@
 import { computed } from 'vue'
+
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -50,6 +52,8 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   acceptInvite: vi.fn(),
   accessBillingPortal: vi.fn()
 }))
+
+vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
 
 const mockWorkspaceApiError = vi.hoisted(
   () =>
@@ -1279,12 +1283,14 @@ describe('useTeamWorkspaceStore', () => {
       await store.fetchMembers()
 
       expect(store.members).toHaveLength(2)
+      expect(store.activeWorkspace?.totalMembers).toBe(2)
 
       await store.removeMember('user-1')
 
       expect(mockWorkspaceApi.removeMember).toHaveBeenCalledWith('user-1')
       expect(store.members).toHaveLength(1)
       expect(store.members[0].id).toBe('user-2')
+      expect(store.activeWorkspace?.totalMembers).toBe(1)
     })
 
     it('changeMemberRole flips the role locally without trusting the response body', async () => {
@@ -2138,6 +2144,32 @@ describe('useTeamWorkspaceStore', () => {
       expect(result.workspaceId).toBe('ws-joined')
       expect(result.workspaceName).toBe('Joined Workspace')
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
+    })
+
+    it('acceptInvite still resolves when the workspace refresh fails', async () => {
+      mockWorkspaceApi.acceptInvite.mockResolvedValue({
+        workspace_id: 'ws-joined',
+        workspace_name: 'Joined Workspace'
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      vi.mocked(reportError).mockImplementation(() => undefined)
+      mockWorkspaceApi.list.mockClear()
+      mockWorkspaceApi.list.mockRejectedValueOnce(
+        new mockWorkspaceApiError('Service unavailable', 503)
+      )
+
+      const result = await store.acceptInvite('invite-token')
+
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 503 }),
+        expect.objectContaining({
+          errorType: 'error_refreshing_workspaces_after_invite_accept'
+        })
+      )
+      expect(result.workspaceId).toBe('ws-joined')
     })
   })
 

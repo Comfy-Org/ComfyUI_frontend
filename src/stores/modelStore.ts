@@ -6,7 +6,6 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
@@ -365,8 +364,22 @@ export const useModelStore = defineStore('models', () => {
   async function loadModelFolders(): Promise<boolean> {
     const prepared = await prepareModelFolders()
     if (!prepared) return false
-    commitModelFolders(prepared)
-    return true
+    while (prepared.requestId === modelFoldersRequestId) {
+      const pendingFolders = modelFolders.value
+        .filter(
+          (folder) =>
+            folder.state !== ResourceState.Uninitialized &&
+            folder.directory in prepared.folders
+        )
+        .map((folder) => prepared.folders[folder.directory])
+        .filter((folder) => folder.state === ResourceState.Uninitialized)
+      if (pendingFolders.length === 0) {
+        commitModelFolders(prepared)
+        return true
+      }
+      await Promise.all(pendingFolders.map((folder) => folder.load()))
+    }
+    return false
   }
 
   async function getLoadedModelFolder(
@@ -446,26 +459,7 @@ export const useModelStore = defineStore('models', () => {
    */
   async function reloadModels(): Promise<boolean> {
     assetService.invalidateModelBuckets()
-    // Loading counts as previously loaded: a scan-complete reload can land
-    // while the eager load is still in flight, and replacing those folder
-    // objects without re-loading them would strand the sidebar on
-    // uninitialized folders whose original loads finish into detached
-    // objects.
-    const previouslyLoaded = modelFolders.value
-      .filter((folder) => folder.state !== ResourceState.Uninitialized)
-      .map((folder) => folder.directory)
-    const prepared = await prepareModelFolders()
-    if (!prepared) return false
-    await Promise.all(
-      previouslyLoaded
-        .filter((name) => name in prepared.folders)
-        .map((name) => prepared.folders[name].load())
-    )
-    // Re-check before the swap: a newer request may have started while the
-    // off-screen contents loaded.
-    if (prepared.requestId !== modelFoldersRequestId) return false
-    commitModelFolders(prepared)
-    return true
+    return loadModelFolders()
   }
 
   /**
@@ -499,19 +493,18 @@ export const useModelStore = defineStore('models', () => {
   }
 
   /**
-   * Scan completions arrive as one event per scanned root and can land in
-   * bursts; coalesce them into one trailing reload instead of one full
-   * library walk per event.
+   * Scan completions and capability changes can land in bursts; coalesce
+   * them into one trailing reload instead of one full library walk per event.
    */
-  const SCAN_RELOAD_DEBOUNCE_MS = 500
+  const MODEL_RELOAD_DEBOUNCE_MS = 500
 
-  const reloadAfterScan = debounce(async () => {
+  const scheduleModelReload = debounce(async () => {
     try {
       await reloadModels()
     } catch (error) {
-      console.error('Failed to reload the model library after a scan', error)
+      console.error('Failed to reload the model library', error)
     }
-  }, SCAN_RELOAD_DEBOUNCE_MS)
+  }, MODEL_RELOAD_DEBOUNCE_MS)
 
   const unsubscribeModelsScanned = assetService.onModelsScanned(() => {
     // A scan changes bucket contents even when no UI has read this store
@@ -519,10 +512,10 @@ export const useModelStore = defineStore('models', () => {
     // skip the reload nothing is displaying.
     assetService.invalidateModelBuckets()
     if (!modelDataConsumed) return
-    reloadAfterScan()
+    scheduleModelReload()
   })
   onScopeDispose(() => {
-    reloadAfterScan.cancel()
+    scheduleModelReload.cancel()
     unsubscribeModelsScanned()
   })
 
@@ -530,28 +523,9 @@ export const useModelStore = defineStore('models', () => {
    * The WS `feature_flags` handshake can land after createGetModelsFunc()
    * already captured its data-source choice at store-init time, so a flag
    * flip after boot must force a reload to switch the sidebar's source.
-   *
-   * One handshake carrying both `assetsEnabled` and `supportsModelTypeTags`
-   * fires both watchers, issuing two concurrent reloadModels() calls. That is
-   * safe by design: prepareModelFolders()'s request-id discipline makes the
-   * stale response a no-op, so no debouncing is needed here.
    */
-  watch(
-    () => flags.assetsEnabled,
-    () => {
-      reloadModels().catch((error) => {
-        reportError(error, { errorType: 'model_library_capability_reload' })
-      })
-    }
-  )
-
-  watch(
-    () => flags.supportsModelTypeTags,
-    () =>
-      flags.assetsEnabled &&
-      reloadModels().catch((error) => {
-        reportError(error, { errorType: 'model_library_capability_reload' })
-      })
+  watch([() => flags.assetsEnabled, () => flags.supportsModelTypeTags], () =>
+    scheduleModelReload()
   )
 
   return {

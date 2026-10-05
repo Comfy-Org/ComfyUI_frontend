@@ -1,8 +1,8 @@
 import type { Pinia } from 'pinia'
 import { getActivePinia } from 'pinia'
 import { useDialogStore } from '@/stores/dialogStore'
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container */
+/* oxlint-disable testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,7 +23,7 @@ let pinia: Pinia
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({
       add: mockToastAdd
@@ -100,7 +100,9 @@ function createTeamWorkspace({
     subscriptionPlan: null,
     subscriptionTier,
     members: [],
-    pendingInvites: []
+    pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true
   }
 }
 

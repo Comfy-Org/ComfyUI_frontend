@@ -3,13 +3,14 @@ import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { breakpointsTailwind, useBreakpoints, useMounted } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import { HERO_SLIDES, PROVIDER_ICON } from '../../config/hero-slides'
-import { useProgressBarPainter } from '../../composables/useProgressBarPainter'
-import { useVideoCarousel, wrapIndex } from '../../composables/useVideoCarousel'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { HERO_SLIDES, PROVIDER_ICON } from '@/config/hero-slides'
+import { useProgressBarPainter } from '@/composables/useProgressBarPainter'
+import { useVideoCarousel, wrapIndex } from '@/composables/useVideoCarousel'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 /**
  * Mirrors the cloud shell: below `xl` the reel is never mounted, so no video
@@ -63,10 +64,11 @@ const announcement = ref('')
 const announceCurrentSlide = () => {
   const slide = slides[activeIndex.value]
   if (!slide) return
-  announcement.value = t('auth.hero.slideStatus', locale)
-    .replace('{title}', slide.title)
-    .replace('{current}', String(activeIndex.value + 1))
-    .replace('{total}', String(slides.length))
+  announcement.value = t('auth.hero.slideStatus', {
+    title: slide.title,
+    current: activeIndex.value + 1,
+    total: slides.length
+  })
 }
 
 const goToNext = () => {
@@ -131,8 +133,8 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
   >
     <div
       role="group"
-      :aria-roledescription="t('auth.hero.carouselRoleDescription', locale)"
-      :aria-label="t('auth.hero.carouselLabel', locale)"
+      :aria-roledescription="t('auth.hero.carouselRoleDescription')"
+      :aria-label="t('auth.hero.carouselLabel')"
       class="flex min-h-0 w-full max-w-3xl flex-1 flex-col gap-4 xl:gap-5 2xl:gap-6"
     >
       <p class="sr-only" role="status" aria-live="polite">
@@ -150,7 +152,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
             v-for="(slide, index) in slides"
             :key="slide.id"
             role="group"
-            :aria-roledescription="t('auth.hero.slideRoleDescription', locale)"
+            :aria-roledescription="t('auth.hero.slideRoleDescription')"
             :aria-label="slide.title"
             :aria-hidden="index !== activeIndex"
             :inert="index !== activeIndex"
@@ -220,7 +222,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
         <button
           type="button"
           :class="NAV_BUTTON_CLASS"
-          :aria-label="t('auth.hero.previousSlide', locale)"
+          :aria-label="t('auth.hero.previousSlide')"
           @click="goToPrevious"
         >
           <ChevronLeft class="size-6" aria-hidden="true" />
@@ -228,7 +230,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
         <button
           type="button"
           :class="NAV_BUTTON_CLASS"
-          :aria-label="t('auth.hero.nextSlide', locale)"
+          :aria-label="t('auth.hero.nextSlide')"
           @click="goToNext"
         >
           <ChevronRight class="size-6" aria-hidden="true" />

@@ -1,6 +1,6 @@
-import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
-import { useCaseFor, useCasesFor } from '../../config/models-catalogue'
-import templateModelJoin from '../../data/templateModelJoin.json'
+import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
+import { useCaseFor, useCasesFor } from '@/config/models-catalogue'
+import templateModelJoin from '@/data/templateModelJoin.json'
 import type { HubTemplate } from './types'
 
 // Generated canonical content-page slugs, not display-family names. Tasks

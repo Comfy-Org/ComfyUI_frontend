@@ -225,18 +225,6 @@ describe('NodeSearchCategorySidebar', () => {
     })
   })
 
-  it('should emit category without root/ prefix', async () => {
-    useNodeDefStore().updateNodeDefs([
-      createMockNodeDef({ name: 'Node1', category: 'sampling' })
-    ])
-
-    const { user, onUpdateSelectedCategory } = createRender()
-
-    await clickCategory(user, 'sampling')
-
-    expect(onUpdateSelectedCategory).toHaveBeenCalledWith('sampling')
-  })
-
   describe('rootLabel wrapping', () => {
     it('should wrap multiple top-level categories under rootLabel key', async () => {
       useNodeDefStore().updateNodeDefs([

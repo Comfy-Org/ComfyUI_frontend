@@ -105,47 +105,25 @@ describe('ZoomControlsModal', () => {
     )
   })
 
-  it('should call setAppZoomFromPercentage with valid zoom input values', async () => {
-    const user = userEvent.setup()
-    renderComponent()
+  it.for([
+    ['150', 150],
+    ['0', 1],
+    ['1001', 1000]
+  ] as const)(
+    'applies typed zoom %s clamped to the allowed range on Enter',
+    async ([typed, applied]) => {
+      const user = userEvent.setup()
+      renderComponent()
 
-    const input = screen.getByRole('spinbutton')
-    await user.tripleClick(input)
-    await user.keyboard('150')
+      const input = screen.getByRole('spinbutton')
+      await user.tripleClick(input)
+      await user.keyboard(`${typed}{Enter}`)
 
-    expect(
-      vi.mocked(useCanvasStore().setAppZoomFromPercentage)
-    ).toHaveBeenCalledWith(150)
-  })
-
-  it('should not call setAppZoomFromPercentage when value is below minimum', async () => {
-    const user = userEvent.setup()
-    renderComponent()
-
-    const input = screen.getByRole('spinbutton')
-    await user.tripleClick(input)
-    await user.keyboard('0')
-
-    expect(
-      vi.mocked(useCanvasStore().setAppZoomFromPercentage)
-    ).not.toHaveBeenCalled()
-  })
-
-  it('should not apply zoom values exceeding the maximum', async () => {
-    const user = userEvent.setup()
-    renderComponent()
-
-    const input = screen.getByRole('spinbutton')
-    await user.tripleClick(input)
-    await user.keyboard('100')
-    vi.mocked(useCanvasStore().setAppZoomFromPercentage).mockClear()
-
-    await user.keyboard('1')
-
-    expect(
-      vi.mocked(useCanvasStore().setAppZoomFromPercentage)
-    ).not.toHaveBeenCalled()
-  })
+      expect(
+        vi.mocked(useCanvasStore().setAppZoomFromPercentage)
+      ).toHaveBeenCalledExactlyOnceWith(applied)
+    }
+  )
 
   it('should display keyboard shortcuts for commands', () => {
     renderComponent()

@@ -6,14 +6,18 @@ import type {
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
+import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -29,16 +33,18 @@ const tooltipDirectiveStub = {
   }
 }
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
-// The api mock is partial, so the real auth store cannot load here; the
-// transport's auth header is not what these tests are about.
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry'))
+// The real auth store cannot load against the mocked api; the transport's
+// auth header is not what these tests are about.
 vi.mock(import('../../services/agent/agentAuth'), () => ({
-  withAgentAuth: async (init: RequestInit) => init,
+  withAgentAuth: async <T extends RequestInit>(init: T) => init,
   ensureSignedIn: async () => true
 }))
+const fetchApi = vi.mocked(api.fetchApi)
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -229,6 +235,15 @@ describe('Composer', () => {
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
+  it('enters graph selection mode from a click on the empty-composer hint', async () => {
+    const { emitted } = mount({ getMentionNodes: vi.fn(() => []) })
+
+    await userEvent.click(screen.getByRole('button', { name: 'mention nodes' }))
+
+    expect(emitted().selectNodes).toHaveLength(1)
+    expect(screen.getByRole('textbox')).not.toHaveFocus()
+  })
+
   it('retains the draft on Enter while a workflow selection is saving', async () => {
     useAgentComposerStore().setText('keep this draft')
     const { emitted, rerender } = mount({ workflowSelecting: true })
@@ -337,19 +352,95 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
 
-    const repeatedEscape = box.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        key: 'Escape',
-        repeat: true,
-        bubbles: true,
-        cancelable: true
-      })
-    )
-    expect(repeatedEscape).toBe(true)
+    // An auto-repeated Escape is still contained by the registered override
+    // (which keybindHandler would otherwise let dispatch ExitSubgraph), but
+    // it doesn't itself trigger a stop.
+    const repeatedEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      repeat: true,
+      cancelable: true
+    })
+    expect(consultEscapeOverride(repeatedEscapeEvent)).toBe(true)
+    expect(repeatedEscapeEvent.defaultPrevented).toBe(true)
     expect(emitted().stop).toBeUndefined()
 
     await userEvent.type(box, '{Escape}')
     expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('stops the run on Escape after submitting by clicking Send with the mouse', async () => {
+    // A plain click moves focus onto the Send button (Chrome's behavior), so
+    // the event never reaches the editor-scoped keydown handler. This is
+    // exactly the case the registered Escape override exists for, so it's
+    // consulted directly rather than dispatched through the DOM - the same
+    // way `keybindHandler` consults it in the real app.
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(emitted().send).toHaveLength(1)
+
+    await rerender({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('stops the run on Escape after clicking Send without moving focus (Safari/Firefox)', async () => {
+    // Safari and Firefox don't move focus onto a plain-clicked <button> the
+    // way Chrome does, so simulate that by dispatching the click directly
+    // instead of going through userEvent.click(), which always focuses the
+    // element it clicks.
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    const sendButton = screen.getByRole('button', { name: 'Send' })
+    sendButton.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    await nextTick()
+    expect(emitted().send).toHaveLength(1)
+    // oxlint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(document.body)
+
+    await rerender({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape once focus has left the composer entirely', async () => {
+    const onStop = vi.fn()
+    const Host = defineComponent({
+      setup: () => () =>
+        h('div', [
+          h(Composer, { hasWorkflowTarget: true, streaming: true, onStop }),
+          h('button', { type: 'button' }, 'Elsewhere on the page')
+        ])
+    })
+    render(Host, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirectiveStub }
+      }
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Elsewhere on the page' })
+    )
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(false)
+    expect(onStop).not.toHaveBeenCalled()
   })
 
   it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
@@ -448,8 +539,8 @@ describe('Composer', () => {
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()
-      fetchApi.mockReset()
-      fetchApi.mockImplementation(async () =>
+      vi.mocked(api.fetchApi).mockReset()
+      vi.mocked(api.fetchApi).mockImplementation(async () =>
         jsonResponse(404, { error: 'not found' })
       )
     })
@@ -481,6 +572,7 @@ describe('Composer', () => {
     })
 
     it('applies the picked mode without a separate save step', async () => {
+      telemetry.trackAgentRunModeChanged.mockClear()
       mount()
       const store = useAgentRunModeStore()
 
@@ -500,6 +592,12 @@ describe('Composer', () => {
         await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
       expect(store.creditLimit).toBeNull()
+      expect(
+        telemetry.trackAgentRunModeChanged
+      ).toHaveBeenCalledExactlyOnceWith({
+        from: 'ask_approval',
+        to: 'auto'
+      })
     })
 
     it('rewrites the active mode when it is picked again', async () => {
@@ -516,12 +614,15 @@ describe('Composer', () => {
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(
-        fetchApi.mock.calls.filter(([, init]) => init?.method === 'PUT')
+        vi
+          .mocked(api.fetchApi)
+          .mock.calls.filter(([, init]) => init?.method === 'PUT')
       ).toHaveLength(1)
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
     })
 
     it('keeps the popover open on the unchanged mode when the save fails', async () => {
+      telemetry.trackAgentRunModeChanged.mockClear()
       fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
       mount()
 
@@ -548,11 +649,12 @@ describe('Composer', () => {
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
       })
+      expect(telemetry.trackAgentRunModeChanged).not.toHaveBeenCalled()
     })
 
     it('blocks a second pick while the write is in flight', async () => {
       let resolvePut!: (response: Response) => void
-      fetchApi.mockReturnValueOnce(
+      vi.mocked(api.fetchApi).mockReturnValueOnce(
         new Promise<Response>((resolve) => {
           resolvePut = resolve
         })
@@ -580,18 +682,20 @@ describe('Composer', () => {
       expect(ask).not.toHaveAttribute('aria-busy')
       expect(ask).toBeChecked()
       await userEvent.click(ask)
-      expect(fetchApi).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
 
       resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
-      expect(fetchApi).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
     })
 
     it('takes a retry after a failed save', async () => {
-      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        jsonResponse(500, { error: 'failed' })
+      )
       mount()
       const store = useAgentRunModeStore()
 
@@ -604,7 +708,7 @@ describe('Composer', () => {
 
       await userEvent.click(auto)
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
-      expect(fetchApi).toHaveBeenCalledTimes(2)
+      expect(api.fetchApi).toHaveBeenCalledTimes(2)
     })
 
     it('commits the focused mode on Enter', async () => {
@@ -628,7 +732,7 @@ describe('Composer', () => {
       const pendingGet = new Promise<Response>((resolve) => {
         resolveGet = resolve
       })
-      fetchApi.mockImplementation(async (_route, init) =>
+      vi.mocked(api.fetchApi).mockImplementation(async (_route, init) =>
         init?.method === 'PUT'
           ? jsonResponse(200, { mode: 'auto', credit_limit: null })
           : pendingGet
@@ -689,7 +793,7 @@ describe('Composer', () => {
 
     it('leaves a menu reopened during the write open once it settles', async () => {
       let resolvePut!: (response: Response) => void
-      fetchApi.mockReturnValueOnce(
+      vi.mocked(api.fetchApi).mockReturnValueOnce(
         new Promise<Response>((resolve) => {
           resolvePut = resolve
         })
@@ -791,13 +895,12 @@ describe('Composer', () => {
     })
 
     it('opens the Nodes submenu and lists matching nodes alphabetically', async () => {
-      mount({
-        getMentionNodes: () => [
-          { id: '3', title: 'VAE Decode' },
-          { id: '1', title: 'Alpha' },
-          { id: '2', title: 'KSampler' }
-        ]
-      })
+      const mentionNodes = [
+        { id: '3', title: 'VAE Decode' },
+        { id: '1', title: 'Alpha' },
+        { id: '2', title: 'KSampler' }
+      ]
+      mount({ getMentionNodes: () => mentionNodes })
 
       const menu = await openReferenceSection('Nodes')
 
@@ -806,6 +909,11 @@ describe('Composer', () => {
           .getAllByRole('menuitem')
           .map((item) => item.textContent.trim())
       ).toEqual(['Back', 'Alpha', 'KSampler', 'VAE Decode'])
+      expect(mentionNodes.map(({ title }) => title)).toEqual([
+        'VAE Decode',
+        'Alpha',
+        'KSampler'
+      ])
     })
 
     // Re-picking a staged node is a no-op, so it drops out of the list.
@@ -1308,6 +1416,70 @@ describe('Composer', () => {
     }
   )
 
+  it.for([
+    {
+      direction: 'ArrowLeft',
+      key: '{ArrowLeft}',
+      insertedText: 'again ',
+      expectedText:
+        'again Before Unsaved Workflow between Unsaved Workflow (2) after',
+      expectedOffsets: [13, 22] as const
+    },
+    {
+      direction: 'ArrowRight',
+      key: '{ArrowRight}',
+      insertedText: ' again',
+      expectedText:
+        'Before Unsaved Workflow between Unsaved Workflow (2) after again',
+      expectedOffsets: [7, 16] as const
+    }
+  ])(
+    'keeps restored workflow chips when $direction collapses Select All',
+    async ({ key, insertedText, expectedText, expectedOffsets }) => {
+      useAgentComposerStore().replacePrompt({
+        text: 'Before  between  after',
+        workflowReferences: [
+          { id: 'wf-1', name: 'Unsaved Workflow', textOffset: 7 },
+          { id: 'wf-2', name: 'Unsaved Workflow (2)', textOffset: 16 }
+        ]
+      })
+      mount()
+      const store = useAgentComposerStore()
+      const epoch = store.promptEpoch
+      store.setNodeScope('workflows/Unsaved Workflow (3).json')
+      expect(store.promptEpoch).toBe(epoch)
+
+      const textbox = screen.getByRole('textbox')
+      expect(textbox).toHaveTextContent(
+        'Before Unsaved Workflow between Unsaved Workflow (2) after'
+      )
+      expect(
+        within(textbox).getAllByTestId('workflow-reference-chip')
+      ).toHaveLength(2)
+
+      await userEvent.click(textbox)
+      await userEvent.keyboard(`{Control>}a{/Control}${key}`)
+      await userEvent.keyboard(insertedText)
+
+      expect(textbox).toHaveTextContent(expectedText)
+      expect(
+        within(textbox).getAllByTestId('workflow-reference-chip')
+      ).toHaveLength(2)
+      expect(store.workflowReferences).toEqual([
+        {
+          id: 'wf-1',
+          name: 'Unsaved Workflow',
+          textOffset: expectedOffsets[0]
+        },
+        {
+          id: 'wf-2',
+          name: 'Unsaved Workflow (2)',
+          textOffset: expectedOffsets[1]
+        }
+      ])
+    }
+  )
+
   it('removes the workflow reference before the text caret with Backspace', async () => {
     useAgentComposerStore().setText('keep me')
     const { emitted } = mount({
@@ -1591,7 +1763,18 @@ describe('Composer', () => {
       })
       render(Host, { global: { plugins: [i18n] } })
       return {
-        insert: (text: string) => composer.value?.insert(text)
+        composer,
+        insert: (text: string, attribution?: AgentStarterPromptAttribution) =>
+          composer.value?.insert(
+            text,
+            attribution ?? {
+              promptId: 'slot_1',
+              promptIndex: 0,
+              promptCount: 5,
+              promptTextHash: 'deadbeef',
+              locale: 'en'
+            }
+          )
       }
     }
 
@@ -1606,6 +1789,18 @@ describe('Composer', () => {
       expect(useAgentComposerStore().draft).toBe('foo')
       expect(textarea).toHaveFocus()
       expect(focusSpy).toHaveBeenCalledOnce()
+    })
+
+    it('accepts unidentified suggestion inserts at the exposed boundary', async () => {
+      const { composer } = mountWithInsert()
+
+      composer.value?.insert('foo', undefined)
+      await nextTick()
+
+      const store = useAgentComposerStore()
+      expect(store.draft).toBe('foo')
+      expect(store.promptOrigin).toBe('suggestion')
+      expect(store.starterPrompt).toBeNull()
     })
   })
 })

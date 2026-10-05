@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { models } from '../../../config/models'
+import { models } from '@/config/models'
 import { GET } from './llms.txt'
 
 function render(site?: URL) {

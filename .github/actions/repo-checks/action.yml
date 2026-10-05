@@ -1,0 +1,21 @@
+name: 'Repository consistency checks'
+description: >
+  Runs knip, the locale integrity check and the ADR index check. Shared by
+  ci-lint-format.yaml (PR) and ci-lint-format-queue.yaml (merge queue). The
+  caller is responsible for a blobless full-history checkout (locale:check
+  fetches source blobs from git history) and frontend setup.
+
+runs:
+  using: composite
+  steps:
+    - name: Find unused files, exports and dependencies
+      shell: bash
+      run: pnpm knip
+
+    - name: Verify locale integrity
+      shell: bash
+      run: pnpm locale:check
+
+    - name: Verify ADR naming and index
+      shell: bash
+      run: pnpm adr:check

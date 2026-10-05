@@ -108,7 +108,7 @@ function handleSearchEnter(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="text-secondary flex gap-2 px-4">
+  <div class="flex gap-2 px-4 text-muted-foreground">
     <AsyncSearchInput
       v-model="searchQuery"
       autofocus

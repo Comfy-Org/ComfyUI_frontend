@@ -1,0 +1,78 @@
+openapi: 3.1.0
+info:
+  title: Comfy Platform Deploy API (rate-card fragment)
+  version: '1.0'
+  description: >-
+    Vendored fragment of the Comfy Platform Deploy API spec, limited to the
+    rate-card operation. Mirrors the packages/ingest-types pattern; unlike
+    that package's spec (fetched from the cloud repo in CI), this fragment is
+    hand-authored and committed because no such CI fetch exists for this API
+    yet. Replace with a fetched full spec once one is available.
+servers:
+  - url: https://platformapi.comfy.org
+paths:
+  /deploy/v1/rate-card:
+    get:
+      operationId: getRateCard
+      summary: Get the current GPU and storage rate card
+      tags:
+        - deploy
+      responses:
+        '200':
+          description: Current rate card
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateCard'
+components:
+  schemas:
+    RateCardGpu:
+      type: object
+      description: Hourly price and credit cost for one GPU class.
+      required: [gpuClass, label, vramGb, pricePerHourUsd, creditsPerHour]
+      properties:
+        gpuClass:
+          type: string
+          description: Stable machine-readable GPU identifier.
+        label:
+          type: string
+          description: Human-readable GPU display name.
+        vramGb:
+          type: integer
+          description: VRAM in gigabytes.
+        pricePerHourUsd:
+          type: number
+          description: Price per GPU-hour in US dollars.
+        creditsPerHour:
+          type: number
+          description: Price per GPU-hour in Comfy Credits.
+    StorageRate:
+      type: object
+      description: Monthly price and credit cost for one storage type.
+      required: [storageType, label, pricePerGbMonthUsd, creditsPerGbMonth]
+      properties:
+        storageType:
+          type: string
+          description: Stable machine-readable storage type identifier.
+        label:
+          type: string
+          description: Human-readable storage type display name.
+        pricePerGbMonthUsd:
+          type: number
+          description: Price per GB per month in US dollars.
+        creditsPerGbMonth:
+          type: number
+          description: Price per GB per month in Comfy Credits.
+    RateCard:
+      type: object
+      description: Current GPU and storage rate card served by the Deploy API.
+      required: [gpus, storage]
+      properties:
+        gpus:
+          type: array
+          items:
+            $ref: '#/components/schemas/RateCardGpu'
+        storage:
+          type: array
+          items:
+            $ref: '#/components/schemas/StorageRate'

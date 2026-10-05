@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AccountCredential } from '../core/session.js'
-import { createWebCrossTabRefreshPort } from './crossTabRefresh.js'
+import {
+  createWebCrossTabRefreshPort,
+  createWebVisibilityPort
+} from './crossTabRefresh.js'
 
 class FakeBroadcastChannel {
   static all: FakeBroadcastChannel[] = []
@@ -171,5 +174,27 @@ describe('createWebCrossTabRefreshPort channel lifecycle', () => {
     expect(FakeBroadcastChannel.all.every((channel) => channel.closed)).toBe(
       true
     )
+  })
+})
+
+describe('createWebVisibilityPort', () => {
+  it('is absent without a document', () => {
+    expect(createWebVisibilityPort()).toBeUndefined()
+  })
+
+  it('reports the page visibility and each change until stopped', () => {
+    const page = Object.assign(new EventTarget(), { visibilityState: 'hidden' })
+    vi.stubGlobal('document', page)
+    const port = createWebVisibilityPort()
+    const seen: boolean[] = []
+    const stop = port?.onChange((visible) => seen.push(visible))
+
+    page.visibilityState = 'visible'
+    page.dispatchEvent(new Event('visibilitychange'))
+    stop?.()
+    page.dispatchEvent(new Event('visibilitychange'))
+
+    expect(port?.isVisible()).toBe(true)
+    expect(seen).toEqual([true])
   })
 })

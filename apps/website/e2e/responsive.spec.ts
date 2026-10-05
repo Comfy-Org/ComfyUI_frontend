@@ -101,7 +101,7 @@ async function measureMarqueeLoopGeometry(
     const tracks = Array.from(
       document.querySelectorAll<HTMLElement>(sel)
     ).slice(0, 2)
-    const firstAnimation = tracks[0]?.getAnimations()[0]
+    const firstAnimation = tracks[0]?.getAnimations().at(0)
     if (!firstAnimation) {
       throw new Error(`No CSS animation found on ${sel}`)
     }

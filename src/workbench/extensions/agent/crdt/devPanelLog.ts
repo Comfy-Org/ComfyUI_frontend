@@ -35,13 +35,15 @@ export const DEV_EVENT_KINDS = [
   'reconnected',
   'subscribe_retry',
   'subscribe_ack_timeout',
+  'subscribe_refused_permanent',
   'stale_probe',
   'catchup_probe',
   'rebind',
   'doc_gap',
   'doc_stale',
   'frame_send_failed',
-  'agent_node_adapters_materialized'
+  'agent_node_adapters_materialized',
+  'local_widget_write_held'
 ] as const
 
 export type DevEventKind = (typeof DEV_EVENT_KINDS)[number]
@@ -237,7 +239,7 @@ function sanitizeDetail(
   value: unknown,
   depth = 0,
   ancestors: readonly object[] = [],
-  key: string | undefined = undefined
+  key?: string
 ): unknown {
   if (depth > MAX_SANITIZE_DEPTH) return REDACTED
   if (ArrayBuffer.isView(value)) {
@@ -286,6 +288,7 @@ export function sanitizeDevEventDetail(detail: unknown): unknown {
     return sanitizeDetail(detail)
   } catch {
     reportError(new Error('Failed to sanitize CRDT dev event detail'), {
+      surface: 'agent',
       errorType: 'crdt_dev_event_sanitization_failed'
     })
     return REDACTED

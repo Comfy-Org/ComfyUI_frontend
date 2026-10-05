@@ -131,7 +131,7 @@ describe('CloudHeroCarousel', () => {
     const user = userEvent.setup()
     const { container } = await renderCarousel(3)
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const liveRegion = container.querySelector('[aria-live="polite"]')
     expect(liveRegion).toBeInTheDocument()
     expect(

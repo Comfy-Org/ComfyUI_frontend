@@ -14,7 +14,6 @@ import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<
-  // eslint-disable-next-line vue/no-unused-properties
   SliderRootProps & {
     class?: HTMLAttributes['class']
     rangeClass?: HTMLAttributes['class']
@@ -54,7 +53,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="slider-track"
       :class="
         cn(
-          'relative grow overflow-hidden rounded-full bg-node-stroke',
+          'relative grow overflow-hidden rounded-full bg-muted-foreground/20',
           'cursor-pointer overflow-visible',
           `before:absolute before:-inset-2 before:block before:bg-transparent`,
           'data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:w-full',
@@ -66,7 +65,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         data-slot="slider-range"
         :class="
           cn(
-            'absolute bg-node-component-surface-highlight data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full',
+            'absolute bg-muted-foreground data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full',
             props.rangeClass
           )
         "
@@ -79,7 +78,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="slider-thumb"
       :class="
         cn(
-          'block size-3.5 shrink-0 rounded-full bg-node-component-surface-highlight shadow-sm ring-node-component-surface-selected transition-[color,box-shadow]',
+          'block size-3.5 shrink-0 rounded-full bg-muted-foreground shadow-sm ring-base-foreground transition-[color,box-shadow]',
           'cursor-grab',
           'before:absolute before:-inset-1 before:block before:rounded-full before:bg-transparent',
           'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50',

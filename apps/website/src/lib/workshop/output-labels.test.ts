@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { RunOutput } from '../../config/workshop-run'
+import type { RunOutput } from '@/config/workshop-run'
 import { outputLabels } from './output-labels'
 
 const output = (kind: RunOutput['kind']): RunOutput => ({

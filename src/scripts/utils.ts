@@ -9,7 +9,7 @@ export function clone<T>(obj: T): T {
     if (typeof structuredClone !== 'undefined') {
       return structuredClone(obj)
     }
-  } catch (error) {
+  } catch {
     // structuredClone is stricter than using JSON.parse/stringify so fallback to that
   }
 
@@ -76,15 +76,12 @@ export function prop<T>(
     name: string
   ) => void
 ): T {
-  // @ts-expect-error fixme ts strict error
-  let currentValue
+  let currentValue: T
   Object.defineProperty(target, name, {
     get() {
-      // @ts-expect-error fixme ts strict error
       return currentValue
     },
     set(newValue) {
-      // @ts-expect-error fixme ts strict error
       const prevValue = currentValue
       currentValue = newValue
       onChanged?.(currentValue, prevValue, target, name)

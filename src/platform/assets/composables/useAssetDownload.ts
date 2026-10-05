@@ -60,6 +60,7 @@ export function useAssetDownload() {
     if (failures.length > 0) {
       for (const failure of failures) {
         reportError(failure.cause, {
+          surface: 'assets',
           errorType: 'error_downloading_asset',
           context: { filename: failure.filename }
         })

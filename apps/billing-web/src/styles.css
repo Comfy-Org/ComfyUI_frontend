@@ -2,19 +2,27 @@
 @import '@comfyorg/design-system/css/style.css';
 
 @source './**/*.{ts,vue}';
+/* The shared checkout steps and the class recipes they render. */
+@source '../../../packages/account-ui/src/billing/**/*.vue';
+@source '../../../packages/design-system/src/*.variants.ts';
 
-@font-face {
-  font-family: 'Inter';
-  src: url('../../../public/fonts/inter-latin-normal.woff2') format('woff2');
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-}
+/*
+ * The cloud app has no Tailwind preflight, so inside its checkout form
+ * controls and links keep the browser's defaults unless a utility sets them.
+ * In the base layer, so any utility still wins.
+ */
+@layer base {
+  [data-app-defaults] :is(input, [role='combobox']) {
+    font: revert;
+    padding: revert;
+  }
 
-@font-face {
-  font-family: 'Inter';
-  src: url('../../../public/fonts/inter-latin-italic.woff2') format('woff2');
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
+  [data-app-defaults] input[type='checkbox'] {
+    margin: revert;
+  }
+
+  [data-app-defaults] input::placeholder,
+  [data-app-defaults] a {
+    color: revert;
+  }
 }

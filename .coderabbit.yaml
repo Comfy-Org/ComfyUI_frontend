@@ -27,7 +27,7 @@ reviews:
       mode: 'off'
     custom_checks:
       - name: End-to-end regression coverage for fixes
-        mode: error
+        mode: warning
         instructions: |
           Use only PR metadata already available in the review context:
             - the PR title

@@ -6,6 +6,14 @@ import type { ComfyApp } from '@/scripts/app'
 
 import { ComfyDialog } from './dialog'
 
+function saveSetting<K extends keyof Settings>(id: K, value: Settings[K]) {
+  useSettingStore()
+    .set(id, value)
+    .catch((err) => {
+      useToastStore().addAlert(t('toastMessages.errorSaveSetting', { id, err }))
+    })
+}
+
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp
 
@@ -84,13 +92,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
    * @deprecated Use `settingStore.set` instead.
    */
   setSettingValue<K extends keyof Settings>(id: K, value: Settings[K]) {
-    useSettingStore()
-      .set(id, value)
-      .catch((err) => {
-        useToastStore().addAlert(
-          t('toastMessages.errorSaveSetting', { id, err })
-        )
-      })
+    saveSetting(id, value)
   }
 
   /**
@@ -123,7 +125,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         return settingStore.get(params.id)
       },
       set value(v) {
-        void settingStore.set(params.id, v)
+        saveSetting(params.id, v)
       }
     }
   }

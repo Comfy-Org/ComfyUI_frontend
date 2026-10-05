@@ -2,6 +2,7 @@ import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -52,7 +53,10 @@ export function useTopupOperation() {
    */
   async function adoptPendingOperation(
     operationId: string,
-    metadata: { attemptStartedAt: number }
+    metadata: {
+      attemptStartedAt: number
+      paymentIntentSource?: PaymentIntentSource
+    }
   ): Promise<void> {
     if (sdkStore) return
     await operationStore.startOperation(operationId, 'topup', {

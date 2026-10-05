@@ -12,6 +12,11 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import DomWidget from './DomWidget.vue'
+import { reportDomWidgetMountFailure } from './domWidgetMountReporting'
+
+vi.mock(import('./domWidgetMountReporting'), () => ({
+  reportDomWidgetMountFailure: vi.fn()
+}))
 
 beforeEach(() => {
   useCanvasStore().canvas = fromPartial({
@@ -89,7 +94,7 @@ describe('DomWidget style', () => {
       }
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.left).toBe('0px')
     expect(root.style.top).toBe('0px')
@@ -109,7 +114,7 @@ describe('DomWidget style', () => {
     widgetState.zIndex = 3
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
     expect(root.style.opacity).toBe('0.5')
@@ -127,7 +132,7 @@ describe('DomWidget style', () => {
     mockClippingStyle.value = { clipPath: 'inset(1px)' }
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.clipPath).toBe('inset(1px)')
   })
@@ -200,7 +205,7 @@ describe('DomWidget style', () => {
     mockClippingStyle.value = { clipPath: 'inset(1px)' }
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.clipPath).toBe('')
   })
@@ -217,7 +222,7 @@ describe('DomWidget style', () => {
     widgetState.zIndex = 3
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
   })
@@ -240,7 +245,7 @@ describe('DomWidget position update matrix', () => {
         render(DomWidget, { props: { widgetState } })
       )
       const roots = rendered.map(({ container }) => {
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         return container.querySelector('.dom-widget') as HTMLElement
       })
       const initialStyles = roots.map((root) => root.getAttribute('style'))
@@ -266,6 +271,82 @@ describe('DomWidget position update matrix', () => {
 describe('native DOM widget interaction lifecycle', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
+  })
+
+  function renderWithUnmountableElement(widgetState: DomWidgetState) {
+    const input = document.createElement('input')
+    Object.assign(widgetState.widget, { element: input })
+    vi.spyOn(HTMLElement.prototype, 'appendChild').mockImplementation(function (
+      this: HTMLElement,
+      child: Node
+    ) {
+      if (child === input) throw new Error('mount failed')
+      return Node.prototype.appendChild.call(this, child)
+    })
+
+    const escapedErrors: unknown[] = []
+    const rendered = render(DomWidget, {
+      props: { widgetState },
+      global: { config: { errorHandler: (error) => escapedErrors.push(error) } }
+    })
+
+    return { rendered, escapedErrors }
+  }
+
+  it('reports a mount failure on the initial mount', async () => {
+    const widgetState = createWidgetState(false)
+    const { rendered, escapedErrors } =
+      renderWithUnmountableElement(widgetState)
+    await nextTick()
+    await nextTick()
+
+    expect(reportDomWidgetMountFailure).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ message: 'mount failed' }),
+      {
+        nodeId: widgetState.widget.node.id,
+        nodeType: widgetState.widget.node.type,
+        widgetName: 'test_widget'
+      }
+    )
+    expect(escapedErrors).toEqual([])
+
+    rendered.unmount()
+  })
+
+  it('reports a mount failure when the widget becomes visible', async () => {
+    const widgetState = createWidgetState(false)
+    widgetState.visible = false
+    const { rendered, escapedErrors } =
+      renderWithUnmountableElement(widgetState)
+    await nextTick()
+    await nextTick()
+    vi.mocked(reportDomWidgetMountFailure).mockClear()
+
+    widgetState.visible = true
+    await nextTick()
+
+    expect(reportDomWidgetMountFailure).toHaveBeenCalledOnce()
+    expect(escapedErrors).toEqual([])
+
+    rendered.unmount()
+  })
+
+  it('reports a mount failure when linear mode is left', async () => {
+    Object.assign(useCanvasStore(), { linearMode: true })
+    const widgetState = createWidgetState(false)
+    const { rendered, escapedErrors } =
+      renderWithUnmountableElement(widgetState)
+    await nextTick()
+    await nextTick()
+    vi.mocked(reportDomWidgetMountFailure).mockClear()
+
+    Object.assign(useCanvasStore(), { linearMode: false })
+    await nextTick()
+
+    expect(reportDomWidgetMountFailure).toHaveBeenCalledOnce()
+    expect(escapedErrors).toEqual([])
+
+    rendered.unmount()
   })
 
   it('preserves selection and outside-click focus behavior, then removes listeners', async () => {
@@ -313,7 +394,7 @@ describe('native DOM widget interaction lifecycle', () => {
     })
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
   })

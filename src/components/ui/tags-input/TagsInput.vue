@@ -69,7 +69,7 @@ onClickOutside(rootEl, () => {
       cn(
         'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
         !internalDisabled &&
-          'focus-within:bg-modal-card-background-hovered hover:bg-modal-card-background-hovered',
+          'focus-within:bg-tertiary-background hover:bg-tertiary-background',
         !disabled && !isEditingEnabled && 'cursor-pointer',
         className
       )

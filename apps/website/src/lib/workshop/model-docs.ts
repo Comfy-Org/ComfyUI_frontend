@@ -1,5 +1,5 @@
-import type { WorkshopModel } from '../../config/models-catalogue'
-import { externalLinks } from '../../config/routes'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { externalLinks } from '@/config/routes'
 
 /**
  * Where a model's docs live. The Router docs page carries one section per

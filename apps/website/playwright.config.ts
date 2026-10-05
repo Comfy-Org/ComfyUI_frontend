@@ -27,6 +27,7 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: '**/acceptance/**',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   globalTimeout: process.env.CI ? 20 * 60_000 : 0,

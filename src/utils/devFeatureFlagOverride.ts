@@ -16,8 +16,14 @@ const FF_PREFIX = 'ff:'
 export function getDevOverride<T>(
   flagKey: string & { readonly valueType?: T }
 ): T | undefined {
-  if (!import.meta.env.DEV) return undefined
-  const raw = localStorage.getItem(`${FF_PREFIX}${flagKey}`)
+  if (!import.meta.env.DEV || typeof localStorage === 'undefined')
+    return undefined
+  let raw: string | null
+  try {
+    raw = localStorage.getItem(`${FF_PREFIX}${flagKey}`)
+  } catch {
+    return undefined
+  }
   if (raw === null) return undefined
   try {
     return JSON.parse(raw) as T

@@ -52,6 +52,7 @@ const CAPABILITIES: BillingCapabilitiesResponse = {
     can_downgrade_to_personal: false,
     can_invite_members: false,
     can_reactivate: false,
+    can_revert_scheduled_change: false,
     can_subscribe_self_serve: true,
     can_top_up: true
   },
@@ -114,7 +115,11 @@ export async function stubBuyCredits(
   }
 
   await context.route('**/api/features', (route) => {
-    traffic.featureReads.push(route.request().url())
+    const request = route.request()
+    if (!request.headers()['authorization']) {
+      return fulfillJson(route, { status: 200, body: {} })
+    }
+    traffic.featureReads.push(request.url())
     return fulfillJson(route, replies.features)
   })
 

@@ -87,10 +87,31 @@ const state = computed<GridState>(() => {
   const fromCol = fromRow * cols.value
   const toCol = toRow * cols.value
 
-  return {
-    start: clamp(fromCol, 0, items?.length),
-    end: clamp(toCol, fromCol, items?.length)
+  const total = items?.length ?? 0
+  const windowSize = Math.max(toCol - fromCol, 0)
+
+  // Clamp `end` to the current item count first, then clamp `start` against
+  // that already-valid bound (not the raw `fromCol`). This guarantees
+  // 0 <= start <= end <= total even when `fromCol`/`toCol` point past a list
+  // that just shrunk (filter change) or a column count that just grew
+  // (resize/zoom) while scrolled deep into the grid. es-toolkit's
+  // clamp(value, min, max) produces nonsensical results when min > max,
+  // which is exactly what happens if `start` is clamped against the
+  // unclamped `fromCol` in those cases.
+  const end = clamp(toCol, 0, total)
+  let start = clamp(fromCol, 0, end)
+
+  // If the scroll position still points entirely past the available items
+  // (the window collapsed to empty), shift it left to show the trailing
+  // items instead of leaving the view blank. A real browser would normally
+  // clamp the scroll position itself once the spacer heights shrink, but a
+  // stale/negative spacer height can get rejected by the CSSOM and prevent
+  // that from ever happening, so we clamp the window directly here.
+  if (start === end && total > 0) {
+    start = Math.max(0, end - windowSize)
   }
+
+  return { start, end }
 })
 const renderedItems = computed(() =>
   isValidGrid.value ? items.slice(state.value.start, state.value.end) : []

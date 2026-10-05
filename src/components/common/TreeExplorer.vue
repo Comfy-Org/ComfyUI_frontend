@@ -3,7 +3,7 @@
     v-bind="$attrs"
     v-model:expanded-keys="expandedKeys"
     v-model:selection-keys="selectionKeys"
-    class="tree-explorer bg-transparent px-2 py-0 2xl:px-4"
+    class="tree-explorer bg-transparent px-2 py-0"
     :class="props.class"
     :value="renderedRoot.children"
     selection-mode="single"

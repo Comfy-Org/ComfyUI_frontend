@@ -17,6 +17,7 @@ export async function openModelLibraryBrowser(): Promise<void> {
       const error = startModelNodeDragFromAsset(asset, 'asset_browser')
       if (error) {
         reportError(new Error(error.message), {
+          surface: 'assets',
           errorType: 'model_node_creation_failure',
           tags: { code: error.code },
           context: { assetId: error.assetId, details: error.details }

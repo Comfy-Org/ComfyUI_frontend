@@ -42,8 +42,7 @@ export class NodeSearchService {
       id: 'output',
       name: 'Output Type',
       invokeSequence: 'o',
-      getItemOptions: (node) =>
-        node.outputs.flatMap((output) => output.type.split(',')),
+      getItemOptions: (node) => node.outputTypes,
       fuseOptions
     })
 

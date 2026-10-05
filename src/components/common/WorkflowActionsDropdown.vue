@@ -179,7 +179,7 @@ const tooltipPt = {
         role="group"
         tabindex="-1"
         :aria-label="t('breadcrumbsMenu.workflowActions')"
-        class="group pointer-events-auto relative inline-block shrink-0 rounded-lg bg-base-background p-1"
+        class="group pointer-events-auto relative inline-block shrink-0 floating-panel"
         @focus="focusActiveSegment"
       >
         <TransitionGroup
@@ -212,7 +212,7 @@ const tooltipPt = {
             :aria-expanded="seg.active ? dropdownOpen : undefined"
             :class="
               cn(
-                'relative flex h-8 items-center gap-0 rounded-md font-normal transition-[background-color,color,transform] duration-200',
+                'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
                 seg.displayActive
                   ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
                   : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'

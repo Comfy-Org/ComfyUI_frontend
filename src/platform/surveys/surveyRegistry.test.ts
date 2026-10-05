@@ -33,6 +33,20 @@ describe('surveyRegistry', () => {
     Object.assign(FEATURE_SURVEYS, originalEntries)
   })
 
+  describe('shipped entries', () => {
+    it('never enables a survey that has no Typeform ID', () => {
+      // An enabled entry with a placeholder ID would open an empty Typeform
+      // dialog for real users, so the placeholder must stay disabled until the
+      // form is published.
+      const enabledWithoutForm = Object.values(originalEntries)
+        .filter((config) => config.enabled !== false)
+        .filter((config) => !config.typeformId)
+        .map((config) => config.featureId)
+
+      expect(enabledWithoutForm).toEqual([])
+    })
+  })
+
   describe('getSurveyConfig', () => {
     it('returns undefined for unknown feature', () => {
       expect(getSurveyConfig('nonexistent-feature')).toBeUndefined()

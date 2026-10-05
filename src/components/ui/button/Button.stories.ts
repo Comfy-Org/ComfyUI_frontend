@@ -5,7 +5,7 @@ import type {
 } from '@storybook/vue3-vite'
 
 import Button from './Button.vue'
-import { FOR_STORIES } from '@/components/ui/button/button.variants'
+import { FOR_STORIES } from '@comfyorg/design-system/button.variants'
 
 interface ButtonPropsAndStoryArgs extends ComponentPropsAndSlots<
   typeof Button

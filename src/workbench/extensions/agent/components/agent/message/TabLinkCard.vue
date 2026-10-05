@@ -69,7 +69,10 @@ async function open(): Promise<void> {
       await targetNavigation.navigate({ workflowId, locatorId })
     } catch (error) {
       if (!(error instanceof AgentTargetNavigationError))
-        reportError(error, { errorType: 'agent_target_navigation_failure' })
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_target_navigation_failure'
+        })
       toast.add({
         severity: 'warn',
         detail: t('agent.targetNavigationUnavailable'),
@@ -102,9 +105,7 @@ async function open(): Promise<void> {
       data-testid="workflow-link-content"
       class="flex min-w-0 flex-1 flex-col gap-0.5"
     >
-      <span class="truncate text-sm/4 font-medium text-base-foreground">{{
-        label
-      }}</span>
+      <span class="truncate text-sm/4 text-base-foreground">{{ label }}</span>
       <span
         v-if="nodeCount !== undefined"
         :id="nodeCountId"

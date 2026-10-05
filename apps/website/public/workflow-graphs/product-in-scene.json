@@ -1,0 +1,541 @@
+{
+  "id": "8ead682f-1c65-4c02-baf3-4e1f9537c836",
+  "revision": 0,
+  "last_node_id": 29,
+  "last_link_id": 44,
+  "nodes": [
+    {
+      "id": 14,
+      "type": "PrimitiveStringMultiline",
+      "pos": [-1570, 60],
+      "size": [270, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [19]
+        }
+      ],
+      "title": "Describe the Product",
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "A dispenser bottle filled with viscuous clear liquid, with a metallic top, \"C\" logo and a clear glass body"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [-1960, 340],
+      "size": [340, 420],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [22]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "title": "Load Product Image",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["comfy_shampoo.png", "image"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [-1960, -170],
+      "size": [340, 420],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [21]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Load Background Image",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["flower_sea.png", "image"],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 23,
+      "type": "SaveImage",
+      "pos": [-610, -170],
+      "size": [760, 930],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 35
+        }
+      ],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["ComfyUI"]
+    },
+    {
+      "id": 22,
+      "type": "ByteDanceSeedreamNode",
+      "pos": [-1050, -170],
+      "size": [400, 374],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 33
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 34
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [35]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ByteDanceSeedreamNode"
+      },
+      "widgets_values": [
+        "seedream-4-5-251128",
+        "",
+        "2048x2048 (1:1)",
+        2048,
+        2048,
+        "disabled",
+        1,
+        406946789,
+        "randomize",
+        false,
+        true
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 13,
+      "type": "RegexReplace",
+      "pos": [-1280, 60],
+      "size": [210, 292],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "string",
+          "type": "STRING",
+          "widget": {
+            "name": "string"
+          },
+          "link": 18
+        },
+        {
+          "name": "replace",
+          "type": "STRING",
+          "widget": {
+            "name": "replace"
+          },
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [34]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RegexReplace"
+      },
+      "widgets_values": ["", "{product_description}", "", true, false, false, 0]
+    },
+    {
+      "id": 12,
+      "type": "PrimitiveStringMultiline",
+      "pos": [-1570, 310],
+      "size": [390, 770],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [18]
+        }
+      ],
+      "title": "Prompt Template",
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "Task: Realistic Product Compositing with Material Preservation Goal: Insert the product from Input 2 into Input 1, ensuring placement is logical and lighting interacts accurately with the product's specific material properties.\n\nInput Image(s):\n\nInput 1 (Scene)\nInput 2 (Product): {product_description}\n\nManual Material Breakdown (Critical): To ensure correct light interaction, treat the product as having the following physical properties:\n\nPrimary Material: [e.g., Matte Plastic / Brushed Aluminum / Clear Glass]\n\nReflectivity: [e.g., Low (dull reflections) / High (mirror-like)]\n\nTexture: [e.g., Smooth / Grainy / Porous]\n\nReaction to Light: [e.g., \"Should absorb light with soft highlights, no sharp glares\"]\n\nSecondary Material (if any): [e.g., Gold Foil Label / Glossy Cap]\n\nReaction to Light: [e.g., \"Should catch sharp, bright specular highlights from the environment\"]\n\nProcess:\nScene Analysis: Identify the logical ground plane/surface in Input 1.\n\nPlacement: Scale Input 2 uniformly (maintain aspect ratio) and place it on the surface.\n\nMaterial-Based Relighting:\n\nDo not simply overlay the scene colors onto the product.\nInstead, map the environment light from Input 1 onto the contours of Input 2 based on the material definitions above.\n\nExample: If the material is Matte, only the edge lighting and general ambient tone should change; do not add sharp reflections.\n\nExample: If the material is Glossy, reflect the scene's details on the surface.\n\nShadows: Generate contact shadows that match the hardness/softness of shadows in the rest of the scene.\n\nTechnical Requirements:\nAlbedo Preservation: The intrinsic color of the product (e.g., \"Brand Red\") must not be washed out by the scene's lighting color.\n\nTexture Fidelity: Do not smooth out surface details (grain, bumps) during the blending process.\n\nScaling: No non-uniform stretching.\n\nOutput: A composite where the lighting confirms the materiality of the product (e.g., makes the plastic look like plastic, not metal)."
+      ]
+    },
+    {
+      "id": 15,
+      "type": "94a7e2c4-f61f-4641-a52c-758479d9b975",
+      "pos": [-1430, -140],
+      "size": [170, 46],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image1",
+          "type": "IMAGE",
+          "link": 21
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [33]
+        }
+      ],
+      "properties": {
+        "proxyWidgets": []
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [18, 12, 0, 13, 0, "STRING"],
+    [19, 14, 0, 13, 1, "STRING"],
+    [21, 2, 0, 15, 0, "IMAGE"],
+    [22, 1, 0, 15, 1, "IMAGE"],
+    [33, 15, 0, 22, 0, "IMAGE"],
+    [34, 13, 0, 22, 1, "STRING"],
+    [35, 22, 0, 23, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "94a7e2c4-f61f-4641-a52c-758479d9b975",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 15,
+          "lastLinkId": 23,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Batch Images",
+        "inputNode": {
+          "id": -10,
+          "bounding": [-1880, -140, 120, 80]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [-1080, -160, 120, 60]
+        },
+        "inputs": [
+          {
+            "id": "68bb369f-8785-4b9f-b018-65e10a96e046",
+            "name": "image1",
+            "type": "IMAGE",
+            "linkIds": [16, 22],
+            "localized_name": "image1",
+            "pos": [-1780, -120]
+          },
+          {
+            "id": "29c264c0-fb68-474c-8fda-ca049dd15e77",
+            "name": "image",
+            "type": "IMAGE",
+            "linkIds": [17],
+            "localized_name": "image",
+            "pos": [-1780, -100]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "506e4ff4-c6f3-4bf1-9492-f4298a32939f",
+            "name": "IMAGE",
+            "type": "IMAGE",
+            "linkIds": [21],
+            "localized_name": "IMAGE",
+            "pos": [-1060, -140]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 15,
+            "type": "BatchImagesNode",
+            "pos": [-1420, -170],
+            "size": [169.23046875, 66],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "image0",
+                "localized_name": "images.image0",
+                "name": "images.image0",
+                "type": "IMAGE",
+                "link": 22
+              },
+              {
+                "label": "image1",
+                "localized_name": "images.image1",
+                "name": "images.image1",
+                "type": "IMAGE",
+                "link": 23
+              },
+              {
+                "label": "image2",
+                "localized_name": "images.image2",
+                "name": "images.image2",
+                "shape": 7,
+                "type": "IMAGE",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "IMAGE",
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": [21]
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "BatchImagesNode"
+            }
+          },
+          {
+            "id": 5,
+            "type": "GetImageSize",
+            "pos": [-1710, -30],
+            "size": [210, 136],
+            "flags": {
+              "collapsed": false
+            },
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "image",
+                "name": "image",
+                "type": "IMAGE",
+                "link": 16
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "width",
+                "name": "width",
+                "type": "INT",
+                "links": [4]
+              },
+              {
+                "localized_name": "height",
+                "name": "height",
+                "type": "INT",
+                "links": [5]
+              },
+              {
+                "localized_name": "batch_size",
+                "name": "batch_size",
+                "type": "INT",
+                "links": null
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "GetImageSize"
+            },
+            "widgets_values": []
+          },
+          {
+            "id": 6,
+            "type": "ResizeAndPadImage",
+            "pos": [-1450, -30],
+            "size": [210, 130],
+            "flags": {
+              "collapsed": false
+            },
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "image",
+                "name": "image",
+                "type": "IMAGE",
+                "link": 17
+              },
+              {
+                "localized_name": "target_width",
+                "name": "target_width",
+                "type": "INT",
+                "widget": {
+                  "name": "target_width"
+                },
+                "link": 4
+              },
+              {
+                "localized_name": "target_height",
+                "name": "target_height",
+                "type": "INT",
+                "widget": {
+                  "name": "target_height"
+                },
+                "link": 5
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "IMAGE",
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": [23]
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "ResizeAndPadImage"
+            },
+            "widgets_values": [512, 512, "white", "area"]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 4,
+            "origin_id": 5,
+            "origin_slot": 0,
+            "target_id": 6,
+            "target_slot": 1,
+            "type": "INT"
+          },
+          {
+            "id": 5,
+            "origin_id": 5,
+            "origin_slot": 1,
+            "target_id": 6,
+            "target_slot": 2,
+            "type": "INT"
+          },
+          {
+            "id": 16,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 5,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 17,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 6,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 21,
+            "origin_id": 15,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 22,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 15,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 23,
+            "origin_id": 6,
+            "origin_slot": 0,
+            "target_id": 15,
+            "target_slot": 1,
+            "type": "IMAGE"
+          }
+        ],
+        "extra": {
+          "workflowRendererVersion": "LG"
+        }
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.3940068280855902,
+      "offset": [1902.121132651144, 351.9877945599146]
+    },
+    "frontendVersion": "1.37.6",
+    "workflowRendererVersion": "LG",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

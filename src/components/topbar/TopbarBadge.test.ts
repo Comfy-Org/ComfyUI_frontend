@@ -200,10 +200,16 @@ describe('TopbarBadge', () => {
       expect(screen.getByText('BETA')).toBeInTheDocument()
     })
 
-    it('keeps the label in compact mode, where it stands in for the text', () => {
-      renderTopbarBadge({ text: 'Warning Message', label: 'WARN' }, 'compact')
+    it('drops the PREVIEW label in compact mode while keeping the warning icon', () => {
+      renderTopbarBadge(
+        { text: 'Preview Environment', label: 'PREVIEW', variant: 'warning' },
+        'compact'
+      )
 
-      expect(screen.getByText('WARN')).toBeInTheDocument()
+      expect(screen.queryByText('PREVIEW')).not.toBeInTheDocument()
+      expect(screen.getByTestId('badge-icon')).toHaveClass(
+        'icon-[lucide--triangle-alert]'
+      )
     })
   })
 

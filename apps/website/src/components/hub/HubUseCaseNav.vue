@@ -3,8 +3,8 @@ import { useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
-import type { UseCase } from '../../config/models-catalogue'
+import { useSlidingUnderline } from '@/composables/useSlidingUnderline'
+import type { UseCase } from '@/config/models-catalogue'
 
 type Entry = { value: UseCase | 'all'; label: string }
 

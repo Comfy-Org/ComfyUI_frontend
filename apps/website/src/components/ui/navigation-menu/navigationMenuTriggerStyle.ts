@@ -5,6 +5,6 @@ export const navigationMenuTriggerStyle = cva([
   'hover:text-primary-warm-gray',
   'data-[state=open]:text-primary-comfy-yellow data-[state=open]:hover:text-primary-comfy-yellow data-[state=open]:focus:text-primary-comfy-yellow',
   'data-active:text-primary-comfy-yellow data-active:hover:text-primary-comfy-yellow',
-  'focus:bg-accent focus:text-accent-foreground focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow focus-visible:outline-1',
+  'focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow focus-visible:outline-1',
   'disabled:pointer-events-none disabled:opacity-50'
 ])

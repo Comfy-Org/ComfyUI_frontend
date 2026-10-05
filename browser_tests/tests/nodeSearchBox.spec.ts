@@ -187,6 +187,34 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await expectFilterChips(comfyPage, ['MODEL'])
     })
 
+    for (const { key, target } of [
+      { key: 'Tab', target: 'Add' },
+      { key: 'Shift+Tab', target: 'Input Type' }
+    ]) {
+      test(`${key} leaves the filter dropdown for ${target}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.searchBox.filterButton.click()
+        const panel = comfyPage.searchBox.filterSelectionPanel
+        await panel.selectFilterType('Input Type')
+        await panel.root
+          .getByRole('button', { name: 'Single-select dropdown' })
+          .click()
+        const search = comfyPage.page.getByRole('combobox', {
+          name: 'Search',
+          exact: true
+        })
+        await expect(search).toBeFocused()
+
+        await search.press(key)
+
+        await expect(search).toBeHidden()
+        await expect(
+          panel.root.getByRole('button', { name: target, exact: true })
+        ).toBeFocused()
+      })
+    }
+
     test('Outer click dismisses filter panel but keeps search box visible', async ({
       comfyPage
     }) => {

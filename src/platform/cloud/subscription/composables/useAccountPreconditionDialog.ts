@@ -1,10 +1,12 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { AccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
 
 interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */
   nodeType?: string
+  source?: PaymentIntentSource
 }
 
 // Routes a resolved account precondition to its dedicated modal. This is the
@@ -26,7 +28,7 @@ export function useAccountPreconditionDialog() {
         return
       case 'subscription':
         void dialogService.showSubscriptionRequiredDialog({
-          reason: 'subscription_required'
+          reason: context.source ?? 'subscription_required'
         })
         return
       case 'credits': {
@@ -38,7 +40,8 @@ export function useAccountPreconditionDialog() {
         const { fetchStatus, fetchBalance } = useBillingContext()
         void Promise.allSettled([fetchStatus(), fetchBalance()])
         void dialogService.showTopUpCreditsDialog({
-          isInsufficientCredits: true
+          isInsufficientCredits: true,
+          ...(context.source && { source: context.source })
         })
         return
       }

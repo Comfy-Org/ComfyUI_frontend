@@ -12,9 +12,7 @@ import {
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
@@ -202,11 +200,22 @@ describe('doc frame client', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_reset',
-        data: { v: 1, workflow_id: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 43,
+          lineage_seq: 7,
+          actor: 'agent:th-1:turn-2'
+        }
       })
     ).toEqual({
       type: 'doc_reset',
-      data: { workflowId: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+      data: {
+        workflowId: 'wf-1',
+        seq: 43,
+        lineageSeq: 7,
+        actor: 'agent:th-1:turn-2'
+      }
     })
     expect(
       parseServerDocFrame({
@@ -273,11 +282,13 @@ describe('doc frame client', () => {
     expect(listener).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledTimes(2)
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'doc_update' },
       level: 'warning'
     })
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'awareness' },
       level: 'warning'

@@ -12,20 +12,24 @@ const contract = workshopContractSchema.parse({
 
 describe('Router output MIME discovery', () => {
   it('uses public asset headers to display extensionless raster output', async () => {
+    let requestSignal: AbortSignal | undefined
     vi.stubGlobal('fetch', async (_url: unknown, options: RequestInit) => {
       expect(options.method).toBe('HEAD')
       expect(options.credentials).toBe('omit')
       expect(options.redirect).toBe('error')
       expect(options.referrerPolicy).toBe('no-referrer')
       expect(new Headers(options.headers).has('Authorization')).toBe(false)
+      requestSignal = options.signal ?? undefined
       return new Response(null, {
         headers: { 'Content-Type': 'IMAGE/WEBP; charset=binary' }
       })
     })
     const url = 'https://assets.example/generated?id=opaque'
+    const controller = new AbortController()
     const outputs = await parseRouterResponse(
       contract,
-      Response.json({ data: [{ url }], duplicate: url })
+      Response.json({ data: [{ url }], duplicate: url }),
+      controller.signal
     )
     try {
       expect(outputs.map(({ kind }) => kind)).toEqual(['image', 'text'])
@@ -33,6 +37,8 @@ describe('Router output MIME discovery', () => {
         url,
         fileName: 'fixture-native-1.webp'
       })
+      expect(requestSignal?.aborted).toBe(true)
+      expect(controller.signal.aborted).toBe(false)
     } finally {
       releaseRouterOutputs(outputs)
     }

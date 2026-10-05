@@ -55,14 +55,21 @@ type CloudValidationResult =
   | { kind: 'nodeErrors'; nodeErrors: Record<SerializedNodeId, NodeError> }
   | { kind: 'promptError'; promptError: PromptError }
 
-export function normalizePromptError(
-  error: RawPromptError | undefined
-): PromptError | null {
-  if (error && typeof error === 'object') {
+export function normalizePromptError(error: unknown): PromptError | null {
+  if (error !== null && typeof error === 'object') {
     return {
-      type: error.type ?? 'error',
-      message: error.message ?? '',
-      details: error.details ?? ''
+      type:
+        'type' in error && typeof error.type === 'string'
+          ? error.type
+          : 'error',
+      message:
+        'message' in error && typeof error.message === 'string'
+          ? error.message
+          : '',
+      details:
+        'details' in error && typeof error.details === 'string'
+          ? error.details
+          : ''
     }
   }
 

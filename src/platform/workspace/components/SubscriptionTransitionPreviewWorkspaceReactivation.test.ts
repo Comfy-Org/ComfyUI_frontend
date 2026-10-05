@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
@@ -17,11 +18,27 @@ const { mockSubscription } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    subscription: computed(() => mockSubscription.value)
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+beforeEach(() => {
+  const billingContext = useBillingContext()
+  billingContext.subscription = computed(() =>
+    mockSubscription.value
+      ? {
+          isActive: true,
+          tier: null,
+          duration: null,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          hasFunds: true,
+          agentHasFunds: true,
+          ...mockSubscription.value
+        }
+      : null
+  )
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -72,6 +89,10 @@ const i18n = createI18n({
               'Your {plan} was set to end on {date}. Switching to annual billing reactivates it and charges the full year, {amount}, today. It will then renew annually on {nextDate} instead of ending.',
             durationChangeBodyMonthly:
               "Your {plan} was set to end on {date}. Switching to monthly billing reactivates it — you'll be charged {amount} today, and it will renew automatically on {nextDate} instead of ending.",
+            withoutRenewalDate: {
+              upgradeBody:
+                "Your {plan} was set to end on {date}. Upgrading now reactivates it — you'll be charged {amount} today, and it will renew automatically instead of ending."
+            },
             confirmButton: 'Confirm & reactivate',
             confirmButtonWithCharge: 'Confirm & reactivate — {amount} today',
             checkboxLabel: "I understand I'll be charged {amount} today",
@@ -737,8 +758,8 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
     })
   })
 
-  describe('next payment date fallback', () => {
-    it('falls back to one month after activation for a monthly plan with no period_end', () => {
+  describe('a quote with no renewal date', () => {
+    it('leaves the renewal clause out instead of computing a date', () => {
       mockSubscription.value = {
         isCancelled: true,
         endDate: '2026-08-15T00:00:00Z'
@@ -747,6 +768,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         makePreview({
           transition_type: 'upgrade',
           effective_at: '2026-08-01T00:00:00Z',
+          renewal_at: undefined,
           new_plan: {
             slug: 'creator-monthly',
             tier: 'CREATOR',
@@ -758,106 +780,15 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
               total_cost_cents: 3500,
               total_credits_cents: 0
             }
-            // No period_end.
           }
         })
       )
       const bodyText = container.textContent
 
-      // Not the activation date itself (which would misreport as "renews
-      // today"); one month later instead.
-      expect(bodyText).not.toContain('renew automatically on Aug 1, 2026')
-      expect(bodyText).toContain('renew automatically on Sep 1, 2026')
-    })
-
-    it('clamps a Jan 31 + 1 month fallback to Feb 28, not Mar 3', () => {
-      mockSubscription.value = {
-        isCancelled: true,
-        endDate: '2026-01-15T00:00:00Z'
-      }
-      const { container } = renderComponent(
-        makePreview({
-          transition_type: 'upgrade',
-          effective_at: '2026-01-31T00:00:00Z',
-          new_plan: {
-            slug: 'creator-monthly',
-            tier: 'CREATOR',
-            duration: 'MONTHLY',
-            price_cents: 3500,
-            credits_cents: 0,
-            seat_summary: {
-              seat_count: 1,
-              total_cost_cents: 3500,
-              total_credits_cents: 0
-            }
-            // No period_end.
-          }
-        })
+      expect(bodyText).toContain(
+        'it will renew automatically instead of ending.'
       )
-      const bodyText = container.textContent
-
-      expect(bodyText).not.toContain('renew automatically on Mar')
-      expect(bodyText).toContain('renew automatically on Feb 28, 2026')
-    })
-
-    it('clamps a Feb 29 leap-day + 12 months fallback to Feb 28 the next year', () => {
-      mockSubscription.value = {
-        isCancelled: true,
-        endDate: '2028-02-15T00:00:00Z'
-      }
-      const { container } = renderComponent(
-        makePreview({
-          transition_type: 'upgrade',
-          effective_at: '2028-02-29T00:00:00Z',
-          new_plan: {
-            slug: 'creator-annual',
-            tier: 'CREATOR',
-            duration: 'ANNUAL',
-            price_cents: 33_600,
-            credits_cents: 0,
-            seat_summary: {
-              seat_count: 1,
-              total_cost_cents: 33_600,
-              total_credits_cents: 0
-            }
-            // No period_end.
-          }
-        })
-      )
-      const bodyText = container.textContent
-
-      expect(bodyText).not.toContain('renew automatically on Mar')
-      expect(bodyText).toContain('renew automatically on Feb 28, 2029')
-    })
-
-    it('clamps a Mar 31 + 1 month fallback to Apr 30, not May 1', () => {
-      mockSubscription.value = {
-        isCancelled: true,
-        endDate: '2026-03-15T00:00:00Z'
-      }
-      const { container } = renderComponent(
-        makePreview({
-          transition_type: 'upgrade',
-          effective_at: '2026-03-31T00:00:00Z',
-          new_plan: {
-            slug: 'creator-monthly',
-            tier: 'CREATOR',
-            duration: 'MONTHLY',
-            price_cents: 3500,
-            credits_cents: 0,
-            seat_summary: {
-              seat_count: 1,
-              total_cost_cents: 3500,
-              total_credits_cents: 0
-            }
-            // No period_end.
-          }
-        })
-      )
-      const bodyText = container.textContent
-
-      expect(bodyText).not.toContain('renew automatically on May')
-      expect(bodyText).toContain('renew automatically on Apr 30, 2026')
+      expect(bodyText).not.toContain('renew automatically on')
     })
   })
 })

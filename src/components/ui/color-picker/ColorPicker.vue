@@ -80,8 +80,8 @@ const contentStyle = useModalLiftedZIndex(isOpen)
           :disabled="$props.disabled"
           :class="
             cn(
-              'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-component-node-widget-background pr-2 outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-not-allowed disabled:opacity-50',
-              isOpen && 'border-node-stroke',
+              'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-secondary-background pr-2 outline-none hover:bg-tertiary-background disabled:cursor-not-allowed disabled:opacity-50',
+              isOpen && 'border-border-default',
               $props.class
             )
           "
@@ -103,7 +103,7 @@ const contentStyle = useModalLiftedZIndex(isOpen)
             </div>
           </div>
           <div
-            class="flex flex-1 items-center justify-between pl-1 text-xs text-component-node-foreground"
+            class="flex flex-1 items-center justify-between pl-1 text-xs text-base-foreground"
           >
             <template v-if="displayMode === 'hex'">
               <span>{{ displayHex }}</span>

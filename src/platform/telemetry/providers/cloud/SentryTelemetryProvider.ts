@@ -104,7 +104,7 @@ export class SentryTelemetryProvider implements TelemetryProvider {
     const activeWorkflow = useWorkflowStore().activeWorkflow
 
     setContext('ComfyUI App State', {
-      ...(this.shellLayout ?? {}),
+      ...this.shellLayout,
       workflow_is_modified: activeWorkflow?.isModified ?? false,
       is_template,
       custom_node_count,

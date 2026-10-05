@@ -10,13 +10,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
-import {
-  isHrefActive,
-  useCurrentPath
-} from '../../../composables/useCurrentPath'
-import { getMainNavigation } from '../../../data/mainNavigation'
-import type { NavItem } from '../../../data/mainNavigation'
-import type { Locale } from '../../../i18n/translations'
+import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath'
+import { getMainNavigation } from '@/data/mainNavigation'
+import type { NavItem } from '@/data/mainNavigation'
+import type { Locale } from '@/i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
@@ -88,11 +85,8 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           "
         >
           <a :href="navItem.href">
-            <span class="ppformula-text-center">{{ navItem.label }}</span>
-            <span
-              v-if="navItem.badge"
-              class="ppformula-text-center hidden 2xl:inline-flex"
-            >
+            <span class="inline-block">{{ navItem.label }}</span>
+            <span v-if="navItem.badge" class="hidden 2xl:inline-flex">
               <NewBadge :locale="locale" size="xxs" />
             </span>
           </a>

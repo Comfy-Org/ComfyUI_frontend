@@ -10,6 +10,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useLoad3dService } from '@/services/load3dService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { api } from '@/scripts/api'
 
 vi.mock(import('@/services/load3dService'), () => ({
   useLoad3dService: vi.fn()
@@ -29,15 +30,9 @@ vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: vi.fn((url: string) => `/${url}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key) => key)
-}))
+vi.mock(import('@/i18n'))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
@@ -75,6 +70,10 @@ describe('useLoad3dViewer', () => {
   let mockLoad3dService: ReturnType<typeof useLoad3dService>
   let mockToastStore: ReturnType<typeof useToastStore>
   let mockNode: LGraphNode
+
+  beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((url) => `/${url}`)
+  })
 
   beforeEach(() => {
     mockNode = createMockLGraphNode({

@@ -44,12 +44,12 @@ vi.mock(import('./cameraFraming'), () => ({
   }
 }))
 
-async function buildSteps(templateId: keyof typeof TOUR_ROLE_PINS | string) {
+async function buildSteps(templateId: string) {
   const { steps } = await firstRunTourSteps(templateId, runState)
   return steps
 }
 
-function buildResolution(templateId: keyof typeof TOUR_ROLE_PINS | string) {
+function buildResolution(templateId: string) {
   return firstRunTourSteps(templateId, runState)
 }
 

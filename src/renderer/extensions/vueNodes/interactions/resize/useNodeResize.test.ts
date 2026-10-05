@@ -15,14 +15,7 @@ type ResizeCallback = (
   element: HTMLElement
 ) => void
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => ({
-    useTransformState: () => ({
-      camera: { x: 0, y: 0, z: 1 }
-    })
-  })
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 const snapState = vi.hoisted(() => ({
   shouldSnap: false,

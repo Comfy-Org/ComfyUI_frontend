@@ -9,7 +9,11 @@ on:
       - 'cloud/**'
     paths:
       - 'apps/billing-web/**'
+      - 'packages/account-core/**'
+      - 'packages/account-ui/**'
+      - 'packages/billing-contract/**'
       - 'packages/design-system/**'
+      - 'packages/ingest-types/**'
       - 'packages/tailwind-utils/**'
       - 'public/fonts/**'
       - 'pnpm-workspace.yaml'
@@ -128,44 +132,3 @@ jobs:
             **Billing Web Preview:** ${{ steps.urls.outputs.stable-url }}
 
             <sub>This commit: ${{ steps.deploy.outputs.url }}</sub>
-
-  # Production never follows a merge. Someone dispatches this workflow against
-  # main when the hosted app should change for customers.
-  deploy-production:
-    needs: preflight
-    if: >
-      needs.preflight.outputs.configured == 'true' &&
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: '.nvmrc'
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel environment information
-        run: vercel pull --yes --environment=production
-
-      - name: Build project artifacts
-        run: NODE_ENV=production VERCEL_ENV=production vercel build --prod
-
-      - name: Deploy project artifacts to Vercel
-        id: deploy
-        run: |
-          URL=$(vercel deploy --prebuilt --prod --archive=tgz)
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
-
-      - name: Add deployment URL to summary
-        run: echo "**Production:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

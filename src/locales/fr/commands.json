@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Nouveau flux de travail vierge"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Rejouer l’intégration"
+  },
   "Comfy_OpenClipspace": {
     "label": "Espace de clip"
   },

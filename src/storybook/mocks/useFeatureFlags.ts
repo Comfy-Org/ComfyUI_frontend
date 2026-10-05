@@ -12,7 +12,6 @@ export enum ServerFeatureFlag {
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
-  ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
@@ -25,6 +24,7 @@ export enum ServerFeatureFlag {
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  UNIFIED_WEB_SESSION = 'unified_web_session',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery'
 }

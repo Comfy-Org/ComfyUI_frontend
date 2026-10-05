@@ -434,7 +434,8 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       trigger_source: 'button',
       view_mode: 'graph',
       is_app_mode: false,
-      dock_state: 'floating'
+      dock_state: 'floating',
+      agent_panel_open: false
     }
 
     provider.trackRunButton(properties)

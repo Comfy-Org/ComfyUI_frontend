@@ -175,7 +175,7 @@ test.describe('Node library sidebar', () => {
 
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
 
@@ -293,9 +293,10 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page.getByLabel('Customize').click()
 
     // Click a color option multiple times
-    const customColorOption = comfyPage.page.locator(
-      '.p-togglebutton-content > .pi-palette'
-    )
+    const customColorOption = comfyPage.page.getByRole('button', {
+      name: 'Custom',
+      exact: true
+    })
     await customColorOption.click()
     await customColorOption.click()
 
@@ -342,7 +343,7 @@ test.describe('Node library sidebar', () => {
     await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
     await comfyPage.nextFrame()

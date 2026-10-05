@@ -8,7 +8,7 @@
         size="md"
         @click="$emit('update:selectedJobTab', tab)"
       >
-        {{ tabLabel(tab) }}
+        {{ t(jobTabLabelKeys[tab]) }}
       </Button>
     </div>
   </div>
@@ -19,8 +19,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { jobTabs } from '@/composables/queue/useJobList'
-import type { JobTab } from '@/composables/queue/useJobList'
+import { getVisibleJobTabs, jobTabLabelKeys } from '@/composables/queue/jobTabs'
+import type { JobTab } from '@/composables/queue/jobTabs'
 
 const { selectedJobTab, hasFailedJobs } = defineProps<{
   selectedJobTab: JobTab
@@ -33,13 +33,5 @@ defineEmits<{
 
 const { t } = useI18n()
 
-const visibleJobTabs = computed(() =>
-  hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
-)
-
-const tabLabel = (tab: JobTab) => {
-  if (tab === 'All') return t('g.all')
-  if (tab === 'Completed') return t('g.completed')
-  return t('g.failed')
-}
+const visibleJobTabs = computed(() => getVisibleJobTabs(hasFailedJobs))
 </script>

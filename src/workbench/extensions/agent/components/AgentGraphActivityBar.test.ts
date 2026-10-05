@@ -11,6 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyApp } from '@/scripts/app'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
 import { useAgentGraphActivityStore } from '../stores/agent/agentGraphActivityStore'
@@ -37,9 +38,7 @@ vi.mock(import('@/scripts/app'), () => ({
     })
   })
 }))
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: () => node
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 function mount() {
   return render(AgentGraphActivityBar, {
     props: { canvas },
@@ -49,6 +48,7 @@ function mount() {
 
 describe('AgentGraphActivityBar', () => {
   beforeEach(() => {
+    vi.mocked(getNodeByLocatorId).mockReturnValue(node)
     document.body.innerHTML =
       '<div class="graph-canvas-panel" style="width: 400px"></div>'
     vi.useFakeTimers()

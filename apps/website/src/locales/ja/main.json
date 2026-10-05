@@ -1,0 +1,167 @@
+{
+  "auth": {
+    "confirmPassword": {
+      "label": "パスワードの確認",
+      "placeholder": "もう一度同じパスワードを入力してください"
+    },
+    "email": {
+      "placeholder": "メールアドレスを入力してください"
+    },
+    "errors": {
+      "auth/account-exists-with-different-credential": "この方法ではサインインできませんでした。別のサインイン方法をお試しいただくか、パスワードをリセットしてください。",
+      "auth/cancelled-popup-request": "別のサインインウィンドウがすでに開いていたため、このリクエストはキャンセルされました。もう一度お試しください。",
+      "auth/email-already-in-use": "このメールアドレスではアカウントを作成できませんでした。代わりにサインインするか、パスワードをリセットしてください。",
+      "auth/invalid-credential": "ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。",
+      "auth/invalid-email": "有効なメールアドレスを入力してください。",
+      "auth/network-request-failed": "ネットワークエラー。接続を確認してからもう一度お試しください。",
+      "auth/operation-not-allowed": "このサインイン方法は現在サポートされていません。",
+      "auth/popup-blocked": "ブラウザによってサインインウィンドウがブロックされました。このサイトのポップアップを許可して、もう一度お試しください。",
+      "auth/popup-closed-by-user": "サインインが完了する前にサインインウィンドウが閉じられました。もう一度お試しください。",
+      "auth/too-many-requests": "ログイン試行回数が多すぎます。しばらく待ってからもう一度お試しください。",
+      "auth/user-disabled": "このアカウントは無効化されています。サポートまでご連絡ください。",
+      "auth/weak-password": "パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。",
+      "generic": "サインイン中に問題が発生しました。もう一度お試しください。",
+      "signupBlocked": "現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support{'@'}comfy.org までご連絡ください。"
+    },
+    "forgot": {
+      "backToSignIn": "ログインに戻る",
+      "body": "メールアドレスを入力すると、パスワードリセット用のリンクをお送りします。",
+      "didntReceive": "メールが届きませんでしたか？",
+      "emailRequired": "メールアドレスは必須です",
+      "error": "パスワードリセットメールの送信に失敗しました",
+      "heading": "パスワードを忘れた場合",
+      "sent": "パスワードリセットを送信しました",
+      "submit": "リセットリンクを送信",
+      "toastDetail": "パスワードをリセットするためのリンクが記載されたメールをご確認ください。",
+      "toastSummary": "パスワードリセット用メールを送信しました"
+    },
+    "hero": {
+      "carouselLabel": "注目モデル",
+      "carouselRoleDescription": "カルーセル",
+      "nextSlide": "次のスライド",
+      "previousSlide": "前のスライド",
+      "slideRoleDescription": "スライド",
+      "slideStatus": "{title}、{total}枚中{current}枚目"
+    },
+    "password": {
+      "hide": "パスワードを非表示",
+      "newPlaceholder": "新しいパスワードを入力してください",
+      "placeholder": "パスワードを入力してください",
+      "show": "パスワードを表示"
+    },
+    "shell": {
+      "andText": "および",
+      "contactLink": "こちら",
+      "logoAlt": "ComfyOrgロゴ",
+      "needHelp": "ヘルプが必要ですか？",
+      "privacyLink": "プライバシーポリシー",
+      "questionsText": "質問がありますか？お問い合わせください",
+      "termsLink": "利用規約",
+      "termsText": "「次へ」または「サインアップ」をクリックすると、私たちの"
+    },
+    "signIn": {
+      "backToSocialLogin": "GoogleまたはGithubでサインアップする",
+      "backToSocialSignIn": "GoogleまたはGithubでサインインする",
+      "freeRunsSuffix": "5回の無料実行を獲得しましょう。",
+      "github": "Githubでログイン",
+      "google": "Googleでログイン",
+      "googleSsoInAppBrowserNotice": "アプリ内ブラウザ（例：Instagram、LinkedIn）から開いた場合、Googleでのサインインができないことがあります。GitHubまたはメールをご利用いただくか、デバイスの標準ブラウザでこのページを開いてください。",
+      "heading": "アカウントにログインする",
+      "insecureContextWarning": "この接続は安全ではありません（HTTP）- このままログインを続けると、認証情報が攻撃者に傍受される可能性があります。",
+      "newHere": "Comfyを初めてご利用ですか？",
+      "signUpLink": "こちらからサインアップ",
+      "signingIn": "サインインしています…",
+      "submit": "ログイン",
+      "useEmailInstead": "メールアドレスを使用する"
+    },
+    "signUp": {
+      "creating": "アカウントを作成しています…",
+      "github": "Githubでサインアップ",
+      "google": "Googleでサインアップ",
+      "haveAccount": "すでにアカウントをお持ちですか？",
+      "heading": "アカウントを作成する",
+      "regionRestrictionChina": "現地の規制要件に従い、当社のサービスは現在中国本土のユーザーにはご利用いただけません。",
+      "signInLink": "サインイン",
+      "submit": "サインアップ"
+    },
+    "timeout": {
+      "helpText": "ヘルプが必要ですか？サポートに連絡",
+      "message": "ComfyUIクラウドへの接続に問題が発生しています。これは接続速度が遅いか、一時的なサービス障害が原因である可能性があります。",
+      "restart": "サインアウトして再試行",
+      "supportLink": "サポート",
+      "title": "接続に時間がかかっています",
+      "troubleshooting": "一般的な原因："
+    },
+    "toast": {
+      "close": "閉じる"
+    },
+    "turnstile": {
+      "expired": "認証の有効期限が切れました。再度チャレンジを完了してください。",
+      "failed": "認証に失敗しました。もう一度お試しください。",
+      "submitBlockedHint": "上記の認証チャレンジを完了すると、サインアップが有効になります。"
+    }
+  },
+  "buildWhat": {
+    "row1": "まだ存在しないものを",
+    "row2a": "構築",
+    "row2b": "しよう",
+    "subtitle": "Comfyは誰も想像したことのないワークフローを作成し、みんなと共有するための構成要素を提供します。"
+  },
+  "caseStudy": {
+    "heading": "実際の現場で活用されるComfyUI",
+    "seeAll": "すべてのケーススタディを見る",
+    "subheading": "ComfyUIを活用するチームの動画とケーススタディ",
+    "watchStory": "ストーリーを見る"
+  },
+  "g": {
+    "error": "エラー",
+    "warning": "警告"
+  },
+  "hero": {
+    "runFirstWorkflow": "最初のワークフローを実行する",
+    "subtitle": "Comfyは、あらゆるモデル、あらゆるパラメータ、あらゆる出力を完全にコントロールしたいビジュアルプロフェッショナルのためのAIクリエーションエンジンです。",
+    "title": "ビジュアルAIを自在にコントロール"
+  },
+  "industries": {
+    "cta": "ワークフローを探索する"
+  },
+  "products": {
+    "cloud": {
+      "cta": "クラウド機能を見る",
+      "description": "どこからでもComfyUIのフルパワーを。",
+      "title": "Comfy\nCloud"
+    },
+    "enterprise": {
+      "cta": "エンタープライズ機能を見る",
+      "description": "組織内のクリエイティブエンジンのためのエンタープライズグレードインフラ。",
+      "title": "Comfy\nEnterprise"
+    },
+    "heading": "すべてをコントロールできる\nAIクリエーションエンジン",
+    "local": {
+      "cta": "デスクトップ機能を見る",
+      "description": "あなたのハードウェアでComfyUIを実行。",
+      "title": "Comfy\nDesktop"
+    }
+  },
+  "showcase": {
+    "subtitle1": "モデル、処理ステップ、出力をキャンバス上で接続。すべての判断が見え、すべてのステップを検証できます。",
+    "subtitle2": "コミュニティテンプレートから始めることも、ゼロから構築することもできます。"
+  },
+  "toastMessages": {
+    "unauthorizedDomain": "あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。"
+  },
+  "validation": {
+    "password": {
+      "lengthRange": "8文字から32文字の間でなければなりません",
+      "requirements": "パスワードの要件"
+    }
+  },
+  "workshop": {
+    "output": {
+      "complete": "生成が完了しました。"
+    },
+    "run": {
+      "preparingSession": "セッションを確認しています…"
+    }
+  }
+}

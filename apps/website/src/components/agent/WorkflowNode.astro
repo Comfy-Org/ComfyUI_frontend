@@ -1,0 +1,111 @@
+---
+import type { WorkflowGraphNode } from './workflowGraph'
+import type { createWorkflowMotion, Point } from './workflowMotion'
+
+type NodeMotion = ReturnType<
+  typeof createWorkflowMotion
+>['scene']['nodes'][number]
+
+interface Props {
+  node: WorkflowGraphNode
+  motion: NodeMotion
+  unit: number
+  imageRoot: string
+}
+
+const { node, motion, unit, imageRoot } = Astro.props
+const nodeKindClasses = {
+  landscape: 'wf-kind-landscape',
+  featured: 'wf-kind-featured',
+  products: 'wf-kind-products',
+  processor: 'wf-kind-processor'
+} satisfies Record<WorkflowGraphNode['kind'], string>
+const imageSizes = {
+  landscape: { width: 256, height: 144 },
+  featured: { width: 153, height: 152 },
+  products: { width: 153, height: 152 },
+  processor: { width: 153, height: 152 }
+} satisfies Record<WorkflowGraphNode['kind'], { width: number; height: number }>
+const imageSize = imageSizes[node.kind]
+const imageStyle = motion.imageName
+  ? `--wf-animation:${motion.imageName}`
+  : undefined
+const ports = [node.input, node.output, ...(node.extraPorts ?? [])].filter(
+  (port): port is Point => port !== undefined
+)
+const portStyle = (port: Point) =>
+  `left:${(port.x - node.x) / unit}cqw;top:${(port.y - node.y) / unit}cqw`
+---
+
+<div
+  data-node={node.id}
+  class:list={['wf-node', nodeKindClasses[node.kind]]}
+  style={`left:${node.x / unit}cqw;top:${node.y / unit}cqw;width:${node.width / unit}cqw;height:${node.height / unit}cqw;--wf-animation:${motion.name}`}
+>
+  <div class="wf-node-heading">
+    <span class="ppformula-text-center">{node.label}</span>
+  </div>
+  {ports.map((port) => (
+    <span class="wf-port" style={portStyle(port)} aria-hidden="true" />
+  ))}
+  {node.image && (
+    <>
+      <div class="wf-image-well" aria-hidden="true" />
+      <img
+        class:list={[
+          'wf-node-image',
+          { 'wf-generated-image': motion.imageName }
+        ]}
+        style={imageStyle}
+        src={`${imageRoot}/${node.image}`}
+        alt={node.alt}
+        width={imageSize.width}
+        height={imageSize.height}
+      />
+    </>
+  )}
+  {node.images && <div class="wf-product-references">
+    {node.images.map((image) => (
+      <img
+        src={`${imageRoot}/${image.src}`}
+        alt={image.alt}
+        width="80"
+        height="80"
+      />
+    ))}
+  </div>}
+  {node.video && (
+    <>
+      <div class="wf-image-well" aria-hidden="true" />
+      <video
+        class:list={[
+          'wf-node-image',
+          { 'wf-generated-image': motion.imageName }
+        ]}
+        style={imageStyle}
+        data-src={`${imageRoot}/${node.video}`}
+        poster={node.poster ? `${imageRoot}/${node.poster}` : undefined}
+        muted
+        playsinline
+        loop={node.loopVideo}
+        preload="none"
+        aria-label={node.alt}
+        width="256"
+        height="144"
+      />
+      <span
+        class="wf-video-cue"
+        style={`animation-delay:${motion.mediaAt ?? 0}s`}
+        aria-hidden="true"
+      />
+    </>
+  )}
+  {motion.selectionName && (
+    <span
+      class="wf-selection"
+      style={`--wf-animation:${motion.selectionName}`}
+      aria-hidden="true"
+    />
+  )}
+  {node.text && <p class="wf-prompt-well">{node.text}</p>}
+</div>

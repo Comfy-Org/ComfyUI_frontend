@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -31,7 +30,7 @@ vi.mock<unknown>(import('@/views/templates/BaseViewTemplate.vue'), () => ({
 const mountView = () =>
   render(UserSelectView, {
     global: {
-      plugins: [i18n, PrimeVue]
+      plugins: [i18n]
     }
   })
 
@@ -48,6 +47,14 @@ describe('UserSelectView', () => {
     await waitFor(() =>
       expect(userStoreMock.initialize).toHaveBeenCalledTimes(1)
     )
+  })
+
+  it('names the existing user selector from its label', () => {
+    mountView()
+
+    expect(
+      screen.getByRole('combobox', { name: 'userSelect.existingUser:' })
+    ).toBeInTheDocument()
   })
 
   it('shows an error when login is attempted without a selection', async () => {

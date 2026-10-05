@@ -1,7 +1,8 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   shouldHideLinkedCoreMediaInputActions,
@@ -9,7 +10,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
@@ -54,13 +55,14 @@ export enum BadgeVariant {
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
-const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
+const invocationContext = ref<{ nodeId: NodeId; widgetName?: string }>()
 
 /**
  * Toggle the node options popover
  * @param event - The trigger event
  */
 export function toggleNodeOptions(event: Event) {
+  invocationContext.value = undefined
   if (nodeOptionsInstance?.toggle) {
     nodeOptionsInstance.toggle(event)
   }
@@ -73,10 +75,9 @@ export function toggleNodeOptions(event: Event) {
  */
 export function showNodeOptions(
   event: MouseEvent,
-  widgetName?: string,
-  nodeId?: SerializedNodeId
+  context?: { nodeId: NodeId; widgetName?: string }
 ) {
-  hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
+  invocationContext.value = context
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
   }
@@ -133,6 +134,7 @@ export function useMoreOptionsMenu() {
     hasImageNode,
     hasOutputNodesSelected,
     hasMultipleSelection,
+    isSingleNode,
     computeSelectionFlags
   } = useSelectionState()
 
@@ -140,6 +142,7 @@ export function useMoreOptionsMenu() {
   const nodeOutputStore = useNodeOutputStore()
 
   const { getImageMenuOptions } = useImageMenuOptions()
+  const { hasMultipleOutputs } = useNodeOutputsExport()
   const {
     getNodeInfoOption,
     getNodeVisualOptions,
@@ -155,7 +158,9 @@ export function useMoreOptionsMenu() {
   const {
     getBasicSelectionOptions,
     getMultipleNodesOptions,
-    getSubgraphOptions
+    getSubgraphOptions,
+    getAlignmentOptions,
+    getDeleteOption
   } = useSelectionMenuOptions()
 
   const hasSubgraphs = hasSubgraphsComputed
@@ -182,7 +187,12 @@ export function useMoreOptionsMenu() {
 
     // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
-    const node = selectedNodes.value.at(0)
+    const node: LGraphNode | undefined =
+      (invocationContext.value === undefined
+        ? undefined
+        : canvasStore.currentGraph?.getNodeById(
+            invocationContext.value.nodeId
+          )) ?? selectedNodes.value.at(0)
     const hideLinkedInputActions = node
       ? shouldHideLinkedCoreMediaInputActions(node)
       : false
@@ -252,6 +262,7 @@ export function useMoreOptionsMenu() {
     )
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
+      options.push(...getAlignmentOptions(node))
     }
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))
@@ -282,8 +293,11 @@ export function useMoreOptionsMenu() {
     }
     options.push({ type: 'divider' })
 
-    // Section 5: Image operations (if image node)
-    if (hasImageNode.value && selectedNodes.value.length > 0) {
+    // Section 5: Image operations (image nodes, or a node with several outputs)
+    if (
+      (hasImageNode.value && selectedNodes.value.length > 0) ||
+      (isSingleNode.value && hasMultipleOutputs(selectedNodes.value[0]))
+    ) {
       options.push(
         ...getImageMenuOptions(selectedNodes.value[0], {
           input: !hideLinkedInputActions,
@@ -292,7 +306,7 @@ export function useMoreOptionsMenu() {
       )
       options.push({ type: 'divider' })
     }
-    const [widgetName] = hoveredWidget.value ?? []
+    const widgetName = invocationContext.value?.widgetName
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (node && widget) {
       const widgetOptions = convertContextMenuToOptions(
@@ -303,6 +317,14 @@ export function useMoreOptionsMenu() {
         options.push({ type: 'divider' })
       }
     }
+
+    options.push(
+      getDeleteOption(
+        selectedNodes.value.some(
+          (node) => node.removable === false || node.block_delete
+        )
+      )
+    )
 
     // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
 

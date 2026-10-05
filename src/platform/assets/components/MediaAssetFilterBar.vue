@@ -39,7 +39,7 @@
 
     <div
       v-if="filterChips.length"
-      class="flex flex-wrap items-center gap-1.5 px-2 pb-2 2xl:px-4"
+      class="flex flex-wrap items-center gap-1.5 px-4 pb-2"
     >
       <span
         v-for="chip in filterChips"
@@ -69,11 +69,6 @@
         {{ $t('sideToolbar.mediaAssets.clearFilters') }}
       </Button>
     </div>
-
-    <div
-      v-if="bottomDivider"
-      class="border-t border-dashed border-comfy-input"
-    />
   </div>
 </template>
 
@@ -98,9 +93,8 @@ import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
 import type { MediaAssetViewMode } from './mediaAssetViewOptions'
 
-const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
+const { showGenerationTimeSort = false } = defineProps<{
   showGenerationTimeSort?: boolean
-  bottomDivider?: boolean
 }>()
 
 const searchQuery = defineModel<string>('searchQuery', { required: true })

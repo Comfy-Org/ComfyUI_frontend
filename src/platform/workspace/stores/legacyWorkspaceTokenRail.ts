@@ -136,9 +136,11 @@ interface StoredSession {
 
 const REFRESH_ATTEMPT_MAX_RETRIES = 3
 const REFRESH_BASE_DELAY_MS = 1000
+const REFRESH_RETRY_JITTER_MS = 1000
 
 function refreshBackoffMs(attempt: number): number {
-  return REFRESH_BASE_DELAY_MS * Math.pow(2, attempt)
+  const baseDelayMs = REFRESH_BASE_DELAY_MS * Math.pow(2, attempt)
+  return baseDelayMs + Math.floor(Math.random() * REFRESH_RETRY_JITTER_MS)
 }
 
 export interface LegacyWorkspaceTokenRailDeps {
@@ -707,6 +709,11 @@ export function createLegacyWorkspaceTokenRail({
     inFlightSwitchPromise = null
   }
 
+  function dispose(): void {
+    refreshRequestId++
+    stopRefreshTimer()
+  }
+
   return {
     workspaceToken,
     initializeFromSession,
@@ -718,6 +725,7 @@ export function createLegacyWorkspaceTokenRail({
     getWorkspaceToken,
     hasValidWorkspaceToken,
     retireLegacyToken,
+    dispose,
     stopRefreshTimer,
     clearLegacyContext
   }

@@ -84,6 +84,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
           )
           .catch((error) => {
             reportError(error, {
+              surface: 'platform',
               errorType: 'customerio_in_app_plugin_registration_failure'
             })
           })

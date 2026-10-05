@@ -47,8 +47,7 @@ import type { WidgetId } from '@/types/widgetId'
 import {
   executionIdFromState,
   executionIdToNodeLocatorId,
-  getNodeByLocatorId,
-  locatorIdFromState,
+  getNodeByState,
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
@@ -166,8 +165,7 @@ function getHostNode(
   nodeData: NodeState
 ): LGraphNode | null {
   if (!rootGraph) return null
-  const locatorId = locatorIdFromState(nodeData, rootGraph.id)
-  return locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
+  return getNodeByState(rootGraph, nodeData)
 }
 
 function isWidgetVisible(
@@ -183,7 +181,7 @@ function isWidgetVisible(
 
 function hasWidgetError(
   widget: { name: string; errorTarget?: WidgetErrorTarget },
-  nodeExecId: NodeExecutionId,
+  nodeExecId: NodeExecutionId | null,
   nodeErrors:
     | { errors: { extra_info?: { input_name?: string } }[] }
     | undefined,
@@ -195,8 +193,9 @@ function hasWidgetError(
     !!nodeErrors?.errors.some(
       (e) => e.extra_info?.input_name === widget.name
     ) ||
-    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name) ||
-    missingMediaStore.isWidgetMissingMedia(nodeExecId, widget.name)
+    (nodeExecId !== null &&
+      (missingModelStore.isWidgetMissingModel(nodeExecId, widget.name) ||
+        missingMediaStore.isWidgetMissingMedia(nodeExecId, widget.name)))
   const target = widget.errorTarget
   if (!target) return hasHostError
 
@@ -226,7 +225,7 @@ function createWidgetUpdateHandler({
   id: WidgetId
   live?: { node: LGraphNode; widget: IBaseWidget }
   errorTarget?: WidgetErrorTarget
-  nodeExecId: NodeExecutionId
+  nodeExecId: NodeExecutionId | null
   widgetName: string
   widgetOptions: IWidgetOptions
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>
@@ -251,13 +250,15 @@ function createWidgetUpdateHandler({
         options
       )
     }
-    executionErrorStore.clearWidgetRelatedErrors(
-      nodeExecId,
-      widgetName,
-      widgetName,
-      newValue,
-      options
-    )
+    if (nodeExecId) {
+      executionErrorStore.clearWidgetRelatedErrors(
+        nodeExecId,
+        widgetName,
+        widgetName,
+        newValue,
+        options
+      )
+    }
   }
 }
 
@@ -335,7 +336,7 @@ function widgetNodeLocatorId(
     )
     if (sourceLocator) return sourceLocator
   }
-  if (!bareWidgetId) return undefined
+  if (!bareWidgetId || bareWidgetId.includes(':')) return undefined
   return createNodeLocatorId(
     subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
     bareWidgetId
@@ -351,7 +352,7 @@ interface WidgetProcessingContext {
   hostNode: LGraphNode | null
   liveWidgets: Map<WidgetId, IBaseWidget>
   slotMetadata: Map<string, WidgetSlotMetadata>
-  nodeExecId: NodeExecutionId
+  nodeExecId: NodeExecutionId | null
   nodeErrors: Parameters<typeof hasWidgetError>[2]
   widgetValueStore: ReturnType<typeof useWidgetValueStore>
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>
@@ -437,7 +438,10 @@ function processWidget(
     e.preventDefault()
     e.stopPropagation()
     ctx.ui.handleNodeRightClick(e, ctx.nodeData.id)
-    showNodeOptions(e, widgetState.name)
+    showNodeOptions(e, {
+      nodeId: ctx.nodeData.id,
+      widgetName: widgetState.name
+    })
   }
 
   return {
@@ -488,7 +492,6 @@ export function computeProcessedWidgets({
     isGraphReady && rootGraph
       ? executionIdFromState(rootGraph, nodeData)
       : createNodeExecutionId([nodeData.id])
-  if (!nodeExecId) return []
 
   const hostNode = getHostNode(rootGraph, nodeData)
   const liveWidgets = hostNode
@@ -520,7 +523,9 @@ export function computeProcessedWidgets({
     liveWidgets,
     slotMetadata,
     nodeExecId,
-    nodeErrors: executionErrorStore.lastNodeErrors?.[nodeExecId],
+    nodeErrors: nodeExecId
+      ? executionErrorStore.lastNodeErrors?.[nodeExecId]
+      : undefined,
     widgetValueStore,
     executionErrorStore,
     missingModelStore,

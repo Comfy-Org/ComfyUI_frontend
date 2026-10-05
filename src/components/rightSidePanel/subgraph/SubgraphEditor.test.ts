@@ -10,7 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
@@ -24,9 +24,7 @@ type DraggableListProps = ComponentProps<typeof DraggableList>
 type PromotedRow =
   DraggableListProps['modelValue'] extends Array<infer T> ? T : never
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: vi.fn() })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -78,7 +76,7 @@ describe('SubgraphEditor', () => {
         sourcePreviewName: '$$canvas-image-preview'
       }
     )
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -125,7 +123,7 @@ describe('SubgraphEditor', () => {
     secondInput.widget = { name: secondWidget.name }
     promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
     promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     let listSetter: ((value: PromotedRow[]) => void) | undefined
     const draggableListStub = {
@@ -194,7 +192,7 @@ describe('SubgraphEditor', () => {
     const sourceInput = sourceNode.addInput('first', 'STRING')
     const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
     sourceInput.widget = { name: sourceWidget.name }
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -234,7 +232,7 @@ describe('SubgraphEditor', () => {
     hiddenWidget.visibility.surfaces.vueNode = 'never'
     pseudoWidget.visibility.surfaces.vueNode = 'never'
     useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = true
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -264,7 +262,7 @@ describe('SubgraphEditor', () => {
     secondInput.widget = { name: secondWidget.name }
     promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
     promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -297,7 +295,7 @@ describe('SubgraphEditor', () => {
     const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
     sourceInput.widget = { name: sourceWidget.name }
     promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget)
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -324,7 +322,7 @@ describe('SubgraphEditor', () => {
     const sourceInput = sourceNode.addInput('first', 'STRING')
     const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
     sourceInput.widget = { name: sourceWidget.name }
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -358,7 +356,7 @@ describe('SubgraphEditor', () => {
       sourcePreviewName: '$$canvas-image-preview'
     })
 
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),

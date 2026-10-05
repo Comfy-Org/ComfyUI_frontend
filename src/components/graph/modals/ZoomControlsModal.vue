@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="visible"
+    ref="modalRoot"
     class="absolute right-0 bottom-[62px] z-1300 flex w-[250px] justify-center border-0! bg-inherit!"
   >
     <div
@@ -46,35 +47,31 @@
           }}</span>
         </div>
 
-        <div
-          ref="zoomInputContainer"
-          class="zoomInputContainer flex items-center gap-1 rounded-sm bg-input-surface p-2"
+        <NumberField
+          :model-value="canvasStore.appScalePercentage"
+          :min="1"
+          :max="1000"
+          :format-options="{ useGrouping: false, maximumFractionDigits: 0 }"
           data-testid="zoom-percentage-input"
+          @update:model-value="canvasStore.setAppZoomFromPercentage"
         >
-          <InputNumber
-            :default-value="canvasStore.appScalePercentage"
-            :min="1"
-            :max="1000"
-            :show-buttons="false"
-            :use-grouping="false"
-            :unstyled="true"
-            input-class="bg-transparent border-none outline-hidden text-sm shadow-none my-0 w-full"
-            fluid
-            @input="applyZoom"
-            @keyup.enter="applyZoom"
-          />
+          <NumberFieldDecrement />
+          <NumberFieldInput :aria-label="$t('zoomControls.zoomPercentage')" />
           <span class="shrink-0 text-sm text-text-primary">%</span>
-        </div>
+          <NumberFieldIncrement />
+        </NumberField>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { InputNumberInputEvent } from 'primevue'
-import { InputNumber } from 'primevue'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
+import NumberField from '@/components/ui/number-field/NumberField.vue'
+import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
+import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
+import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
@@ -91,14 +88,6 @@ interface Props {
 const props = defineProps<Props>()
 
 const interval = ref<number | null>(null)
-
-const applyZoom = (val: InputNumberInputEvent) => {
-  const inputValue = val.value as number
-  if (isNaN(inputValue) || inputValue < 1 || inputValue > 1000) {
-    return
-  }
-  canvasStore.setAppZoomFromPercentage(inputValue)
-}
 
 const executeCommand = (command: string) => {
   void commandStore.execute(command)
@@ -133,23 +122,14 @@ const zoomOutCommandText = computed(() =>
 const zoomToFitCommandText = computed(() =>
   formatKeySequence(commandStore.getCommand('Comfy.Canvas.FitView'))
 )
-const zoomInputContainer = ref<HTMLDivElement | null>(null)
+const modalRoot = useTemplateRef<HTMLDivElement>('modalRoot')
 
 watch(
   () => props.visible,
-  async (newVal) => {
-    if (newVal) {
-      await nextTick()
-      const input = zoomInputContainer.value?.querySelector(
-        'input'
-      ) as HTMLInputElement
-      input?.focus()
-    }
+  async (visible) => {
+    if (!visible) return
+    await nextTick()
+    modalRoot.value?.querySelector('input')?.focus()
   }
 )
 </script>
-<style>
-.zoomInputContainer:focus-within {
-  border: 1px solid var(--color-white);
-}
-</style>

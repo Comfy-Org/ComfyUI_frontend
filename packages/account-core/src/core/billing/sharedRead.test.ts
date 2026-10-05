@@ -27,11 +27,11 @@ function answering(
 }
 
 describe('readValidatedBillingResponse', () => {
-  it('carries the coded server error and never its message', async () => {
+  it('carries the coded server error and its message', async () => {
     const result = await readValidatedBillingResponse(
       answering(400, {
-        code: 'NO_PAYMENT_METHOD',
-        message: 'Stripe: no default payment method on customer cus_123'
+        code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+        message: 'a subscription change is already in progress'
       }),
       REQUEST,
       (body) => Body.safeParse(body)
@@ -41,10 +41,31 @@ describe('readValidatedBillingResponse', () => {
       status: 'error',
       code: 'REQUEST_FAILED',
       httpStatus: 400,
-      serverCode: 'NO_PAYMENT_METHOD'
+      serverCode: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+      serverMessage: 'a subscription change is already in progress'
     })
-    expect(JSON.stringify(result)).not.toContain('Stripe')
   })
+
+  it.for([
+    { name: 'empty', message: '' },
+    { name: 'whitespace', message: '  \n' }
+  ])(
+    'omits the server message when the error body carries a $name one',
+    async ({ message }) => {
+      const result = await readValidatedBillingResponse(
+        answering(400, { code: 'NO_PAYMENT_METHOD', message }),
+        REQUEST,
+        (body) => Body.safeParse(body)
+      )
+
+      expect(result).toEqual({
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: 'NO_PAYMENT_METHOD'
+      })
+    }
+  )
 
   it.for([
     {

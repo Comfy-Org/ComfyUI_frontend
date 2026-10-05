@@ -555,7 +555,8 @@ describe('Viewport3d', () => {
         setScissorTest: vi.fn(),
         setClearColor: vi.fn(),
         clear: vi.fn(),
-        render: vi.fn()
+        render: vi.fn(),
+        state: { reset: vi.fn() }
       }
       const view = {
         canvas: document.createElement('canvas'),
@@ -623,6 +624,17 @@ describe('Viewport3d', () => {
       expect(view.blit).toHaveBeenCalledTimes(2)
       expect(viewport.INITIAL_RENDER_DONE).toBe(true)
     })
+
+    it('resyncs the shared GL state before every frame so texture uploads keep flipY', () => {
+      const { viewport, renderer } = makeConstructedViewport()
+
+      viewport.forceRender()
+
+      expect(renderer.state.reset).toHaveBeenCalledOnce()
+      expect(renderer.state.reset.mock.invocationCallOrder[0]).toBeLessThan(
+        renderer.render.mock.invocationCallOrder[0]
+      )
+    })
   })
 
   describe('render callback dispatch', () => {
@@ -682,7 +694,7 @@ describe('Viewport3d', () => {
       const order: string[] = []
       Object.assign(ctx.viewport, {
         view: {
-          renderer: { setScissorTest: vi.fn() },
+          renderer: { setScissorTest: vi.fn(), state: { reset: vi.fn() } },
           beginRender: () => order.push('begin'),
           blit: vi.fn()
         },

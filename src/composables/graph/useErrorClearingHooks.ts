@@ -266,7 +266,7 @@ function scanSingleNodeMedia(
   if (!rootGraph) return
   if (!getActiveExecutionId(node)) return
 
-  const mediaCandidates = scanNodeMediaCandidates(rootGraph, node, isCloud)
+  const mediaCandidates = scanNodeMediaCandidates(rootGraph, node)
   const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
   if (confirmedMedia.length) {
     useMissingMediaStore().addMissingMedia(confirmedMedia)
@@ -610,9 +610,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
 
   // `node:before-removed` covers both single removals and graph.clear();
   // `node:removed` fires only from LGraph.remove.
-  const onNodeRemoved = ({
-    detail: { node, successor }
-  }: NodeBeforeRemovedEvent) => {
+  const onNodeRemoved = ({ detail: { node } }: NodeBeforeRemovedEvent) => {
     if (disposed) return
     for (const scan of pendingScans.get(node) ?? []) scan.cancel()
     // Derive the execution ID from the graph the hook is installed on plus
@@ -620,10 +618,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // "parentId:...:nodeId" path that matches how missing asset errors are
     // keyed; without this, removal falls back to the local ID and misses
     // subgraph entries.
-    if (!successor) {
-      const execId = getRemovedNodeExecutionId(graph, node.id)
-      removeNodeErrors(node, execId)
-    }
+    const execId = getRemovedNodeExecutionId(graph, node.id)
+    removeNodeErrors(node, execId)
     scheduleDropOutOfScopeMissingMedia()
     restoreNodeHooksRecursive(node)
     promotionErrors.detachNode(node)

@@ -42,7 +42,7 @@ jobs:
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
-        run: pnpm --filter @comfyorg/website build
+        run: pnpm --filter @comfyorg/website build:e2e
 
       - name: Validate JSON-LD structured data
         run: pnpm --filter @comfyorg/website validate:jsonld
@@ -50,21 +50,45 @@ jobs:
       - name: Validate llms.txt links
         run: pnpm --filter @comfyorg/website validate:llms-txt-links
 
+      - name: Check internal links end with a slash
+        run: pnpm --filter @comfyorg/website check:link-slashes
+
       # Same shape as validate:jsonld: reads the built dist/ and exits non-zero.
       # Which routes are locale-invariant is hand-maintained, so this is what
       # catches a cluster that points at a page the build never produced.
       - name: Check hreflang clusters
         run: pnpm --filter @comfyorg/website check:hreflang
 
-      - name: Verify the optional Workshop build exclusion
+      - name: Check model pages carry their model in the HTML
+        run: pnpm --filter @comfyorg/website check:models-html
+
+      - name: Verify the release build excludes Workshop and is noindex
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WORKSHOP_IN_BUILD: '0'
         run: |
+          models_pages() { pnpm --silent --filter @comfyorg/website list:models-pages; }
+          # dist/ still holds the "Build website" step's Workshop-enabled output.
+          models_pages > "$RUNNER_TEMP/models-with-workshop.txt"
+          if [ ! -s "$RUNNER_TEMP/models-with-workshop.txt" ]; then
+            echo "::error title=No Workshop-enabled baseline::No pages under the Models URL registry's roots before the WORKSHOP_IN_BUILD=0 build. Run this step after \"Build website\"."
+            exit 1
+          fi
           pnpm --filter @comfyorg/website build
+          pnpm --filter @comfyorg/website check:link-slashes
           if [ -d apps/website/dist/workshop ]; then
             echo "::error title=Workshop leaked into a release build::apps/website/dist/workshop exists with WORKSHOP_IN_BUILD=0. The retired Workshop routes must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
             exit 1
           fi
-          echo "Release build has no Workshop output."
+          models_pages > "$RUNNER_TEMP/models-without-workshop.txt"
+          if ! diff "$RUNNER_TEMP/models-with-workshop.txt" "$RUNNER_TEMP/models-without-workshop.txt"; then
+            echo "::error title=Turning Workshop off changed the Models pages::WORKSHOP_IN_BUILD=0 built a different set of Models pages than the Workshop build (diff above). Turning Workshop off must only hide Run and the nav."
+            exit 1
+          fi
+          if ! grep -q 'name="robots"' apps/website/dist/index.html; then
+            echo "::error title=Non-production build is indexable::apps/website/dist/index.html has no robots meta. Every build outside production must be noindex. See apps/website/src/config/indexing.ts."
+            exit 1
+          fi
+          echo "Non-production build is noindex."
+          echo "Release build has no Workshop output and keeps all $(wc -l < "$RUNNER_TEMP/models-without-workshop.txt" | tr -d ' ') Models pages."

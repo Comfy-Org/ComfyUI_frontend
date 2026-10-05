@@ -14,7 +14,7 @@ import { toConcreteWidget } from './widgetMap'
 
 class AccessorHeightWidget implements IBaseWidget {
   [symbol: symbol]: boolean
-  #height = 24
+  private heightValue = 24
   name = 'custom'
   type = 'legacy_test'
   value = 0
@@ -23,29 +23,29 @@ class AccessorHeightWidget implements IBaseWidget {
   heightWrites = 0
 
   get height() {
-    return this.#height
+    return this.heightValue
   }
 
   set height(value: number) {
     this.heightWrites++
-    this.#height = value
+    this.heightValue = value
   }
 }
 
 class NormalisingValueWidget implements IBaseWidget {
   [symbol: symbol]: boolean
-  #value: { entries: number[] } = { entries: [] }
+  private normalisedValue: { entries: number[] } = { entries: [] }
   name = 'custom'
   type = 'legacy_test'
   options = {}
   y = 0
 
   get value(): { entries: number[] } {
-    return this.#value
+    return this.normalisedValue
   }
 
   set value(value: { entries: number[] } | number[]) {
-    this.#value.entries = Array.isArray(value) ? value : value.entries
+    this.normalisedValue.entries = Array.isArray(value) ? value : value.entries
   }
 }
 

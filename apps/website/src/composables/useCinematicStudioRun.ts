@@ -1,0 +1,483 @@
+import { useMounted } from '@vueuse/core'
+import { computed, onScopeDispose, readonly, shallowRef, watch } from 'vue'
+
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
+import { fetchModelsPage } from '@/config/models-page-data'
+import type { PreparedRouterRender } from '@/config/router-render'
+import { router_render } from '@/config/router-render'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { releaseRouterOutputs } from '@/config/workshop-response'
+import {
+  WorkshopRouterError,
+  workshopRunMayStillSettle
+} from '@/config/workshop-router-errors'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { workshopIdempotencyKey } from '@/config/workshop-snippets'
+import { createWorkshopUrlUploader } from '@/config/workshop-url-upload'
+import type { AspectRatio } from '@/lib/workshop/cinematic-studio/catalog'
+import {
+  frameParameters,
+  watermarksOff
+} from '@/lib/workshop/cinematic-studio/frames'
+import { studioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { CinematicVideoShot } from '@/lib/workshop/cinematic-studio/video'
+import {
+  videoCapabilities,
+  videoParameters
+} from '@/lib/workshop/cinematic-studio/video'
+import { studioRouterForm } from '@/lib/workshop/cinematic-studio/request'
+import type { Reel, ReelEvent } from '@/lib/workshop/cinematic-studio/reel'
+import {
+  EMPTY_REEL,
+  isRendering,
+  reduceReel
+} from '@/lib/workshop/cinematic-studio/reel'
+import { studioAnalytics } from '@/lib/workshop/cinematic-studio/analytics'
+import {
+  captureWorkshopEvent,
+  useWorkshopAuthFlag,
+  useWorkshopEnabled
+} from '@/scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
+import {
+  workshopFailureAnalytics,
+  workshopModelAnalytics
+} from '@/scripts/workshop-analytics'
+
+interface ShotRequest {
+  readonly modelSlug: string
+  readonly referenceSlug?: string
+  /** The operation that starts from an image, for a video with a first frame. */
+  readonly firstFrameSlug?: string
+  /** Present for a video shot. */
+  readonly video?: Omit<CinematicVideoShot, 'aspect'>
+  readonly prompt: string
+  readonly aspect: AspectRatio
+  readonly resolutionPixels: number
+  readonly takes: number
+  /** Pictures, or links for a model that fetches them itself. */
+  readonly references: readonly (File | string)[]
+  readonly preview?: string
+}
+
+interface UnsettledTake {
+  readonly key: string
+  readonly prepared?: PreparedRouterRender
+}
+
+const fileIds = new WeakMap<File, string>()
+function fileId(file: File | string): string {
+  if (typeof file === 'string') return file
+  const known = fileIds.get(file)
+  if (known) return known
+  const id = crypto.randomUUID()
+  fileIds.set(file, id)
+  return id
+}
+
+function takeFingerprint(
+  startedFor: WorkshopSession,
+  slug: string,
+  request: ShotRequest,
+  index: number
+): string {
+  return JSON.stringify([
+    startedFor.uid,
+    startedFor.workspace.id,
+    slug,
+    request.prompt,
+    request.aspect,
+    request.resolutionPixels,
+    request.references.map(fileId),
+    request.video && {
+      ...request.video,
+      firstFrame: request.video.firstFrame && fileId(request.video.firstFrame),
+      lastFrame: request.video.lastFrame && fileId(request.video.lastFrame),
+      sourceVideo:
+        request.video.sourceVideo && fileId(request.video.sourceVideo)
+    },
+    index
+  ])
+}
+
+function shotParameters(request: ShotRequest, model: WorkshopModelDetail) {
+  if (request.video && model.execution) {
+    const clip = videoParameters(videoCapabilities(model.execution), {
+      ...request.video,
+      aspect: request.aspect
+    })
+    return {
+      prompt: request.prompt,
+      ...clip,
+      model_specific: {
+        ...clip.model_specific,
+        ...watermarksOff(model.execution)
+      }
+    }
+  }
+  const frame = frameParameters(
+    model.execution,
+    request.aspect,
+    request.resolutionPixels
+  )
+  const clean = watermarksOff(model.execution)
+  return {
+    prompt: request.prompt,
+    ...frame,
+    ...(clean ? { model_specific: { ...frame.model_specific, ...clean } } : {}),
+    ...(request.references.length
+      ? { reference_images: request.references }
+      : {})
+  }
+}
+
+function takeFailure(id: string, runSlug: string, error: unknown): ReelEvent {
+  return error instanceof WorkshopRouterError
+    ? {
+        type: 'takeFailed',
+        id,
+        reason: error.reason,
+        requestId: error.requestId ?? undefined,
+        runSlug
+      }
+    : { type: 'takeFailed', id, reason: 'client', runSlug }
+}
+
+function mayStillSettle(error: unknown): boolean {
+  return (
+    error instanceof WorkshopRouterError && workshopRunMayStillSettle(error)
+  )
+}
+
+/**
+ * Runs a shot as one Router request per take, through the same render path,
+ * credentials and credit gate as a model page. Models load lazily from their
+ * page data, so the studio never ships the catalogue to the client.
+ * `shotCost` is the least the shot being directed is estimated to cost.
+ */
+export function useCinematicStudioRun(
+  modelCount: number,
+  shotCost: () => number | undefined = () => undefined
+) {
+  const { user, session, sessionFailure, settled, ensureFresh } =
+    useWorkshopSession()
+  const balance = useWorkshopModelBalance(session)
+  const workshopEnabled = useWorkshopEnabled()
+  const authEnabled = useWorkshopAuthFlag()
+  const mounted = useMounted()
+  const uploadUrl = createWorkshopUrlUploader()
+
+  const reel = shallowRef<Reel>(EMPTY_REEL)
+  const dispatch = (event: ReelEvent) => {
+    reel.value = reduceReel(reel.value, event)
+  }
+  const rendering = computed(() => isRendering(reel.value))
+
+  const credits = computed(() =>
+    balance.value.status === 'ok' ? balance.value.credits : undefined
+  )
+  const gateFor = (cost: number | undefined) =>
+    studioGate({
+      runEnabled:
+        workshopEnabled.value &&
+        import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1',
+      modelRunnable: modelCount > 0,
+      mounted: mounted.value,
+      authAvailable: authEnabled.value && !sessionFailure.value,
+      sessionSettled: settled.value && !(user.value && !session.value),
+      role: session.value?.role,
+      credits: rendering.value ? undefined : credits.value,
+      cost
+    })
+  const gate = computed(() => gateFor(shotCost()))
+
+  const models = new Map<string, Promise<WorkshopModelDetail>>()
+  function loadModel(slug: string): Promise<WorkshopModelDetail> {
+    const cached = models.get(slug)
+    if (cached) return cached
+    const loading = fetchModelsPage(slug).then((page) => page.model)
+    loading.catch(() => models.delete(slug))
+    models.set(slug, loading)
+    return loading
+  }
+
+  let controller: AbortController | undefined
+
+  const unsettledTakes = new Map<string, UnsettledTake>()
+  function unsettledTakeFor(fingerprint: string): UnsettledTake {
+    const take = unsettledTakes.get(fingerprint) ?? {
+      key: workshopIdempotencyKey()
+    }
+    unsettledTakes.set(fingerprint, take)
+    return take
+  }
+
+  async function tokenFor(startedFor: WorkshopSession, signal: AbortSignal) {
+    const credential = await ensureFresh(undefined, { signal })
+    signal.throwIfAborted()
+    if (
+      credential?.status !== 'ok' ||
+      credential.session.uid !== startedFor.uid ||
+      credential.session.workspace.id !== startedFor.workspace.id
+    )
+      throw new WorkshopRouterError('unavailable')
+    return credential.session.token
+  }
+
+  function takeAnalytics(
+    startedFor: WorkshopSession,
+    slug: string,
+    model?: WorkshopModelDetail
+  ): WorkshopRunAnalytics {
+    return {
+      ...(model ? workshopModelAnalytics(model) : { render_engine: 'router' }),
+      ...studioAnalytics(slug),
+      user_id: startedFor.uid,
+      workspace_id: startedFor.workspace.id,
+      attempt_id: workshopIdempotencyKey()
+    }
+  }
+
+  function recordUnloadedTake(analytics: WorkshopRunAnalytics, error: unknown) {
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...analytics,
+        duration_ms: 0,
+        status: 'failed',
+        ...workshopFailureAnalytics(
+          new WorkshopRouterError(
+            'unavailable',
+            null,
+            {},
+            undefined,
+            'input_preparation',
+            { cause: error }
+          )
+        )
+      }
+    })
+  }
+
+  async function renderTake(
+    id: string,
+    index: number,
+    model: WorkshopModelDetail,
+    request: ShotRequest,
+    startedFor: WorkshopSession,
+    signal: AbortSignal
+  ) {
+    const fingerprint = takeFingerprint(startedFor, model.slug, request, index)
+    const { key, prepared } = unsettledTakeFor(fingerprint)
+    const analytics = takeAnalytics(startedFor, model.slug, model)
+    const startedAt = Date.now()
+    const finished = () => ({
+      ...analytics,
+      duration_ms: Date.now() - startedAt
+    })
+    captureWorkshopEvent({ name: 'run_started', properties: analytics })
+    try {
+      const result = await router_render(
+        model.slug,
+        {},
+        {
+          model,
+          form: studioRouterForm(model, shotParameters(request, model)),
+          signal,
+          idempotencyKey: key,
+          prepared,
+          onPrepared: (ready) => {
+            unsettledTakes.set(fingerprint, { key, prepared: ready })
+          },
+          token: () => tokenFor(startedFor, signal),
+          uploadFile: async (file, uploadSignal) =>
+            uploadUrl(
+              file,
+              await tokenFor(startedFor, signal),
+              JSON.stringify([startedFor.uid, startedFor.workspace.id]),
+              uploadSignal
+            )
+        }
+      )
+      unsettledTakes.delete(fingerprint)
+      const output = result.outputs.at(0)
+      releaseRouterOutputs(result.outputs.slice(1))
+      if (signal.aborted) {
+        if (output) releaseRouterOutputs([output])
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
+        return
+      }
+      if (!output) throw new WorkshopRouterError('response', result.requestId)
+      dispatch({ type: 'takeSucceeded', id, output })
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'succeeded',
+          request_id: result.requestId ?? undefined,
+          output_count: result.outputs.length
+        }
+      })
+    } catch (error) {
+      if (signal.aborted) {
+        captureWorkshopEvent({
+          name: 'run_finished',
+          properties: { ...finished(), status: 'cancelled' }
+        })
+        return
+      }
+      if (!mayStillSettle(error)) unsettledTakes.delete(fingerprint)
+      dispatch(takeFailure(id, model.slug, error))
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'failed',
+          ...workshopFailureAnalytics(
+            error instanceof WorkshopRouterError
+              ? error
+              : new WorkshopRouterError(
+                  'client',
+                  null,
+                  {},
+                  undefined,
+                  undefined,
+                  { cause: error }
+                )
+          )
+        }
+      })
+    }
+  }
+
+  interface TakePlan {
+    readonly id: string
+    readonly index: number
+    readonly slug: string
+    readonly request: ShotRequest
+  }
+  const plans = new Map<string, TakePlan>()
+
+  async function runTakes(
+    takes: readonly TakePlan[],
+    startedFor: WorkshopSession
+  ) {
+    const attempt = new AbortController()
+    controller = attempt
+    try {
+      await Promise.all(
+        takes.map(async ({ id, index, slug, request }) => {
+          const model = await loadModel(slug).catch((error: unknown) => {
+            if (!attempt.signal.aborted)
+              recordUnloadedTake(takeAnalytics(startedFor, slug), error)
+            throw error
+          })
+          attempt.signal.throwIfAborted()
+          return renderTake(
+            id,
+            index,
+            model,
+            request,
+            startedFor,
+            attempt.signal
+          )
+        })
+      )
+    } catch {
+      if (!attempt.signal.aborted)
+        takes.forEach(({ id }) =>
+          dispatch({ type: 'takeFailed', id, reason: 'unavailable' })
+        )
+    } finally {
+      if (controller === attempt) controller = undefined
+      void refreshWorkshopCredits({ force: true })
+    }
+  }
+
+  async function generate(request: ShotRequest) {
+    const startedFor = session.value
+    const slug = request.references.length
+      ? request.referenceSlug
+      : request.video?.firstFrame
+        ? request.firstFrameSlug
+        : request.modelSlug
+    if (rendering.value || gate.value !== 'ready' || !startedFor || !slug)
+      return
+    const takes = Array.from({ length: request.takes }, (_, index) => ({
+      id: workshopIdempotencyKey(),
+      index,
+      slug,
+      request
+    }))
+    takes.forEach((take) => plans.set(take.id, take))
+    dispatch({
+      type: 'shotStarted',
+      ids: takes.map(({ id }) => id),
+      prompt: request.prompt,
+      modelSlug: request.modelSlug,
+      aspect: request.aspect,
+      startedAt: Date.now(),
+      preview: request.preview
+    })
+    await runTakes(takes, startedFor)
+  }
+
+  /** Retries settled takes; the shot being directed does not price them. */
+  async function retry(...ids: string[]) {
+    const startedFor = session.value
+    if (rendering.value || gateFor(undefined) !== 'ready' || !startedFor) return
+    const retried = ids.flatMap((id) => {
+      const plan = plans.get(id)
+      const take = reel.value.takes.find((candidate) => candidate.id === id)
+      return plan && (take?.status === 'failed' || take?.status === 'cancelled')
+        ? [plan]
+        : []
+    })
+    if (!retried.length) return
+    const startedAt = Date.now()
+    retried.forEach(({ id }) =>
+      dispatch({ type: 'takeRetried', id, startedAt })
+    )
+    await runTakes(retried, startedFor)
+  }
+
+  function cancel() {
+    controller?.abort()
+    controller = undefined
+    dispatch({ type: 'rendersCancelled' })
+  }
+
+  watch(
+    () => [session.value?.uid, session.value?.workspace.id],
+    ([uid, workspace], [previousUid, previousWorkspace]) => {
+      if (uid !== previousUid || workspace !== previousWorkspace) cancel()
+    }
+  )
+
+  onScopeDispose(() => {
+    cancel()
+    releaseRouterOutputs(
+      reel.value.takes.flatMap((take) =>
+        take.status === 'done' ? [take.output] : []
+      )
+    )
+  })
+
+  return {
+    reel: readonly(reel),
+    gate,
+    credits,
+    session,
+    rendering,
+    generate,
+    retry,
+    cancel,
+    select: (id: string) => dispatch({ type: 'selected', id })
+  }
+}

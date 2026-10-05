@@ -144,12 +144,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
-  layoutStore: {
-    getRerouteLayout: () => null,
-    queryRerouteAtPoint: () => null
-  }
-}))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/litegraph/slotCalculations'),

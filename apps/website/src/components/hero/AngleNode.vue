@@ -117,7 +117,7 @@ onUnmounted(() => {
       <span class="size-[0.55em] rounded-full bg-primary-comfy-yellow" />
       <span class="ml-auto flex items-center gap-[0.5em]">
         <span
-          class="ppformula-text-center font-formula text-[0.75em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
+          class="inline-block font-formula text-[0.75em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-canvas"
         >
           3D ANGLE
         </span>

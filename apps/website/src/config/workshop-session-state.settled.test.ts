@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
-let { useWorkshopAuthFlag } = await import('../scripts/posthog')
+let { useWorkshopAuthFlag } = await import('@/scripts/posthog')
 let { workshopIdentity, workshopSessionClient } =
   await import('./workshop-account')
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-account'))
 
 beforeEach(async () => {
   vi.resetModules()
-  ;({ useWorkshopAuthFlag } = await import('../scripts/posthog'))
+  ;({ useWorkshopAuthFlag } = await import('@/scripts/posthog'))
   ;({ workshopIdentity, workshopSessionClient } =
     await import('./workshop-account'))
 })

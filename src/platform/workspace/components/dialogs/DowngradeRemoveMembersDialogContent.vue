@@ -10,7 +10,7 @@
         {{ $t('subscription.downgrade.title', { plan: planName }) }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         :disabled="isLoading"
         @click="onClose"

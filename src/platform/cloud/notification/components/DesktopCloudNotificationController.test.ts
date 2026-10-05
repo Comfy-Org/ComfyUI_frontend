@@ -170,6 +170,7 @@ describe('DesktopCloudNotificationController', () => {
     expect(errorReporter).toHaveBeenCalledExactlyOnceWith(
       error,
       expect.objectContaining({
+        surface: 'platform',
         errorType: 'cloud_notification_state_save_failed',
         tags: expect.objectContaining({
           failure_kind: 'caught_unexpected',
@@ -209,6 +210,7 @@ describe('DesktopCloudNotificationController', () => {
     expect(errorReporter).toHaveBeenCalledWith(
       error,
       expect.objectContaining({
+        surface: 'platform',
         errorType: 'cloud_notification_show_failed',
         tags: expect.objectContaining({
           failure_kind: 'caught_unexpected',
@@ -255,6 +257,7 @@ describe('DesktopCloudNotificationController', () => {
         1,
         initialError,
         expect.objectContaining({
+          surface: 'platform',
           errorType:
             failure === 'save'
               ? 'cloud_notification_state_save_failed'
@@ -265,6 +268,7 @@ describe('DesktopCloudNotificationController', () => {
         2,
         resetError,
         expect.objectContaining({
+          surface: 'platform',
           errorType: 'cloud_notification_state_reset_failed',
           tags: expect.objectContaining({
             failure_kind: 'caught_unexpected',

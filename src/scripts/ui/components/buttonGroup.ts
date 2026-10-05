@@ -32,7 +32,10 @@ export class ComfyButtonGroup {
   }
 
   update() {
-    // @ts-expect-error fixme ts strict error
-    this.element.replaceChildren(...this.buttons.map((b) => b['element'] ?? b))
+    this.element.replaceChildren(
+      ...this.buttons.map((button) =>
+        button instanceof HTMLElement ? button : button.element
+      )
+    )
   }
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   workshopDisplayEntriesSchema,
   workshopDisplaySourceSchema
-} from '../src/content/workshop-display.schema'
+} from '@/content/workshop-display.schema'
 import { splitWorkshopDisplay } from './workshop-display-use-cases'
 
 const thumbnail = { url: 'https://example.com/output.png', kind: 'image' }

@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import type { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyApp } from '@/scripts/app'
 import { GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -19,13 +18,7 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    canvas: { graph_mouse: [0, 0] },
-    configuringGraph: false,
-    registerExtension: vi.fn()
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
 import { PrimitiveNode } from './widgetInputs'
 

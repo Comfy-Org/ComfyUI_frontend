@@ -1,7 +1,7 @@
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
-} from '../templates/model-launch/types'
+} from '@/templates/model-launch/types'
 
 const chatgptImage25Links = {
   cloud:

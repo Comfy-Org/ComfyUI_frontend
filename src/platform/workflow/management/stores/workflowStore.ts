@@ -16,7 +16,7 @@ import {
 } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -156,12 +156,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const openWorkflowPaths = ref<string[]>([])
   const openWorkflowPathSet = computed(() => new Set(openWorkflowPaths.value))
   const openWorkflows = computed(() =>
-    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
+    openWorkflowPaths.value
+      .map(getWorkflowByPath)
+      .filter((workflow) => workflow !== null)
   )
   const reorderWorkflows = (from: number, to: number) => {
-    const movedTab = openWorkflowPaths.value[from]
-    openWorkflowPaths.value.splice(from, 1)
-    openWorkflowPaths.value.splice(to, 0, movedTab)
+    const paths = openWorkflows.value.map((workflow) => workflow.path)
+    const [movedTab] = paths.splice(from, 1)
+    paths.splice(to, 0, movedTab)
+    openWorkflowPaths.value = paths
   }
   const isOpen = (workflow: ComfyWorkflow) =>
     openWorkflowPathSet.value.has(workflow.path)
@@ -351,8 +354,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The next workflow or null if the shift is out of bounds.
    */
   const openedWorkflowIndexShift = (shift: number): ComfyWorkflow | null => {
-    const index = openWorkflowPaths.value.indexOf(
-      activeWorkflow.value?.path ?? ''
+    const index = openWorkflows.value.findIndex(
+      (workflow) => workflow.path === activeWorkflow.value?.path
     )
 
     if (index !== -1) {

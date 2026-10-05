@@ -24,13 +24,13 @@ on:
     # Nightly PATCH bump on main (proposal PR only; a patch bump never triggers
     # a release-branch cut). 00:00 UTC ≈ 4:00 PM PST / 5:00 PM PDT the prior day.
     - cron: '0 0 * * *'
-    # Weekly RC cut: MINOR bump on main every Monday 20:00 UTC (noon PST /
-    # 13:00 PDT), aligned
-    # with the release freeze in release-weekly-comfyui.yaml. Merging this minor
+    # RC cut: MINOR bump on main every Monday and Wednesday 20:00 UTC.
+    # Monday aligns with the release freeze in release-weekly-comfyui.yaml.
+    # Merging this minor
     # `Release` PR advances main to the next dev minor AND makes
     # release-branch-create.yaml cut the outgoing core/x.y + cloud/x.y pair. This
-    # is what makes the Monday branch cut hands-off (no manual minor bump).
-    - cron: '0 20 * * 1'
+    # is what makes the branch cuts hands-off (no manual minor bump).
+    - cron: '0 20 * * 1,3'
 
 # Key concurrency by target branch so per-branch bumps (e.g. the cloud
 # release fan-out that dispatches this workflow once per active branch) do
@@ -66,11 +66,11 @@ jobs:
           TARGET_BRANCH="$RAW_BRANCH"
           WEEKLY_CUT='false'
 
-          # Monday 20:00 UTC schedule = the weekly RC cut: a MINOR bump on main.
+          # Monday/Wednesday 20:00 UTC schedule = an RC cut: a MINOR bump on main.
           # Merging it fires release-branch-create.yaml (cuts core/x.y + cloud/x.y).
           # Every other schedule (the nightly 00:00 UTC cron) is a patch bump, which
           # never cuts a branch.
-          if [[ "$EVENT_NAME" == "schedule" && "$SCHEDULE" == '0 20 * * 1' ]]; then
+          if [[ "$EVENT_NAME" == "schedule" && "$SCHEDULE" == '0 20 * * 1,3' ]]; then
             VERSION_TYPE='minor'
             TARGET_BRANCH='main'
             WEEKLY_CUT='true'
@@ -119,7 +119,7 @@ jobs:
                 continue
               }
 
-              // The weekly Monday minor RC cut is also a `version-bump-*` PR, but
+              // The scheduled minor RC cut is also a `version-bump-*` PR, but
               // it must survive until it auto-merges and cuts the release
               // branches. Never close the PR carrying the weekly-cut marker.
               if (pr.labels?.some((label) => label.name === 'weekly-release-cut')) {
@@ -250,17 +250,17 @@ jobs:
           # treatment (Chromatic in ci-tests-storybook.yaml, i18n-update-core.yaml).
           # The base slug after the prefix keeps heads unique per base branch
           # while every `startsWith('version-bump-')` filter still matches.
-          # The `weekly-release-cut` marker label — added here for the Monday cut —
+          # The `weekly-release-cut` marker label — added here for scheduled cuts —
           # is what exempts it from the stale-PR closer above.
           branch: version-bump-${{ steps.prepared-inputs.outputs.branch_slug }}-${{ steps.bump-version.outputs.NEW_VERSION }}
           base: ${{ steps.prepared-inputs.outputs.branch }}
           labels: ${{ steps.prepared-inputs.outputs.weekly_cut == 'true' && 'Release,weekly-release-cut' || 'Release' }}
 
-      - name: Enable auto-merge for weekly RC cut PR
-        # Only the Monday weekly minor bump. Native auto-merge makes the PR merge
+      - name: Enable auto-merge for scheduled RC cut PR
+        # Only the scheduled minor bump. Native auto-merge makes the PR merge
         # (and thus fire release-branch-create.yaml) as soon as its required checks
         # pass and it clears main's merge queue — no manual merge click and no
-        # manual Monday branch creation.
+        # manual branch creation.
         #
         # Requires the repo-level "Allow auto-merge" setting to be ON, and main's
         # ProtectMain ruleset still requires one CODEOWNERS approval that the

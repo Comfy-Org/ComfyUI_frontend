@@ -1,0 +1,71 @@
+name: 'Workshop: Live Smoke'
+
+on:
+  workflow_run:
+    workflows: ['CI: Vercel Website Preview']
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '43 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workshop-live-prod
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  smoke:
+    name: Production · uploads and customer generations
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    environment: workshop-prod
+    timeout-minutes: 150
+    env:
+      PUBLIC_WORKSHOP_CLOUD_ENV: prod
+      WORKSHOP_SITE_URL: https://comfy.org
+      WORKSHOP_ACCEPTANCE_SCOPE: smoke
+      WORKSHOP_WORKSPACE_ID: ${{ vars.WORKSHOP_WORKSPACE_ID }}
+      WORKSHOP_EXPECTED_CHARGES_JSON: ${{ vars.WORKSHOP_EXPECTED_CHARGES_JSON }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-workshop-live
+      - name: Verify storage from the production browser origin
+        env:
+          COMFY_API_KEY: ${{ secrets.WORKSHOP_ROUTER_API_KEY }}
+        run: pnpm --filter @comfyorg/website test:workshop-upload --origin https://comfy.org
+      - name: Verify real customer journeys
+        env:
+          WORKSHOP_FIXTURE_DIR: ${{ runner.temp }}/workshop-fixtures
+          WORKSHOP_ACCOUNT_EMAIL: ${{ secrets.WORKSHOP_ACCOUNT_EMAIL }}
+          WORKSHOP_ACCOUNT_PASSWORD: ${{ secrets.WORKSHOP_ACCOUNT_PASSWORD }}
+        run: pnpm --filter @comfyorg/website test:acceptance --project chromium
+      - name: Publish acceptance evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: workshop-live-smoke-${{ github.run_id }}
+          path: |
+            apps/website/acceptance-results/
+            apps/website/acceptance-report/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Summarize live smoke
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+          SOURCE_REVISION: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          echo "Workshop production smoke: $RESULT. Test source: $SOURCE_REVISION. See the acceptance evidence artifact for job IDs, decoded outputs, and balance checks." >> "$GITHUB_STEP_SUMMARY"

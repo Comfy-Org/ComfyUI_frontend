@@ -33,6 +33,7 @@ describe('unmatchedRouteRedirect', () => {
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ message: 'Unmatched route' }),
       {
+        surface: 'platform',
         errorType: 'unmatched_route',
         level: 'warning',
         context: { path: '/woiadawd' }

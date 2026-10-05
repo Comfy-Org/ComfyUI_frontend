@@ -131,14 +131,12 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 import { useFirstRunEntry } from './firstRunEntry'
 import type { TutorialCard } from './tutorialCards'
 import {
@@ -165,8 +163,7 @@ const tabs = [
 
 const { t } = useI18n()
 
-const { dismissGettingStarted } = useFirstRunEntry()
-const { beginTour } = useFirstRunTourController()
+const { dismissGettingStarted, dismissIntoFirstRunTour } = useFirstRunEntry()
 const templatesStore = useWorkflowTemplatesStore()
 const dialogStore = useDialogStore()
 
@@ -235,10 +232,10 @@ async function onSelectTemplate(id: string) {
   if (loadingTemplateId.value) return
   failedTemplateId.value = null
 
-  if (await loadWorkflowTemplate(id, 'default')) {
-    await dismissGettingStarted()
+  const result = await loadWorkflowTemplate(id, 'default')
+  if (result === 'loaded') {
     try {
-      await beginTour(id)
+      await dismissIntoFirstRunTour(id)
     } catch (error) {
       console.error('first-run tour failed to start', error)
     }
@@ -246,10 +243,5 @@ async function onSelectTemplate(id: string) {
   }
 
   failedTemplateId.value = id
-  useToastStore().add({
-    severity: 'error',
-    summary: t('g.error'),
-    detail: t('gettingStarted.templateFailed')
-  })
 }
 </script>

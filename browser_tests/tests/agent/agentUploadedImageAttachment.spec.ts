@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
@@ -25,9 +26,7 @@ test(
       route.fulfill({ path: assetPath('image32x32.webp') })
     )
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
+    await new AgentPanel(page).open()
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,

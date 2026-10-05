@@ -176,7 +176,7 @@ test('collect-i18n-general', async ({ comfyPage }) => {
         // Do merge for settingsCategories as there are some manual translations
         // for special panels like "About" and "Keybinding".
         settingsCategories: {
-          ...(locale.settingsCategories ?? {}),
+          ...locale.settingsCategories,
           ...allSettingCategoriesLocale
         },
         serverConfigItems: allServerConfigsLocale,

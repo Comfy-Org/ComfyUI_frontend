@@ -176,6 +176,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,
@@ -213,17 +214,10 @@ const toggleState = () => {
   showApiKeyForm.value = false
 }
 
-const signInWithGoogle = async () => {
-  if (await authActions.signInWithGoogle({ isNewUser: !isSignIn.value })) {
-    onSuccess()
-  }
-}
-
-const signInWithGithub = async () => {
-  if (await authActions.signInWithGithub({ isNewUser: !isSignIn.value })) {
-    onSuccess()
-  }
-}
+const { signInWithGoogle, signInWithGithub } = useSocialSignIn({
+  isNewUser: () => !isSignIn.value,
+  onSignedIn: onSuccess
+})
 
 const signInWithEmail = async (values: SignInData) => {
   if (await authActions.signInWithEmail(values.email, values.password)) {
