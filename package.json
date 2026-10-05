@@ -170,6 +170,7 @@
     "@comfyorg/ingest-types": "workspace:*",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",
+    "@microsoft/api-extractor": "catalog:",
     "@pinia/testing": "catalog:",
     "@playwright/test": "catalog:",
     "@sentry/vite-plugin": "catalog:",
