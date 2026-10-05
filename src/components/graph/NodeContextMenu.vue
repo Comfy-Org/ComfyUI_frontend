@@ -2,6 +2,7 @@
   <ContextMenu
     ref="contextMenu"
     :model="menuItems"
+    :reference="menuReference"
     @show="onMenuShow"
     @hide="onMenuHide"
   >
@@ -31,8 +32,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useElementBounding, useRafFn } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import { getMenuAnchorPosition } from '@/components/ui/menu/menuAnchor'
@@ -84,46 +84,19 @@ function getItemColor(item: MenuItem): string | undefined {
 const worldPosition = ref({ x: 0, y: 0 })
 
 const lgCanvas = canvasStore.getCanvas()
-const { left: canvasLeft, top: canvasTop } = useElementBounding(lgCanvas.canvas)
-
-let lastScale = 0
-let lastOffsetX = 0
-let lastOffsetY = 0
-
-const updateMenuPosition = () => {
-  if (!isOpen.value) return
-
-  const { scale, offset } = lgCanvas.ds
-
-  if (
-    scale === lastScale &&
-    offset[0] === lastOffsetX &&
-    offset[1] === lastOffsetY
-  ) {
-    return
+const menuReference = {
+  contextElement: lgCanvas.canvas,
+  getBoundingClientRect() {
+    const { scale, offset } = lgCanvas.ds
+    const { left, top } = lgCanvas.canvas.getBoundingClientRect()
+    return new DOMRect(
+      (worldPosition.value.x + offset[0]) * scale + left,
+      (worldPosition.value.y + offset[1]) * scale + top,
+      1,
+      1
+    )
   }
-
-  lastScale = scale
-  lastOffsetX = offset[0]
-  lastOffsetY = offset[1]
-
-  const screenX = (worldPosition.value.x + offset[0]) * scale + canvasLeft.value
-  const screenY = (worldPosition.value.y + offset[1]) * scale + canvasTop.value
-
-  contextMenu.value?.updatePosition({ x: screenX, y: screenY })
 }
-
-const { resume: startSync, pause: stopSync } = useRafFn(updateMenuPosition, {
-  immediate: false
-})
-
-watchEffect(() => {
-  if (isOpen.value) {
-    startSync()
-  } else {
-    stopSync()
-  }
-})
 
 function convertToMenuItem(option: MenuOption): NodeMenuItem {
   if (option.type === 'divider') return { separator: true }
@@ -176,18 +149,12 @@ function prepareMenu(event: Event) {
   bump()
 
   const { x, y } = getMenuAnchorPosition(event)
-  const screenX = x - canvasLeft.value
-  const screenY = y - canvasTop.value
-
+  const { left, top } = lgCanvas.canvas.getBoundingClientRect()
   const { scale, offset } = lgCanvas.ds
   worldPosition.value = {
-    x: screenX / scale - offset[0],
-    y: screenY / scale - offset[1]
+    x: (x - left) / scale - offset[0],
+    y: (y - top) / scale - offset[1]
   }
-
-  lastScale = scale
-  lastOffsetX = offset[0]
-  lastOffsetY = offset[1]
 }
 
 function show(event: MouseEvent) {

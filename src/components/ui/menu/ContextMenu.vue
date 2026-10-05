@@ -5,6 +5,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
+import type { DropdownMenuContentProps } from 'reka-ui'
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref, useId, useTemplateRef } from 'vue'
 
@@ -19,9 +20,14 @@ import type { MenuItem } from './types'
 
 defineOptions({ inheritAttrs: false })
 
-const { id: providedId, model } = defineProps<{
+const {
+  id: providedId,
+  model,
+  reference
+} = defineProps<{
   id?: string
   model: MenuItem[]
+  reference?: DropdownMenuContentProps['reference']
 }>()
 const emit = defineEmits<{ show: []; hide: [] }>()
 
@@ -106,11 +112,7 @@ function updateOpen(value: boolean) {
   setOpen(value)
 }
 
-function updatePosition(position: { x: number; y: number }) {
-  anchorPosition.value = position
-}
-
-defineExpose({ hide, show, toggle, visible, updatePosition })
+defineExpose({ hide, show, toggle, visible })
 </script>
 
 <template>
@@ -129,6 +131,7 @@ defineExpose({ hide, show, toggle, visible, updatePosition })
     <DropdownMenuPortal>
       <DropdownMenuContent
         :id="providedId ?? generatedId"
+        :reference
         :data-menu-owner="ownerId"
         :class="
           cn(
