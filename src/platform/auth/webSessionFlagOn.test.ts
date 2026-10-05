@@ -2601,6 +2601,54 @@ describe.for([{ unified: false }, { unified: true }])(
         await expect(enterApp()).resolves.toBe('/cloud/login')
       })
 
+      describe('once the tab is in the app', () => {
+        let stopRecording = () => {}
+
+        afterEach(() => stopRecording())
+
+        const enterAppRecordingLandings = async () => {
+          const { server } = await install({ userId: 'user-a' })
+          identity.resolve(null)
+          await expect(enterApp()).resolves.toBe('/user-select')
+          const landings: string[] = []
+          stopRecording = router.afterEach((to) => {
+            landings.push(to.path)
+          })
+          return { server, landings }
+        }
+
+        it.for<{ name: string; session: ServerSession }>([
+          { name: 'its heartbeat reads session_revoked', session: 'revoked' },
+          {
+            name: 'its heartbeat finds no session and no login to restore',
+            session: 'none'
+          }
+        ])(
+          'sends the tab to the login page once, keeping its path, when $name',
+          async ({ session }) => {
+            const { server, landings } = await enterAppRecordingLandings()
+
+            server.session = session
+            await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+            await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+            expect(landings).toEqual(['/cloud/login'])
+            expect(router.currentRoute.value.query.previousFullPath).toBe(
+              encodeURIComponent('/user-select')
+            )
+          }
+        )
+
+        it('leaves the navigation of a sign-out in this tab to the sign-out flow', async () => {
+          const { landings } = await enterAppRecordingLandings()
+
+          await useAuthStore().logout()
+          await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+          expect(landings).toEqual([])
+        })
+      })
+
       it('waits out an outage instead of sending the tab to the login page', async () => {
         const { server } = await install('network')
         identity.resolve(null)
