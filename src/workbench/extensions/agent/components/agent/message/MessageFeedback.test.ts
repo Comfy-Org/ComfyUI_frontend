@@ -94,6 +94,17 @@ describe('MessageFeedback', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('keeps the Copy tooltip open to confirm the copy after a click', async () => {
+    const { user } = renderFeedback()
+    const copy = screen.getByRole('button', { name: 'Copy' })
+
+    await user.hover(copy)
+    await screen.findByRole('tooltip')
+    await user.click(copy)
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Copied')
+  })
+
   it('the chevron menu exposes only Copy as markdown and copies the raw source', async () => {
     const { user } = renderFeedback()
 
