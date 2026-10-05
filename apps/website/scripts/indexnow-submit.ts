@@ -69,14 +69,17 @@ async function postBatch(
   return accepted
 }
 
-async function send(payloads: IndexNowPayload[]): Promise<void> {
-  if (payloads.length === 0) return
-  if (!(await keyFileIsLive()))
-    return warn(`key file ${INDEXNOW_KEY_LOCATION} does not serve the key`)
+async function postAll(payloads: IndexNowPayload[]): Promise<void> {
   for (const [index, payload] of payloads.entries()) {
     if (!(await postBatch(payload, `batch ${index + 1}/${payloads.length}`)))
       return
   }
+}
+
+async function send(payloads: IndexNowPayload[]): Promise<void> {
+  if (payloads.length === 0) return
+  if (await keyFileIsLive()) return postAll(payloads)
+  warn(`key file ${INDEXNOW_KEY_LOCATION} does not serve the key`)
 }
 
 function preview(payloads: IndexNowPayload[]): void {
