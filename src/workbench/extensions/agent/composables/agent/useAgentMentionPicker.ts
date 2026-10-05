@@ -34,16 +34,13 @@ interface MentionPickerOptions {
 
 export function useAgentMentionPicker(options: MentionPickerOptions) {
   const { t } = useI18n()
-  const graphNodes = ref<SelectedNode[]>([])
-  function loadMentionNodes(): void {
-    if (options.nodeReferenceDisabledReason()) {
-      graphNodes.value = []
-      return
-    }
-    graphNodes.value = [...options.getMentionNodes()].sort((a, b) =>
-      a.title.localeCompare(b.title)
-    )
-  }
+  const graphNodes = computed(() =>
+    options.nodeReferenceDisabledReason()
+      ? []
+      : [...options.getMentionNodes()].sort((a, b) =>
+          a.title.localeCompare(b.title)
+        )
+  )
 
   const mention = ref<MentionPickerState>({ status: 'closed' })
   const mentionSection = computed(() =>
@@ -165,14 +162,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
 
   const graphDupes = computed(() => duplicatedTitles(graphNodes.value))
 
-  watch(
-    () => options.selectionTags(),
-    (tags) => {
-      if (tags.length) loadMentionNodes()
-    },
-    { immediate: true }
-  )
-
   function dispatchMention(event: MentionPickerEvent): void {
     mention.value = transitionMentionPicker(mention.value, event)
   }
@@ -201,8 +190,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
       dispatchMention({ type: 'closed' })
       return
     }
-    if (mention.value.status === 'closed' || mentionSection.value === 'nodes')
-      loadMentionNodes()
     dispatchMention({
       type: 'queryChanged',
       start: at,
@@ -222,11 +209,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
   watch(
     () => options.nodeReferenceDisabledReason(),
     (reason) => {
-      if (!reason) {
-        if (mention.value.status === 'open') loadMentionNodes()
-        return
-      }
-      graphNodes.value = []
+      if (!reason) return
       if (
         mention.value.status === 'open' &&
         mention.value.section === 'nodes'
@@ -245,7 +228,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     from: number,
     to: number
   ): void {
-    if (section === 'nodes') loadMentionNodes()
     options.editor()?.replaceText(from, to, '')
     dispatchMention({ type: 'sectionSelected', section })
     if (section === 'workflows') options.requestWorkflows()

@@ -7,11 +7,12 @@ import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
-import type { DirectiveBinding } from 'vue'
+import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
+import type { DirectiveBinding,ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -202,12 +203,17 @@ describe('Composer', () => {
     ).toBeTruthy()
   })
 
-  it.for([{ withAsset: false }, { withAsset: true }])(
-    'hides the hint while typing and restores it after clearing (tray=$withAsset)',
-    async ({ withAsset }) => {
+  it.for([
+    { tray: 'empty', attachments: [] },
+    {
+      tray: 'with an asset',
+      attachments: [{ id: 'asset', name: 'cat.png', ref: 'cat.png' }]
+    }
+  ])(
+    'hides the hint while typing and restores it after clearing (tray=$tray)',
+    async ({ attachments }) => {
       const store = useAgentComposerStore()
-      if (withAsset)
-        store.addAttachment({ id: 'asset', name: 'cat.png', ref: 'cat.png' })
+      store.replaceDraft({ text: '', workflowReferences: [], attachments })
       const { emitted } = mount()
       const box = screen.getByRole('textbox')
       expect(
@@ -226,7 +232,7 @@ describe('Composer', () => {
         screen.getByRole('button', { name: 'mention nodes' })
       )
       expect(emitted().selectNodes).toHaveLength(1)
-      expect(store.attachments).toHaveLength(withAsset ? 1 : 0)
+      expect(store.attachments).toEqual(attachments)
     }
   )
 
@@ -928,16 +934,16 @@ describe('Composer', () => {
     })
 
     it('loads current nodes when entering or re-entering the Nodes submenu', async () => {
-      let nodes: typeof NODES = []
-      mount({ getMentionNodes: () => nodes })
+      const nodes = ref<typeof NODES>([])
+      mount({ getMentionNodes: () => nodes.value })
       await openReferenceRoot()
 
-      nodes = [NODES[0]]
+      nodes.value = [NODES[0]]
       await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
       expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
 
       await userEvent.click(screen.getByRole('menuitem', { name: 'Back' }))
-      nodes = [NODES[2]]
+      nodes.value = [NODES[2]]
       await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
       expect(screen.getByRole('menuitem', { name: 'VAE Decode' })).toBeVisible()
       expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
@@ -945,11 +951,11 @@ describe('Composer', () => {
     })
 
     it('filters current nodes after the graph changes with the submenu open', async () => {
-      let nodes = [NODES[0]]
-      const { emitted } = mount({ getMentionNodes: () => nodes })
+      const nodes = ref([NODES[0]])
+      const { emitted } = mount({ getMentionNodes: () => nodes.value })
       await openReferenceSection('Nodes')
 
-      nodes = [NODES[2]]
+      nodes.value = [NODES[2]]
       await userEvent.click(screen.getByRole('textbox'))
       await userEvent.paste('vae')
 
@@ -960,6 +966,68 @@ describe('Composer', () => {
       expect(emitted().mentionPick).toEqual([[NODES[2]]])
       expect(emitted().send).toBeUndefined()
     })
+
+    it.for<{
+      event: string
+      act: (graph: ShallowRef<LGraph>, node: LGraphNode) => void
+      labels: string[]
+    }>([
+      {
+        event: 'adding a node',
+        act: (graph) => graph.value.add(new LGraphNode('Alpha')),
+        labels: ['Back', 'Alpha', 'KSampler']
+      },
+      {
+        event: 'renaming a node',
+        act: (_graph, node) => {
+          node.title = 'Alpha'
+        },
+        labels: ['Back', 'Alpha']
+      },
+      {
+        event: 'removing a node',
+        act: (graph, node) => graph.value.remove(node),
+        labels: ['Back']
+      },
+      {
+        event: 'replacing the viewed graph',
+        act: (graph) => {
+          const replacement = new LGraph()
+          replacement.add(new LGraphNode('VAE Decode'))
+          graph.value = replacement
+        },
+        labels: ['Back', 'VAE Decode']
+      }
+    ])(
+      'updates the open Nodes submenu after $event without typing',
+      async ({ act, labels }) => {
+        const graph = shallowRef(new LGraph())
+        const node = new LGraphNode('KSampler')
+        graph.value.add(node)
+        const { emitted } = mount({
+          getMentionNodes: () =>
+            graph.value.nodes.map((item) => ({
+              id: String(item.id),
+              title: item.title
+            }))
+        })
+        await openReferenceSection('Nodes')
+        expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+
+        act(graph, node)
+
+        await waitFor(() =>
+          expect(
+            within(screen.getByRole('menu', { name: 'Add to prompt' }))
+              .getAllByRole('menuitem')
+              .map((item) => item.textContent.trim())
+          ).toEqual(labels)
+        )
+        expect(useAgentComposerStore().draft).toBe('@')
+        expect(emitted().mentionPick).toBeUndefined()
+        expect(emitted().send).toBeUndefined()
+      }
+    )
 
     // Re-picking a staged node is a no-op, so it drops out of the list.
     it('hides nodes already in the basket', async () => {

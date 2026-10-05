@@ -598,7 +598,9 @@ let nodeReferenceWorkflow = selectionTags.value.length
   : null
 
 function viewedGraphNodes() {
-  return app.canvas?.graph?.nodes ?? app.graph?.nodes ?? []
+  return (
+    (canvasStore.currentGraph ?? app.canvas?.graph ?? app.graph)?.nodes ?? []
+  )
 }
 
 function mentionableNodes(): SelectedNode[] {

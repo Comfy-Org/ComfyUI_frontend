@@ -3097,15 +3097,23 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
-  it.for([{ withAsset: false }, { withAsset: true }])(
-    'shows panel-wide drop feedback across child transitions while preserving the composer (tray=$withAsset)',
-    async ({ withAsset }) => {
+  it.for([
+    { tray: 'empty', attachments: [] },
+    {
+      tray: 'with an asset',
+      attachments: [{ id: 'kept', name: 'kept.png', ref: 'kept.png' }]
+    }
+  ])(
+    'shows panel-wide drop feedback across child transitions while preserving the composer (tray=$tray)',
+    async ({ attachments }) => {
       stubUploadFetch()
       renderWithSelectedTarget()
       const store = useAgentComposerStore()
-      store.setText('Keep this draft')
-      if (withAsset)
-        store.addAttachment({ id: 'kept', name: 'kept.png', ref: 'kept.png' })
+      store.replaceDraft({
+        text: 'Keep this draft',
+        workflowReferences: [],
+        attachments
+      })
       await nextTick()
       const prompt = store.prompt
       const header = screen.getByRole('button', {
@@ -3125,10 +3133,9 @@ describe('AgentPanelRoot attach flow', () => {
       expect(composer).not.toContainElement(dropTarget)
       expect(screen.getByRole('textbox')).toHaveTextContent('Keep this draft')
       expect(store.prompt).toEqual(prompt)
-      if (withAsset)
-        expect(
-          screen.getByRole('group', { name: 'kept.png' })
-        ).toBeInTheDocument()
+      expect(screen.queryAllByRole('group', { name: 'kept.png' })).toHaveLength(
+        attachments.length
+      )
 
       dispatchDrag(composer, 'dragenter', data)
       dispatchDrag(header, 'dragleave', data)
@@ -3139,7 +3146,7 @@ describe('AgentPanelRoot attach flow', () => {
       await nextTick()
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
       expect(store.prompt).toEqual(prompt)
-      expect(store.attachments).toHaveLength(withAsset ? 1 : 0)
+      expect(store.attachments).toEqual(attachments)
     }
   )
 
@@ -10210,7 +10217,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
       }
       await act(textbox)
-      if (nextAction === 'stop') expect(cancellations).toHaveLength(0)
+      expect(cancellations).toHaveLength(0)
       finishSend(
         nextAction === 'stop'
           ? json(202, ack('wf-42', 'm-stopped'))
@@ -10486,6 +10493,25 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     expect(state.deselect).not.toHaveBeenCalled()
     expect([...state.selectedItems]).toEqual([rootTwin])
+  })
+
+  it('updates the open node picker when the viewed graph changes without editing the prompt', async () => {
+    makeTab('wf-42')
+    const state = setupOwnedSelectionCanvas()
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    await openMentionPicker()
+    expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+    const prompt = useAgentComposerStore().prompt
+
+    viewGraph(state.canvas, state.rootGraph)
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'Root node' })
+    ).toBeVisible()
+    expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
+    expect(useAgentComposerStore().prompt).toEqual(prompt)
+    expect(useAgentComposerStore().nodes).toEqual([])
   })
 
   it('lists target nodes loaded after opening the reference menu', async () => {
