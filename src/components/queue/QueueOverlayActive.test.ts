@@ -70,7 +70,7 @@ describe('QueueOverlayActive', () => {
       onViewAllJobs: viewAllJobsSpy
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const progressBars = container.querySelectorAll('.absolute.inset-0')
     expect(progressBars).toHaveLength(2)
     expect(progressBars[0]).toHaveStyle({ transform: 'scaleX(0.65)' })
@@ -98,7 +98,7 @@ describe('QueueOverlayActive', () => {
     await user.click(screen.getByRole('button', { name: 'View all jobs' }))
     expect(viewAllJobsSpy).toHaveBeenCalledOnce()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.custom-bottom-row')).toBeTruthy()
   })
 

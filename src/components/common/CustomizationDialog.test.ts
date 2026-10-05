@@ -8,18 +8,6 @@ import CustomizationDialog from './CustomizationDialog.vue'
 const DEFAULT_ICON = 'pi-bookmark-fill'
 const DEFAULT_COLOR = '#a1a1aa'
 
-vi.mock<unknown>(
-  import('primevue/selectbutton'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    default: {
-      name: 'SelectButton',
-      template: '<div />',
-      props: ['modelValue', 'options']
-    }
-  })
-)
-
 vi.mock<unknown>(import('@/components/ui/dialog/Dialog.vue'), () => ({
   default: { name: 'Dialog', template: '<div><slot /></div>' }
 }))
@@ -64,13 +52,14 @@ function renderDialog(extraProps: Record<string, unknown> = {}) {
 
 describe('CustomizationDialog', () => {
   describe('confirmCustomization', () => {
-    it('emits confirm with default icon and color when no initial values provided', async () => {
+    it('emits the icon selected by the user', async () => {
       const user = userEvent.setup()
       const { onConfirm } = renderDialog()
 
+      await user.click(screen.getByRole('button', { name: 'icon.folder' }))
       await user.click(screen.getByText('g.confirm'))
 
-      expect(onConfirm).toHaveBeenCalledWith(DEFAULT_ICON, DEFAULT_COLOR)
+      expect(onConfirm).toHaveBeenCalledWith('pi-folder', DEFAULT_COLOR)
     })
 
     it('emits confirm with matching initialIcon when provided', async () => {

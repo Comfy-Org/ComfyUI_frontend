@@ -14,9 +14,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import InputSlot from './InputSlot.vue'
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({ toastErrorHandler: vi.fn() })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/links/slotLinkDragUIState'),

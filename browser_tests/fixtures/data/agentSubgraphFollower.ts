@@ -7,11 +7,15 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 
 export const AGENT_SUBGRAPH_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+export const AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID =
+  'b92718a4-02ae-41e6-ae85-c33b7bb880f7'
 export const AGENT_SUBGRAPH_HOST_ID = 11
 export const AGENT_SUBGRAPH_LINK_ID = 21
 export const AGENT_SUBGRAPH_INITIAL_TEXT = 'a photo of a pier'
 export const AGENT_SUBGRAPH_INITIAL_SEED = 0
 export const AGENT_SUBGRAPH_EDITED_SEED = 42
+const AGENT_SUBGRAPH_DRIFT_TEXT = 'must not reach the canvas'
+const AGENT_SUBGRAPH_DRIFT_SEED = 99
 export const AGENT_NESTED_SUBGRAPH_ID = '52e51d98-aaac-44d3-bab1-61eae17b9869'
 
 export const agentSubgraphNodeDefs: Record<string, ComfyNodeDef> = {
@@ -170,4 +174,20 @@ export function agentSubgraphFrames(): {
   const initial = host.initialSync()
   const followUp = host.apply([followUpOp])
   return { initial, followUp }
+}
+
+export function agentSubgraphWidgetDriftFrames(): HostFrame[] {
+  const workflow = structuredClone(subgraphWorkflow)
+  const host = workflow.nodes.find((node) => node.id === AGENT_SUBGRAPH_HOST_ID)
+  if (!host) throw new Error('Subgraph host fixture is missing')
+  host.widgets_values = [
+    AGENT_SUBGRAPH_DRIFT_TEXT,
+    AGENT_SUBGRAPH_DRIFT_SEED,
+    'extra opaque value'
+  ]
+  return new HostDoc(
+    AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID,
+    workflow,
+    catalog
+  ).initialSync()
 }

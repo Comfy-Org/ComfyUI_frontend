@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -16,11 +15,7 @@ vi.mock(import('@/utils/hostWhitelist'), () => ({
   isHostWhitelisted: () => true,
   normalizeHost: (host: string) => host
 }))
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: ref({}),
-  configValueOrDefault: (_config: unknown, _key: string, fallback: string) =>
-    fallback
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const inChina = vi.hoisted(() => ({
   value: false,
@@ -118,6 +113,40 @@ describe('SignInContent', () => {
 
     accessError.value = true
     expect(await screen.findByText('Tip')).toBeVisible()
+  })
+
+  it('finishes a closed popup’s late result as a sign-in, then reports success', async () => {
+    const onSuccess = vi.fn()
+    const actions = useAuthActions()
+    render(SignInContent, {
+      props: { onSuccess },
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: MESSAGES }
+          })
+        ],
+        stubs: {
+          SignUpForm: true,
+          SignInForm: true,
+          ApiKeyForm: true,
+          Divider: true
+        }
+      }
+    })
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /sign in with google/i }))
+    const popup = vi.mocked(actions.signInWithGoogle).mock.calls[0]?.[0]?.popup
+    vi.mocked(actions.signInWithGoogle).mockResolvedValueOnce({
+      user: { uid: 'u1' }
+    } as never)
+
+    popup?.onResumed?.(Promise.resolve({ user: { uid: 'u1' } } as never))
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce())
   })
 
   it('links legal terms directly to canonical Comfy pages', () => {

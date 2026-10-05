@@ -23,7 +23,7 @@ import type { SessionSnapshot } from '@comfyorg/account-core/session'
 import { isPermanentSessionError } from '@comfyorg/account-core/session'
 import { createLifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
 
-import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
+import { identifyWorkshopUser, useWorkshopAuthFlag } from '@/scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
   workshopIdentity,
@@ -263,6 +263,15 @@ function start(): void {
       { immediate: true }
     )
   })
+}
+
+export function stopWorkshopSession(): void {
+  operation.abandon()
+  stopListeners()
+  restoredForUid = undefined
+  // PENDING also idles credits, which follow this snapshot's settled state.
+  snapshot.value = PENDING
+  lifecycle.stop()
 }
 
 async function signOut(): Promise<void> {

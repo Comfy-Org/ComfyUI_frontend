@@ -200,7 +200,7 @@ class Load3DConfiguration {
         intensity:
           saved.intensity ??
           useSettingStore().get('Comfy.Load3D.LightIntensity'),
-        hdri: { ...hdriDefaults, ...(saved.hdri ?? {}) }
+        hdri: { ...hdriDefaults, ...saved.hdri }
       }
     }
 

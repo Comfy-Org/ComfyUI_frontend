@@ -31,6 +31,7 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import {
   CONNECTED_SOCKET_SLOTS,
   EXPECTED_TARGETS,
@@ -85,6 +86,7 @@ export class MultiAutogrowRealignHarness {
   readonly agentPanel: AgentPanel
 
   readonly panel: Locator
+  readonly sourceNode: Locator
   readonly targetNode: Locator
   readonly promptField: Locator
   readonly widthInput: Locator
@@ -101,6 +103,12 @@ export class MultiAutogrowRealignHarness {
     return prompt
   }
 
+  outputImage(nodeId: number | string): Locator {
+    return this.vueNodes
+      .getNodeLocator(String(nodeId))
+      .locator('img[src*="/api/view"]')
+  }
+
   constructor(private readonly page: Page) {
     this.hostSocket = new AgentFollowerHostSocket(
       page,
@@ -114,6 +122,7 @@ export class MultiAutogrowRealignHarness {
     this.agentPanel = new AgentPanel(page)
 
     this.panel = this.agentPanel.root
+    this.sourceNode = this.vueNodes.getNodeLocator(String(SOURCE_NODE_ID))
     this.targetNode = this.vueNodes.getNodeLocator(TARGET_ID)
     this.promptField = this.targetNode.getByRole('textbox', { name: 'prompt' })
     this.widthInput = this.vueNodes.getInputNumberControls(
@@ -124,7 +133,9 @@ export class MultiAutogrowRealignHarness {
     ).input
   }
 
-  async setUp(): Promise<void> {
+  async setUp(
+    options: { settings?: Record<string, unknown> } = {}
+  ): Promise<void> {
     const { page } = this
     // Registered before `bootAgentApp` (with `objectInfo: 'server'` below) so
     // it wins over the empty handler `mockCloudBootRoutes` would otherwise
@@ -212,7 +223,8 @@ export class MultiAutogrowRealignHarness {
       // DOM this test can query.
       settings: {
         'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
+        'Comfy.Graph.CanvasInfo': false,
+        ...options.settings
       }
     })
 
@@ -253,6 +265,7 @@ export class MultiAutogrowRealignHarness {
   }
 
   async targetActiveWorkflow(): Promise<void> {
+    await loadSeedIntoActiveTab(this.page, seed)
     await this.agentPanel.open()
     await this.agentPanel.selectWorkflow()
   }
@@ -341,17 +354,20 @@ export class MultiAutogrowRealignHarness {
   async submitAndReadTargetInputs(): Promise<
     ComfyApiWorkflow[string]['inputs']
   > {
+    const submittedPrompt = await this.submitAndReadPrompt()
+    if (!(TARGET_ID in submittedPrompt)) {
+      throw new Error(`Submitted prompt has no node ${TARGET_ID}`)
+    }
+    return submittedPrompt[TARGET_ID].inputs
+  }
+
+  async submitAndReadPrompt(): Promise<ComfyApiWorkflow> {
     this.submittedPrompt = undefined
     await this.page
       .getByRole('button', { name: enMessages.menu.run, exact: true })
       .click()
     await expect.poll(() => this.submittedPrompt !== undefined).toBe(true)
-    const submittedPrompt = this.requireSubmittedPrompt()
-    if (!(TARGET_ID in submittedPrompt)) {
-      throw new Error(`Submitted prompt has no node ${TARGET_ID}`)
-    }
-    const target = submittedPrompt[TARGET_ID]
-    return target.inputs
+    return this.requireSubmittedPrompt()
   }
 
   async expectSubmittedValuesNamedCorrectly(
@@ -379,6 +395,14 @@ export class MultiAutogrowRealignHarness {
     await expect(this.heightInput).toHaveValue(String(SENTINEL_HEIGHT))
   }
 
+  applyRemoteWidget(widget: 'width' | 'height', value: number): void {
+    this.hostSocket.send(
+      this.host.apply([
+        { op: 'set_widget', node_id: TARGET_NODE_ID, widget, value }
+      ])
+    )
+  }
+
   async expectSentinelWidgetValues(
     expectedPrompt = SENTINEL_PROMPT
   ): Promise<void> {
@@ -399,16 +423,17 @@ export class MultiAutogrowRealignHarness {
   }
 
   async switchTabsAwayAndBack(): Promise<void> {
-    await expect(
-      this.topbar.workflowTabs.locator('.p-togglebutton')
-    ).toHaveCount(1)
+    await expect(this.topbar.tabs).toHaveCount(1)
     await this.topbar.newWorkflowButton.click()
+    await expect(this.topbar.tabs).toHaveCount(2)
     await expect(
-      this.topbar.workflowTabs.locator('.p-togglebutton')
-    ).toHaveCount(2)
-    await expect(this.topbar.getTab(1)).toHaveAttribute('aria-pressed', 'true')
+      this.topbar.getTab(1).and(this.topbar.getActiveTab())
+    ).toBeVisible()
     await this.topbar.getTab(0).click()
-    await expect(this.topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect(
+      this.topbar.getTab(0).and(this.topbar.getActiveTab())
+    ).toBeVisible()
+    await this.topbar.dismissWorkflowPopover()
     await expect.poll(() => this.hostSocket.subscribeCount()).toBe(2)
   }
 

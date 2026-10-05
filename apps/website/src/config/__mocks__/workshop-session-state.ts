@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type * as realSession from '../workshop-session-state'
+import type * as realSession from '@/config/workshop-session-state'
 
 type Session = ReturnType<typeof realSession.useWorkshopSession>
 
@@ -26,6 +26,7 @@ const state: Session = {
 
 const session: typeof realSession = {
   REMEMBERED_WORKSPACE_KEY: 'workshop:workspace',
+  stopWorkshopSession: vi.fn(),
   useWorkshopSession: vi.fn(() => {
     onTestFinished(() => {
       Object.assign(state, defaults())
@@ -34,8 +35,12 @@ const session: typeof realSession = {
   })
 }
 
-export const { REMEMBERED_WORKSPACE_KEY, useWorkshopSession } = session
+export const {
+  REMEMBERED_WORKSPACE_KEY,
+  stopWorkshopSession,
+  useWorkshopSession
+} = session
 export type {
   WorkshopSession,
   WorkshopSessionUser
-} from '../workshop-session-state'
+} from '@/config/workshop-session-state'
