@@ -5,14 +5,11 @@ import {
 import { expectDialogBoundsWithDockedPanel } from '@e2e/fixtures/utils/workspaceInset'
 
 test.describe('Dialog layout with a docked Agent panel', () => {
-  for (const { viewportWidth, x, outcome } of [
-    { viewportWidth: 1440, x: 8, outcome: 'covers the panel from the gutter' },
-    { viewportWidth: 1920, x: 50, outcome: 'centres beside the panel' }
-  ]) {
+  for (const viewportWidth of [1440, 1920]) {
     test.describe(`at a ${viewportWidth}px viewport`, () => {
       test.use({ viewport: { width: viewportWidth, height: 800 } })
 
-      test(`Templates browser keeps its size and ${outcome}`, async ({
+      test('Templates browser stays centered at every panel width', async ({
         comfyPage
       }) => {
         await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
@@ -21,7 +18,12 @@ test.describe('Dialog layout with a docked Agent panel', () => {
         await expectDialogBoundsWithDockedPanel(
           comfyPage.page,
           comfyPage.templatesDialog.root,
-          { panelWidth: 420, x }
+          { panelWidths: [0, 420, 960] }
+        )
+
+        await expect(comfyPage.page.getByTestId('dialog-overlay')).toHaveBounds(
+          { x: 0, y: 0, width: viewportWidth, height: 800 },
+          { numDigits: 1 }
         )
       })
     })
@@ -30,7 +32,7 @@ test.describe('Dialog layout with a docked Agent panel', () => {
   test.describe('at the sm breakpoint', () => {
     test.use({ viewport: { width: 640, height: 800 } })
 
-    test('a size-variant dialog keeps its width and stops at the gutter', async ({
+    test('a size-variant dialog stays viewport-centered and keeps its width', async ({
       comfyPage
     }) => {
       await comfyPage.page.evaluate(() => {
@@ -47,7 +49,7 @@ test.describe('Dialog layout with a docked Agent panel', () => {
       await expectDialogBoundsWithDockedPanel(
         comfyPage.page,
         comfyPage.confirmDialog.root,
-        { panelWidth: 420, x: 8 }
+        { panelWidths: [0, 420] }
       )
     })
   })

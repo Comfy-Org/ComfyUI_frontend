@@ -69,7 +69,7 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
       await viewer.waitForOpen()
     })
 
-    await test.step('keep the viewer outside the docked Agent panel', async () => {
+    await test.step('keep the viewer centered over the docked Agent panel', async () => {
       await page.setViewportSize({ width: 500, height: 800 })
 
       const viewport = page.viewportSize()
@@ -83,11 +83,15 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
         expect(panelBox).not.toBeNull()
         if (!dialogBox || !panelBox) return
 
-        expect(dialogBox.x).toBeGreaterThanOrEqual(0)
-        expect(dialogBox.y).toBeGreaterThanOrEqual(0)
-        expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(
-          panelBox.x + 1
+        expect(dialogBox.x).toBeCloseTo(
+          (viewport.width - dialogBox.width) / 2,
+          1
         )
+        expect(dialogBox.y).toBeCloseTo(
+          (viewport.height - dialogBox.height) / 2,
+          1
+        )
+        expect(dialogBox.x + dialogBox.width).toBeGreaterThan(panelBox.x)
         expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(
           viewport.height + 1
         )
