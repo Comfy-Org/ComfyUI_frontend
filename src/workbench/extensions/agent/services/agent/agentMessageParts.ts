@@ -116,6 +116,17 @@ function supersedes(
   return isServerDecided(next) && !namesAnswer(shown) && namesAnswer(next)
 }
 
+/**
+ * The resolution an ask ends up with when `next` arrives after `shown`: the
+ * same rule a card on screen follows, for anything that keeps a resolution.
+ */
+export function settleResolution(
+  shown: AskUserResolution | undefined,
+  next: AskUserResolution = { status: 'retired', selected: [] }
+): AskUserResolution {
+  return shown === undefined || supersedes(next, shown) ? next : shown
+}
+
 /** The generic `ask_user` question: a prompt plus every option the agent offered. */
 export interface AskUserPart {
   type: 'askUser'
@@ -143,6 +154,15 @@ export function isPendingAskPart(part: MessagePart): part is AskPart {
   )
 }
 
+/**
+ * A part still waiting on an answer: a pending card or the notice standing in
+ * for one. Only a live turn's transport can settle it, so a settled turn drops
+ * it rather than keep an answerable form.
+ */
+export function isOpenAskPart(part: MessagePart): boolean {
+  return isPendingAskPart(part) || part.type === 'askUnavailable'
+}
+
 /** The ask a part belongs to: its card or its stand-in notice. */
 export function askIdOf(part: MessagePart): string | undefined {
   return isAskPart(part) || part.type === 'askUnavailable'
@@ -159,15 +179,16 @@ export function askIdOf(part: MessagePart): string | undefined {
 export function retireAskParts(
   parts: MessagePart[],
   askId: string,
-  resolution: AskUserResolution = { status: 'retired', selected: [] }
+  resolution?: AskUserResolution
 ): MessagePart[] {
   if (!parts.some((part) => askIdOf(part) === askId)) return parts
   return parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
     if (part.type !== 'askUser') return []
-    const keep =
-      part.resolution !== undefined && !supersedes(resolution, part.resolution)
-    return [keep ? part : { ...part, resolution }]
+    const settled = settleResolution(part.resolution, resolution)
+    return [
+      settled === part.resolution ? part : { ...part, resolution: settled }
+    ]
   })
 }
 

@@ -5433,7 +5433,8 @@
       "answered": "Answered",
       "otherAnswer": "Other: {text}",
       "unconfirmed": "We couldn't confirm your answer was received.",
-      "closed": "This question was closed without an answer."
+      "closed": "This question was closed without an answer.",
+      "retired": "This question is no longer open here."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",
