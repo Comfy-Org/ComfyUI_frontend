@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
-import { onMounted, shallowRef, useTemplateRef } from 'vue'
+import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { description } = defineProps<{ description: string }>()
@@ -11,10 +11,10 @@ const { t } = useI18n()
  * Whether three lines clip this text depends on the rendered width, so it is
  * measured rather than guessed from a character count, and remeasured on resize.
  */
-const showFullDescription = shallowRef(false)
+const showFullDescription = ref(false)
 const descriptionElement =
   useTemplateRef<HTMLParagraphElement>('descriptionElement')
-const descriptionOverflows = shallowRef(false)
+const descriptionOverflows = ref(false)
 
 function measureDescriptionOverflow() {
   const element = descriptionElement.value
@@ -24,6 +24,19 @@ function measureDescriptionOverflow() {
 
 onMounted(measureDescriptionOverflow)
 useResizeObserver(descriptionElement, measureDescriptionOverflow)
+
+/**
+ * A clamped paragraph keeps its height when the text changes, so the resize
+ * observer never fires and both the measurement and the expanded state would
+ * describe the previous template.
+ */
+watch(
+  () => description,
+  () => {
+    showFullDescription.value = false
+    void nextTick(measureDescriptionOverflow)
+  }
+)
 </script>
 
 <template>

@@ -5,7 +5,10 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
+import type {
+  TemplateDetailGroup,
+  TemplateModelSetup
+} from '@/platform/workflow/templates/types/templateDetail'
 
 import WorkflowTemplateDetail from './WorkflowTemplateDetail.vue'
 
@@ -42,29 +45,15 @@ function renderDetail({
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  modelSetupEnabled = false,
-  setupPending = false,
-  requirementsMet = false,
-  modelDownloadsAvailable = false,
-  remainingModelDownloadSize
+  modelSetup
 }: {
   renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetupEnabled?: boolean
-  setupPending?: boolean
-  requirementsMet?: boolean
-  modelDownloadsAvailable?: boolean
-  remainingModelDownloadSize?: string
+  modelSetup?: TemplateModelSetup
 } = {}) {
-  const modelSetupProps = {
-    modelSetupEnabled,
-    setupPending,
-    requirementsMet,
-    modelDownloadsAvailable,
-    remainingModelDownloadSize
-  }
+  const modelSetupProps = { modelSetup }
 
   return render(WorkflowTemplateDetail, {
     props: {
@@ -161,10 +150,7 @@ describe('WorkflowTemplateDetail', () => {
 
   it('keeps Open now available while offering Download models & open', async () => {
     const user = userEvent.setup()
-    const result = renderDetail({
-      modelSetupEnabled: true,
-      modelDownloadsAvailable: true
-    })
+    const result = renderDetail({ modelSetup: { state: 'startable' } })
 
     await user.click(screen.getByRole('button', { name: 'Open now' }))
     await user.click(
@@ -179,7 +165,7 @@ describe('WorkflowTemplateDetail', () => {
   })
 
   it('does not block Open now while model metadata is pending', () => {
-    renderDetail({ modelSetupEnabled: true, setupPending: true })
+    renderDetail({ modelSetup: { state: 'resolving' } })
 
     expect(screen.getByRole('button', { name: 'Open now' })).toBeEnabled()
     expect(
@@ -506,9 +492,7 @@ describe('WorkflowTemplateDetail', () => {
   })
   it('states the cost on the bulk action when every startable row declares one', () => {
     renderDetail({
-      modelSetupEnabled: true,
-      modelDownloadsAvailable: true,
-      remainingModelDownloadSize: '6.46 GB'
+      modelSetup: { state: 'startable', remainingSize: '6.46 GB' }
     })
 
     expect(
@@ -517,10 +501,7 @@ describe('WorkflowTemplateDetail', () => {
   })
 
   it('drops the cost rather than stating a partial one', () => {
-    renderDetail({
-      modelSetupEnabled: true,
-      modelDownloadsAvailable: true
-    })
+    renderDetail({ modelSetup: { state: 'startable' } })
 
     expect(
       screen.getByRole('button', { name: 'Download models & open' })
@@ -528,7 +509,7 @@ describe('WorkflowTemplateDetail', () => {
   })
 
   it('offers the bulk action disabled while availability is still resolving', () => {
-    renderDetail({ modelSetupEnabled: true, setupPending: true })
+    renderDetail({ modelSetup: { state: 'resolving' } })
 
     expect(
       screen.getByRole('button', { name: 'Download models & open' })
@@ -537,11 +518,7 @@ describe('WorkflowTemplateDetail', () => {
   })
 
   it('offers only Open now once every requirement is met', () => {
-    renderDetail({
-      modelSetupEnabled: true,
-      requirementsMet: true,
-      modelDownloadsAvailable: true
-    })
+    renderDetail({ modelSetup: undefined })
 
     expect(
       screen.queryByRole('button', { name: /Download models & open/ })

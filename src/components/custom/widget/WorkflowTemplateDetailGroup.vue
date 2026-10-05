@@ -26,7 +26,7 @@ const emit = defineEmits<{ 'download-model': [rowId: string] }>()
         {{ group.total }}
       </span>
     </div>
-    <ul class="m-0 list-none p-0">
+    <ul role="list" class="m-0 list-none p-0">
       <li
         v-for="row in group.rows"
         :key="row.id"

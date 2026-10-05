@@ -12,7 +12,7 @@ const { state, rowName } = defineProps<{
 }>()
 const emit = defineEmits<{ retry: [] }>()
 const { t } = useI18n()
-const hintId = `${useId()}-download-failed-hint`
+const hintId = useId()
 
 function failureLabel(): string {
   return t(

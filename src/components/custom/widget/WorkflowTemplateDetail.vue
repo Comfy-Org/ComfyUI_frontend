@@ -5,7 +5,10 @@ import { useI18n } from 'vue-i18n'
 import WorkflowTemplateDescription from '@/components/custom/widget/WorkflowTemplateDescription.vue'
 import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
+import type {
+  TemplateDetailGroup,
+  TemplateModelSetup
+} from '@/platform/workflow/templates/types/templateDetail'
 
 const {
   title,
@@ -14,11 +17,7 @@ const {
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  modelSetupEnabled = false,
-  setupPending = false,
-  requirementsMet = false,
-  modelDownloadsAvailable = false,
-  remainingModelDownloadSize
+  modelSetup
 } = defineProps<{
   title: string
   description: string
@@ -26,11 +25,7 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetupEnabled?: boolean
-  setupPending?: boolean
-  requirementsMet?: boolean
-  modelDownloadsAvailable?: boolean
-  remainingModelDownloadSize?: string
+  modelSetup?: TemplateModelSetup
 }>()
 
 const emit = defineEmits<{
@@ -44,19 +39,14 @@ const detailRoot = ref<HTMLElement | null>(null)
 const detailId = useId()
 const cloudTitleId = `${detailId}-cloud-title`
 const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
-const offerDownloadAndOpen = computed(
-  () =>
-    modelSetupEnabled &&
-    !requirementsMet &&
-    (setupPending || modelDownloadsAvailable)
-)
-const downloadModelsAndOpenLabel = computed(() =>
-  remainingModelDownloadSize
-    ? t('templateWorkflows.detail.downloadModelsAndOpenWithSize', {
-        size: remainingModelDownloadSize
-      })
+const offerDownloadAndOpen = computed(() => modelSetup !== undefined)
+const downloadModelsAndOpenLabel = computed(() => {
+  const size =
+    modelSetup?.state === 'startable' ? modelSetup.remainingSize : undefined
+  return size
+    ? t('templateWorkflows.detail.downloadModelsAndOpenWithSize', { size })
     : t('templateWorkflows.detail.downloadModelsAndOpen')
-)
+})
 
 defineExpose({
   focus: () => detailRoot.value?.focus()
@@ -163,7 +153,7 @@ defineExpose({
           variant="inverted"
           size="lg"
           :loading="openPending"
-          :disabled="offerDownloadAndOpen && setupPending"
+          :disabled="modelSetup?.state === 'resolving'"
           @click="
             offerDownloadAndOpen
               ? emit('download-models-and-open')
