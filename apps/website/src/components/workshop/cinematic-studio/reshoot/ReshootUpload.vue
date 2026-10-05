@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { Upload } from '@lucide/vue'
 import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { clipFits } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
-import type { Locale } from '../../../../i18n/translations'
+import { clipFits } from '@/lib/workshop/cinematic-studio/reshoot'
+import { fileSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
+import type { Locale } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

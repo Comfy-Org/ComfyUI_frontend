@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 
-import SectionHeader from '../common/SectionHeader.vue'
-import NodeUnionIcon from '../icons/NodeUnionIcon.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import NodeUnionIcon from '@/components/icons/NodeUnionIcon.vue'
 
 type Cta = { label: string; href: string; target?: '_blank' }
 

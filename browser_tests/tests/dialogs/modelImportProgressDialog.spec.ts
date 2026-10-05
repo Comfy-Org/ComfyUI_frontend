@@ -175,7 +175,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       await expect(
         toast.getByText('Cancelled', { exact: true }).first()
       ).toBeVisible()
-      await expect(toast.getByRole('button', { name: 'Close' })).toBeHidden()
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
     })
 
     await test.step('keep the terminal backend state rendered', async () => {
@@ -196,6 +196,133 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       ).toBeHidden()
       await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
     })
+  })
+
+  test('a cancelled download whose task row is purged can still be dismissed', async ({
+    comfyPage
+  }) => {
+    // The store waits a real 10s before its first reconciliation, and this
+    // case has to observe that reconciliation rather than fake the clock: the
+    // toast does not render at all under an installed clock.
+    test.setTimeout(60_000)
+
+    const { page } = comfyPage
+    const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224d'
+    const assetName = 'purged-model.safetensors'
+    // The backend accepts the cancellation, then purges the task row, so no
+    // terminal WS message and no successful poll will ever arrive.
+    await page.route(`**/tasks/${taskId}`, async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({ status: 204 })
+        return
+      }
+      await route.fulfill({ status: 404, json: { detail: 'Task not found' } })
+    })
+
+    const toast = page.getByRole('status').filter({ hasText: assetName })
+
+    await test.step('cancel a running download', async () => {
+      await comfyPage.assets.dispatchDownload({
+        task_id: taskId,
+        asset_name: assetName,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'running'
+      })
+
+      await expect(toast).toBeVisible()
+      await toast.getByRole('button', { name: 'Expand' }).click()
+      await toast.getByRole('button', { name: 'Cancel Download' }).click()
+
+      await expect(
+        toast.getByText('Cancelled', { exact: true }).first()
+      ).toBeVisible()
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
+    })
+
+    await test.step('settle the cancellation once the task lookup 404s', async () => {
+      await page.waitForResponse(
+        (response) =>
+          response.url().endsWith(`/tasks/${taskId}`) &&
+          response.request().method() === 'GET',
+        { timeout: 30_000 }
+      )
+
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
+    })
+
+    await test.step('dismiss the settled cancellation', async () => {
+      await toast.getByRole('button', { name: 'Close' }).click()
+      await expect(toast).toBeHidden()
+    })
+  })
+
+  test('a dismissed unconfirmed cancellation stays hidden from late progress', async ({
+    comfyPage
+  }) => {
+    const { page } = comfyPage
+    const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224e'
+    const assetName = 'unconfirmed-cancel-model.safetensors'
+    await page.clock.install()
+    await page.route(`**/tasks/${taskId}`, async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({ status: 204 })
+        return
+      }
+      await route.fulfill({
+        json: {
+          id: taskId,
+          idempotency_key: taskId,
+          task_name: 'task:download_file',
+          payload: {},
+          status: 'running',
+          create_time: new Date().toISOString(),
+          update_time: new Date().toISOString()
+        } satisfies TaskResponse
+      })
+    })
+
+    await comfyPage.assets.dispatchDownload({
+      task_id: taskId,
+      asset_name: assetName,
+      bytes_total: 1000,
+      bytes_downloaded: 200,
+      progress: 20,
+      status: 'running'
+    })
+
+    const toast = page.getByRole('status').filter({ hasText: assetName })
+    await expect(toast).toBeVisible()
+    await toast.getByRole('button', { name: 'Expand' }).click()
+    await toast.getByRole('button', { name: 'Cancel Download' }).click()
+
+    const advanceReconciliation = async () => {
+      const response = page.waitForResponse(
+        (candidate) =>
+          candidate.url().endsWith(`/tasks/${taskId}`) &&
+          candidate.request().method() === 'GET'
+      )
+      await page.clock.runFor(10_001)
+      await (await response).finished()
+      await page.clock.runFor(1)
+    }
+    await advanceReconciliation()
+    await expect(
+      toast.getByText('Cancelled', { exact: true }).first()
+    ).toBeVisible()
+    await toast.getByRole('button', { name: 'Close' }).click()
+    await expect(toast).toBeHidden()
+
+    await comfyPage.assets.dispatchDownload({
+      task_id: taskId,
+      asset_name: assetName,
+      bytes_total: 1000,
+      bytes_downloaded: 750,
+      progress: 75,
+      status: 'running'
+    })
+    await expect(toast).toBeHidden()
   })
 
   test('closing a failed download while polling does not reopen its toast', async ({

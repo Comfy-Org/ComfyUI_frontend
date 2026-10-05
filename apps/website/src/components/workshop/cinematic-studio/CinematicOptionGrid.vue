@@ -3,9 +3,9 @@ import { CircleDashed } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DirectionGroup } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+import type { DirectionGroup } from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
 
 const {
