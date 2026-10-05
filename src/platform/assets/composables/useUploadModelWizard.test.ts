@@ -19,7 +19,7 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetMetadata: vi.fn(),
     uploadAssetAsync: vi.fn(),
-    uploadAssetPreviewImage: vi.fn()
+    uploadAssetFromBase64: vi.fn()
   }
 }))
 
@@ -100,6 +100,114 @@ describe('useUploadModelWizard', () => {
     for (const app of mountedApps.splice(0)) {
       app.unmount()
     }
+  })
+
+  it('does not start an upload after reset while preview creation is pending', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    let finishPreview!: () => void
+    vi.mocked(assetService.uploadAssetFromBase64).mockReturnValue(
+      new Promise((resolve) => {
+        finishPreview = () => resolve(fromPartial({ id: 'preview-id' }))
+      })
+    )
+
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/stale-preview'
+    wizard.wizardData.value.previewImage = 'data:image/png;base64,cHJldmlldw=='
+    wizard.selectedModelType.value = 'checkpoints'
+
+    const upload = wizard.uploadModel()
+    await vi.waitFor(() => {
+      expect(assetService.uploadAssetFromBase64).toHaveBeenCalledOnce()
+    })
+    wizard.resetWizard()
+    finishPreview()
+
+    await expect(upload).resolves.toBeNull()
+    expect(assetService.uploadAssetAsync).not.toHaveBeenCalled()
+    expect(wizard.currentStep.value).toBe(1)
+    expect(wizard.isUploading.value).toBe(false)
+  })
+
+  it('tracks a backend task that resolves after the wizard is reset', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    let finishUpload!: (value: AsyncUploadResponse) => void
+    vi.mocked(assetService.uploadAssetAsync).mockReturnValue(
+      new Promise((resolve) => {
+        finishUpload = resolve
+      })
+    )
+
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/stale-response'
+    wizard.selectedModelType.value = 'checkpoints'
+
+    const upload = wizard.uploadModel()
+    await vi.waitFor(() => {
+      expect(assetService.uploadAssetAsync).toHaveBeenCalledOnce()
+    })
+    wizard.resetWizard()
+    finishUpload({
+      type: 'async',
+      task: {
+        task_id: 'task-after-reset',
+        status: 'created',
+        message: 'Download queued'
+      }
+    })
+
+    await expect(upload).resolves.toBeNull()
+    expect(useAssetDownloadStore().downloadList).toEqual([
+      expect.objectContaining({
+        taskId: 'task-after-reset',
+        modelType: 'checkpoints'
+      })
+    ])
+    expect(wizard.currentStep.value).toBe(1)
+  })
+
+  it('does not let a stale failure overwrite a replacement upload', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    let failFirstUpload!: (error: Error) => void
+    vi.mocked(assetService.uploadAssetAsync)
+      .mockReturnValueOnce(
+        new Promise((_, reject) => {
+          failFirstUpload = reject
+        })
+      )
+      .mockResolvedValueOnce({
+        type: 'async',
+        task: {
+          task_id: 'replacement-task',
+          status: 'created',
+          message: 'Download queued'
+        }
+      })
+
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/first'
+    wizard.selectedModelType.value = 'checkpoints'
+    const staleUpload = wizard.uploadModel()
+    await vi.waitFor(() => {
+      expect(assetService.uploadAssetAsync).toHaveBeenCalledOnce()
+    })
+
+    wizard.resetWizard()
+    wizard.wizardData.value.url = 'https://civitai.com/models/replacement'
+    wizard.selectedModelType.value = 'checkpoints'
+    await expect(wizard.uploadModel()).resolves.toMatchObject({
+      taskId: 'replacement-task',
+      status: 'processing'
+    })
+
+    failFirstUpload(new Error('stale failure'))
+    await expect(staleUpload).resolves.toBeNull()
+    expect(wizard.uploadStatus.value).toBe('processing')
+    expect(wizard.uploadError.value).toBe('')
+    expect(wizard.currentStep.value).toBe(3)
   })
 
   it('updates uploadStatus to success when async download completes', async () => {

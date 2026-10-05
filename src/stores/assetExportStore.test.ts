@@ -196,10 +196,29 @@ describe('useAssetExportStore polling', () => {
 
     await vi.advanceTimersByTimeAsync(10_000)
 
+    expect(store.activeExports).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(10_000)
+
     expect(store.finishedExports[0]).toMatchObject({
       status: 'failed',
-      error: expect.stringContaining('Task not found')
+      error: 'progressToast.failed'
     })
+  })
+
+  it('requires consecutive task-not-found responses before settling', async () => {
+    const store = useAssetExportStore()
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValue(new Response(null, { status: 404 }))
+    dispatch(createExportMessage())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(store.activeExports).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(store.finishedExports[0].status).toBe('failed')
+    expect(api.fetchApi).toHaveBeenCalledTimes(4)
   })
 
   it('keeps completion terminal when fetching the download URL fails', async () => {
@@ -288,6 +307,11 @@ describe('assetExportStore triggerDownload', () => {
       name: 'an absolute signed URL unchanged',
       url: 'https://storage.example.com/exports/e.zip?signature=abc',
       expected: 'https://storage.example.com/exports/e.zip?signature=abc'
+    },
+    {
+      name: 'a document-relative URL under the document base',
+      url: 'exports/e.zip',
+      expected: new URL('exports/e.zip', document.baseURI).href
     }
   ])('downloads $name', async ({ url, expected }) => {
     const originalBase = api.api_base
@@ -310,5 +334,34 @@ describe('assetExportStore triggerDownload', () => {
     await store.triggerDownload(exportJob)
 
     expect(clickedHrefs).toEqual([expected])
+  })
+
+  it.for([
+    { name: 'a non-HTTP URL', url: 'javascript:alert(1)' },
+    {
+      name: 'a protocol-relative URL',
+      url: '//storage.example.com/exports/e.zip?signature=abc'
+    },
+    {
+      name: 'a backslash-prefixed authority URL',
+      url: '\\\\storage.example.com/exports/e.zip?signature=abc'
+    },
+    { name: 'an empty URL', url: '' },
+    { name: 'a whitespace-only URL', url: '   ' }
+  ])('rejects $name', async ({ url }) => {
+    vi.mocked(assetService.getExportDownloadUrl).mockResolvedValue({
+      url
+    })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const store = useAssetExportStore()
+    store.trackExport('task-1')
+    store.exportList[0].exportName = 'e.zip'
+
+    await store.triggerDownload(store.exportList[0])
+
+    expect(click).not.toHaveBeenCalled()
+    expect(store.exportList[0].downloadError).toBe(
+      'exportToast.unsupportedDownloadUrl'
+    )
   })
 })
