@@ -669,11 +669,42 @@ describe('CancelSubscriptionDialogContent', () => {
       await confirmWith(isCancelled)
 
       isCancelled.value = false
+      await nextTick()
       isCancelled.value = true
       await nextTick()
 
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(confirmedCalls()).toHaveLength(0)
+    })
+
+    it('completes when the cancel is observed while the portal call is pending', async () => {
+      const isCancelled = ref(false)
+      useBillingContext().subscription = computed(() =>
+        subscription({ isCancelled: isCancelled.value })
+      )
+      let resolvePortal!: () => void
+      vi.mocked(useBillingContext().cancelSubscription).mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          resolvePortal = resolve
+        })
+      )
+
+      renderComponent()
+      await confirm()
+      isCancelled.value = true
+      await nextTick()
+      resolvePortal()
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'success' })
+        )
+      )
+      expect(confirmedCalls()).toHaveLength(1)
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'cancel-subscription'
+      })
     })
 
     it('sends confirmed exactly once when isCancelled flips repeatedly', async () => {

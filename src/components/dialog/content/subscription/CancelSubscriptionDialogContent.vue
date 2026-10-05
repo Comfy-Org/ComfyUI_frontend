@@ -151,34 +151,29 @@ const description = computed(() =>
       })
 )
 
+function completeObservedCancel() {
+  if (wasCancelledAtConfirm || didCancelSucceed.value) return
+  if (!isScopeCurrent()) {
+    didScopeAbort.value = true
+    dialogStore.closeDialog({ key: 'cancel-subscription' })
+    return
+  }
+  didCancelSucceed.value = true
+  isAwaitingStripe.value = false
+  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
+  cancelReport.confirmed({ operationFollows: false })
+  dialogStore.closeDialog({ key: 'cancel-subscription' })
+  toast.add({
+    severity: 'success',
+    summary: t('subscription.cancelSuccess'),
+    life: 5000
+  })
+}
+
 watch(
   () => !!subscription.value?.isCancelled,
   (cancelled) => {
-    if (
-      !cancelled ||
-      !isAwaitingStripe.value ||
-      wasCancelledAtConfirm ||
-      didCancelSucceed.value
-    )
-      return
-    if (!isScopeCurrent()) {
-      didScopeAbort.value = true
-      dialogStore.closeDialog({ key: 'cancel-subscription' })
-      return
-    }
-    didCancelSucceed.value = true
-    isAwaitingStripe.value = false
-    telemetry?.trackSubscriptionCancellation(
-      'confirmed',
-      cancellationMetadata()
-    )
-    cancelReport.confirmed({ operationFollows: false })
-    dialogStore.closeDialog({ key: 'cancel-subscription' })
-    toast.add({
-      severity: 'success',
-      summary: t('subscription.cancelSuccess'),
-      life: 5000
-    })
+    if (cancelled && isAwaitingStripe.value) completeObservedCancel()
   }
 )
 
@@ -251,6 +246,8 @@ async function onConfirmCancel() {
   if (isLegacyRail) {
     isAwaitingStripe.value = true
     isLoading.value = false
+    // The cancel may have been observed while the portal call was pending.
+    if (subscription.value?.isCancelled) completeObservedCancel()
     return
   }
 
