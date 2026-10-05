@@ -6,11 +6,6 @@
     :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
     header-padding="symmetric"
   >
-    <template #leftPanelHeaderTitle>
-      <i class="icon-[lucide--settings]" />
-      <h2 class="text-base text-base-foreground">{{ $t('g.settings') }}</h2>
-    </template>
-
     <template #leftPanel>
       <div class="px-3">
         <SearchInput
