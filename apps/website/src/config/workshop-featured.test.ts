@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
-import { workshopModelSchema } from '../content/workshop-models.schema'
+import { websiteRoot } from '@website/paths'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
 import type { WorkshopBrowseModel } from './workshop'
 import {
   FEATURED_WORKSHOP_MODEL_IDS,
@@ -12,7 +13,7 @@ import {
 
 // The committed catalog is one packed array, a model per line; read it rather
 // than scanning a directory that no longer exists.
-const CATALOG = join(import.meta.dirname, '../content/workshop-models.json')
+const CATALOG = join(websiteRoot, 'src/content/workshop-models.json')
 
 function catalogIds(): Set<string> {
   const catalog = z

@@ -21,7 +21,7 @@ export function useSkillPacks() {
   const operatingPackName = ref<string | null>(null)
 
   function reportUnexpected(error: unknown, errorType: string) {
-    reportError(error, { errorType })
+    reportError(error, { errorType, surface: 'agent' })
     toastStore.add({
       severity: 'error',
       summary: t('g.error'),

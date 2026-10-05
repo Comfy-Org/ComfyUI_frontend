@@ -97,7 +97,8 @@ describe('skillPacksStore', () => {
 
     expect(mocks.onFeatureFlags).toHaveBeenCalledTimes(2)
     expect(mocks.reportError).toHaveBeenCalledWith(failure, {
-      errorType: 'agent_skill_packs_flag_gate_failure'
+      errorType: 'agent_skill_packs_flag_gate_failure',
+      surface: 'agent'
     })
     expect(listSkillPacks).toHaveBeenCalledOnce()
   })

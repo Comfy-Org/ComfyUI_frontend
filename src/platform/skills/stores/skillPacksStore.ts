@@ -72,13 +72,17 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
       sync()
     } catch (error) {
       flagGateStarted = false
-      reportError(error, { errorType: 'agent_skill_packs_flag_gate_failure' })
+      reportError(error, {
+        errorType: 'agent_skill_packs_flag_gate_failure',
+        surface: 'agent'
+      })
     }
   }
 
   function reportFetchFailure(error: unknown): void {
     reportError(error, {
-      errorType: 'error_fetching_agent_skill_packs'
+      errorType: 'error_fetching_agent_skill_packs',
+      surface: 'agent'
     })
   }
 

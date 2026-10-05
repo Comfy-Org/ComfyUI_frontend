@@ -252,7 +252,8 @@ describe('useSkillPackForm', () => {
     await handleSubmit()
 
     expect(reportError).toHaveBeenCalledWith(failure, {
-      errorType: 'error_publishing_agent_skill_pack'
+      errorType: 'error_publishing_agent_skill_pack',
+      surface: 'agent'
     })
     expect(fieldError.value).toBe('unknown-error')
   })

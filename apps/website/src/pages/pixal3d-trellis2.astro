@@ -2,13 +2,13 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { Copy as CopyIcon, KeyRound } from '@lucide/vue'
 
-import FAQSplit01 from '../components/blocks/FAQSplit01.vue'
-import BrandButton from '../components/common/BrandButton.vue'
-import GlassCard from '../components/common/GlassCard.vue'
-import Badge from '../components/ui/badge/Badge.vue'
-import { toggleVariants } from '../components/ui/toggle'
-import BaseLayout from '../layouts/BaseLayout.astro'
-import { highlightInline } from '../lib/highlight'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import GlassCard from '@/components/common/GlassCard.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import { toggleVariants } from '@/components/ui/toggle'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { highlightInline } from '@/lib/highlight'
 
 const name = 'Image to 3D Model'
 const slugId = 'pixal3d-trellis2'
@@ -289,7 +289,7 @@ const faqJsonLd = {
           aria-selected="true"
           class={tab}
         >
-          <span class="ppformula-text-center inline-block">Examples</span>
+          <span class="inline-block">Examples</span>
         </button>
         <button
           type="button"
@@ -300,7 +300,7 @@ const faqJsonLd = {
           aria-selected="false"
           class={tab}
         >
-          <span class="ppformula-text-center inline-block">API</span>
+          <span class="inline-block">API</span>
         </button>
       </nav>
     </div>
@@ -747,11 +747,9 @@ const faqJsonLd = {
             class="size-4 group-data-copied:hidden"
             aria-hidden="true"
           />
-          <span class="ppformula-text-center group-data-copied:hidden"
-            >Copy</span
-          >
+          <span class="group-data-copied:hidden">Copy</span>
           <span
-            class="ppformula-text-center hidden text-primary-comfy-yellow group-data-copied:inline"
+            class="hidden text-primary-comfy-yellow group-data-copied:inline"
             >Copied</span
           >
         </button>
@@ -887,7 +885,7 @@ const faqJsonLd = {
           >Continue with email</BrandButton
         >
       </div>
-      <p id="auth-error" class="text-danger mt-3 hidden text-sm"></p>
+      <p id="auth-error" class="mt-3 hidden text-sm text-destructive"></p>
       <p class:list={[helperCopy, 'mt-4 leading-relaxed']}>
         By continuing you agree to the Terms. Open source stays open — your
         graphs and outputs are yours.
@@ -1166,7 +1164,7 @@ const faqJsonLd = {
         el.textContent = code
         const stamp = String(Number(el.dataset.paint ?? '0') + 1)
         el.dataset.paint = stamp
-        void import('../lib/highlight').then(({ highlightInline }) => {
+        void import('@/lib/highlight').then(({ highlightInline }) => {
           const html = highlightInline(code, 'json')
           if (html && el.dataset.paint === stamp) el.innerHTML = html
         })

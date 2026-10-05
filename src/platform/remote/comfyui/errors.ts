@@ -21,6 +21,41 @@ const MAX_RAW_MESSAGE_LENGTH = 500
  */
 const MARKUP_DOCUMENT = /^<[a-z!/]/i
 
+const CODE_SHAPE = /^[A-Z][A-Z0-9_]*$/
+
+/** Refusal of a legacy `/customers/*` call for a workspace not on the legacy rail. */
+export function isWorkspaceBillingRequiredError(err: unknown): boolean {
+  return (
+    err instanceof Error &&
+    'status' in err &&
+    err.status === 409 &&
+    'code' in err &&
+    err.code === 'WORKSPACE_BILLING_REQUIRED'
+  )
+}
+
+/**
+ * Flat `{ error, message }` bodies (the /customers/* shape) carry the code in
+ * `error`; a prose value there (e.g. "Forbidden") is not a code.
+ */
+function codeFromRecord(record: Record<PropertyKey, unknown>): string {
+  const raw =
+    record.code ??
+    (typeof record.error === 'string' && CODE_SHAPE.test(record.error)
+      ? record.error
+      : undefined)
+  return typeof raw === 'string' && raw !== '' ? raw : UNKNOWN_ERROR_CODE
+}
+
+function usableText(body: string, fallbackMessage: string): string {
+  const trimmed = body.trim()
+  const usable =
+    trimmed !== '' &&
+    trimmed.length <= MAX_RAW_MESSAGE_LENGTH &&
+    !MARKUP_DOCUMENT.test(trimmed)
+  return usable ? trimmed : fallbackMessage
+}
+
 /**
  * Coerce an already-parsed error body into the canonical
  * `ErrorResponse { code, message, details? }` shape.
@@ -39,21 +74,13 @@ export function errorResponseFromBody(
   fallbackMessage: string
 ): ErrorResponse {
   if (typeof body === 'string') {
-    const trimmed = body.trim()
-    const usable =
-      trimmed !== '' &&
-      trimmed.length <= MAX_RAW_MESSAGE_LENGTH &&
-      !MARKUP_DOCUMENT.test(trimmed)
     return {
       code: UNKNOWN_ERROR_CODE,
-      message: usable ? trimmed : fallbackMessage
+      message: usableText(body, fallbackMessage)
     }
   }
   const record: Record<PropertyKey, unknown> = isPlainObject(body) ? body : {}
-  const code =
-    typeof record.code === 'string' && record.code !== ''
-      ? record.code
-      : UNKNOWN_ERROR_CODE
+  const code = codeFromRecord(record)
   const message =
     typeof record.message === 'string' && record.message !== ''
       ? record.message

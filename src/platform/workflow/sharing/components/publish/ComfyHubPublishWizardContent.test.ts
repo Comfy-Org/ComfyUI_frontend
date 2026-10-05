@@ -3,12 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import ComfyHubPublishWizardContent from './ComfyHubPublishWizardContent.vue'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 const mockCheckProfile = vi.hoisted(() => vi.fn())
-const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockHasProfile = ref<boolean | null>(true)
 const mockIsFetchingProfile = ref(false)
 const mockProfile = ref<{ username: string; name?: string } | null>({
@@ -28,11 +28,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    toastErrorHandler: mockToastErrorHandler
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 function createDefaultFormData(): ComfyHubPublishFormData {
@@ -195,7 +191,7 @@ describe('ComfyHubPublishWizardContent', () => {
       await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
-      expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
       expect(onPublish).not.toHaveBeenCalled()
       expect(onRequireProfile).not.toHaveBeenCalled()
     })
@@ -239,7 +235,9 @@ describe('ComfyHubPublishWizardContent', () => {
       await flushPromises()
 
       expect(onPublish).toHaveBeenCalledOnce()
-      expect(mockToastErrorHandler).toHaveBeenCalledWith(publishError)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(
+        publishError
+      )
       expect(onGateClose).not.toHaveBeenCalled()
     })
 

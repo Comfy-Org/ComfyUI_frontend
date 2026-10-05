@@ -190,7 +190,8 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       }
       if (!(error instanceof SkillPacksApiError)) {
         reportError(error, {
-          errorType: 'error_publishing_agent_skill_pack'
+          errorType: 'error_publishing_agent_skill_pack',
+          surface: 'agent'
         })
       }
       if (generation !== formGeneration) return
