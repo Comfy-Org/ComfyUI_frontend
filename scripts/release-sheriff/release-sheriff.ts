@@ -625,24 +625,25 @@ function requestReviewFrom(
   repo: string,
   { number }: SheriffAction,
   reviewer: string
-) {
+): boolean {
   const path = `repos/${repo}/pulls/${number}/requested_reviewers`
   if (ghPost(path, `reviewers[]=${reviewer}`)) {
     summary(`- Requested review from \`${reviewer}\` on #${number}`)
-  } else {
-    warn(`Could not request review from ${reviewer} on #${number}`)
+    return true
   }
+  warn(`Could not request review from ${reviewer} on #${number}`)
+  return false
 }
 
 // Reported once rather than per PR: `degraded` is a single workflow output, and
 // appending a second record for one key is how a heredoc output misparses.
-function reportUnconfirmed(sheriff: string, unconfirmed: number[]) {
-  if (unconfirmed.length === 0) return
+function reportUnowned(unowned: string[]) {
+  if (unowned.length === 0) return
   output(
     'degraded',
-    `GitHub did not record \`${sheriff}\` as assignee on ` +
-      `${unconfirmed.map((number) => `#${number}`).join(', ')}. It ignores an ` +
-      'assignee without push access and still reports success.'
+    `${unowned.join('; ')}. GitHub drops an assignee without push access and ` +
+      'rejects a review request for a non-collaborator, so these PRs are ' +
+      'unowned or unmergeable: backport-auto-merge.yaml needs an approval.'
   )
   process.exitCode = 1
 }
@@ -666,15 +667,22 @@ function runAssignment(
     )
   }
 
-  const unconfirmed = actions.flatMap((action) => {
-    const assigned = !action.assign || assignSheriff(repo, action, sheriff)
-    // A failed review request (e.g. fork PRs) must not undo the assignment.
-    if (action.requestReview && action.reviewer) {
-      requestReviewFrom(repo, action, action.reviewer)
+  // The two calls are independent on purpose: a failed review request must not
+  // undo an assignment that succeeded, and vice versa.
+  const unowned = actions.flatMap((action) => {
+    const failures: string[] = []
+    if (action.assign && !assignSheriff(repo, action, sheriff)) {
+      failures.push(`#${action.number} is not assigned to \`${sheriff}\``)
     }
-    return assigned ? [] : [action.number]
+    const reviewer = action.requestReview ? action.reviewer : null
+    if (reviewer && !requestReviewFrom(repo, action, reviewer)) {
+      failures.push(
+        `#${action.number} has no review request for \`${reviewer}\``
+      )
+    }
+    return failures
   })
-  reportUnconfirmed(sheriff, unconfirmed)
+  reportUnowned(unowned)
 }
 
 // The pre-config path: resolve the sheriff from the Datadog on-call rota.

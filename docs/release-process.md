@@ -92,6 +92,14 @@ open PR that has no assignee and is either:
 It also requests their review, since backport merges are gated on an approval.
 Existing assignees and review requests are never overwritten.
 
+Both halves are **verified, not assumed**. GitHub drops an assignee who lacks
+push access and still answers `201`, and rejects a review request for a
+non-collaborator with `422`, so the job reads the assignee list back and checks
+the review request succeeded. Either failure marks the run degraded and exits
+non-zero rather than reporting a PR as owned when it is not — an unassigned
+backport with no requested reviewer never reaches the approval
+`backport-auto-merge.yaml` waits for.
+
 When the sheriff wrote the PR themselves, the review is requested from the
 **standby** instead — GitHub rejects a self-review request, so previously those
 PRs were assigned to their own author with nobody asked to review, and then
