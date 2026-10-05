@@ -75,6 +75,8 @@
     "feedbackCaption": "フィードバックを共有",
     "focusNode": "キャンバスに表示",
     "focusNodeLabel": "キャンバスに {node} を表示",
+    "freeUseNotice": "ベータ期間中、プロンプトとワークフローの実行は無料です。",
+    "freeUseNoticeLabel": "無料利用に関するお知らせ",
     "friend": "あなた",
     "gotIt": "了解",
     "greeting": "こんにちは、{name}さん",
@@ -124,12 +126,16 @@
       "upgradePlan": "プランをアップグレード"
     },
     "placeholder": "アイデアを説明し、{'@'}でワークフローを参照、メディアアセットやファイルをドラッグ＆ドロップ、または\nノードに言及",
+    "recoveredTurnFailed": "エージェントはこの応答を完了できませんでした。",
     "reference": "参照",
     "remove": "削除",
     "removeNodeLabel": "{node} の参照を削除",
     "removeWorkflowReference": "{name}の参照を削除",
     "retryAfterSeconds": "{seconds}秒後に再試行できます。",
     "runApproval": {
+      "answerFailed": "回答を送信できませんでした。ページを再読み込みして、もう一度お試しください。",
+      "answerSuperseded": "このリクエストにはすでに別の場所で回答済みのため、あなたの回答ではなくそちらの回答が使用されました。",
+      "answerUncertain": "回答がエージェントに届いたことを確認できませんでした。適用されている可能性があります。ページを再読み込みして、現在の状況を確認してください。",
       "cancel": "キャンセル",
       "lead": "このツールはワークフローを実行しようとしています：",
       "leadBound": "このツールはこのワークフローを実行しようとしています。",
@@ -196,8 +202,11 @@
     "targetWorkflowUnavailable": "対象のワークフローは利用できなくなりました。",
     "thinking": "考え中...",
     "title": "Comfy Agent",
+    "toolFailedSkill": "{skill}の読み込みに失敗しました",
     "toolForgettingPreference": "設定を削除しています",
     "toolForgotPreference": "設定を削除しました",
+    "toolLoadedSkill": "{skill}を読み込みました",
+    "toolLoadingSkill": "{skill}を読み込み中",
     "toolOpenedNewTab": "新しいタブを開きました",
     "toolOpeningNewTab": "新しいタブを開いています",
     "toolSavedPreference": "設定を保存しました",
@@ -274,6 +283,7 @@
       "failed": "ダウンロードに失敗しました",
       "inProgress": "{assetName}をダウンロード中..."
     },
+    "downloadFailed": "{name}のダウンロードに失敗しました",
     "emptyImported": {
       "canImport": "まだインポートされたモデルはありません。「モデルをインポート」をクリックして追加してください。",
       "restricted": "パーソナルモデルはCreator以上のプランでのみ利用可能です。"
@@ -464,6 +474,7 @@
       "generic": "サインイン中に問題が発生しました。もう一度お試しください。",
       "signupBlocked": "現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。"
     },
+    "hidePassword": "パスワードを非表示",
     "login": {
       "andText": "および",
       "backToGithubLogin": "代わりにGithubでサインアップ",
@@ -480,6 +491,7 @@
       "forgotPassword": "パスワードを忘れましたか？",
       "forgotPasswordError": "パスワードリセット用メールの送信に失敗しました",
       "freeRunsSuffix": "{count}回の無料実行を獲得しましょう。",
+      "freeRunsSuffixGoogle": "Googleでログインして{count}回の無料実行を取得。 | Googleでログインして{count}回の無料実行を取得。",
       "freeTierBadge": "無料プラン対象",
       "freeTierDescription": "Googleでサインアップすると、毎月{credits}の無料クレジットがもらえます。クレジットカード不要。",
       "freeTierDescriptionGeneric": "Googleでサインアップすると、毎月無料クレジットがもらえます。クレジットカード不要。",
@@ -524,6 +536,7 @@
       "message": "セキュリティ上の理由により、この操作には再度サインインが必要です。続行しますか？",
       "title": "再認証が必要です"
     },
+    "showPassword": "パスワードを表示",
     "signOut": {
       "saveFailed": "「{workflow}」の保存に失敗したため、サインアウトがキャンセルされました。",
       "signOut": "ログアウト",
@@ -532,6 +545,12 @@
       "successDetail": "アカウントからサインアウトしました。",
       "unsavedChangesMessage": "サインアウトすると未保存の変更が失われます。続行しますか？",
       "unsavedChangesTitle": "未保存の変更"
+    },
+    "signOutEverywhere": {
+      "action": "すべてのデバイスからサインアウト",
+      "failed": "すべてのデバイスからサインアウトできませんでした",
+      "success": "すべてのデバイスからサインアウトしました",
+      "successDetail": "アカウントにサインインしているすべてのデバイスからサインアウトしました。"
     },
     "signup": {
       "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
@@ -989,6 +1008,7 @@
     "Copy Image": "画像をコピー",
     "Delete": "削除",
     "Distribute Nodes": "ノードを分布",
+    "Download Images": "画像をダウンロード",
     "Duplicate": "複製",
     "Edit Subgraph Widgets": "サブグラフウィジェットを編集",
     "Expand": "展開",
@@ -1278,6 +1298,11 @@
     "skip": "スキップ",
     "title": "Gitをダウンロード",
     "warning": "Gitがインストールされていなくても問題ないと確信している場合、または間違いがあった場合は、「スキップ」をクリックしてこのチェックをスキップできます。作業コピーのない状態でComfyUIを実行することは現在サポートされていません。"
+  },
+  "dynamicGroup": {
+    "add": "{group}を追加",
+    "remove": "{row}を削除",
+    "row": "{group} #{index}"
   },
   "electronFileDownload": {
     "cancel": "ダウンロードをキャンセル",
@@ -1867,6 +1892,7 @@
     "download": "ダウンロード",
     "downloadAudio": "オーディオをダウンロード",
     "downloadImage": "画像をダウンロード",
+    "downloadImages": "画像をダウンロード",
     "downloadVideo": "ビデオをダウンロード",
     "downloadWithSize": "ダウンロード（{size}）",
     "downloading": "ダウンロード中",
@@ -2120,6 +2146,7 @@
     "selectItemsToDelete": "削除する項目を選択",
     "selectItemsToDuplicate": "複製する項目を選択",
     "selectItemsToRename": "リネームする項目を選択",
+    "selected": "選択済み",
     "selectedFile": "選択されたファイル",
     "setAKeybindingForTheFollowing": "次の操作のキーバインドを設定：",
     "setAsBackground": "背景として設定",
@@ -2176,6 +2203,7 @@
     "usageHint": "使用ヒント",
     "use": "使用",
     "user": "ユーザー",
+    "validate": "検証",
     "versionMismatchWarning": "バージョン互換性の警告",
     "versionMismatchWarningMessage": "{warning}: {detail} 更新手順については https://docs.comfy.org/installation/update_comfyui#common-update-issues をご覧ください。",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました",
@@ -3438,6 +3466,11 @@
     "outputs": "出力",
     "type": "タイプ"
   },
+  "nodeOutputsExport": {
+    "download": "ダウンロード（{count}）",
+    "downloadAll": "すべてダウンロード",
+    "title": "アセットをダウンロード"
+  },
   "nodeReplacement": {
     "compatibleAlternatives": "互換性のある代替案",
     "installMissingNodes": "不足ノードをインストール",
@@ -3488,6 +3521,7 @@
       "deny": "キャンセル",
       "detailsHeader": "詳細",
       "errorExpired": "この同意リクエストは期限切れ、またはすでに使用されています。クライアントアプリから再起動してください。",
+      "errorOriginRefused": "このページからは承認できませんでした。アプリからサインインを再度開始してください。",
       "errorScopeBroadening": "以前に承認された権限ではこのリクエストをカバーできません。新しい権限で再認可が必要です。",
       "errorUnavailable": "現在この機能は利用できません。問題が続く場合はサポートにお問い合わせください。",
       "genericError": "OAuthリクエストに失敗しました。クライアントアプリから再起動してください。",
@@ -4237,6 +4271,7 @@
     "assets": "アセット",
     "backToAssets": "すべてのアセットに戻る",
     "browseTemplates": "サンプルテンプレートを表示",
+    "closeSidebar": "サイドバーを閉じる",
     "downloads": "ダウンロード",
     "folderView": {
       "errorDetail": "このジョブの出力を取得できませんでした。もう一度お試しください。",
@@ -4904,6 +4939,19 @@
       "Video API": "動画API"
     },
     "clearAllFilters": "すべてのフィルターをクリア",
+    "detail": {
+      "backToTemplates": "{category}に戻る",
+      "breadcrumbLabel": "テンプレートのナビゲーション",
+      "cloudUpsellDescription": "ローカルでのセットアップやダウンロードなしで、クラウドGPU上で実行できます。",
+      "cloudUpsellTitle": "このテンプレートをComfy Cloudで実行",
+      "models": "モデル",
+      "openInCloud": "Cloudで開く",
+      "openTemplate": "テンプレートを開く",
+      "partnerNodeDescription": "このワークフローをローカルとComfy Cloudのどちらで実行するかを選択してください。",
+      "partnerNodeTitle": "このワークフローはパートナーノードを使用しています",
+      "requirements": "テンプレートの要件",
+      "usedBy": "{nodes}で使用"
+    },
     "error": {
       "loading": "テンプレートを開けませんでした。もう一度お試しください。",
       "preparingMedia": "一部のサンプルメディアを準備できませんでした。ワークフローは開きます。不足している入力には、ご自身のファイルを選択してください。",
@@ -4959,6 +5007,7 @@
     "errorOpenImage": "画像の読み込み中にエラーが発生しました: {error}",
     "errorSaveSetting": "設定{id}の保存エラー: {err}",
     "exportSuccess": "モデルを {format} として正常にエクスポートしました",
+    "extraResourcesUploadFailed": "追加リソースのアップロードに失敗しました",
     "failedExecutionPathResolution": "選択したノードへのパスを解決できませんでした",
     "failedToAccessBillingPortal": "請求ポータルへのアクセスに失敗しました: {error}",
     "failedToApplyTexture": "テクスチャの適用に失敗しました",
@@ -5227,37 +5276,46 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "それまでメンバーはすべての機能を利用できます。共有クレジットとシートを維持するには、サブスクリプションを再開してください。",
+        "body": "それまではメンバーは引き続きすべての機能にアクセスできます。チームの共有クレジットを維持するには、プランを再開してください。",
+        "contactSales": "営業に問い合わせる",
         "enterpriseBody": "それまではメンバー全員がフルアクセスを維持できます。延長するには営業チームにお問い合わせください。",
         "enterpriseTitle": "Enterpriseプランは{date}に終了します",
-        "reactivate": "サブスクリプションを再開",
+        "memberBody": "それまではワークフローを実行できます。",
+        "reactivate": "プランを再開",
         "title": "チームプランは{date}に終了します"
       },
       "outOfCredits": {
         "addCredits": "クレジットを追加",
-        "body": "チームのクレジットがすべて使用されました。クレジットを追加して生成を続けるか、{date}にクレジットが補充されるまでお待ちください。",
-        "bodyNoDate": "チームのクレジットがすべて使用されました。クレジットを追加して生成を続けてください。",
+        "body": "チームのクレジットをすべて使い切りました。クレジットを追加するか、{date}にクレジットが補充されるまでお待ちください。",
+        "bodyNoDate": "チームのクレジットをすべて使い切りました。クレジットを追加してください。",
         "dismiss": "閉じる",
-        "memberBody": "チームのクレジットがすべて使用されました。ワークスペース管理者がクレジットを追加する必要があります。",
-        "title": "クレジットが不足しています",
-        "upgradeBody": "プランをアップグレードしてクレジットを追加し、生成を続けてください。"
+        "memberBody": "チームのクレジットをすべて使い切りました。ワークスペースのオーナーにクレジットの追加を依頼するか、{date}にクレジットが補充されるまでお待ちください。",
+        "memberBodyNoDate": "チームのクレジットをすべて使い切りました。ワークスペースのオーナーにクレジットの追加を依頼してください。",
+        "title": "クレジットが不足しています"
       },
       "paused": {
         "body": "このワークスペースのサブスクリプションは一時停止されています。お支払い方法を更新して再開してください。",
         "memberBody": "このワークスペースのサブスクリプションは一時停止されています。ワークスペース管理者がお支払い方法を更新する必要があります。",
+        "personalBody": "サブスクリプションは一時停止中です。再開するには支払い方法を更新してください。",
+        "personalPaymentFailedBody": "お支払いを完了できませんでした。再開するには支払い方法を更新してください。",
         "title": "サブスクリプションが一時停止中"
       },
       "payInvoice": "請求書を支払う",
       "planChange": {
         "body": "それまでは現在のプランが有効です。",
-        "title": "{date} にプランが {plan} に変更されます"
+        "title": "プランは{date}に{plan}へ変更されます。"
       },
-      "updatePayment": "お支払い方法を更新",
-      "warning": {
-        "bodyNoDate": "前回のお支払いが完了しませんでした。サブスクリプションの一時停止を避けるためにお支払い方法を更新してください。",
-        "bodyWithAmount": "{amount}のお支払いを処理できませんでした。一時停止を避けるため、請求書を支払うか支払い方法を更新してください。",
-        "title": "支払いが拒否されました"
-      }
+      "planEnded": {
+        "enterpriseBody": "新しいEnterpriseプランを開始するには営業担当にお問い合わせください。",
+        "enterpriseTitle": "Enterpriseプランは{date}に終了しました",
+        "planTitle": "プランは{date}に終了しました",
+        "salesBody": "新しいプランを開始するには営業担当にお問い合わせください。",
+        "salesMemberBody": "ワークスペースのオーナーに営業担当への連絡を依頼してください。",
+        "teamBody": "ワークフローを実行し、共有クレジットを再び利用するには再登録してください。",
+        "teamMemberBody": "ワークスペースのオーナーに再登録を依頼してください。",
+        "teamTitle": "チームプランは{date}に終了しました"
+      },
+      "updatePayment": "お支払い方法を更新"
     },
     "changeRoleDialog": {
       "demoteConfirm": "メンバーに降格",
@@ -5328,6 +5386,11 @@
       "titleSingleSeat": "現在のプランは1名のみ対応しています",
       "upgradeToTeam": "チームにアップグレード"
     },
+    "invoices": {
+      "fullHistory": "請求書の全履歴",
+      "nextInvoice": "次回の請求書",
+      "usd": "USD"
+    },
     "leaveDialog": {
       "leave": "退出",
       "message": "ワークスペースのオーナーに連絡しない限り、再参加できません。",
@@ -5378,6 +5441,7 @@
       "noMembers": "メンバーがいません",
       "noMembersMatch": "\"{query}\" に一致するメンバーはいません",
       "pendingInvitesCount": "{count}件の招待保留中",
+      "planEndedFooter": "プランが終了したため、新しいメンバーを追加できません。",
       "reactivateTeam": "チームを再有効化",
       "resubscribe": "再購読",
       "searchPlaceholder": "検索...",
@@ -5396,6 +5460,7 @@
     "menu": {
       "creatorCannotLeave": "ワークスペースの作成者は、自分が作成したワークスペースを退出できません",
       "deleteWorkspace": "ワークスペースを削除",
+      "deleteWorkspaceAfterPlanEndsTooltip": "プランが{date}に終了した後、このワークスペースを削除できます",
       "deleteWorkspaceDisabledTooltip": "まずワークスペースの有効なサブスクリプションをキャンセルしてください",
       "editWorkspace": "ワークスペースの詳細を編集",
       "leaveWorkspace": "ワークスペースを退出"
@@ -5448,6 +5513,7 @@
     "planCredits": {
       "tabs": {
         "activity": "アクティビティ",
+        "invoices": "請求書",
         "overview": "クレジット"
       }
     },
@@ -5509,6 +5575,7 @@
     "hideMinimap": "ミニマップを非表示",
     "label": "ズームコントロール",
     "showMinimap": "ミニマップを表示",
+    "zoomPercentage": "ズーム率",
     "zoomToFit": "全体表示にズーム"
   }
 }

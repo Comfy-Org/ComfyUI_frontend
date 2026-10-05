@@ -75,6 +75,8 @@
     "feedbackCaption": "שיתוף משוב",
     "focusNode": "הצג בקנבס",
     "focusNodeLabel": "הצג את {node} בקנבס",
+    "freeUseNotice": "פרומפטים והרצות של תהליכי עבודה הם בחינם במהלך תקופת ה-BETA.",
+    "freeUseNoticeLabel": "הודעת שימוש חינם",
     "friend": "שם",
     "gotIt": "הבנתי",
     "greeting": "שלום {name},",
@@ -124,12 +126,16 @@
       "upgradePlan": "שדרוג התוכנית"
     },
     "placeholder": "תארו רעיונות, {'@'} להפניה לתהליכי עבודה, גררו נכסי מדיה וקבצים, או\nציינו צמתים",
+    "recoveredTurnFailed": "הסוכן לא הצליח להשלים את התגובה הזו.",
     "reference": "הפניה",
     "remove": "הסר",
     "removeNodeLabel": "הסר את ההפניה ל־{node}",
     "removeWorkflowReference": "הסר הפניה אל {name}",
     "retryAfterSeconds": "ניתן לנסות שוב בעוד {seconds} שניות.",
     "runApproval": {
+      "answerFailed": "לא ניתן היה לשלוח את תשובתכם. רעננו את הדף ונסו שוב.",
+      "answerSuperseded": "לבקשה זו כבר ניתנה תשובה במקום אחר, ולכן נעשה שימוש בתשובה זו במקום בתשובתכם.",
+      "answerUncertain": "לא ניתן היה לאשר שתשובתכם הגיעה לסוכן. ייתכן שהיא עדיין הוחלה — רעננו את הדף כדי לראות מה המצב.",
       "cancel": "ביטול",
       "lead": "כלי זה מבקש להפעיל את תהליך העבודה:",
       "leadBound": "כלי זה מבקש להריץ את תהליך העבודה הזה.",
@@ -196,8 +202,11 @@
     "targetWorkflowUnavailable": "תהליך העבודה המבוקש אינו זמין עוד.",
     "thinking": "חושב...",
     "title": "Comfy Agent",
+    "toolFailedSkill": "טעינת {skill} נכשלה",
     "toolForgettingPreference": "שכחת העדפה",
     "toolForgotPreference": "נשכחה העדפה",
+    "toolLoadedSkill": "{skill} נטען",
+    "toolLoadingSkill": "טוען את {skill}",
     "toolOpenedNewTab": "נפתחה לשונית חדשה",
     "toolOpeningNewTab": "פתיחת לשונית חדשה",
     "toolSavedPreference": "נשמרה העדפה",
@@ -274,6 +283,7 @@
       "failed": "ההורדה נכשלה",
       "inProgress": "מוריד את {assetName}..."
     },
+    "downloadFailed": "ההורדה של {name} נכשלה",
     "emptyImported": {
       "canImport": "אין עדיין מודלים מיובאים. לחץ על \"ייבוא\" כדי להוסיף מודלים משלך.",
       "restricted": "מודלים אישיים זמינים רק בדרגת Creator ומעלה."
@@ -464,6 +474,7 @@
       "generic": "משהו השתבש במהלך ההתחברות שלך. אנא נסה שוב.",
       "signupBlocked": "לא הצלחנו ליצור את החשבון שלך כרגע. נסה שוב מאוחר יותר. אם הבעיה נמשכת, שלח מייל ל-support@comfy.org."
     },
+    "hidePassword": "הסתר סיסמה",
     "login": {
       "andText": "ו",
       "backToGithubLogin": "הירשם באמצעות Github במקום",
@@ -480,6 +491,7 @@
       "forgotPassword": "שכחת סיסמה?",
       "forgotPasswordError": "שליחת מייל לאיפוס הסיסמה נכשלה",
       "freeRunsSuffix": "לקבלת {count} הרצה חינמית. | לקבלת {count} הרצות חינמיות.",
+      "freeRunsSuffixGoogle": "באמצעות Google כדי לקבל {count} הרצה חינמית. | באמצעות Google כדי לקבל {count} הרצות חינמיות.",
       "freeTierBadge": "זכאי לדרגה החינמית",
       "freeTierDescription": "הירשם באמצעות Google כדי לקבל {credits} קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
       "freeTierDescriptionGeneric": "הירשם באמצעות Google כדי לקבל קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
@@ -524,6 +536,7 @@
       "message": "מטעמי אבטחה, פעולה זו דורשת שתתחבר מחדש. האם ברצונך להמשיך?",
       "title": "נדרש אימות מחדש"
     },
+    "showPassword": "הצג סיסמה",
     "signOut": {
       "saveFailed": "ההתנתקות בוטלה משום ששמירת \"{workflow}\" נכשלה.",
       "signOut": "התנתקות",
@@ -532,6 +545,12 @@
       "successDetail": "התנתקת מחשבונך.",
       "unsavedChangesMessage": "יש לך שינויים שלא נשמרו אשר יאבדו בעת ההתנתקות. האם ברצונך להמשיך?",
       "unsavedChangesTitle": "שינויים שלא נשמרו"
+    },
+    "signOutEverywhere": {
+      "action": "התנתק מכל המכשירים",
+      "failed": "לא ניתן היה להתנתק מכל המכשירים",
+      "success": "התנתקת מכל המכשירים",
+      "successDetail": "כל המכשירים המחוברים לחשבונך נותקו."
     },
     "signup": {
       "alreadyHaveAccount": "כבר יש לך חשבון?",
@@ -989,6 +1008,7 @@
     "Copy Image": "העתקת תמונה",
     "Delete": "מחיקה",
     "Distribute Nodes": "פיזור הצמתים",
+    "Download Images": "הורדת תמונות",
     "Duplicate": "שכפול",
     "Edit Subgraph Widgets": "עריכת פקדי תת-הגרף",
     "Expand": "הרחבה",
@@ -1278,6 +1298,11 @@
     "skip": "דילוג",
     "title": "הורדת git",
     "warning": "אם אתה בטוח שאינך זקוק להתקנת git, או שאירעה טעות, ניתן ללחוץ על 'דלג' כדי לעקוף בדיקה זו. הרצת ComfyUI ללא עותק עובד של git אינה נתמכת כרגע."
+  },
+  "dynamicGroup": {
+    "add": "הוסף {group}",
+    "remove": "הסר את {row}",
+    "row": "{group} #{index}"
   },
   "electronFileDownload": {
     "cancel": "ביטול ההורדה",
@@ -1867,6 +1892,7 @@
     "download": "הורדה",
     "downloadAudio": "הורדת שמע",
     "downloadImage": "הורדת תמונה",
+    "downloadImages": "הורדת תמונות",
     "downloadVideo": "הורדת סרטון",
     "downloadWithSize": "הורדה ({size})",
     "downloading": "מוריד",
@@ -2120,6 +2146,7 @@
     "selectItemsToDelete": "בחר פריטים למחיקה",
     "selectItemsToDuplicate": "בחר פריטים לשכפול",
     "selectItemsToRename": "בחר פריטים לשינוי שם",
+    "selected": "נבחר",
     "selectedFile": "הקובץ הנבחר",
     "setAKeybindingForTheFollowing": "הגדר מקש קיצור עבור הפעולה הבאה:",
     "setAsBackground": "הגדרה כרקע",
@@ -2176,6 +2203,7 @@
     "usageHint": "רמז שימוש",
     "use": "שימוש",
     "user": "משתמש",
+    "validate": "אמת",
     "versionMismatchWarning": "אזהרת תאימות גרסאות",
     "versionMismatchWarningMessage": "{warning}: {detail} בקר בכתובת https://docs.comfy.org/installation/update_comfyui#common-update-issues לקבלת הוראות עדכון.",
     "videoFailedToLoad": "טעינת הסרטון נכשלה",
@@ -3438,6 +3466,11 @@
     "outputs": "פלטים",
     "type": "סוג"
   },
+  "nodeOutputsExport": {
+    "download": "הורדה ({count})",
+    "downloadAll": "הורדת הכול",
+    "title": "הורדת נכסים"
+  },
   "nodeReplacement": {
     "compatibleAlternatives": "חלופות תואמות",
     "installMissingNodes": "התקנת הצמתים החסרים",
@@ -3488,6 +3521,7 @@
       "deny": "ביטול",
       "detailsHeader": "פרטים",
       "errorExpired": "בקשת הסכמה זו פגה או כבר נוצלה. אנא התחל מחדש מיישום הלקוח.",
+      "errorOriginRefused": "לא הצלחנו לאשר זאת מדף זה. פתח מחדש את ההתחברות מהיישום.",
       "errorScopeBroadening": "ההרשאות שאושרו בעבר אינן מכסות בקשה זו. יהיה עליך לאשר מחדש עם ההרשאות החדשות.",
       "errorUnavailable": "תכונה זו אינה זמינה כרגע. אנא פנה לתמיכה אם הבעיה נמשכת.",
       "genericError": "בקשת OAuth נכשלה. אנא התחל מחדש מיישום הלקוח.",
@@ -4237,6 +4271,7 @@
     "assets": "נכסים",
     "backToAssets": "חזרה לכל הנכסים",
     "browseTemplates": "עיון בתבניות לדוגמה",
+    "closeSidebar": "סגור את סרגל הצד",
     "downloads": "הורדות",
     "folderView": {
       "errorDetail": "לא ניתן היה לאחזר את הפלטים עבור משימה זו. אנא נסה שוב.",
@@ -4904,6 +4939,19 @@
       "Video API": "Video API"
     },
     "clearAllFilters": "נקה את כל המסננים",
+    "detail": {
+      "backToTemplates": "חזרה אל {category}",
+      "breadcrumbLabel": "ניווט בתבניות",
+      "cloudUpsellDescription": "הפעל על GPUs בענן ללא הגדרה מקומית או הורדות.",
+      "cloudUpsellTitle": "הפעל תבנית זו ב-Comfy Cloud",
+      "models": "מודלים",
+      "openInCloud": "פתח בענן",
+      "openTemplate": "פתח תבנית",
+      "partnerNodeDescription": "בחר אם להפעיל תהליך עבודה זה באופן מקומי או ב-Comfy Cloud.",
+      "partnerNodeTitle": "תהליך עבודה זה משתמש בצמתי שותפים",
+      "requirements": "דרישות התבנית",
+      "usedBy": "בשימוש על ידי {nodes}"
+    },
     "error": {
       "loading": "לא ניתן היה לפתוח את התבנית. נסו שוב.",
       "preparingMedia": "לא ניתן היה להכין חלק מקובצי המדיה לדוגמה. תהליך העבודה ייפתח; בחרו קבצים משלכם עבור קלטים חסרים.",
@@ -4959,6 +5007,7 @@
     "errorOpenImage": "שגיאה בפתיחת התמונה: {error}",
     "errorSaveSetting": "שגיאה בשמירת ההגדרה {id}: {err}",
     "exportSuccess": "המודל יוצא בהצלחה כ-{format}",
+    "extraResourcesUploadFailed": "העלאת משאבים נוספים נכשלה",
     "failedExecutionPathResolution": "לא ניתן היה לפתור את הנתיב לצמתים הנבחרים",
     "failedToAccessBillingPortal": "הגישה לפורטל החיוב נכשלה: {error}",
     "failedToApplyTexture": "החלת המרקם נכשלה",
@@ -5227,37 +5276,46 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "החברים ישמרו על גישה מלאה עד אז. חדשו את המנוי כדי לשמור על הקרדיטים והמושבים המשותפים שלכם.",
+        "body": "לחברים תישמר גישה מלאה עד אז. חדש את התוכנית שלך כדי לשמור על הקרדיטים המשותפים של הצוות.",
+        "contactSales": "צור קשר עם מחלקת המכירות",
         "enterpriseBody": "החברים ישמרו על גישה מלאה עד אז. צור קשר עם צוות המכירות שלנו כדי להאריך את התוכנית.",
         "enterpriseTitle": "תוכנית ה־Enterprise שלך מסתיימת בתאריך {date}",
-        "reactivate": "חידוש המנוי",
+        "memberBody": "באפשרותך להפעיל תהליכי עבודה עד אז.",
+        "reactivate": "חדש תוכנית",
         "title": "תוכנית הצוות שלך מסתיימת ב-{date}"
       },
       "outOfCredits": {
         "addCredits": "הוסף קרדיטים",
-        "body": "הצוות שלך השתמש בכל הקרדיטים. הוסף קרדיטים כדי להמשיך ביצירה או המתן עד למילוי הקרדיטים ב-{date}.",
-        "bodyNoDate": "הצוות שלך השתמש בכל הקרדיטים. הוסף קרדיטים כדי להמשיך ביצירה.",
+        "body": "הצוות שלך ניצל את כל הקרדיטים שלו. הוסף קרדיטים נוספים או המתן עד שהקרדיטים יתמלאו מחדש ב-{date}.",
+        "bodyNoDate": "הצוות שלך ניצל את כל הקרדיטים שלו. הוסף קרדיטים נוספים.",
         "dismiss": "סגור",
-        "memberBody": "הצוות שלך השתמש בכל הקרדיטים. מנהלי סביבת העבודה צריכים להוסיף קרדיטים נוספים כדי להמשיך ביצירה.",
-        "title": "אזלו הקרדיטים",
-        "upgradeBody": "שדרגו את התוכנית שלכם כדי להוסיף קרדיטים ולהמשיך ביצירה."
+        "memberBody": "הצוות שלך ניצל את כל הקרדיטים שלו. בקש מבעל סביבת העבודה להוסיף קרדיטים נוספים או המתן עד שהקרדיטים יתמלאו מחדש ב-{date}.",
+        "memberBodyNoDate": "הצוות שלך ניצל את כל הקרדיטים שלו. בקש מבעל סביבת העבודה להוסיף קרדיטים נוספים.",
+        "title": "אזלו הקרדיטים"
       },
       "paused": {
         "body": "המנוי של סביבת עבודה זו מושהה. עדכן את התשלום כדי להמשיך.",
         "memberBody": "המנוי של סביבת עבודה זו מושהה. מנהלי סביבת העבודה צריכים לעדכן את אמצעי התשלום.",
+        "personalBody": "המנוי שלך מושהה. עדכן את אמצעי התשלום שלך כדי לחדש אותו.",
+        "personalPaymentFailedBody": "התשלום שלך לא עבר. עדכן את אמצעי התשלום שלך כדי לחדש אותו.",
         "title": "המנוי מושהה"
       },
       "payInvoice": "תשלום חשבונית",
       "planChange": {
         "body": "התוכנית הנוכחית שלך נשארת פעילה עד אז.",
-        "title": "התוכנית שלך משתנה ל-{plan} ב-{date}"
+        "title": "התוכנית שלכם תשתנה ל-{plan} ב-{date}."
       },
-      "updatePayment": "עדכן תשלום",
-      "warning": {
-        "bodyNoDate": "התשלום האחרון שלך לא עבר. עדכן את התשלום כדי למנוע השהיה.",
-        "bodyWithAmount": "עיבוד התשלום שלך בסך {amount} נכשל. יש לשלם את החשבונית או לעדכן את אמצעי התשלום כדי למנוע השהיה.",
-        "title": "התשלום נדחה"
-      }
+      "planEnded": {
+        "enterpriseBody": "צרו קשר עם מחלקת המכירות כדי להתחיל תוכנית Enterprise חדשה.",
+        "enterpriseTitle": "תוכנית Enterprise שלכם הסתיימה ב-{date}",
+        "planTitle": "התוכנית שלכם הסתיימה ב-{date}",
+        "salesBody": "צרו קשר עם מחלקת המכירות כדי להתחיל תוכנית חדשה.",
+        "salesMemberBody": "בקשו מבעלי סביבת העבודה שלכם ליצור קשר עם מחלקת המכירות.",
+        "teamBody": "הירשמו מחדש כדי להפעיל תהליכי עבודה ולקבל שוב קרדיטים משותפים.",
+        "teamMemberBody": "בקשו מבעלי סביבת העבודה שלכם להירשם מחדש.",
+        "teamTitle": "תוכנית הצוות שלך הסתיימה ב-{date}"
+      },
+      "updatePayment": "עדכן תשלום"
     },
     "changeRoleDialog": {
       "demoteConfirm": "הורד לחבר רגיל",
@@ -5328,6 +5386,11 @@
       "titleSingleSeat": "המסלול הנוכחי שלך תומך במושב יחיד",
       "upgradeToTeam": "שדרג ל-Team"
     },
+    "invoices": {
+      "fullHistory": "היסטוריית חשבוניות מלאה",
+      "nextInvoice": "החשבונית הבאה",
+      "usd": "USD"
+    },
     "leaveDialog": {
       "leave": "עזיבה",
       "message": "לא תוכל להצטרף שוב אלא אם תפנה לבעלים של סביבת העבודה.",
@@ -5378,6 +5441,7 @@
       "noMembers": "אין חברים",
       "noMembersMatch": "אין חברים התואמים ל-\"{query}\"",
       "pendingInvitesCount": "{count} הזמנה ממתינה | {count} הזמנות ממתינות",
+      "planEndedFooter": "התוכנית שלכם הסתיימה, ולכן אין באפשרותכם להוסיף חברים חדשים.",
       "reactivateTeam": "הפעל מחדש את ה-Team",
       "resubscribe": "הירשם מחדש",
       "searchPlaceholder": "חיפוש...",
@@ -5396,6 +5460,7 @@
     "menu": {
       "creatorCannotLeave": "יוצר סביבת העבודה לא יכול לעזוב את סביבת העבודה שיצר",
       "deleteWorkspace": "מחיקת סביבת העבודה",
+      "deleteWorkspaceAfterPlanEndsTooltip": "תוכלו למחוק את סביבת העבודה הזו לאחר שהתוכנית שלכם תסתיים ב-{date}",
       "deleteWorkspaceDisabledTooltip": "בטל תחילה את המנוי הפעיל של סביבת העבודה שלך",
       "editWorkspace": "עריכת פרטי סביבת העבודה",
       "leaveWorkspace": "עזיבת סביבת העבודה"
@@ -5448,6 +5513,7 @@
     "planCredits": {
       "tabs": {
         "activity": "פעילות",
+        "invoices": "חשבוניות",
         "overview": "קרדיטים"
       }
     },
@@ -5509,6 +5575,7 @@
     "hideMinimap": "הסתרת מפת המיני",
     "label": "בקרות זום",
     "showMinimap": "הצגת מפת המיני",
+    "zoomPercentage": "אחוז הגדלה",
     "zoomToFit": "זום להתאמה"
   }
 }
