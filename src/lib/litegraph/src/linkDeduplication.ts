@@ -259,6 +259,86 @@ export function realignGroupWidgetChildLinks(
 }
 
 /**
+ * Re-points each link at the slot of the serialized input that references it.
+ *
+ * `LGraphNode.configure` takes its inputs from `info.inputs`, but a subclass
+ * may have laid those out in a different order than they were saved in
+ * (`ComfyNode.configure` leads with the node definition and appends the rest),
+ * while every link still carries the `target_slot` it was saved with. Until
+ * the two agree, anything that reads a slot's link by index attributes it to
+ * the wrong input, so this runs before the node replays its connections and
+ * before any dynamic input rebuilds its layout from those links.
+ *
+ * Only the index moves: no connection callbacks fire, since the replay that
+ * follows fires them for every input. A link several serialized inputs
+ * reference stays where it is when that is one of them, and a slot held by a
+ * link no serialized input references is left to {@link LGraph.configure}'s
+ * final pass, which removes such links.
+ */
+export function alignInputLinksToSerialisedSlots(
+  node: LGraphNode,
+  info: Pick<ISerialisedNode, 'inputs'>
+): void {
+  const { graph } = node
+  if (!graph) return
+
+  const moving = new Map<LinkId, { link: LLink; slot: number }>()
+  for (const [link, slots] of serialisedSlotsByLink(node, info)) {
+    if (slots.includes(link.target_slot)) continue
+    moving.set(link.id, { link, slot: slots[0] })
+  }
+  const scope = graphScopeOf(graph)
+  const store = useLinkStore()
+  const occupantOf = (slot: number) =>
+    store.getInputSlotLink(scope, node.id, slot)?.id
+  dropBlockedMoves(moving, occupantOf)
+  if (!moving.size) return
+
+  const updates: EndpointUpdate[] = [...moving.values()].map(
+    ({ link, slot }) => ({ topology: link._state, patch: { targetSlot: slot } })
+  )
+  const result = store.updateEndpoints(scope, updates)
+  if (!result.ok) {
+    console.error(
+      'Failed to align input links to serialised slots',
+      result.error
+    )
+  }
+}
+
+/** Each link of the node paired with the serialized slots that reference it. */
+function serialisedSlotsByLink(
+  node: LGraphNode,
+  info: Pick<ISerialisedNode, 'inputs'>
+): Map<LLink, number[]> {
+  const slotsByLink = new Map<LLink, number[]>()
+  for (const [slot, input] of (info.inputs ?? []).entries()) {
+    if (input.link == null || slot >= node.inputs.length) continue
+    const link = node.graph?.links.get(toLinkId(input.link))
+    if (!link || link.target_id !== node.id) continue
+    slotsByLink.set(link, [...(slotsByLink.get(link) ?? []), slot])
+  }
+  return slotsByLink
+}
+
+/**
+ * Removes every move whose destination is held by a link that is not itself
+ * moving, until no such move is left: dropping one can strand the next.
+ */
+function dropBlockedMoves(
+  moving: Map<LinkId, { slot: number }>,
+  occupantOf: (slot: number) => LinkId | undefined
+): void {
+  const blocked = [...moving].filter(([, { slot }]) => {
+    const occupant = occupantOf(slot)
+    return occupant !== undefined && !moving.has(occupant)
+  })
+  if (!blocked.length) return
+  for (const [id] of blocked) moving.delete(id)
+  dropBlockedMoves(moving, occupantOf)
+}
+
+/**
  * Re-points each link's `target_slot` at the configured input with the same
  * name as the serialized input that references it. Replays moved connections
  * because dynamic inputs may grow additional named slots in response.

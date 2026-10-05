@@ -57,7 +57,10 @@ import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
-import { realignGroupWidgetChildLinks } from './linkDeduplication'
+import {
+  alignInputLinksToSerialisedSlots,
+  realignGroupWidgetChildLinks
+} from './linkDeduplication'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
@@ -1185,6 +1188,7 @@ export class LGraphNode
     this.inputs = this.inputs.map((input) =>
       toClass(NodeInputSlot, input, this)
     )
+    alignInputLinksToSerialisedSlots(this, info)
     for (const [i, input] of this.inputs.entries()) {
       const serialisedLink = info.inputs?.[i]?.link
       const link =

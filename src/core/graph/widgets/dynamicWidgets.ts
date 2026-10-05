@@ -237,6 +237,13 @@ function dynamicComboWidget(
     //assume existing inputs are in correct order
     node.inputs.splice(inputInsertionPoint, 0, ...addedInputs)
 
+    if (app.configuringGraph) {
+      growAutogrowGroupsToCover(
+        node,
+        removedInputs.filter((input) => inputLinks.has(input)),
+        inputLinks
+      )
+    }
     for (const input of removedInputs) {
       const replacement = node.inputs.find((item) => item.name === input.name)
       const link = inputLinks.get(input)
@@ -245,11 +252,18 @@ function dynamicComboWidget(
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
     //A callback can grow the group it lands on, shifting every input after
-    //it, so the slot captured before the batch is stale for later entries.
+    //it and recreating the one it grows into, so neither the slot captured
+    //before the batch nor the input object is stable for later entries.
     for (const { input, link } of result.replacements) {
-      const slot = node.inputs.indexOf(input)
+      const slot = node.inputs.findIndex(({ name }) => name === input.name)
       if (slot === -1) continue
-      node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
+      node.onConnectionsChange?.(
+        LiteGraph.INPUT,
+        slot,
+        true,
+        link,
+        node.inputs[slot]
+      )
     }
     restoreRemovedValues(value, addedWidgetNames)
 
@@ -470,17 +484,19 @@ function autogrowOrdinalToName(
   return { name: `${groupName}.${baseName}`, display_name: baseName }
 }
 
-function addAutogrowGroup(
+/**
+ * Lays out the inputs of autogrow group `ordinal` in `node.inputs` without
+ * committing the change. An input of the same name already in the layout is
+ * replaced, and the link `inputLinks` holds for it moves to the new input.
+ */
+function insertAutogrowGroup(
   ordinal: number,
   groupName: string,
-  node: AutogrowNode
+  node: AutogrowNode,
+  inputLinks: Map<INodeInputSlot, LLink>
 ) {
   const { addNodeInput } = useLitegraphService()
-  const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
-  if (ordinal >= max) return
-
-  const previous = captureInputLayout(node)
-  const inputLinks = new Map(previous.links)
+  const { min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   const namedSpecs = inputSpecs.map((input) => ({
     ...input,
     isOptional: ordinal >= min || input.isOptional,
@@ -516,9 +532,46 @@ function addAutogrowGroup(
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   node.inputs.splice(insertionIndex, 0, ...newInputs)
+}
+
+function addAutogrowGroup(
+  ordinal: number,
+  groupName: string,
+  node: AutogrowNode
+) {
+  if (ordinal >= node.comfyDynamic.autogrow[groupName].max) return
+
+  const previous = captureInputLayout(node)
+  const inputLinks = new Map(previous.links)
+  insertAutogrowGroup(ordinal, groupName, node, inputLinks)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
   node.graph?.setDirtyCanvas(true, true)
+}
+
+/**
+ * Grows each autogrow group of the current layout until it holds an input for
+ * every linked `inputs` entry whose name the group can reach, so a rebuild that
+ * hands links over by name finds a slot for each of them. Groups the current
+ * layout does not contain are left alone.
+ */
+function growAutogrowGroupsToCover(
+  node: LGraphNode,
+  inputs: readonly INodeInputSlot[],
+  inputLinks: Map<INodeInputSlot, LLink>
+) {
+  if (!hasAutogrowGroups(node)) return
+  for (const { name } of inputs) {
+    const groupName = liveAutogrowGroupOf(node, name)
+    if (groupName === undefined) continue
+    const ordinal = resolveAutogrowOrdinal(name, groupName, node)
+    const highest = highestAutogrowOrdinal(node, groupName)
+    if (ordinal === undefined || highest === -1) continue
+    const { max } = node.comfyDynamic.autogrow[groupName]
+    for (let next = highest + 1; next <= ordinal && next < max; next++) {
+      insertAutogrowGroup(next, groupName, node, inputLinks)
+    }
+  }
 }
 
 const ORDINAL_REGEX = /\d+$/
