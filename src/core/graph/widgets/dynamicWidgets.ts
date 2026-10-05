@@ -275,6 +275,14 @@ function dynamicComboWidget(
   // that redundant call tears the group down and rebuilds it from its
   // default member count, discarding any additional autogrow-grown members
   // (and their links) the node already had.
+  // Scoped to `app.configuringGraph` (set for the duration of
+  // `LGraph.configure()`, i.e. a workflow load/reload) so it only
+  // short-circuits that redundant replay. Node search's dynamic-input
+  // reveal speculatively sets sibling DynamicCombo widgets to try revealing
+  // a type, then reverts on failure by re-setting a widget back to its
+  // already-active option; outside `configuringGraph` that re-set must still
+  // run `updateWidgets` so a sibling combo whose widget was bound under a
+  // different name than its backing input stays consistent.
   let optionMaterialized = false
   const getState = () => {
     const graphId = resolveNodeRootGraphId(node)
@@ -291,7 +299,8 @@ function dynamicComboWidget(
       const state = getState()
       if (state) state.value = value
       widgetValue = value
-      if (optionMaterialized && value === activeOption) return
+      if (app.configuringGraph && optionMaterialized && value === activeOption)
+        return
       optionMaterialized = true
       updateWidgets(value)
     }
