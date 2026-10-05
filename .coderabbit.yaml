@@ -5,6 +5,11 @@ reviews:
   profile: assertive
   high_level_summary: false
   request_changes_workflow: true
+  # Website PRs use the dedicated website reviewer / Greenlight fast lane.
+  # Keep CodeRabbit on mixed PRs by reviewing every non-website file, but do
+  # not let website-only changes generate an independent request-changes loop.
+  path_filters:
+    - '!apps/website/**'
   # Without this, a review that never happened (rate limit, internal error)
   # still reports green, so an unreviewed PR is indistinguishable from a
   # cleanly reviewed one.
