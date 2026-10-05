@@ -8,6 +8,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useToast } from '@/components/ui/toast/toastStore'
+import { toToastId } from '@/types/toastId'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useTelemetry } from '@/platform/telemetry'
@@ -104,7 +105,7 @@ describe('CloudSurveyView', () => {
     vi.mocked(useTelemetry).mockReturnValue(
       fromPartial({ trackSurvey: mocks.trackSurvey })
     )
-    vi.mocked(useToast().error).mockImplementation(() => 0)
+    vi.mocked(useToast().error).mockImplementation(() => toToastId(0))
   })
 
   it('tracks and advances after storing a first survey', async () => {

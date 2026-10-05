@@ -14,7 +14,7 @@ import ToastRoot from './ToastRoot.vue'
 import ToastTitle from './ToastTitle.vue'
 import ToastViewport from './ToastViewport.vue'
 import { isDocked, useToast } from './toastStore'
-import type { ToastId } from './toastStore'
+import type { ToastId } from '@/types/toastId'
 
 const toast = useToast()
 const { toasts } = storeToRefs(toast)

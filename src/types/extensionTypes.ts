@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 
-import type { ToastId, ToastOptions } from '@/components/ui/toast/toastStore'
+import type { ToastOptions } from '@/components/ui/toast/toastStore'
+import type { ToastId } from '@/types/toastId'
 
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'

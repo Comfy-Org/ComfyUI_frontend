@@ -1,4 +1,5 @@
 import { useToast } from '@/components/ui/toast/toastStore'
+import { toToastId } from '@/types/toastId'
 import PaymentRecoveryToast from '@/platform/workspace/components/PaymentRecoveryToast.vue'
 import type { PaymentRecoveryToastProps } from '@/platform/workspace/components/PaymentRecoveryToast.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -432,12 +433,12 @@ beforeEach(() => {
   ] as const) {
     vi.mocked(toast[kind]).mockImplementation((...args) => {
       mockToastAdd(kind, ...args)
-      return 0
+      return toToastId(0)
     })
   }
   vi.mocked(toast.custom).mockImplementation((...args) => {
     mockToastAdd('custom', ...args)
-    return 0
+    return toToastId(0)
   })
 })
 

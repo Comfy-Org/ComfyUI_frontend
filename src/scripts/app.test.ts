@@ -1,6 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ComfyApp, app as singletonApp } from './app'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { toToastId } from '@/types/toastId'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -133,7 +134,7 @@ const {
     warning: vi.fn(),
     success: vi.fn(),
     error: vi.fn(),
-    info: vi.fn(() => 1),
+    info: vi.fn(),
     custom: vi.fn(),
     dismiss: vi.fn()
   },
@@ -198,7 +199,10 @@ beforeEach(() => {
   vi.mocked(useToast().warning).mockImplementation(mockToastStore.warning)
   vi.mocked(useToast().success).mockImplementation(mockToastStore.success)
   vi.mocked(useToast().error).mockImplementation(mockToastStore.error)
-  vi.mocked(useToast().info).mockImplementation(mockToastStore.info)
+  vi.mocked(useToast().info).mockImplementation((...args) => {
+    mockToastStore.info(...args)
+    return toToastId(1)
+  })
   vi.mocked(useToast().custom).mockImplementation(mockToastStore.custom)
   vi.mocked(useToast().dismiss).mockImplementation(mockToastStore.dismiss)
 })

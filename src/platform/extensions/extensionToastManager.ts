@@ -1,4 +1,5 @@
-import type { ToastId, useToast } from '@/components/ui/toast/toastStore'
+import type { useToast } from '@/components/ui/toast/toastStore'
+import type { ToastId } from '@/types/toastId'
 import type { ToastManager, ToastMessageOptions } from '@/types/extensionTypes'
 
 const legacySeverityKinds = {

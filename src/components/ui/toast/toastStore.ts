@@ -4,8 +4,9 @@ import type { Component } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toToastId } from '@/types/toastId'
+import type { ToastId } from '@/types/toastId'
 
-export type ToastId = number
 type ToastRole = 'alert' | 'status'
 type ToastKind = 'success' | 'error' | 'info' | 'warning' | 'loading'
 
@@ -79,7 +80,7 @@ export const useToast = defineStore('toast', () => {
   )
 
   function add(kind: ToastKind, title: string, options: ToastOptions = {}) {
-    const id = nextId++
+    const id = toToastId(nextId++)
     enqueue({
       id,
       kind,
@@ -117,7 +118,7 @@ export const useToast = defineStore('toast', () => {
     props: Omit<ComponentProps<C>, 'toastId'>,
     options: CustomToastOptions = {}
   ) {
-    const id = nextId++
+    const id = toToastId(nextId++)
     enqueue({
       id,
       kind: 'custom',

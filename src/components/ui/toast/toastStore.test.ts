@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
+import type { ToastId } from '@/types/toastId'
 
 import { useToast } from './toastStore'
 
@@ -99,5 +101,11 @@ describe('useToast', () => {
     expect(toast.toasts).toEqual([
       expect.objectContaining({ placement: 'dock' })
     ])
+  })
+
+  it('accepts only minted toast ids', () => {
+    expectTypeOf<number>().not.toExtend<ToastId>()
+    expectTypeOf(useToast().info('Saved')).toEqualTypeOf<ToastId>()
+    expectTypeOf(useToast().dismiss).parameter(0).toEqualTypeOf<ToastId>()
   })
 })
