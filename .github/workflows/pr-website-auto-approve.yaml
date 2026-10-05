@@ -1,7 +1,8 @@
 # Auto-approve website-only pull requests from explicitly trusted authors.
 #
 # Security boundary:
-# - pull_request_target reads this workflow from the trusted base branch.
+# - pull_request_target and pull_request_review load this workflow from the
+#   trusted default branch.
 # - automation is checked out from the repository's protected default branch;
 #   pull request code is never executed.
 # - the script rejects other base branches and forks, re-fetches the live PR,
@@ -20,6 +21,10 @@ on:
       - edited
       - labeled
       - unlabeled
+  pull_request_review:
+    types:
+      - submitted
+      - dismissed
 
 permissions:
   contents: read

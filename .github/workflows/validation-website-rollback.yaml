@@ -21,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: website-production-rollback
+  group: website-production
   cancel-in-progress: false
 
 env:
