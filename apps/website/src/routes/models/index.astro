@@ -1,18 +1,90 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { workshopModels } from '@/config/workshop-browse-content'
+import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
+import { modelsHubMeta } from './models-hub-meta'
+import { modelsByProvider } from './models-directory'
+
+const { title, description } = modelsHubMeta(workshopModels)
+const directory = modelsByProvider(
+  workshopModels,
+  Astro.locals.t('workshop.filter.other')
+)
 ---
 
-<BaseLayout
-  title="Models - Comfy"
-  preloadFonts={['Medium']}
-  description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
->
-  <ModelsPage client:load>
+<BaseLayout {title} {description} preloadFonts={['Medium']}>
+  <script>
+    import '@/scripts/hubNavigation'
+  </script>
+  <ModelsPage
+    section="models"
+    heading={Astro.locals.t('workshop.catalogue.heading')}
+    client:load
+    transition:persist="hub-catalogue"
+  >
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
-  <noscript>
-    <ModelsShowcase />
-  </noscript>
+  <section
+    aria-labelledby="models-directory-heading"
+    class="mx-auto max-w-10xl px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24"
+    data-testid="models-directory"
+  >
+    <details
+      class="group rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
+    >
+      <summary
+        class="flex cursor-pointer list-none items-center gap-3 rounded-2xl px-6 py-5 text-primary-warm-white transition-colors hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:px-4 [&::-webkit-details-marker]:hidden"
+        data-testid="models-directory-toggle"
+      >
+        <div
+          class="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3"
+        >
+          <h2 id="models-directory-heading" class="text-xl font-medium">
+            {Astro.locals.t('workshop.catalogue.directory')}
+          </h2>
+          <span class="text-sm text-primary-warm-gray tabular-nums">
+            {Astro.locals.t('workshop.catalogue.directoryCount', {
+              count: workshopModels.length
+            })}
+          </span>
+        </div>
+        <svg
+          class="ml-auto size-5 shrink-0 transition-transform duration-200 group-open:rotate-180"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path
+            d="m6 9 6 6 6-6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+        </svg>
+      </summary>
+      <div
+        class="gap-x-8 border-t border-transparency-white-t8 px-6 pt-6 pb-2 max-sm:px-4 sm:columns-2 lg:columns-3"
+      >
+        {directory.map((group) => <div class="mb-8 break-inside-avoid">
+          <h3
+            class="text-xs font-medium tracking-wide text-primary-warm-gray uppercase"
+          >
+            {group.provider}
+          </h3>
+          <ul class="mt-2">
+            {group.models.map((model) => <li class="py-1 text-sm">
+              <a
+                href={model.href}
+                class="text-primary-comfy-canvas transition-colors hover:text-primary-comfy-yellow"
+              >
+                {model.name}
+              </a>
+            </li>)}
+          </ul>
+        </div>)}
+      </div>
+    </details>
+  </section>
 </BaseLayout>

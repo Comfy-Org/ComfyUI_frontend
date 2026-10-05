@@ -1,20 +1,22 @@
-import catalogJson from '../content/workshop-models.json'
-import displayJson from '../content/workshop-display.json'
-import indexJson from '../content/workshop-router-index.json'
-import aliasesJson from '../content/workshop-router-aliases.json'
-import displayNames from '../data/workshop-router-display-names.json'
-import useCaseOverrides from '../data/workshop-use-case-overrides.json'
-import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
-import { workshopModelSchema } from '../content/workshop-models.schema'
-import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import catalogJson from '@/content/workshop-models.json'
+import displayJson from '@/content/workshop-display.json'
+import indexJson from '@/content/workshop-router-index.json'
+import aliasesJson from '@/content/workshop-router-aliases.json'
+import displayNames from '@/data/workshop-router-display-names.json'
+import useCaseOverrides from '@/data/workshop-use-case-overrides.json'
+import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
 import type { Modality, UseCase, RouterWorkshopModel } from './models-catalogue'
 import { USE_CASES } from './models-catalogue'
 import { workshopRouterIndexSchema } from './workshop-router-index'
 import { workshopRouterAliasesSchema } from './workshop-router-identity'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 import { workshopContentInputs } from './workshop-content-inputs'
-import { modelSummary } from '../lib/workshop/model-summary'
+import { modelSummary } from '@/lib/workshop/model-summary'
+import { providerName } from '@/lib/workshop/provider-name'
 import { modelOrderRank } from './workshop-model-order'
+import { hubModelHref } from './hub-models'
 import {
   isWorkshopModelDisabled,
   workshopModelAvailability
@@ -58,34 +60,6 @@ function modalityFor(model: WorkshopModelEntry): Modality {
   return model.modality
 }
 
-const PROVIDER_NAMES: Readonly<Record<string, string>> = {
-  bfl: 'Black Forest Labs',
-  byteplus: 'ByteDance',
-  'byteplus-mediakit': 'ByteDance',
-  elevenlabs: 'ElevenLabs',
-  fishaudio: 'Fish Audio',
-  gemini: 'Google',
-  ltx: 'Lightricks',
-  luma_2: 'Luma',
-  openai: 'OpenAI',
-  synclabs: 'Sync Labs',
-  'tencent-hunyuan3d': 'Tencent',
-  vertexai: 'Google',
-  wavespeed: 'WaveSpeed',
-  xai: 'xAI'
-}
-
-function providerName(provider: string): string {
-  return (
-    PROVIDER_NAMES[provider] ??
-    provider
-      .split('-')
-      .filter(Boolean)
-      .map((word) => word[0].toUpperCase() + word.slice(1))
-      .join(' ')
-  )
-}
-
 function taskForUseCases(
   useCases: readonly UseCase[]
 ): RouterWorkshopModel['task'] {
@@ -99,18 +73,19 @@ function taskForUseCases(
   return 'text-to-text'
 }
 
-const display = workshopDisplayEntriesSchema.parse(displayJson)
-const displaySlugs = new Set(display.map((entry) => entry.slug))
+export const workshopDisplayEntries =
+  workshopDisplayEntriesSchema.parse(displayJson)
+const displaySlugs = new Set(workshopDisplayEntries.map((entry) => entry.slug))
 for (const slug of modelOrderRank.keys())
   if (!displaySlugs.has(slug))
     throw new Error(`Recommended model order names an unknown page: ${slug}`)
 
 const catalogById = new Map(legacyCatalog.map((entry) => [entry.id, entry]))
 for (const slug of workshopModelAvailability.keys())
-  if (!display.some((overlay) => overlay.slug === slug))
+  if (!workshopDisplayEntries.some((overlay) => overlay.slug === slug))
     throw new Error(`Model availability names an unknown page: ${slug}`)
 
-function bindingFor(overlay: (typeof display)[number]) {
+function bindingFor(overlay: (typeof workshopDisplayEntries)[number]) {
   const input = workshopContentInputs.get(overlay.id)
   const alias = routerAliasById.get(overlay.modelId)
   if (!input) return alias
@@ -122,7 +97,7 @@ function bindingFor(overlay: (typeof display)[number]) {
   }
 }
 
-const contentSources = display
+const contentSources = workshopDisplayEntries
   .filter((overlay) => overlay.type === undefined || overlay.type === 'MODEL')
   .flatMap((overlay) => {
     const input = workshopContentInputs.get(overlay.id)
@@ -190,7 +165,7 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       name,
       workflowCount: exampleCount,
       ...(recommendedRank !== undefined ? { recommendedRank } : {}),
-      href: `/models/${slug}/`,
+      ...(isWorkshopModelDisabled(slug) ? {} : { href: hubModelHref(slug) }),
       routerId: record.id,
       incompleteReason: record.incompleteReason,
       provider,

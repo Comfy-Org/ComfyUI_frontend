@@ -3,9 +3,12 @@ import type {
   ExchangeTokenResponse
 } from '@comfyorg/ingest-types'
 
+import { hubModelHref } from '@/config/hub-models'
 import { test as base } from './blockExternalMedia'
+import { stubWorkshopFlags } from './workshopFlags'
 
-export const MODEL_PATH = '/models/bfl--flux-2-max--generate-images/'
+export const MODEL_ID = 'bfl--flux-2-max--generate-images'
+export const MODEL_PATH = hubModelHref(MODEL_ID)
 
 /** The identity this fixture signs in as, and the workspace its token mints. */
 export const MODELS_ACCOUNT_UID = 'e2e-models-user'
@@ -22,26 +25,10 @@ export const test = base.extend<{
   modelsAccount: [
     async ({ context }, use) => {
       const email = 'models-e2e@test.comfy.org'
-      await context.route('**/cdn-cgi/trace', (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'text/plain',
-          body: 'loc=US\n'
-        })
-      )
-      await context.route('**/t.comfy.org/**', (route) =>
-        /\/(flags|decide)\//.test(route.request().url())
-          ? route.fulfill(
-              jsonRoute({
-                featureFlags: {
-                  'workshop-auth': true,
-                  'workshop-enabled': true
-                },
-                featureFlagPayloads: {}
-              })
-            )
-          : route.abort('blockedbyclient')
-      )
+      await stubWorkshopFlags(context, {
+        'workshop-auth': true,
+        'workshop-enabled': true
+      })
       await context.route('**/api/auth/token', (route) =>
         route.fulfill(
           jsonRoute({

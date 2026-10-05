@@ -9,12 +9,13 @@ import { computed, ref, useId, useTemplateRef, watchEffect } from 'vue'
 
 import TeamSharingChat from './TeamSharingChat.vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 const endpointClipId = `how-it-works-clip-${useId()}`
 const endpointFadeId = `how-it-works-fade-${useId()}`
 
@@ -22,8 +23,8 @@ const stepNumbers = [1, 2, 3] as const
 
 const steps = stepNumbers.map((number) => ({
   number,
-  title: t(`platform.howItWorks.${number}.title`, locale),
-  description: t(`platform.howItWorks.${number}.description`, locale)
+  title: t(`platform.howItWorks.${number}.title`),
+  description: t(`platform.howItWorks.${number}.description`)
 }))
 
 const APPS = ['internal tool', 'application', 'website', 'workflow'] as const
@@ -73,10 +74,10 @@ watchEffect(() => {
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.serverlessDeploy.heading', locale) }}
+      {{ t('platform.serverlessDeploy.heading') }}
       <template #subtitle>
         <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
-          {{ t('platform.serverlessDeploy.subtitle', locale) }}
+          {{ t('platform.serverlessDeploy.subtitle') }}
         </p>
       </template>
     </SectionHeader>
@@ -229,7 +230,7 @@ watchEffect(() => {
               v-else-if="step.number === 2"
               class="flex size-full items-center justify-center"
             >
-              <TeamSharingChat :locale :endpoint="workflow.endpoint" />
+              <TeamSharingChat :locale />
             </div>
 
             <div v-else class="flex size-full items-center justify-center">

@@ -20,6 +20,11 @@ const ES2023_ARRAY_COPY_METHODS = new Set([
 ])
 const ES2023_ARRAY_COPY_MESSAGE =
   'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
+const TEST_APIS = new Set(['describe', 'it', 'suite', 'test'])
+const DISABLING_CONDITION = new Map([
+  ['skipIf', true],
+  ['runIf', false]
+])
 
 interface Node {
   readonly type: string
@@ -67,6 +72,7 @@ interface MemberExpression extends Node {
 interface CallExpression extends Node {
   readonly type: 'CallExpression'
   readonly callee: Node
+  readonly arguments: readonly Node[]
 }
 
 interface AssignmentExpression extends Node {
@@ -110,6 +116,12 @@ function staticPropertyName(member: MemberExpression): string | undefined {
   return member.computed
     ? staticString(member.property)
     : identifierName(member.property)
+}
+
+function rootIdentifierName(node: Node): string | undefined {
+  return node.type === 'MemberExpression'
+    ? rootIdentifierName((node as MemberExpression).object)
+    : identifierName(node)
 }
 
 const SELECTION_PROJECTIONS = new Set([
@@ -341,6 +353,35 @@ export const noEs2023ArrayCopyMethod = {
         const method = staticPropertyName(node.callee as MemberExpression)
         if (method !== undefined && ES2023_ARRAY_COPY_METHODS.has(method)) {
           context.report({ node, message: ES2023_ARRAY_COPY_MESSAGE })
+        }
+      }
+    }
+  }
+}
+
+export const noStaticallyDisabledTest = {
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        const condition = node.arguments.at(0)
+        if (
+          node.callee.type !== 'MemberExpression' ||
+          condition?.type !== 'Literal'
+        )
+          return
+        const member = node.callee as MemberExpression
+        const disablingValue = DISABLING_CONDITION.get(
+          staticPropertyName(member) ?? ''
+        )
+        if (
+          disablingValue === Boolean((condition as Literal).value) &&
+          TEST_APIS.has(rootIdentifierName(member.object) ?? '')
+        ) {
+          context.report({
+            node,
+            message:
+              'A literal condition permanently disables this test. Fix or delete the test.'
+          })
         }
       }
     }

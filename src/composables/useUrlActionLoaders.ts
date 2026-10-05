@@ -187,6 +187,7 @@ function schedulePendingCheckoutRecovery(
   void (async () => subscriptionDialog.resumePendingPricingFlow())().catch(
     (error) => {
       reportError(error, {
+        surface: 'platform',
         errorType: 'billing_pending_checkout_resume_failure'
       })
     }

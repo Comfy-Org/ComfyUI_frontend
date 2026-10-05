@@ -1,22 +1,21 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
-import BreadcrumbBar from '../components/common/BreadcrumbBar.vue'
-import ContactSection from '../components/customers/ContactSection.vue'
-import FeedbackSection from '../components/customers/FeedbackSection.vue'
-import HeroSection from '../components/customers/HeroSection.vue'
-import StorySection from '../components/customers/StorySection.vue'
-import WatchSection from '../components/customers/WatchSection.vue'
-import { customerVideoStories, formatDuration } from '../data/customerVideos'
-import { t } from '../i18n/translations'
-import { toCardProps } from '../utils/customers'
-import { loadStories } from '../utils/loadStories'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import BreadcrumbBar from '@/components/common/BreadcrumbBar.vue'
+import ContactSection from '@/components/customers/ContactSection.vue'
+import FeedbackSection from '@/components/customers/FeedbackSection.vue'
+import HeroSection from '@/components/customers/HeroSection.vue'
+import StorySection from '@/components/customers/StorySection.vue'
+import WatchSection from '@/components/customers/WatchSection.vue'
+import { customerVideoStories, formatDuration } from '@/data/customerVideos'
+import { toCardProps } from '@/utils/customers'
+import { loadStories } from '@/utils/loadStories'
 import {
   absoluteUrl,
   itemListNode,
   jsonLdId,
   pageContext,
   videoObjectNode
-} from '../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 const stories = (await loadStories('en')).map(toCardProps)
 
@@ -25,14 +24,14 @@ const { siteUrl, url, locale } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale
 )
-const collectionLabel = t('nav.customerStories', locale)
-const homeLabel = t('breadcrumb.home', locale)
+const collectionLabel = Astro.locals.t('nav.customerStories')
+const homeLabel = Astro.locals.t('breadcrumb.home')
 
 const storyList = itemListNode(
   url,
   collectionLabel,
   stories.map((story) => ({
-    url: absoluteUrl(Astro.site, `/customers/${story.slug}`),
+    url: absoluteUrl(Astro.site, `/customers/${story.slug}/`),
     name: story.title
   }))
 )
@@ -74,7 +73,7 @@ const breadcrumbs = [
 >
   <BreadcrumbBar
     crumbs={[{ label: homeLabel, href: '/' }, { label: collectionLabel }]}
-    label={t('ui.breadcrumb', locale)}
+    label={Astro.locals.t('ui.breadcrumb')}
   />
   <HeroSection client:load />
   <WatchSection stories={watchCards} />

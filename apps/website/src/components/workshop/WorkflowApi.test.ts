@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 import { h, markRaw } from 'vue'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
-import { OBJECT_URL_LIFETIME_MS } from '../../config/workshop-output-download'
-import { initialWorkshopPageState } from '../../config/workshop-page-state'
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
-import { workflowSnippetRequest } from '../../config/workshop-workflow-snippet'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { OBJECT_URL_LIFETIME_MS } from '@/config/workshop-output-download'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { workflowSnippetRequest } from '@/config/workshop-workflow-snippet'
 import WorkflowApi from './WorkflowApi.vue'
 
 const fixture = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
@@ -31,6 +31,22 @@ describe('WorkflowApi', () => {
     expect(endpoint).toHaveTextContent(`${WORKSHOP_CLOUD_BASE_URL}/api/prompt`)
   })
 
+  it('reports the snippet language it copies and Get API key clicks', async () => {
+    const { emitted } = render(WorkflowApi, { props: { model, values } })
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('tab', { name: 'TypeScript' }))
+    await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
+    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    getKey.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(getKey)
+
+    expect(emitted('copy')).toEqual([['typescript']])
+    expect(emitted('getKey')).toEqual([[]])
+  })
+
   it.for([
     { tab: 'Python', opening: '# Python 3.10+: pip install comfy-sdk' },
     { tab: 'TypeScript', opening: '// Node 22+: npm install @comfyorg/sdk' },
@@ -52,18 +68,12 @@ describe('WorkflowApi', () => {
   it.for([
     {
       tab: 'Python',
-      shows: [
-        'Comfy(api_key=…) + run(workflow, api_key=…)',
-        'client.assets.from_url(url)'
-      ],
+      shows: ['COMFY_API_KEY', 'Uploaded by the code'],
       hides: ['/api/prompt', 'X-API-Key']
     },
     {
       tab: 'TypeScript',
-      shows: [
-        'new Comfy({ apiKey }) + run(workflow, { apiKey })',
-        'client.assets.fromUrl(url)'
-      ],
+      shows: ['COMFY_API_KEY', 'Uploaded by the code'],
       hides: ['/api/prompt', 'X-API-Key']
     },
     {
@@ -73,7 +83,7 @@ describe('WorkflowApi', () => {
         'X-API-Key + extra_data.api_key_comfy_org',
         'Uploaded before the call'
       ],
-      hides: ['assets.from']
+      hides: ['Uploaded by the code']
     }
   ])(
     'lists what the $tab code needs beside it',

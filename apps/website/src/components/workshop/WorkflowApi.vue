@@ -5,27 +5,27 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { useTablist } from '../../composables/useTablist'
-import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { SnippetLanguage } from '../../config/models-snippets'
-import { SNIPPET_LANGUAGES } from '../../config/models-snippets'
-import { apiKeysLink, externalLinks } from '../../config/routes'
-import type { FormValues } from '../../config/workshop-playground'
-import { urlUploadField } from '../../config/workshop-playground'
-import { OBJECT_URL_LIFETIME_MS } from '../../config/workshop-output-download'
-import { initialWorkshopPageState } from '../../config/workshop-page-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
-import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
+import { useTablist } from '@/composables/useTablist'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
+import { SNIPPET_LANGUAGES } from '@/config/models-snippets'
+import { apiKeysLink, externalLinks } from '@/config/routes'
+import type { FormValues } from '@/config/workshop-playground'
+import { urlUploadField } from '@/config/workshop-playground'
+import { OBJECT_URL_LIFETIME_MS } from '@/config/workshop-output-download'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { workspaceLinkedHref } from '@/config/workshop-workspace-link'
 import {
   workflowCurl,
   workflowPython,
   workflowSdkPlan,
   workflowSnippetRequest,
   workflowTypeScript
-} from '../../config/workshop-workflow-snippet'
-import { t } from '../../i18n/translations'
-import type { CodeLang } from '../../lib/highlight'
+} from '@/config/workshop-workflow-snippet'
+import { t } from '@/i18n/translations'
+import type { CodeLang } from '@/lib/highlight'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
 import SectionHeading from './SectionHeading.vue'
@@ -34,6 +34,7 @@ const { model, values } = defineProps<{
   model: WorkflowWorkshopModelDetail
   values: FormValues
 }>()
+const emit = defineEmits<{ copy: [language: SnippetLanguage]; getKey: [] }>()
 const { session } = useWorkshopSession()
 const keyHref = computed(() =>
   workspaceLinkedHref(
@@ -91,40 +92,31 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
   urlUploadField(field)
 )
 const endpoint = `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`
-const sdkFacts = {
-  python: {
-    key: 'Comfy(api_key=…) + run(workflow, api_key=…)',
-    files: 'client.assets.from_url(url)'
-  },
-  typescript: {
-    key: 'new Comfy({ apiKey }) + run(workflow, { apiKey })',
-    files: 'client.assets.fromUrl(url)'
-  }
-} as const
 const facts = computed(() => {
-  const current = language.value
-  const sdk = current === 'curl' ? undefined : sdkFacts[current]
+  const sdk = language.value !== 'curl'
   return [
-    ...(sdk === undefined
-      ? [
+    ...(sdk
+      ? []
+      : [
           {
             label: t('workshop.api.needsEndpoint'),
             value: `POST ${endpoint}`,
-            mono: true
+            mono: true,
+            copyLabel: t('workshop.api.copyEndpoint')
           }
-        ]
-      : []),
+        ]),
     {
       label: t('workshop.api.needsKey'),
-      value: sdk?.key ?? 'X-API-Key + extra_data.api_key_comfy_org',
+      value: sdk ? 'COMFY_API_KEY' : 'X-API-Key + extra_data.api_key_comfy_org',
       mono: true
     },
     ...(hasMedia
       ? [
           {
             label: t('workshop.api.needsFiles'),
-            value: sdk?.files ?? t('workshop.api.filesUploaded'),
-            mono: Boolean(sdk)
+            value: sdk
+              ? t('workshop.api.filesSdk')
+              : t('workshop.api.filesUploaded')
           }
         ]
       : [])
@@ -150,6 +142,7 @@ const facts = computed(() => {
           rel="noopener"
           class="w-full justify-between"
           data-testid="api-get-key"
+          @click="emit('getKey')"
         >
           <template #prepend>
             <span
@@ -226,6 +219,7 @@ const facts = computed(() => {
               :value="code"
               :label="t('workshop.api.copy')"
               :copied-label="t('workshop.api.copied')"
+              @click="emit('copy', language)"
             />
           </div>
           <pre

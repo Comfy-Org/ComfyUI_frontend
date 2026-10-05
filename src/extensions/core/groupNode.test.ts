@@ -1,7 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, test, vi } from 'vitest'
 
 import { t } from '@/i18n'
 
@@ -121,6 +121,27 @@ describe('GroupNodeConfig.getLinks', () => {
     const config = configFrom([], [[0, 1, 'IMAGE']])
     expect(config.externalFrom).toEqual({ 0: { 1: 'IMAGE' } })
   })
+
+  it('normalizes a missing primitive link type to null', () => {
+    const linkWithoutType = [0, 0, 1, 0, 1] satisfies GroupNodeLink
+    const config = configFrom([linkWithoutType])
+
+    expect(
+      config.getNodeDef({ index: 0, type: 'PrimitiveNode' })?.output
+    ).toEqual([null])
+  })
+
+  test.for([{ unexpected: true }, ['IMAGE', 42]])(
+    'normalizes an invalid primitive link type to null',
+    (invalidType) => {
+      const link = [0, 0, 1, 0, 1, invalidType] satisfies GroupNodeLink
+      const config = configFrom([link])
+
+      expect(
+        config.getNodeDef({ index: 0, type: 'PrimitiveNode' })?.output
+      ).toEqual([null])
+    }
+  )
 })
 
 describe('findUnconsumedWidgetIndex', () => {
@@ -188,8 +209,8 @@ describe('GroupNodeConfig.processInputSlots', () => {
 
     config.processInputSlots(
       {
-        model: ['MODEL'],
-        latent_image: ['LATENT']
+        model: ['MODEL', {}],
+        latent_image: ['LATENT', {}]
       },
       { index: 0, type: 'KSampler' },
       ['model', 'latent_image'],
@@ -260,7 +281,7 @@ describe('GroupNodeConfig.processConvertedWidgets', () => {
     const inputMap: Record<string, number> = {}
 
     config.processConvertedWidgets(
-      { seed: ['INT'], steps: ['INT'], cfg: ['FLOAT'] },
+      { seed: ['INT', {}], steps: ['INT', {}], cfg: ['FLOAT', {}] },
       { index: 0, type: 'KSampler' },
       new Map([
         [10, 'cfg'],
@@ -285,7 +306,7 @@ describe('GroupNodeConfig.processConvertedWidgets', () => {
     const link: GroupNodeLink = [null, 0, 0, 0, 0, 'INT']
 
     config.processConvertedWidgets(
-      { b: ['INT'] },
+      { b: ['INT', {}] },
       { index: 0, type: 'KSampler' },
       // The converted widget's real slot index is 5 (the map key), which
       // doesn't equal `slots.length + i` for any plausible `slots` this

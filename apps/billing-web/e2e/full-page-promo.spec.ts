@@ -24,7 +24,8 @@ const EYEBROW = 'Subscribe to Pro Plan · Personal'
 
 /**
  * Prices LAUNCH20 at 20% off the $50 plan and refuses any other code the way
- * billing does, with a 400 carrying `PROMOTION_CODE_INVALID`.
+ * billing does, with a 400 carrying `PROMOTION_CODE_INVALID`. As on the real
+ * quote, today's cost is net of the code and the subtotal is the plan before it.
  */
 function quoteCodes(cloud: MockCloud, valid: () => boolean = () => true) {
   cloud.reply('POST', '/billing/preview-subscribe', ({ body }) => {
@@ -45,6 +46,8 @@ function quoteCodes(cloud: MockCloud, valid: () => boolean = () => true) {
       body: {
         ...cloud.scenario.preview,
         quote_id: 'quote_launch20',
+        subtotal_cents: 5000,
+        cost_today_cents: 4000,
         amount_due_cents: 4000,
         promotion_code: 'LAUNCH20',
         discounts: [
@@ -77,7 +80,9 @@ test('applies a valid code: its row, its removable chip, and the new total', asy
 
   await enterCode(page, 'launch20')
 
-  await expect(summary(page)).toContainText('Promo code−$10.00')
+  await expect(summary(page)).toContainText(
+    'Pro Plan$50.00$50 /mo, billed monthlyPromo code−$10.00'
+  )
   await expect(summary(page)).toContainText('Total due today$40.00')
   await expect(
     page.getByRole('button', { name: 'Remove LAUNCH20' })
@@ -222,4 +227,112 @@ test('a code that lapses before Pay returns to capture with the expired card', a
     page.getByRole('button', { name: 'Pay and subscribe' })
   ).toBeEnabled()
   await expect(page.getByRole('link', { name: 'Contact support' })).toBeHidden()
+})
+
+test('a code applied here survives a reload, still applied at the discounted price', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  quoteCodes(cloud)
+  await signIn(CHECKOUT)
+  await enterCode(page, 'LAUNCH20')
+  await expect(summary(page)).toContainText('Total due today$40.00')
+
+  await page.reload()
+
+  await expect(summary(page)).toContainText('Promo code−$10.00')
+  await expect(summary(page)).toContainText('Total due today$40.00')
+  await expect(
+    page.getByRole('button', { name: 'Remove LAUNCH20' })
+  ).toBeVisible()
+})
+
+test('a restored code the server now refuses shows the expired card at the full price', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  let stillValid = true
+  quoteCodes(cloud, () => stillValid)
+  await signIn(CHECKOUT)
+  await enterCode(page, 'LAUNCH20')
+  await expect(summary(page)).toContainText('Total due today$40.00')
+  stillValid = false
+
+  await page.reload()
+
+  const card = page.getByRole('alert')
+  await expect(card).toContainText('Your promo code expired')
+  await expect(card).toContainText(
+    'The LAUNCH20 code expired, so the total was updated.'
+  )
+  await expect(summary(page)).toContainText('Total due today$50.00')
+  await expect(
+    page.getByRole('button', { name: 'Add promo code' })
+  ).toBeEnabled()
+})
+
+test('a copied checkout URL carries no applied code', async ({
+  page,
+  context,
+  cloud,
+  signIn
+}) => {
+  quoteCodes(cloud)
+  await signIn(CHECKOUT)
+  await enterCode(page, 'LAUNCH20')
+  await expect(summary(page)).toContainText('Total due today$40.00')
+
+  const copied = page.url()
+  expect(copied).not.toMatch(/launch20/i)
+  const pasted = await context.newPage()
+  await pasted.goto(copied)
+
+  await expect(pasted.getByText(EYEBROW)).toBeVisible()
+  await expect(summary(pasted)).toContainText('Total due today$50.00')
+  await expect(
+    pasted.getByRole('button', { name: 'Add promo code' })
+  ).toBeVisible()
+})
+
+test('discount rows follow the server order, the entered code first when it comes first', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.reply('POST', '/billing/preview-subscribe', ({ body }) => {
+    const entered =
+      typeof body === 'object' && body !== null && 'promotion_code' in body
+    if (!entered) return { body: cloud.scenario.preview }
+    return {
+      body: {
+        ...cloud.scenario.preview,
+        quote_id: 'quote_launch20',
+        subtotal_cents: 5000,
+        cost_today_cents: 3000,
+        amount_due_cents: 3000,
+        promotion_code: 'LAUNCH20',
+        discounts: [
+          { kind: 'promotion', code: 'LAUNCH20', amount_off_cents: 1000 },
+          {
+            kind: 'promotion',
+            code: 'COMFY-EDU',
+            name: 'Education discount',
+            amount_off_cents: 1000
+          }
+        ]
+      }
+    }
+  })
+  await signIn(CHECKOUT)
+
+  await enterCode(page, 'LAUNCH20')
+
+  await expect(summary(page)).toContainText(
+    'Promo code−$10.00Education discount−$10.00'
+  )
+  await expect(
+    page.getByRole('button', { name: 'Remove LAUNCH20' })
+  ).toBeVisible()
 })

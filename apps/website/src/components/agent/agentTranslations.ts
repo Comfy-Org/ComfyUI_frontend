@@ -1,4 +1,4 @@
-import type { Locale, LocalizedText } from '../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
 const translations = {
   'agentPage.meta.title': {
@@ -121,6 +121,10 @@ const translations = {
       '把角色和想象中的世界带入同一条创作流程。智能体帮助塑造画面风格、探索场景并比较生成结果。由一位艺术家使用 Comfy Agent，在 100 小时内完成。'
   },
   'agentPage.usecases.featured.tag': { en: 'Animation', 'zh-CN': '动画' },
+  'agentPage.usecases.featured.cta': {
+    en: "See how it's made",
+    'zh-CN': '了解制作过程'
+  },
   'agentPage.usecases.brief.1.byline': {
     en: 'By Doug Hogan',
     'zh-CN': '作者：Doug Hogan'

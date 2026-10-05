@@ -1,14 +1,13 @@
 import { ref } from 'vue'
 
-import { refreshWorkshopCredits } from '../config/workshop-credits'
-import { useWorkshopSession } from '../config/workshop-session-state'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopSession } from '@/config/workshop-session-state'
 
 /**
  * Moves a workspace member whose team is out of credits onto their personal
  * workspace, then re-reads the balance that now pays for runs.
  */
 export function usePersonalWorkspaceSwitch() {
-  const { remint } = useWorkshopSession()
   const pending = ref(false)
   const failed = ref(false)
 
@@ -17,7 +16,7 @@ export function usePersonalWorkspaceSwitch() {
     pending.value = true
     failed.value = false
     try {
-      const result = await remint(undefined, {
+      const result = await useWorkshopSession().remint(undefined, {
         preserveCredentialOnTransientFailure: true
       })
       if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })

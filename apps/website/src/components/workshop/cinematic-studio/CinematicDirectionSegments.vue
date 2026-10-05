@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -6,36 +7,35 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type {
   Direction,
   LookPart
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import {
-  directionOption,
-  gradeGroup,
-  lookGroups
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import { gradeGroup, lookGroups } from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { shownOption } from '@/lib/workshop/cinematic-studio/grade-image'
 import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
 import CinematicTooltip from './CinematicTooltip.vue'
 
 const {
   direction,
   open,
+  colors,
   locale = 'en'
 } = defineProps<{
   direction: Direction
+  colors?: readonly string[]
   open?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ open: [part: LookPart | 'grade'] }>()
 
 const segments = computed(() =>
   [...lookGroups, gradeGroup].map((group) => {
-    const option = directionOption(group.part, direction)
+    const { label, option } = shownOption(group.part, direction, colors)
     return {
       part: group.part,
-      title: tc(group.title, locale),
-      label: tc(option.label, locale),
+      title: t(group.title),
+      label: t(label),
       option
     }
   })
@@ -45,7 +45,7 @@ const segments = computed(() =>
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.section.direction', locale)"
+    :aria-label="t('cinematic.section.direction')"
     class="flex h-9 shrink-0 items-center overflow-hidden rounded-xl ring-1 ring-transparency-white-t8 ring-inset"
   >
     <template v-for="(segment, index) in segments" :key="segment.part">

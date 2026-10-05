@@ -71,7 +71,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
-    const firstPrompt = enMessages.agent.suggestedPrompts[0]
+    const firstPrompt = enMessages.agent.suggestedPrompts.cloud[0]
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 
@@ -241,7 +241,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await expect.poll(() => postedMessages.length).toBe(1)
       pushEvent(ws, THINKING_EVENT)
       await expect(
-        agentPanel.root.getByRole('button', { name: 'Stop' })
+        agentPanel.root.getByRole('button', { name: enMessages.agent.stop })
       ).toBeVisible()
       await expect(paywall).toHaveCount(0)
       pushEvent(ws, MESSAGE_DONE_EVENT)
@@ -251,15 +251,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await test.step('finish the funded recovery while the panel is closed', async () => {
       agentBilling.setAgentFunds(true)
       const recovery = agentBilling.holdNextFundedRefresh()
-      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      await paywall
+        .getByRole('button', { name: enMessages.agent.paywall.addCredits })
+        .click()
       const topUpDialog = new TopUpCreditsDialog(page)
       await topUpDialog.waitForVisible()
       await recovery.entered
+      agentBilling.failSubsequentRefreshes()
       await topUpDialog.close()
-      await agentPanel.root
-        .getByRole('button', { name: enMessages.g.close })
-        .click()
-      await expect(agentPanel.root).toHaveCount(0)
+      await agentPanel.close()
       recovery.release()
       await recovery.completed
     })
@@ -267,6 +267,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await test.step('reopen without the stale paywall', async () => {
       await agentPanel.open()
       await expect(paywall).toHaveCount(0)
+      agentBilling.resumeRefreshes()
     })
 
     await test.step('show the standing paywall after a second exhaustion', async () => {
@@ -286,7 +287,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         })
       )
       await expect(
-        agentPanel.root.getByRole('button', { name: 'Stop' })
+        agentPanel.root.getByRole('button', { name: enMessages.agent.stop })
       ).toBeVisible()
       pushEvent(
         ws,
@@ -303,7 +304,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await test.step('remove the standing paywall after the final funded refresh', async () => {
       agentBilling.setAgentFunds(true)
-      await paywall.getByRole('button', { name: 'Add Credits' }).click()
+      await paywall
+        .getByRole('button', { name: enMessages.agent.paywall.addCredits })
+        .click()
       await expect(paywall).toHaveCount(0)
     })
   })
@@ -338,6 +341,39 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     ).toBeVisible()
     await expect(agentPanel.composer).toHaveText(prompt)
     await expect(agentPanel.sendButton).toBeEnabled()
+  })
+
+  test('shows a privacy-safe failure without retrying an unreadable accepted response', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19740
+    let postCount = 0
+    await comfyPage.page.route(
+      '**/api/agent/threads/*/messages',
+      async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        postCount += 1
+        await route.fulfill({
+          status: 202,
+          contentType: 'application/json',
+          body: 'not-json'
+        })
+      }
+    )
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+
+    await agentPanel.sendMessage('Build a product photo workflow')
+
+    await expect(
+      agentPanel.root.getByText(
+        `${enMessages.agent.sendFailed}: Unreadable agent response body`,
+        { exact: true }
+      )
+    ).toBeVisible()
+    await expect(agentPanel.sendButton).toBeEnabled()
+    expect(postCount).toBe(1)
   })
 
   test.describe('diagnostic report', () => {
@@ -466,6 +502,19 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await expect(
         panel.getByText('What do you want to make?')
       ).toBeInViewport()
+    })
+
+    test('starts typing from a click below the first prompt line', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      await agentPanel.open()
+
+      await agentPanel.clickBelowFirstPromptLine()
+
+      await expect(agentPanel.composer).toBeFocused()
+      await comfyPage.page.keyboard.type('hello')
+      await expect(agentPanel.composer).toHaveText('hello')
     })
   })
 

@@ -1,11 +1,11 @@
 import { z } from 'astro/zod'
 
-import rawModels from '../src/data/workshop-creator-models.json'
-import type { WorkshopCreatorForm } from '../src/config/workshop-creator-form'
+import rawModels from '@/data/workshop-creator-models.json'
+import type { WorkshopCreatorForm } from '@/config/workshop-creator-form'
 import type { curateWorkshopInputs } from './workshop-input-presentation'
 import { createCreatorFields, schemaAt } from './workshop-creator-fields'
 import { wanCreatorRequest } from './workshop-creator-wan'
-import { workshopContentInputs } from '../src/config/workshop-content-inputs'
+import { workshopContentInputs } from '@/config/workshop-content-inputs'
 import { workshopCreatorDefinitionSchema } from './workshop-creator-definition'
 
 const object = z.record(z.string(), z.json())
@@ -187,6 +187,10 @@ export function creatorFormFor(
             imageAspectRatio: { minimum: 0.39, maximum: 2.5 },
             help: 'Use an image with an aspect ratio between 0.39 and 2.50.'
           }
+        // BytePlus rejects any other ratio once a first frame is given; the
+        // clip keeps that frame's own shape.
+        if (model.options.mode === 'first-last')
+          rules.ratio = { ...rules.ratio, fixed: 'adaptive' }
       }
       request = {
         kind: 'callback',

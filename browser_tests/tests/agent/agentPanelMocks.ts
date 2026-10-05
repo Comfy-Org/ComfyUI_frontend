@@ -1,5 +1,5 @@
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
-import type { Page, Route } from '@playwright/test'
+import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentThreadListResponse,
@@ -38,6 +38,10 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
 
+export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
+  ws.send(JSON.stringify(event))
+}
+
 const FUNDED_BILLING_STATUS = {
   billing_rail: 'stripe',
   billing_status: 'paid',
@@ -59,13 +63,30 @@ type HeldBillingRefresh = {
   release: () => void
 }
 
+type DeferredGate = {
+  promise: Promise<void>
+  release: () => void
+}
+
+function createDeferredGate(): DeferredGate {
+  let release: (value?: void | PromiseLike<void>) => void = () => {
+    throw new Error('Deferred gate was released before initialization')
+  }
+  const promise = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  return { promise, release: () => release() }
+}
+
 class AgentBillingFixture {
   private status: BillingStatusResponse = FUNDED_BILLING_STATUS
+  private available = true
   private heldRefresh:
     | {
-        resolveEntered: () => void
-        resolveCompleted: () => void
-        releaseRequest?: () => void
+        entered: DeferredGate
+        completed: DeferredGate
+        request: DeferredGate
+        requestEntered: boolean
       }
     | undefined
 
@@ -77,47 +98,52 @@ class AgentBillingFixture {
     }
   }
 
+  failSubsequentRefreshes(): void {
+    this.available = false
+  }
+
+  resumeRefreshes(): void {
+    this.available = true
+  }
+
   holdNextFundedRefresh(): HeldBillingRefresh {
-    let resolveEntered!: () => void
-    let resolveCompleted!: () => void
-    const entered = new Promise<void>((resolve) => {
-      resolveEntered = resolve
-    })
-    const completed = new Promise<void>((resolve) => {
-      resolveCompleted = resolve
-    })
     const heldRefresh: NonNullable<AgentBillingFixture['heldRefresh']> = {
-      resolveEntered,
-      resolveCompleted
+      entered: createDeferredGate(),
+      completed: createDeferredGate(),
+      request: createDeferredGate(),
+      requestEntered: false
     }
     this.heldRefresh = heldRefresh
 
     return {
-      entered,
-      completed,
+      entered: heldRefresh.entered.promise,
+      completed: heldRefresh.completed.promise,
       release: () => {
-        if (heldRefresh.releaseRequest === undefined) {
+        if (!heldRefresh.requestEntered) {
           throw new Error('Funded billing refresh has not entered the fixture')
         }
-        heldRefresh.releaseRequest()
+        heldRefresh.request.release()
       }
     }
   }
 
   async fulfillStatus(route: Route): Promise<void> {
+    if (!this.available) {
+      await route.fulfill({ status: 503 })
+      return
+    }
     const response = this.status
     const heldRefresh = this.heldRefresh
     let completedHeldRefresh: typeof heldRefresh
     if (heldRefresh && response.scoped_effective_has_funds?.agent) {
       this.heldRefresh = undefined
       completedHeldRefresh = heldRefresh
-      heldRefresh.resolveEntered()
-      await new Promise<void>((resolve) => {
-        heldRefresh.releaseRequest = resolve
-      })
+      heldRefresh.requestEntered = true
+      heldRefresh.entered.release()
+      await heldRefresh.request.promise
     }
     await route.fulfill(jsonRoute(response))
-    completedHeldRefresh?.resolveCompleted()
+    completedHeldRefresh?.completed.release()
   }
 }
 
@@ -238,6 +264,7 @@ async function mockAgentBoot(
     agentConsentAccepted,
     agentConsentReads,
     agentConsentSave,
+    agentConsentWebSession,
     agentConsentWrites,
     agentAutoShownReadProbe,
     agentFlagEnabled,
@@ -259,6 +286,7 @@ async function mockAgentBoot(
   }
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
+  const csrfToken = 'csrf-e2e'
 
   await page.addInitScript(
     ({
@@ -324,7 +352,11 @@ async function mockAgentBoot(
   )
 
   await mockCloudBootRoutes(page, {
-    features: { ...agentFeatures(agentFlagEnabled), ...initialFeatureFlags },
+    features: {
+      ...agentFeatures(agentFlagEnabled),
+      ...(agentConsentWebSession && { unified_web_session: true }),
+      ...initialFeatureFlags
+    },
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
@@ -403,9 +435,43 @@ async function mockAgentBoot(
     value: true,
     updated_at: '2026-09-09T00:00:00Z'
   }
+  if (agentConsentWebSession) {
+    await page.route('**/api/auth/session', (route) =>
+      route.fulfill(
+        jsonRoute({
+          user: {
+            id: 'test-user-e2e',
+            email: 'e2e@test.comfy.org',
+            email_verified: true
+          },
+          csrf_token: csrfToken,
+          expires_at: '2100-01-01T00:00:00.000Z',
+          absolute_expires_at: '2100-01-08T00:00:00.000Z'
+        })
+      )
+    )
+    await page.route('**/api/workspaces/current', (route) =>
+      route.fulfill(
+        jsonRoute({
+          id: 'ws-personal',
+          name: 'Personal',
+          type: 'personal',
+          role: 'owner',
+          auth_method: 'web_session',
+          permissions: ['owner:*']
+        })
+      )
+    )
+  }
   await page.route(
     `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
     (route) => {
+      if (
+        agentConsentWebSession &&
+        'authorization' in route.request().headers()
+      ) {
+        return route.fulfill({ status: 401 })
+      }
       agentConsentReads.push(consentAccepted)
       return route.fulfill(
         consentAccepted
@@ -423,6 +489,12 @@ async function mockAgentBoot(
   await page.route('**/api/global-settings', async (route) => {
     const request = route.request()
     if (request.method() !== 'POST') return route.fulfill({ status: 405 })
+    if (
+      agentConsentWebSession &&
+      request.headers()['x-csrf-token'] !== csrfToken
+    ) {
+      return route.fulfill({ status: 401 })
+    }
     const setting = zGlobalSettingValue.parse(request.postDataJSON())
     const { status, pending } = agentConsentSave
     agentConsentWrites.push(setting.value)
@@ -502,6 +574,7 @@ type AgentFixtures = {
   agentConsentAccepted: boolean
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
+  agentConsentWebSession: boolean
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
   agentPanel: AgentPanel
@@ -529,6 +602,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use({ status: 200 })
   },
+  agentConsentWebSession: [false, { option: true }],
   agentConsentWrites: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
@@ -547,6 +621,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentAccepted,
       agentConsentReads,
       agentConsentSave,
+      agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
@@ -569,6 +644,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentAccepted,
       agentConsentReads,
       agentConsentSave,
+      agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,

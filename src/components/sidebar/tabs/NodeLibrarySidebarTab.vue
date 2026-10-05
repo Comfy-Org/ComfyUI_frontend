@@ -135,7 +135,8 @@
           />
           <div
             v-show="nodeBookmarkStore.bookmarks.length > 0"
-            class="m-2 border-t border-dashed border-interface-stroke"
+            role="separator"
+            class="m-2 border-0 border-t border-dashed border-interface-stroke"
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
@@ -170,6 +171,7 @@ import {
   h,
   nextTick,
   onMounted,
+  onUnmounted,
   ref,
   render
 } from 'vue'
@@ -243,6 +245,8 @@ const searchQuery = ref<string>('')
 
 const { currentHelpNode, isHelpOpen } = storeToRefs(nodeHelpStore)
 const { openHelp, closeHelp } = nodeHelpStore
+
+onUnmounted(closeHelp)
 
 const groupingOptions = computed(() =>
   nodeOrganizationService.getGroupingStrategies().map((strategy) => ({

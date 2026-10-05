@@ -79,7 +79,7 @@ export type OnboardingSurvey = {
  * Remote configuration type
  * Configuration fetched from the server at runtime
  */
-export type RemoteConfig = GetFeaturesResponses[200] & {
+export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string
@@ -102,7 +102,6 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   telemetry_disabled_events?: TelemetryEventName[]
   enable_telemetry?: boolean
   model_upload_button_enabled?: boolean
-  asset_rename_enabled?: boolean
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
@@ -111,6 +110,7 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
+  'agent-free-use-message-placement'?: string
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
@@ -133,6 +133,7 @@ export type RemoteConfig = GetFeaturesResponses[200] & {
   billing_sdk_topup_enabled?: boolean
   billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
+  member_credit_limits_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
   churnkey_app_id?: string

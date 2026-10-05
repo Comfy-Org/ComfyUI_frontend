@@ -17,6 +17,9 @@ import {
   vi
 } from 'vitest'
 import { ref } from 'vue'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
@@ -46,6 +49,11 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createTestCanvasElement,
+  createTestDragAndScale,
+  setCanvasVisible
+} from '@/utils/__tests__/canvasTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
@@ -99,6 +107,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
 
@@ -677,6 +686,105 @@ describe('ComfyApp', () => {
         'afterConfigureGraph',
         'afterLoadGraph'
       ])
+    })
+
+    it('closes every beforeLoadGraph when a newer load overtakes an older one', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseFirstLoad!: () => void
+      const firstLoadBlocked = new Promise<void>((resolve) => {
+        releaseFirstLoad = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(firstLoadBlocked)
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await app.loadGraphData(createWorkflowGraphData(), false)
+      releaseFirstLoad()
+      await expect(olderLoad).resolves.toBeUndefined()
+
+      const hooks = mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+        ([hook]) => hook
+      )
+      const opened = hooks.filter((hook) => hook === 'beforeLoadGraph')
+      const closed = hooks.filter(
+        (hook) => hook === 'afterConfigureGraph' || hook === 'onGraphLoadError'
+      )
+      expect(closed).toHaveLength(opened.length)
+    })
+
+    it('lets an older valid load commit when its newer replacement fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(olderLoadBlocked)
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenRejectOnce(new Error('newer load failed'))
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false)
+      ).resolves.toBe(false)
+      releaseOlderLoad()
+
+      await expect(olderLoad).resolves.toBe(true)
+    })
+
+    describe('pending camera restore while the canvas is hidden', () => {
+      let canvasElement: HTMLCanvasElement
+
+      beforeEach(() => {
+        canvasElement = createTestCanvasElement({ visible: false })
+        document.body.append(canvasElement)
+        app.canvasElRef.value = canvasElement
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+        Reflect.set(mockCanvas, 'bgcanvas', createTestCanvasElement())
+        useCanvasScheduler().cancel('graph-load-camera')
+      })
+
+      function revealCanvas() {
+        setCanvasVisible(canvasElement, true)
+        useCanvasScheduler().flush()
+      }
+
+      it('survives a same-workflow undo', async () => {
+        const workflow = new ComfyWorkflow({
+          path: 'workflows/camera.json',
+          modified: 0,
+          size: 0
+        })
+
+        await app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+        await app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          false,
+          workflow
+        )
+        revealCanvas()
+
+        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+      })
+
+      it('is dropped when a different anonymous graph loads', async () => {
+        await app.loadGraphData(createWorkflowGraphData(), true, true)
+        await app.loadGraphData(createWorkflowGraphData(), true, false)
+        revealCanvas()
+
+        expect(mockCanvas.draw).not.toHaveBeenCalled()
+      })
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {
@@ -1701,6 +1809,151 @@ describe('ComfyApp', () => {
   })
 
   describe('workflow lifecycle', () => {
+    it.for([
+      { indices: ['1', '3'], nested: false },
+      { indices: ['99', '1', '3', '5', '7', '9'], nested: false },
+      { indices: ['1', '3'], nested: true }
+    ])(
+      'restores submitted DynamicGroup rows in encounter order: %j',
+      async ({ indices, nested }) => {
+        const graph = new LGraph()
+        const previousSingletonGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        })
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const nodeType = 'test/ApiDynamicGroup'
+        const group = {
+          min: 0,
+          max: 5,
+          template: {
+            required: {
+              strength: ['FLOAT', { default: 1 }],
+              '10': ['STRING', { default: '' }]
+            }
+          }
+        } as const
+        const input: NonNullable<ComfyNodeDef['input']> = {
+          required: { loras: ['COMFY_DYNAMICGROUP_V3', group] }
+        }
+        const definitionInput: NonNullable<ComfyNodeDef['input']> = nested
+          ? {
+              required: {
+                mode: [
+                  'COMFY_DYNAMICCOMBO_V3',
+                  {
+                    options: [
+                      { key: 'off', inputs: {} },
+                      { key: 'on', inputs: input }
+                    ]
+                  }
+                ]
+              }
+            }
+          : input
+        const prefix = nested ? 'mode.loras' : 'loras'
+        class ApiDynamicGroup extends LGraphNode {
+          constructor() {
+            super('API DynamicGroup')
+            this.comfyClass = nodeType
+            this.serialize_widgets = true
+            for (const [name, spec] of Object.entries(
+              definitionInput.required ?? {}
+            )) {
+              useLitegraphService().addNodeInput(
+                this,
+                transformInputSpecV1ToV2(spec, { name, isOptional: false })
+              )
+            }
+          }
+        }
+        LiteGraph.registerNodeType(nodeType, ApiDynamicGroup)
+        const sourceType = 'test/ApiDynamicGroupSource'
+        class ApiDynamicGroupSource extends LGraphNode {
+          constructor() {
+            super('Source')
+            this.addOutput('strength', 'FLOAT')
+          }
+        }
+        LiteGraph.registerNodeType(sourceType, ApiDynamicGroupSource)
+        useNodeDefStore().updateNodeDefs([
+          {
+            name: nodeType,
+            display_name: nodeType,
+            category: 'test',
+            python_module: 'test',
+            description: '',
+            output: [],
+            output_node: false,
+            deprecated: false,
+            experimental: false,
+            input: definitionInput
+          }
+        ])
+        const inputs = Object.fromEntries(
+          indices.map((index, position) => [
+            `${prefix}.${index}.strength`,
+            position + 0.5
+          ])
+        )
+        try {
+          await app.loadApiJson(
+            {
+              '1': {
+                class_type: nodeType,
+                inputs: {
+                  ...inputs,
+                  [`${prefix}.${indices.at(-1)}.strength`]: ['2', 0],
+                  [`${prefix}.10`]: 'malformed',
+                  [prefix]: 0,
+                  [`${prefix}.$add`]: 0,
+                  [`${prefix}.$notice`]: 'not an input',
+                  [`${prefix}.0`]: 0,
+                  ...(nested ? { mode: 'on' } : {})
+                },
+                _meta: { title: nodeType }
+              },
+              '2': {
+                class_type: sourceType,
+                inputs: {},
+                _meta: { title: sourceType }
+              }
+            },
+            ''
+          )
+          const node = graph.getNodeById(toNodeId(1))
+          expect(
+            node?.widgets?.filter((w) => w.type === 'dynamic_group_row')
+          ).toHaveLength(indices.length)
+          expect(
+            node?.widgets
+              ?.filter((w) => w.name.endsWith('.strength'))
+              .map((w) => [w.name, w.value])
+          ).toEqual(
+            indices.map((_, position) => [
+              `${prefix}.${position}.strength`,
+              position === indices.length - 1 ? 1 : position + 0.5
+            ])
+          )
+          expect(
+            node?.widgets
+              ?.filter((w) => w.name.endsWith('.10'))
+              .map((w) => w.value)
+          ).toEqual(indices.map(() => ''))
+          const slot = node?.findInputSlot(
+            `${prefix}.${indices.length - 1}.strength`
+          )
+          const link = slot === undefined ? undefined : node?.getInputLink(slot)
+          expect(link?.origin_id).toBe(toNodeId(2))
+          expect(link?.origin_slot).toBe(0)
+        } finally {
+          LiteGraph.unregisterNodeType(nodeType)
+          LiteGraph.unregisterNodeType(sourceType)
+        }
+      }
+    )
+
     it('clears missing node packs before loading API JSON without missing nodes', async () => {
       const graph = new LGraph()
       const activeSubgraph = createTestSubgraph({ rootGraph: graph })
@@ -2297,6 +2550,64 @@ describe('ComfyApp', () => {
         expect(passthroughNode?.widgets?.[1].value).toEqual(passthrough)
       } finally {
         missingNodesStore.setMissingNodeTypes(previousMissingNodeTypes)
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+      }
+    })
+
+    it('keeps importing when a widget callback rejects an API value', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = app.rootGraph
+      const previousSingletonGraph = singletonApp.rootGraph
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const videoCallback = (value: string) => value.lastIndexOf('.')
+      class VhsLoadVideoNode extends LGraphNode {
+        constructor() {
+          super('Load Video')
+          this.addWidget('text', 'video', 'default.mp4', videoCallback)
+        }
+      }
+      LiteGraph.registerNodeType('VHS_LoadVideo', VhsLoadVideoNode)
+
+      try {
+        await expect(
+          app.loadApiJson(
+            {
+              '1': {
+                class_type: 'VHS_LoadVideo',
+                inputs: { video: 1 },
+                _meta: { title: 'Load Video' }
+              },
+              '2': {
+                class_type: 'VHS_LoadVideo',
+                inputs: { video: 'input/later.mp4' },
+                _meta: { title: 'Later Video' }
+              }
+            },
+            'invalid-vhs-api-prompt.json'
+          )
+        ).resolves.toBeUndefined()
+
+        const videoWidget = graph.nodes[0]?.widgets?.find(
+          ({ name }) => name === 'video'
+        )
+        expect(videoWidget?.value).toBe(1)
+        expect(
+          graph.nodes[1]?.widgets?.find(({ name }) => name === 'video')?.value
+        ).toBe('input/later.mp4')
+        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalled()
+        expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+          surface: 'graph',
+          errorType: 'failure_invoking_api_workflow_widget_callback',
+          tags: {
+            node_type: 'VHS_LoadVideo',
+            widget_name: 'video'
+          },
+          context: { fileName: 'invalid-vhs-api-prompt.json' }
+        })
+      } finally {
+        LiteGraph.unregisterNodeType('VHS_LoadVideo')
         Reflect.set(app, 'rootGraphInternal', previousAppGraph)
         Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
       }

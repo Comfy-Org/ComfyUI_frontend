@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 
 const models: WorkshopModel[] = [
@@ -49,7 +49,7 @@ describe('WorkshopSearchPanel', () => {
       appId: 'reshoot',
       slug: 'apps/reshoot',
       name: 'Re-shoot a video',
-      href: '/models/apps/reshoot/',
+      href: '/hub/apps/reshoot/',
       workflowCount: 0,
       capabilities: []
     }

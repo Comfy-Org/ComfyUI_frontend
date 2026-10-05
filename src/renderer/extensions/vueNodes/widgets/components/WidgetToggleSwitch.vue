@@ -13,10 +13,10 @@
       "
       @update:model-value="(v) => handleOptionChange(v as string)"
     >
-      <ToggleGroupItem value="off" size="sm">
+      <ToggleGroupItem value="off" size="sm" class="flex-1 truncate">
         {{ widget.options?.off ?? t('widgets.boolean.false') }}
       </ToggleGroupItem>
-      <ToggleGroupItem value="on" size="sm">
+      <ToggleGroupItem value="on" size="sm" class="flex-1 truncate">
         {{ widget.options?.on ?? t('widgets.boolean.true') }}
       </ToggleGroupItem>
     </ToggleGroup>
@@ -35,7 +35,7 @@
         v-model="modelValue"
         :disabled="Boolean(widget.options?.disabled)"
         :readonly="Boolean(widget.options?.read_only)"
-        :aria-label="widget.name"
+        :aria-label="widget.label || widget.name"
       />
     </div>
   </WidgetLayoutField>

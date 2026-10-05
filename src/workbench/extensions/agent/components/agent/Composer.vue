@@ -342,6 +342,7 @@ defineExpose({
   <div
     id="agent-composer"
     ref="composerContainerRef"
+    data-testid="agent-composer"
     class="relative flex flex-col rounded-lg border border-border-subtle bg-base-background"
   >
     <div
@@ -442,10 +443,13 @@ defineExpose({
       <slot name="header" />
     </div>
 
+    <slot name="aboveInput" />
+
     <div
+      data-testid="composer-input-box"
       :class="
         cn(
-          'relative -m-px flex flex-col border transition-colors',
+          'relative -m-px flex max-h-[50dvh] flex-col border transition-colors',
           assetDragActive
             ? 'h-28 rounded-lg border-dashed border-component-node-border bg-secondary-background'
             : 'min-h-28 rounded-lg border-border-subtle bg-secondary-background focus-within:border-muted-foreground'
@@ -463,10 +467,11 @@ defineExpose({
         />
         <span>{{ t('agent.dragAndDropAssets') }}</span>
       </div>
+      <slot name="insideInput" />
       <div
         v-if="selectionTags.length"
         data-testid="composer-node-section"
-        class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
+        class="flex min-h-0 flex-wrap items-center gap-2 overflow-y-auto border-b border-border-default p-3"
       >
         <Tag
           v-for="tag in selectionTags"
@@ -495,7 +500,7 @@ defineExpose({
       <div
         v-if="composer.attachments.value.length"
         data-testid="composer-asset-section"
-        class="flex flex-wrap gap-2 p-3"
+        class="flex max-h-32 flex-wrap gap-2 overflow-y-auto p-3"
       >
         <AttachmentChip
           v-for="item in composer.attachments.value"
@@ -509,49 +514,53 @@ defineExpose({
 
       <div
         data-testid="composer-inline-input"
-        class="max-h-100 min-h-16 overflow-x-hidden overflow-y-auto p-3"
+        class="flex max-h-100 min-h-16 flex-col overflow-x-hidden overflow-y-auto"
       >
         <div
           v-if="workflowSelecting"
           role="status"
-          class="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
+          class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
         >
           <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
           {{ t('agent.savingWorkflow') }}
         </div>
-        <div class="relative min-h-7">
-          <InlinePromptEditor
-            ref="editorRef"
-            :model-value="composer.prompt.value"
-            :label="t('agent.placeholder')"
-            :expanded="mentionVisible"
-            :active-descendant="
-              mentionVisible
-                ? `agent-reference-item-${mentionActive}`
-                : undefined
-            "
-            :history-epoch="composer.promptEpoch.value"
-            :editable-workflow-id
-            @keydown="onComposerKeydown"
-            @update:model-value="composer.applyEditorPrompt"
-            @keyup="onComposerKeyup"
-            @input="syncMention"
-            @selection-change="onEditorSelectionChange"
-            @click="syncMention"
-            @blur="closeMention()"
-            @attach-files="emit('attachFiles', $event)"
-            @open-reference-workflow="
-              (id, name) => emit('openReferenceWorkflow', id, name)
-            "
-            @remove-node-reference="emit('removeTag', $event)"
-            @remove-workflow-reference="emit('removeWorkflowReference', $event)"
-          />
+        <div class="grid flex-1">
+          <div class="col-start-1 row-start-1 flex flex-col">
+            <InlinePromptEditor
+              ref="editorRef"
+              :model-value="composer.prompt.value"
+              :label="t('agent.placeholder')"
+              :expanded="mentionVisible"
+              :active-descendant="
+                mentionVisible
+                  ? `agent-reference-item-${mentionActive}`
+                  : undefined
+              "
+              :history-epoch="composer.promptEpoch.value"
+              :editable-workflow-id
+              @keydown="onComposerKeydown"
+              @update:model-value="composer.applyEditorPrompt"
+              @keyup="onComposerKeyup"
+              @input="syncMention"
+              @selection-change="onEditorSelectionChange"
+              @click="syncMention"
+              @blur="closeMention()"
+              @attach-files="emit('attachFiles', $event)"
+              @open-reference-workflow="
+                (id, name) => emit('openReferenceWorkflow', id, name)
+              "
+              @remove-node-reference="emit('removeTag', $event)"
+              @remove-workflow-reference="
+                emit('removeWorkflowReference', $event)
+              "
+            />
+          </div>
 
           <div
             v-if="
               !composer.draft.value && !composer.prompt.value.references.length
             "
-            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/5 font-normal text-muted-foreground"
+            class="pointer-events-none z-10 col-start-1 row-start-1 self-start p-3 font-inter text-[14px]/5 font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>
             <AccessibleTooltip
@@ -585,7 +594,7 @@ defineExpose({
         </div>
       </div>
 
-      <div class="flex items-center justify-between px-3 py-2">
+      <div class="flex shrink-0 items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
           <DropdownMenuTrigger as-child>
             <Button

@@ -53,20 +53,12 @@ function createInvite(
 }
 
 describe('sortMembers', () => {
-  it('places owners before members when sorting descending', () => {
+  it('places owners before members', () => {
     const owner = createMember({ id: 'o', role: 'owner', name: 'Owner' })
     const member = createMember({ id: 'm', role: 'member', name: 'Member' })
-    const result = sortMembers([member, owner], null, 'desc')
+    const result = sortMembers([member, owner], null)
     expect(result[0].id).toBe('o')
     expect(result[1].id).toBe('m')
-  })
-
-  it('places members before owners when sorting ascending', () => {
-    const owner = createMember({ id: 'o', role: 'owner', name: 'Owner' })
-    const member = createMember({ id: 'm', role: 'member', name: 'Member' })
-    const result = sortMembers([member, owner], null, 'asc')
-    expect(result[0].id).toBe('m')
-    expect(result[1].id).toBe('o')
   })
 
   it('places current user after owners but before others', () => {
@@ -89,11 +81,11 @@ describe('sortMembers', () => {
       joinDate: new Date('2025-01-01')
     })
 
-    const result = sortMembers([other, current, owner], 'me@test.com', 'desc')
+    const result = sortMembers([other, current, owner], 'me@test.com')
     expect(result.map((m) => m.id)).toEqual(['o', 'me', 'other'])
   })
 
-  it('sorts remaining members by joinDate descending', () => {
+  it('sorts remaining members newest first', () => {
     const early = createMember({
       id: 'early',
       joinDate: new Date('2025-01-01')
@@ -102,23 +94,9 @@ describe('sortMembers', () => {
       id: 'late',
       joinDate: new Date('2025-06-01')
     })
-    const result = sortMembers([early, late], null, 'desc')
+    const result = sortMembers([early, late], null)
     expect(result[0].id).toBe('late')
     expect(result[1].id).toBe('early')
-  })
-
-  it('sorts remaining members by joinDate ascending', () => {
-    const early = createMember({
-      id: 'early',
-      joinDate: new Date('2025-01-01')
-    })
-    const late = createMember({
-      id: 'late',
-      joinDate: new Date('2025-06-01')
-    })
-    const result = sortMembers([early, late], null, 'asc')
-    expect(result[0].id).toBe('early')
-    expect(result[1].id).toBe('late')
   })
 
   it('does not mutate the input array', () => {
@@ -127,11 +105,11 @@ describe('sortMembers', () => {
       createMember({ id: 'a', joinDate: new Date('2025-01-01') })
     ]
     const original = [...members]
-    sortMembers(members, null, 'desc')
+    sortMembers(members, null)
     expect(members).toEqual(original)
   })
 
-  it('pins the original owner first regardless of sort direction', () => {
+  it('pins the original owner before other owners', () => {
     const creator = createMember({
       id: 'creator',
       role: 'owner',
@@ -151,21 +129,12 @@ describe('sortMembers', () => {
       joinDate: new Date('2025-03-01')
     })
 
-    const desc = sortMembers(
+    const result = sortMembers(
       [member, promoted, creator],
       'me@test.com',
-      'desc',
       'creator'
     )
-    expect(desc.map((m) => m.id)).toEqual(['creator', 'promoted', 'm'])
-
-    const asc = sortMembers(
-      [member, promoted, creator],
-      'me@test.com',
-      'asc',
-      'creator'
-    )
-    expect(asc[0].id).toBe('creator')
+    expect(result.map((m) => m.id)).toEqual(['creator', 'promoted', 'm'])
   })
 })
 
@@ -230,19 +199,6 @@ describe('sortPendingInvites', () => {
     const result = sortPendingInvites([early, late], 'expiryDate', 'asc')
     expect(result[0].id).toBe('e')
     expect(result[1].id).toBe('l')
-  })
-
-  it('falls back to inviteDate when sortField is role', () => {
-    const early = createInvite({
-      id: 'e',
-      inviteDate: new Date('2025-01-01')
-    })
-    const late = createInvite({
-      id: 'l',
-      inviteDate: new Date('2025-06-01')
-    })
-    const result = sortPendingInvites([early, late], 'role', 'desc')
-    expect(result[0].id).toBe('l')
   })
 
   it('does not mutate the input array', () => {
@@ -338,7 +294,9 @@ function updateWorkspaceStore() {
       subscriptionPlan: null,
       subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
       members: workspaceMembers,
-      pendingInvites: workspacePendingInvites
+      pendingInvites: workspacePendingInvites,
+      membersLoaded: true,
+      pendingInvitesLoaded: true
     }
   ]
   workspaceStore.activeWorkspaceId = 'workspace-one'
@@ -465,7 +423,7 @@ describe('useMembersPanel', () => {
     workspaceMembers = []
     workspacePendingInvites = []
     updateWorkspaceStore()
-    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = true
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -655,6 +613,34 @@ describe('useMembersPanel', () => {
       panel.searchQuery.value = 'alice'
       expect(panel.filteredMembers.value).toHaveLength(1)
       expect(panel.filteredMembers.value[0].name).toBe('Alice')
+    })
+
+    it('keeps the members order when the Pending sort changes', async () => {
+      const founder = createMember({
+        id: 'founder',
+        email: 'founder@example.com',
+        role: 'owner',
+        isOriginalOwner: true
+      })
+      const coOwner = createMember({
+        id: 'co-owner',
+        email: 'co@example.com',
+        role: 'owner'
+      })
+      const member = createMember({
+        id: 'member',
+        email: 'member@example.com',
+        role: 'member'
+      })
+      mockMembers.value = [member, coOwner, founder]
+      const panel = await setup()
+      const before = panel.filteredMembers.value.map((m) => m.id)
+
+      panel.toggleSort('inviteDate')
+      expect(panel.sortDirection.value).toBe('asc')
+
+      expect(panel.filteredMembers.value.map((m) => m.id)).toEqual(before)
+      expect(before).toEqual(['founder', 'co-owner', 'member'])
     })
   })
 
@@ -893,7 +879,20 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
+      const panel = await setup()
+
+      expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
+        [
+          'workspacePanel.members.actions.changeRole',
+          'workspacePanel.members.actions.removeMember'
+        ]
+      )
+    })
+
+    it('omits the credit-limit action under billing controls alone', async () => {
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -905,7 +904,7 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
-      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
       setOriginalOwner()
       const panel = await setup()
 
@@ -1178,22 +1177,49 @@ describe('useMembersPanel', () => {
       expect(panel.isPlanEnded.value).toBe(true)
     })
 
-    it('keeps a missing-tier seatless plan out of the ended treatment', async () => {
+    // Without a team signal or a real tier there is nothing to hang the
+    // ended-team treatment on — a terminal tierless payload off the team
+    // plan is most plausibly lapsed personal, which the upgrade banner owns.
+    it('keeps a tierless terminal plan off the team plan out of the treatment', async () => {
       mockIsTeamPlan.value = false
-      mockMaxSeats.value = 1
       mockSubscriptionStatus.value = 'ended'
       mockSubscription.value = null
       const panel = await setup()
       expect(panel.isPlanEnded.value).toBe(false)
     })
 
-    // A seatless workspace has no member table; an Invite button that can
-    // never enable must not appear there.
-    it('hides the invite button for a seatless ended workspace', async () => {
+    // The real ended payload collapses max_seats to the no-plan default of 1
+    // and fails the self-serve Team classifier (enterprise_* slug, no team
+    // credit stop) — the treatment must survive both, or production hides
+    // the banner on exactly the workspace it was designed for. Pins the
+    // observed test-env payload: ended + ENTERPRISE + max_seats 1.
+    it('keeps the ended treatment when the backend collapses the seat limit', async () => {
+      mockIsTeamPlan.value = false
+      mockMaxSeats.value = 1
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      // can_invite_members stays TRUE on the real ended payload —
+      // ResolveBillingWritePermissions grants it from the owner role alone.
+      // The disabled state, not the capability, carries the denial.
+      useBillingCapabilities().canInviteMembers = computed(() => true)
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+      // The visible-disabled Invite and the members table stay, banner intact.
+      expect(panel.showInviteButton.value).toBe(true)
+      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.uiConfig.value.showMembersList).toBe(true)
+    })
+
+    // A lapsed personal workspace is seatless and outside the ended
+    // treatment; an Invite button that can never enable must not appear.
+    it('hides the invite button for a lapsed personal workspace', async () => {
+      mockIsTeamPlan.value = false
       mockSubscriptionStatus.value = 'ended'
       mockMaxSeats.value = 1
       useBillingCapabilities().canInviteMembers = computed(() => false)
       const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
       expect(panel.showInviteButton.value).toBe(false)
     })
 
