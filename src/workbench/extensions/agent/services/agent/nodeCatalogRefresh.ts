@@ -35,20 +35,32 @@ export function refreshNodeCatalogOnRestart(
   deps: NodeCatalogRefreshDeps
 ): () => void {
   // A reconnect can deliver the same call again; one restart, one refresh.
-  const handled = new Set<string>()
+  // Only a refresh that succeeded is final: a failed one forgets its call, so
+  // a redelivery of that same call gets another attempt.
+  const refreshed = new Set<string>()
+  const inFlight = new Set<string>()
   // Two restarts in quick succession refresh in order, never interleaved.
   let queue = Promise.resolve()
+
+  async function refreshFor(callId: string): Promise<void> {
+    try {
+      await deps.refreshNodeDefinitions()
+      await deps.reloadCurrentWorkflow()
+    } catch (error) {
+      inFlight.delete(callId)
+      deps.onFailure(error)
+      return
+    }
+    inFlight.delete(callId)
+    refreshed.add(callId)
+  }
+
   return events.subscribe((raw) => {
     const parsed = zRestartSucceeded.safeParse(raw)
     if (!parsed.success) return
     const callId = parsed.data.data.tool_call_id
-    if (handled.has(callId)) return
-    handled.add(callId)
-    queue = queue
-      .then(async () => {
-        await deps.refreshNodeDefinitions()
-        await deps.reloadCurrentWorkflow()
-      })
-      .catch(deps.onFailure)
+    if (refreshed.has(callId) || inFlight.has(callId)) return
+    inFlight.add(callId)
+    queue = queue.then(() => refreshFor(callId))
   })
 }

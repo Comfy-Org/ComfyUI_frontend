@@ -94,6 +94,22 @@ describe('refreshNodeCatalogOnRestart', () => {
     expect(deps.reloadCurrentWorkflow).toHaveBeenCalledTimes(1)
   })
 
+  // The new node types stay missing until the next restart or a page reload
+  // if a refresh that failed during backend recovery is never retried.
+  it('refreshes again when a restart whose refresh failed is delivered again', async () => {
+    const { events, deps } = setup()
+    deps.refreshNodeDefinitions.mockRejectedValueOnce(new Error('offline'))
+    events.emit(toolCall('restart_comfyui', 'success', 'a'))
+    await flush()
+    expect(deps.onFailure).toHaveBeenCalledWith(new Error('offline'))
+
+    events.emit(toolCall('restart_comfyui', 'success', 'a'))
+    await flush()
+
+    expect(deps.refreshNodeDefinitions).toHaveBeenCalledTimes(2)
+    expect(deps.reloadCurrentWorkflow).toHaveBeenCalledOnce()
+  })
+
   it('stops listening when unsubscribed', () => {
     const { events, stop } = setup()
     stop()
