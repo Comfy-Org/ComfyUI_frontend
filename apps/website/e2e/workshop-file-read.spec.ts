@@ -5,6 +5,7 @@ import { expect } from '@playwright/test'
 
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
+import { hubModelHref } from '../src/config/hub-models'
 
 const scenarios = [
   {
@@ -98,7 +99,7 @@ for (const { name, models, field, inputField, result } of scenarios) {
         .fill(modelsAccount.password)
       await page.getByRole('button', { name: 'Sign in', exact: true }).click()
       await expect(page).toHaveURL('/')
-      await page.goto(`/models/${enabledModel}/`)
+      await page.goto(hubModelHref(enabledModel))
       await expect(page.getByTestId('run-button')).toBeVisible()
       const source = page.getByTestId(`field-group-${field}`)
       for (const remove of await source

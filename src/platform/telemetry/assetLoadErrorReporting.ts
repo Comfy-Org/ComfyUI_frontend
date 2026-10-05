@@ -49,6 +49,7 @@ export function reportResourceLoadError(url: string, tagName: string): void {
   }
 
   reportError(new Error(`Resource load failed: ${url}`), {
+    surface: 'platform',
     errorType: 'resource_load_error',
     tags: { tag_name: tagName }
   })
@@ -68,6 +69,7 @@ export function reportPreloadError(error: Error): void {
   }
 
   reportError(error, {
+    surface: 'platform',
     errorType: 'vite_preload_error',
     tags: {
       file_type: info.fileType,

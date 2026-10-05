@@ -3,15 +3,18 @@
  * own Pay, a revisit after the money settled, a bank capture that is still
  * settling, a refusal, a stale plan link and a checkout that could not load.
  */
+import type { BillingOpChargeBreakdown } from '@comfyorg/ingest-types'
 import type { Locator, Page } from '@playwright/test'
 
 import type { MockCloud } from './fixtures/cloud'
+import { PORTAL_URL } from './fixtures/env'
 import {
   capabilitiesWith,
+  challengeRequiredOperation,
   pendingOperation,
   succeededOperation
 } from './fixtures/scenario'
-import { expectStraightToHost } from './fixtures/planless'
+import { expectStraightToPricingTable } from './fixtures/planless'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -64,6 +67,7 @@ test('a Pay that goes through names the plan and the workspace, and Close goes b
     page.getByText('Your plan for Personal has been successfully updated.')
   ).toBeVisible()
   await expect(page.getByTestId('checkout-ending-plan')).toContainText('Pro')
+  await expect(page.getByTestId('checkout-ending-paid-today')).toBeHidden()
   await expect(code(page)).toBeHidden()
   await expect(page.getByText('You can close this tab now.')).toBeVisible()
   await expect(page.getByText(/Closing in/)).toBeHidden()
@@ -76,24 +80,450 @@ test('a Pay that goes through names the plan and the workspace, and Close goes b
   expect(back.searchParams.get('billing_ref')).toBe('op_subscribe')
 })
 
-test('a revisit after the payment settled renders Already completed on every load, never a form', async ({
+/** What the real Cloud answers once this plan is active: no longer pending, and not for sale again. */
+function settleOnServer(cloud: MockCloud) {
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    plan_slug: 'pro_monthly',
+    subscription_tier: 'PRO'
+  }
+  cloud.scenario.preview = { ...cloud.scenario.preview, allowed: false }
+}
+
+test('a scheduled change ends on the plan that starts, its date, and the plan kept until then, not on an updated plan', async ({
   page,
   cloud,
   signIn
 }) => {
-  markPending(cloud, 'op_done')
-  cloud.scenario.operations.op_done = succeededOperation('op_done')
+  const preview = cloud.scenario.preview
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'duration_change',
+    is_immediate: false,
+    effective_at: '2026-11-04T00:00:00.000Z',
+    amount_due_cents: 0,
+    cost_today_cents: 0,
+    current_plan: {
+      ...preview.new_plan,
+      slug: 'pro_yearly',
+      duration: 'ANNUAL'
+    }
+  }
+  chargedWith(cloud, {
+    amount_charged_cents: 0,
+    currency: 'usd',
+    prorated: false,
+    reasons: []
+  })
   await signIn(CHECKOUT)
+  await page.getByRole('button', { name: 'Confirm change' }).click()
+
+  await expect(heading(page, 'Your plan change is scheduled')).toBeVisible()
+  await expect(
+    page.getByText(
+      "Your plan for Personal changes to Pro on November 4, 2026. You'll keep Pro Yearly until then."
+    )
+  ).toBeVisible()
+  await expect(page.getByText(/successfully updated/)).toBeHidden()
+  const card = page.getByTestId('checkout-ending-plan')
+  await expect(card.getByText('Pro', { exact: true })).toBeVisible()
+  await expect(card).toContainText('$50.00 USD / mo')
+  await expect(page.getByText(/credits added/)).toBeHidden()
+  await expect(page.getByTestId('checkout-ending-paid-today')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Close' })).toBeVisible()
+})
+
+test('a reload after its own Pay went through renders Already completed on every load, never a form', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(heading(page, "You're all set")).toBeVisible()
+  settleOnServer(cloud)
+
+  await page.reload()
 
   await expect(heading(page, 'Already completed')).toBeVisible()
-  await expect(code(page)).toHaveText('op_done')
+  await expect(code(page)).toHaveText('op_subscribe')
   await expect(page.getByTestId('checkout-ending-plan')).toBeHidden()
 
   await page.reload()
 
   await expect(heading(page, 'Already completed')).toBeVisible()
   await expect(payButton(page)).toBeHidden()
-  expect(subscribeRequests(cloud)).toHaveLength(0)
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+/** How the real preview route refuses a link: a 400 with its own code and sentence. */
+function refuseQuote(cloud: MockCloud, message: string) {
+  cloud.reply('POST', '/billing/preview-subscribe', () => ({
+    status: 400,
+    body: { code: 'TRANSITION_NOT_ALLOWED', message }
+  }))
+}
+
+test('E2: reopening the checkout link after its own Pay went through is Already completed, even when the quote refuses it with a 400', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(heading(page, "You're all set")).toBeVisible()
+  refuseQuote(cloud, 'the selected plan is already the current plan')
+
+  await page.goto(CHECKOUT)
+
+  await expect(heading(page, 'Already completed')).toBeVisible()
+  await expect(code(page)).toHaveText('op_subscribe')
+  await expect(heading(page, "Couldn't load your checkout")).toBeHidden()
+  await expect(payButton(page)).toBeHidden()
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test("a coded quote refusal on a link nothing here paid is Checkout not available in the server's words", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  refuseQuote(cloud, 'the selected plan is already the current plan')
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, 'Checkout not available')).toBeVisible()
+  await expect(
+    page.getByText('the selected plan is already the current plan')
+  ).toBeVisible()
+  await expect(code(page)).toHaveText('TRANSITION_NOT_ALLOWED')
+  await expect(page.getByRole('button', { name: 'Try again' })).toBeHidden()
+  await expect(contactSupport(page)).toBeVisible()
+})
+
+const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+
+test('77-4068: a Pay that goes through counts the credits the server says it added', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.operations.op_subscribe = {
+    ...succeededOperation('op_subscribe'),
+    amount_charged_cents: 5000,
+    credits_added: 10_000,
+    plan: RECEIPT_PLAN
+  }
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(page.getByTestId('checkout-ending-plan')).toContainText(
+    '10,000 credits added'
+  )
+})
+
+test('the summary counts the same credits the receipt reports after Pay', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const grant = { credits_today: 4200, credits_next_period: 4200 }
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    credits_today_cents: 1991,
+    credits_next_period_cents: 1991,
+    ...grant
+  }
+  cloud.scenario.operations.op_subscribe = {
+    ...succeededOperation('op_subscribe'),
+    amount_charged_cents: 5000,
+    credits_added: 4200,
+    plan: RECEIPT_PLAN
+  }
+  await signIn(CHECKOUT)
+
+  await expect(
+    page.getByRole('region', { name: 'Order summary' })
+  ).toContainText('4,200 credits per month')
+  await payButton(page).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(page.getByTestId('checkout-ending-plan')).toContainText(
+    '4,200 credits added'
+  )
+})
+
+const paidToday = (page: Page) => page.getByTestId('checkout-ending-paid-today')
+
+function chargedWith(cloud: MockCloud, breakdown: BillingOpChargeBreakdown) {
+  cloud.scenario.operations.op_subscribe = {
+    ...succeededOperation('op_subscribe'),
+    amount_charged_cents: breakdown.amount_charged_cents,
+    credits_added: 10_000,
+    plan: RECEIPT_PLAN,
+    charge_breakdown: breakdown
+  }
+}
+
+const LAUNCH_PROMO = {
+  kind: 'promo_code',
+  amount_cents: 1000,
+  discount: {
+    kind: 'promotion',
+    code: 'LAUNCH20',
+    name: 'Launch 20%',
+    duration: 'once',
+    term: 'first_month'
+  }
+} as const
+
+const LAUNCH_PROMO_ON_A_CHANGE = {
+  ...LAUNCH_PROMO,
+  discount: { ...LAUNCH_PROMO.discount, term: 'this_payment' }
+} as const
+
+test('758-15763: a Pay under a promo code keeps the plan rate on Success and lists the reasons the server reported, then what was paid today', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  chargedWith(cloud, {
+    amount_charged_cents: 3750,
+    currency: 'usd',
+    prorated: false,
+    reasons: [LAUNCH_PROMO, { kind: 'account_balance', amount_cents: 250 }]
+  })
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    amount_due_cents: 4000,
+    promotion_code: 'LAUNCH20',
+    discounts: [
+      {
+        kind: 'promotion',
+        code: 'LAUNCH20',
+        name: 'Launch 20%',
+        amount_off_cents: 1000,
+        duration: 'once',
+        term: 'first_month'
+      }
+    ]
+  }
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  const card = page.getByTestId('checkout-ending-plan')
+  await expect(card).toContainText('$50.00')
+  await expect(paidToday(page)).toHaveText(
+    /Launch 20%\s*−\$10\.00\s*First month\s*Account balance\s*−\$2\.50\s*Credit already on your account\s*Paid today\s*\$37\.50/
+  )
+})
+
+test('a one-time code on a monthly plan change reads This payment only on the summary and on Success', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  chargedWith(cloud, {
+    amount_charged_cents: 4000,
+    currency: 'usd',
+    prorated: false,
+    reasons: [LAUNCH_PROMO_ON_A_CHANGE]
+  })
+  const preview = cloud.scenario.preview
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'upgrade',
+    amount_due_cents: 4000,
+    promotion_code: 'LAUNCH20',
+    discounts: [
+      {
+        kind: 'promotion',
+        code: 'LAUNCH20',
+        name: 'Launch 20%',
+        amount_off_cents: 1000,
+        duration: 'once',
+        term: 'this_payment'
+      }
+    ],
+    current_plan: {
+      ...preview.new_plan,
+      slug: 'creator_monthly',
+      tier: 'CREATOR',
+      price_cents: 3500
+    }
+  }
+  await signIn(CHECKOUT)
+  await expect(page.getByText('This payment only')).toBeVisible()
+  await expect(page.getByText('First month')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Confirm upgrade' }).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(paidToday(page)).toHaveText(
+    /Launch 20%\s*−\$10\.00\s*This payment only\s*Paid today\s*\$40\.00/
+  )
+})
+
+test('765-15713: a prorated upgrade reads Paid today and why, without itemizing the proration', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  chargedWith(cloud, {
+    amount_charged_cents: 3250,
+    currency: 'usd',
+    prorated: true,
+    reasons: []
+  })
+  const preview = cloud.scenario.preview
+  cloud.scenario.preview = {
+    ...preview,
+    transition_type: 'upgrade',
+    proration_at: '2026-07-10T09:30:00.000Z',
+    amount_due_cents: 3250,
+    cost_today_cents: 3250,
+    credits_today_cents: 3250,
+    credits_next_period_cents: 10_000,
+    renewal_amount_cents: 10_000,
+    current_plan: {
+      ...preview.new_plan,
+      slug: 'creator_monthly',
+      tier: 'CREATOR',
+      price_cents: 3500
+    }
+  }
+  await signIn(CHECKOUT)
+  await page.getByRole('button', { name: 'Confirm upgrade' }).click()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(paidToday(page)).toHaveText(
+    /^\s*Paid today\s*\$32\.50\s*Prorated for the rest of this billing period\s*$/
+  )
+})
+
+test('a payment settled after a return from the provider lists the reasons its operation reports', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.operations.op_subscribe = challengeRequiredOperation(
+    'op_subscribe',
+    'pi_e2e_secret'
+  )
+  await page.addInitScript((redirectTo) => {
+    Object.assign(window, {
+      __e2eStripeMethodType: 'alipay',
+      __e2eStripeRedirectTo: redirectTo
+    })
+  }, PORTAL_URL)
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(page).toHaveURL(PORTAL_URL)
+
+  chargedWith(cloud, {
+    amount_charged_cents: 4000,
+    currency: 'usd',
+    prorated: false,
+    reasons: [LAUNCH_PROMO]
+  })
+  settleOnServer(cloud)
+  await page.goBack()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(paidToday(page)).toHaveText(
+    /Launch 20%\s*−\$10\.00\s*First month\s*Paid today\s*\$40\.00/
+  )
+})
+
+test('390-4947 / 328-4444: a charge whose credits are still landing reads Payment received, then Already completed names the plan once they land', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.operations.op_subscribe = {
+    ...succeededOperation('op_subscribe'),
+    amount_charged_cents: 5000,
+    plan: RECEIPT_PLAN
+  }
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+
+  await expect(heading(page, 'Payment received')).toBeVisible()
+  const receipt = page.getByTestId('checkout-ending-receipt')
+  await expect(receipt).toContainText('Payment$50.00')
+  await expect(receipt).toContainText('Credits addedAdding…')
+  await expect(receipt).toContainText('PlanPro')
+  await expect(code(page)).toHaveText('op_subscribe')
+
+  cloud.scenario.operations.op_subscribe = {
+    ...cloud.scenario.operations.op_subscribe,
+    credits_added: 10_000
+  }
+  settleOnServer(cloud)
+  await page.reload()
+
+  await expect(heading(page, 'Already completed')).toBeVisible()
+  await expect(page.getByTestId('checkout-ending-plan')).toContainText(
+    'Pro$50.00 USD / mo10,000 credits added'
+  )
+  await expect(code(page)).toBeHidden()
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test('a later checkout in the same tab for a plan still for sale opens the form, not the old payment', async ({
+  page,
+  signIn
+}) => {
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  await expect(heading(page, "You're all set")).toBeVisible()
+
+  await page.goto(entryPath('checkout', { plan: 'creator_monthly' }))
+
+  await expect(payButton(page)).toBeVisible()
+  await expect(heading(page, 'Already completed')).toBeHidden()
+})
+
+test('a quote the server refuses with nothing paid here ends on Checkout not available, not a form Pay cannot use', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.preview = { ...cloud.scenario.preview, allowed: false }
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, 'Checkout not available')).toBeVisible()
+  await expect(code(page)).toHaveText('UNSPECIFIED')
+  await expect(payButton(page)).toBeHidden()
+})
+
+test("a reload on We couldn't confirm stays on it, never a live form, and lands on Success once the payment settles", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const stuck = {
+    ...pendingOperation('op_subscribe'),
+    status: 'reconciliation_needed' as const
+  }
+  cloud.scenario.operations.op_subscribe = stuck
+  await signIn(CHECKOUT)
+  await payButton(page).click()
+  const unconfirmed = heading(page, "We couldn't confirm your payment")
+  await expect(unconfirmed).toBeVisible()
+
+  await page.reload()
+
+  await expect(unconfirmed).toBeVisible()
+  await expect(payButton(page)).toBeHidden()
+
+  cloud.scenario.operations.op_subscribe = succeededOperation('op_subscribe')
+  settleOnServer(cloud)
+  await page.reload()
+
+  await expect(heading(page, "You're all set")).toBeVisible()
+  await expect(page.getByTestId('checkout-ending-plan')).toContainText('Pro')
+  expect(subscribeRequests(cloud)).toHaveLength(1)
 })
 
 test('FE-2856: a capture the bank is still settling renders Payment in progress, then resolves forward to success', async ({
@@ -123,7 +553,7 @@ test('FE-2856: a capture the bank is still settling renders Payment in progress,
   await expect(heading(page, "You're all set")).toBeVisible()
   await expect(
     page.getByText(
-      'A payment on this workspace completed — check your plan in settings.'
+      'A payment for Personal went through. Check your plan in settings for the details.'
     )
   ).toBeVisible()
   await expect(code(page)).toHaveText('op_bank')
@@ -289,6 +719,33 @@ test('433-6840: a link to a plan the catalog lacks renders Plan not available wi
   )
 })
 
+test('433-6840: a retired team plan whose link carries its commit stop opens the pricing table on the Team tab', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.reply('POST', '/billing/preview-subscribe', () => ({
+    status: 400,
+    body: { code: 'INVALID_PLAN', message: 'Plan not found' }
+  }))
+  await signIn(
+    entryPath('checkout', {
+      plan: 'team_per_credit_monthly',
+      team_credit_stop_id: 'stop_1'
+    })
+  )
+
+  await expect(heading(page, "This plan isn't available")).toBeVisible()
+  await expect(code(page)).toHaveText('PLAN_NOT_FOUND')
+
+  await page.getByRole('button', { name: 'View plans' }).click()
+
+  await expect(heading(page, 'Host app')).toBeVisible()
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?pricing=team&workspace=ws_e2e'
+  )
+})
+
 test('433-6840: a team link without its commit stop is an invalid link, and View plans opens the pricing table on the Team tab', async ({
   page,
   cloud,
@@ -304,6 +761,37 @@ test('433-6840: a team link without its commit stop is an invalid link, and View
   await expect(code(page)).toHaveText('CHECKOUT_LINK_INVALID')
   await expect(payButton(page)).toBeHidden()
   expect(subscribeRequests(cloud)).toHaveLength(0)
+
+  await page.getByRole('button', { name: 'View plans' }).click()
+
+  await expect(heading(page, 'Host app')).toBeVisible()
+  await expect(page).toHaveURL(
+    'https://testcloud.comfy.org/?pricing=team&workspace=ws_e2e'
+  )
+})
+
+test('G7: a catalog team plan linked without its commit stop, which the quote refuses with a 400, is Plan not available and View plans opens the Team tab', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  const [listed] = cloud.scenario.plans.plans
+  cloud.scenario.plans = {
+    ...cloud.scenario.plans,
+    plans: [
+      ...cloud.scenario.plans.plans,
+      { ...listed, slug: 'team_per_credit_monthly', tier: 'TEAM' }
+    ]
+  }
+  refuseQuote(
+    cloud,
+    'team_credit_stop_id is required for the per-credit Team plan'
+  )
+  await signIn(entryPath('checkout', { plan: 'team_per_credit_monthly' }))
+
+  await expect(heading(page, "This plan isn't available")).toBeVisible()
+  await expect(code(page)).toHaveText('CHECKOUT_LINK_INVALID')
+  await expect(heading(page, "Couldn't load your checkout")).toBeHidden()
 
   await page.getByRole('button', { name: 'View plans' }).click()
 
@@ -339,7 +827,7 @@ test('433-6840: a checkout link that names no plan, routed once the tab is signe
 test('a signed-out visitor on the flag still goes back to the host for a checkout link that names no plan', async ({
   page
 }) => {
-  await expectStraightToHost(page, 'ws_team_e2e')
+  await expectStraightToPricingTable(page, 'ws_team_e2e')
 })
 
 test('a checkout link that names no plan, opened by the host in a new tab, goes back to the host even for a signed-in customer on the flag', async ({
@@ -348,7 +836,7 @@ test('a checkout link that names no plan, opened by the host in a new tab, goes 
 }) => {
   await signIn(CHECKOUT)
 
-  await expectStraightToHost(await context.newPage(), 'ws_e2e')
+  await expectStraightToPricingTable(await context.newPage(), 'ws_e2e')
 })
 
 test("433-6840: a checkout link the contract cannot read is the checkout's 404 on the full page, and still the entry error on the embedded one", async ({
@@ -399,6 +887,41 @@ test("a checkout that couldn't load retries in place on Try again, without leavi
   await expect(payButton(page)).toBeEnabled()
   await expect(page).toHaveURL(CHECKOUT)
   expect(quotes).toBe(2)
+})
+
+test('421-5804: a capabilities read that fails says so without claiming nothing was charged, and Try again opens the checkout', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  let reads = 0
+  cloud.reply('GET', '/billing/capabilities', () => {
+    reads += 1
+    return reads === 1
+      ? { status: 503, body: { code: 'UNAVAILABLE', message: 'down' } }
+      : {
+          body: cloud.scenario.capabilities,
+          headers: {
+            'x-capability-revision': String(
+              cloud.scenario.capabilities.revision
+            )
+          }
+        }
+  })
+  await signIn(CHECKOUT)
+
+  await expect(heading(page, "Couldn't load your checkout")).toBeVisible()
+  await expect(
+    page.getByText(
+      "We couldn't check whether this workspace can check out, so checkout can't open yet. Try again, or contact support if this keeps happening."
+    )
+  ).toBeVisible()
+  await expect(page.getByText(/Nothing has been charged/)).toBeHidden()
+  await expect(code(page)).toHaveText('REQUEST_FAILED')
+
+  await page.getByRole('button', { name: 'Try again' }).click()
+
+  await expect(payButton(page)).toBeEnabled()
 })
 
 test("a re-read of the workspace's payments that fails never claims nothing was charged, and Try again follows the payment once it answers", async ({

@@ -5,8 +5,8 @@ import { tAgent } from '../src/components/agent/agentTranslations'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const PATH_EN = '/agent'
-const PATH_ZH = '/zh-CN/agent'
+const PATH_EN = '/agent/'
+const PATH_ZH = '/zh-CN/agent/'
 const CANONICAL: Record<'en' | 'zh-CN', string> = {
   en: 'https://comfy.org/agent/',
   'zh-CN': 'https://comfy.org/zh-CN/agent/'
@@ -65,6 +65,31 @@ async function assertLandingPage(
     })
   ).toBeVisible()
 
+  const featuredStoryLink = page.getByRole('link', {
+    name: tAgent('agentPage.usecases.featured.cta', locale),
+    exact: true
+  })
+  await expect(featuredStoryLink).toBeVisible()
+  await expect(featuredStoryLink).toHaveAttribute(
+    'href',
+    'https://blog.comfy.org/p/comfy-agent-the-first-agent-for-craft'
+  )
+  await expect(featuredStoryLink).toHaveAttribute('target', '_blank')
+  await expect(featuredStoryLink).toHaveAttribute('rel', /\bnoopener\b/)
+  await expect(featuredStoryLink).toHaveAttribute('rel', /\bnoreferrer\b/)
+  let reachedFeaturedStoryLink = false
+  for (let press = 0; press < 50; press++) {
+    await page.keyboard.press('Tab')
+    reachedFeaturedStoryLink = await featuredStoryLink.evaluate(
+      (link) => link === document.activeElement
+    )
+    if (reachedFeaturedStoryLink) {
+      break
+    }
+  }
+  expect(reachedFeaturedStoryLink).toBe(true)
+  await expect(featuredStoryLink).toBeFocused()
+
   await expect(
     page.getByRole('heading', {
       level: 2,
@@ -79,7 +104,7 @@ async function assertLandingPage(
     page.getByRole('link', {
       name: tAgent('agentPage.faq.6.linkLabel', locale)
     })
-  ).toHaveAttribute('href', locale === 'en' ? '/pricing' : '/zh-CN/pricing')
+  ).toHaveAttribute('href', locale === 'en' ? '/pricing/' : '/zh-CN/pricing/')
 }
 
 test.describe('Agent landing — desktop @smoke', () => {
@@ -114,17 +139,19 @@ test.describe('Agent navigation @smoke', () => {
       const nav = page.getByRole('navigation', { name: 'Main navigation' })
       await nav
         .getByTestId('desktop-nav-links')
-        .getByRole('button', { name: t('nav.products', locale) })
+        .getByRole('button', {
+          name: t('nav.products', {}, { locale })
+        })
         .hover()
-      const headerLink = nav
-        .getByTestId('nav-dropdown')
-        .getByRole('link', { name: t('nav.comfyAgent', locale) })
+      const headerLink = nav.getByTestId('nav-dropdown').getByRole('link', {
+        name: t('nav.comfyAgent', {}, { locale })
+      })
       await expect(headerLink).toBeVisible()
       await expect(headerLink).toHaveAttribute('href', expectedHref)
 
-      const footerLink = page
-        .getByRole('contentinfo')
-        .getByRole('link', { name: t('nav.comfyAgent', locale) })
+      const footerLink = page.getByRole('contentinfo').getByRole('link', {
+        name: t('nav.comfyAgent', {}, { locale })
+      })
       await expect(footerLink).toHaveAttribute('href', expectedHref)
     })
   }

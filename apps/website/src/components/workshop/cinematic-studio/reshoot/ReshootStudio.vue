@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { Clapperboard } from '@lucide/vue'
 
 import { useCinematicLeaveGuard } from '../../../../composables/useCinematicLeaveGuard'
 import { useReshoot } from '../../../../composables/useReshoot'
 import { reportStudioBusy } from '../../../../composables/useStudioSwitchGuard'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import RunLeaveDialog from '../../RunLeaveDialog.vue'
 import AppsBackLink from '../AppsBackLink.vue'
@@ -15,7 +15,11 @@ import ReshootStage from './ReshootStage.vue'
 import ReshootUpload from './ReshootUpload.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
+// Reading the scene and every take run on the Comfy app proxy. The scene is
+// read as soon as a clip is picked; the camera is then aimed against a live
+// warp of the clip's own geometry.
 const reshoot = useReshoot({ locale })
 const {
   upload,
@@ -29,8 +33,12 @@ const {
   stage,
   notice,
   frames,
+  clipError,
+  geometry,
   step,
-  camera,
+  view,
+  pose,
+  onKey,
   keepAim,
   frame,
   keys,
@@ -64,6 +72,8 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
       class="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
     >
       <ReshootUpload v-if="!picked" :locale @pick="reshoot.pick" />
+      <!-- A failed read is said once, beside its Try again button; the
+           viewport keeps the notices that no button can fix. -->
       <ReshootSide
         v-else
         v-model:upload="upload"
@@ -72,24 +82,24 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
         v-model:seed="seed"
         v-model:keep-aim="keepAim"
         v-model:frame="frame"
-        v-model:motion="motion"
         v-model:prompt="prompt"
         :clip
         :clip-name="clipName"
         :is-example="isExample"
-        :camera
+        :camera="view"
         :keys
         :depth
         :frames
+        :clip-error="clipError"
+        :error="depth === 'failed' ? notice : undefined"
         :gate
         :can-generate="canGenerate"
         :price-note="priceNote"
         :workspace-name="session?.workspace.name"
         :locale
         @aim="reshoot.aim"
-        @key="reshoot.addKey"
         @remove-key="reshoot.removeKey"
-        @clear-keys="keys = []"
+        @analyze="reshoot.analyze"
         @generate="reshoot.generate"
       />
       <div
@@ -102,30 +112,39 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
           aria-hidden="true"
         />
         <p class="text-base text-primary-comfy-canvas">
-          {{ rc('reshoot.empty.title', locale) }}
+          {{ t('reshoot.empty.title') }}
         </p>
         <p class="text-xs text-primary-warm-gray">
-          {{ rc('reshoot.empty.hint', locale) }}
+          {{ t('reshoot.empty.hint') }}
         </p>
       </div>
       <ReshootStage
         v-else
+        v-model:frame="frame"
+        v-model:motion="motion"
         :clip
-        :camera
+        :camera="view"
         :depth
         :stage
-        :notice
+        :notice="depth === 'failed' ? undefined : notice"
         :step
         :takes
         :selected
         :current
         cancellable
+        :geometry
+        :pose
+        :keep-aim="keepAim"
+        :keys
+        :keyed="onKey"
         :locale
         class="lg:pt-2"
         @aim="reshoot.aim"
         @select="selected = $event"
         @cancel="reshoot.cancel"
         @reuse="reshoot.reuse(selected)"
+        @key="reshoot.toggleKey"
+        @clear-keys="keys = []"
       />
     </div>
     <ReshootExamples

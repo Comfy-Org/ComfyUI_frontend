@@ -6,12 +6,11 @@ import BuilderHero from '../../templates/platform/BuilderHero.vue'
 import BuilderPillarsSection from '../../templates/platform/BuilderPillarsSection.vue'
 import BuilderProblemSection from '../../templates/platform/BuilderProblemSection.vue'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
-import { t } from '../../i18n/translations'
 ---
 
 <BaseLayout
-  title={`${t('platform.products.builder.title', 'en')} · ${t('platform.meta.title', 'en')}`}
-  description={t('platform.products.builder.description', 'en')}
+  title={`${Astro.locals.t('platform.products.builder.title')} · ${Astro.locals.t('platform.meta.title')}`}
+  description={Astro.locals.t('platform.products.builder.description')}
 >
   <BuilderHero locale="en" client:load />
   <BuilderProblemSection locale="en" />
@@ -19,7 +18,7 @@ import { t } from '../../i18n/translations'
   <BuilderEnterpriseSection locale="en" />
   <ClosingCtaSection
     locale="en"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    heading-after-badge={Astro.locals.t('platform.closing.headingAfterBadge')}
     client:visible
   />
   <ProductCardsSection locale="en" label-key="products.labelProducts" />

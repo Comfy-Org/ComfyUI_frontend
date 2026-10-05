@@ -18,7 +18,10 @@ import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import {
+  webSessionRequests,
+  webSessionResourceHeader
+} from '@/platform/auth/session/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
@@ -71,11 +74,13 @@ export type BillingPortalTargetTier = NonNullable<
 
 export class AuthStoreError extends Error {
   readonly status: number | undefined
+  readonly code: string | undefined
 
-  constructor(message: string, status?: number) {
+  constructor(message: string, status?: number, code?: string) {
     super(message)
     this.name = 'AuthStoreError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -88,6 +93,7 @@ async function webSessionRunToken(
   if (result.status === 'ok') return result.credential.token
   if (result.httpStatus !== 401) {
     reportError(new Error(`Run token mint failed: ${result.code}`), {
+      surface: 'auth',
       errorType: 'web_session_run_token_failure',
       level: 'warning',
       tags: { failure_code: result.code, http_status: result.httpStatus ?? 0 }
@@ -98,6 +104,7 @@ async function webSessionRunToken(
 
 export const useAuthStore = defineStore('auth', () => {
   const { flags } = useFeatureFlags()
+  const cloudWebSessionStore = useCloudWebSessionStore()
 
   // State
   const loading = ref(false)
@@ -137,9 +144,14 @@ export const useAuthStore = defineStore('auth', () => {
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   // Getters
-  const isAuthenticated = computed(() => !!currentUser.value)
-  const userEmail = computed(() => currentUser.value?.email)
-  const userId = computed(() => currentUser.value?.uid)
+  const sessionUser = computed(() => cloudWebSessionStore.signedInUser)
+  const isAuthenticated = computed(
+    () => !!currentUser.value || !!sessionUser.value
+  )
+  const userEmail = computed(
+    () => sessionUser.value?.email ?? currentUser.value?.email
+  )
+  const userId = computed(() => sessionUser.value?.id ?? currentUser.value?.uid)
 
   function getShareAuthMetadata() {
     const shareId = getPreservedQueryParam(
@@ -333,7 +345,16 @@ export const useAuthStore = defineStore('auth', () => {
       ? useApiKeyAuthStore().getAuthHeader()
       : await getFirebaseAuthHeader()
 
+  const getCustomerAuthHeader = async (): Promise<Readonly<
+    Record<string, string>
+  > | null> => (await webSessionResourceHeader()) ?? (await getUserAuthHeader())
+
   const currentUserIdentity = (): string | null =>
+    sessionUser.value?.id ??
+    currentUser.value?.uid ??
+    useApiKeyAuthStore().getApiKey()
+
+  const currentUserCredentialIdentity = (): string | null =>
     currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
 
   /**
@@ -358,6 +379,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
+      if (await awaitUnifiedMint()) return null
       const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
     }
@@ -472,8 +494,12 @@ export const useAuthStore = defineStore('auth', () => {
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     const requestOwner = currentUserIdentity()
+    const requestCredential = currentUserCredentialIdentity()
+    const requestIsCurrent = () =>
+      currentUserIdentity() === requestOwner &&
+      currentUserCredentialIdentity() === requestCredential
     try {
-      const authHeader = await getUserAuthHeader()
+      const authHeader = await getCustomerAuthHeader()
       if (!authHeader) {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
@@ -494,7 +520,7 @@ export const useAuthStore = defineStore('auth', () => {
           return null
         }
         const { message } = await parseErrorResponse(response)
-        if (currentUserIdentity() !== requestOwner) {
+        if (!requestIsCurrent()) {
           return null
         }
         throw new AuthStoreError(
@@ -505,10 +531,9 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const balanceData = await response.json()
-      // A direct A->B switch (Firebase account or stored API key) leaves this
-      // request owned by the previous identity; its late-resolving response
-      // must not repaint the new session's balance.
-      if (currentUserIdentity() !== requestOwner) {
+      // Session identity and request credentials can change independently;
+      // a late response must still match both.
+      if (!requestIsCurrent()) {
         return null
       }
       // Update the last balance update time
@@ -530,7 +555,7 @@ export const useAuthStore = defineStore('auth', () => {
     const sessionIdentity = completedUser?.uid ?? currentUserIdentity()
     const authHeader = completedUser
       ? headerFromToken(await completedUser.getIdToken())
-      : await getUserAuthHeader()
+      : await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -682,7 +707,10 @@ export const useAuthStore = defineStore('auth', () => {
             credential
           ),
         onRollbackFailure: (error) => {
-          reportError(error, { errorType: 'auth_signup_rollback_failed' })
+          reportError(error, {
+            surface: 'auth',
+            errorType: 'auth_signup_rollback_failed'
+          })
           console.warn(
             'Failed to roll back orphaned Firebase user after customer creation failed',
             error
@@ -772,7 +800,7 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
       await useCloudWebSessionStore().signOut()
-      await firebaseIdentity.signOut()
+      if (currentUser.value) await firebaseIdentity.signOut()
     })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
@@ -790,7 +818,7 @@ export const useAuthStore = defineStore('auth', () => {
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
     const requestOwner = currentUserIdentity()
-    const authHeader = await getUserAuthHeader()
+    const authHeader = await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -818,13 +846,14 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
+      const { message, code } = await parseErrorResponse(response)
       assertIdentityUnchanged(requestOwner)
       throw new AuthStoreError(
         t('toastMessages.failedToInitiateCreditPurchase', {
           error: message
         }),
-        response.status
+        response.status,
+        code
       )
     }
 
@@ -842,7 +871,7 @@ export const useAuthStore = defineStore('auth', () => {
     targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
     const requestOwner = currentUserIdentity()
-    const authHeader = await getUserAuthHeader()
+    const authHeader = await getCustomerAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -862,12 +891,14 @@ export const useAuthStore = defineStore('auth', () => {
     )
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
+      const { message, code } = await parseErrorResponse(response)
       assertIdentityUnchanged(requestOwner)
       throw new AuthStoreError(
         t('toastMessages.failedToAccessBillingPortal', {
           error: message
-        })
+        }),
+        response.status,
+        code
       )
     }
 
@@ -888,6 +919,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Getters
     isAuthenticated,
+    sessionUser,
     userEmail,
     userId,
 

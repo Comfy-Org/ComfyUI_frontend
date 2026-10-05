@@ -12,9 +12,12 @@
     "./networkUtil": "./src/networkUtil.ts",
     "./nodePricing": "./src/nodePricing.ts",
     "./piiUtil": "./src/piiUtil.ts",
+    "./telemetry": "./src/telemetry.ts",
     "./urlSafety": "./src/urlSafety.ts"
   },
   "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "test": "vitest run",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },

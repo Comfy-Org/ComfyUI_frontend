@@ -1,10 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
+import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
@@ -15,10 +22,10 @@ import type {
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
-  BillingTelemetryEvent,
-  CheckoutJourneyTelemetryEvent,
   TelemetryProvider
 } from './types'
+
+type AgentDispatchMethod = keyof TelemetryProvider & `trackAgent${string}`
 
 describe('TelemetryRegistry', () => {
   it('dispatches feature flag evaluations to supporting providers', () => {
@@ -304,7 +311,7 @@ describe('TelemetryRegistry', () => {
       starter_prompt_click_id: null
     } satisfies AgentMessageSentMetadata
     const starterPromptClickedMetadata = {
-      prompt_id: 'generate_image',
+      prompt_id: 'slot_1',
       prompt_index: 0,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
@@ -338,12 +345,40 @@ describe('TelemetryRegistry', () => {
       cta: 'add_credits',
       surface: 'refused_send'
     } satisfies AgentPaywallCtaMetadata
+    const errorMetadata = {
+      error_class: 'request_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: true,
+      turn_accepted: false,
+      ui_treatment: 'inline_notice'
+    } satisfies AgentErrorMetadata
+    const freeUseExposureMetadata = {
+      placement: 'above-input',
+      '$feature/agent-free-use-message-placement': 'above-input'
+    } satisfies AgentFreeUseExposureMetadata
+    const freeUseNoticeMetadata = {
+      action: 'shown',
+      placement: 'above-input'
+    } satisfies AgentFreeUseNoticeMetadata
 
-    const cases: Array<{
-      method: keyof TelemetryProvider & `trackAgent${string}`
-      expected: unknown
-      invoke: (registry: TelemetryRegistry) => void
-    }> = [
+    const cases = [
+      {
+        method: 'trackAgentError',
+        expected: { ...errorMetadata },
+        invoke: (registry) => registry.trackAgentError(errorMetadata)
+      },
+      {
+        method: 'trackAgentFreeUseExposure',
+        expected: { ...freeUseExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentFreeUseExposure(freeUseExposureMetadata)
+      },
+      {
+        method: 'trackAgentFreeUseNotice',
+        expected: { ...freeUseNoticeMetadata },
+        invoke: (registry) =>
+          registry.trackAgentFreeUseNotice(freeUseNoticeMetadata)
+      },
       {
         method: 'trackAgentMessageFeedback',
         expected: { ...feedbackMetadata },
@@ -538,7 +573,26 @@ describe('TelemetryRegistry', () => {
         invoke: (registry) =>
           registry.trackAgentPaywallCtaClicked(paywallCtaMetadata)
       }
-    ]
+    ] satisfies ReadonlyArray<{
+      method: AgentDispatchMethod
+      expected: unknown
+      invoke: (registry: TelemetryRegistry) => void
+    }>
+
+    type CoveredDispatchMethod = (typeof cases)[number]['method']
+
+    it('covers every agent dispatch method with a case', () => {
+      expectTypeOf<
+        Exclude<AgentDispatchMethod, CoveredDispatchMethod>
+      >().toBeNever()
+
+      const dispatched = Object.getOwnPropertyNames(TelemetryRegistry.prototype)
+        .filter((name) => name.startsWith('trackAgent'))
+        .sort()
+      const covered = new Set(cases.map((testCase) => testCase.method))
+
+      expect([...covered].sort()).toEqual(dispatched)
+    })
 
     it.for(cases)(
       'dispatches $method to every registered provider',

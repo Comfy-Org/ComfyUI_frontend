@@ -17,78 +17,86 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
-    test('shows one legacy notice per group and preserves rows when returning to Node 2.0', async ({
-      comfyPage
-    }) => {
-      const node = comfyPage.vueNodes.getNodeByTitle('Node With Dynamic Group')
-      for (const rowCount of [0, 3]) {
-        for (let row = 0; row < rowCount; row++) {
-          await node.getByRole('button', { name: 'Add LoRA' }).click()
-        }
-        if (rowCount > 0) {
-          await node
-            .getByRole('combobox', { name: 'lora_name', exact: true })
-            .nth(1)
-            .click()
-          await comfyPage.page
-            .getByRole('option', { name: 'B.safetensors', exact: true })
-            .click()
-        }
-        await comfyPage.menu.topbar.setVueNodesEnabled(false)
-        await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
-        await comfyPage.page.evaluate(() => {
-          const node = window.app!.graph.nodes.find(
-            (node) => String(node.id) === '1'
-          )!
-          const drawWidgets = node.drawWidgets
-          node.properties.drawnLabels = null
-          node.drawWidgets = function (ctx, options) {
-            const labels: string[] = []
-            const fillText = ctx.fillText
-            ctx.fillText = function (text, ...args) {
-              labels.push(text)
-              fillText.call(this, text, ...args)
-            }
-            try {
-              drawWidgets.call(this, ctx, options)
-              node.properties.drawnLabels = labels
-            } finally {
-              ctx.fillText = fillText
-              node.drawWidgets = drawWidgets
-            }
-          }
-          node.setDirtyCanvas(true, true)
-        })
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate(() => {
-              const labels = window.app!.graph.nodes.find(
-                (node) => String(node.id) === '1'
-              )!.properties.drawnLabels
-              return Array.isArray(labels)
-                ? labels.filter((label) => label === 'LoRA: Node 2.0 only')
-                    .length
-                : 0
-            })
+    for (const filenames of [
+      [],
+      ['A.safetensors', 'B.safetensors', 'A.safetensors']
+    ]) {
+      test.describe(`legacy notice with ${filenames.length} rows`, () => {
+        test.beforeEach(async ({ comfyPage }) => {
+          const node = comfyPage.vueNodes.getNodeByTitle(
+            'Node With Dynamic Group'
           )
-          .toBe(1)
-        const legacyNode = await comfyPage.nodeOps.getNodeRefById('1')
-        await (await legacyNode.getWidgetByName('loras.$notice')).click()
+          for (const [index, filename] of filenames.entries()) {
+            await node.getByRole('button', { name: 'Add LoRA' }).click()
+            await node
+              .getByRole('combobox', {
+                name: `LoRA #${index + 1} lora_name`,
+                exact: true
+              })
+              .click()
+            await comfyPage.page
+              .getByRole('option', { name: filename, exact: true })
+              .click()
+          }
+        })
 
-        await comfyPage.menu.topbar.setVueNodesEnabled(true)
-        await expect(
-          node.getByRole('combobox', { name: 'lora_name', exact: true })
-        ).toHaveCount(rowCount)
-        await expect(
-          node.getByText('LoRA: Node 2.0 only', { exact: true })
-        ).toHaveCount(0)
-        if (rowCount > 0) {
+        test('shows one notice and preserves rows when returning to Node 2.0', async ({
+          comfyPage
+        }) => {
+          const node = comfyPage.vueNodes.getNodeByTitle(
+            'Node With Dynamic Group'
+          )
+          await comfyPage.menu.topbar.setVueNodesEnabled(false)
+          await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+          await comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes.find(
+              (node) => String(node.id) === '1'
+            )!
+            const drawWidgets = node.drawWidgets
+            node.properties.drawnLabels = null
+            node.drawWidgets = function (ctx, options) {
+              const labels: string[] = []
+              const fillText = ctx.fillText
+              ctx.fillText = function (text, ...args) {
+                labels.push(text)
+                fillText.call(this, text, ...args)
+              }
+              try {
+                drawWidgets.call(this, ctx, options)
+                node.properties.drawnLabels = labels
+              } finally {
+                ctx.fillText = fillText
+                node.drawWidgets = drawWidgets
+              }
+            }
+            node.setDirtyCanvas(true, true)
+          })
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate(() => {
+                const labels = window.app!.graph.nodes.find(
+                  (node) => String(node.id) === '1'
+                )!.properties.drawnLabels
+                return Array.isArray(labels)
+                  ? labels.filter((label) => label === 'LoRA: Node 2.0 only')
+                      .length
+                  : 0
+              })
+            )
+            .toBe(1)
+          const legacyNode = await comfyPage.nodeOps.getNodeRefById('1')
+          await (await legacyNode.getWidgetByName('loras.$notice')).click()
+
+          await comfyPage.menu.topbar.setVueNodesEnabled(true)
           await expect(
-            node.getByRole('combobox', { name: 'lora_name', exact: true })
-          ).toHaveText(['A.safetensors', 'B.safetensors', 'A.safetensors'])
-        }
-      }
-    })
+            node.getByRole('combobox', { name: /^LoRA #\d+ lora_name$/ })
+          ).toHaveText(filenames)
+          await expect(
+            node.getByText('LoRA: Node 2.0 only', { exact: true })
+          ).toHaveCount(0)
+        })
+      })
+    }
 
     test('executes an empty group as an empty list', async ({ comfyPage }) => {
       const node = comfyPage.vueNodes.getNodeByTitle('Node With Dynamic Group')
@@ -118,41 +126,39 @@ test.describe(
         node.getByRole('button', { name: 'Add LoRA' })
       ).toBeDisabled()
       await expect(
-        node.getByRole('combobox', { name: 'lora_name', exact: true })
+        node.getByRole('combobox', { name: /^LoRA #\d+ lora_name$/ })
       ).toHaveCount(3)
       await node
-        .getByRole('combobox', { name: 'lora_name', exact: true })
-        .nth(1)
+        .getByRole('combobox', { name: 'LoRA #2 lora_name', exact: true })
         .click()
       await comfyPage.page
         .getByRole('option', { name: 'B.safetensors', exact: true })
         .click()
       await node
-        .getByRole('combobox', { name: 'lora_name', exact: true })
-        .nth(2)
+        .getByRole('combobox', { name: 'LoRA #3 lora_name', exact: true })
         .click()
       await comfyPage.page
         .getByRole('option', { name: 'C.safetensors', exact: true })
         .click()
-      const strength = comfyPage.vueNodes.getInputNumberControls(
-        node.getByLabel('loras.2.strength', { exact: true })
-      ).input
+      const strength = node
+        .getByRole('group', { name: 'LoRA #3', exact: true })
+        .getByRole('spinbutton')
       await strength.fill('0.5')
       await strength.blur()
-      await node.getByLabel('loras.2.enabled', { exact: true }).click()
+      await node.getByLabel('LoRA #3 enabled', { exact: true }).click()
       await node
         .getByRole('button', { name: 'Remove LoRA #2', exact: true })
         .click()
       await comfyPage.command.executeCommand('Comfy.Undo')
       await expect(
-        node.getByRole('combobox', { name: 'lora_name', exact: true })
+        node.getByRole('combobox', { name: /^LoRA #\d+ lora_name$/ })
       ).toHaveText(['A.safetensors', 'B.safetensors', 'C.safetensors'])
       await comfyPage.command.executeCommand('Comfy.Redo')
       await expect(
-        node.getByRole('combobox', { name: 'lora_name', exact: true }).nth(1)
+        node.getByRole('combobox', { name: 'LoRA #2 lora_name', exact: true })
       ).toHaveText('C.safetensors')
       await expect(
-        node.getByLabel('loras.1.enabled', { exact: true })
+        node.getByLabel('LoRA #2 enabled', { exact: true })
       ).not.toBeChecked()
       await expect(node.getByRole('button', { name: 'Add LoRA' })).toBeEnabled()
 
@@ -174,10 +180,10 @@ test.describe(
         'tail'
       )
       await expect(
-        node.getByRole('combobox', { name: 'lora_name', exact: true })
+        node.getByRole('combobox', { name: /^LoRA #\d+ lora_name$/ })
       ).toHaveText(['A.safetensors', 'C.safetensors'])
       await expect(
-        node.getByLabel('loras.1.enabled', { exact: true })
+        node.getByLabel('LoRA #2 enabled', { exact: true })
       ).not.toBeChecked()
 
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')

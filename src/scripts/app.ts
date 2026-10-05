@@ -1,10 +1,15 @@
-import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
+import {
+  applyViewport,
+  measureViewportFromElement
+} from '@/renderer/core/canvas/canvasViewport'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -23,7 +28,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   TWidgetValue
@@ -50,6 +55,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -392,6 +398,11 @@ export class ComfyApp {
   }
 
   private configuringGraphLevel: number = 0
+  private graphLoadSequence = 0
+  private committedGraphLoadSequence = 0
+  private pendingCamera:
+    | { id: number; workflow: string | null | ComfyWorkflow }
+    | undefined
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -759,6 +770,7 @@ export class ComfyApp {
         if (files.length === 0) {
           if (event.dataTransfer?.types.includes(MIME_ASSET_INFO)) {
             reportError(new Error('Dropped asset card yielded no file'), {
+              surface: 'graph',
               errorType: 'asset_drop_load_failure'
             })
             useToastStore().addAlert(t('toastMessages.assetDropFailed'))
@@ -1103,15 +1115,9 @@ export class ComfyApp {
   }
 
   private resizeCanvas(canvas: HTMLCanvasElement) {
-    // Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
-    const scale = Math.max(window.devicePixelRatio, 1)
-
-    // Clear fixed width and height while calculating rect so it uses 100% instead
-    canvas.height = canvas.width = NaN
-    const { width, height } = canvas.getBoundingClientRect()
-    canvas.width = Math.round(width * scale)
-    canvas.height = Math.round(height * scale)
-    canvas.getContext('2d')?.scale(scale, scale)
+    const viewport = measureViewportFromElement(canvas)
+    applyViewport(viewport, canvas, this.canvas.bgcanvas, this.canvas)
+    useCanvasScheduler().flush()
     this.canvas.draw(true, true)
   }
 
@@ -1309,7 +1315,10 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
-  ): Promise<LoadedComfyWorkflow | boolean> {
+  ): Promise<LoadedComfyWorkflow | boolean | undefined> {
+    const canvasScheduler = useCanvasScheduler()
+    const loadId = ++this.graphLoadSequence
+
     const {
       checkForRerouteMigration = false,
       openSource,
@@ -1482,8 +1491,11 @@ export class ComfyApp {
       return false
     }
 
-    const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
     const fitView = () => {
+      const savedCameraState = normalizeCameraState(graphData.extra?.ds, {
+        minScale: this.canvas.ds.min_scale,
+        maxScale: this.canvas.ds.max_scale
+      })
       if (
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
@@ -1491,9 +1503,9 @@ export class ComfyApp {
         // Always fit view for templates to ensure they're visible on load
         if (openSource === 'template') {
           useLitegraphService().fitView()
-        } else if (graphData.extra?.ds) {
-          this.canvas.ds.offset = graphData.extra.ds.offset
-          this.canvas.ds.scale = graphData.extra.ds.scale
+        } else if (savedCameraState) {
+          this.canvas.ds.offset = savedCameraState.offset
+          this.canvas.ds.scale = savedCameraState.scale
 
           // Fit view if no nodes visible in restored viewport
           this.canvas.ds.computeVisibleArea(this.canvas.viewport)
@@ -1505,7 +1517,7 @@ export class ComfyApp {
               this.canvas.visible_area
             )
           ) {
-            requestAnimationFrame(() => useLitegraphService().fitView())
+            useLitegraphService().fitView()
           }
         } else {
           useLitegraphService().fitView()
@@ -1519,8 +1531,18 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        // @ts-expect-error Discrepancies between zod and litegraph - in progress
-        this.rootGraph.configure(graphData)
+        if (loadId < this.committedGraphLoadSequence) {
+          await useExtensionService().invokeExtensionsAsync(
+            'onGraphLoadError',
+            new DOMException(
+              'Graph load superseded by a newer load',
+              'AbortError'
+            )
+          )
+          return undefined
+        }
+
+        this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =
@@ -1538,7 +1560,41 @@ export class ComfyApp {
           )
         }
 
-        if (canvasVisible) fitView()
+        this.committedGraphLoadSequence = Math.max(
+          loadId,
+          this.committedGraphLoadSequence
+        )
+        const preservesPendingCamera =
+          !restore_view &&
+          workflow !== null &&
+          workflow === this.pendingCamera?.workflow
+        if (!preservesPendingCamera) {
+          canvasScheduler.cancel('graph-load-camera')
+          this.pendingCamera = restore_view
+            ? { id: loadId, workflow }
+            : undefined
+          if (restore_view) {
+            canvasScheduler.schedule({
+              key: 'graph-load-camera',
+              element: this.canvasEl,
+              isCurrent: () => this.pendingCamera?.id === loadId,
+              run: () => {
+                const viewport = measureViewportFromElement(this.canvasEl)
+                applyViewport(
+                  viewport,
+                  this.canvasEl,
+                  this.canvas.bgcanvas,
+                  this.canvas
+                )
+                fitView()
+                this.canvas.draw(true, true)
+                if (this.pendingCamera?.id === loadId) {
+                  this.pendingCamera = undefined
+                }
+              }
+            })
+          }
+        }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
         // Resolves rather than throws: the close/replacement guards read this outcome.
@@ -1632,13 +1688,6 @@ export class ComfyApp {
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
-
-      // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
-      // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
-      if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
-        this.canvas.resize()
-        requestAnimationFrame(() => fitView())
-      }
 
       // Drop missing-node entries whose enclosing subgraph is
       // muted/bypassed. The initial JSON scan only checks each node's
@@ -2207,7 +2256,10 @@ export class ComfyApp {
             })
           } catch (err) {
             console.error('Failed to load API prompt:', err)
-            reportError(err, { errorType: 'api_prompt_load_failure' })
+            reportError(err, {
+              surface: 'graph',
+              errorType: 'api_prompt_load_failure'
+            })
             this.showErrorOnFileLoad(file)
           }
           return
@@ -2563,7 +2615,19 @@ export class ComfyApp {
                 value
               ) as TWidgetValue
               widget.value = widgetValue
-              widget.callback?.(widgetValue)
+              try {
+                widget.callback?.(widgetValue)
+              } catch (error) {
+                reportError(error, {
+                  surface: 'graph',
+                  errorType: 'failure_invoking_api_workflow_widget_callback',
+                  tags: {
+                    node_type: targetNode.type,
+                    widget_name: input
+                  },
+                  context: { fileName }
+                })
+              }
               return true
             }
             if (!applyWidgetValue()) unresolvedInputs.push(applyWidgetValue)

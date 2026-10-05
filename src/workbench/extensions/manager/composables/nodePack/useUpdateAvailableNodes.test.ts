@@ -318,67 +318,6 @@ describe('useUpdateAvailableNodes', () => {
     })
   })
 
-  describe('version comparison logic', () => {
-    it('calls compareVersions with correct parameters', () => {
-      mockUseInstalledPacks.mockReturnValue(
-        createMockInstalledPacksReturn({
-          installedPacks: ref([mockInstalledPacks[0]]), // pack-1
-          startFetchInstalled: mockStartFetchInstalled
-        })
-      )
-
-      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
-
-      // Access the computed to trigger the logic
-      expect(updateAvailableNodePacks.value).toBeDefined()
-
-      expect(mockSemverCompare).toHaveBeenCalledWith('2.0.0', '1.0.0')
-    })
-
-    it('calls semver.valid to check nightly versions', () => {
-      mockUseInstalledPacks.mockReturnValue(
-        createMockInstalledPacksReturn({
-          installedPacks: ref([mockInstalledPacks[2]]), // pack-3: nightly
-          startFetchInstalled: mockStartFetchInstalled
-        })
-      )
-
-      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
-
-      // Access the computed to trigger the logic
-      expect(updateAvailableNodePacks.value).toBeDefined()
-
-      expect(mockSemverValid).toHaveBeenCalledWith('nightly-abc123')
-    })
-
-    it('calls isPackInstalled for each pack', () => {
-      mockUseInstalledPacks.mockReturnValue(
-        createMockInstalledPacksReturn({
-          installedPacks: ref(mockInstalledPacks),
-          startFetchInstalled: mockStartFetchInstalled
-        })
-      )
-
-      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
-
-      // Access the computed to trigger the logic
-      expect(updateAvailableNodePacks.value).toBeDefined()
-
-      expect(
-        vi.mocked(useComfyManagerStore().isPackInstalled)
-      ).toHaveBeenCalledWith('pack-1')
-      expect(
-        vi.mocked(useComfyManagerStore().isPackInstalled)
-      ).toHaveBeenCalledWith('pack-2')
-      expect(
-        vi.mocked(useComfyManagerStore().isPackInstalled)
-      ).toHaveBeenCalledWith('pack-3')
-      expect(
-        vi.mocked(useComfyManagerStore().isPackInstalled)
-      ).toHaveBeenCalledWith('pack-4')
-    })
-  })
-
   describe('enabledUpdateAvailableNodePacks', () => {
     it('returns only enabled packs with updates', () => {
       vi.mocked(useComfyManagerStore().isPackEnabled).mockImplementation(

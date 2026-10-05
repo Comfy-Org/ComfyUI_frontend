@@ -521,6 +521,32 @@ class NodeWithDynamicGroup(IO.ComfyNode):
         return IO.NodeOutput(json.dumps({"before": before, "loras": loras, "after": after}))
 
 
+class TestBranchNode(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        mtemplate = IO.MatchType.Template("switch")
+        minput = IO.MatchType.Input("branch", template=mtemplate, lazy=True, optional=True)
+        template = IO.Autogrow.TemplatePrefix(input=minput, prefix="branch", min=1, max=10)
+        return IO.Schema(
+            node_id="DevToolsBranchNode",
+            display_name="Test Branch Node",
+            category="logic",
+            is_experimental=True,
+            inputs=[
+                IO.Autogrow.Input("autogrow", template=template),
+                IO.Combo.Input("branch", extra_dict={"widgetType": "COMFY_BRANCH_SELECTOR"}),
+                IO.Array.Input("branch_names", extra_dict={"widgetType": "COMFY_BRANCH_INPUT_NAMES", "socketless": True}),
+            ],
+            outputs=[
+                IO.MatchType.Output(template=mtemplate, display_name="output"),
+            ],
+        )
+
+    @classmethod
+    async def execute(cls):
+        return IO.NodeOutput()
+
+
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
     "DevToolsNodeWithOptionalInput": NodeWithOptionalInput,
@@ -547,6 +573,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
+    "DevToolsBranchNode": TestBranchNode,
 }
 
 if hasattr(IO, "DynamicGroup"):
@@ -578,6 +605,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
+    "DevToolsBranchNode": "Test Branch Node",
 }
 
 __all__ = [

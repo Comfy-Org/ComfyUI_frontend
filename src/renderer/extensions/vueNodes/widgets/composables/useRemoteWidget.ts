@@ -361,10 +361,12 @@ export function useRemoteWidget<
     api.addEventListener('execution_success', handleExecutionSuccess)
 
     const cleanup = () => {
-      removed = true
       api.removeEventListener('execution_success', handleExecutionSuccess)
     }
-    widget.onRemove = useChainCallback(widget.onRemove, cleanup)
+    widget.onRemove = useChainCallback(widget.onRemove, () => {
+      removed = true
+      cleanup()
+    })
     node.onRemoved = useChainCallback(node.onRemoved, cleanup)
 
     return autoRefreshWidget

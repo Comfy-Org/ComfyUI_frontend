@@ -10,9 +10,9 @@ const COPY = {
   body: 'Upgrading keeps your subscription, and it renews that day at $100.00.'
 }
 
-function renderNotice(state: KeepSubscriptionConsent['state']) {
+function renderNotice(state: KeepSubscriptionConsent['state'], locked = false) {
   return render(KeepSubscriptionNotice, {
-    props: { consent: { state, copy: COPY } },
+    props: { consent: { state, copy: COPY }, locked },
     global: { plugins: [createBillingI18n()] }
   })
 }
@@ -66,5 +66,15 @@ describe('KeepSubscriptionNotice', () => {
     await rerender({ consent: { state: 'confirmed', copy: COPY } })
     await userEvent.click(box())
     expect(emitted('confirm')).toEqual([[true], [false]])
+  })
+
+  it('ignores clicks while a Pay is in flight', async () => {
+    const { emitted } = renderNotice('confirmed', true)
+
+    await userEvent.click(box())
+
+    expect(box()).toBeDisabled()
+    expect(box()).toBeChecked()
+    expect(emitted('confirm')).toBeUndefined()
   })
 })

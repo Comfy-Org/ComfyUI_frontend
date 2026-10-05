@@ -246,15 +246,6 @@ export function runnableCinematicVideoModels(
   })
 }
 
-export function cinematicStudioHref(
-  slug: string,
-  studioRoute: string
-): string | undefined {
-  return slug in CINEMATIC_MODEL_LOGOS || slug in CINEMATIC_VIDEO_MODELS
-    ? `${studioRoute}?model=${encodeURIComponent(slug)}`
-    : undefined
-}
-
 /** What a video shot holds, and whether each frame can be sent as it is. */
 export interface VideoShotInputs {
   readonly sourceVideo: boolean

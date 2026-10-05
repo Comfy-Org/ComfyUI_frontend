@@ -200,6 +200,47 @@ describe('WidgetGrid', () => {
     expect(screen.queryByText('prompt')).not.toBeInTheDocument()
   })
 
+  it.for([
+    { label: 'LoRA #1 model', displayed: 'model', first: 0 },
+    { label: 'My model', displayed: 'My model', first: 0 },
+    { label: 'LoRA #1 model', displayed: 'LoRA #1 model', first: 1 }
+  ])(
+    'displays $displayed while keeping the accessible name $label',
+    ({ label, displayed, first }) => {
+      const items: WidgetGridItem[] = [
+        {
+          renderKey: 'header',
+          visible: true,
+          simplified: {
+            name: 'loras.0',
+            type: 'dynamic_group_row',
+            value: undefined,
+            label: 'LoRA #1'
+          },
+          vueComponent: markRaw(WidgetDynamicGroupRow)
+        },
+        {
+          renderKey: 'model',
+          visible: true,
+          simplified: {
+            name: 'loras.0.model',
+            type: 'combo',
+            value: 'A',
+            label,
+            options: { values: ['A', 'B'] }
+          },
+          vueComponent: markRaw(WidgetSelectDefault)
+        }
+      ]
+      renderGrid(items.slice(first), false)
+
+      expect(
+        screen.getByTestId('widget-layout-field-label').textContent.trim()
+      ).toBe(displayed)
+      expect(screen.getByRole('combobox', { name: label })).toBeVisible()
+    }
+  )
+
   it.for([0, 1])(
     'identifies repeated fields and restores keyboard focus after deletion with min = %s',
     async (min) => {

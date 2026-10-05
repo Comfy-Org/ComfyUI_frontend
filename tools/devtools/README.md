@@ -31,11 +31,13 @@ received rows as JSON. It does not load models. Connect its output to Preview as
 Text. Enable Modern Node Design (Node 2.0) to edit its dynamic rows; legacy
 canvas shows one Node 2.0-only notice per group instead of editable controls.
 
-This node requires a backend providing `io.DynamicGroup` (currently
-[feat: add DynamicGroup widget input](https://github.com/Comfy-Org/ComfyUI/pull/16260)).
-Older backends do not register it. Browser tests using real `/object_info`,
-workflow storage and execution live in the separate integration PR together
-with selection of the unmerged backend.
+This node requires a backend containing the merged
+[DynamicGroup support](https://github.com/Comfy-Org/ComfyUI/pull/16260).
+Older backends do not register it. The browser scenarios in
+[`dynamicGroup.spec.ts`](../../browser_tests/tests/vueNodes/widgets/dynamicGroup.spec.ts)
+use real `/object_info`, workflow storage and execution. CI temporarily pins
+the backend to merge commit `2d2fa46e18d293ced1b958fe288730e2ef4b322e` until the
+standard CI image includes this support.
 
 ## Migration
 

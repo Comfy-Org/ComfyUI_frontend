@@ -229,6 +229,15 @@ describe('Composer', () => {
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
+  it('enters graph selection mode from a click on the empty-composer hint', async () => {
+    const { emitted } = mount({ getMentionNodes: vi.fn(() => []) })
+
+    await userEvent.click(screen.getByRole('button', { name: 'mention nodes' }))
+
+    expect(emitted().selectNodes).toHaveLength(1)
+    expect(screen.getByRole('textbox')).not.toHaveFocus()
+  })
+
   it('retains the draft on Enter while a workflow selection is saving', async () => {
     useAgentComposerStore().setText('keep this draft')
     const { emitted, rerender } = mount({ workflowSelecting: true })
@@ -388,7 +397,7 @@ describe('Composer', () => {
     )
     await nextTick()
     expect(emitted().send).toHaveLength(1)
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(document.body)
 
     await rerender({ streaming: true })
@@ -1753,7 +1762,7 @@ describe('Composer', () => {
           composer.value?.insert(
             text,
             attribution ?? {
-              promptId: 'generate_image',
+              promptId: 'slot_1',
               promptIndex: 0,
               promptCount: 5,
               promptTextHash: 'deadbeef',

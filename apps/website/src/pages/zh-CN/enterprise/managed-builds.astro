@@ -10,7 +10,6 @@ import HeroProduct01 from '../../../components/blocks/HeroProduct01.vue'
 import StepsCards01 from '../../../components/blocks/StepsCards01.vue'
 import IndustriesSection from '../../../components/home/IndustriesSection.vue'
 import DistributionsScene from '../../../components/product/enterprise/DistributionsScene.vue'
-import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
 import { absoluteUrl, pageContext } from '../../../utils/jsonLd'
@@ -290,9 +289,8 @@ const faqPage = buildFaqPageNode(url, faqs)
 
   <ClosingCtaSection
     locale="zh-CN"
-    heading-after-badge={t(
-      'enterprise.managedBuilds.closing.headingAfterBadge',
-      'zh-CN'
+    heading-after-badge={Astro.locals.t(
+      'enterprise.managedBuilds.closing.headingAfterBadge'
     )}
     client:visible
   />

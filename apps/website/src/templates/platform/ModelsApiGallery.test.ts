@@ -23,12 +23,14 @@ describe('ModelsApiGallery', () => {
       'cloud.aiModels.card.klingAi30',
       'cloud.aiModels.card.flux3'
     ] as const) {
-      expect(screen.getByText(t(titleKey, 'en'))).toBeTruthy()
+      expect(screen.getByText(t(titleKey, {}, { locale: 'en' }))).toBeTruthy()
     }
 
     const seedanceClip = () =>
       screen
-        .getByLabelText(t('cloud.aiModels.card.seedance25', 'en'))
+        .getByLabelText(
+          t('cloud.aiModels.card.seedance25', {}, { locale: 'en' })
+        )
         .getAttribute('src')
     const firstClip = seedanceClip()
     await vi.advanceTimersByTimeAsync(6000)
@@ -41,12 +43,11 @@ describe('ModelsApiGallery', () => {
 
     expect(
       screen.getByRole('link', {
-        name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
+        name: new RegExp(
+          t('cloud.aiModels.card.seedance25', {}, { locale: 'en' })
+        )
       })
-    ).toHaveAttribute(
-      'href',
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
-    )
+    ).toHaveAttribute('href', '/hub/models/seedance-2-5-text-to-video/')
   })
 
   it('links a model id shared by several use cases to the specific page the card names', () => {
@@ -54,9 +55,14 @@ describe('ModelsApiGallery', () => {
 
     expect(
       screen.getByRole('link', {
-        name: new RegExp(t('cloud.aiModels.card.geminiOmniFlash', 'en'))
+        name: new RegExp(
+          t('cloud.aiModels.card.geminiOmniFlash', {}, { locale: 'en' })
+        )
       })
-    ).toHaveAttribute('href', '/models/gemini--omni-1.1-flash--animate-images/')
+    ).toHaveAttribute(
+      'href',
+      '/hub/models/gemini-omni-1-1-flash-image-to-video/'
+    )
   })
 
   it('bakes in the href the Router catalogue resolves for each card, so the two never drift', () => {
@@ -79,11 +85,15 @@ describe('ModelsApiGallery', () => {
 
     expect(
       screen.queryByRole('link', {
-        name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
+        name: new RegExp(
+          t('cloud.aiModels.card.seedance25', {}, { locale: 'en' })
+        )
       })
     ).not.toBeInTheDocument()
     expect(
-      screen.getByText(t('cloud.aiModels.card.seedance25', 'en'))
+      screen.getByText(
+        t('cloud.aiModels.card.seedance25', {}, { locale: 'en' })
+      )
     ).toBeTruthy()
   })
 })

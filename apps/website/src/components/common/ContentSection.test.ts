@@ -34,10 +34,10 @@ describe('ContentSection', () => {
     await nextTick()
 
     const securityBadge = screen.getByRole('button', {
-      name: t('privacy.security.label', 'en')
+      name: t('privacy.security.label', {}, { locale: 'en' })
     })
     const introBadge = screen.getByRole('button', {
-      name: t('privacy.intro.label', 'en')
+      name: t('privacy.intro.label', {}, { locale: 'en' })
     })
 
     expect(securityBadge.getAttribute('aria-pressed')).toBe('true')
@@ -50,7 +50,7 @@ describe('ContentSection', () => {
     render(ContentSection, { props: { prefix: 'privacy' } })
 
     const introBadge = screen.getByRole('button', {
-      name: t('privacy.intro.label', 'en')
+      name: t('privacy.intro.label', {}, { locale: 'en' })
     })
     expect(introBadge.getAttribute('aria-pressed')).toBe('true')
   })

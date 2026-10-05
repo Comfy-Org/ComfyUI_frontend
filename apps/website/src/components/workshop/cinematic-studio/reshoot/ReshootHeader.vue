@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { workshopAppRepo } from '../../../../lib/workshop/apps'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import { RESHOOT_APP_SLUG } from '../../../../lib/workshop/cinematic-studio/analytics'
 import type { Locale } from '../../../../i18n/translations'
 import AppRepoLink from '../AppRepoLink.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -13,20 +15,20 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <h1
         class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ rc('reshoot.title', locale) }}
+        {{ t('reshoot.title') }}
       </h1>
       <AppRepoLink
         :repo="workshopAppRepo('reshoot')"
+        :app-slug="RESHOOT_APP_SLUG"
         :locale
         class="sm:ml-auto"
       />
     </div>
     <p class="text-lg text-primary-warm-gray">
-      {{ rc('reshoot.pick.lead', locale) }}
+      {{ t('reshoot.pick.lead') }}
     </p>
-    <p class="flex flex-col gap-1 text-xs text-primary-warm-gray/80">
-      <span>{{ rc('reshoot.credit', locale) }}</span>
-      <span>{{ rc('reshoot.demoNote', locale) }}</span>
+    <p class="text-xs text-primary-warm-gray/80">
+      {{ t('reshoot.credit') }}
     </p>
   </header>
 </template>

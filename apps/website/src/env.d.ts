@@ -1,6 +1,13 @@
 import 'astro/client'
+import type { t } from './i18n/translations'
 
 declare global {
+  namespace App {
+    interface Locals {
+      t: typeof t
+    }
+  }
+
   // Opting into Vite's strict mode drops the `[key: string]: any` fallback on
   // ImportMetaEnv, so an undeclared `import.meta.env.X` is a compile error
   // instead of a silent `any`.
@@ -20,6 +27,8 @@ declare global {
     readonly PUBLIC_WORKSHOP_ENABLED?: string
     readonly PUBLIC_WORKSHOP_WORKFLOWS_ENABLED?: string
     readonly PUBLIC_WORKSHOP_APPS_ENABLED?: string
+    /** Any build but Vercel production: comma-separated PostHog flags to force on. Production reads them from PostHog only. */
+    readonly PUBLIC_WORKSHOP_FLAG_OVERRIDES?: string
     readonly PUBLIC_WORKSHOP_ROUTER_RUN?: string
     readonly PUBLIC_WORKSHOP_SAVE_ASSETS?: string
     /** `astro dev` only: the local CrossView dev proxy, e.g. http://127.0.0.1:4329. */

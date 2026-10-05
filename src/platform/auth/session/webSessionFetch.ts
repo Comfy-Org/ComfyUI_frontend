@@ -1,7 +1,20 @@
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
-import type { SessionTokenResult } from '@comfyorg/account-core/sessionTokenMint'
 import type { RequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import type { SessionTokenResult } from '@comfyorg/account-core/sessionTokenMint'
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 import type { WebSession } from '@comfyorg/account-core/webSession'
+
+/** A workspace-token mint failure whose message is localized user-facing copy. */
+export class WebSessionTokenError extends SessionTokenError {
+  override readonly cause: SessionTokenError
+
+  constructor(original: SessionTokenError, message: string) {
+    super(original.failure)
+    this.message = message
+    this.name = 'WebSessionTokenError'
+    this.cause = original
+  }
+}
 
 /** The user, session epoch and workspace one request was started for. */
 export interface WebSessionRequestScope {
@@ -13,7 +26,7 @@ export interface WebSessionRequestScope {
 
 export interface WebSessionFetchPorts {
   /** A fresh session for the same user and epoch, or undefined to abandon. */
-  readonly reread: (
+  readonly refresh: (
     scope: WebSessionRequestScope
   ) => Promise<WebSessionRequestScope | undefined>
   readonly workspaceDenied: (workspaceId: string) => void
@@ -63,7 +76,7 @@ export async function fetchOnWebSession(
   if (code !== 'csrf_invalid' || init.body instanceof ReadableStream) {
     return response
   }
-  const fresh = await ports.reread(scope)
+  const fresh = await ports.refresh(scope)
   return fresh ? send(fresh) : response
 }
 
@@ -82,7 +95,11 @@ export interface WebSessionRequests {
   readonly workspaceToken: (
     scope: WebSessionRequestScope
   ) => Promise<SessionTokenResult>
-  /** Bearer headers for a service other than ingest; mints on first use. Rejects with SessionTokenError. */
+  /** Mints past the cached token, for a token the server just refused; never rejects. */
+  readonly remintWorkspaceToken: (
+    scope: WebSessionRequestScope
+  ) => Promise<SessionTokenResult>
+  /** Bearer headers for a service other than ingest; mints on first use. Rejects with WebSessionTokenError. */
   readonly authorizeResource: (
     scope: WebSessionRequestScope
   ) => Promise<Readonly<Record<string, string>>>

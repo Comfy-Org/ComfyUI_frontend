@@ -38,13 +38,15 @@ import {
   createSessionBillingTransport,
   createTopupCommand,
   createWorkspaceInviteCommands,
-  sessionBillingScopeSource
+  sessionBillingScopeSource,
+  toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 /** Tab-local, like the credential cache: a pointer must not outlive the tab. */
 const pointerStorage: BillingOperationPointerStorage = {
@@ -121,7 +123,10 @@ function composeBillingWebClient(
     scopeSource,
     statusReader: status,
     pointerStorage,
-    embeddedCheckoutAvailable: () => billingWebStripeKey() !== undefined
+    retainSettledPointer: true,
+    embeddedCheckoutAvailable: () => billingWebStripeKey() !== undefined,
+    onTelemetry: (event) =>
+      billingWebTelemetry.trackBillingEvent(toBillingTelemetryEvent(event))
   })
 
   return {

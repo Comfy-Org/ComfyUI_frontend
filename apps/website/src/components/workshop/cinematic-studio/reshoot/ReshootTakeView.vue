@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { translationsFor } from '../../../../i18n/translations'
 import { CircleStop, LoaderCircle } from '@lucide/vue'
 import { useTimestamp } from '@vueuse/core'
 import { computed } from 'vue'
 
 import type { ReshootTake } from '../../../../composables/useReshoot'
 import { formatElapsed } from '../../../../config/workshop-run'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
 
@@ -24,6 +24,7 @@ const {
   cancellable?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ cancel: [] }>()
 
@@ -54,7 +55,7 @@ const shown = computed(() => {
         v-if="view === 'warp' && !take.warpUrl"
         class="absolute inset-x-4 top-4 mx-auto w-fit max-w-md rounded-xl bg-primary-comfy-ink/85 px-3.5 py-2 text-center text-xs text-primary-comfy-canvas"
       >
-        {{ rc('reshoot.warpNote', locale) }}
+        {{ t('reshoot.warpNote') }}
       </p>
     </template>
     <div
@@ -69,18 +70,19 @@ const shown = computed(() => {
           class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
           aria-hidden="true"
         />
-        {{ rc('reshoot.generating', locale) }}
+        {{ t('reshoot.generating') }}
         <span class="font-mono text-primary-comfy-canvas tabular-nums">
           {{ formatElapsed(elapsed) }}
         </span>
       </p>
       <p class="max-w-xs text-center text-xs text-primary-warm-gray">
         {{
-          rc(
+          t(
             take.phase === 'starting'
               ? 'reshoot.stage.starting'
-              : 'reshoot.generatingHelp',
-            locale
+              : take.phase === 'queued'
+                ? 'reshoot.stage.queued'
+                : 'reshoot.generatingHelp'
           )
         }}
       </p>
@@ -90,19 +92,21 @@ const shown = computed(() => {
         class="h-8 rounded-full px-4 text-xs text-primary-warm-white ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
         @click="emit('cancel')"
       >
-        {{ rc('reshoot.cancel', locale) }}
+        {{ t('reshoot.cancel') }}
       </button>
     </div>
     <div
       v-else-if="take.status === 'failed'"
-      role="status"
-      class="flex max-w-sm flex-col items-center gap-2 text-center"
+      role="alert"
+      class="flex max-w-md flex-col items-center gap-2 px-6 text-center"
     >
-      <p class="flex items-center gap-2.5 text-sm text-primary-comfy-canvas">
+      <p class="flex items-center gap-2.5 text-sm text-primary-warm-white">
         <CircleStop class="size-4" aria-hidden="true" />
-        {{ rc('reshoot.take.failed', locale) }}
+        {{ t('reshoot.take.failed') }}
       </p>
-      <p class="text-xs text-primary-warm-gray">{{ take.note }}</p>
+      <p class="text-xs wrap-break-word text-primary-warm-gray">
+        {{ take.note }}
+      </p>
     </div>
     <p
       v-else
@@ -110,7 +114,7 @@ const shown = computed(() => {
       class="flex items-center gap-2.5 text-sm text-primary-comfy-canvas"
     >
       <CircleStop class="size-4" aria-hidden="true" />
-      {{ rc('reshoot.take.cancelled', locale) }}
+      {{ t('reshoot.take.cancelled') }}
     </p>
   </div>
 </template>

@@ -8,16 +8,15 @@ import {
   isAnnualDuration
 } from '@comfyorg/account-ui/billing/checkout'
 
-import {
-  PENDING_PAYMENT_CANCEL_AVAILABLE,
-  isLocked
-} from '@/checkout/checkoutPage'
+import { isLocked, submitPhaseOf } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
-import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
+import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.vue'
-import { buildSummaryLedger } from '@/checkout/summaryLedger'
+import { successBreakdown } from '@/checkout/successBreakdown'
+import type { LedgerContext } from '@/checkout/summaryLedger'
+import { buildSummaryLedger, planPurchaseOf } from '@/checkout/summaryLedger'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { keepSubscriptionCopy } from '@/checkout/keepSubscription'
 import PromoCodeEntry from '@/components/fullPage/summary/PromoCodeEntry.vue'
@@ -25,6 +24,7 @@ import { useFullPageCheckout } from '@/composables/useFullPageCheckout'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingWebSession } from '@/session/billingWebSession'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 const { t, locale } = useI18n()
 const { coded } = useHostedCopy()
@@ -34,12 +34,11 @@ const {
   page,
   preview,
   canPay,
-  submitting,
-  payFailure,
   returnLink,
   viewPlansLink,
   openedByScript,
   close,
+  abandon,
   retryLoad,
   onPaymentPhase,
   savedMethods,
@@ -53,15 +52,28 @@ const {
   promo,
   promoLive,
   pay,
+  reopening,
   continueVerification,
+  cancelPayment,
   reconcile
 } = useFullPageCheckout()
 
 // A page restored from the back-forward cache is whatever it was when the
 // customer left, which may be a form over money that has since moved (rule 16).
+// One that left for a payment method's own site loads afresh instead: the
+// challenge it handed over froze with it and never settles.
 useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
-  if (event.persisted) void reconcile()
+  if (!event.persisted) return
+  if (leftForProvider()) window.location.reload()
+  else void reconcile()
 })
+
+function leftForProvider() {
+  const current = page.value
+  return (
+    current.kind === 'capture' && submitPhaseOf(current).kind === 'redirecting'
+  )
+}
 
 const quote = computed(() =>
   page.value.kind === 'capture' || page.value.kind === 'waiting'
@@ -69,15 +81,17 @@ const quote = computed(() =>
     : undefined
 )
 
+const ledgerContext = computed<LedgerContext>(() => ({
+  workspace: session.value?.workspace.name,
+  tierName: (tier) => coded('tier', tier),
+  t,
+  locale: locale.value
+}))
+
 const ledger = computed(() => {
   const quoted = quote.value
   if (!quoted) return undefined
-  return buildSummaryLedger(quoted, {
-    workspace: session.value?.workspace.name,
-    tierName: (tier) => coded('tier', tier),
-    t,
-    locale: locale.value
-  })
+  return buildSummaryLedger(quoted, ledgerContext.value)
 })
 
 const charge = computed<CheckoutCharge | undefined>(() => {
@@ -90,6 +104,8 @@ const charge = computed<CheckoutCharge | undefined>(() => {
   }
 })
 
+const purchase = computed(() => quote.value && planPurchaseOf(quote.value))
+
 const keepSubscription = computed(() => {
   const quoted = quote.value
   if (!quoted) return undefined
@@ -100,40 +116,51 @@ const keepSubscription = computed(() => {
   })
 })
 
-const payFailureCopy = computed(() =>
-  payFailure.value === undefined
-    ? undefined
-    : coded('failure', payFailure.value)
-)
-
 const ending = computed(() => endingOf(page.value))
+
+const breakdown = computed(() =>
+  ending.value?.kind === 'success'
+    ? successBreakdown(page.value, ledgerContext.value)
+    : undefined
+)
 
 const locked = computed(() => isLocked(page.value))
 
-/** The server cannot cancel a pending payment yet; the click has nowhere honest to go. */
-function cancelPayment() {}
+/**
+ * The plan a settled payment bought: as this page's own quote priced it, or,
+ * for any payment it did not price here, as the server's catalog lists it.
+ */
+const boughtPlan = computed(() => {
+  const current = page.value
+  if (current.kind === 'terminal' && current.attribution !== 'started')
+    return current.plan && { ...current.plan, currency: 'usd' }
+  const quoted =
+    (current.kind === 'terminal' ? current.quote : undefined) ?? preview.value
+  return quoted && { ...quoted.new_plan, currency: quoted.currency ?? 'usd' }
+})
 
-/** The plan this page's own Pay bought, as its quote priced it. */
 const endingPlan = computed<EndingPlan | undefined>(() => {
-  const quoted = preview.value
-  if (!quoted) return undefined
+  const plan = boughtPlan.value
+  if (!plan) return undefined
   return {
-    name: coded('tier', quoted.new_plan.tier),
+    name: coded('tier', plan.tier),
     price: formatQuoteMoney(
-      quoted.new_plan.price_cents,
-      quoted.currency ?? 'usd',
+      Number(plan.price_cents),
+      plan.currency,
       locale.value
     ),
     period: t(
-      isAnnualDuration(quoted.new_plan.duration)
+      isAnnualDuration(plan.duration)
         ? 'checkout.fullPage.ending.perYear'
         : 'checkout.fullPage.ending.perMonth',
-      { currency: (quoted.currency ?? 'usd').toUpperCase() }
+      { currency: plan.currency.toUpperCase() }
     )
   }
 })
 
-function returnToProduct() {
+function goBack() {
+  reportReturnClicked('back')
+  abandon('back')
   window.location.assign(returnLink.value)
 }
 
@@ -150,6 +177,7 @@ function viewPlans() {
       session?.workspace.name ?? t('checkout.fullPage.ending.thisWorkspace')
     "
     :plan="endingPlan"
+    :breakdown
     :closes-itself="openedByScript"
     @close="close"
     @retry="retryLoad"
@@ -166,7 +194,7 @@ function viewPlans() {
         :ledger
         :locked
         :repricing="promo.busy.value"
-        @back="returnToProduct"
+        @back="goBack"
       >
         <PromoCodeEntry
           :chips="shown.chips"
@@ -190,9 +218,8 @@ function viewPlans() {
         :charge
         :publishable-key="stripeKey ?? ''"
         :can-pay="canPay"
-        :submitting
-        :can-cancel="PENDING_PAYMENT_CANCEL_AVAILABLE"
-        :failure="payFailureCopy"
+        :reopening
+        :purchase
         :keep-subscription="keepSubscription"
         :saved-methods="savedMethods"
         @phase="onPaymentPhase"
