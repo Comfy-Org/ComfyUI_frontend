@@ -218,7 +218,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (!activeWorkflow) return
 
     const source =
-      activeWorkflow.changeTracker.activeState.extra?.linearData ??
+      activeWorkflow.changeTracker.activeState?.extra?.linearData ??
       activeWorkflow.initialState.extra?.linearData
     loadSelections(source)
   }
