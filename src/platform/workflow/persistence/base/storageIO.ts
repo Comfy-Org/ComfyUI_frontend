@@ -508,6 +508,16 @@ const legacyAgentKeys = [
   'Comfy.Agent.DeletedThreads'
 ]
 
+const preIdentityCloudScopePrefixes = [
+  StorageKeys.prefixes.draftIndex,
+  StorageKeys.prefixes.lastActivePath,
+  StorageKeys.prefixes.lastOpenPaths,
+  StorageKeys.prefixes.agentThread,
+  StorageKeys.prefixes.agentWorkflowTabBindings,
+  StorageKeys.prefixes.agentChatTitles,
+  StorageKeys.prefixes.agentDeletedThreads
+]
+
 const sessionRestorePrefixes = [
   StorageKeys.prefixes.activePath,
   StorageKeys.prefixes.openPaths,
@@ -541,6 +551,35 @@ function removeStorageKeys(
         } catch {
           continue
         }
+      }
+    }
+  } catch {
+    return
+  }
+}
+
+function isPreIdentityCloudStorageKey(key: string): boolean {
+  if (key.startsWith(StorageKeys.prefixes.draftPayload)) {
+    const suffix = key.slice(StorageKeys.prefixes.draftPayload.length)
+    return suffix.split(':').length === 2
+  }
+
+  return preIdentityCloudScopePrefixes.some((prefix) => {
+    if (!key.startsWith(prefix)) return false
+    const scope = key.slice(prefix.length)
+    return scope.length > 0 && !scope.includes(':')
+  })
+}
+
+function removePreIdentityCloudStorageKeys(): void {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (!key || !isPreIdentityCloudStorageKey(key)) continue
+      try {
+        localStorage.removeItem(key)
+      } catch {
+        continue
       }
     }
   } catch {
@@ -631,7 +670,8 @@ export function clearAllWorkflowStorage(): void {
 /**
  * Removes persisted state owned by one resolved auth/workspace scope, plus
  * unscoped local and per-tab restore pointers that could reopen that session.
- * Ownerless legacy draft and order blobs are deliberately preserved.
+ * Pre-identity Cloud V2 keys are also removed because no current scope can
+ * read or evict them. Ownerless V1 draft and order blobs remain preserved.
  */
 export function clearWorkflowStorageForScope(scope: StorageScope): void {
   const localKeys = [
@@ -647,5 +687,6 @@ export function clearWorkflowStorageForScope(scope: StorageScope): void {
   const localPrefixes = [`${StorageKeys.prefixes.draftPayload}${scope}:`]
 
   removeStorageKeys(localStorage, localKeys, localPrefixes)
+  removePreIdentityCloudStorageKeys()
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }

@@ -608,6 +608,36 @@ describe('storageIO', () => {
       ).toBeNull()
     })
 
+    it('removes pre-identity Cloud V2 state on logout', () => {
+      const legacyKeys = [
+        'Comfy.Workflow.DraftIndex.v2:personal',
+        'Comfy.Workflow.Draft.v2:personal:abc',
+        'Comfy.Workflow.LastActivePath:personal',
+        'Comfy.Workflow.LastOpenPaths:personal',
+        'Comfy.Agent.ThreadId:personal',
+        'Comfy.Agent.WorkflowTabBindings:personal',
+        'Comfy.Agent.ChatTitles:personal',
+        'Comfy.Agent.DeletedThreads:personal'
+      ]
+      localStorage.setItem(legacyKeys[0], '{}')
+      localStorage.setItem(legacyKeys[1], '{}')
+      localStorage.setItem(legacyKeys[2], '{}')
+      localStorage.setItem(legacyKeys[3], '{}')
+      localStorage.setItem(legacyKeys[4], '{}')
+      localStorage.setItem(legacyKeys[5], '{}')
+      localStorage.setItem(legacyKeys[6], '{}')
+      localStorage.setItem(legacyKeys[7], '{}')
+      const retainedKey = 'Comfy.Workflow.Draft.v2:user-b:workspace-1:def'
+      localStorage.setItem(retainedKey, '{}')
+
+      clearWorkflowStorageForScope(scope('user-a:workspace-1'))
+
+      expect(legacyKeys.map((key) => localStorage.getItem(key))).toEqual(
+        legacyKeys.map(() => null)
+      )
+      expect(localStorage.getItem(retainedKey)).toBe('{}')
+    })
+
     it('preserves unowned legacy draft data while dropping restore pointers', () => {
       const departing = scope('user-a:workspace-1')
       localStorage.setItem('Comfy.Workflow.Drafts', '{"legacy":true}')
