@@ -18,7 +18,10 @@ import { zCurrentWorkspaceResponse } from '@comfyorg/ingest-types/zod'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import {
+  signedInOnWebSession,
+  webSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -557,6 +560,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
     if (getUnifiedToken()) {
       return true
+    }
+    // A unified credential on a session tab would join a sibling's cross-tab
+    // lease and overwrite currentWorkspace when it adopts their token.
+    if (await signedInOnWebSession()) {
+      return false
     }
     const authUser = await unifiedUser()
     // Re-check after the wait: a rollback that flips the flag off while a mint
