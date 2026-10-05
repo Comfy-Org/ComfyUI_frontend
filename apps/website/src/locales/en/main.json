@@ -2469,7 +2469,8 @@
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
-    "modelCatalogue": "ComfyUI Models"
+    "modelCatalogue": "ComfyUI Models",
+    "changelog": "Changelog"
   },
   "privacy": {
     "intro": {
@@ -5495,5 +5496,13 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "changelog": {
+    "viewDocs": "VIEW DOCS",
+    "saved": "Showing saved release notes. The latest updates could not be loaded.",
+    "unavailable": "Release notes could not be loaded.",
+    "loading": "Loading the latest release notes…",
+    "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
+    "retry": "Try again"
   }
 }

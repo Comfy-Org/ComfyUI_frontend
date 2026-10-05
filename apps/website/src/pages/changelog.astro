@@ -1,0 +1,23 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroSection from '@/components/legal/HeroSection.vue'
+import ChangelogContent from '@/components/legal/ChangelogContent.vue'
+---
+
+<BaseLayout
+  title="Changelog - Comfy"
+  description="The latest ComfyUI features, improvements, and fixes from Comfy docs."
+  noindex
+>
+  <HeroSection title="Changelog" />
+  <ChangelogContent client:load />
+  <noscript>
+    <p class="px-4 pb-24 text-sm text-primary-comfy-canvas lg:px-20">
+      <a
+        href="https://docs.comfy.org/changelog/index"
+        class="text-primary-comfy-yellow underline"
+        >Read the changelog in Comfy docs</a
+      >.
+    </p>
+  </noscript>
+</BaseLayout>

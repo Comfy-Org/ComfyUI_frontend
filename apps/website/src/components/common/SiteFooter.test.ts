@@ -1,10 +1,23 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { externalLinks, getRoutes } from '@/config/routes'
 import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
+  it('links the live changelog from the footer', () => {
+    render(SiteFooter, { props: { locale: 'en' } })
+    for (const link of screen.getAllByRole('link', { name: 'Changelog' })) {
+      expect(link.getAttribute('href')).toBe('/changelog')
+    }
+    for (const column of screen.getAllByRole('navigation', {
+      name: 'Resources'
+    })) {
+      const links = within(column).getAllByRole('link')
+      expect(links.at(-1)).toHaveAccessibleName('Changelog')
+    }
+  })
+
   it.for([
     ['en', 'ComfyUI Models'],
     ['zh-CN', 'ComfyUI 模型'],

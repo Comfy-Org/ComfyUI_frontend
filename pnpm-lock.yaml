@@ -1141,6 +1141,9 @@ importers:
       lottie-web:
         specifier: 'catalog:'
         version: 5.13.0
+      marked:
+        specifier: ^15.0.11
+        version: 15.0.12
       parse5:
         specifier: 'catalog:'
         version: 8.0.1
