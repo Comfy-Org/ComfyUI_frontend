@@ -79,15 +79,21 @@ export interface AskUserOption {
 }
 
 /**
- * How an `ask_user` question was closed. `answered` is false when it was
- * cancelled, expired or retired without an answer this client can name.
- * `otherText` is only ever this client's own free text: the resolution frame
- * carries the winning option ids but not the text.
+ * How an ask was closed. `answered` names the committed answer only as far as
+ * the server reported it (`selected` may be empty when it did not); `closed`
+ * means cancelled, expired or retired with no answer; `unknown` means this
+ * client sent an answer but could not confirm the server took it.
  */
 export interface AskUserResolution {
-  answered: boolean
+  status: 'answered' | 'closed' | 'unknown'
   selected: string[]
   otherText?: string
+}
+
+const RESOLUTION_RANK: Record<AskUserResolution['status'], number> = {
+  closed: 0,
+  unknown: 1,
+  answered: 2
 }
 
 /** The generic `ask_user` question: a prompt plus every option the agent offered. */
@@ -162,7 +168,7 @@ export function askIdOf(part: MessagePart): string | undefined {
 export function retireAskParts(
   parts: MessagePart[],
   askId: string,
-  resolution: AskUserResolution = { answered: false, selected: [] }
+  resolution: AskUserResolution = { status: 'closed', selected: [] }
 ): MessagePart[] {
   if (!parts.some((part) => askIdOf(part) === askId)) return parts
   return parts.flatMap((part): MessagePart[] => {
@@ -171,7 +177,9 @@ export function retireAskParts(
     // A real answer outranks an earlier retirement that could not name one
     // (a 409, a lost frame), so the card ends up showing what was chosen.
     const keep =
-      part.resolution && (part.resolution.answered || !resolution.answered)
+      part.resolution &&
+      RESOLUTION_RANK[part.resolution.status] >=
+        RESOLUTION_RANK[resolution.status]
     return [keep ? part : { ...part, resolution }]
   })
 }
