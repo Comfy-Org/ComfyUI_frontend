@@ -139,6 +139,22 @@ describe('NodeHandle', () => {
     it('returns undefined for a slot that does not exist', () => {
       expect(handle().getSlotPosition('input', 9)).toBeUndefined()
     })
+
+    it('combines the renderer and declared minimum size', () => {
+      node.computeSize = vi.fn(() => [80, 40] as [number, number])
+      handle().setSizeConstraints({ minWidth: 120, minHeight: 20 })
+
+      const minimum = handle().getMinimumSize()
+
+      expect(minimum).toEqual({ width: 120, height: 40 })
+      expect(Object.isFrozen(minimum)).toBe(true)
+    })
+
+    it('normalizes malformed renderer minima to finite positive values', () => {
+      node.computeSize = vi.fn(() => [Number.NaN, -50] as [number, number])
+
+      expect(handle().getMinimumSize()).toEqual({ width: 1, height: 1 })
+    })
   })
 
   describe('writes', () => {
@@ -274,6 +290,27 @@ describe('NodeHandle', () => {
 
       expect([...onResize.mock.calls[0][0]]).toEqual([300, 400])
     })
+
+    it('clamps setSize to the same effective minimum', () => {
+      node.computeSize = vi.fn(() => [160, 90] as [number, number])
+      handle().setSizeConstraints({ minWidth: 200, minHeight: 50 })
+      const onResize = vi.fn()
+      node.onResize = onResize
+
+      handle().setSize({ width: 10, height: 20 })
+
+      expect([...node.size]).toEqual([200, 90])
+      expect([...onResize.mock.calls[0][0]]).toEqual([200, 90])
+    })
+
+    it('rejects nonfinite or nonpositive requested sizes', () => {
+      expect(() =>
+        handle().setSize({ width: Number.NaN, height: 100 })
+      ).toThrow(/finite and positive/)
+      expect(() => handle().setSize({ width: 100, height: 0 })).toThrow(
+        /finite and positive/
+      )
+    })
   })
 
   describe('the real node is not reachable', () => {
@@ -339,6 +376,7 @@ describe('NodeHandle', () => {
       expect(held.id).toBe(id)
       expect(held.getTitle()).toBeUndefined()
       expect(held.getPosition()).toBeUndefined()
+      expect(held.getMinimumSize()).toBeUndefined()
       expect(() => held.snapshot()).not.toThrow()
       expect(held.snapshot()).toBeUndefined()
       expect(() => held.setTitle('zombie')).toThrow(ComfyDeletedError)

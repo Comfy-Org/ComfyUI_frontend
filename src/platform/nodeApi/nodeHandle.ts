@@ -126,7 +126,12 @@ export interface NodeHandle extends HandleCommon {
   getPosition(): Point
   setPosition(pos: Point): void
   getSize(): Size
-  /** Changes size through the host's resize protocol, including `onResized`. */
+  /** The renderer's current intrinsic and declared minimum size. */
+  getMinimumSize(): Size
+  /**
+   * Changes size through the host's resize protocol, including `onResized`.
+   * Requested dimensions are clamped to {@link getMinimumSize}.
+   */
   setSize(size: Size): void
   /**
    * The node's rectangle in graph space, title bar included.
@@ -334,6 +339,31 @@ function applyConstraints(node: LGraphNode, c: SizeConstraints) {
   clampToConstraints(node)
 }
 
+function finitePositive(value: unknown, fallback: number): number {
+  const number = Number(value)
+  return Number.isFinite(number) && number > 0 ? number : fallback
+}
+
+function minimumSize(node: LGraphNode): Size {
+  let computed: readonly unknown[] = []
+  try {
+    const value = node.computeSize()
+    if (Array.isArray(value)) computed = value
+  } catch {
+    // A malformed custom node must not leak NaN or prevent safe resizing.
+  }
+  const constraints = constraintsByNode.get(node)
+  const width = Math.max(
+    finitePositive(computed[0], 1),
+    finitePositive(constraints?.minWidth, 0)
+  )
+  const height = Math.max(
+    finitePositive(computed[1], 1),
+    finitePositive(constraints?.minHeight, 0)
+  )
+  return freezeSize(width, height)
+}
+
 /** Mutating a copy avoids relying on in-place mutation of the flags object. */
 function setFlag(node: LGraphNode, flag: 'collapsed' | 'pinned', on: boolean) {
   if (Boolean(node.flags[flag]) === on) return
@@ -451,6 +481,7 @@ export function createNodeHandles(
           markChanged(n)
         },
         getSize: (n) => freezeSize(n.size[0], n.size[1]),
+        getMinimumSize: (n) => minimumSize(n),
         getOutputImages: (n) =>
           Object.freeze(useNodeOutputStore().getNodeImageUrls(n) ?? []),
         // `overIndex` is what the renderer sets while the pointer is over an
@@ -523,8 +554,20 @@ export function createNodeHandles(
         },
         setSize: (n, ...args) => {
           const { width, height } = args[0] as Size
-          if (n.size[0] === width && n.size[1] === height) return
-          n.setSize([width, height])
+          if (
+            ![width, height].every(Number.isFinite) ||
+            width <= 0 ||
+            height <= 0
+          ) {
+            throw new TypeError('node size must be finite and positive')
+          }
+          const minimum = minimumSize(n)
+          const next: [number, number] = [
+            Math.max(width, minimum.width),
+            Math.max(height, minimum.height)
+          ]
+          if (n.size[0] === next[0] && n.size[1] === next[1]) return
+          n.setSize(next)
           markChanged(n)
         },
         snapshot: (n) => snapshotOf(n),
