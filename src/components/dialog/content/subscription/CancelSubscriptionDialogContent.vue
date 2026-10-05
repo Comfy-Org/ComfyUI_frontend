@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { defaultWindow, useEventListener } from '@vueuse/core'
+import { defaultWindow, useEventListener, useThrottleFn } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -98,7 +98,10 @@ const telemetry = useTelemetry()
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
 const isAwaitingStripe = ref(false)
-let wasCancelledAtConfirm = false
+// Last seen `isCancelled` (null until the status loads). A cancel only counts
+// as observed when it turns true after a loaded, not-cancelled reading.
+let lastCancelled: boolean | null = null
+let cancelObserved = false
 const didScopeAbort = ref(false)
 const cancelReport = createCancelFlowReporter(
   telemetry,
@@ -152,12 +155,8 @@ const description = computed(() =>
 )
 
 function completeObservedCancel() {
-  if (wasCancelledAtConfirm || didCancelSucceed.value) return
-  if (!isScopeCurrent()) {
-    didScopeAbort.value = true
-    dialogStore.closeDialog({ key: 'cancel-subscription' })
-    return
-  }
+  if (!cancelObserved || didCancelSucceed.value) return
+  if (!isScopeCurrent()) return abortForScopeChange()
   didCancelSucceed.value = true
   isAwaitingStripe.value = false
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
@@ -171,17 +170,21 @@ function completeObservedCancel() {
 }
 
 watch(
-  () => !!subscription.value?.isCancelled,
+  () => (subscription.value ? !!subscription.value.isCancelled : null),
   (cancelled) => {
-    if (cancelled && isAwaitingStripe.value) completeObservedCancel()
+    if (cancelled === null) return
+    if (cancelled && lastCancelled === false) cancelObserved = true
+    if (!cancelled) cancelObserved = false
+    lastCancelled = cancelled
+    if (cancelObserved && isAwaitingStripe.value) completeObservedCancel()
   }
 )
 
 // The shared watcher gives up after a few minutes; keep checking on return from Stripe.
-useEventListener(defaultWindow, 'focus', () => {
-  if (!isAwaitingStripe.value) return
-  fetchStatus().catch(() => {})
-})
+const refreshOnFocus = useThrottleFn(() => {
+  if (isAwaitingStripe.value) fetchStatus().catch(() => {})
+}, 10_000)
+useEventListener(defaultWindow, 'focus', () => void refreshOnFocus())
 
 function onClose() {
   if (isLoading.value) return
@@ -220,37 +223,19 @@ function reportCancelFailure(error: unknown) {
   isLoading.value = false
 }
 
-async function onConfirmCancel() {
-  if (!isScopeCurrent()) return abortForScopeChange()
-  if (lacksWorkspaceCancelPermission()) return
+function reportWorkspaceConfirmed() {
+  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
+  cancelReport.confirmed({ operationFollows: true })
+}
 
-  // The legacy rail only opens the Stripe portal, so it reports `confirmed`
-  // once the cancellation is observed instead of on click.
-  const isLegacyRail = !shouldUseWorkspaceBilling.value
-  wasCancelledAtConfirm = !!subscription.value?.isCancelled
-  if (!isLegacyRail) {
-    telemetry?.trackSubscriptionCancellation(
-      'confirmed',
-      cancellationMetadata()
-    )
-    cancelReport.confirmed({ operationFollows: true })
-  }
-  isLoading.value = true
-  try {
-    await cancelSubscription(isScopeCurrent)
-  } catch (error) {
-    reportCancelFailure(error)
-    return
-  }
+function awaitStripeCancel() {
+  isAwaitingStripe.value = true
+  isLoading.value = false
+  // The cancel may have been observed while the portal call was pending.
+  completeObservedCancel()
+}
 
-  if (isLegacyRail) {
-    isAwaitingStripe.value = true
-    isLoading.value = false
-    // The cancel may have been observed while the portal call was pending.
-    if (subscription.value?.isCancelled) completeObservedCancel()
-    return
-  }
-
+async function finishWorkspaceCancel() {
   didCancelSucceed.value = true
   try {
     await fetchStatus()
@@ -264,5 +249,36 @@ async function onConfirmCancel() {
     life: 5000
   })
   isLoading.value = false
+}
+
+function handleCancelError(error: unknown) {
+  if (!isScopeCurrent()) return abortForScopeChange()
+  reportCancelFailure(error)
+}
+
+// Routing resolves inside the cancel call, so pick the rail after it returns.
+async function finishCancel(confirmedBeforeCall: boolean) {
+  if (!shouldUseWorkspaceBilling.value) return awaitStripeCancel()
+  if (!confirmedBeforeCall) reportWorkspaceConfirmed()
+  await finishWorkspaceCancel()
+}
+
+async function onConfirmCancel() {
+  if (!isScopeCurrent()) return abortForScopeChange()
+  if (lacksWorkspaceCancelPermission()) return
+
+  // The legacy rail only opens the Stripe portal, so it reports `confirmed`
+  // once the cancellation is observed instead of on click.
+  const confirmedBeforeCall = shouldUseWorkspaceBilling.value
+  if (confirmedBeforeCall) reportWorkspaceConfirmed()
+  lastCancelled = subscription.value ? !!subscription.value.isCancelled : null
+  cancelObserved = false
+  isLoading.value = true
+  try {
+    await cancelSubscription(isScopeCurrent)
+  } catch (error) {
+    return handleCancelError(error)
+  }
+  await finishCancel(confirmedBeforeCall)
 }
 </script>

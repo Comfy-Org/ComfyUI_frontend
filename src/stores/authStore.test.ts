@@ -1837,7 +1837,7 @@ describe('useAuthStore', () => {
       })
     })
 
-    it('sends cancel_subscription only when requested without a target tier', async () => {
+    it('sends cancel_subscription only when requested, and never with a target tier', async () => {
       const bodyOf = () =>
         mockFetch.mock.calls
           .filter((call) => (call[0] as string).endsWith('/customers/billing'))
@@ -1847,8 +1847,9 @@ describe('useAuthStore', () => {
       await store.accessBillingPortal(undefined, { cancelSubscription: true })
       expect(JSON.parse(bodyOf()!)).toEqual({ cancel_subscription: true })
 
-      await store.accessBillingPortal('creator', { cancelSubscription: true })
-      expect(JSON.parse(bodyOf()!)).toEqual({ target_tier: 'creator' })
+      await expect(
+        store.accessBillingPortal('creator', { cancelSubscription: true })
+      ).rejects.toThrow(/target tier/)
 
       await store.accessBillingPortal(undefined, { cancelSubscription: false })
       expect(bodyOf()).toBeUndefined()

@@ -660,7 +660,10 @@ describe('CancelSubscriptionDialogContent', () => {
       await waitFor(() =>
         expect(useDialogStore().closeDialog).toHaveBeenCalled()
       )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
       expect(confirmedCalls()).toHaveLength(0)
     })
 
@@ -668,9 +671,6 @@ describe('CancelSubscriptionDialogContent', () => {
       const isCancelled = ref(true)
       await confirmWith(isCancelled)
 
-      isCancelled.value = false
-      await nextTick()
-      isCancelled.value = true
       await nextTick()
 
       expect(mockToastAdd).not.toHaveBeenCalled()
@@ -707,6 +707,34 @@ describe('CancelSubscriptionDialogContent', () => {
       })
     })
 
+    it('does not report success when a pre-existing cancel loads after a null status at confirm', async () => {
+      const status = ref<SubscriptionInfo | null>(null)
+      useBillingContext().subscription = computed(() => status.value)
+      vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
+        undefined
+      )
+      renderComponent()
+      await confirm()
+      await screen.findByText(/Finish cancelling on the Stripe page/i)
+
+      status.value = subscription({ isCancelled: true })
+      await nextTick()
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(confirmedCalls()).toHaveLength(0)
+    })
+
+    it('reports a cancel that turns true after the status was un-cancelled', async () => {
+      const isCancelled = ref(true)
+      await confirmWith(isCancelled)
+
+      isCancelled.value = false
+      await nextTick()
+      isCancelled.value = true
+
+      await waitFor(() => expect(confirmedCalls()).toHaveLength(1))
+    })
+
     it('sends confirmed exactly once when isCancelled flips repeatedly', async () => {
       const isCancelled = ref(false)
       await confirmWith(isCancelled)
@@ -729,6 +757,32 @@ describe('CancelSubscriptionDialogContent', () => {
       window.dispatchEvent(new Event('focus'))
 
       expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(1)
+    })
+
+    it('takes the scope-change path, not failed, when the workspace changed during a failing portal call', async () => {
+      setSubscription(subscription())
+      const scopeCurrent = ref(true)
+      vi.mocked(useBillingContext().cancelSubscription).mockImplementationOnce(
+        () => {
+          scopeCurrent.value = false
+          return Promise.reject(new Error('boom'))
+        }
+      )
+
+      renderComponent({ isScopeCurrent: () => scopeCurrent.value })
+      await confirm()
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'warn' })
+        )
+      )
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('failed', expect.anything())
     })
 
     it('reports a blocked portal tab as failed with an error toast and no confirmed', async () => {

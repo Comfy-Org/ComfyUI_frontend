@@ -230,9 +230,7 @@ export const useAuthActions = () => {
     targetTier?: BillingPortalTargetTier,
     options?: { cancelSubscription?: boolean }
   ): Promise<boolean> => {
-    const response = options
-      ? await authStore.accessBillingPortal(targetTier, options)
-      : await authStore.accessBillingPortal(targetTier)
+    const response = await authStore.accessBillingPortal(targetTier, options)
     if (!response.billing_portal_url) {
       throw new Error(
         t('toastMessages.failedToAccessBillingPortal', {
