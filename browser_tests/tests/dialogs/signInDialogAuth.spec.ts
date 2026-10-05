@@ -50,7 +50,7 @@ test.describe('Sign In dialog — live auth', () => {
 
     await expect(dialog.root).toBeVisible()
     await expect(
-      comfyPage.page.getByText('Invalid login credentials')
+      comfyPage.toast.withText('Invalid login credentials')
     ).toBeVisible()
   })
 
@@ -156,7 +156,7 @@ test.describe('Sign In dialog — live auth', () => {
     await dialog.forgotPasswordLink.click()
 
     await expect(
-      comfyPage.page.getByText('Password reset email sent')
+      comfyPage.toast.withText('Password reset email sent')
     ).toBeVisible()
   })
 
@@ -168,7 +168,7 @@ test.describe('Sign In dialog — live auth', () => {
 
     await dialog.forgotPasswordLink.click()
 
-    await expect(comfyPage.page.getByText('Enter your email')).toBeVisible()
+    await expect(comfyPage.toast.withText('Enter your email')).toBeVisible()
     await expect(dialog.emailInput).toBeFocused()
   })
 
@@ -188,7 +188,7 @@ test.describe('Sign In dialog — live auth', () => {
     await resetFailed
 
     await expect(
-      comfyPage.page.getByText(
+      comfyPage.toast.withText(
         'Network error. Please check your connection and try again.'
       ),
       'a dropped connection must surface the network error, not a silent failure'

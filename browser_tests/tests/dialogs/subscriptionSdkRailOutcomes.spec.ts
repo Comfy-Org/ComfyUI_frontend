@@ -28,6 +28,7 @@ import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Subscription outcomes the other SDK-rail specs leave uncovered: leaving a
@@ -373,7 +374,9 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     expect(routes.subscribeRequests).toHaveLength(1)
     expect(transport(routes.subscribeRequests[0])).toBe('fetch')
     await expect(
-      page.getByText('Verify your payment to finish setting up your workspace')
+      new ToastHelper(page).withText(
+        'Verify your payment to finish setting up your workspace'
+      )
     ).toBeVisible()
 
     // A poll that still reports the same parked step must not offer it again.
@@ -419,7 +422,7 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     ).toBeVisible()
     await page.getByRole('button', { name: 'Confirm upgrade' }).click()
 
-    const progressToast = page.getByText(
+    const progressToast = new ToastHelper(page).withText(
       'Processing payment — setting up your workspace...'
     )
     await expect(progressToast).toBeVisible()

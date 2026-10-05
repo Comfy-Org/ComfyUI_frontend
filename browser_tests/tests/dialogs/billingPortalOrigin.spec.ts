@@ -14,6 +14,7 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Which billing-portal origins the outstanding-payment recovery will open.
@@ -163,7 +164,9 @@ test.describe('Billing portal origin (#19892)', { tag: '@cloud' }, () => {
 
     // The customer still gets the server's own guidance, which is what tells
     // them what to do; the rejected host never reaches a tab.
-    await expect(page.getByText(PAYMENT_REQUIRED.message)).toBeVisible()
+    await expect(
+      new ToastHelper(page).withText(PAYMENT_REQUIRED.message)
+    ).toBeVisible()
     expect(await portalOpens()).toEqual([])
   })
 })

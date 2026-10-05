@@ -21,6 +21,7 @@ import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * Hosted billing destination — FE-2218, Layer C of the billing rollout.
@@ -337,7 +338,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect(
-      page.getByText(
+      new ToastHelper(page).withText(
         "Couldn't open the billing page. Allow pop-ups for this site and try again."
       )
     ).toBeVisible()
@@ -355,7 +356,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect(
-      page.getByText(
+      new ToastHelper(page).withText(
         "Couldn't open the billing page. Allow pop-ups for this site and try again."
       )
     ).toBeVisible()

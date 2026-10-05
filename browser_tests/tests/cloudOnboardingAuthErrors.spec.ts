@@ -13,6 +13,7 @@ import {
   mockCloudBoot,
   preselectCloudUser
 } from '@e2e/fixtures/utils/cloudBootMocks'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 type CreateCustomerResponse =
@@ -79,7 +80,7 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(
-      page.getByText('Invalid login credentials'),
+      new ToastHelper(page).withText('Invalid login credentials'),
       'the same copy as a wrong password keeps sign-in from revealing whether an email has an account'
     ).toBeVisible()
   })
@@ -99,7 +100,9 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(
-      page.getByText('This account has been disabled. Please contact support.')
+      new ToastHelper(page).withText(
+        'This account has been disabled. Please contact support.'
+      )
     ).toBeVisible()
   })
 
@@ -119,7 +122,7 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(
-      page.getByText(
+      new ToastHelper(page).withText(
         'Too many login attempts. Please wait a moment and try again.'
       )
     ).toBeVisible()
@@ -143,7 +146,9 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign up', exact: true }).click()
 
     await expect(
-      page.getByText(enMessages.auth.errors['auth/email-already-in-use'])
+      new ToastHelper(page).withText(
+        enMessages.auth.errors['auth/email-already-in-use']
+      )
     ).toBeVisible()
     await expect(page).toHaveURL(/\/cloud\/signup/)
   })
@@ -163,7 +168,7 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(
-      page.getByText(
+      new ToastHelper(page).withText(
         'Network error. Please check your connection and try again.'
       )
     ).toBeVisible()
