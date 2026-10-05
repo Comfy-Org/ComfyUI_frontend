@@ -189,7 +189,7 @@ function namedLabel(key: string): string {
     v-else
     :state="status.downloadState"
     :row-name="rowName"
-    @retry="emit('download')"
+    @retry="requestDownload()"
   />
 </template>
 

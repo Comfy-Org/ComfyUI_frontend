@@ -603,4 +603,44 @@ describe('WorkflowTemplateDetail', () => {
     // The queued row takes the focus the vanished button was holding.
     await waitFor(() => expect(screen.getByRole('status')).toHaveFocus())
   })
+  it('keeps focus in the row when Retry replaces its own button', async () => {
+    const failed = {
+      id: 'm1',
+      name: 'model.safetensors',
+      description: 'Checkpoint',
+      status: {
+        kind: 'downloadable',
+        label: 'Download model',
+        downloadState: { status: 'failed', attempt: 1, reason: 'error' }
+      }
+    } as const
+    const { rerender } = renderDetail({
+      renderedGroups: [{ id: 'models', label: 'Models', rows: [failed] }]
+    })
+
+    const retry = screen.getByRole('button', { name: /^Retry/ })
+    retry.focus()
+    await userEvent.click(retry)
+
+    await rerender({
+      groups: [
+        {
+          id: 'models',
+          label: 'Models',
+          rows: [
+            {
+              ...failed,
+              status: {
+                kind: 'downloadable',
+                label: 'Download model',
+                downloadState: { status: 'queued', attempt: 2 }
+              }
+            }
+          ]
+        }
+      ]
+    })
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveFocus())
+  })
 })
