@@ -12,7 +12,6 @@ import {
 } from 'reka-ui'
 import {
   computed,
-  inject,
   nextTick,
   onMounted,
   onUnmounted,
@@ -20,11 +19,9 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
@@ -35,10 +32,9 @@ import { composerPromptForSend } from '../../utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
   WorkflowReference,
@@ -47,7 +43,8 @@ import type {
 } from '../../types/workflowReference'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import AttachmentChip from './composer/AttachmentChip.vue'
+import AssetTray from './composer/AssetTray.vue'
+import AssetThumbnail from './composer/AssetThumbnail.vue'
 import RunModePopover from './composer/RunModePopover.vue'
 
 const {
@@ -99,11 +96,6 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 
-const assetDragActive = inject<Readonly<Ref<boolean>>>(
-  'agentAssetDragActive',
-  ref(false)
-)
-
 const duplicateIdClass =
   'shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 text-base-foreground'
 
@@ -146,9 +138,16 @@ const composer = useComposer({
 const editorRef =
   useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')
 const { workflowReferences } = composer
+const showPlaceholderHint = computed(
+  () => !composer.draft.value && !composer.prompt.value.references.length
+)
 
 const workflowSubmenuOpen = ref(false)
 const addMenuOpen = ref(false)
+const highlightedAssetIds = ref<string[]>([])
+const uploadingAttachmentCount = computed(
+  () => composer.attachments.value.filter((item) => item.uploading).length
+)
 
 const { eligibleWorkflows, selectWorkflow } = useWorkflowReferencePicker({
   editor: () => editorRef.value,
@@ -166,7 +165,6 @@ const {
   mentionVisible,
   mentionHasResults,
   graphDupes,
-  tagDupes,
   syncMention,
   pickMention,
   isNodeReferenceDisabled,
@@ -180,11 +178,13 @@ const {
   editor: () => editorRef.value,
   selectionTags: () => selectionTags,
   workflows: () => eligibleWorkflows.value,
+  assets: () => composer.attachments.value,
   nodeReferenceDisabledReason: () => nodeReferenceDisabledReason,
   workflowSelecting: () => workflowSelecting,
   getMentionNodes: () => getMentionNodes(),
   selectWorkflow,
   pickNode: (node) => emit('mentionPick', node),
+  pickAsset: (asset) => composer.referenceAttachment(asset.id),
   requestWorkflows: () => emit('requestWorkflowReferences')
 })
 
@@ -343,7 +343,7 @@ defineExpose({
     id="agent-composer"
     ref="composerContainerRef"
     data-testid="agent-composer"
-    class="relative flex flex-col rounded-lg border border-border-subtle bg-base-background"
+    class="relative flex min-w-0 flex-col rounded-lg border border-border-subtle bg-base-background"
   >
     <div
       v-if="mentionVisible"
@@ -380,6 +380,7 @@ defineExpose({
                 : undefined
             "
             role="menuitem"
+            :aria-label="match.kind === 'asset' ? match.label : undefined"
             :data-active="index === mentionActive"
             :class="
               cn(
@@ -401,6 +402,13 @@ defineExpose({
             <span
               v-else-if="match.kind === 'back'"
               class="icon-[lucide--chevron-left] size-4 shrink-0"
+            />
+            <AssetThumbnail
+              v-if="match.kind === 'asset'"
+              :name="match.asset.name"
+              :preview-url="match.asset.previewUrl"
+              variant="menu"
+              class="size-5 shrink-0"
             />
             <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
             <span
@@ -447,69 +455,34 @@ defineExpose({
 
     <div
       data-testid="composer-input-box"
-      :class="
-        cn(
-          'relative -m-px flex max-h-[50dvh] flex-col border transition-colors',
-          assetDragActive
-            ? 'h-28 rounded-lg border-dashed border-component-node-border bg-secondary-background'
-            : 'min-h-28 rounded-lg border-border-subtle bg-secondary-background focus-within:border-muted-foreground'
-        )
-      "
+      class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border-subtle bg-secondary-background transition-colors focus-within:border-muted-foreground"
     >
-      <div
-        v-if="assetDragActive"
-        role="status"
-        class="absolute inset-px z-20 flex flex-col items-center justify-center gap-2 rounded-lg bg-secondary-background font-inter text-[14px] leading-[normal] font-normal text-muted-foreground"
-      >
-        <span
-          aria-hidden="true"
-          class="icon-[lucide--upload] size-6 shrink-0 text-muted-foreground"
-        />
-        <span>{{ t('agent.dragAndDropAssets') }}</span>
-      </div>
       <slot name="insideInput" />
-      <div
-        v-if="selectionTags.length"
-        data-testid="composer-node-section"
-        class="flex min-h-0 flex-wrap items-center gap-2 overflow-y-auto border-b border-border-default p-3"
-      >
-        <Tag
-          v-for="tag in selectionTags"
-          :key="selectedNodeKey(tag)"
-          :label="tag.title"
-          removable
-          :remove-label="
-            t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
-          "
-          :remove-tooltip="t('agent.remove')"
-          class="max-w-64"
-          @remove="emit('removeTag', selectedNodeKey(tag))"
-        >
-          <template #icon>
-            <span class="icon-[comfy--node] size-3.5 text-muted-foreground" />
-          </template>
-          <span
-            v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-            :class="duplicateIdClass"
-          >
-            #{{ tag.id }}
-          </span>
-        </Tag>
-      </div>
+      <AssetTray
+        v-if="composer.attachments.value.length"
+        :attachments="composer.attachments.value"
+        :highlighted-ids="highlightedAssetIds"
+        @remove="composer.removeAttachment"
+      />
 
       <div
-        v-if="composer.attachments.value.length"
-        data-testid="composer-asset-section"
-        class="flex max-h-32 flex-wrap gap-2 overflow-y-auto p-3"
+        data-testid="composer-upload-status"
+        aria-live="polite"
+        aria-atomic="true"
+        :class="
+          cn(
+            'flex shrink-0 items-center gap-1 text-xs text-muted-foreground',
+            uploadingAttachmentCount > 0 && 'px-3 pb-2'
+          )
+        "
       >
-        <AttachmentChip
-          v-for="item in composer.attachments.value"
-          :key="item.id"
-          :name="item.name"
-          :preview-url="item.previewUrl"
-          :uploading="item.uploading"
-          @remove="composer.removeReference(`asset:${item.id}`)"
-        />
+        <template v-if="uploadingAttachmentCount > 0">
+          <span
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] size-3 animate-spin"
+          />
+          {{ t('agent.uploadingAttachments', uploadingAttachmentCount) }}
+        </template>
       </div>
 
       <div
@@ -550,6 +523,7 @@ defineExpose({
                 (id, name) => emit('openReferenceWorkflow', id, name)
               "
               @remove-node-reference="emit('removeTag', $event)"
+              @highlight-assets="highlightedAssetIds = $event"
               @remove-workflow-reference="
                 emit('removeWorkflowReference', $event)
               "
@@ -557,10 +531,14 @@ defineExpose({
           </div>
 
           <div
-            v-if="
-              !composer.draft.value && !composer.prompt.value.references.length
+            :aria-hidden="!showPlaceholderHint || undefined"
+            :inert="!showPlaceholderHint"
+            :class="
+              cn(
+                'pointer-events-none z-10 col-start-1 row-start-1 self-start p-3 font-inter text-[14px]/5 font-normal text-muted-foreground',
+                !showPlaceholderHint && 'invisible'
+              )
             "
-            class="pointer-events-none z-10 col-start-1 row-start-1 self-start p-3 font-inter text-[14px]/5 font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>
             <AccessibleTooltip

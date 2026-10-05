@@ -202,16 +202,33 @@ describe('Composer', () => {
     ).toBeTruthy()
   })
 
-  it('hides the empty-composer hint once typing begins', async () => {
-    mount()
-    const box = screen.getByRole('textbox')
+  it.for([{ withAsset: false }, { withAsset: true }])(
+    'hides the hint while typing and restores it after clearing (tray=$withAsset)',
+    async ({ withAsset }) => {
+      const store = useAgentComposerStore()
+      if (withAsset)
+        store.addAttachment({ id: 'asset', name: 'cat.png', ref: 'cat.png' })
+      const { emitted } = mount()
+      const box = screen.getByRole('textbox')
+      expect(
+        screen.getByRole('button', { name: 'mention nodes' })
+      ).toBeVisible()
 
-    await userEvent.click(box)
-    await userEvent.paste('hello')
+      await userEvent.click(box)
+      await userEvent.paste('hello')
 
-    expect(useAgentComposerStore().draft).toBe('hello')
-    expect(screen.queryByRole('button', { name: 'mention nodes' })).toBeNull()
-  })
+      expect(store.draft).toBe('hello')
+      expect(screen.queryByRole('button', { name: 'mention nodes' })).toBeNull()
+
+      await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
+      expect(store.draft).toBe('')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'mention nodes' })
+      )
+      expect(emitted().selectNodes).toHaveLength(1)
+      expect(store.attachments).toHaveLength(withAsset ? 1 : 0)
+    }
+  )
 
   it('enters graph selection mode from the empty-composer hint', async () => {
     const getMentionNodes = vi.fn(() => [])
@@ -910,6 +927,40 @@ describe('Composer', () => {
       ])
     })
 
+    it('loads current nodes when entering or re-entering the Nodes submenu', async () => {
+      let nodes: typeof NODES = []
+      mount({ getMentionNodes: () => nodes })
+      await openReferenceRoot()
+
+      nodes = [NODES[0]]
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+      expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Back' }))
+      nodes = [NODES[2]]
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+      expect(screen.getByRole('menuitem', { name: 'VAE Decode' })).toBeVisible()
+      expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
+      expect(useAgentComposerStore().draft).toBe('@')
+    })
+
+    it('filters current nodes after the graph changes with the submenu open', async () => {
+      let nodes = [NODES[0]]
+      const { emitted } = mount({ getMentionNodes: () => nodes })
+      await openReferenceSection('Nodes')
+
+      nodes = [NODES[2]]
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('vae')
+
+      expect(screen.getByRole('menuitem', { name: 'VAE Decode' })).toBeVisible()
+      expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
+      expect(useAgentComposerStore().draft).toBe('@vae')
+      await userEvent.keyboard('{Enter}')
+      expect(emitted().mentionPick).toEqual([[NODES[2]]])
+      expect(emitted().send).toBeUndefined()
+    })
+
     // Re-picking a staged node is a no-op, so it drops out of the list.
     it('hides nodes already in the basket', async () => {
       mount({
@@ -926,11 +977,11 @@ describe('Composer', () => {
       expect(labels).toEqual(['Back', 'KSampler #7', 'VAE Decode'])
     })
 
-    // The staged node is only hidden from the picker, not from the duplicate
-    // check - its chip must still show the id that tells it apart from the
-    // same-titled node still in the graph.
     it('keeps disambiguating a staged node against its graph twin', async () => {
       const twin = { id: '11', title: NODES[0].title }
+      const store = useAgentComposerStore()
+      store.setNodeScope('workflow-a')
+      store.setNodes([NODES[0]])
       mount({
         getMentionNodes: () => [...NODES, twin],
         selectionTags: [NODES[0]]
@@ -938,7 +989,12 @@ describe('Composer', () => {
 
       await openReferenceSection('Nodes')
 
-      expect(screen.getByText(`#${NODES[0].id}`)).toBeInTheDocument()
+      expect(screen.getByTestId('node-reference-chip')).toHaveTextContent(
+        'KSampler #5'
+      )
+      expect(
+        screen.queryByTestId('composer-node-section')
+      ).not.toBeInTheDocument()
     })
 
     it('keeps type-to-filter behavior inside the selected reference type', async () => {
@@ -1334,7 +1390,10 @@ describe('Composer', () => {
   it.for(['pointer', 'Enter', 'Space'])(
     'opens a staged workflow with %s without consuming the draft',
     async (interaction) => {
-      useAgentComposerStore().setText('Keep this prompt')
+      const store = useAgentComposerStore()
+      store.setText('Keep this prompt')
+      store.setNodeScope('workflow-a')
+      store.setNodes([{ id: '5', title: 'KSampler' }])
       const { emitted } = mount({
         workflowReferences: [
           { id: 'wf-1', name: 'Water world', textOffset: 0 }
@@ -1351,9 +1410,10 @@ describe('Composer', () => {
       expect(emitted().openReferenceWorkflow).toEqual([['wf-1', 'Water world']])
       expect(emitted().removeWorkflowReference).toBeUndefined()
       expect(emitted().send).toBeUndefined()
-      expect(useAgentComposerStore().draft).toBe('Keep this prompt')
-      expect(screen.getByTestId('composer-node-section')).toHaveTextContent(
-        'KSampler'
+      expect(store.draft).toBe('Keep this prompt ')
+      expect(store.nodes).toEqual([{ id: '5', title: 'KSampler' }])
+      expect(screen.getByTestId('node-reference-chip')).toHaveTextContent(
+        'KSampler #5'
       )
     }
   )
@@ -1517,20 +1577,20 @@ describe('Composer', () => {
     expect(useAgentComposerStore().draft).toBe('tex')
   })
 
-  it('keeps selected nodes in a dedicated section above the inline prompt', () => {
+  it('keeps selected nodes inline alongside workflow references', () => {
+    const store = useAgentComposerStore()
+    store.setNodeScope('workflow-a')
+    store.setNodes([{ id: '5', title: 'KSampler' }])
     mount({
-      selectionTags: [{ id: '5', title: 'KSampler' }],
+      selectionTags: store.nodes,
       workflowReferences: [{ id: 'wf-1', name: 'Water world', textOffset: 0 }]
     })
-
-    const nodeSection = screen.getByTestId('composer-node-section')
-    const inlineInput = screen.getByTestId('composer-inline-input')
-
-    expect(nodeSection).toHaveClass('border-b', 'p-3')
-    expect(nodeSection).toHaveTextContent('KSampler')
-    expect(nodeSection).not.toContainElement(screen.getByRole('textbox'))
-    expect(inlineInput).not.toHaveTextContent('KSampler')
-    expect(inlineInput).toHaveTextContent('Water world')
+    expect(
+      screen.queryByTestId('composer-node-section')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Water worldKSampler #5'
+    )
   })
 
   it('keeps added assets in a separate padded section above the prompt', async () => {
@@ -1583,9 +1643,11 @@ describe('Composer', () => {
       screen.getByRole('button', { name: 'Open Water world' })
     )
     expect(onOpenReferenceWorkflow).toHaveBeenCalledWith('wf-1', 'Water world')
-    expect(screen.getByTestId('composer-asset-section')).toHaveTextContent(
-      'cat.png'
-    )
+    expect(
+      within(screen.getByTestId('composer-asset-section')).getByRole('group', {
+        name: 'cat.png'
+      })
+    ).toBeVisible()
   })
 
   it('keeps the empty prompt hint visible when only nodes are selected', () => {
@@ -1645,81 +1707,51 @@ describe('Composer', () => {
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
-  it('hides the id on a uniquely named selection chip', () => {
-    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
-
-    expect(screen.getByText('KSampler')).toBeInTheDocument()
-    expect(screen.queryByText('#5')).not.toBeInTheDocument()
-  })
-
-  it('emits removeTag when a selection chip is removed', async () => {
-    const { emitted } = mount({
-      selectionTags: [{ id: '5', title: 'KSampler' }]
-    })
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
-    )
-
-    expect(emitted().removeTag).toEqual([['5']])
-  })
-
-  it('builds the remove tooltip for a selection chip', () => {
-    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
-
-    const removeButton = screen.getByRole('button', {
-      name: 'Remove KSampler #5 reference'
-    })
-    expect(tooltipBindings.get(removeButton)).toMatchObject({ value: 'Remove' })
-  })
-
-  it('renders a selection chip label as non-interactive context', () => {
-    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
-
-    expect(screen.getByText('KSampler')).toBeVisible()
-    expect(
-      screen.queryByRole('button', { name: 'Show KSampler #5 on canvas' })
-    ).toBeNull()
-  })
-
-  // The remove button sits outside the focus trigger; removing a chip must not
-  // also fly the canvas to the node being removed.
-  it('removes a selection chip without focusing its node', async () => {
-    const { emitted } = mount({
-      selectionTags: [{ id: '5', title: 'KSampler' }]
-    })
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
-    )
-
-    expect(emitted().removeTag).toEqual([['5']])
-    expect(emitted().focusTag).toBeUndefined()
-  })
-
-  it('shows the id on a lone selection chip with a graph title twin', () => {
-    const selected = { id: '5', title: 'KSampler' }
-    mount({
-      selectionTags: [selected],
-      getMentionNodes: () => [selected, { id: '7', title: 'KSampler' }]
-    })
-
-    expect(screen.getByText('KSampler')).toBeInTheDocument()
-    expect(screen.getByText('#5')).toBeInTheDocument()
-    expect(screen.queryByText('#7')).not.toBeInTheDocument()
-  })
-
-  it('shows ids when selection chips have duplicate titles', () => {
-    mount({
-      selectionTags: [
+  it.for([
+    {
+      label: 'unique title',
+      nodes: [{ id: '5', title: 'KSampler' }],
+      labels: ['KSampler #5']
+    },
+    {
+      label: 'duplicate titles',
+      nodes: [
         { id: '5', title: 'KSampler' },
         { id: '7', title: 'KSampler' }
-      ]
-    })
+      ],
+      labels: ['KSampler #5', 'KSampler #7']
+    }
+  ])(
+    'identifies inline nodes with $label by their IDs',
+    ({ nodes, labels }) => {
+      const store = useAgentComposerStore()
+      store.setNodeScope('workflow-a')
+      store.setNodes(nodes)
+      mount({ selectionTags: store.nodes })
+      expect(
+        screen
+          .getAllByTestId('node-reference-chip')
+          .map((chip) => chip.textContent)
+      ).toEqual(labels)
+      expect(
+        screen.queryByTestId('composer-node-section')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Show KSampler #5 on canvas' })
+      ).toBeNull()
+    }
+  )
 
-    expect(screen.getAllByText('KSampler')).toHaveLength(2)
-    expect(screen.getByText('#5')).toBeInTheDocument()
-    expect(screen.getByText('#7')).toBeInTheDocument()
+  it('removes an inline node without focusing its canvas node', async () => {
+    const store = useAgentComposerStore()
+    store.setNodeScope('workflow-a')
+    store.setNodes([{ id: '5', title: 'KSampler' }])
+    const { emitted } = mount({ selectionTags: store.nodes })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
+    expect(emitted().removeTag).toEqual([['5']])
+    expect(emitted().focusTag).toBeUndefined()
+    expect(store.nodes).toEqual([])
   })
 
   it('renders an attachment preview and removes it from the composer', async () => {

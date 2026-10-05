@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -25,6 +26,21 @@ function iconMarker(container: Element): string {
 }
 
 describe('AttachmentChip', () => {
+  it.for([
+    { name: 'cat.png', previewUrl: 'blob:cat' },
+    { name: 'song.mp3', previewUrl: undefined }
+  ])(
+    'shows $name only on hover while retaining an accessible tray item',
+    async (props) => {
+      const user = userEvent.setup()
+      renderChip(props)
+      expect(screen.queryByText(props.name)).not.toBeInTheDocument()
+      await user.hover(screen.getByRole('group', { name: props.name }))
+      const preview = await screen.findByRole('tooltip', { name: props.name })
+      expect(within(preview).getByText(props.name)).toBeVisible()
+    }
+  )
+
   it('renders an image preview only for image files', () => {
     renderChip({ name: 'cat.png', previewUrl: 'blob:x' })
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
@@ -37,7 +53,8 @@ describe('AttachmentChip', () => {
       name: 'song.mp3',
       previewUrl: 'https://x/thumb.png'
     })
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.queryByAltText('song.mp3')).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Audio' })).toBeInTheDocument()
     expect(iconMarker(container)).toContain('lucide--music')
   })
 

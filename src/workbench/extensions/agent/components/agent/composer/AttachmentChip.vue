@@ -1,60 +1,53 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-import Tag from '@/components/chip/Tag.vue'
-import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import AssetHoverPreview from './AssetHoverPreview.vue'
+import AssetThumbnail from './AssetThumbnail.vue'
 
 const {
   name,
   previewUrl,
-  uploading = false
+  uploading = false,
+  highlighted = false
 } = defineProps<{
   name: string
   previewUrl?: string
   uploading?: boolean
+  highlighted?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
-
-const kind = computed(() => getMediaTypeFromFilename(name))
-
-/* The shared map's 'other' glyph is a checkmark, which reads as a status
-   rather than a file on this surface. */
-const kindIconClass = computed(() =>
-  kind.value === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind.value)
-)
 </script>
 
 <template>
-  <!-- `data-attachment-name` anchors black-box coverage of what a drop actually
-       attached: the visible label truncates, so asserting on rendered text alone
-       cannot tell one long filename from another. -->
-  <Tag
-    data-testid="agent-attachment-chip"
-    :data-attachment-name="name"
-    :label="name"
-    removable
-    :remove-label="$t('agent.remove')"
-    class="max-w-48"
-    @remove="emit('remove')"
-  >
-    <template #icon>
+  <AssetHoverPreview :name :preview-url>
+    <span
+      data-testid="agent-attachment-chip"
+      :data-attachment-name="name"
+      :data-highlighted="highlighted || undefined"
+      role="group"
+      :aria-label="name"
+      class="group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset"
+    >
       <span
-        v-if="uploading"
-        role="status"
-        :aria-label="$t('agent.uploading')"
-        class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
+        class="relative flex size-full items-center justify-center overflow-hidden rounded-md"
+      >
+        <AssetThumbnail :name :preview-url variant="tray" class="size-full" />
+        <span
+          v-if="uploading"
+          role="status"
+          :aria-label="$t('agent.uploading')"
+          class="absolute inset-0 flex items-center justify-center bg-base-background/60"
+        >
+          <span
+            class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
+          />
+        </span>
+      </span>
+      <TagRemoveButton
+        :label="$t('agent.remove')"
+        class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-base-background text-base-foreground opacity-0 ring-1 ring-border-subtle group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-secondary-background-hover"
+        @click="emit('remove')"
       />
-      <!-- Only an image kind renders its preview: a server thumbnail for an
-           audio or 3D asset would repaint the broken-image chip this fixed. -->
-      <img
-        v-else-if="previewUrl && kind === 'image'"
-        :src="previewUrl"
-        :alt="name"
-        class="size-3.5 shrink-0 rounded-sm object-cover"
-      />
-      <span v-else :class="cn(kindIconClass, 'size-3.5 shrink-0')" />
-    </template>
-  </Tag>
+    </span>
+  </AssetHoverPreview>
 </template>

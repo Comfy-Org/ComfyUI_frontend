@@ -5,7 +5,7 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { useAgentComposerStore } from './agentComposerStore'
 
 describe('composer reference ownership', () => {
-  it('updates detached uploads without attaching them until an explicit Undo', () => {
+  it('keeps every asset occurrence and updates all of them after upload', () => {
     const store = useAgentComposerStore()
     store.addAttachment({
       id: 'image',
@@ -13,10 +13,43 @@ describe('composer reference ownership', () => {
       ref: '',
       uploading: true
     })
+    store.referenceAttachment('image')
+    store.referenceAttachment('image')
+    const snapshot = store.prompt
+    expect(snapshot.references).toHaveLength(2)
+
+    store.updateAttachment('image', { ref: 'uploaded.png', uploading: false })
+    store.applyEditorPrompt(snapshot)
+    expect(store.prompt.references).toEqual(
+      snapshot.references.map((reference) => ({
+        ...reference,
+        attachment: {
+          id: 'image',
+          name: 'source.png',
+          ref: 'uploaded.png',
+          uploading: false
+        }
+      }))
+    )
+    expect(store.attachments).toHaveLength(1)
+  })
+
+  it('updates a tray upload without reinserting its deleted inline mention', () => {
+    const store = useAgentComposerStore()
+    store.addAttachment({
+      id: 'image',
+      name: 'source.png',
+      ref: '',
+      uploading: true
+    })
+    store.referenceAttachment('image')
     const snapshot = store.prompt
     store.removeReference('asset:image')
     store.updateAttachment('image', { ref: 'uploaded.png', uploading: false })
-    expect(store.attachments).toEqual([])
+    expect(store.prompt.references).toEqual([])
+    expect(store.attachments).toEqual([
+      { id: 'image', name: 'source.png', ref: 'uploaded.png', uploading: false }
+    ])
     store.applyEditorPrompt(snapshot)
     expect(store.attachments).toEqual([
       { id: 'image', name: 'source.png', ref: 'uploaded.png', uploading: false }
@@ -34,6 +67,7 @@ describe('composer reference ownership', () => {
       uploading: true,
       previewUrl: 'blob:source'
     })
+    store.referenceAttachment('image')
     const snapshot = store.prompt
     store.removeAttachment('image')
     store.updateAttachment('image', { ref: 'too-late.png', uploading: false })
@@ -42,7 +76,7 @@ describe('composer reference ownership', () => {
     expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:source')
   })
 
-  it('retains previews for Undo, then releases only unused previews on unmount', () => {
+  it('retains included previews after inline deletion and unmount', () => {
     const store = useAgentComposerStore()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     store.addAttachment({
@@ -57,11 +91,41 @@ describe('composer reference ownership', () => {
       ref: 'second.png',
       previewUrl: 'blob:second'
     })
+    store.referenceAttachment('first')
     store.removeReference('asset:first')
     expect(revoke).not.toHaveBeenCalled()
     store.releaseUnusedAssets()
+    expect(revoke).not.toHaveBeenCalled()
+    expect(store.attachments.map(({ id }) => id)).toEqual(['first', 'second'])
+    store.removeAttachment('first')
     expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:first')
-    expect(store.attachments.map(({ id }) => id)).toEqual(['second'])
+  })
+
+  it('releases excluded previews when replacing the tray and rejects late updates', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    store.addAttachment({
+      id: 'old',
+      name: 'old.png',
+      ref: 'old.png',
+      previewUrl: 'blob:old'
+    })
+    store.referenceAttachment('old')
+    const oldPrompt = store.prompt
+    store.replaceDraft({
+      text: 'New draft',
+      workflowReferences: [],
+      attachments: [
+        { id: 'new', name: 'new.png', ref: 'new.png', previewUrl: 'blob:new' }
+      ]
+    })
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:old')
+    store.updateAttachment('old', { previewUrl: 'blob:late' })
+    expect(revoke).toHaveBeenLastCalledWith('blob:late')
+    store.applyEditorPrompt({ ...oldPrompt, text: 'Keep typing' })
+    expect(store.prompt).toEqual({ text: 'Keep typing', references: [] })
+    expect(store.attachments.map(({ id }) => id)).toEqual(['new'])
+    expect(revoke).not.toHaveBeenCalledWith('blob:new')
   })
 
   it('rejects node history from a different target even when node IDs collide', () => {

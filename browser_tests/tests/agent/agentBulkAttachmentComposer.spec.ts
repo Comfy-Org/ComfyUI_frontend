@@ -41,6 +41,11 @@ test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
     )
 
     await expect(agentPanel.attachmentChips).toHaveCount(ATTACHMENT_COUNT)
+    await expect(agentPanel.attachmentChips.last()).not.toBeInViewport({
+      ratio: 1
+    })
+    await agentPanel.scrollAssetsToEnd()
+    await expect(agentPanel.attachmentChips.last()).toBeInViewport({ ratio: 1 })
     await expect(agentPanel.sendButton).toBeEnabled()
     // ratio: 1 rather than the default ratio: 0 — a Send button clipped down to
     // a sliver is the FE-3202 symptom, and it satisfies ratio: 0.

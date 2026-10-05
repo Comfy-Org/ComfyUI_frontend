@@ -57,7 +57,7 @@ export function startAssetDrag(
       : {
           filename: asset.name,
           type: getAssetType(asset.tags),
-          display_name: asset.display_name
+          display_name: asset.display_name ?? undefined
         }),
     attachment_ref: getAssetUrlFilename(asset),
     media_kind: mediaKind,

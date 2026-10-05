@@ -2,7 +2,7 @@ import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { hasImageType } from '@/utils/eventUtils'
 import { formatSize } from '@/utils/formatUtil'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000

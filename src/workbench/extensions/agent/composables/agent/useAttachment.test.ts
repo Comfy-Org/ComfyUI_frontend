@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
 
 vi.mock(import('@/platform/telemetry/reportError'))
