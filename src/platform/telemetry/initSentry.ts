@@ -24,6 +24,7 @@ export function initSentry({
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,
     beforeSend: sentryThirdPartyErrorFilter,
+    denyUrls: [/^(?:chrome|moz|safari-web)-extension:\/\//],
     // Only set these for non-cloud builds
     ...(isCloud
       ? {

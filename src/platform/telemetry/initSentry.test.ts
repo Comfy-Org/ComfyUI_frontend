@@ -30,3 +30,27 @@ it('installs the third-party error filter', () => {
     expect.objectContaining({ beforeSend: sentryThirdPartyErrorFilter })
   )
 })
+
+it('denies errors whose stack originates in a browser extension', () => {
+  initSentry({
+    app: createApp({}),
+    dsn: 'https://public@example.invalid/1',
+    enabled: true,
+    isCloud: false
+  })
+
+  const { denyUrls } = sentryInit.mock.lastCall![0]!
+  const isDenied = (url: string) =>
+    (denyUrls ?? []).some((pattern) =>
+      typeof pattern === 'string' ? url.includes(pattern) : pattern.test(url)
+    )
+
+  expect(
+    [
+      'chrome-extension://abcdef/content.js',
+      'moz-extension://abcdef/content.js',
+      'safari-web-extension://abcdef/content.js'
+    ].every(isDenied)
+  ).toBe(true)
+  expect(isDenied('https://cloud.comfy.org/assets/index.js')).toBe(false)
+})
