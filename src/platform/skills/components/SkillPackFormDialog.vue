@@ -14,61 +14,86 @@
           @submit.prevent="handleSubmit"
         >
           <div class="flex flex-col gap-1">
-            <label for="skill-pack-name" class="text-sm font-medium">
+            <label :for="nameId" class="text-sm font-medium">
               {{ $t('skillPacks.name') }}
             </label>
             <Input
-              id="skill-pack-name"
+              :id="nameId"
               v-model="form.name"
               :placeholder="$t('skillPacks.namePlaceholder')"
-              :disabled="pack !== undefined"
+              :disabled="pack !== undefined || loading"
+              :aria-invalid="!!errors.name || undefined"
+              :aria-describedby="`${nameId}-help`"
               :maxlength="MAX_NAME_LENGTH"
             />
-            <small v-if="errors.name" class="text-destructive">
+            <small
+              v-if="errors.name"
+              :id="`${nameId}-help`"
+              role="alert"
+              class="text-destructive"
+            >
               {{ errors.name }}
             </small>
-            <small v-else class="text-muted">
+            <small v-else :id="`${nameId}-help`" class="text-muted">
               {{ $t('skillPacks.nameHint') }}
             </small>
           </div>
 
           <div class="flex flex-col gap-1">
-            <label for="skill-pack-description" class="text-sm font-medium">
+            <label :for="descriptionId" class="text-sm font-medium">
               {{ $t('skillPacks.triggerLine') }}
             </label>
             <Input
-              id="skill-pack-description"
+              :id="descriptionId"
               v-model="form.description"
               :placeholder="$t('skillPacks.triggerLinePlaceholder')"
-              :maxlength="MAX_DESCRIPTION_CODE_POINTS"
+              :disabled="loading"
+              :aria-invalid="!!errors.description || undefined"
+              :aria-describedby="`${descriptionId}-help`"
             />
-            <small v-if="errors.description" class="text-destructive">
+            <small
+              v-if="errors.description"
+              :id="`${descriptionId}-help`"
+              role="alert"
+              class="text-destructive"
+            >
               {{ errors.description }}
             </small>
-            <small v-else class="text-muted">
+            <small v-else :id="`${descriptionId}-help`" class="text-muted">
               {{ $t('skillPacks.triggerLineHint') }}
             </small>
           </div>
 
           <div class="flex flex-col gap-1">
-            <label for="skill-pack-body" class="text-sm font-medium">
+            <label :for="bodyId" class="text-sm font-medium">
               {{ $t('skillPacks.body') }}
             </label>
             <Textarea
-              id="skill-pack-body"
+              :id="bodyId"
               v-model="form.body"
               class="min-h-48 font-mono"
               :placeholder="$t('skillPacks.bodyPlaceholder')"
+              :disabled="loading"
+              :aria-invalid="!!errors.body || undefined"
+              :aria-describedby="`${bodyId}-help`"
             />
-            <small v-if="errors.body" class="text-destructive">
+            <small
+              v-if="errors.body"
+              :id="`${bodyId}-help`"
+              role="alert"
+              class="text-destructive"
+            >
               {{ errors.body }}
             </small>
-            <small v-else class="text-muted">{{ bodySizeLabel }}</small>
+            <small v-else :id="`${bodyId}-help`" class="text-muted">{{
+              bodySizeLabel
+            }}</small>
           </div>
 
           <div
             v-if="budgetError"
             data-testid="skill-pack-budget-error"
+            role="alert"
             class="border-destructive flex flex-col gap-1 rounded-lg border p-3"
           >
             <span class="text-destructive text-sm font-medium">
@@ -83,6 +108,7 @@
           <span
             v-else-if="fieldError"
             data-testid="skill-pack-field-error"
+            role="alert"
             class="text-destructive text-sm"
           >
             {{ fieldError }}
@@ -120,7 +146,7 @@ import Textarea from '@/components/ui/textarea/Textarea.vue'
 
 import { useSkillPackForm } from '../composables/useSkillPackForm'
 import type { SkillPack } from '../types'
-import { MAX_DESCRIPTION_CODE_POINTS, MAX_NAME_LENGTH } from '../types'
+import { MAX_NAME_LENGTH } from '../types'
 
 const { pack } = defineProps<{
   pack?: SkillPack
@@ -134,6 +160,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const titleId = useId()
+const nameId = useId()
+const descriptionId = useId()
+const bodyId = useId()
 
 const {
   form,
