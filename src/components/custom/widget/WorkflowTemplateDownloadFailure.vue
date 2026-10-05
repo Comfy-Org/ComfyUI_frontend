@@ -22,7 +22,7 @@ function failureLabel(): string {
 </script>
 
 <template>
-  <span class="flex shrink-0 items-center gap-2">
+  <span class="col-start-3 row-start-1 flex shrink-0 items-center gap-2">
     <Badge
       role="status"
       :aria-label="failureLabel()"

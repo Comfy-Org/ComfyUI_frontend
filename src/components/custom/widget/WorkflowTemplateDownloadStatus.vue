@@ -79,7 +79,7 @@ function namedLabel(key: string): string {
     :title="status.label"
     variant="textonly"
     size="unset"
-    class="size-6 shrink-0 rounded-sm p-1"
+    class="col-start-3 row-start-1 size-8 shrink-0 rounded-md p-1.5"
     @click="emit('download')"
   >
     <i aria-hidden="true" class="icon-[tabler--download] size-4" />
@@ -89,14 +89,23 @@ function namedLabel(key: string): string {
       status.downloadState.status === 'queued' ||
       status.downloadState.status === 'starting'
     "
-    role="status"
-    class="shrink-0 text-xs text-muted-foreground"
+    class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3 text-xs text-muted-foreground"
   >
-    {{ getPassiveDownloadLabel(status.downloadState) }}
+    <span
+      aria-hidden="true"
+      class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
+    >
+      <span
+        class="block h-full w-1/3 animate-pulse rounded-full bg-primary-background"
+      />
+    </span>
+    <span role="status" class="shrink-0">
+      {{ getPassiveDownloadLabel(status.downloadState) }}
+    </span>
   </span>
   <span
     v-else-if="status.downloadState.status === 'downloading'"
-    class="flex shrink-0 items-center gap-2"
+    class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3"
   >
     <span
       role="progressbar"
@@ -111,7 +120,7 @@ function namedLabel(key: string): string {
       aria-valuemax="100"
       :aria-valuenow="getProgressPercent(status.downloadState)"
       :aria-valuetext="getProgressText(status.downloadState)"
-      class="block h-1 w-24 overflow-hidden rounded-full bg-secondary-background"
+      class="block h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
     >
       <span
         :class="
@@ -132,7 +141,7 @@ function namedLabel(key: string): string {
         "
       />
     </span>
-    <span class="text-xs text-muted-foreground">
+    <span class="shrink-0 text-xs text-muted-foreground">
       {{ getProgressText(status.downloadState) }}
     </span>
   </span>
@@ -142,6 +151,7 @@ function namedLabel(key: string): string {
     :aria-label="t('templateWorkflows.detail.downloaded')"
     variant="compact"
     severity="success"
+    class="col-start-3 row-start-1"
   >
     {{ t('templateWorkflows.detail.downloaded') }}
   </Badge>
