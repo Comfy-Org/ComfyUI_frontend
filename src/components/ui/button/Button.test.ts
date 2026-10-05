@@ -105,6 +105,28 @@ describe('Button', () => {
     ).toHaveAccessibleDescription('Delete the node')
   })
 
+  it('forwards attributes, events and focus to the button when it has a tooltip', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+    render(Button, {
+      props: { tooltip: 'Run the workflow' },
+      attrs: { 'data-testid': 'run-button', 'aria-pressed': 'true', onClick },
+      slots: { default: 'Run' }
+    })
+    const button = screen.getByRole('button', { name: 'Run' })
+
+    await user.tab()
+    expect(button).toHaveFocus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Run the workflow'
+    )
+
+    await user.click(button)
+    expect(onClick).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('run-button')).toBe(button)
+    expect(button).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('renders without tooltip wiring when it has no tooltip', async () => {
     const user = userEvent.setup()
     render(Button, { slots: { default: 'Plain' } })
