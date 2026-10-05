@@ -1,7 +1,8 @@
-# Assigns the release sheriff named in .github/release-sheriff.json to backport
-# and release version-bump PRs so they are never left unowned. The sheriff is a
-# fixed role, deliberately not the Datadog on-call rotation: on-call pages for
-# incidents, the sheriff shepherds releases. Details: docs/release-process.md.
+# Assigns the release sheriff named in .github/release-sheriff.json to
+# backport, release version-bump and automation-authored PRs so they are never
+# left unowned. The sheriff is a fixed role, deliberately not the Datadog
+# on-call rotation: on-call pages for incidents, the sheriff shepherds
+# releases. Details: docs/release-process.md.
 name: 'PR: Assign Release Sheriff'
 
 on:

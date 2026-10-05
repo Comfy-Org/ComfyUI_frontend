@@ -125,6 +125,34 @@ All of that is gone: the sheriff is declared in this repo. `DATADOG_API_KEY`,
 `DATADOG_APP_KEY` and `RELEASE_SHERIFF_DIRECTORY` can be deleted from the repo
 secrets, and the roster file and its sync script retired.
 
+### Failure alerting
+
+A failed run also posts to **#frontend-releases** with the reason, because a
+failing scheduled workflow otherwise only notifies whoever last pushed to
+`main` — in practice nobody, which is how the placeholder config survived for
+weeks. Needs the `SLACK_BOT_TOKEN` secret; the post is `continue-on-error`, so
+Slack being down never masks the underlying result.
+
+It alerts on the **transition** into failure, not on every failing run: the job
+runs hourly, so a lasting breakage would otherwise post around the clock until
+someone fixed it, and a channel that cries wolf gets muted.
+
+The check walks recent **scheduled** runs and reads the conclusion of the
+`Assign release sheriff` **step**, not of the run. A run that died in checkout
+failed without ever reaching the sheriff, and treating that as "already
+alerted" would swallow the next real failure. Scheduled runs are used because
+the `pull_request_target` gate skips most other runs, so they are the ones
+dense in runs that decided anything. If the check itself cannot run it fails
+open and alerts, since a duplicate beats a silence.
+
+Only scheduled runs **alert**, for the same reason: a run can recognise a
+duplicate only within the history it reads, so the runs that post have to be
+the runs that get read back. While the two sets differed, every PR-triggered
+failure was invisible to every other one — five posts in nine minutes when a
+rotation member turned up without a GitHub login. PR-triggered runs still go
+red on the PR itself; the alert rides the hourly sweep instead, so a new
+breakage is announced within the hour rather than on the spot.
+
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,

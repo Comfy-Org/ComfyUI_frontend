@@ -98,8 +98,8 @@ export function parseSheriffConfig(raw: string): SheriffConfigParse {
   }
 }
 
-// An absent file yields no config and no error, so the Datadog path still runs.
-// That branch is transitional and is removed with the Datadog lookup itself.
+// Neither outcome assigns anyone; the two are separated only so the operator
+// reading Slack is told whether the file is absent or merely unreadable.
 export function loadSheriffConfig(): SheriffConfigParse {
   let raw: string
   try {
@@ -108,9 +108,6 @@ export function loadSheriffConfig(): SheriffConfigParse {
       'utf8'
     )
   } catch (cause) {
-    // Only an absent file falls through to Datadog. A file that exists but
-    // cannot be read is reported, because silently re-engaging the rotating
-    // lookup is the coupling this declaration exists to remove.
     const code = (cause as NodeJS.ErrnoException).code
     if (code === 'ENOENT') return { config: null, error: null }
     return {
