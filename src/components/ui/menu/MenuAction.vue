@@ -32,10 +32,13 @@ function mouseDown(event: MouseEvent) {
   )
     return
   stopRepeating?.()
-  pointerRepeating = true
+  pointerRepeating = false
   const { dispose } = whileMouseDown(
     event,
-    () => void item.command?.({ originalEvent: event, item }),
+    () => {
+      pointerRepeating = true
+      void item.command?.({ originalEvent: event, item })
+    },
     item.pressAndHoldInterval
   )
   stopRepeating = dispose

@@ -105,7 +105,7 @@
               />
             </Button>
           </template>
-          <template #item="{ item }">
+          <template #item="{ item, hasSubmenu }">
             <div v-if="item.key === 'volume'" class="w-48">
               <label class="mb-2 block text-xs text-base-foreground">{{
                 item.label
@@ -119,7 +119,7 @@
                 @update:model-value="handleVolumeChange"
               />
             </div>
-            <MenuItemContent v-else :item :has-submenu="false" />
+            <MenuItemContent v-else :item :has-submenu />
           </template>
         </Menu>
       </div>

@@ -90,7 +90,7 @@ export function usePanelSizing(
     last: shallowRef<InstanceType<typeof SplitterPanel>>()
   }
   watch(
-    () => toValue(containerWidth),
+    [() => toValue(containerWidth), layoutKey, panelRefs.first, panelRefs.last],
     async () => {
       await nextTick()
       const updates = [panelRefs.first.value, panelRefs.last.value].flatMap(

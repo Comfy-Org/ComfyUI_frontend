@@ -25,7 +25,7 @@ const forwarded = useForwardPropsEmits(restProps, emit)
         'hover:bg-primary-background data-[state=drag]:bg-primary-background',
         'focus-visible:ring-1 focus-visible:ring-border-default',
         'data-[orientation=vertical]:h-px data-[orientation=vertical]:w-full',
-        'data-[orientation=vertical]:after:inset-x-0 data-[orientation=vertical]:after:top-1/2 data-[orientation=vertical]:after:h-1 data-[orientation=vertical]:after:w-full data-[orientation=vertical]:after:-translate-y-1/2',
+        'data-[orientation=vertical]:after:inset-x-0 data-[orientation=vertical]:after:top-1/2 data-[orientation=vertical]:after:h-1 data-[orientation=vertical]:after:w-full data-[orientation=vertical]:after:translate-x-0 data-[orientation=vertical]:after:-translate-y-1/2',
         className
       )
     "

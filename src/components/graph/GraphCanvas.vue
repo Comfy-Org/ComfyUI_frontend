@@ -27,7 +27,7 @@
     <template v-if="showUI && !isBuilderMode" #topmenu>
       <TopMenuSection />
     </template>
-    <template v-if="showUI" #bottom-panel>
+    <template v-if="betaMenuEnabled" #bottom-panel>
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>

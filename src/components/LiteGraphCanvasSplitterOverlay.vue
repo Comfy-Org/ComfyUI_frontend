@@ -22,7 +22,6 @@
           class="pointer-events-none min-w-0 flex-1 overflow-hidden"
         >
           <SplitterGroup
-            :key="splitterRefreshKey"
             class="pointer-events-none border-none bg-transparent"
             @keydown.capture="onResizeStart"
             @keyup="onResizeEnd"
@@ -32,6 +31,7 @@
             <SplitterPanel
               v-if="firstPanelRendered"
               id="first-side-panel"
+              :key="isSelectMode ? mainSplitterStateKey : 'first-side-panel'"
               :ref="panelRefs.first"
               :order="1"
               :class="
@@ -44,7 +44,7 @@
                   ? sidebarMinSize
                   : isSelectMode
                     ? BUILDER_MIN_SIZE
-                    : 0
+                    : propertiesMinSize
               "
               :default-size="firstPanelDefaultSize"
               :role="sidebarLocation === 'left' ? 'complementary' : undefined"
@@ -118,6 +118,7 @@
                       ) && 'hidden'
                     )
                   "
+                  @dragging="!$event && flushLayouts()"
                 />
                 <SplitterPanel
                   v-show="
@@ -148,6 +149,7 @@
             <SplitterPanel
               v-if="lastPanelRendered"
               id="last-side-panel"
+              :key="isSelectMode ? mainSplitterStateKey : 'last-side-panel'"
               :ref="panelRefs.last"
               :order="3"
               :class="
@@ -160,7 +162,7 @@
                   ? sidebarMinSize
                   : isSelectMode
                     ? BUILDER_MIN_SIZE
-                    : 0
+                    : propertiesMinSize
               "
               :default-size="lastPanelDefaultSize"
               :role="sidebarLocation === 'right' ? 'complementary' : undefined"
@@ -191,8 +193,16 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
+import { debounce } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
-import { computed, ref, shallowRef, watch, watchEffect } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  ref,
+  shallowRef,
+  watch,
+  watchEffect
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
@@ -204,6 +214,7 @@ import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_MIN_WIDTH,
   CENTER_PANEL_SIZE,
+  PROPERTIES_PANEL_MIN_WIDTH,
   SIDEBAR_MIN_SIZE,
   SIDEBAR_MIN_WIDTH,
   SIDE_PANEL_SIZE,
@@ -334,6 +345,11 @@ const sidebarMinSize = computed(() =>
     ? (SIDEBAR_MIN_WIDTH / availableSplitterWidth.value) * 100
     : SIDEBAR_MIN_SIZE
 )
+const propertiesMinSize = computed(() =>
+  availableSplitterWidth.value
+    ? (PROPERTIES_PANEL_MIN_WIDTH / availableSplitterWidth.value) * 100
+    : BUILDER_MIN_SIZE
+)
 
 const centerPanelFallbackSize = computed(() =>
   bothSidePanelsVisible.value ? 100 - 2 * SIDE_PANEL_SIZE : CENTER_PANEL_SIZE
@@ -365,6 +381,16 @@ const mainPanelCount = computed(
   () => 1 + Number(firstPanelRendered.value) + Number(lastPanelRendered.value)
 )
 const savedMainPanelSizes = shallowRef<number[]>()
+const persistMainLayout = debounce(saveSplitterSizes, 100)
+const persistBottomLayout = debounce(saveSplitterSizes, 100)
+
+function flushLayouts() {
+  persistMainLayout.flush()
+  persistBottomLayout.flush()
+}
+
+onBeforeUnmount(flushLayouts)
+watch(mainSplitterStateKey, () => persistMainLayout.flush(), { flush: 'sync' })
 watch(
   [mainSplitterStateKey, mainPanelCount],
   ([key, count]) => {
@@ -396,17 +422,16 @@ function defaultPanelWidth(isSidebarPanel: boolean) {
     savedPanelPercent((key) => localStorage.getItem(key), stateKeys, edge) ??
     SIDE_PANEL_SIZE
   return Math.max(
-    isSidebarPanel ? SIDEBAR_MIN_WIDTH : 0,
+    isSidebarPanel ? SIDEBAR_MIN_WIDTH : PROPERTIES_PANEL_MIN_WIDTH,
     Math.round((percent / 100) * (window.innerWidth - SIDE_TOOLBAR_WIDTH))
   )
 }
 const {
   panelPercentages,
-  layoutKey,
   panelRefs,
   onResizeStart,
-  onResizeDragging,
-  onResizeEnd
+  onResizeDragging: updatePanelResize,
+  onResizeEnd: savePanelWidth
 } = usePanelSizing(
   [
     {
@@ -417,7 +442,9 @@ const {
           : 'Comfy.RightSidePanel.Width',
       visible: () => firstPanelRendered.value && !isSelectMode.value,
       minWidth: () =>
-        sidebarLocation.value === 'left' ? SIDEBAR_MIN_WIDTH : 0,
+        sidebarLocation.value === 'left'
+          ? SIDEBAR_MIN_WIDTH
+          : PROPERTIES_PANEL_MIN_WIDTH,
       defaultWidth: () => defaultPanelWidth(sidebarLocation.value === 'left')
     },
     {
@@ -428,13 +455,26 @@ const {
           : 'Comfy.RightSidePanel.Width',
       visible: () => lastPanelRendered.value && !isSelectMode.value,
       minWidth: () =>
-        sidebarLocation.value === 'right' ? SIDEBAR_MIN_WIDTH : 0,
+        sidebarLocation.value === 'right'
+          ? SIDEBAR_MIN_WIDTH
+          : PROPERTIES_PANEL_MIN_WIDTH,
       defaultWidth: () => defaultPanelWidth(sidebarLocation.value === 'right')
     }
   ],
   availableSplitterWidth,
   CENTER_PANEL_MIN_WIDTH
 )
+
+function onResizeEnd() {
+  savePanelWidth()
+  flushLayouts()
+}
+
+function onResizeDragging(dragging: boolean, panelId: string) {
+  updatePanelResize(dragging, panelId)
+  if (!dragging) flushLayouts()
+}
+
 const firstPanelDefaultSize = computed(() =>
   !isSelectMode.value
     ? panelPercentages.value[0]
@@ -459,9 +499,8 @@ const lastPanelDefaultSize = computed(() =>
 
 function saveMainSplitterLayout(sizes: number[]) {
   if (!isSelectMode.value || sizes.length === 1) return
-  if (saveSplitterSizes(mainSplitterStateKey.value, sizes)) {
-    savedMainPanelSizes.value = sizes
-  }
+  savedMainPanelSizes.value = sizes
+  persistMainLayout(mainSplitterStateKey.value, sizes)
 }
 
 const bottomPanelStateKey = 'bottom-panel-splitter'
@@ -470,12 +509,7 @@ const bottomPanelDefaultSizes = shallowRef(
 )
 
 function saveBottomPanelLayout(sizes: number[]) {
-  if (saveSplitterSizes(bottomPanelStateKey, sizes)) {
-    bottomPanelDefaultSizes.value = sizes
-  }
+  bottomPanelDefaultSizes.value = sizes
+  persistBottomLayout(bottomPanelStateKey, sizes)
 }
-
-const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${agentPanelOpen.value ? '-with-agent' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}-${mainPanelCount.value}-${layoutKey.value}`
-})
 </script>

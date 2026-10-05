@@ -71,7 +71,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     return {
       command: () => commandStore.execute(command.id),
       label: command.menubarLabel,
-      icon: command.icon,
+      icon: command.id === 'Comfy.NewBlankWorkflow' ? undefined : command.icon,
       tooltip: command.tooltip,
       commandId: command.id,
       checked: command.active,

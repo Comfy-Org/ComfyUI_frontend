@@ -46,6 +46,20 @@ function renderGallery(value: string[] = images, options: IWidgetOptions = {}) {
 }
 
 describe('WidgetGalleria', () => {
+  it.for([
+    { name: 'null', value: null },
+    { name: 'a non-array value', value: 'not-an-array' },
+    { name: 'an array without image URLs', value: [null, 1, ''] }
+  ])('renders an empty gallery for persisted $name', ({ value }) => {
+    render(WidgetGalleria, {
+      global: { plugins: [i18n] },
+      props: { modelValue: value }
+    })
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
   it('renders the active image and thumbnails with accessible labels', () => {
     renderGallery()
 

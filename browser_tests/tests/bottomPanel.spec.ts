@@ -4,6 +4,16 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Bottom Panel', { tag: '@ui' }, () => {
+  test('centers the grab strip across the full separator width', async ({
+    comfyPage
+  }) => {
+    const { bottomPanel } = comfyPage
+    await bottomPanel.toggleButton.click()
+    await expect(bottomPanel.root).toBeVisible()
+
+    await expect.poll(() => bottomPanel.grabStripTranslation()).toBe('0px -50%')
+  })
+
   test('should close panel via close button inside the panel', async ({
     comfyPage
   }) => {

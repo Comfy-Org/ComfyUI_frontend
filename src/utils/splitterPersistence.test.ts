@@ -9,6 +9,16 @@ describe('splitter persistence', () => {
     expect(loadSplitterSizes('linear-view-splitter', 2)).toEqual([25, 75])
   })
 
+  it.for([
+    { key: 'builder-splitter', sizes: [20, 56, 24], expected: [70, 30] },
+    { key: 'builder-splitter-right', sizes: [28, 52, 20], expected: [35, 65] },
+    { key: 'builder-splitter', sizes: [100, 0, 0], expected: undefined }
+  ])('restores shipped $key sizes $sizes', ({ key, sizes, expected }) => {
+    localStorage.setItem(key, JSON.stringify(sizes))
+
+    expect(loadSplitterSizes(key, 2)).toEqual(expected)
+  })
+
   it('continues when storage is unavailable', () => {
     vi.stubGlobal('localStorage', undefined)
 

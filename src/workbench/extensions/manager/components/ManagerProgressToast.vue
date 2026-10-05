@@ -36,6 +36,9 @@ const tabs = computed(() => [
     logs: comfyManagerStore.failedTasksLogs
   }
 ])
+const activeTabData = computed(
+  () => tabs.value.find((tab) => tab.value === activeTab.value) ?? tabs.value[0]
+)
 
 const visible = computed(() => comfyManagerStore.taskLogs.length > 0)
 
@@ -88,10 +91,6 @@ const latestTaskLogLines = computed(
     tabs.value.find((tab) => tab.value === activeTab.value)?.logs.at(-1)?.logs
 )
 
-function setSectionsContainer(el: Element | ComponentPublicInstance | null) {
-  sectionsContainerRef.value = el instanceof HTMLElement ? el : null
-}
-
 function setLatestLogContainer(el: Element | ComponentPublicInstance | null) {
   latestLogContainerRef.value = el instanceof HTMLElement ? el : null
 }
@@ -129,7 +128,7 @@ function onLogsAdded() {
 }
 
 whenever(latestTaskLogLines, onLogsAdded, { flush: 'post', deep: true })
-whenever(() => isExpanded.value, scrollContentToBottom)
+whenever(() => isExpanded.value, scrollContentToBottom, { flush: 'post' })
 whenever(() => !isExpanded.value, resetUserScrolling)
 
 function closeToast() {
@@ -177,14 +176,11 @@ onBeforeUnmount(() => {
           </TabsList>
         </div>
 
-        <TabsContent
-          v-for="tab in tabs"
-          :key="tab.value"
-          :value="tab.value"
-          class="mt-0"
-        >
+        <TabsContent :value="activeTab" class="mt-0">
           <div
-            :ref="tab.value === activeTab ? setSectionsContainer : undefined"
+            ref="sectionsContainerRef"
+            role="region"
+            :aria-label="activeTabData.label"
             class="scroll-container max-h-[450px] overflow-y-auto px-6 py-4"
             :style="{
               scrollbarWidth: 'thin',
@@ -192,7 +188,7 @@ onBeforeUnmount(() => {
             }"
           >
             <details
-              v-for="(log, index) in tab.logs"
+              v-for="(log, index) in activeTabData.logs"
               :key="log.taskId"
               open
               class="group/log mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-interface"
@@ -219,14 +215,16 @@ onBeforeUnmount(() => {
               </summary>
               <div
                 :ref="
-                  index === tab.logs.length - 1
+                  index === activeTabData.logs.length - 1
                     ? setLatestLogContainer
                     : undefined
                 "
+                role="log"
+                :aria-label="log.taskName"
                 :class="
                   cn(
                     'h-64 overflow-y-auto rounded-lg bg-black',
-                    index === tab.logs.length - 1 && 'grow'
+                    index === activeTabData.logs.length - 1 && 'grow'
                   )
                 "
                 @scroll="handleScroll"

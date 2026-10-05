@@ -15,15 +15,25 @@ export function loadSplitterSizes(
   try {
     const value: unknown = JSON.parse(storage.getItem(key) ?? 'null')
     if (
-      Array.isArray(value) &&
-      value.length === panelCount &&
-      value.every(
+      !Array.isArray(value) ||
+      !value.every(
         (size): size is number =>
           typeof size === 'number' && Number.isFinite(size) && size >= 0
-      ) &&
-      value.reduce((total, size) => total + size, 0) > 0
+      ) ||
+      value.reduce((total, size) => total + size, 0) <= 0
     ) {
-      return value
+      return undefined
+    }
+    if (value.length === panelCount) return value
+    if (
+      panelCount === 2 &&
+      value.length === 3 &&
+      (key === 'builder-splitter' || key === 'builder-splitter-right')
+    ) {
+      const visible =
+        key === 'builder-splitter' ? value.slice(1) : value.slice(0, 2)
+      const total = visible[0] + visible[1]
+      if (total > 0) return visible.map((size) => (size / total) * 100)
     }
   } catch {
     return undefined

@@ -5,3 +5,6 @@ export const menuItemClass =
   'flex min-h-8 cursor-default items-center gap-2 rounded-md px-3 py-1.5 text-sm outline-none data-disabled:opacity-50 data-highlighted:bg-secondary-background-hover'
 
 export const menuButtonClass = `${menuItemClass} w-full justify-start border-0 bg-transparent text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover disabled:pointer-events-none disabled:opacity-50`
+
+export const selectedMenuButtonClass =
+  'bg-secondary-background-selected hover:bg-secondary-background-selected focus-visible:bg-secondary-background-selected'

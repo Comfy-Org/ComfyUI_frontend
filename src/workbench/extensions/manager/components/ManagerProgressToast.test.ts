@@ -156,6 +156,61 @@ it('supports keyboard tab navigation and associates each tab with its panel', as
   expect(screen.queryByText('Installed')).not.toBeInTheDocument()
 })
 
+it('scrolls the mounted task list when expanded', async () => {
+  const store = useComfyManagerStore()
+  const log = { taskId: 'done', taskName: 'Installed pack', logs: ['Done'] }
+  store.taskLogs = [log]
+  store.succeededTasksLogs = [log]
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  const scrollHeight = vi
+    .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+    .mockReturnValue(500)
+  onTestFinished(() => scrollHeight.mockRestore())
+
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Expand' }))
+  const container = screen.getByRole('region', {
+    name: en.manager.installationQueue
+  })
+
+  expect(container.scrollTop).toBe(500)
+})
+
+it('keeps following the latest log after switching tabs', async () => {
+  const store = useComfyManagerStore()
+  const succeeded = {
+    taskId: 'succeeded',
+    taskName: 'Installed pack',
+    logs: ['Starting']
+  }
+  const failed = { taskId: 'failed', taskName: 'Failed pack', logs: ['Denied'] }
+  store.taskLogs = [succeeded, failed]
+  store.succeededTasksLogs = [succeeded]
+  store.failedTasksIds = ['failed']
+  store.failedTasksLogs = [failed]
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: 'Expand' }))
+  await user.click(screen.getByRole('tab', { name: 'Failed' }))
+  await user.click(
+    screen.getByRole('tab', { name: en.manager.installationQueue })
+  )
+  const latestLog = screen.getByRole('log', { name: 'Installed pack' })
+  Object.defineProperty(latestLog, 'scrollHeight', { value: 400 })
+
+  store.succeededTasksLogs[0].logs.push('Done')
+  await nextTick()
+
+  expect(latestLog.scrollTop).toBe(400)
+})
+
 it.for([[], ['failed']])(
   'keeps Apply Changes available when a task succeeded (%j failures)',
   (failedIds) => {

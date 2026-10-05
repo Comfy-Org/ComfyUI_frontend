@@ -1,5 +1,6 @@
 <template>
   <ComboboxRoot
+    ref="comboboxRef"
     v-model="modelValue"
     v-model:open="isOpen"
     ignore-filter
@@ -119,7 +120,7 @@ import {
   ComboboxPortal,
   ComboboxRoot
 } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -140,6 +141,7 @@ const {
   loading = false,
   disabled = false,
   openOnFocus = false,
+  updateModelOnSelect = true,
   size = 'md',
   suggestions = [],
   optionLabel,
@@ -155,6 +157,7 @@ const {
   loading?: boolean
   disabled?: boolean
   openOnFocus?: boolean
+  updateModelOnSelect?: boolean
   size?: SearchInputVariants['size']
   suggestions?: T[]
   optionLabel?: keyof T & string
@@ -173,6 +176,7 @@ const sizeConfig = computed(() => searchInputSizeConfig[size])
 
 const modelValue = defineModel<string>({ required: true })
 
+const comboboxRef = useTemplateRef('comboboxRef')
 const inputRef = ref<InstanceType<typeof ComboboxInput> | null>(null)
 const isOpen = ref(false)
 const isComposing = ref(false)
@@ -219,7 +223,7 @@ function suggestionValue(item: T): string {
 }
 
 function onSelectSuggestion(item: T) {
-  modelValue.value = suggestionLabel(item)
+  if (updateModelOnSelect) modelValue.value = suggestionLabel(item)
   isOpen.value = false
   emit('select', item)
 }
@@ -238,8 +242,12 @@ function onEnterKey(e: KeyboardEvent) {
 
 watch(
   () => suggestions,
-  (items) => {
+  async (items) => {
     isOpen.value = items.length > 0 && (openOnFocus || !!modelValue.value)
+    if (isOpen.value) {
+      await nextTick()
+      comboboxRef.value?.highlightFirstItem?.()
+    }
   }
 )
 </script>

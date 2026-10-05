@@ -69,6 +69,12 @@ export class BottomPanel {
     }
   }
 
+  async grabStripTranslation() {
+    return this.resizeHandle.evaluate(
+      (handle) => getComputedStyle(handle, '::after').translate
+    )
+  }
+
   async resizeByDragging(deltaY: number): Promise<void> {
     const handleBox = await this.resizeHandle.boundingBox()
     if (!handleBox) {

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -45,7 +45,12 @@ describe('AudioPreviewPlayer', () => {
     const user = userEvent.setup()
 
     await user.click(screen.getByRole('button', { name: 'g.moreOptions' }))
-    await screen.findByRole('menuitem', { name: 'g.playbackSpeed' })
+    const speedMenu = await screen.findByRole('menuitem', {
+      name: 'g.playbackSpeed'
+    })
+    expect(
+      within(speedMenu).getByTestId('menu-item-submenu-indicator')
+    ).toBeVisible()
     await user.keyboard('{ArrowDown}{ArrowRight}{End}')
     const doubleSpeed = await screen.findByRole('menuitemradio', {
       name: 'g.2x'

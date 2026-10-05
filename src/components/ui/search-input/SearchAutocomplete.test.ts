@@ -68,6 +68,21 @@ describe('SearchAutocomplete', () => {
       await user.click(screen.getByText('foo'))
       expect(onUpdateModelValue).toHaveBeenCalledWith('foo')
     })
+
+    it('can select without replacing the typed query', async () => {
+      const onUpdateModelValue = vi.fn()
+      const user = userEvent.setup()
+      renderComponent({
+        modelValue: 'fo',
+        suggestions: ['foo'],
+        updateModelOnSelect: false,
+        'onUpdate:modelValue': onUpdateModelValue
+      })
+
+      await user.click(screen.getByText('foo'))
+
+      expect(onUpdateModelValue).not.toHaveBeenCalled()
+    })
   })
 
   describe('with optionLabel', () => {
@@ -108,6 +123,23 @@ describe('SearchAutocomplete', () => {
 
     await user.keyboard('{ArrowDown}')
     await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('bar'))
+  })
+
+  it('highlights the first suggestion when results change', async () => {
+    const onHighlight = vi.fn()
+    const { rerender } = render(SearchAutocomplete, {
+      global: { plugins: [i18n] },
+      props: {
+        modelValue: 'foo',
+        suggestions: [],
+        onHighlight
+      }
+    })
+
+    await rerender({ suggestions: ['foo', 'bar'] })
+
+    expect(await screen.findByRole('option', { name: 'foo' })).toBeVisible()
+    await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('foo'))
   })
 
   it('does not select an option when Enter is pressed during composition', async () => {

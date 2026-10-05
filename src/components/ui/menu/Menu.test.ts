@@ -8,6 +8,56 @@ import Menu from './Menu.vue'
 import ContextMenu from './ContextMenu.vue'
 
 describe('Menu', () => {
+  it('executes a quick press-and-hold click exactly once', async () => {
+    const command = vi.fn()
+    render(Menu, {
+      props: {
+        open: true,
+        items: [{ label: 'Zoom', command, pressAndHoldInterval: 50 }]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const item = await screen.findByRole('menuitem', { name: 'Zoom' })
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTime,
+      pointerEventsCheck: 0
+    })
+
+    await user.pointer({ keys: '[MouseLeft>][/MouseLeft]', target: item })
+
+    expect(command).toHaveBeenCalledOnce()
+  })
+
+  it('does not add a click command after press-and-hold repeats', async () => {
+    const command = vi.fn()
+    render(Menu, {
+      props: {
+        open: true,
+        items: [{ label: 'Zoom', command, pressAndHoldInterval: 50 }]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const item = await screen.findByRole('menuitem', { name: 'Zoom' })
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const user = userEvent.setup({
+      advanceTimers: vi.advanceTimersByTime,
+      pointerEventsCheck: 0
+    })
+
+    await user.pointer({ keys: '[MouseLeft>]', target: item })
+    await vi.advanceTimersByTimeAsync(100)
+    await user.pointer({ keys: '[/MouseLeft]', target: item })
+
+    expect(command).toHaveBeenCalledTimes(2)
+  })
+
   it('does not repeat a disabled press-and-hold command', async () => {
     const command = vi.fn()
     render(Menu, {

@@ -1,5 +1,6 @@
 import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -14,6 +15,32 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 vi.mock(import('firebase/auth'))
 
 describe('LiteGraphCanvasSplitterOverlay', () => {
+  it('persists the final keyboard resize without writing each step', async () => {
+    vi.useFakeTimers()
+    localStorage.removeItem('bottom-panel-splitter')
+    useBottomPanelStore().activePanel = 'shortcuts'
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: {} }
+    })
+    render(LiteGraphCanvasSplitterOverlay, { global: { plugins: [i18n] } })
+    await nextTick()
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(100)
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    screen.getByRole('separator').focus()
+    const savedBeforeResize = localStorage.getItem('bottom-panel-splitter')
+
+    await user.keyboard('{ArrowUp>2}')
+    expect(localStorage.getItem('bottom-panel-splitter')).toBe(
+      savedBeforeResize
+    )
+
+    await user.keyboard('{/ArrowUp}')
+    expect(localStorage.getItem('bottom-panel-splitter')).toBe('[30,70]')
+  })
+
   it('renders content passed into the agent-panel slot so the docked panel can host in graph mode', () => {
     const i18n = createI18n({
       legacy: false,
@@ -26,8 +53,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
         'agent-panel': '<div data-testid="agent-panel-probe">docked panel</div>'
       },
       global: {
-        plugins: [getActivePinia()!, i18n],
-        stubs: { SplitterGroup: true, SplitterPanel: true }
+        plugins: [getActivePinia()!, i18n]
       }
     })
 
@@ -62,12 +88,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
         'agent-panel': '<div data-testid="agent-panel">agent</div>'
       },
       global: {
-        plugins: [pinia, i18n],
-        stubs: {
-          SplitterGroup: { template: '<div><slot /></div>' },
-          SplitterPanel: { template: '<div><slot /></div>' },
-          SplitterResizeHandle: true
-        }
+        plugins: [pinia, i18n]
       }
     })
 
@@ -104,8 +125,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
 
     render(LiteGraphCanvasSplitterOverlay, {
       global: {
-        plugins: [getActivePinia()!, i18n],
-        stubs: { Splitter: true, SplitterPanel: true }
+        plugins: [getActivePinia()!, i18n]
       }
     })
 
@@ -129,13 +149,12 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     expect(agentPanelStore.width).toBe(widthWithoutSidebar)
   })
 
-  it('refreshes the splitter only when the Agent panel becomes visible', async () => {
+  it('preserves bottom panel content when the Agent panel becomes visible', async () => {
     const agentPanelStore = useAgentPanelStore()
     agentPanelStore.enabled = true
     agentPanelStore.isOpen = false
     agentPanelStore.consentAccepted = false
 
-    const splitterMounts = vi.fn()
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -143,25 +162,21 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     })
 
     render(LiteGraphCanvasSplitterOverlay, {
+      slots: {
+        'bottom-panel': '<input aria-label="Extension state" />'
+      },
       global: {
-        plugins: [i18n],
-        stubs: {
-          SplitterGroup: {
-            setup: splitterMounts,
-            template: '<div><slot /></div>'
-          },
-          SplitterPanel: { template: '<div><slot /></div>' },
-          SplitterResizeHandle: true
-        }
+        plugins: [i18n]
       }
     })
-    const mountsBeforePanelOpen = splitterMounts.mock.calls.length
+    await fireEvent.update(
+      screen.getByRole('textbox', { hidden: true }),
+      'draft'
+    )
 
     agentPanelStore.isOpen = true
     await nextTick()
 
-    expect(splitterMounts.mock.calls.length).toBeGreaterThan(
-      mountsBeforePanelOpen
-    )
+    expect(screen.getByRole('textbox', { hidden: true })).toHaveValue('draft')
   })
 })

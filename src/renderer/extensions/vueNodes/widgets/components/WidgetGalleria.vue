@@ -73,12 +73,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const images = defineModel<string[]>({ required: true })
+const modelValue = defineModel<unknown>({ required: true })
+const images = computed(() =>
+  Array.isArray(modelValue.value)
+    ? modelValue.value.filter(
+        (image): image is string =>
+          typeof image === 'string' && image.length > 0
+      )
+    : []
+)
 const activeIndex = ref(0)
 const { t } = useI18n()
 

@@ -2,6 +2,9 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
+import SplitterPanel from '@/components/ui/splitter/SplitterPanel.vue'
+import SplitterResizeHandle from '@/components/ui/splitter/SplitterResizeHandle.vue'
 import { usePanelSizing } from './usePanelSizing'
 
 beforeEach(() => localStorage.clear())
@@ -70,6 +73,58 @@ async function setupSizing({ left = 400, right = 200, total = 1000 } = {}) {
 }
 
 describe('pixel panel sizing', () => {
+  it('resizes both real side panels while preserving the center minimum', async () => {
+    const total = ref(1000)
+    render({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      setup() {
+        const sizing = usePanelSizing(
+          [
+            {
+              id: 'left',
+              storageKey: 'left',
+              visible: true,
+              minWidth: 300,
+              defaultWidth: () => 600
+            },
+            {
+              id: 'right',
+              storageKey: 'right',
+              visible: true,
+              minWidth: 0,
+              defaultWidth: () => 300
+            }
+          ],
+          total,
+          160
+        )
+        const layout = ref<number[]>([])
+        return { ...sizing, total, layout }
+      },
+      template: `
+        <SplitterGroup @layout="layout = $event">
+          <SplitterPanel id="left" :order="1" :ref="panelRefs.first" :min-size="300 / total * 100" :default-size="panelPercentages[0]" />
+          <SplitterResizeHandle />
+          <SplitterPanel :order="2" :min-size="160 / total * 100" :default-size="panelPercentages[1]" />
+          <SplitterResizeHandle />
+          <SplitterPanel id="right" :order="3" :ref="panelRefs.last" :default-size="panelPercentages[2]" />
+        </SplitterGroup>
+        <output data-testid="layout">{{ layout }}</output>
+      `
+    })
+    await expect
+      .poll(() => JSON.parse(screen.getByTestId('layout').textContent))
+      .toEqual([57, 16, 27])
+
+    total.value = 800
+
+    await expect
+      .poll(() => JSON.parse(screen.getByTestId('layout').textContent))
+      .toEqual([58.75, 20, 21.25])
+    expect(localStorage.getItem('left')).toBe('600')
+    expect(localStorage.getItem('right')).toBe('300')
+  })
+
   it.for([
     { stored: '450', expected: 450 },
     { stored: '0', expected: 400 },

@@ -1,8 +1,25 @@
 import { describe, expect, it } from 'vitest'
 
+import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 
 describe('menuItemStore', () => {
+  it('places the New Blank Workflow icon only at the trailing edge', () => {
+    useCommandStore().registerCommand({
+      id: 'Comfy.NewBlankWorkflow',
+      label: 'New',
+      icon: 'icon-plus',
+      function: () => undefined
+    })
+
+    const item = useMenuItemStore().commandIdToMenuItem(
+      'Comfy.NewBlankWorkflow'
+    )
+
+    expect(item.icon).toBeUndefined()
+    expect(item.trailingIcon).toBe('icon-plus')
+  })
+
   it('drops action-only fields when converting an item to a submenu', () => {
     const store = useMenuItemStore()
     store.menuItems.push({

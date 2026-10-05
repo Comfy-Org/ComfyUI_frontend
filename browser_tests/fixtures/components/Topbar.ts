@@ -203,9 +203,6 @@ export class Topbar {
 
     await this.menuTrigger.click()
     await this.menuRoot.waitFor({ state: 'visible' })
-    await expect(this.menuRoot).not.toHaveClass(
-      /\bp-connected-overlay-enter-active\b/
-    )
     return this.menuRoot
   }
 

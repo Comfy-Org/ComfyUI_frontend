@@ -47,6 +47,7 @@
       :suggestions="suggestions"
       :loading="!nodeFrequencyStore.isLoaded"
       open-on-focus
+      :update-model-on-select="false"
       option-label="display_name"
       option-key="name"
       @select="onAddNode"
@@ -77,10 +78,9 @@
 </template>
 
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import Dialog from 'primevue/dialog'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NodePreview from '@/components/node/NodePreview.vue'
@@ -152,7 +152,12 @@ const search = (query: string) => {
   debouncedTrackSearch(query)
 }
 
-watchDebounced(currentQuery, search, { debounce: 100 })
+const debouncedSearch = debounce(search, 100)
+watch(currentQuery, debouncedSearch)
+onUnmounted(() => {
+  debouncedSearch.cancel()
+  debouncedTrackSearch.cancel()
+})
 
 const emit = defineEmits<{
   addFilter: [filter: FuseFilterWithValue<ComfyNodeDefImpl, string>]

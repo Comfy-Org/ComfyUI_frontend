@@ -34,7 +34,11 @@ const { hasSubmenu, item } = defineProps<{
   >
     {{ item.badge }}
   </span>
-  <i v-if="hasSubmenu" class="ml-auto icon-[lucide--chevron-right] size-4" />
+  <i
+    v-if="hasSubmenu"
+    data-testid="menu-item-submenu-indicator"
+    class="ml-auto icon-[lucide--chevron-right] size-4"
+  />
   <Switch
     v-else-if="item.presentation === 'switch'"
     :model-value="toValue(item.checked)"
