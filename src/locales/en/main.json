@@ -2980,6 +2980,7 @@
       "title": "Cancel subscription",
       "description": "Your access continues until {date}. You won't be charged again, and your workspace and credits will be preserved. You can resubscribe anytime.",
       "endOfBillingPeriod": "end of billing period",
+      "finishOnStripe": "Your subscription isn't cancelled yet. Finish cancelling on the Stripe page that just opened. Until you do, your plan will renew as usual.",
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription",

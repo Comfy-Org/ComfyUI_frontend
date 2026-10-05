@@ -27,7 +27,15 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 p-4">
+    <div
+      v-if="isAwaitingStripe"
+      class="flex items-center justify-end gap-4 p-4"
+    >
+      <Button variant="muted-textonly" @click="onClose">
+        {{ $t('g.close') }}
+      </Button>
+    </div>
+    <div v-else class="flex items-center justify-end gap-4 p-4">
       <Button variant="muted-textonly" :disabled="isLoading" @click="onClose">
         {{ $t('subscription.cancelDialog.keepSubscription') }}
       </Button>
@@ -45,7 +53,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -88,6 +96,7 @@ const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
+const isAwaitingStripe = ref(false)
 const didScopeAbort = ref(false)
 const cancelReport = createCancelFlowReporter(
   telemetry,
@@ -133,7 +142,30 @@ const formattedEndDate = computed(() => {
 })
 
 const description = computed(() =>
-  t('subscription.cancelDialog.description', { date: formattedEndDate.value })
+  isAwaitingStripe.value
+    ? t('subscription.cancelDialog.finishOnStripe')
+    : t('subscription.cancelDialog.description', {
+        date: formattedEndDate.value
+      })
+)
+
+watch(
+  () => isAwaitingStripe.value && !!subscription.value?.isCancelled,
+  (observed) => {
+    if (!observed) return
+    didCancelSucceed.value = true
+    telemetry?.trackSubscriptionCancellation(
+      'confirmed',
+      cancellationMetadata()
+    )
+    cancelReport.confirmed({ operationFollows: false })
+    dialogStore.closeDialog({ key: 'cancel-subscription' })
+    toast.add({
+      severity: 'success',
+      summary: t('subscription.cancelSuccess'),
+      life: 5000
+    })
+  }
 )
 
 function onClose() {
@@ -160,10 +192,16 @@ async function onConfirmCancel() {
     return
   }
 
-  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
-  cancelReport.confirmed({
-    operationFollows: shouldUseWorkspaceBilling.value
-  })
+  // The legacy rail only opens the Stripe portal, so it reports `confirmed`
+  // once the cancellation is observed instead of on click.
+  const isLegacyRail = !shouldUseWorkspaceBilling.value
+  if (!isLegacyRail) {
+    telemetry?.trackSubscriptionCancellation(
+      'confirmed',
+      cancellationMetadata()
+    )
+    cancelReport.confirmed({ operationFollows: true })
+  }
   isLoading.value = true
   try {
     await cancelSubscription(isScopeCurrent)
@@ -171,6 +209,7 @@ async function onConfirmCancel() {
     const errorMessage = getErrorMessage(error)
     if (!shouldUseWorkspaceBilling.value) {
       telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
+      cancelReport.confirmed({ operationFollows: false })
       cancelReport.failed(categorizeBillingApiError(error))
     }
     toast.add({
@@ -178,6 +217,12 @@ async function onConfirmCancel() {
       summary: t('subscription.cancelDialog.failed'),
       detail: errorMessage ?? t('g.unknownError')
     })
+    isLoading.value = false
+    return
+  }
+
+  if (isLegacyRail) {
+    isAwaitingStripe.value = true
     isLoading.value = false
     return
   }

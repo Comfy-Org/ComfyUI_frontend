@@ -175,6 +175,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
     it('tracks confirmed before the cancel request and no abandoned on success', async () => {
       setSubscription(null)
+      mockShouldUseWorkspaceBilling.value = true
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
         undefined
       )
@@ -222,7 +223,7 @@ describe('CancelSubscriptionDialogContent', () => {
       ).not.toHaveBeenCalledWith('abandoned', expect.anything())
     })
 
-    it('tracks confirmed and failed with message-carrying rejection values', async () => {
+    it('tracks failed without confirmed for a legacy cancel that rejects', async () => {
       setSubscription(null)
       vi.mocked(useBillingContext().cancelSubscription).mockRejectedValueOnce({
         message: 'timed out'
@@ -243,7 +244,7 @@ describe('CancelSubscriptionDialogContent', () => {
       )
       expect(
         useTelemetry()?.trackSubscriptionCancellation
-      ).toHaveBeenCalledWith('confirmed', expect.anything())
+      ).not.toHaveBeenCalledWith('confirmed', expect.anything())
     })
 
     it('leaves workspace terminal failure telemetry to the billing poller', async () => {
@@ -372,8 +373,10 @@ describe('CancelSubscriptionDialogContent', () => {
         reported: []
       },
       {
-        name: 'a cancel that goes through',
-        arrange: () => {},
+        name: 'a workspace cancel that goes through',
+        arrange: () => {
+          mockShouldUseWorkspaceBilling.value = true
+        },
         act: confirm,
         reported: [intent]
       },
@@ -452,6 +455,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
     it('closes the dialog and shows a success toast when cancellation succeeds', async () => {
       setSubscription(null)
+      mockShouldUseWorkspaceBilling.value = true
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
         undefined
       )
@@ -532,6 +536,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
     it('does not track cancellation failure when status refresh fails after cancellation succeeds', async () => {
       setSubscription(null)
+      mockShouldUseWorkspaceBilling.value = true
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
         undefined
       )
@@ -562,6 +567,90 @@ describe('CancelSubscriptionDialogContent', () => {
       expect(
         useTelemetry()?.trackSubscriptionCancellation
       ).not.toHaveBeenCalledWith('abandoned', expect.anything())
+    })
+  })
+
+  describe('legacy rail portal cancel', () => {
+    const confirm = () =>
+      userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+    const confirmedCalls = () =>
+      vi
+        .mocked(useTelemetry()!.trackSubscriptionCancellation)
+        .mock.calls.filter(([stage]) => stage === 'confirmed')
+
+    it('asks the user to finish on Stripe and claims no success', async () => {
+      setSubscription(subscription())
+      vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
+        undefined
+      )
+
+      renderComponent()
+      await confirm()
+
+      expect(
+        await screen.findByText(/Finish cancelling on the Stripe page/i)
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /^cancel subscription$/i })
+      ).not.toBeInTheDocument()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      expect(confirmedCalls()).toHaveLength(0)
+    })
+
+    it('shows success and tracks confirmed only once the cancel is observed', async () => {
+      const isCancelled = ref(false)
+      useBillingContext().subscription = computed(() =>
+        subscription({ isCancelled: isCancelled.value })
+      )
+      vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
+        undefined
+      )
+
+      const { unmount } = renderComponent()
+      await confirm()
+      await screen.findByText(/Finish cancelling on the Stripe page/i)
+
+      isCancelled.value = true
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'success',
+            summary: 'Subscription cancelled successfully'
+          })
+        )
+      )
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'cancel-subscription'
+      })
+      expect(confirmedCalls()).toHaveLength(1)
+      unmount()
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('abandoned', expect.anything())
+    })
+
+    it('reports abandoned, not confirmed, when closed before the cancel is observed', async () => {
+      setSubscription(subscription())
+      vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
+        undefined
+      )
+
+      const { unmount } = renderComponent()
+      await confirm()
+      await screen.findByText(/Finish cancelling on the Stripe page/i)
+      await userEvent.click(
+        screen.getAllByRole('button', { name: /^close$/i }).at(-1)!
+      )
+      unmount()
+
+      expect(confirmedCalls()).toHaveLength(0)
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).toHaveBeenCalledWith('abandoned', expect.anything())
     })
   })
 
