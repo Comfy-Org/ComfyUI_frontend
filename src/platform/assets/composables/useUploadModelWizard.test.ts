@@ -19,7 +19,8 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetMetadata: vi.fn(),
     uploadAssetAsync: vi.fn(),
-    uploadAssetFromBase64: vi.fn()
+    uploadAssetFromBase64: vi.fn(),
+    deleteAsset: vi.fn()
   }
 }))
 
@@ -129,8 +130,46 @@ describe('useUploadModelWizard', () => {
 
     await expect(upload).resolves.toBeNull()
     expect(assetService.uploadAssetAsync).not.toHaveBeenCalled()
+    expect(assetService.deleteAsset).toHaveBeenCalledWith('preview-id')
     expect(wizard.currentStep.value).toBe(1)
     expect(wizard.isUploading.value).toBe(false)
+  })
+
+  it('does not reopen a reset wizard after a synchronous refresh finishes', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
+      type: 'sync',
+      asset: fromPartial({
+        id: 'asset-1',
+        name: 'model.safetensors',
+        tags: ['models', 'checkpoints']
+      })
+    })
+    let finishRefresh!: () => void
+    const refreshPending = new Promise<void>((resolve) => {
+      finishRefresh = resolve
+    })
+    vi.spyOn(useModelToNodeStore(), 'getAllNodeProviders').mockReturnValue([
+      fromPartial({ nodeDef: { name: 'CheckpointLoaderSimple' } })
+    ])
+    vi.spyOn(useAssetsStore(), 'updateModelsForNodeType').mockReturnValue(
+      refreshPending
+    )
+
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/sync'
+    wizard.selectedModelType.value = 'checkpoints'
+    const upload = wizard.uploadModel()
+    await vi.waitFor(() => {
+      expect(useAssetsStore().updateModelsForNodeType).toHaveBeenCalledOnce()
+    })
+
+    wizard.resetWizard()
+    finishRefresh()
+
+    await expect(upload).resolves.toBeNull()
+    expect(wizard.currentStep.value).toBe(1)
   })
 
   it('tracks a backend task that resolves after the wizard is reset', async () => {
