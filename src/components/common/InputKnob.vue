@@ -5,6 +5,7 @@
       :min
       :max
       :step
+      :disabled
       :aria-label="ariaLabel"
       :aria-labelledby="ariaLabelledby"
       v-bind="$attrs"
