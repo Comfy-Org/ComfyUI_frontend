@@ -8,6 +8,7 @@ import {
   filterWorkshopModels,
   sortWorkshopModels
 } from '@/config/models-catalogue'
+import { isVideoUrl, videoPosterUrl } from '@/config/workshop-playground'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
@@ -83,8 +84,18 @@ function sourceOf(model: WorkshopModel): string | undefined {
         @mousedown.prevent
         @click="emit('pick', model)"
       >
+        <video
+          v-if="model.thumbnailUrl && isVideoUrl(model.thumbnailUrl)"
+          :src="videoPosterUrl(model.thumbnailUrl)"
+          class="size-10 shrink-0 rounded-lg object-cover"
+          aria-hidden="true"
+          data-testid="workshop-search-model-video"
+          muted
+          playsinline
+          preload="metadata"
+        />
         <img
-          v-if="model.thumbnailUrl"
+          v-else-if="model.thumbnailUrl"
           :src="model.thumbnailUrl"
           alt=""
           class="size-10 shrink-0 rounded-lg object-cover"

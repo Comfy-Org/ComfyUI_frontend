@@ -59,6 +59,21 @@ describe('WorkshopSearchPanel', () => {
     ).toBeTruthy()
   })
 
+  it('shows a video thumbnail as a still frame, not a broken image', () => {
+    const clip = 'https://media.comfy.org/clip.mp4'
+    const videoModel: WorkshopModel = {
+      ...models[1],
+      thumbnailUrl: clip,
+      thumbnail: { url: clip, kind: 'video' }
+    }
+    render(WorkshopSearchPanel, {
+      props: { models: [videoModel], query: 'alpha' }
+    })
+    expect(
+      screen.getByTestId('workshop-search-model-video').getAttribute('src')
+    ).toBe(`${clip}#t=0.1`)
+  })
+
   it('shows an empty state for a query without matches', () => {
     render(WorkshopSearchPanel, {
       props: { models, query: 'missing' }
