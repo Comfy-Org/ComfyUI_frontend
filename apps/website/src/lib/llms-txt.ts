@@ -60,9 +60,10 @@ export function redirectSourcePattern(source: string): RegExp {
 
 /**
  * llms.txt links whose path, or the page a `.md` twin copies, matches a
- * redirect source (e.g. a Vercel edge redirect). Linking a redirect source instead of its destination means an
- * agent following the link pays an extra hop, and the description sitting
- * next to it describes whatever page the redirect used to point at.
+ * redirect source (e.g. a Vercel edge redirect). Linking a redirect source
+ * instead of its destination means an agent following the link pays an extra
+ * hop, and the description sitting next to it describes whatever page the
+ * redirect used to point at.
  */
 export function findRedirectedLinks(
   links: LlmsTxtLink[],
@@ -98,7 +99,7 @@ export function isWorkflowsAppPath(path: string): boolean {
 }
 
 /** comfy.org links whose path neither the build nor another app behind the router serves. */
-export function findMissingLinks(
+function findMissingLinks(
   links: LlmsTxtLink[],
   isServed: (path: string) => boolean
 ): LlmsTxtLink[] {
