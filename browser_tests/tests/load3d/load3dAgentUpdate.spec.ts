@@ -54,7 +54,7 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
     })
   })
 
-  test('keeps the full-screen viewer inside the visible workspace inset', async ({
+  test('keeps the full-screen viewer centered in the viewport', async ({
     load3dAgent,
     page
   }) => {
