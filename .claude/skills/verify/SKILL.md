@@ -70,7 +70,7 @@ await new Promise((resolve) => {
 })
 ```
 
-At 0 frames, Vue transitions never finish. A removed PrimeVue toast keeps its DOM node with `p-toast-message-leave-active` at opacity 0, and a new one sticks at `p-toast-message-enter-from`, so DOM queries report toasts a real user never sees. In that case assert on component state instead. Walk `el.__vueParentComponent` up to the component whose `type.name` is `Toast` and read `proxy.messages`. A 2026-09-21 run filed a false "verify toast stays after the top-up settles" finding this way.
+At 0 frames, Vue transitions and exit animations never finish. A dismissed toast can keep its DOM node mid-animation, so DOM queries report toasts a real user never sees. In that case assert on state instead: read `toasts` from the toast store (`src/components/ui/toast/toastStore.ts`), for example through the `Toaster` component instance's `setupState`. A 2026-09-21 run filed a false "verify toast stays after the top-up settles" finding this way.
 
 ## Drive
 
