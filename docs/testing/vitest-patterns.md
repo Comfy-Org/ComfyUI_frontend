@@ -50,11 +50,11 @@ Read an action from its store where it is used instead of caching it in a
 suite-level `let` assigned by `beforeEach`:
 
 ```typescript
-vi.mocked(useToastStore().addAlert).mockImplementation(() => {})
-expect(useToastStore().addAlert).toHaveBeenCalledWith('Upload failed')
+vi.mocked(useToast().error).mockImplementation(() => 1)
+expect(useToast().error).toHaveBeenCalledWith('Upload failed')
 ```
 
-Use a test-local `const store = useToastStore()` when several accesses become
+Use a test-local `const store = useToast()` when several accesses become
 hard to read. Keep shared variables when they own a per-test resource, a
 reactive fixture, or a value that teardown must restore.
 

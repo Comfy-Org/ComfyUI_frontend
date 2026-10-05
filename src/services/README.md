@@ -407,9 +407,9 @@ describe('useWorkflowService', () => {
       })
     }))
 
-    vi.mock('@/platform/updates/common/toastStore', () => ({
-      useToastStore: () => ({
-        add: vi.fn()
+    vi.mock('@/components/ui/toast', () => ({
+      useToast: () => ({
+        error: vi.fn()
       })
     }))
   })
