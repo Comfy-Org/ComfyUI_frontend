@@ -51,18 +51,37 @@ async function keyFileIsLive(): Promise<boolean> {
   return response.ok && (await response.text()).trim() === INDEXNOW_KEY
 }
 
+const ACCEPTED = new Set([200, 202])
+
+async function postBatch(
+  payload: IndexNowPayload,
+  label: string
+): Promise<boolean> {
+  const response = await fetch(INDEXNOW_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+  const accepted = ACCEPTED.has(response.status)
+  const line = `${label} (${payload.urlList.length} URLs): HTTP ${response.status}`
+  if (accepted) report(`IndexNow ${line}`)
+  else warn(line)
+  return accepted
+}
+
 async function send(payloads: IndexNowPayload[]): Promise<void> {
+  if (payloads.length === 0) return
+  if (!(await keyFileIsLive()))
+    return warn(`key file ${INDEXNOW_KEY_LOCATION} does not serve the key`)
   for (const [index, payload] of payloads.entries()) {
-    const response = await fetch(INDEXNOW_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      body: JSON.stringify(payload)
-    })
-    const batch = `batch ${index + 1}/${payloads.length} (${payload.urlList.length} URLs)`
-    if (response.status !== 200 && response.status !== 202)
-      return warn(`${batch} returned HTTP ${response.status}`)
-    report(`IndexNow ${batch}: HTTP ${response.status}`)
+    if (!(await postBatch(payload, `batch ${index + 1}/${payloads.length}`)))
+      return
   }
+}
+
+function preview(payloads: IndexNowPayload[]): void {
+  process.stdout.write(`${JSON.stringify(payloads, null, 2)}\n`)
+  report(`IndexNow dry run: ${payloads.length} request(s) not sent`)
 }
 
 async function main(): Promise<void> {
@@ -73,16 +92,7 @@ async function main(): Promise<void> {
   )
   if (plan.kind === 'skip') return warn(plan.reason)
   report(plan.summary)
-
-  if (values['dry-run']) {
-    process.stdout.write(`${JSON.stringify(plan.payloads, null, 2)}\n`)
-    return report(
-      `IndexNow dry run: ${plan.payloads.length} request(s) not sent`
-    )
-  }
-  if (plan.payloads.length === 0) return
-  if (!(await keyFileIsLive()))
-    return warn(`key file ${INDEXNOW_KEY_LOCATION} does not serve the key`)
+  if (values['dry-run']) return preview(plan.payloads)
   await send(plan.payloads)
 }
 
