@@ -470,9 +470,13 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
       returnTo: '/workflows?id=7'
     }
   ])('with the flag on, $name', async ({ url, returnTo }) => {
-    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    const flags = vi.mocked(useFeatureFlags().flags)
+    flags.ssoEnabled = true
     sessionRequiresSso.mockResolvedValue(true)
     await renderLoginView(url)
+    vi.mocked(useAuthStore().logout).mockImplementation(async () => {
+      flags.ssoEnabled = false
+    })
 
     await signInWithFirebase()
 
@@ -482,6 +486,10 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
         returnTo
       })
     )
+    expect(
+      vi.mocked(presentSsoRequired).mock.results[0].value,
+      'shown before the sign-out drops the remote config that carries sso_enabled'
+    ).toBe(true)
     expect(useAuthStore().logout).toHaveBeenCalledOnce()
     expect(redirectAfterAuth).not.toHaveBeenCalled()
   })
