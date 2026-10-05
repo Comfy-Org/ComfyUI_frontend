@@ -26,6 +26,7 @@
         variant="badge"
         severity="secondary"
         class="ml-2"
+        data-testid="tree-leaf-count"
       >
         {{ nodeBadgeText }}
       </Badge>

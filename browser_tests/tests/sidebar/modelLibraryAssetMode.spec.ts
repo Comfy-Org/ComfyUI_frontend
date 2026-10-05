@@ -287,12 +287,8 @@ test.describe('Model library sidebar - asset mode enabled after the tab opens', 
       assets: true
     })
 
-    await expect(
-      tab.getFolderRowByLabel('checkpoints').locator('.leaf-count-badge')
-    ).toBeVisible()
-    await expect(
-      tab.getFolderRowByLabel('loras').locator('.leaf-count-badge')
-    ).toBeVisible()
+    await expect(tab.getFolderLeafCount('checkpoints')).toBeVisible()
+    await expect(tab.getFolderLeafCount('loras')).toBeVisible()
     await expect(tab.loadAllFoldersButton).toHaveCount(0)
   })
 })

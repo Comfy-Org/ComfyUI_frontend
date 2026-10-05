@@ -301,6 +301,10 @@ export class ModelLibrarySidebarTab extends SidebarTab {
     return this.getFolderByLabel(label)
   }
 
+  getFolderLeafCount(label: string) {
+    return this.getFolderByLabel(label).getByTestId(TestIds.tree.leafCount)
+  }
+
   getLeavesByText(text: string) {
     return this.leafNodes.filter({ hasText: text })
   }
