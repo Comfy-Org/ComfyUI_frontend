@@ -491,7 +491,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         dismissedPendingDownloads.set(download.taskId, download.modelType)
       }
       taskNotFoundAttempts.delete(download.taskId)
-      terminalReconciledFailures.delete(download.taskId)
       downloads.value.delete(download.taskId)
     }
   }
@@ -509,7 +508,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
           dismissedPendingDownloads.set(download.taskId, download.modelType)
         }
         taskNotFoundAttempts.delete(download.taskId)
-        terminalReconciledFailures.delete(download.taskId)
         downloads.value.delete(download.taskId)
       }
     }

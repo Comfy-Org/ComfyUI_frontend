@@ -810,6 +810,10 @@ describe('useAssetDownloadStore', () => {
         error: 'Download failed'
       })
       expect(store.activeDownloads).toHaveLength(0)
+
+      store.clearFinishedDownloads()
+      dispatch(createDownloadMessage({ status: 'running', progress: 80 }))
+      expect(store.downloadList).toHaveLength(0)
     })
 
     it('settles a pending cancellation the backend never confirms', async () => {
