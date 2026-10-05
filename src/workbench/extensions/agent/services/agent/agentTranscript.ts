@@ -13,7 +13,7 @@ import type {
 } from './agentMessageParts'
 import {
   createAssistantMessage,
-  isPendingAskPart,
+  isOpenAskPart,
   toAskOrNoticePart
 } from './agentMessageParts'
 
@@ -434,9 +434,7 @@ function recordAssistantRow(
  */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
-  message.parts = message.parts.filter(
-    (part) => !isPendingAskPart(part) && part.type !== 'askUnavailable'
-  )
+  message.parts = message.parts.filter((part) => !isOpenAskPart(part))
   for (const part of message.parts) {
     if (part.type !== 'tool' || part.state !== 'streaming') continue
     part.state = 'done'

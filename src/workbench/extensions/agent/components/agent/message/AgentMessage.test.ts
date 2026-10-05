@@ -921,7 +921,7 @@ describe('AgentMessage delete approval', () => {
     {
       name: 'a local retirement',
       resolution: { status: 'retired', selected: [] },
-      text: 'This request was closed without an answer.'
+      text: 'This request is no longer open here.'
     },
     {
       name: 'an unconfirmed answer',
