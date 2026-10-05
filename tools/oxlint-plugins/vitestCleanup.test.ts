@@ -293,30 +293,6 @@ afterEach(() => {
   helper()
 })
 function render() {}
-import { reportError } from './reportError'
-import { track } from './unmocked'
-vi.mock('./reportError')
-const { hoistedMock } = vi.hoisted(() => ({ hoistedMock: vi.fn() }))
-const mocks = { nested: { fn: vi.fn() } }
-const cache = { mockClear() {}, mockReset() {}, mockRestore() {} }
-let spy
-beforeEach(() => {
-  spy = vi.spyOn(console, 'warn')
-})
-afterEach(() => {
-  reportError.mockClear()
-  hoistedMock.mockReset()
-  mocks.nested.fn.mockReset()
-  spy.mockRestore()
-  vi.mocked(useThing()).method.mockClear()
-  cache.mockClear()
-  cache.mockReset()
-  cache.mockRestore()
-  track.mockClear()
-})
-function useThing() {
-  return { method() {} }
-}
 `
 
 function expectReportsAt(
@@ -425,13 +401,9 @@ describe('Vitest cleanup rules', () => {
     expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131, 136, 137, 138])
   })
 
-  it('reports Vitest mock cleanup in hooks unless beforeEach setup ran first', () => {
-    expect(output.match(/resets and restores every mock/g)).toHaveLength(12)
-    expectReportsAt(
-      output,
-      [6, 8, 10, 12, 13, 17, 18, 48, 49, 50, 51, 52],
-      'mock-instance.test.ts'
-    )
+  it('reports per-mock cleanup in hooks unless beforeEach setup ran first', () => {
+    expect(output.match(/resets and restores every mock/g)).toHaveLength(7)
+    expectReportsAt(output, [6, 8, 10, 12, 13, 17, 18], 'mock-instance.test.ts')
   })
 
   it('reports persistent LiteGraph registrations and redundant cleanup', () => {
