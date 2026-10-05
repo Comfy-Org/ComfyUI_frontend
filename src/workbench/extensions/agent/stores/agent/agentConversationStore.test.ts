@@ -954,6 +954,29 @@ describe('useAgentConversationStore', () => {
       }
     )
 
+    // The resolved frame can land while this client's POST is still out; the
+    // POST settling afterwards must not erase the server's answer that a
+    // refetch rebuilds the card from.
+    it('keeps the server answer through a later commit and refetch', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.recordAskSelection('turn-1:call-1', { selected: ['oil'] })
+      store.retireAsk('turn-1:call-1', 'th', {
+        status: 'answered',
+        selected: ['ink']
+      })
+
+      store.commitAsk('turn-1:call-1', 'th')
+      store.hydrate(askUserTranscript())
+
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          resolution: { status: 'answered', selected: ['ink'] }
+        })
+      ])
+    })
+
     // The read-only card is the record of the user's answer; a refetch that
     // still lists the ask as pending must neither re-arm it nor erase it.
     it('rebuilds a retired question read-only from a transcript that still lists it', () => {
@@ -1891,6 +1914,51 @@ describe('useAgentConversationStore', () => {
       { type: 'tool', name: 'add_node', state: 'done', ok: true }
     ])
   })
+
+  // A lost agent_ask_resolved leaves the question pending locally while the
+  // server has finished the turn; settling must not hand back a live form.
+  it.for([
+    {
+      name: 'a persisted reply',
+      persisted: [
+        { type: 'text' as const, text: 'done', state: 'done' as const }
+      ],
+      kept: ['text']
+    },
+    { name: 'an empty terminal row', persisted: undefined, kept: [] }
+  ])(
+    'drops a pending question and its stand-in when $name settles the turn',
+    ({ persisted, kept }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      const ask = {
+        message_id: 't1',
+        thread_id: 'th',
+        prompt: 'Which style?',
+        options: [{ id: 'oil', label: 'Oil' }],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...ask, ask_id: 'q-1', kind: 'ask_user' }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...ask, ask_id: 'q-2', kind: 'something_new' }
+        })
+      )
+
+      store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+
+      expect(store.messages[0].parts.map((part) => part.type)).toEqual(kept)
+    }
+  )
 
   it('splits persisted text around a local tab link when there is no tool', () => {
     const store = useAgentConversationStore()

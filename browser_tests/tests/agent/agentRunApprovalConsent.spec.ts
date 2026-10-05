@@ -370,7 +370,7 @@ test.describe('Agent ask_user question', { tag: ['@cloud', '@agent'] }, () => {
         choices.getByRole('checkbox', { name: 'Pixel art' })
       ).toBeVisible()
       await expect(
-        panel.getByText(t('agent.askUser.chooseUpTo', { max: 2 }))
+        panel.getByText(t('agent.askUser.chooseBetween', { min: 1, max: 2 }))
       ).toBeVisible()
     })
 
