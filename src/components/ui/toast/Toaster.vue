@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, shallowReactive } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -27,6 +29,38 @@ const stackedToasts = computed(() =>
 const dockedToasts = computed(() => toasts.value.filter(isDocked))
 const latestToastId = computed(() => stackedToasts.value.at(-1)?.id)
 const latestDockedToastId = computed(() => dockedToasts.value.at(-1)?.id)
+const { t } = useI18n()
+const providerLabel = computed(() => t('notifications.label'))
+const customToastText = shallowReactive(new Map<ToastId, string>())
+
+function rememberCustomToastText(
+  id: ToastId,
+  element: Element | ComponentPublicInstance | null
+) {
+  if (element instanceof HTMLElement) {
+    customToastText.set(id, element.textContent?.trim() ?? '')
+  } else {
+    customToastText.delete(id)
+  }
+}
+
+const announcements = computed(() =>
+  stackedToasts.value.map((message) => ({
+    id: message.id,
+    assertive: message.role === 'alert',
+    text:
+      message.kind === 'custom'
+        ? (customToastText.get(message.id) ?? '')
+        : [message.title, message.description].filter(Boolean).join('. ')
+  }))
+)
+const politeAnnouncements = computed(() =>
+  announcements.value.filter((announcement) => !announcement.assertive)
+)
+const assertiveAnnouncements = computed(() =>
+  announcements.value.filter((announcement) => announcement.assertive)
+)
+
 let escapeToastId: ToastId | undefined
 
 function preserveToastOnEscape(id: ToastId) {
@@ -53,40 +87,58 @@ const icons = {
 </script>
 
 <template>
-  <ToastProvider>
-    <ToastRoot
-      v-for="message in stackedToasts"
-      :key="message.id"
-      :open="true"
-      :duration="message.duration"
-      :role="message.role"
-      data-testid="toast"
-      :data-toast-kind="message.kind"
-      @escape-key-down="preserveToastOnEscape(message.id)"
-      @update:open="updateToastOpen(message.id, $event)"
-    >
-      <template v-if="message.kind === 'custom'">
-        <component
-          :is="message.component"
-          v-bind="message.props"
-          :toast-id="message.id"
-        />
-      </template>
-      <template v-else>
-        <i
-          :class="cn(icons[message.kind], 'mt-0.5 size-5 shrink-0')"
-          aria-hidden="true"
-        />
-        <div class="min-w-0 flex-1">
-          <ToastTitle>{{ message.title }}</ToastTitle>
-          <ToastDescription v-if="message.description">
-            {{ message.description }}
-          </ToastDescription>
+  <div class="sr-only">
+    <div role="status" aria-live="polite" :aria-label="providerLabel">
+      <p v-for="announcement in politeAnnouncements" :key="announcement.id">
+        {{ announcement.text }}
+      </p>
+    </div>
+    <div role="alert" aria-live="assertive" :aria-label="providerLabel">
+      <p v-for="announcement in assertiveAnnouncements" :key="announcement.id">
+        {{ announcement.text }}
+      </p>
+    </div>
+  </div>
+  <ToastProvider :label="providerLabel">
+    <div aria-hidden="true">
+      <ToastRoot
+        v-for="message in stackedToasts"
+        :key="message.id"
+        :open="true"
+        :duration="message.duration"
+        data-testid="toast"
+        :data-toast-kind="message.kind"
+        @escape-key-down="preserveToastOnEscape(message.id)"
+        @update:open="updateToastOpen(message.id, $event)"
+      >
+        <div
+          v-if="message.kind === 'custom'"
+          :ref="(element) => rememberCustomToastText(message.id, element)"
+          class="contents"
+        >
+          <component
+            :is="message.component"
+            v-bind="message.props"
+            :toast-id="message.id"
+          />
         </div>
-      </template>
-      <ToastClose v-if="message.closable" data-testid="toast-close" />
-    </ToastRoot>
+        <template v-else>
+          <i
+            :class="cn(icons[message.kind], 'mt-0.5 size-5 shrink-0')"
+            aria-hidden="true"
+          />
+          <div class="min-w-0 flex-1">
+            <ToastTitle>{{ message.title }}</ToastTitle>
+            <ToastDescription v-if="message.description">
+              {{ message.description }}
+            </ToastDescription>
+          </div>
+        </template>
+        <ToastClose v-if="message.closable" data-testid="toast-close" />
+      </ToastRoot>
+    </div>
     <ToastViewport
+      :label="(hotkey: string) => t('notifications.viewportLabel', { hotkey })"
       :z-index-version="latestToastId"
       :class="agentNodeSelectionActive ? 'hidden' : undefined"
       data-testid="toast-viewport"

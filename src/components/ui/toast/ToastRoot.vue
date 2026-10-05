@@ -5,15 +5,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const {
-  class: className,
-  role = 'status',
-  ...restProps
-} = defineProps<
-  ToastRootProps & {
-    class?: HTMLAttributes['class']
-    role?: 'alert' | 'status'
-  }
+const { class: className, ...restProps } = defineProps<
+  ToastRootProps & { class?: HTMLAttributes['class'] }
 >()
 const emits = defineEmits<ToastRootEmits>()
 const forwarded = useForwardPropsEmits(restProps, emits)
@@ -22,8 +15,6 @@ const forwarded = useForwardPropsEmits(restProps, emits)
 <template>
   <ToastRoot
     v-bind="forwarded"
-    :role
-    :aria-live="role === 'alert' ? 'assertive' : 'polite'"
     :class="
       cn(
         'pointer-events-auto relative flex w-full items-start gap-3 rounded-lg border border-border-default bg-base-background p-4 text-base-foreground shadow-lg',
