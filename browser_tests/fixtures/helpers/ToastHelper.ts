@@ -13,7 +13,8 @@ export class ToastHelper {
   public readonly toastSuccesses: Locator
   public readonly toastWarnings: Locator
   public readonly toastLoadings: Locator
-  public readonly alerts: Locator
+  public readonly politeAnnouncements: Locator
+  public readonly assertiveAnnouncements: Locator
 
   constructor(private readonly page: Page) {
     const toasts = page.getByTestId('toast')
@@ -22,7 +23,14 @@ export class ToastHelper {
     this.toastSuccesses = page.locator(toastSelector('success'))
     this.toastWarnings = page.locator(toastSelector('warning'))
     this.toastLoadings = page.locator(toastSelector('loading'))
-    this.alerts = toasts.and(page.getByRole('alert'))
+    this.politeAnnouncements = page.getByRole('status', {
+      name: 'Notification',
+      exact: true
+    })
+    this.assertiveAnnouncements = page.getByRole('alert', {
+      name: 'Notification',
+      exact: true
+    })
   }
 
   withText(text: string | RegExp): Locator {

@@ -13,7 +13,15 @@ import { useToast } from './toastStore'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { g: { close: 'Close' } } }
+  messages: {
+    en: {
+      g: { close: 'Close' },
+      notifications: {
+        label: 'Notification',
+        viewportLabel: 'Notifications ({hotkey})'
+      }
+    }
+  }
 })
 
 describe('Toaster', () => {
@@ -21,39 +29,81 @@ describe('Toaster', () => {
     return render(Toaster, { global: { plugins: [i18n] } })
   }
 
-  it('stacks notifications and assigns severity roles', async () => {
+  it('announces errors and warnings assertively and other notifications politely', async () => {
     renderToaster()
     const toast = useToast()
 
     toast.success('Saved')
-    toast.error('Could not save')
+    toast.loading('Uploading')
+    toast.error('Could not save', { description: 'Disk is full' })
+    toast.warning('Check settings')
     await nextTick()
 
-    const notifications = screen.getAllByTestId('toast')
-    expect(notifications).toHaveLength(2)
-    expect(notifications[0]).toHaveAttribute('role', 'status')
-    expect(notifications[0]).toHaveAttribute('aria-live', 'polite')
-    expect(notifications[1]).toHaveAttribute('role', 'alert')
-    expect(notifications[1]).toHaveAttribute('aria-live', 'assertive')
+    expect(
+      screen.getByRole('status', { name: 'Notification' })
+    ).toHaveTextContent('SavedUploading')
+    expect(
+      screen.getByRole('alert', { name: 'Notification' })
+    ).toHaveTextContent('Could not save. Disk is fullCheck settings')
   })
 
-  it('renders standard and custom messages only once after announcement', async () => {
+  it('announces custom notifications by their text', async () => {
+    renderToaster()
+
+    useToast().custom({ template: '<div>Invite accepted</div>' }, {})
+    await nextTick()
+
+    expect(
+      screen.getByRole('status', { name: 'Notification' })
+    ).toHaveTextContent('Invite accepted')
+  })
+
+  it('keeps visible notifications out of the live regions', async () => {
     vi.useFakeTimers()
     renderToaster()
-    const toast = useToast()
 
-    toast.error('Save failed', { description: 'Try another location' })
-    toast.custom({ template: '<div>Custom notification</div>' }, {})
+    useToast().error('Save failed', { description: 'Try another location' })
     await nextTick()
     await vi.advanceTimersByTimeAsync(1000)
 
-    expect(document.body.textContent.match(/Save failed/g)).toHaveLength(1)
+    const notification = screen.getByTestId('toast')
+    expect(notification).toHaveAttribute('aria-live', 'off')
+    expect(notification).toHaveTextContent('Save failedTry another location')
     expect(
-      document.body.textContent.match(/Try another location/g)
-    ).toHaveLength(1)
+      screen.getAllByRole('alert').map((element) => element.textContent)
+    ).not.toContainEqual(expect.stringContaining('[]'))
+  })
+
+  it('labels the notification regions in the active locale', async () => {
+    render(Toaster, {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'fr',
+            messages: {
+              fr: {
+                g: { close: 'Fermer' },
+                notifications: {
+                  label: 'Notification FR',
+                  viewportLabel: 'Notifications FR ({hotkey})'
+                }
+              }
+            }
+          })
+        ]
+      }
+    })
+
+    useToast().info('Enregistré')
+    await nextTick()
+
     expect(
-      document.body.textContent.match(/Custom notification/g)
-    ).toHaveLength(1)
+      screen.getByRole('region', { name: 'Notifications FR (F8)' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('status', { name: 'Notification FR' })
+    ).toHaveTextContent('Enregistré')
   })
 
   it('lifts a new notification above an open dialog', async () => {
@@ -77,12 +127,12 @@ describe('Toaster', () => {
 
     useToast().info('Uploaded', { duration: 1000 })
     await nextTick()
-    expect(screen.getByText('Uploaded')).toBeInTheDocument()
+    expect(screen.getByTestId('toast')).toHaveTextContent('Uploaded')
 
     await vi.advanceTimersByTimeAsync(1000)
     await nextTick()
 
-    expect(screen.queryByText('Uploaded')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('toast')).not.toBeInTheDocument()
   })
 
   it('preserves notifications when Escape is pressed', async () => {
@@ -96,8 +146,9 @@ describe('Toaster', () => {
 
     await user.keyboard('{Escape}')
 
-    expect(screen.getByText('First')).toBeInTheDocument()
-    expect(screen.getByText('Second')).toBeInTheDocument()
+    expect(
+      screen.getAllByTestId('toast').map((element) => element.textContent)
+    ).toEqual(['First', 'Second'])
   })
 
   it('does not prevent the default Escape behavior', async () => {

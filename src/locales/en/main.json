@@ -5832,5 +5832,9 @@
       "descriptionTooLong": "Trigger line must be {max} characters or less",
       "bodyRequired": "Instructions are required"
     }
+  },
+  "notifications": {
+    "label": "Notification",
+    "viewportLabel": "Notifications ({hotkey})"
   }
 }

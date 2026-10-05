@@ -48,12 +48,12 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     )
   })
 
-  test('Error toast is announced as an alert', async ({ comfyPage }) => {
+  test('Error toast is announced assertively', async ({ comfyPage }) => {
     await triggerErrorToast(comfyPage)
 
-    await expect(
-      comfyPage.toast.alerts.filter({ hasText: 'Test execution error' })
-    ).toBeVisible()
+    await expect(comfyPage.toast.assertiveAnnouncements).toContainText(
+      'Error. Test execution error'
+    )
     await expect(comfyPage.toast.toastErrors).toHaveCount(1)
   })
 
