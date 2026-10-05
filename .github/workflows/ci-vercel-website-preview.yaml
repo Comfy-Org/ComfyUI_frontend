@@ -378,17 +378,17 @@ jobs:
           for attempt in {1..60}; do
             MARKER=$(curl -fsS \
               -H 'Cache-Control: no-cache' \
-              "https://comfy.org/__build.json?promoted=$GITHUB_RUN_ID-$attempt") || true
+              "https://comfy.org/__build.json?promoted=$GITHUB_RUN_ID-$attempt") || MARKER='{}'
             ALIAS_DEPLOYMENT_ID=$(curl -fsS --retry 3 \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
               "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID" |
               jq -r '.deploymentId // empty') || true
             if jq -e \
               --arg sha "$EXPECTED_SHA" \
-              --arg runId "$EXPECTED_RUN_ID" \
-              --arg runAttempt "$EXPECTED_RUN_ATTEMPT" \
-              '.sha == $sha and .runId == $runId and .runAttempt == $runAttempt' \
-              <<< "${MARKER:-{}}" >/dev/null &&
+                --arg runId "$EXPECTED_RUN_ID" \
+                --arg runAttempt "$EXPECTED_RUN_ATTEMPT" \
+                '.sha == $sha and .runId == $runId and .runAttempt == $runAttempt' \
+              <<< "$MARKER" >/dev/null &&
               [[ "$ALIAS_DEPLOYMENT_ID" == "$EXPECTED_DEPLOYMENT_ID" ]]; then
               curl -fsS -o /dev/null https://comfy.org/
               exit 0
