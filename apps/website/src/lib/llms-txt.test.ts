@@ -93,6 +93,18 @@ describe('findRedirectedLinks', () => {
     )
   })
 
+  it.for([
+    ['https://comfy.org/old/', true],
+    ['https://comfy.org/old/page/', true],
+    ['https://comfy.org/older/', false]
+  ] as const)('matches %s against a catch-all source: %s', ([url, stale]) => {
+    const links = [{ title: 'Old', url, description: '' }]
+
+    expect(findRedirectedLinks(links, new Set(['/old/:path*']))).toEqual(
+      stale ? links : []
+    )
+  })
+
   it('ignores external links even if their path matches a redirect source', () => {
     const links = [
       { title: 'Docs', url: 'https://docs.comfy.org/pricing', description: '' }

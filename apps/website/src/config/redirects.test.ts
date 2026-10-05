@@ -9,7 +9,6 @@ import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { routeOf } from '@/utils/hreflangRoutes'
 import { hubAppSlugs, hubModelAliases, hubModelSlugs } from './hub-models'
 import { modelPageUrls } from './model-urls'
-import { models } from './models'
 import { modelsUrlKind } from './models-url-registry'
 import {
   astroRedirects,
@@ -18,6 +17,7 @@ import {
   toVercelRedirects
 } from './redirects'
 import { getRoutes } from './routes'
+import { supportedModelUrls } from './supported-model-urls'
 
 const pagesDir = join(websiteRoot, 'src', 'pages')
 
@@ -36,10 +36,7 @@ const builtPages = new Set([
   ...modelsBuildRoutes(true)
     .map(({ pattern }) => pattern)
     .filter((pattern) => !pattern.includes('['))
-    .map((pattern) => `${pattern}/`),
-  ...models
-    .filter((model) => !model.canonicalSlug)
-    .map((model) => `/p/supported-models/${model.slug}/`)
+    .map((pattern) => `${pattern}/`)
 ])
 
 const pageExistsAt = (pathname: string) => builtPages.has(pathname)
@@ -55,6 +52,8 @@ const vercelConfig = VercelConfigSchema.parse(
 )
 
 const VERCEL_ROUTE_LIMIT = 2048
+
+const SUPPORTED_MODELS_PATTERN = '/p/supported-models/:path*'
 
 const withoutSlash = (path: string) => path.replace(/\/$/, '')
 
@@ -98,7 +97,11 @@ describe('the redirect list', () => {
 
   it('writes sources as literal paths without a trailing slash', () => {
     expect(
-      sources.filter((source) => !/^(\/[A-Za-z0-9._-]+)+$/.test(source))
+      sources.filter(
+        (source) =>
+          source !== SUPPORTED_MODELS_PATTERN &&
+          !/^(\/[A-Za-z0-9._-]+)+$/.test(source)
+      )
     ).toEqual([])
   })
 
@@ -140,9 +143,10 @@ describe('generated Vercel rules', () => {
     { source: '/cloud/enterprise', destination: en.enterprise },
     { source: '/zh-CN/affiliates', destination: '/affiliates/' },
     {
-      source: '/p/supported-models/t5xxl-fp8-e4m3fn-scaled',
-      destination: '/p/supported-models/t5xxl-fp16/'
-    }
+      source: '/p/supported-models/wan2-7',
+      destination: '/hub/models/wan-2-7-text-to-video/'
+    },
+    { source: SUPPORTED_MODELS_PATTERN, destination: '/hub/models/' }
   ])(
     'send $source and $source/ to $destination permanently',
     ({ source, destination }) => {
@@ -225,21 +229,25 @@ describe('generated Vercel rules', () => {
 })
 
 describe('Astro redirects', () => {
-  it('cover every internal row whose slash form redirects, except old Models addresses', () => {
-    const isOldModelsAddress = (source: string) =>
-      source === '/models' || source.startsWith('/models/')
+  it('cover every internal row whose slash form redirects, except retired addresses', () => {
+    const isRetiredAddress = (source: string) =>
+      ['/models', '/p/supported-models'].some(
+        (root) =>
+          source === root ||
+          source.startsWith(`${root}/`) ||
+          source.startsWith(`${root}.`)
+      )
     expect(Object.keys(astroRedirects)).toEqual(
       siteRedirects
         .filter(
           ({ source, destination, slashFormIsPageBecause }) =>
             isInternalDestination(destination) &&
             slashFormIsPageBecause === undefined &&
-            !isOldModelsAddress(source)
+            !isRetiredAddress(source)
         )
         .map(({ source }) => source)
     )
-    const aliasCount = models.filter((model) => model.canonicalSlug).length
-    expect(Object.keys(astroRedirects)).toHaveLength(18 + aliasCount)
+    expect(Object.keys(astroRedirects)).toHaveLength(18)
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'
@@ -283,6 +291,42 @@ describe('old Models addresses', () => {
         )
       })
     ).toEqual([])
+  })
+})
+
+describe('retired supported-model addresses', () => {
+  const vercelRedirects = toVercelRedirects(siteRedirects)
+  const matches = (source: string, path: string) =>
+    source.includes(':path*')
+      ? new RegExp(`^${source.replace('/:path*', '(?:/[^/]+)*')}$`).test(path)
+      : source === path
+  const firstMatch = (path: string) =>
+    vercelRedirects.find(({ source }) => matches(source, path))
+  const expected = new Map<string, string>([
+    ...supportedModelUrls.map(
+      ([slug, hubSlug]) =>
+        [
+          `/p/supported-models/${slug}`,
+          hubSlug ? `/hub/models/${hubSlug}/` : '/hub/models/'
+        ] as const
+    ),
+    ...['', '.md', '/llms.txt', '/qwen-3-8b-fp8mixed.md', '/stability-ai'].map(
+      (suffix) => [`/p/supported-models${suffix}`, '/hub/models/'] as const
+    )
+  ])
+  const paths = [...expected.keys()].flatMap((path) => [path, `${path}/`])
+
+  it('each reach their Hub page, or the catalogue, permanently in one hop', () => {
+    const wrong = paths.filter((path) => {
+      const row = firstMatch(path)
+      return (
+        !row?.permanent ||
+        row.destination !== expected.get(path.replace(/\/$/, '')) ||
+        firstMatch(row.destination) !== undefined ||
+        !['model', 'hub'].includes(modelsUrlKind(row.destination) ?? '')
+      )
+    })
+    expect(wrong).toEqual([])
   })
 })
 

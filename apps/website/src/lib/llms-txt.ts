@@ -41,9 +41,17 @@ export function internalLinks(
     .map(({ link, url }) => ({ path: normalizePath(url.pathname), link }))
 }
 
+const CATCH_ALL = '/:path*'
+
+const matchesSource = (path: string, source: string) =>
+  source.endsWith(CATCH_ALL)
+    ? path === source.slice(0, -CATCH_ALL.length) ||
+      path.startsWith(source.slice(0, -CATCH_ALL.length + 1))
+    : path === source
+
 /**
  * llms.txt links whose path is itself a redirect source (e.g. a Vercel edge
- * redirect). Linking a redirect source instead of its destination means an
+ * redirect, a literal or a `/:path*` catch-all). Linking a redirect source instead of its destination means an
  * agent following the link pays an extra hop, and the description sitting
  * next to it describes whatever page the redirect used to point at.
  */
@@ -52,7 +60,9 @@ export function findRedirectedLinks(
   redirectSources: ReadonlySet<string>
 ): LlmsTxtLink[] {
   return internalLinks(links)
-    .filter(({ path }) => redirectSources.has(path))
+    .filter(({ path }) =>
+      [...redirectSources].some((source) => matchesSource(path, source))
+    )
     .map(({ link }) => link)
 }
 

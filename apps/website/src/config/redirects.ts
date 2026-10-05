@@ -1,6 +1,5 @@
 import type { RedirectConfig } from 'astro'
 
-import { models } from './models'
 import {
   HUB_MODELS_PATH,
   hubAppHref,
@@ -11,9 +10,13 @@ import {
   hubWorkflowHref,
   hubWorkflowSlugs
 } from './hub-models'
+import { supportedModelUrls } from './supported-model-urls'
 
 interface SiteRedirect {
-  /** A literal path with no trailing slash; both slash forms redirect. */
+  /**
+   * A literal path, or a `:path*` catch-all, with no trailing slash; both
+   * slash forms redirect.
+   */
   readonly source: `/${string}`
   /** An internal destination ends in `/`, the form every page canonicalizes to. */
   readonly destination: string
@@ -32,22 +35,32 @@ interface VercelRedirect {
 const MINIMAX_TEMPORARY_BECAUSE =
   '/minimax/ is a live namespace (the license pages sit under it); the page owner signs off before both locales go permanent together'
 
-const modelAliasRedirects = models.flatMap(({ slug, canonicalSlug }) =>
-  canonicalSlug
-    ? [
-        {
-          source: `/p/supported-models/${slug}`,
-          destination: `/p/supported-models/${canonicalSlug}/`
-        } as const
-      ]
-    : []
-)
-
 const HUB_ROUTER_PENDING =
   'switch to permanent once comfy-router#46 is confirmed live on prod; a 308 is cached by browsers and cannot be retracted'
 
 const HUB_APPS_ROUTER_PENDING =
   'switch to permanent once comfy-router sends /hub/apps/ to this site on prod; a 308 is cached by browsers and cannot be retracted'
+
+const SUPPORTED_MODELS_PATH = '/p/supported-models'
+
+// The pattern row must stay last: Vercel answers with the first match.
+const supportedModelRedirects: readonly SiteRedirect[] = [
+  ...supportedModelUrls.flatMap(([slug, hubSlug]) =>
+    hubSlug
+      ? [
+          {
+            source: `${SUPPORTED_MODELS_PATH}/${slug}` as const,
+            destination: hubModelPath(hubSlug)
+          }
+        ]
+      : []
+  ),
+  { source: `${SUPPORTED_MODELS_PATH}.md`, destination: `${HUB_MODELS_PATH}/` },
+  {
+    source: `${SUPPORTED_MODELS_PATH}/:path*`,
+    destination: `${HUB_MODELS_PATH}/`
+  }
+]
 
 // Literal rows only: hub pages fetch /models/<slug>/page.json, so a /models/:path* catch-all would break them.
 const hubModelRedirects: readonly SiteRedirect[] = [
@@ -137,8 +150,8 @@ export const siteRedirects: readonly SiteRedirect[] = [
   // Affiliates exists in English only.
   { source: '/zh-CN/affiliates', destination: '/affiliates/' },
   { source: '/zh-CN/affiliates/terms', destination: '/affiliates/terms/' },
-  ...modelAliasRedirects,
-  ...hubModelRedirects
+  ...hubModelRedirects,
+  ...supportedModelRedirects
 ]
 
 export function isInternalDestination(destination: string): boolean {
@@ -147,8 +160,15 @@ export function isInternalDestination(destination: string): boolean {
 
 const isPermanent = (row: SiteRedirect) => row.temporaryBecause === undefined
 
-const isOldModelsAddress = ({ source }: SiteRedirect) =>
-  source === '/models' || source.startsWith('/models/')
+const RETIRED_ROOTS = ['/models', SUPPORTED_MODELS_PATH]
+
+const isRetiredAddress = ({ source }: SiteRedirect) =>
+  RETIRED_ROOTS.some(
+    (root) =>
+      source === root ||
+      source.startsWith(`${root}/`) ||
+      source.startsWith(`${root}.`)
+  )
 
 const redirectsSlashForm = (row: SiteRedirect) =>
   row.slashFormIsPageBecause === undefined
@@ -172,8 +192,9 @@ export function toVercelRedirects(
  * Astro renders each entry as a meta-refresh stub so `astro preview` and the
  * e2e suite see the redirects; on Vercel the `vercel.json` rule answers first.
  * Astro cannot redirect off-site, and a stub for `/x` is the same file as a
- * page at `/x/`, so those rows live in `vercel.json` only. The old Models
- * addresses are left out too, so the build ships no stub pages under /models.
+ * page at `/x/`, so those rows live in `vercel.json` only. The retired /models
+ * and /p/supported-models addresses are left out too, so the build ships no
+ * stub pages under them.
  */
 export const astroRedirects: Record<string, RedirectConfig> =
   Object.fromEntries(
@@ -182,7 +203,7 @@ export const astroRedirects: Record<string, RedirectConfig> =
         (row) =>
           isInternalDestination(row.destination) &&
           redirectsSlashForm(row) &&
-          !isOldModelsAddress(row)
+          !isRetiredAddress(row)
       )
       .map((row) => [
         row.source,

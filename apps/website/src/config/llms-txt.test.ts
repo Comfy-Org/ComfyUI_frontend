@@ -209,9 +209,9 @@ describe('llms.txt', () => {
     expect(listedButExcluded).toEqual([])
   })
 
-  it('uses only literal redirect sources for stale link checks', () => {
+  it('uses only literal or catch-all redirect sources for stale link checks', () => {
     const patternedSources = [...vercelRedirectSources].filter((source) =>
-      /[:*(]/.test(source)
+      /[:*(]/.test(source.replace(/\/:path\*$/, ''))
     )
     expect(patternedSources).toEqual([])
   })

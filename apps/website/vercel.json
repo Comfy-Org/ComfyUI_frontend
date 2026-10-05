@@ -288,126 +288,6 @@
       "permanent": true
     },
     {
-      "source": "/p/supported-models/t5xxl-fp8-e4m3fn-scaled",
-      "destination": "/p/supported-models/t5xxl-fp16/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/t5xxl-fp8-e4m3fn-scaled/",
-      "destination": "/p/supported-models/t5xxl-fp16/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemma-3-12b-it",
-      "destination": "/p/supported-models/gemma-3-12b-it-fp4-mixed/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemma-3-12b-it/",
-      "destination": "/p/supported-models/gemma-3-12b-it-fp4-mixed/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/umt5-xxl-fp16",
-      "destination": "/p/supported-models/umt5-xxl-fp8-e4m3fn-scaled/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/umt5-xxl-fp16/",
-      "destination": "/p/supported-models/umt5-xxl-fp8-e4m3fn-scaled/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-2-5-vl-7b",
-      "destination": "/p/supported-models/qwen-2-5-vl-7b-fp8-scaled/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-2-5-vl-7b/",
-      "destination": "/p/supported-models/qwen-2-5-vl-7b-fp8-scaled/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen3vl-4b-bf16",
-      "destination": "/p/supported-models/qwen3vl-4b-fp8-scaled/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen3vl-4b-bf16/",
-      "destination": "/p/supported-models/qwen3vl-4b-fp8-scaled/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/mistral-3-small-flux2-fp8",
-      "destination": "/p/supported-models/mistral-3-small-flux2-bf16/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/mistral-3-small-flux2-fp8/",
-      "destination": "/p/supported-models/mistral-3-small-flux2-bf16/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-image-edit-2511-fp8mixed",
-      "destination": "/p/supported-models/qwen-image-edit-2511-bf16/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-image-edit-2511-fp8mixed/",
-      "destination": "/p/supported-models/qwen-image-edit-2511-bf16/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-3-8b",
-      "destination": "/p/supported-models/qwen-3-8b-fp8mixed/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-3-8b/",
-      "destination": "/p/supported-models/qwen-3-8b-fp8mixed/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-image-2512-bf16",
-      "destination": "/p/supported-models/qwen-image-2512-fp8-e4m3fn/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/qwen-image-2512-bf16/",
-      "destination": "/p/supported-models/qwen-image-2512-fp8-e4m3fn/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemma-2-2b-it-elm-fp8-scaled",
-      "destination": "/p/supported-models/gemma-2-2b-it-elm-bf16/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemma-2-2b-it-elm-fp8-scaled/",
-      "destination": "/p/supported-models/gemma-2-2b-it-elm-bf16/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemma-3-12b-it-fp8-scaled",
-      "destination": "/p/supported-models/gemma-3-12b-it-fp4-mixed/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/gemma-3-12b-it-fp8-scaled/",
-      "destination": "/p/supported-models/gemma-3-12b-it-fp4-mixed/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-image",
-      "destination": "/p/supported-models/grok-imagine/",
-      "permanent": true
-    },
-    {
-      "source": "/p/supported-models/grok-image/",
-      "destination": "/p/supported-models/grok-imagine/",
-      "permanent": true
-    },
-    {
       "source": "/models",
       "destination": "/hub/models/",
       "permanent": false
@@ -4336,6 +4216,116 @@
       "source": "/models/apps/reshoot/",
       "destination": "/hub/apps/reshoot/",
       "permanent": false
+    },
+    {
+      "source": "/p/supported-models/kling-o3",
+      "destination": "/hub/models/kling-o3-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/kling-o3/",
+      "destination": "/hub/models/kling-o3-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/nano-banana",
+      "destination": "/hub/models/nano-banana-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/nano-banana/",
+      "destination": "/hub/models/nano-banana-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/nano-banana-2",
+      "destination": "/hub/models/nano-banana-2-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/nano-banana-2/",
+      "destination": "/hub/models/nano-banana-2-text-to-image/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/seedance-2",
+      "destination": "/hub/models/seedance-2-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/seedance-2/",
+      "destination": "/hub/models/seedance-2-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/seedance-2-0",
+      "destination": "/hub/models/seedance-2-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/seedance-2-0/",
+      "destination": "/hub/models/seedance-2-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/veo-3",
+      "destination": "/hub/models/veo-3-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/veo-3/",
+      "destination": "/hub/models/veo-3-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/wan-3-0",
+      "destination": "/hub/models/wan-3-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/wan-3-0/",
+      "destination": "/hub/models/wan-3-0-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/wan2-6",
+      "destination": "/hub/models/wan-2-6-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/wan2-6/",
+      "destination": "/hub/models/wan-2-6-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/wan2-7",
+      "destination": "/hub/models/wan-2-7-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/wan2-7/",
+      "destination": "/hub/models/wan-2-7-text-to-video/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models.md",
+      "destination": "/hub/models/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models.md/",
+      "destination": "/hub/models/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:path*",
+      "destination": "/hub/models/",
+      "permanent": true
+    },
+    {
+      "source": "/p/supported-models/:path*/",
+      "destination": "/hub/models/",
+      "permanent": true
     }
   ]
 }
