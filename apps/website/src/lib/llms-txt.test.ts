@@ -3,9 +3,12 @@ import { describe, expect, it } from 'vitest'
 import {
   findCanonicalDrift,
   findRedirectedLinks,
+  findStaleLinks,
   internalLinks,
+  isWorkflowsAppPath,
   normalizePath,
-  parseLlmsTxtLinks
+  parseLlmsTxtLinks,
+  redirectSourcePattern
 } from './llms-txt'
 
 describe('parseLlmsTxtLinks', () => {
@@ -74,9 +77,7 @@ describe('findRedirectedLinks', () => {
       }
     ]
 
-    expect(findRedirectedLinks(links, new Set(['/cloud/enterprise']))).toEqual(
-      links
-    )
+    expect(findRedirectedLinks(links, ['/cloud/enterprise'])).toEqual(links)
   })
 
   it('leaves a link that is not a redirect source alone', () => {
@@ -88,9 +89,7 @@ describe('findRedirectedLinks', () => {
       }
     ]
 
-    expect(findRedirectedLinks(links, new Set(['/cloud/enterprise']))).toEqual(
-      []
-    )
+    expect(findRedirectedLinks(links, ['/cloud/enterprise'])).toEqual([])
   })
 
   it('ignores external links even if their path matches a redirect source', () => {
@@ -98,7 +97,112 @@ describe('findRedirectedLinks', () => {
       { title: 'Docs', url: 'https://docs.comfy.org/pricing', description: '' }
     ]
 
-    expect(findRedirectedLinks(links, new Set(['/pricing']))).toEqual([])
+    expect(findRedirectedLinks(links, ['/pricing'])).toEqual([])
+  })
+})
+
+describe('redirectSourcePattern', () => {
+  it.for([
+    ['/cloud/enterprise', '/cloud/enterprise', true],
+    ['/cloud/enterprise/', '/cloud/enterprise', true],
+    ['/cloud/enterprise', '/cloud/enterprise-plans', false],
+    ['/p/supported-models/:slug', '/p/supported-models/flux1-dev-fp8', true],
+    ['/p/supported-models/:slug', '/p/supported-models', false],
+    ['/p/supported-models/:slug', '/p/supported-models/a/b', false],
+    ['/models/:path*', '/models', true],
+    ['/models/:path*', '/models/a/b.md', true],
+    ['/models/:path*', '/models-v2', false],
+    ['/models/:path+', '/models', false],
+    ['/models/:path+', '/models/a/b', true],
+    ['/hub/models.md', '/hub/modelsxmd', false]
+  ] as const)('%s matches %s: %s', ([source, path, matches]) => {
+    expect(redirectSourcePattern(source).test(path)).toBe(matches)
+  })
+})
+
+describe('isWorkflowsAppPath', () => {
+  it.for([
+    ['/workflows', true],
+    ['/workflows/use-cases/image-to-3d', true],
+    ['/ja/workflows', true],
+    ['/hub/workflows/flux', false],
+    ['/workflows/unknown/shape', false]
+  ] as const)('%s: %s', ([path, expected]) => {
+    expect(isWorkflowsAppPath(path)).toBe(expected)
+  })
+})
+
+describe('findStaleLinks', () => {
+  const sectionFile = (url: string) =>
+    [
+      '# Supported models in ComfyUI',
+      '',
+      '## Models',
+      '',
+      `- [FLUX.1 Dev](${url}): Open model`,
+      '- [Docs](https://docs.comfy.org/p/supported-models/gone): External'
+    ].join('\n')
+  const builtPages = new Set([
+    '/p/supported-models/flux-1-dev',
+    '/p/supported-models/flux-1-dev.md'
+  ])
+  const checks = {
+    redirectSources: ['/models/:path*', '/cloud/enterprise'],
+    isServed: (path: string) => builtPages.has(path),
+    canonicalFor: () => undefined
+  }
+
+  it('fails a link that matches a pattern redirect source', () => {
+    expect(
+      findStaleLinks(
+        sectionFile('https://comfy.org/models/flux-1-dev.md'),
+        checks
+      )
+    ).toEqual([
+      '[FLUX.1 Dev](https://comfy.org/models/flux-1-dev.md) is a redirect source'
+    ])
+  })
+
+  it('fails a link that matches a literal redirect source', () => {
+    expect(
+      findStaleLinks(sectionFile('https://comfy.org/cloud/enterprise/'), checks)
+    ).toEqual([
+      '[FLUX.1 Dev](https://comfy.org/cloud/enterprise/) is a redirect source'
+    ])
+  })
+
+  it('fails a link the build did not produce', () => {
+    expect(
+      findStaleLinks(
+        sectionFile('https://comfy.org/p/supported-models/removed.md'),
+        { ...checks, redirectSources: [] }
+      )
+    ).toEqual([
+      '[FLUX.1 Dev](https://comfy.org/p/supported-models/removed.md) is not in the build'
+    ])
+  })
+
+  it('fails a built page that canonicalizes elsewhere', () => {
+    expect(
+      findStaleLinks(
+        sectionFile('https://comfy.org/p/supported-models/flux-1-dev/'),
+        {
+          ...checks,
+          canonicalFor: () => 'https://comfy.org/hub/models/flux-1-dev/'
+        }
+      )
+    ).toEqual([
+      '[FLUX.1 Dev](https://comfy.org/p/supported-models/flux-1-dev/) now canonicalizes to https://comfy.org/hub/models/flux-1-dev/'
+    ])
+  })
+
+  it('passes once the link points at the live page', () => {
+    expect(
+      findStaleLinks(
+        sectionFile('https://comfy.org/p/supported-models/flux-1-dev.md'),
+        checks
+      )
+    ).toEqual([])
   })
 })
 
