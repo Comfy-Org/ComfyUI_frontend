@@ -870,8 +870,14 @@ export const useAuthStore = defineStore('auth', () => {
     executeAuthAction(() => addCredits(requestBodyContent))
 
   const accessBillingPortal = async (
-    targetTier?: BillingPortalTargetTier
+    targetTier?: BillingPortalTargetTier,
+    options?: { cancelSubscription?: boolean }
   ): Promise<AccessBillingPortalResponse> => {
+    if (targetTier && options?.cancelSubscription) {
+      throw new AuthStoreError(
+        'cancelSubscription cannot be combined with a target tier'
+      )
+    }
     const requestOwner = currentUserIdentity()
     const authHeader = await getCustomerAuthHeader()
     if (!authHeader) {
@@ -888,6 +894,9 @@ export const useAuthStore = defineStore('auth', () => {
         },
         ...(targetTier && {
           body: JSON.stringify({ target_tier: targetTier })
+        }),
+        ...(options?.cancelSubscription === true && {
+          body: JSON.stringify({ cancel_subscription: true })
         })
       }
     )

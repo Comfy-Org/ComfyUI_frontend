@@ -881,7 +881,8 @@ const {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
           { workflowId, rootGraphId: toRootGraphId(app.rootGraph.id) },
-          nodeIds
+          nodeIds,
+          conversationTurnId.value
         )
         if (status.value === 'idle') graphActivity.finishTurn()
       }
