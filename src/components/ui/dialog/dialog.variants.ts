@@ -43,7 +43,6 @@ export const HUG_CONTENT_CLASS =
 export const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
 
 export const SELF_STYLED_PANEL_DIALOG_PROPS = {
-  renderer: 'reka',
   headless: true,
   contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
 } as const

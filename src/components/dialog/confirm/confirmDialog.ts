@@ -26,7 +26,6 @@ export function showConfirmDialog(
     props,
     footerProps,
     dialogComponentProps: {
-      renderer: 'reka',
       size: 'md',
       contentClass: 'rounded-2xl border-border-default sm:max-w-lg',
       // Confirm sections carry their own padding — zero out the dialog

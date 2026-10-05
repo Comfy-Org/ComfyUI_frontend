@@ -132,7 +132,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-not-closable',
       title: 'No close',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', closable: false }
+      dialogComponentProps: { closable: false }
     })
 
     await screen.findByRole('dialog')
@@ -146,8 +146,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     store.showDialog({
       key: 'reka-closable',
       title: 'Closable',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      component: Body
     })
 
     await screen.findByRole('dialog')
@@ -162,7 +161,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-headless',
       title: 'Hidden title',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', headless: true }
+      dialogComponentProps: { headless: true }
     })
 
     await screen.findByRole('dialog')
@@ -176,8 +175,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     store.showDialog({
       key: 'reka-titled',
       title: 'Visible title',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      component: Body
     })
 
     await screen.findByRole('dialog')
@@ -197,7 +195,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
         creditsUsed: 645,
         currentLimit: 3000
       },
-      dialogComponentProps: { renderer: 'reka', headless: true }
+      dialogComponentProps: { headless: true }
     })
 
     expect(
@@ -216,7 +214,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       component: BuilderSaveDialogContent,
       props: { defaultFilename: 'workflow.json' },
       dialogComponentProps: {
-        renderer: 'reka',
         headless: true,
         useAutomaticLabeling: true
       }
@@ -236,8 +233,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     store.showDialog({
       key: 'reka-esc-default',
       title: 'Esc closes',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      component: Body
     })
 
     await screen.findByRole('dialog')
@@ -255,7 +251,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-esc-blocked',
       title: 'Esc blocked',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', closable: false }
+      dialogComponentProps: { closable: false }
     })
 
     await screen.findByRole('dialog')
@@ -273,7 +269,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       title: 'Section classes',
       component: Body,
       dialogComponentProps: {
-        renderer: 'reka',
         headerClass: 'p-2',
         bodyClass: 'p-0'
       }
@@ -303,7 +298,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       title: 'Maximize wins',
       component: Body,
       dialogComponentProps: {
-        renderer: 'reka',
         maximizable: true,
         contentClass:
           'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]'
@@ -333,8 +327,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
     store.showDialog({
       key: 'reka-modal-scrim',
       title: 'Modal',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      component: Body
     })
 
     await screen.findByRole('dialog')
@@ -351,7 +344,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
       key: 'reka-non-modal-scrim',
       title: 'Non-modal',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', modal: false }
+      dialogComponentProps: { modal: false }
     })
 
     await screen.findByRole('dialog')
@@ -380,7 +373,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
       key: 'reka-scrim-dismiss',
       title: 'Non-modal',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', modal: false }
+      dialogComponentProps: { modal: false }
     })
 
     await screen.findByRole('dialog')
@@ -413,7 +406,6 @@ describe('GlobalDialog Reka overlay scrim', () => {
         component: SubscriptionRequiredDialogContentUnified,
         props: { onClose: () => store.closeDialog({ key }) },
         dialogComponentProps: {
-          renderer: 'reka',
           headless: true,
           dismissableMask: false
         }
@@ -459,7 +451,7 @@ describe('GlobalDialog Reka focus-outside binding', () => {
       key: 'focus-default',
       title: 'Focus dismisses',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', modal: false }
+      dialogComponentProps: { modal: false }
     })
 
     await screen.findByRole('dialog')
@@ -488,7 +480,6 @@ describe('GlobalDialog Reka focus-outside binding', () => {
       title: 'Focus blocked',
       component: Body,
       dialogComponentProps: {
-        renderer: 'reka',
         modal: false,
         dismissOnFocusOutside: false
       }

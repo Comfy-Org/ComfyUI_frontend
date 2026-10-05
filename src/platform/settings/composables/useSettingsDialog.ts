@@ -52,7 +52,6 @@ export function useSettingsDialog() {
         ...(settingId ? { scrollToSettingId: settingId } : {})
       },
       dialogComponentProps: {
-        renderer: 'reka',
         headless: true,
         closable: true,
         // Settings hosts nested PrimeVue dialogs (Edit Keybinding, Overwrite

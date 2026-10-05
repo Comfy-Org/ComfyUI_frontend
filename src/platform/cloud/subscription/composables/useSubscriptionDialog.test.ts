@@ -111,7 +111,6 @@ function expectRekaPricingDialogProps(
   dialogComponentProps: Record<string, unknown>
 ) {
   expect(dialogComponentProps).toMatchObject({
-    renderer: 'reka',
     size: 'full',
     dismissableMask: false
   })
