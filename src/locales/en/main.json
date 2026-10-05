@@ -2553,6 +2553,7 @@
     "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
     "userNotAuthenticated": "User not authenticated",
     "failedToFetchBalance": "Failed to fetch balance: {error}",
+    "noPersonalWorkspace": "This account has no personal billing. Manage billing from your team workspace.",
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
@@ -5147,6 +5148,10 @@
     "initializationFailedDetail": "Check your connection and try again.",
     "initializationFailedSignOutDetail": "Sign out and log in again to continue.",
     "retry": "Try again",
+    "noWorkspaceAccess": {
+      "title": "You don't have access to any workspace",
+      "detail": "Ask your admin to add you to a workspace, then sign in again."
+    },
     "errors": {
       "notAuthenticated": "You must be logged in to access workspaces",
       "invalidFirebaseToken": "Authentication failed. Please try logging in again.",

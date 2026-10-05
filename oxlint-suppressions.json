@@ -276,7 +276,7 @@
   },
   "src/platform/workspace/stores/teamWorkspaceStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 11
+      "count": 9
     }
   },
   "src/renderer/core/canvas/canvasStore.ts": {
