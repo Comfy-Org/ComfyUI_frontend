@@ -43,4 +43,16 @@ describe('TagRow', () => {
     expect(overflow.tagName).toBe('BUTTON')
     expect(overflow.getAttribute('aria-label')).toMatch(/controlnet/i)
   })
+
+  it('keeps the hidden-tag count out of the tab order inside a card link', async () => {
+    stubWidths(120, 100)
+    render(TagRow, {
+      props: { tags: ['upscale', 'inpaint', 'controlnet'], linkTags: false }
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(screen.getByTestId('tag-overflow').textContent).toMatch(/\+\d/)
+    expect(screen.queryByRole('button')).toBeNull()
+  })
 })

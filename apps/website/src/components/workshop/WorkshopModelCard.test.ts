@@ -37,7 +37,7 @@ describe('WorkshopModelCard', () => {
     expect(screen.queryByTestId('model-incomplete-badge')).toBeNull()
     expect(screen.getByTestId('model-media-placeholder')).toBeTruthy()
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
-    expect(screen.queryByLabelText('Flux')).toBeNull()
+    expect(screen.getAllByLabelText('Flux')).toEqual([screen.getByRole('link')])
   })
 
   // The artwork is decorative: the mark says who made this and the heading
@@ -52,9 +52,37 @@ describe('WorkshopModelCard', () => {
       }
     })
     expect(screen.getByRole('link')).toHaveAccessibleName(
-      /^Black Forest Labs Flux Image to Image/
+      'Black Forest Labs Flux Image to Image'
     )
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
+  })
+
+  it('names the card without its tags and nests no control in the link', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get: () => 120
+    })
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get: () => 100
+    })
+    try {
+      render(WorkshopModelCard, {
+        props: {
+          model: { ...base, capabilities: ['upscale', 'inpaint', 'controlnet'] }
+        }
+      })
+      await nextTick()
+      await nextTick()
+      expect(screen.getByTestId('tag-overflow')).toBeTruthy()
+      expect(screen.getByRole('link')).toHaveAccessibleName(
+        'Black Forest Labs Flux Image to Image'
+      )
+      expect(screen.queryByRole('button')).toBeNull()
+    } finally {
+      for (const name of ['clientWidth', 'offsetWidth'])
+        Reflect.deleteProperty(HTMLElement.prototype, name)
+    }
   })
 
   it.for([
@@ -109,7 +137,7 @@ describe('WorkshopModelCard', () => {
       'href',
       base.href
     )
-    expect(screen.queryByLabelText('Flux')).toBeNull()
+    expect(screen.getAllByLabelText('Flux')).toEqual([screen.getByRole('link')])
   })
 
   // Artwork that repeats the name gives a screen reader the model twice. The
@@ -134,7 +162,9 @@ describe('WorkshopModelCard', () => {
       expect(
         screen.getByRole('link', { name: /Black Forest Labs/ })
       ).toBeVisible()
-      expect(screen.queryByLabelText('Flux')).toBeNull()
+      expect(screen.getAllByLabelText('Flux')).toEqual([
+        screen.getByRole('link')
+      ])
       if (kind === 'video')
         expect(screen.getByTestId('model-card-media')).toHaveAttribute(
           'aria-hidden',

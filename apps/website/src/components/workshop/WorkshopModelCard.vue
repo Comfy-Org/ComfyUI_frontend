@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -61,6 +61,21 @@ const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
 
+const id = useId()
+const showsTask = computed(() => !workflow.value || !underHeading)
+// The tags stay readable inside the link but out of its name.
+const labelledBy = computed(() =>
+  [
+    `${id}-provider`,
+    providerBadge && `${id}-kind`,
+    model.incompleteReason && `${id}-support`,
+    `${id}-name`,
+    showsTask.value && `${id}-task`
+  ]
+    .filter(Boolean)
+    .join(' ')
+)
+
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
 </script>
@@ -69,19 +84,26 @@ const pillClass =
   <a
     :href="model.href"
     class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+    :aria-labelledby="labelledBy"
     data-testid="workshop-model-card"
     :data-kind="model.type === 'APP' ? 'app' : workflow ? 'workflow' : 'model'"
   >
     <div class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface">
       <!-- First in the link, so the reader hears who answers for the card
         before its name rather than after everything else on it. -->
-      <WorkshopCardMark :label="providerName" :logo />
+      <WorkshopCardMark :id="`${id}-provider`" :label="providerName" :logo />
 
       <!-- Only the hub mixes graphs, apps and models in one grid, so only
         there does a card have to say which it is. -->
-      <HubTypeBadge v-if="providerBadge" kind="model" :locale />
+      <HubTypeBadge
+        v-if="providerBadge"
+        :id="`${id}-kind`"
+        kind="model"
+        :locale
+      />
       <ModelSupport
         v-if="model.incompleteReason"
+        :id="`${id}-support`"
         :reason="model.incompleteReason"
         :locale
         class="absolute top-3 right-3 z-10"
@@ -103,6 +125,7 @@ const pillClass =
       <!-- The mark over the artwork already says who answers for this, so the
           line under it is the card's own name and nothing else. -->
       <h3
+        :id="`${id}-name`"
         :class="
           cn(
             'text-xs font-medium text-content-bright lg:text-sm',
@@ -119,10 +142,14 @@ const pillClass =
           on its own — searched, filtered, or beside models — it keeps the tag,
           which is then the only place the kind is written. -->
       <div
-        v-if="!workflow || !underHeading"
+        v-if="showsTask"
         class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
       >
-        <span :class="pillClass" data-testid="model-card-task">
+        <span
+          :id="`${id}-task`"
+          :class="pillClass"
+          data-testid="model-card-task"
+        >
           {{ taskLabel }}
         </span>
         <TagRow
