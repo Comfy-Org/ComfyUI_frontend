@@ -887,40 +887,6 @@
         "defaultCandidates": []
       }
     },
-    "bfl/flux-pro-1.0-canny": {
-      "canny_high_threshold": {
-        "label": "Strong-edge threshold",
-        "help": "Set the threshold that identifies strong edges.",
-        "advanced": true,
-        "control": "slider"
-      },
-      "canny_low_threshold": {
-        "label": "Weak-edge threshold",
-        "help": "Set the lower threshold for edges connected to strong edges.",
-        "advanced": true,
-        "control": "slider"
-      },
-      "output_format": {
-        "options": ["jpeg", "png"]
-      },
-      "preprocessed_image": {
-        "label": "Edge map",
-        "help": "Provide a base64 edge map to skip edge detection.",
-        "advanced": false,
-        "control": "text-box"
-      }
-    },
-    "bfl/flux-pro-1.0-depth": {
-      "output_format": {
-        "options": ["jpeg", "png"]
-      },
-      "preprocessed_image": {
-        "label": "Depth map",
-        "help": "Provide a base64 depth map to skip depth estimation.",
-        "advanced": false,
-        "control": "text-box"
-      }
-    },
     "bfl/flux-pro-1.0-expand": {
       "bottom": {
         "label": "Expand bottom",
@@ -2945,39 +2911,6 @@
         "help": "Provide JSON with Type set to FBX, OBJ or GLB and Url set to the model URL."
       }
     },
-    "veo/veo-2.0-generate-001": {
-      "instances": {
-        "label": "Video inputs",
-        "help": "Provide a prompt and optional starting image for a silent video."
-      },
-      "parameters": {
-        "label": "Video settings",
-        "help": "Set a duration of 5 to 8 seconds, aspect ratio, and output count.",
-        "advanced": false
-      }
-    },
-    "veo/veo-3.0-fast-generate-001": {
-      "instances": {
-        "label": "Video inputs",
-        "help": "Provide an input object containing the prompt and optional reference media."
-      },
-      "parameters": {
-        "label": "Video settings",
-        "help": "Set duration, aspect ratio, output count, and other video settings.",
-        "advanced": false
-      }
-    },
-    "veo/veo-3.0-generate-001": {
-      "instances": {
-        "label": "Video inputs",
-        "help": "Provide an input object containing the prompt and optional reference media."
-      },
-      "parameters": {
-        "label": "Video settings",
-        "help": "Set duration, aspect ratio, output count, and other video settings.",
-        "advanced": false
-      }
-    },
     "veo/veo-3.1-fast-generate-001": {
       "instances": {
         "label": "Video inputs",
@@ -3009,36 +2942,6 @@
         "label": "Video settings",
         "help": "Set duration, aspect ratio, output count, and other video settings.",
         "advanced": false
-      }
-    },
-    "vertexai/imagen-3.0-fast-generate-001": {
-      "instances": {
-        "label": "Image prompts",
-        "help": "Provide a list of image requests, each containing a prompt."
-      },
-      "parameters": {
-        "label": "Image settings",
-        "help": "Set image count, aspect ratio, prompt enhancement, or output format."
-      }
-    },
-    "vertexai/imagen-3.0-generate-001": {
-      "instances": {
-        "label": "Image prompts",
-        "help": "Provide a list of image requests, each containing a prompt."
-      },
-      "parameters": {
-        "label": "Image settings",
-        "help": "Set image count, aspect ratio, prompt enhancement, or output format."
-      }
-    },
-    "vertexai/imagen-3.0-generate-002": {
-      "instances": {
-        "label": "Image prompts",
-        "help": "Provide a list of image requests, each containing a prompt."
-      },
-      "parameters": {
-        "label": "Image settings",
-        "help": "Set image count, aspect ratio, prompt enhancement, or output format."
       }
     },
     "wan/happyhorse-1.0-i2v": {

@@ -235,6 +235,26 @@ describe('curated model inputs', () => {
     ).toThrow('Invalid fixed input')
   })
 
+  it('keeps example fields that only a composed branch declares', () => {
+    const { inputSchema } = curateWorkshopInputs('fixture/composed-example', {
+      allOf: [
+        {
+          oneOf: [
+            { properties: { mode: { const: 'preview' }, prompt: {} } },
+            { properties: { mode: { const: 'refine' } } }
+          ]
+        }
+      ],
+      properties: { quality: { type: 'string', enum: ['standard'] } },
+      example: { mode: 'preview', prompt: 'A cube', quality: 'standard' }
+    })
+    expect(inputSchema.example).toEqual({
+      mode: 'preview',
+      prompt: 'A cube',
+      quality: 'standard'
+    })
+  })
+
   it('offers no output-count controls across the generated Router contracts', () => {
     const outputCountNames =
       /^(?:param_)?(?:n|count|num_images|sampleCount|series_amount)$/
@@ -559,15 +579,13 @@ describe('curated model inputs', () => {
       absent: ['style']
     },
     {
-      id: 'bfl/flux-pro-1.0-canny',
+      id: 'bfl/flux-pro-1.1-ultra',
       values: {
         prompt: 'A red cube',
-        canny_high_threshold: 250,
-        guidance: 30.125
+        image_prompt_strength: 0.125
       },
       expected: {
-        canny_high_threshold: 250,
-        guidance: 30.125,
+        image_prompt_strength: 0.125,
         prompt_upsampling: false
       },
       absent: ['seed']
