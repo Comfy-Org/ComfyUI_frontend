@@ -963,25 +963,6 @@
     "workflowName": "שם תהליך העבודה",
     "workflowNamePlaceholder": "טיפ: הזן שם תיאורי שקל לחפש"
   },
-  "commands": {
-    "clear": "ניקוי תהליך העבודה",
-    "clipspace": "פתיחת Clipspace",
-    "dark": "כהה",
-    "execute": "ביצוע",
-    "help": "עזרה",
-    "interrupt": "ביטול ההרצה הנוכחית",
-    "light": "בהיר",
-    "manageExtensions": "הרחבות",
-    "queue": "פאנל התור",
-    "refresh": "רענון הגדרות הצמתים",
-    "resetView": "איפוס תצוגת הקנבס",
-    "run": "הרצה",
-    "runWorkflow": "הרצת תהליך העבודה",
-    "runWorkflowFront": "הרצת תהליך העבודה (הוספה לראש התור)",
-    "settings": "הגדרות",
-    "theme": "ערכת נושא",
-    "toggleBottomPanel": "הצגה/הסתרה של הפאנל התחתון"
-  },
   "compositor": {
     "downloadPsd": "הורד PSD",
     "empty": "הרץ את תהליך העבודה כדי ליצור קומפוזיט",

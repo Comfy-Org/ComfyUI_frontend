@@ -9,6 +9,7 @@ import {
   defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
+  onMounted,
   provide,
   readonly,
   ref,
@@ -41,6 +42,7 @@ import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
@@ -409,32 +411,73 @@ watch(
   },
   { immediate: true }
 )
-const agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
-watch(
-  () => graphActivity.state,
-  (activity) => {
-    if (activity.phase === 'idle') {
-      agentMinimapLayer.replace([])
-      return
+// Claimed on mount rather than in setup so a setup failure cannot leave the id
+// registered with no unmount to release it.
+let agentMinimapLayer: MinimapDecorationLayer | undefined
+function syncAgentMinimapLayer(activity: typeof graphActivity.state): void {
+  if (activity.phase === 'idle') {
+    agentMinimapLayer?.replace([])
+    return
+  }
+  const rootGraphId = toRootGraphId(activity.rootGraphId)
+  agentMinimapLayer?.replace(
+    activity.nodeIds.map((nodeId) => ({
+      target: {
+        rootGraphId,
+        owningGraphId: toOwningGraphId(activity.rootGraphId),
+        nodeId
+      },
+      enter: 'pop'
+    }))
+  )
+  if (
+    activity.phase === 'running' &&
+    !settingStore.get('Comfy.Minimap.Visible')
+  )
+    void settingStore.set('Comfy.Minimap.Visible', true)
+}
+watch(() => graphActivity.state, syncAgentMinimapLayer, { immediate: true })
+onMounted(() => {
+  agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+  syncAgentMinimapLayer(graphActivity.state)
+})
+// Teardown must be total. Nothing is re-thrown: an error escaping an unmount
+// hook reaches Vue's logError, which re-throws outside production builds (this
+// app registers no app.config.errorHandler) and aborts both the steps after it
+// and the rest of unmountComponent -- stranding this panel's later releases on
+// singletons that outlive it, such as the PM-1575 canvas-sync gate below.
+//
+// Steps are keyed rather than positional for two reasons: the key names the
+// failure in telemetry, which is now the only signal that a release was
+// skipped, and insertion order is the run order (no key is integer-like, so
+// Object.entries order is specified). They return `undefined` rather than
+// `void` so an async step -- whose rejection would escape the catch below
+// while still looking contained -- fails to compile instead.
+function runPanelTeardown(
+  steps: Readonly<Record<string, () => undefined>>
+): void {
+  for (const [step, release] of Object.entries(steps)) {
+    try {
+      release()
+    } catch (error) {
+      try {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_tearing_down_agent_panel',
+          tags: { step }
+        })
+      } catch {
+        // A reporter that throws must not abort the teardown it reports on.
+      }
     }
-    const rootGraphId = toRootGraphId(activity.rootGraphId)
-    agentMinimapLayer.replace(
-      activity.nodeIds.map((nodeId) => ({
-        target: {
-          rootGraphId,
-          owningGraphId: toOwningGraphId(activity.rootGraphId),
-          nodeId
-        },
-        enter: 'pop'
-      }))
-    )
-    if (
-      activity.phase === 'running' &&
-      !settingStore.get('Comfy.Minimap.Visible')
-    )
-      void settingStore.set('Comfy.Minimap.Visible', true)
-  },
-  { immediate: true }
+  }
+}
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    disposeMinimapLayer: () => {
+      agentMinimapLayer?.dispose()
+    }
+  })
 )
 const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
@@ -1230,29 +1273,50 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
-  releaseCoachCompletionWaiters()
-  if (
-    (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
-    composerStore.submission?.id === consentHeldSubmissionId
-  )
-    composerStore.invalidateSubmission()
-  docOpMinter.detach()
-  restoreOpMinter.detach()
-  exitNodeSelectionMode()
-  stop()
-  ++activeTabGeneration
-  tabActivity.setEditing(null)
-  tabActivity.setCreating(false)
-  agentMinimapLayer.dispose()
-  // PM-1575: the store singleton outlives this component. Without resetting
-  // the gate here, a remount's own setCanvasSyncGate() call is the only
-  // thing standing between the old (now torn-down) follower's gate and a
-  // turn resumed in the meantime reading it -- reset to the always-safe
-  // default instead of leaving whatever this instance last set.
-  conversationStore.setCanvasSyncGate(
-    () => false,
-    () => 0
-  )
+  runPanelTeardown({
+    releaseCoachCompletionWaiters: () => {
+      releaseCoachCompletionWaiters()
+    },
+    invalidateConsentHeldSubmission: () => {
+      if (
+        (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
+        composerStore.submission?.id === consentHeldSubmissionId
+      )
+        composerStore.invalidateSubmission()
+    },
+    detachDocOpMinter: () => {
+      docOpMinter.detach()
+    },
+    detachRestoreOpMinter: () => {
+      restoreOpMinter.detach()
+    },
+    exitNodeSelectionMode: () => {
+      exitNodeSelectionMode()
+    },
+    stopSession: () => {
+      stop()
+    },
+    invalidateActiveTabGeneration: () => {
+      ++activeTabGeneration
+    },
+    clearEditingTab: () => {
+      tabActivity.setEditing(null)
+    },
+    clearCreatingTab: () => {
+      tabActivity.setCreating(false)
+    },
+    // PM-1575: the store singleton outlives this component. Without resetting
+    // the gate here, a remount's own setCanvasSyncGate() call is the only
+    // thing standing between the old (now torn-down) follower's gate and a
+    // turn resumed in the meantime reading it -- reset to the always-safe
+    // default instead of leaving whatever this instance last set.
+    resetCanvasSyncGate: () => {
+      conversationStore.setCanvasSyncGate(
+        () => false,
+        () => 0
+      )
+    }
+  })
 })
 
 const { copy } = useClipboard({ legacy: true })
@@ -1645,7 +1709,13 @@ const attachment = useAttachment({
   remove: composerStore.removeAttachment
 })
 
-onBeforeUnmount(() => attachment.cancelAllUploads())
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    cancelAllUploads: () => {
+      attachment.cancelAllUploads()
+    }
+  })
+)
 
 function onAttach(): void {
   exitNodeSelectionMode()
