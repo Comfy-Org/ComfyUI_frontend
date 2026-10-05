@@ -2,13 +2,13 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { Copy as CopyIcon, KeyRound } from '@lucide/vue'
 
-import FAQSplit01 from '../components/blocks/FAQSplit01.vue'
-import BrandButton from '../components/common/BrandButton.vue'
-import GlassCard from '../components/common/GlassCard.vue'
-import Badge from '../components/ui/badge/Badge.vue'
-import { toggleVariants } from '../components/ui/toggle'
-import BaseLayout from '../layouts/BaseLayout.astro'
-import { highlightInline } from '../lib/highlight'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import GlassCard from '@/components/common/GlassCard.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import { toggleVariants } from '@/components/ui/toggle'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { highlightInline } from '@/lib/highlight'
 
 const name = 'Image to 3D Model'
 const slugId = 'pixal3d-trellis2'
@@ -1164,7 +1164,7 @@ const faqJsonLd = {
         el.textContent = code
         const stamp = String(Number(el.dataset.paint ?? '0') + 1)
         el.dataset.paint = stamp
-        void import('../lib/highlight').then(({ highlightInline }) => {
+        void import('@/lib/highlight').then(({ highlightInline }) => {
           const html = highlightInline(code, 'json')
           if (html && el.dataset.paint === stamp) el.innerHTML = html
         })

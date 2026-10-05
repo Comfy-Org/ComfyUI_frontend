@@ -6,17 +6,17 @@ import { defineComponent, h, shallowRef } from 'vue'
 import {
   createWorkflowApi,
   WorkshopWorkflowError
-} from '../../config/workshop-workflow-api'
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
-import { createWorkflowController } from '../../config/workshop-workflow-controller'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import { workflowStorage } from '../../config/workshop-workflow-storage'
-import { captureWorkshopEvent } from '../../scripts/posthog'
-import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
+} from '@/config/workshop-workflow-api'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { createWorkflowController } from '@/config/workshop-workflow-controller'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { workflowStorage } from '@/config/workshop-workflow-storage'
+import { captureWorkshopEvent } from '@/scripts/posthog'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import WorkflowResults from './WorkflowResults.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 const id = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
 

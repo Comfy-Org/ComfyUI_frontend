@@ -9,21 +9,21 @@ import {
   generationPending,
   getWorkshopGeneration,
   listWorkshopGenerations
-} from '../../config/workshop-generation-assets'
-import type { SavedGeneration } from '../../config/workshop-generation-assets'
-import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
+} from '@/config/workshop-generation-assets'
+import type { SavedGeneration } from '@/config/workshop-generation-assets'
+import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
 import {
   accessAfterFailure,
   mergeGenerations,
   savedAssetTiles
-} from '../../lib/workshop/saved-assets'
+} from '@/lib/workshop/saved-assets'
 import type {
   AssetAccess,
   SavedAsset,
   SavedAssetTile as SavedAssetTileData
-} from '../../lib/workshop/saved-assets'
-import { translationsFor } from '../../i18n/translations'
-import type { Locale } from '../../i18n/translations'
+} from '@/lib/workshop/saved-assets'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import SavedAssetPreview from './SavedAssetPreview.vue'
 import SavedAssetTile from './SavedAssetTile.vue'
 

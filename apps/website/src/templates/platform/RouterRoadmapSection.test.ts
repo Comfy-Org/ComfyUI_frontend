@@ -2,10 +2,10 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { captureRouterRoadmapCardExpanded } from '../../scripts/posthog'
+import { captureRouterRoadmapCardExpanded } from '@/scripts/posthog'
 import RouterRoadmapSection from './RouterRoadmapSection.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 describe('RouterRoadmapSection', () => {
   it('links to the Router documentation with one section-level call to action', () => {

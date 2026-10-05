@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const app: CatalogueApp = {

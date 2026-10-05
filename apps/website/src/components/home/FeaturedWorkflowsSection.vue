@@ -2,10 +2,10 @@
 import { useElementVisibility } from '@vueuse/core'
 import { ref, useTemplateRef, watch } from 'vue'
 
-import { useAutoAdvance } from '../../composables/useAutoAdvance'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import { useAutoAdvance } from '@/composables/useAutoAdvance'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

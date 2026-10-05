@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import SectionLabel from '../common/SectionLabel.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import SectionLabel from '@/components/common/SectionLabel.vue'
 import VideoStoryCard from './VideoStoryCard.vue'
 
 interface WatchStoryCard {

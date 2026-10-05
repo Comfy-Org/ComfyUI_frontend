@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import ServerlessHowItWorksSection from './ServerlessHowItWorksSection.vue'
 
 describe('ServerlessHowItWorksSection', () => {

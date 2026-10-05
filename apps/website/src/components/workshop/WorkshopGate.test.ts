@@ -4,14 +4,14 @@ import { readonly, ref, Teleport, createSSRApp, h, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import { htmlToTwin } from '../../lib/markdown-twin'
+import { htmlToTwin } from '@/lib/markdown-twin'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import WorkshopGate from './WorkshopGate.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>

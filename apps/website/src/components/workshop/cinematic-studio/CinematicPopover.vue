@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { X } from '@lucide/vue'
 import { onClickOutside, onKeyStroke } from '@vueuse/core'
 import { onMounted, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 const { title, locale = 'en' } = defineProps<{
   title: string

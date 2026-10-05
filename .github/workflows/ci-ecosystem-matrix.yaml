@@ -72,8 +72,6 @@ jobs:
       - name: Detect relevant changes
         id: changes
         uses: ./.github/actions/changes-filter
-        with:
-          evaluate-candidate: 'true'
 
   # First job in the run, and deliberately dependency-free so its annotation
   # and step summary land at the top. Stale pins are the one failure mode this

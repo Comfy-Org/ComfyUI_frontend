@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro'
 
-import type { CustomerVideoStory } from '../data/customerVideos'
-import { customerVideoPath, customerVideoStories } from '../data/customerVideos'
-import { isoDateTime } from '../utils/jsonLd'
+import type { CustomerVideoStory } from '@/data/customerVideos'
+import { customerVideoPath, customerVideoStories } from '@/data/customerVideos'
+import { isoDateTime } from '@/utils/jsonLd'
 
 function escapeXml(value: string): string {
   return value

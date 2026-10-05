@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WorkshopModelDetail } from '../../config/models-catalogue'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
 import { prepareModelPage } from './model-page'
 
 const mocks = vi.hoisted(() => ({
@@ -9,17 +9,17 @@ const mocks = vi.hoisted(() => ({
   successor: vi.fn(),
   price: vi.fn()
 }))
-vi.mock(import('../../config/workshop-page-content'), () => ({
+vi.mock(import('@/config/workshop-page-content'), () => ({
   getWorkshopPageDetail: mocks.lookup,
   workshopPages: []
 }))
-vi.mock(import('../../config/workshop-related'), () => ({
+vi.mock(import('@/config/workshop-related'), () => ({
   relatedModels: mocks.related
 }))
-vi.mock(import('../../config/workshop-node-pricing'), () => ({
+vi.mock(import('@/config/workshop-node-pricing'), () => ({
   estimateWorkshopNodePrice: mocks.price
 }))
-vi.mock(import('../../config/workshop-browse-content'), () => ({
+vi.mock(import('@/config/workshop-browse-content'), () => ({
   getWorkshopModel: mocks.successor,
   workshopModels: []
 }))

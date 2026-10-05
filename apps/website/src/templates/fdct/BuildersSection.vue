@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import WireNodeLayout from '../../components/common/WireNodeLayout.vue'
-import { translationsFor } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import WireNodeLayout from '@/components/common/WireNodeLayout.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

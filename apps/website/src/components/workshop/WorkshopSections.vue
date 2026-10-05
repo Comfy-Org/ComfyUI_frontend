@@ -6,19 +6,19 @@ import type {
   SortOrder,
   UseCase,
   WorkshopModel
-} from '../../config/models-catalogue'
+} from '@/config/models-catalogue'
 import {
   USE_CASES,
   filterWorkshopModels,
   sortWorkshopModels,
   useCasesFor
-} from '../../config/models-catalogue'
-import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { groupModels } from '../../config/model-family'
-import { SHELF_CARD } from '../../lib/workshop/card-layout'
-import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
+} from '@/config/models-catalogue'
+import { OTHER_FORMAT_USE_CASES } from '@/config/workshop-sections'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { groupModels } from '@/config/model-family'
+import { SHELF_CARD } from '@/lib/workshop/card-layout'
+import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 

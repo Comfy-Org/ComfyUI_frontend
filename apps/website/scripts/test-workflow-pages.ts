@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../src/config/workshop-env'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { mapConcurrent } from './router-model-batch'
 import { publishedWorkflows, workflow_render } from './workflow-render'
 import type { WorkflowCheckResult, WorkflowRunResult } from './workflow-sweep'

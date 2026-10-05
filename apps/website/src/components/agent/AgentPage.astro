@@ -1,12 +1,12 @@
 ---
 import WorkflowCanvas from './WorkflowCanvas.astro'
-import BrandButton from '../common/BrandButton.vue'
-import BreadcrumbBar from '../common/BreadcrumbBar.vue'
-import ProductCardsSection from '../common/ProductCardsSection.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import type { Locale } from '../../i18n/translations'
-import { externalLinks, getRoutes } from '../../config/routes'
-import BaseLayout from '../../layouts/BaseLayout.astro'
+import BrandButton from '@/components/common/BrandButton.vue'
+import BreadcrumbBar from '@/components/common/BreadcrumbBar.vue'
+import ProductCardsSection from '@/components/common/ProductCardsSection.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import type { Locale } from '@/i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 import { tAgent } from './agentTranslations'
 
 interface Props {
@@ -579,7 +579,7 @@ const briefs = [
   import {
     captureAgentFaqExpanded,
     captureAgentUsecaseVideoPlayed
-  } from '../../scripts/posthog'
+  } from '@/scripts/posthog'
 
   document.addEventListener(
     'toggle',

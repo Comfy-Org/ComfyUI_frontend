@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { WorkshopCloudEnv } from '../src/config/workshop-cloud-env'
+import type { WorkshopCloudEnv } from '@/config/workshop-cloud-env'
 import type {
   ReportFailureCode,
   ReportSource,

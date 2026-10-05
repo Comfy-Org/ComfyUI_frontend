@@ -6,13 +6,13 @@ import type {
   FieldErrors,
   FieldSchema,
   FormValues
-} from '../../config/workshop-playground'
-import { groupPlaygroundFields } from '../../config/workshop-playground'
-import { useFrameRatioMismatch } from '../../composables/useFrameRatioMismatch'
-import type { FrameRatioRule } from '../../config/workshop-model-restrictions'
-import { frameSource } from '../../config/workshop-model-restrictions'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/workshop-playground'
+import { groupPlaygroundFields } from '@/config/workshop-playground'
+import { useFrameRatioMismatch } from '@/composables/useFrameRatioMismatch'
+import type { FrameRatioRule } from '@/config/workshop-model-restrictions'
+import { frameSource } from '@/config/workshop-model-restrictions'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import FrameRatioNotice from './FrameRatioNotice.vue'
 import PlaygroundField from './PlaygroundField.vue'
 

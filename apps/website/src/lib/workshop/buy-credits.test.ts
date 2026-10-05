@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL
-} from '../../config/workshop-env'
+} from '@/config/workshop-env'
 import { TopUpCheckoutError, createTopUpCheckout } from './buy-credits'
 
 const options = {

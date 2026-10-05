@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import FeatureRows01 from '../../components/blocks/FeatureRows01.vue'
-import type { FeatureRow } from '../../components/blocks/FeatureRows01.vue'
-import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import FeatureRows01 from '@/components/blocks/FeatureRows01.vue'
+import type { FeatureRow } from '@/components/blocks/FeatureRows01.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

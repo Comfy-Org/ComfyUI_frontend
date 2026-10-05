@@ -10,12 +10,12 @@ import {
   watch
 } from 'vue'
 
-import { lockScroll, unlockScroll } from '../../composables/scrollLock'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { GalleryItem } from '../../data/gallery'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
+import { lockScroll, unlockScroll } from '@/composables/scrollLock'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { GalleryItem } from '@/data/gallery'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
 
 const {

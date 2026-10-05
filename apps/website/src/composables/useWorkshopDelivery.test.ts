@@ -1,12 +1,12 @@
 import { effectScope } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
-import type { RunOutput } from '../config/workshop-run'
-import { captureWorkshopEvent } from '../scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
+import type { RunOutput } from '@/config/workshop-run'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 import { useWorkshopDelivery } from './useWorkshopDelivery'
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 const analytics: WorkshopRunAnalytics = {
   model_slug: 'demo--image',

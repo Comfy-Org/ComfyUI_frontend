@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import { t } from '../../i18n/translations'
-import { stubIntersectionObserver } from '../../test/fakeIntersectionObserver'
+import { t } from '@/i18n/translations'
+import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import ContentSection from './ContentSection.vue'
 
 /** `isAtBottom()` compares scroll position against `scrollHeight`, which is

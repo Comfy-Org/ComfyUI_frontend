@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
-import { minimaxLicensePage } from '../src/data/minimaxLicense'
-import type { Locale } from '../src/i18n/translations'
-import { t } from '../src/i18n/translations'
-import { faqAnswerPlainText, parseFaqAnswer } from '../src/utils/faqAnswer'
+import { getRoutes } from '@/config/routes'
+import { minimaxLicensePage } from '@/data/minimaxLicense'
+import type { Locale } from '@/i18n/translations'
+import { t } from '@/i18n/translations'
+import { faqAnswerPlainText, parseFaqAnswer } from '@/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 

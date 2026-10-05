@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { GeneratedExample } from '../../config/models-catalogue'
+import type { GeneratedExample } from '@/config/models-catalogue'
 import WorkflowExampleCard from './WorkflowExampleCard.vue'
 
 const example: GeneratedExample = {

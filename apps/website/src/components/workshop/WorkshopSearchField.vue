@@ -6,11 +6,11 @@ import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
-import { filterWorkshopModels } from '../../config/models-catalogue'
-import { useVisualViewport } from '../../composables/useVisualViewport'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { filterWorkshopModels } from '@/config/models-catalogue'
+import { useVisualViewport } from '@/composables/useVisualViewport'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 
 const {

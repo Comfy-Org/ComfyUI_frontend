@@ -1,4 +1,4 @@
-import type { RunFailure, RunOutput } from '../../../config/workshop-run'
+import type { RunFailure, RunOutput } from '@/config/workshop-run'
 import type { AspectRatio } from './catalog'
 
 interface TakeBase {

@@ -3,11 +3,11 @@ import { Loader2 } from '@lucide/vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useSignInHref } from '../../composables/useSignInHref'
-import { leaveForSignIn } from '../../config/workshop-return'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import { t } from '../../i18n/translations'
+import { useSignInHref } from '@/composables/useSignInHref'
+import { leaveForSignIn } from '@/config/workshop-return'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { t } from '@/i18n/translations'
 
 const { state, signedIn, canStart, statusLabel } = defineProps<{
   state: WorkflowState

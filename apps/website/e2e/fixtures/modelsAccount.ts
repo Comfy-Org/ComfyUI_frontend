@@ -3,7 +3,7 @@ import type {
   ExchangeTokenResponse
 } from '@comfyorg/ingest-types'
 
-import { hubModelHref } from '../../src/config/hub-models'
+import { hubModelHref } from '@/config/hub-models'
 import { test as base } from './blockExternalMedia'
 import { stubWorkshopFlags } from './workshopFlags'
 

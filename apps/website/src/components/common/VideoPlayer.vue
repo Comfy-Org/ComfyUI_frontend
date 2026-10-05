@@ -14,10 +14,10 @@ import {
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { translationsFor } from '../../i18n/translations'
-import type { Locale } from '../../i18n/translations'
-import VolumeMutedIcon from '../icons/VolumeMutedIcon.vue'
-import VolumeUnmutedIcon from '../icons/VolumeUnmutedIcon.vue'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import VolumeMutedIcon from '@/components/icons/VolumeMutedIcon.vue'
+import VolumeUnmutedIcon from '@/components/icons/VolumeUnmutedIcon.vue'
 import PlayPauseButton from './PlayPauseButton.vue'
 
 export type VideoTrack = {

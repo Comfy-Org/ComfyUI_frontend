@@ -1,7 +1,7 @@
 import { render, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { Drop } from '../../data/drops'
+import type { Drop } from '@/data/drops'
 import DropsSection from './DropsSection.vue'
 
 function drop(overrides: Partial<Drop> & { id: string }): Drop {
@@ -44,7 +44,7 @@ const { recentDrop, staleDrop, overriddenDrop } = vi.hoisted(() => ({
 
 // A focused mock: only recentDrop's launchDate reads as "recent", decoupled
 // from real dates so the test never drifts with the calendar.
-vi.mock(import('../../data/drops'), () => ({
+vi.mock(import('@/data/drops'), () => ({
   NEW_BADGE: { en: 'NEW', 'zh-CN': '新' },
   isRecentLaunch: (launchDate: string) => launchDate === recentDrop.launchDate,
   drops: [drop(recentDrop), drop(staleDrop), drop(overriddenDrop)]

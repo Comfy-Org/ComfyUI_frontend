@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Coins as CreditsIcon } from '@lucide/vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import {
   formatCreditsPerGbMonth,
   formatCreditsPerHour,
@@ -13,7 +13,7 @@ import {
   getStorageRate,
   groupStorageRatesForDisplay,
   rateCard
-} from '../../data/rateCard'
+} from '@/data/rateCard'
 
 const {
   locale = 'en',

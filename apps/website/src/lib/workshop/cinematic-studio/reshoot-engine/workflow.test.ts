@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_CAMERA } from '../reshoot'
+import { DEFAULT_CAMERA } from '@/lib/workshop/cinematic-studio/reshoot'
 import type { ReshootShot } from './workflow'
 import { analyzeWorkflow, generateSeconds, generateWorkflow } from './workflow'
 

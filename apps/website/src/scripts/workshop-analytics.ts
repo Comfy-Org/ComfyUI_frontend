@@ -1,15 +1,15 @@
-import type { Modality, WorkshopModel } from '../config/models-catalogue'
-import type { SnippetLanguage } from '../config/models-snippets'
-import type { RunFailure, RunOutput } from '../config/workshop-run'
+import type { Modality, WorkshopModel } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
+import type { RunFailure, RunOutput } from '@/config/workshop-run'
 import type {
   FieldErrorCode,
   FieldErrors,
   FieldSchema
-} from '../config/workshop-playground'
-import type { WorkshopFailureStage } from '../config/workshop-router-errors'
-import { WorkshopRouterError } from '../config/workshop-router-errors'
-import type { WorkshopWorkflowError } from '../config/workshop-workflow-api'
-import type { WorkflowExecutionFailure } from '../config/workshop-workflow-response'
+} from '@/config/workshop-playground'
+import type { WorkshopFailureStage } from '@/config/workshop-router-errors'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import type { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { WorkflowExecutionFailure } from '@/config/workshop-workflow-response'
 import type { WorkshopExceptionAnalytics } from './workshop-exception'
 import { workshopExceptionAnalytics } from './workshop-exception'
 

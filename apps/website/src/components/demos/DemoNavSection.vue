@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { localizeHref } from '../../config/routes'
-import { translationsFor } from '../../i18n/translations'
+import { localizeHref } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   nextTitle,

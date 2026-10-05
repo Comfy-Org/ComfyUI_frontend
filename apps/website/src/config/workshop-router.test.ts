@@ -12,8 +12,8 @@ import {
   schemaForModel,
   validateForm
 } from './workshop-playground'
-import contracts from '../content/workshop-router-contracts.json'
-import bindings from '../data/workshop-router-bindings.json'
+import contracts from '@/content/workshop-router-contracts.json'
+import bindings from '@/data/workshop-router-bindings.json'
 import { validateWorkshopInput } from './workshop-json-schema'
 
 function contractFor(id: string) {

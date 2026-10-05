@@ -1,4 +1,4 @@
-import { splitTask } from '../../config/models-catalogue'
+import { splitTask } from '@/config/models-catalogue'
 import { words } from './model-summary'
 import { providerName } from './provider-name'
 

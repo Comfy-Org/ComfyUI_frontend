@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { externalLinks, getRoutes } from '../../config/routes'
-import { useFrameScrub } from '../../composables/useFrameScrub'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { useFrameScrub } from '@/composables/useFrameScrub'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import FooterLinkColumn from './FooterLinkColumn.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
 

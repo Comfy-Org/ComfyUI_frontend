@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type {
   WorkshopField as Field,
   WorkshopFormValues
-} from '../../config/workshop-detail'
+} from '@/config/workshop-detail'
 import WorkshopField from './WorkshopField.vue'
 
 function renderField(field: Field) {

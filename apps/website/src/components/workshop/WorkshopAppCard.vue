@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 
 const { app } = defineProps<{ app: CatalogueApp }>()
 </script>

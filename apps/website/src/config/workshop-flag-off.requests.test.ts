@@ -11,7 +11,7 @@ import type { User } from 'firebase/auth'
 import { mintBody, testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 const CLOUD = WORKSHOP_CLOUD_BASE_URL
@@ -153,7 +153,7 @@ describe('website with unified_web_session not on', () => {
     '$name: boot, both balances, a session freshness check, a refocus and sign-out send main’s requests',
     async ({ anonymous, perUser, features }) => {
       const sent = stubCloud(anonymous, perUser)
-      const posthog = await import('../scripts/posthog')
+      const posthog = await import('@/scripts/posthog')
       vi.mocked(posthog.useWorkshopAuthFlag).mockReturnValue(
         readonly(ref(true))
       )

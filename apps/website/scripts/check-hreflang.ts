@@ -8,7 +8,7 @@
  * This file only gathers what was built; `hreflangAudit.ts` holds the rules, so
  * they can be tested against fixtures rather than a full build.
  */
-import type { Alternate } from '../src/utils/hreflangRoutes'
+import type { Alternate } from '@/utils/hreflangRoutes'
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
@@ -17,7 +17,7 @@ import {
   auditBuiltSite,
   routeOfHref,
   sitemapChunkNames
-} from '../src/utils/hreflangAudit'
+} from '@/utils/hreflangAudit'
 
 const DIST = join(process.cwd(), 'dist')
 const PUBLIC = join(process.cwd(), 'public')

@@ -2,16 +2,16 @@
 import { ArrowRight } from '@lucide/vue'
 import { computed, nextTick, onMounted, ref, useId } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
-import { useDownloadUrl } from '../../../composables/useDownloadUrl'
-import { translationsFor } from '../../../i18n/translations'
+import { useDownloadUrl } from '@/composables/useDownloadUrl'
+import { translationsFor } from '@/i18n/translations'
 import {
   isDownloadLinkRequestEnabled,
   preloadDownloadLinkAnalytics,
   requestDownloadLink
-} from '../../../scripts/customerio'
+} from '@/scripts/customerio'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

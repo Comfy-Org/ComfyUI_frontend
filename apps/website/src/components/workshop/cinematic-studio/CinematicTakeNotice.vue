@@ -6,11 +6,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { refusesRealFaces } from '../../../config/workshop-model-restrictions'
-import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import { failureLabelKey } from '../../../lib/workshop/failure-label'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+import { refusesRealFaces } from '@/config/workshop-model-restrictions'
+import type { Take } from '@/lib/workshop/cinematic-studio/reel'
+import { failureLabelKey } from '@/lib/workshop/failure-label'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import CinematicCreditAction from './CinematicCreditAction.vue'
 
 type Settled = Extract<Take, { status: 'failed' | 'cancelled' }>

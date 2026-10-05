@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { HostedTopupCheckoutResult } from '@comfyorg/account-core/billing'
 
-import { workshopTopupCommand } from '../../config/workshop-billing-sdk'
-import { readBillingSdkTopupEnabled } from '../../config/workshop-features'
+import { workshopTopupCommand } from '@/config/workshop-billing-sdk'
+import { readBillingSdkTopupEnabled } from '@/config/workshop-features'
 import { TopUpCheckoutError } from './buy-credits'
 import { createWorkshopTopUpCheckout } from './buy-credits-sdk'
 
-vi.mock(import('../../config/workshop-billing-sdk'))
-vi.mock(import('../../config/workshop-features'))
+vi.mock(import('@/config/workshop-billing-sdk'))
+vi.mock(import('@/config/workshop-features'))
 
 const options = {
   token: 'fresh-token',

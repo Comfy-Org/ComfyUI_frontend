@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { computed } from 'vue'
 
 import type {
   CameraAxis,
   ReshootCamera
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
+} from '@/lib/workshop/cinematic-studio/reshoot'
 import {
   CAMERA_RANGES,
   cameraZone
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import type { ReshootCopyKey } from '../../../../lib/workshop/cinematic-studio/copy'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import type { ReshootCopyKey } from '@/lib/workshop/cinematic-studio/copy'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
-import type { Locale } from '../../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import ReshootBarField from './ReshootBarField.vue'
 import ReshootGlobe from './ReshootGlobe.vue'
 import ReshootZone from './ReshootZone.vue'

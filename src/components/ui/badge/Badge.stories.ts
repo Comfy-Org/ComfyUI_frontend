@@ -27,6 +27,9 @@ export const RemovableChip: Story = {
 }
 export const Count: Story = { args: { variant: 'badge', default: '12' } }
 export const Dot: Story = { args: { variant: 'dot', default: '' } }
+export const Compact: Story = {
+  args: { variant: 'compact', default: 'Downloaded' }
+}
 export const Severities: Story = {
   render: () => ({
     components: { Badge },

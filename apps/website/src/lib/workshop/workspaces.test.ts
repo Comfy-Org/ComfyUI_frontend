@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { listWorkspaces } from './workspaces'
 
 const workspace = {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
@@ -8,15 +8,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type {
   ReshootCamera,
   ReshootZone
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { clampAxis } from '../../../../lib/workshop/cinematic-studio/reshoot'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import { clampAxis } from '@/lib/workshop/cinematic-studio/reshoot'
 import {
   GLOBE_FLATTEN,
   distanceScale,
   globePoint,
   zoneArcs
-} from '../../../../lib/workshop/cinematic-studio/reshoot-globe'
-import type { Locale } from '../../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/reshoot-globe'
+import type { Locale } from '@/i18n/translations'
 
 const {
   clip,

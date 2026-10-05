@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import routerIndex from '../../content/workshop-router-index.json'
+import routerIndex from '@/content/workshop-router-index.json'
 import { modelDocsHref } from './model-docs'
 
 const DOCS = 'https://docs.comfy.org/development/comfy-router/models'

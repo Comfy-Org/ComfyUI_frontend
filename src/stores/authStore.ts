@@ -189,9 +189,11 @@ export const useAuthStore = defineStore('auth', () => {
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
-    } else if (isCloud) {
+    } else if (isCloud && !flags.unifiedWebSessionEnabled) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
-      // no-op when unified_cloud_auth is off).
+      // no-op when unified_cloud_auth is off). With the web session on, this
+      // runs before the router decides the session, so WorkspaceAuthGate
+      // mints instead, and only for a tab the session did not sign in.
       void mintUnifiedToken(user.uid)
     }
 

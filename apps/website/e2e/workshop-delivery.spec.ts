@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test'
 
-import availability from '../src/data/workshop-model-availability.json' with { type: 'json' }
-import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
+import availability from '@/data/workshop-model-availability.json' with { type: 'json' }
+import { workshopModelAvailabilitySchema } from '@/config/workshop-model-availability-schema'
 import { test } from './fixtures/modelsAccount'
 import { capturePosthogEvents } from './fixtures/posthogEvents'
-import { hubModelHref } from '../src/config/hub-models'
+import { hubModelHref } from '@/config/hub-models'
 
 test.use({
   launchOptions: { args: ['--disable-blink-features=AutomationControlled'] }

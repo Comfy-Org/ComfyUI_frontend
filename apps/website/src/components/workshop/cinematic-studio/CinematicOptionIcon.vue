@@ -5,9 +5,9 @@ import { computed, useId } from 'vue'
 import type {
   IconShape,
   IconTone
-} from '../../../lib/workshop/cinematic-studio/camera-icons'
-import { cameraIcon } from '../../../lib/workshop/cinematic-studio/camera-icons'
-import type { DirectionPart } from '../../../lib/workshop/cinematic-studio/catalog'
+} from '@/lib/workshop/cinematic-studio/camera-icons'
+import { cameraIcon } from '@/lib/workshop/cinematic-studio/camera-icons'
+import type { DirectionPart } from '@/lib/workshop/cinematic-studio/catalog'
 
 const { part, option } = defineProps<{
   part: DirectionPart

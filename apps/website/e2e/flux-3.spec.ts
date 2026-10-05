@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
-import { flux3Page } from '../src/data/flux3'
-import { t } from '../src/i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { flux3Page } from '@/data/flux3'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/flux-3'

@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { addToast, removeAllToasts } from '../../config/auth-toast-state'
+import { addToast, removeAllToasts } from '@/config/auth-toast-state'
 import AuthToast from './AuthToast.vue'
 
 beforeEach(removeAllToasts)

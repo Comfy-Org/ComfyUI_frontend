@@ -3,8 +3,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import { resolveRel } from '../../utils/cta'
-import Badge from '../ui/badge/Badge.vue'
+import { resolveRel } from '@/utils/cta'
+import Badge from '@/components/ui/badge/Badge.vue'
 
 type CardWorkflowMedia = {
   type: 'image' | 'video'

@@ -129,6 +129,10 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
+import {
+  deriveSessionTitle,
+  withCurrentSessionTitle
+} from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -356,7 +360,8 @@ const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
-  listCloudWorkflows: () => rest.listCloudWorkflows()
+  listCloudWorkflows: () => rest.listCloudWorkflows(),
+  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId)
 })
 const {
   refreshCloudWorkflowIds,
@@ -1371,7 +1376,8 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   return {
     id: thread.id,
     title: thread.title || thread.preview || t('agent.untitledChat'),
-    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt
+    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
+    titleSource: thread.title ? 'server' : 'fallback'
   }
 }
 
@@ -1404,6 +1410,16 @@ const currentChatReady = computed(
     threadId.value === history.activeId &&
     selectedTarget.value !== null
 )
+
+const historyGroups = computed(() => {
+  const id = threadId.value
+  if (id === null || !isTranscriptReady.value || id !== history.activeId)
+    return history.grouped
+  return withCurrentSessionTitle(
+    history.grouped,
+    history.titleFor(id) || deriveSessionTitle(entries.value)
+  )
+})
 
 async function onSelectHistory(
   id: string,
@@ -1900,7 +1916,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :can-attach="true"
       :can-open-assets="!isBuilderMode"
       :is-maximized="agentPanelStore.isMaximized"
-      :history-groups="history.grouped"
+      :history-groups="historyGroups"
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
       :session-id="threadId"

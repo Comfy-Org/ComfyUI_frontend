@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { GalleryItem } from '../../data/gallery'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { GalleryItem } from '@/data/gallery'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   item,

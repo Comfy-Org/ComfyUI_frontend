@@ -5,7 +5,7 @@ import {
   ROUTER_CATALOG_MODEL_COUNT,
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE
-} from '../../config/router-providers'
+} from '@/config/router-providers'
 import RouterProviderCoverageSection from './RouterProviderCoverageSection.vue'
 
 const remaining =

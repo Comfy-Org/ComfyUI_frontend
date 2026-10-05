@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
-import type { RunFailure } from '../../config/workshop-run'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { RunFailure } from '@/config/workshop-run'
 import type {
   WorkflowErrorCode,
   WorkflowRun,
   WorkflowRunSummary
-} from '../../config/workshop-workflow-response'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import type { SavedWorkflow } from '../../config/workshop-workflow-storage'
+} from '@/config/workshop-workflow-response'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import type { SavedWorkflow } from '@/config/workshop-workflow-storage'
 import { failureLabelKey } from './failure-label'
 import { panelSaysRefusal, workflowRunFailure } from './workflow-refusal'
 

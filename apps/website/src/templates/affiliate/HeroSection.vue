@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { translationsFor } from '../../i18n/translations'
-import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
+import { translationsFor } from '@/i18n/translations'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
 import { externalLinks } from '@/config/routes.ts'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

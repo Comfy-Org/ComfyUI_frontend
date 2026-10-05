@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   WORKSHOP_RESHOOT_PROXY_ID,
   WORKSHOP_ROUTER_BASE_URL
-} from '../../../../config/workshop-env'
+} from '@/config/workshop-env'
 import type { ReshootTransport } from './transport'
 import { ReshootError, appProxyTransport, devProxyTransport } from './transport'
 import { reshootTransport } from './transport-config'

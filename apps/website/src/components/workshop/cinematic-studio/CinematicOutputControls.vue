@@ -4,10 +4,10 @@ import { ChevronDown, Maximize, Minus, Plus } from '@lucide/vue'
 import type {
   AspectRatio,
   Resolution
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import { MAX_TAKES } from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
 import { FORMAT_TRIGGER_CLASS } from './cinematic-menu-trigger'
 import CinematicMenu from './CinematicMenu.vue'

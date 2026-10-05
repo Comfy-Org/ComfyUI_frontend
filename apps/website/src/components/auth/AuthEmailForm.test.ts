@@ -8,7 +8,7 @@ import type {
   TurnstileRenderOptions
 } from '@comfyorg/account-core/turnstileScript'
 
-import { useWorkshopTurnstileMode } from '../../scripts/posthog'
+import { useWorkshopTurnstileMode } from '@/scripts/posthog'
 import AuthEmailForm from './AuthEmailForm.vue'
 
 const widgetBehavior = vi.hoisted(() => ({
@@ -28,7 +28,7 @@ vi.mock(import('@comfyorg/account-core/turnstileScript'), () => ({
   loadTurnstile: () => Promise.resolve(turnstileApi)
 }))
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 const submitButton = (name: RegExp) =>
   screen.getByRole('button', { name }) as HTMLButtonElement

@@ -1,18 +1,18 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import AIModelsSection from '../../components/product/shared/AIModelsSection.vue'
-import HeroSection from '../../components/product/local/HeroSection.vue'
-import ReasonSection from '../../components/product/local/ReasonSection.vue'
-import EcoSystemSection from '../../components/product/local/EcoSystemSection.vue'
-import ProductCardsSection from '../../components/product/local/ProductCardsSection.vue'
-import FAQSection from '../../components/product/local/FAQSection.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import AIModelsSection from '@/components/product/shared/AIModelsSection.vue'
+import HeroSection from '@/components/product/local/HeroSection.vue'
+import ReasonSection from '@/components/product/local/ReasonSection.vue'
+import EcoSystemSection from '@/components/product/local/EcoSystemSection.vue'
+import ProductCardsSection from '@/components/product/local/ProductCardsSection.vue'
+import FAQSection from '@/components/product/local/FAQSection.vue'
 import {
   absoluteUrl,
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
   pageContext
-} from '../../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 const { siteUrl } = pageContext(
   Astro.site,

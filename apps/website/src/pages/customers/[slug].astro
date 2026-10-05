@@ -1,18 +1,13 @@
 ---
-import BreadcrumbBar from '../../components/common/BreadcrumbBar.vue'
-import CustomerArticle from '../../components/customers/CustomerArticle.astro'
-import DetailHeroSection from '../../components/customers/DetailHeroSection.vue'
-import WhatsNextSection from '../../components/customers/WhatsNextSection.vue'
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import { customerVideoForStory } from '../../data/customerVideos'
-import { nextStory, storySlug } from '../../utils/customers'
-import { loadStories } from '../../utils/loadStories'
-import {
-  absoluteUrl,
-  articleNode,
-  jsonLdId,
-  pageContext
-} from '../../utils/jsonLd'
+import BreadcrumbBar from '@/components/common/BreadcrumbBar.vue'
+import CustomerArticle from '@/components/customers/CustomerArticle.astro'
+import DetailHeroSection from '@/components/customers/DetailHeroSection.vue'
+import WhatsNextSection from '@/components/customers/WhatsNextSection.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { customerVideoForStory } from '@/data/customerVideos'
+import { nextStory, storySlug } from '@/utils/customers'
+import { loadStories } from '@/utils/loadStories'
+import { absoluteUrl, articleNode, jsonLdId, pageContext } from '@/utils/jsonLd'
 
 export async function getStaticPaths() {
   const stories = await loadStories('en')

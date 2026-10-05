@@ -71,6 +71,7 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import {
   remoteConfigErrorStatus,
@@ -106,6 +107,15 @@ function cancelInitialization(): void {
   backgroundInitializationUserId = undefined
 }
 
+/** A tab signed in on the web session carries its workspace on the session. */
+async function requiresUnifiedToken(): Promise<boolean> {
+  return (
+    useFeatureFlags().flags.unifiedCloudAuthEnabled &&
+    useAuthStore().currentUser !== null &&
+    !(await signedInOnWebSession())
+  )
+}
+
 async function initialize(): Promise<void> {
   if (!isCloud) {
     void initializeWorkspacesInBackground()
@@ -118,7 +128,7 @@ async function initialize(): Promise<void> {
   initializationController = controller
 
   const authStore = useAuthStore()
-  const { isInitialized, isAuthenticated, currentUser } = storeToRefs(authStore)
+  const { isInitialized, isAuthenticated } = storeToRefs(authStore)
 
   try {
     // Step 1: Wait for Firebase auth to resolve
@@ -156,10 +166,9 @@ async function initialize(): Promise<void> {
       throw new Error('Failed to load authenticated remote config')
     }
 
-    const { flags } = useFeatureFlags()
     const workspaceAuthStore = useWorkspaceAuthStore()
-    const needsUnifiedToken =
-      flags.unifiedCloudAuthEnabled && currentUser.value !== null
+    const needsUnifiedToken = await requiresUnifiedToken()
+    if (generation !== initializationGeneration) return
     if (needsUnifiedToken) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return

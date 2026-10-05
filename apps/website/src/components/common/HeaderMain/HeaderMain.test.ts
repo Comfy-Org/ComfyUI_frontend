@@ -2,15 +2,12 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, readonly, ref } from 'vue'
 
-import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
-import {
-  useWorkshopAuthFlag,
-  useWorkshopEnabled
-} from '../../../scripts/posthog'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { useWorkshopAuthFlag, useWorkshopEnabled } from '@/scripts/posthog'
 import HeaderMain from './HeaderMain.vue'
 
-vi.mock(import('../../../scripts/posthog'))
-vi.mock(import('../../../config/workshop-account-source'), () => ({
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-account-source'), () => ({
   resolveWorkshopAccountSource: () => Promise.resolve('firebase'),
   peekWorkshopAccountSource: () => 'firebase'
 }))

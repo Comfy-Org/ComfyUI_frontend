@@ -1,7 +1,7 @@
 import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
+import { getRoutes } from '@/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { publishedModelSlugs } from './fixtures/modelsCatalogue'

@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { captureWorkshopEvent } from '../../../scripts/posthog'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 import AppRepoLink from './AppRepoLink.vue'
 
-vi.mock(import('../../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 describe('AppRepoLink', () => {
   it('opens the app repository on GitHub in a new tab', () => {

@@ -1,13 +1,13 @@
-import { isNoindexPathname } from '../config/indexing'
-import type { Hreflang, Locale } from '../config/locales'
+import { isNoindexPathname } from '@/config/indexing'
+import type { Hreflang, Locale } from '@/config/locales'
 import {
   LOCALE_CODES,
   LOCALES,
   NON_DEFAULT_LOCALE_PREFIXES,
   normalizeRoute,
   withRouteSlash
-} from '../config/locales'
-import { supportsLocaleRoute } from '../config/routes'
+} from '@/config/locales'
+import { supportsLocaleRoute } from '@/config/routes'
 
 export interface Alternate {
   hreflang: Hreflang | 'x-default'

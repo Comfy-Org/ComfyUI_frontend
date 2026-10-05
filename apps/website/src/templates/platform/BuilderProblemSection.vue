@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import CheckIcon from '../../components/icons/CheckIcon.vue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

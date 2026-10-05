@@ -121,6 +121,11 @@ export function webSessionRequests(): WebSessionRequests | undefined {
   return provided
 }
 
+/** True when the session is on and this tab is signed in on it. */
+export async function signedInOnWebSession(): Promise<boolean> {
+  return (await provided?.scope()) !== undefined
+}
+
 export type WebSessionSend = (
   url: string,
   init: RequestInit
