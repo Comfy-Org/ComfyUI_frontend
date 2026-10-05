@@ -1,8 +1,8 @@
-import type { ButtonVariants } from '../components/ui/button'
-import type { Locale, TranslationKey } from '../i18n/translations'
+import type { ButtonVariants } from '@/components/ui/button'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { translationsFor } from '../i18n/translations'
-import { resolveRel } from '../utils/cta'
+import { translationsFor } from '@/i18n/translations'
+import { resolveRel } from '@/utils/cta'
 import { localizeHref } from './routes'
 
 // The banner "CMS": a single typed config resolved through i18n at build time.

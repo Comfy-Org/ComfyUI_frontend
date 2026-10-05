@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { workshopApps } from '../../../lib/workshop/apps'
-import type { AppWorkshopModel } from '../../../config/models-catalogue'
-import type { Locale } from '../../../i18n/translations'
-import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
+import { workshopApps } from '@/lib/workshop/apps'
+import type { AppWorkshopModel } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import type { CinematicCopyKey } from '@/lib/workshop/cinematic-studio/copy'
 import CinematicAppCard from './CinematicAppCard.vue'
 
 const { models, locale = 'en' } = defineProps<{

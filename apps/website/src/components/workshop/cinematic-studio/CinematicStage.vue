@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
-import {
-  selectedTake,
-  takesOfShot
-} from '../../../lib/workshop/cinematic-studio/reel'
-import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
-import type { Locale } from '../../../i18n/translations'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { Reel } from '@/lib/workshop/cinematic-studio/reel'
+import { selectedTake, takesOfShot } from '@/lib/workshop/cinematic-studio/reel'
+import type { StarterShot } from '@/lib/workshop/cinematic-studio/starters'
+import type { Locale } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
 import CinematicCreditSummary from './CinematicCreditSummary.vue'
 import CinematicFirstRun from './CinematicFirstRun.vue'

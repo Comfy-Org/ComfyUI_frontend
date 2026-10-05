@@ -4,10 +4,10 @@ import { ref } from 'vue'
 
 import type { ModelLaunchHero } from './types'
 
-import { useHeroLogo } from '../../composables/useHeroLogo'
+import { useHeroLogo } from '@/composables/useHeroLogo'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 
-vi.mock(import('../../composables/useHeroLogo'), { spy: true })
+vi.mock(import('@/composables/useHeroLogo'), { spy: true })
 vi.mocked(useHeroLogo).mockReturnValue({ loaded: ref(false) })
 
 const hero: ModelLaunchHero = {

@@ -1,13 +1,12 @@
+import { join } from 'node:path'
 import { renameSync, rmSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
-import { fileURLToPath } from 'node:url'
 
-import { fetchFeatureFlagsForBuild } from '../src/utils/featureFlags'
-import { reportFeatureFlagsOutcome } from '../src/utils/featureFlags.ci'
+import { websiteRoot } from '@website/paths'
+import { fetchFeatureFlagsForBuild } from '@/utils/featureFlags'
+import { reportFeatureFlagsOutcome } from '@/utils/featureFlags.ci'
 
-const snapshotPath = fileURLToPath(
-  new URL('../src/data/feature-flags.snapshot.json', import.meta.url)
-)
+const snapshotPath = join(websiteRoot, 'src/data/feature-flags.snapshot.json')
 const tempPath = `${snapshotPath}.${process.pid}.${randomUUID()}.tmp`
 
 const outcome = await fetchFeatureFlagsForBuild()

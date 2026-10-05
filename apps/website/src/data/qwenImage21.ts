@@ -1,9 +1,9 @@
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
-} from '../templates/model-launch/types'
+} from '@/templates/model-launch/types'
 
-import { externalLinks } from '../config/routes'
+import { externalLinks } from '@/config/routes'
 
 const qwenImage21Links = {
   cloud:

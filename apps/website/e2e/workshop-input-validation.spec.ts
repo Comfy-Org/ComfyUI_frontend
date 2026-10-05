@@ -1,15 +1,17 @@
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
-import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
-import { hubModelHref } from '../src/config/hub-models'
+import { websiteRoot } from '@website/paths'
+import { workshopModelAvailabilitySchema } from '@/config/workshop-model-availability-schema'
+import { hubModelHref } from '@/config/hub-models'
 
 const availability = workshopModelAvailabilitySchema.parse(
   JSON.parse(
     readFileSync(
-      new URL('../src/data/workshop-model-availability.json', import.meta.url),
+      join(websiteRoot, 'src/data/workshop-model-availability.json'),
       'utf8'
     )
   )

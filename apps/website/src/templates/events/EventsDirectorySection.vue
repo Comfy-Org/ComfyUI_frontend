@@ -4,16 +4,16 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { MapPinMarker } from '../../components/blocks/MapPins01.vue'
-import type { ComfyEvent } from '../../data/events'
-import type { Locale } from '../../i18n/translations'
-import type { EventsDirectoryView } from '../../utils/eventsDirectory'
+import type { MapPinMarker } from '@/components/blocks/MapPins01.vue'
+import type { ComfyEvent } from '@/data/events'
+import type { Locale } from '@/i18n/translations'
+import type { EventsDirectoryView } from '@/utils/eventsDirectory'
 
-import MapPins01 from '../../components/blocks/MapPins01.vue'
+import MapPins01 from '@/components/blocks/MapPins01.vue'
 import EventsAgendaView from './EventsAgendaView.vue'
 import EventsCardsView from './EventsCardsView.vue'
-import { directoryEvents, eventsDerivedAt } from '../../data/events'
-import { translationsFor } from '../../i18n/translations'
+import { directoryEvents, eventsDerivedAt } from '@/data/events'
+import { translationsFor } from '@/i18n/translations'
 import {
   DIRECTORY_FILTER_ALL,
   EVENT_CATEGORIES,
@@ -21,7 +21,7 @@ import {
   defaultDirectoryFilters,
   directoryRows,
   filterDirectoryEvents
-} from '../../utils/eventsDirectory'
+} from '@/utils/eventsDirectory'
 import EventsDirectoryList from './EventsDirectoryList.vue'
 
 const {

@@ -38,6 +38,20 @@ describe('collectSearchableInputTypes', () => {
     expect(resolve(['IMAGE', {}])).toEqual(['IMAGE'])
   })
 
+  it('finds widget types inside a DynamicGroup template', () => {
+    expect(
+      resolve([
+        'COMFY_DYNAMICGROUP_V3',
+        {
+          template: {
+            required: { name: ['COMBO', { options: ['A', 'B'] }] },
+            optional: { strength: ['FLOAT', { default: 1 }] }
+          }
+        }
+      ])
+    ).toEqual(['COMBO', 'FLOAT'])
+  })
+
   describe('COMFY_DYNAMICCOMBO_V3', () => {
     it('resolves concrete types from option inputs', () => {
       expect(

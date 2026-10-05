@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { okFetch, testUser } from './__fixtures__/workshopSessionFakes'
 import { STORAGE_KEY, workshopSessionClient } from './workshop-account'
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 beforeEach(() => {
   sessionStorage.clear()

@@ -3970,7 +3970,12 @@ describe('AgentPanelRoot history', () => {
     // The server has no delete endpoint yet, so the tombstone must hold the
     // thread out of the next refresh instead of letting it resurrect.
     useAgentChatHistoryStore().replaceAll([
-      { id: 'th-active', title: 'build a duck', updatedAt: Date.now() }
+      {
+        id: 'th-active',
+        title: 'build a duck',
+        updatedAt: Date.now(),
+        titleSource: 'server'
+      }
     ])
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
@@ -4015,6 +4020,83 @@ describe('AgentPanelRoot history', () => {
     expect(history.sessions[1]).toMatchObject({
       id: 'th-10',
       title: 'make a duck'
+    })
+  })
+
+  describe('history row title for the active chat', () => {
+    function stubActiveThread(serverTitle: string): void {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.endsWith('/api/agent/threads'))
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-active',
+                  title: serverTitle,
+                  preview: 'delete everything on this canvas',
+                  last_message_at: '2026-07-07T10:00:00Z'
+                })
+              ])
+            )
+          if (url.includes('/messages'))
+            return json(200, [
+              {
+                id: 'active-user',
+                thread_id: 'th-active',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'active-turn',
+                content: { text: 'Clear entire canvas' }
+              }
+            ])
+          return json(200, [])
+        })
+      )
+      useAgentConversationStore().setThreadId('th-active')
+    }
+
+    async function openHistory(): Promise<void> {
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await screen.findByRole('heading', {
+        name: i18n.global.t('agent.history')
+      })
+    }
+
+    it('shows the first user message while the server title is empty', async () => {
+      stubActiveThread('')
+      renderWithSelectedTarget()
+      await screen.findByRole('button', { name: 'Clear entire canvas' })
+
+      await openHistory()
+
+      expect(
+        await screen.findByRole('button', { name: 'Clear entire canvas' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('delete everything on this canvas')
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps the server title when one exists', async () => {
+      stubActiveThread('Canvas cleanup')
+      renderWithSelectedTarget()
+      await screen.findByRole('button', { name: 'Clear entire canvas' })
+
+      await openHistory()
+
+      expect(
+        await screen.findByRole('button', { name: 'Canvas cleanup' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Clear entire canvas' })
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -4510,11 +4592,17 @@ describe('AgentPanelRoot lifecycle', () => {
     })
 
     first.unmount()
-    expect(errorHandler).toHaveBeenCalledWith(
+    // Contained and reported, not escaped: a step that throws must not reach
+    // Vue's error handling, which re-throws out of `invokeArrayFns` and would
+    // abandon the remaining hooks and the rest of `unmountComponent`.
+    expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'teardown failed' }),
-      expect.anything(),
-      'beforeUnmount hook'
+      expect.objectContaining({
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step: 'clearCreatingTab' }
+      })
     )
+    expect(errorHandler).not.toHaveBeenCalled()
 
     renderWithSelectedTarget().unmount()
 
@@ -4524,6 +4612,79 @@ describe('AgentPanelRoot lifecycle', () => {
         errorType: 'minimap_decoration_layer_duplicate'
       })
     )
+  })
+
+  it('resets the canvas sync gate when an earlier teardown step throws', () => {
+    const errorHandler = vi.fn()
+    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
+      docOpMinterDeps.current = deps
+      return fromPartial<DocOpMinter>({
+        detach: vi.fn(() => {
+          throw new Error('detach failed')
+        })
+      })
+    })
+    const panel = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+    // Cleared so the only recorded call is the teardown reset, not this
+    // instance's own live gate registered while it was mounted.
+    setCanvasSyncGate.mockClear()
+
+    panel.unmount()
+
+    // PM-1575: the gate is reset to the always-safe default even though a
+    // step three places ahead of it threw.
+    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
+    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe(false)
+    expect(outcomeCount?.()).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'detach failed' }),
+      expect.objectContaining({
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step: 'detachDocOpMinter' }
+      })
+    )
+    expect(errorHandler).not.toHaveBeenCalled()
+  })
+
+  it('resets the canvas sync gate when reporting a failed teardown step throws', () => {
+    const errorHandler = vi.fn()
+    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
+      docOpMinterDeps.current = deps
+      return fromPartial<DocOpMinter>({
+        detach: vi.fn(() => {
+          throw new Error('detach failed')
+        })
+      })
+    })
+    const panel = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+    setCanvasSyncGate.mockClear()
+    // The reporter is the one part of the loop outside its own try/catch; a
+    // telemetry sink torn down ahead of the panel must not take the remaining
+    // releases with it.
+    vi.mocked(reportError).mockImplementationOnce(() => {
+      throw new Error('reporter failed')
+    })
+
+    panel.unmount()
+
+    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
+    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe(false)
+    expect(outcomeCount?.()).toBe(0)
+    expect(errorHandler).not.toHaveBeenCalled()
   })
 
   it('does not claim the minimap graph-activity layer when setup throws', () => {
