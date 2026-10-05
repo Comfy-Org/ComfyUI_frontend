@@ -168,6 +168,12 @@
     "changelog": "変更履歴"
   },
   "changelog": {
+    "meta": {
+      "title": "変更履歴 - Comfy",
+      "description": "Comfy ドキュメントからの ComfyUI の最新機能、改善、修正。"
+    },
+    "title": "変更履歴",
+    "noscriptLink": "Comfy ドキュメントで変更履歴を読む",
     "viewDocs": "ドキュメントを見る",
     "saved": "保存済みのリリースノートを表示しています。最新の更新を読み込めませんでした。",
     "unavailable": "リリースノートを読み込めませんでした。",
