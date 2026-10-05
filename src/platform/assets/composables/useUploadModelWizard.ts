@@ -419,7 +419,16 @@ export function useUploadModelWizard(
         'model'
 
       const previewId = await uploadPreviewImage(filename)
-      if (isStaleUpload(generation)) return null
+      if (isStaleUpload(generation)) {
+        if (previewId) {
+          try {
+            await assetService.deleteAsset(previewId)
+          } catch (error) {
+            console.error('Failed to clean up stale preview image:', error)
+          }
+        }
+        return null
+      }
 
       const userMetadata = {
         source: source.type,
@@ -465,6 +474,7 @@ export function useUploadModelWizard(
 
         uploadStatus.value = 'success'
         await refreshModelCaches()
+        if (isStaleUpload(generation)) return null
         uploadSuccess = {
           filename:
             result.type === 'sync' ? getAssetFilename(result.asset) : filename,
