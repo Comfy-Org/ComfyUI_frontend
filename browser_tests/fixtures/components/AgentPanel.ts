@@ -10,6 +10,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 export class AgentPanel {
   public readonly root: Locator
   public readonly dockedPanel: Locator
+  public readonly dockedPanelShell: Locator
   public readonly openButton: Locator
   public readonly closeButton: Locator
   public readonly debugHeading: Locator
@@ -34,6 +35,7 @@ export class AgentPanel {
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
     this.dockedPanel = page.getByTestId('docked-agent-panel')
+    this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,
       exact: true
