@@ -40,23 +40,9 @@
               @update:model-value="toggleAllVisible"
             />
           </TableHead>
-          <TableHead>
-            <button
-              type="button"
-              class="flex items-center gap-1 hover:text-base-foreground"
-              @click="toggleNameSort"
-            >
-              {{ $t('g.extensionName') }}
-              <i
-                :class="
-                  nameSortDirection === 'ascending'
-                    ? 'icon-[lucide--arrow-up]'
-                    : 'icon-[lucide--arrow-down]'
-                "
-                class="size-4"
-              />
-            </button>
-          </TableHead>
+          <TableSortHead v-model:direction="nameSortDirection">
+            {{ $t('g.extensionName') }}
+          </TableSortHead>
           <TableHead class="w-20 text-right">
             <Button
               size="icon"
@@ -123,6 +109,7 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import TableSortHead from '@/components/ui/table/TableSortHead.vue'
 import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -143,7 +130,7 @@ const filterTypes = computed(() =>
 const filterType = ref<FilterTypeKey>('all')
 const selectedExtensions = ref<ComfyExtension[]>([])
 const searchQuery = ref('')
-const nameSortDirection = ref<TableSortDirection>('ascending')
+const nameSortDirection = ref<TableSortDirection | null>('ascending')
 
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
@@ -172,11 +159,13 @@ const visibleExtensions = computed(() => {
     searchQuery.value,
     (extension) => extension.name
   )
-  return sortByText(
-    filtered,
-    nameSortDirection.value,
-    (extension) => extension.name
-  )
+  return nameSortDirection.value
+    ? sortByText(
+        filtered,
+        nameSortDirection.value,
+        (extension) => extension.name
+      )
+    : filtered
 })
 
 const selectedExtensionNames = computed(
@@ -190,11 +179,6 @@ const allVisibleSelected = computed(
       selectedExtensionNames.value.has(extension.name)
     )
 )
-
-function toggleNameSort() {
-  nameSortDirection.value =
-    nameSortDirection.value === 'ascending' ? 'descending' : 'ascending'
-}
 
 function setExtensionSelected(
   extension: ComfyExtension,

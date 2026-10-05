@@ -44,6 +44,29 @@ describe('ExtensionPanel', () => {
     expect(coreFilter).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('sorts by extension name and exposes the order through aria-sort', async () => {
+    const user = userEvent.setup()
+    const extensionStore = useExtensionStore()
+    extensionStore.registerExtension({ name: 'Zebra' })
+    extensionStore.registerExtension({ name: 'Alpha' })
+
+    render(ExtensionPanel, { global: { plugins: [i18n] } })
+
+    const header = screen.getByRole('columnheader', { name: 'Extension name' })
+    const names = () =>
+      screen
+        .getAllByRole('checkbox', { name: /^(Alpha|Zebra)$/ })
+        .map((checkbox) => checkbox.getAttribute('aria-label'))
+
+    expect(header).toHaveAttribute('aria-sort', 'ascending')
+    expect(names()).toEqual(['Alpha', 'Zebra'])
+
+    await user.click(screen.getByRole('button', { name: 'Extension name' }))
+
+    expect(header).toHaveAttribute('aria-sort', 'descending')
+    expect(names()).toEqual(['Zebra', 'Alpha'])
+  })
+
   it('keeps individual and filtered bulk selections', async () => {
     const user = userEvent.setup()
     const extensionStore = useExtensionStore()
