@@ -55,6 +55,22 @@ jobs:
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=preview
 
+      - name: Write preview build identity
+        env:
+          BUILD_REPOSITORY: ${{ github.repository }}
+          BUILD_SHA: ${{ github.event.pull_request.head.sha }}
+          BUILD_RUN_ID: ${{ github.run_id }}
+          BUILD_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          jq -n \
+            --arg repository "$BUILD_REPOSITORY" \
+            --arg sha "$BUILD_SHA" \
+            --arg runId "$BUILD_RUN_ID" \
+            --arg runAttempt "$BUILD_RUN_ATTEMPT" \
+            --arg builtAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{repository: $repository, sha: $sha, runId: $runId, runAttempt: $runAttempt, builtAt: $builtAt}' \
+            > apps/website/public/__build.json
+
       - name: Build project artifacts
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
@@ -99,6 +115,24 @@ jobs:
             --meta githubPrId="$GIT_PR_ID" \
             --meta githubRepo="$GIT_REPO")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Verify immutable preview identity
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          for attempt in {1..30}; do
+            ACTUAL_SHA=$(curl -fsS \
+              -H 'Cache-Control: no-cache' \
+              "$DEPLOY_URL/__build.json?run=$GITHUB_RUN_ID-$attempt" |
+              jq -r '.sha // empty') || true
+            if [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" ]]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Immutable preview did not serve expected SHA $EXPECTED_SHA"
+          exit 1
 
       - name: Alias deployment to stable PR hostname
         id: alias-set
@@ -164,6 +198,38 @@ jobs:
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=production
 
+      - name: Capture the current production deployment
+        id: previous-production
+        env:
+          CANONICAL_BUILD_URL: https://comfy.org/__build.json
+        run: |
+          ALIAS=$(curl -fsS --retry 3 \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v4/aliases/comfy.org?projectId=$VERCEL_PROJECT_ID&teamId=$VERCEL_ORG_ID")
+          PREVIOUS_DEPLOYMENT_ID=$(jq -er '.deploymentId' <<< "$ALIAS")
+          PREVIOUS_SHA=$(curl -fsS \
+            -H 'Cache-Control: no-cache' \
+            "$CANONICAL_BUILD_URL?before=$GITHUB_RUN_ID" |
+            jq -r '.sha // empty') || true
+          echo "deployment-id=$PREVIOUS_DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+          echo "sha=${PREVIOUS_SHA:-unavailable}" >> "$GITHUB_OUTPUT"
+
+      - name: Write production build identity
+        env:
+          BUILD_REPOSITORY: ${{ github.repository }}
+          BUILD_SHA: ${{ github.sha }}
+          BUILD_RUN_ID: ${{ github.run_id }}
+          BUILD_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          jq -n \
+            --arg repository "$BUILD_REPOSITORY" \
+            --arg sha "$BUILD_SHA" \
+            --arg runId "$BUILD_RUN_ID" \
+            --arg runAttempt "$BUILD_RUN_ATTEMPT" \
+            --arg builtAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{repository: $repository, sha: $sha, runId: $runId, runAttempt: $runAttempt, builtAt: $builtAt}' \
+            > apps/website/public/__build.json
+
       - name: Verify WEBSITE_CLOUD_API_KEY is present for production build
         env:
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
@@ -198,9 +264,76 @@ jobs:
 
       - name: Deploy project artifacts to Vercel
         id: deploy
+        env:
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_REPO: ${{ github.repository }}
         run: |
-          URL=$(vercel deploy --prebuilt --prod --archive=tgz)
+          URL=$(vercel deploy --prebuilt --prod --archive=tgz \
+            --meta githubCommitSha="$GIT_COMMIT_SHA" \
+            --meta githubRepo="$GIT_REPO" \
+            --meta githubRunId="$GITHUB_RUN_ID")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-      - name: Add deployment URL to summary
-        run: echo "**Production:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify immutable and canonical production identity
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          EXPECTED_SHA: ${{ github.sha }}
+        timeout-minutes: 12
+        run: |
+          verify_marker() {
+            local base_url="$1"
+            local attempts="$2"
+            local delay="$3"
+            for ((attempt = 1; attempt <= attempts; attempt += 1)); do
+              ACTUAL_SHA=$(curl -fsS \
+                -H 'Cache-Control: no-cache' \
+                "${base_url%/}/__build.json?run=$GITHUB_RUN_ID-$attempt" |
+                jq -r '.sha // empty') || true
+              if [[ "$ACTUAL_SHA" == "$EXPECTED_SHA" ]]; then
+                return 0
+              fi
+              sleep "$delay"
+            done
+            return 1
+          }
+
+          verify_marker "$DEPLOY_URL" 30 5 || {
+            echo "::error::Immutable deployment did not serve expected SHA $EXPECTED_SHA"
+            exit 1
+          }
+          verify_marker https://comfy.org 60 10 || {
+            echo "::error::Canonical production did not promote expected SHA $EXPECTED_SHA"
+            exit 1
+          }
+          curl -fsS -o /dev/null https://comfy.org/
+
+      - name: Retain production transition evidence
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          PREVIOUS_DEPLOYMENT_ID: ${{ steps.previous-production.outputs.deployment-id }}
+          PREVIOUS_SHA: ${{ steps.previous-production.outputs.sha }}
+          DEPLOYED_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p temp/website-production-transition
+          jq -n \
+            --arg previousDeploymentId "$PREVIOUS_DEPLOYMENT_ID" \
+            --arg previousSha "$PREVIOUS_SHA" \
+            --arg deploymentUrl "$DEPLOY_URL" \
+            --arg deployedSha "$DEPLOYED_SHA" \
+            --arg runId "$GITHUB_RUN_ID" \
+            '{previousDeploymentId: $previousDeploymentId, previousSha: $previousSha, deploymentUrl: $deploymentUrl, deployedSha: $deployedSha, runId: $runId}' \
+            > temp/website-production-transition/transition.json
+          {
+            echo "**Production:** $DEPLOY_URL"
+            echo "**Deployed SHA:** $DEPLOYED_SHA"
+            echo "**Previous deployment:** $PREVIOUS_DEPLOYMENT_ID"
+            echo "**Previous SHA:** $PREVIOUS_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload production transition evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: website-production-transition
+          path: temp/website-production-transition/transition.json
+          retention-days: 7
+          if-no-files-found: error

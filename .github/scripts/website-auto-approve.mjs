@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const API_VERSION = '2022-11-28'
 const PAGE_SIZE = 100
+const HOLD_LABEL = 'website-fast-lane:hold'
 
 export function parseApprovedAuthors(raw) {
   let authors
@@ -51,9 +52,30 @@ export function changedPaths(files) {
 
 function changedPathGroup(file) {
   if (typeof file?.filename !== 'string') return null
-  if (file.status !== 'renamed') return [file.filename]
+  if (file.previous_filename === undefined) {
+    if (file.status === 'renamed' || file.status === 'copied') return null
+    return [file.filename]
+  }
   if (typeof file.previous_filename !== 'string') return null
   return [file.filename, file.previous_filename]
+}
+
+export function hasHoldLabel(pull) {
+  return pull?.labels?.some(
+    (label) => label?.name?.toLowerCase() === HOLD_LABEL
+  )
+}
+
+export function hasActiveChangeRequest(reviews) {
+  const latestStateByReviewer = new Map()
+  for (const review of reviews) {
+    const login = review?.user?.login?.toLowerCase()
+    if (!login || review.user?.type === 'Bot' || login.endsWith('[bot]')) {
+      continue
+    }
+    latestStateByReviewer.set(login, review.state)
+  }
+  return [...latestStateByReviewer.values()].includes('CHANGES_REQUESTED')
 }
 
 export function isSameRepository(pull, repository) {
@@ -199,12 +221,18 @@ function authorFailure({ pull, config }) {
   return `Skipped: @${author ?? 'unknown'} is not in the website fast-lane author allowlist.`
 }
 
+function holdFailure({ pull }) {
+  if (!hasHoldLabel(pull)) return
+  return `Skipped: ${HOLD_LABEL} is applied.`
+}
+
 const ELIGIBILITY_CHECKS = [
   readinessFailure,
   baseFailure,
   repositoryFailure,
   headFailure,
-  authorFailure
+  authorFailure,
+  holdFailure
 ]
 
 function eligibilityFailure(context) {
@@ -226,15 +254,53 @@ function assertNotSelfApproval(pull, expectedApprover) {
   }
 }
 
+function approvalForHead(reviews, approverLogin, headSha) {
+  const expectedLogin = approverLogin.toLowerCase()
+  for (let index = reviews.length - 1; index >= 0; index -= 1) {
+    const review = reviews[index]
+    if (isApprovalForHead(review, expectedLogin, headSha)) return review
+  }
+}
+
+async function dismissApproval(github, prNumber, review, reason) {
+  if (!review?.id) return false
+  await github.request(`/pulls/${prNumber}/reviews/${review.id}/dismissals`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ message: reason })
+  })
+  return true
+}
+
+async function stopWithSummary({ github, config, reviews, headSha, message }) {
+  const approval = approvalForHead(reviews, config.expectedApprover, headSha)
+  if (approval) {
+    await dismissApproval(
+      github,
+      config.prNumber,
+      approval,
+      `Website fast-lane approval withdrawn: ${message}`
+    )
+  }
+  summary(message)
+}
+
 async function main() {
   const config = configuration()
   const github = githubClient(config.token, config.repository)
   await assertApproverIdentity(github, config.expectedApprover)
 
   const pull = await github.request(`/pulls/${config.prNumber}`)
+  const reviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
   const failure = eligibilityFailure({ pull, config })
   if (failure) {
-    summary(failure)
+    await stopWithSummary({
+      github,
+      config,
+      reviews,
+      headSha: pull?.head?.sha,
+      message: failure
+    })
     return
   }
   assertNotSelfApproval(pull, config.expectedApprover)
@@ -248,18 +314,47 @@ async function main() {
   }
   const paths = changedPaths(files)
   if (paths === null || !isWebsiteOnly(paths)) {
-    summary('Skipped: at least one changed file is outside apps/website/**.')
+    await stopWithSummary({
+      github,
+      config,
+      reviews,
+      headSha: liveHeadSha,
+      message: 'Skipped: at least one changed file is outside apps/website/**.'
+    })
     return
   }
 
-  const reviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
   const recheckedPull = await github.request(`/pulls/${config.prNumber}`)
-  if (recheckedPull?.head?.sha !== liveHeadSha) {
-    summary('Skipped: the pull request head advanced during validation.')
+  const recheckedReviews = await github.paginate(
+    `/pulls/${config.prNumber}/reviews`
+  )
+  const recheckedFailure = eligibilityFailure({ pull: recheckedPull, config })
+  if (recheckedFailure) {
+    await stopWithSummary({
+      github,
+      config,
+      reviews: recheckedReviews,
+      headSha: liveHeadSha,
+      message: recheckedFailure
+    })
+    return
+  }
+  if (hasActiveChangeRequest(recheckedReviews)) {
+    await stopWithSummary({
+      github,
+      config,
+      reviews: recheckedReviews,
+      headSha: liveHeadSha,
+      message: 'Skipped: an active reviewer change request is present.'
+    })
     return
   }
   if (
-    alreadyApprovedCurrentHead(reviews, config.expectedApprover, liveHeadSha)
+    alreadyApprovedCurrentHead(
+      recheckedReviews,
+      config.expectedApprover,
+      liveHeadSha
+    )
   ) {
     summary(
       `Already approved ${liveHeadSha.slice(0, 12)} as @${config.expectedApprover}.`
@@ -267,15 +362,40 @@ async function main() {
     return
   }
 
-  await github.request(`/pulls/${config.prNumber}/reviews`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      event: 'APPROVE',
-      commit_id: liveHeadSha,
-      body: 'Automatically approved: trusted website fast-lane author; all changed files are under `apps/website/**`.'
-    })
+  const createdReview = await github.request(
+    `/pulls/${config.prNumber}/reviews`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        event: 'APPROVE',
+        commit_id: liveHeadSha,
+        body: '[Validation canary] Policy-only automatic approval. No diff review was performed; eligibility was bound to the trusted author, exact head commit, and `apps/website/**` path boundary.'
+      })
+    }
+  )
+
+  const verifiedPull = await github.request(`/pulls/${config.prNumber}`)
+  const verifiedReviews = await github.paginate(
+    `/pulls/${config.prNumber}/reviews`
+  )
+  const verificationFailure = eligibilityFailure({
+    pull: verifiedPull,
+    config
   })
+  if (verificationFailure || hasActiveChangeRequest(verifiedReviews)) {
+    const reason =
+      verificationFailure ??
+      'Skipped: an active reviewer change request appeared during approval.'
+    await dismissApproval(
+      github,
+      config.prNumber,
+      createdReview,
+      `Website fast-lane approval withdrawn: ${reason}`
+    )
+    summary(`Approval withdrawn: ${reason}`)
+    return
+  }
   summary(
     `Approved ${liveHeadSha.slice(0, 12)} as @${config.expectedApprover}.`
   )

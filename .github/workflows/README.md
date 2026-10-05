@@ -38,7 +38,24 @@ rejects other base branches and fork pull requests, rechecks the live head, and 
 `WEBSITE_APPROVAL_TOKEN` belongs to `webreviewer-bot` before approving. The bot is a member of
 `comfy_website_devs`, so its review satisfies the website path reviewer rule.
 
+The `website-fast-lane:hold` label, draft state, an active non-app reviewer change request, a base
+or head change, or a path outside `apps/website/**` stops approval and withdraws an existing
+current-head policy approval. The review body identifies the verdict as policy-only; it must not be
+interpreted as a diff review.
+
 The initial author allowlist contains only `bertfy`. Expand it by reviewing a
 change to `WEBSITE_AUTO_APPROVE_AUTHORS` in the workflow. A repository
 administrator must provide the bot's classic PAT as the Actions secret
 `WEBSITE_APPROVAL_TOKEN`; missing or mismatched credentials fail closed.
+
+## Website production identity and validation rollback
+
+Every website preview and production build writes a cache-disabled `/__build.json` containing the
+repository, exact source SHA, workflow run, attempt, and build time. The deploy workflow verifies
+the immutable Vercel URL before it accepts canonical `comfy.org` promotion and retains the prior
+deployment ID/SHA as a short-lived artifact.
+
+`validation-website-rollback.yaml` is a manually dispatched validation-only workflow. It accepts
+that captured immutable deployment ID and expected SHA, uses Vercel's instant rollback, verifies
+the canonical marker and public homepage, then promotes the same known-good deployment to preserve
+it while resuming normal automatic production-domain assignment.

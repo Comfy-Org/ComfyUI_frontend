@@ -11,7 +11,15 @@ name: 'PR: Website Auto-Approve'
 
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review, edited]
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - converted_to_draft
+      - edited
+      - labeled
+      - unlabeled
 
 permissions:
   contents: read
@@ -22,7 +30,6 @@ concurrency:
 
 jobs:
   approve:
-    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -4,7 +4,9 @@ import test from 'node:test'
 import {
   alreadyApprovedCurrentHead,
   changedPaths,
+  hasActiveChangeRequest,
   hasCompleteChangedFileList,
+  hasHoldLabel,
   isSameRepository,
   isWebsiteOnly,
   parseApprovedAuthors,
@@ -69,6 +71,57 @@ void test('a rename must stay inside the website on both sides', () => {
   assert.equal(
     changedPaths([{ status: 'renamed', filename: 'apps/website/new.astro' }]),
     null
+  )
+})
+
+void test('a copied file retains both paths for boundary evaluation', () => {
+  assert.deepEqual(
+    changedPaths([
+      {
+        status: 'copied',
+        previous_filename: 'src/sensitive.ts',
+        filename: 'apps/website/sensitive.ts'
+      }
+    ]),
+    ['apps/website/sensitive.ts', 'src/sensitive.ts']
+  )
+})
+
+void test('the explicit hold label stops fast-lane approval', () => {
+  assert.equal(hasHoldLabel({ labels: [] }), false)
+  assert.equal(
+    hasHoldLabel({ labels: [{ name: 'website-fast-lane:hold' }] }),
+    true
+  )
+  assert.equal(
+    hasHoldLabel({ labels: [{ name: 'WEBSITE-FAST-LANE:HOLD' }] }),
+    true
+  )
+})
+
+void test('only each non-app reviewer latest state can actively block', () => {
+  assert.equal(
+    hasActiveChangeRequest([
+      {
+        state: 'CHANGES_REQUESTED',
+        user: { login: 'coderabbitai[bot]', type: 'Bot' }
+      },
+      {
+        state: 'CHANGES_REQUESTED',
+        user: { login: 'DrJKL', type: 'User' }
+      },
+      { state: 'APPROVED', user: { login: 'DrJKL', type: 'User' } }
+    ]),
+    false
+  )
+  assert.equal(
+    hasActiveChangeRequest([
+      {
+        state: 'CHANGES_REQUESTED',
+        user: { login: 'webreviewer-bot', type: 'User' }
+      }
+    ]),
+    true
   )
 })
 
