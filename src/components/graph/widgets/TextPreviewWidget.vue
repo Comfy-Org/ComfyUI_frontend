@@ -5,7 +5,11 @@
     <div class="flex items-center gap-2">
       <div class="flex flex-1 items-center gap-2 break-all">
         <SanitizedHtml as="span" :html="formattedText" />
-        <Skeleton v-if="isParentNodeExecuting" class="h-4 flex-1" />
+        <Skeleton
+          v-if="isParentNodeExecuting"
+          data-testid="skeleton"
+          class="h-4 flex-1"
+        />
       </div>
     </div>
   </div>
