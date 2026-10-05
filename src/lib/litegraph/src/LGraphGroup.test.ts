@@ -1,3 +1,4 @@
+import { reactive } from 'vue'
 import { afterEach, describe, expect, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -463,5 +464,56 @@ describe('group layout in layoutStore', () => {
     group.pos = [75, 80]
 
     expect(groups.value.get(group.id)?.position).toEqual({ x: 75, y: 80 })
+  })
+})
+
+describe('geometry an extension cannot clobber', () => {
+  test('a copy of a group carries no geometry buffer to write back', () => {
+    const group = new LGraphGroup('group', toGroupId(810))
+
+    expect(Object.keys(group)).not.toContain('bounds')
+    expect(JSON.parse(JSON.stringify(group))).not.toHaveProperty('bounds')
+    expect(Object.assign({}, group)).not.toHaveProperty('bounds')
+  })
+
+  test('a JSON round-trip written back onto a group leaves geometry working', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(811))
+    group.pos = [100, 100]
+    group.size = [300, 200]
+
+    Object.assign(group, JSON.parse(JSON.stringify(group)))
+    graph.add(group)
+    group.pos = [110, 120]
+
+    expect([...group.boundingRect]).toEqual([110, 120, 300, 200])
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 110, y: 120 },
+      size: { width: 300, height: 200 }
+    })
+  })
+
+  test('assigning over the geometry buffer fails in the caller', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(812))
+    graph.add(group)
+
+    expect(() => {
+      Object.assign(group, { bounds: [1, 2, 3, 4] })
+    }).toThrow(TypeError)
+    expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
+  })
+
+  test('geometry still reads through a reactive proxy', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(813))
+    graph.add(group)
+    const reactiveGroup = reactive(group)
+
+    group.pos = [60, 70]
+
+    expect([...reactiveGroup.boundingRect]).toEqual([60, 70, 140, 80])
+    expect([...reactiveGroup.pos]).toEqual([60, 70])
   })
 })

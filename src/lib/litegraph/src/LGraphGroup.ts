@@ -125,6 +125,24 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.title = title || 'Group'
     const { pale_blue } = LGraphCanvas.node_colors
     this.color = pale_blue.groupcolor
+
+    // Hidden from own-key enumeration so JSON round-trips and naive deep clones
+    // cannot replace them; left configurable so a reactive Proxy may wrap them.
+    const conceal = (
+      key: 'bounds' | '_pos' | '_size' | '_bounding',
+      writable: boolean
+    ) =>
+      Object.defineProperty(this, key, {
+        value: this[key],
+        writable,
+        enumerable: false,
+        configurable: true
+      })
+
+    conceal('bounds', false)
+    conceal('_pos', true)
+    conceal('_size', true)
+    conceal('_bounding', true)
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */
