@@ -36,7 +36,6 @@ export interface DocSubscribed {
   workflowId: string
   ok: boolean
   seq?: number
-  /** Exact stored sequence a stale-schema refusal authorizes for reseed. */
   expectedSeq?: number
   code?: string
   message?: string
@@ -62,12 +61,10 @@ export interface DocOpsResult {
   failed?: DocOpFailure
 }
 
-/** The answer to a `doc_reseed`. */
 export interface DocReseedResult {
   workflowId: string
   ok: boolean
   seq?: number
-  /** Host-provided diagnostic outcome. */
   outcome?: string
   code?: string
   message?: string
@@ -339,19 +336,9 @@ function parseResultMetadata(data: WireData) {
   }
 }
 
-function parseOptionalDocOpFailure(value: unknown): DocOpFailure | undefined {
-  if (isAbsent(value)) return undefined
-  return parseDocOpFailure(value) ?? undefined
-}
-
-function parseAwarenessState(value: unknown): Record<string, unknown> | null {
-  const state = parseRecord(value)
-  if (!isAbsent(value) && state === null) return null
-  if (state === null) return {}
+function fitsAwarenessBudget(state: Record<string, unknown>): boolean {
   const stateSize = encodedJsonSize(state)
   return stateSize !== null && stateSize <= MAX_AWARENESS_STATE_BYTES
-    ? state
-    : null
 }
 
 const serverFrameParsers: ServerFrameParsers = {
@@ -385,7 +372,7 @@ const serverFrameParsers: ServerFrameParsers = {
     const applied = parseOptionalStringArray(data.applied)
     const skipped = parseOptionalStringArray(data.skipped)
     if (applied === null || skipped === null) return null
-    const failed = parseOptionalDocOpFailure(data.failed)
+    const failed = parseDocOpFailure(data.failed) ?? undefined
     return {
       type: 'doc_ops_result',
       data: {
@@ -421,15 +408,16 @@ const serverFrameParsers: ServerFrameParsers = {
       : null,
   awareness: (workflowId, data) => {
     if (typeof data.actor !== 'string' || !isValidActor(data.actor)) return null
-    const state = parseAwarenessState(data.state)
-    if (state === null) return null
+    const state = parseRecord(data.state)
+    if (state === null ? !isAbsent(data.state) : !fitsAwarenessBudget(state))
+      return null
     if (!isAbsent(data.expires_at) && !isSequence(data.expires_at)) return null
     return {
       type: 'awareness',
       data: {
         workflowId,
         actor: data.actor,
-        ...(!isAbsent(data.state) && { state }),
+        ...(state !== null && { state }),
         ...(isSequence(data.expires_at) && { expiresAt: data.expires_at })
       }
     }
@@ -448,14 +436,9 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   )
     return null
 
-  if (typeof frame.type !== 'string') return null
-  if (!isServerFrameType(frame.type)) return null
-  const type = frame.type
-  const parser = serverFrameParsers[type] as (
-    workflowId: string,
-    data: WireData
-  ) => ServerDocFrame | null
-  return parser(data.workflow_id, data)
+  if (typeof frame.type !== 'string' || !isServerFrameType(frame.type))
+    return null
+  return serverFrameParsers[frame.type](data.workflow_id, data)
 }
 
 function isServerFrameType(type: string): type is ServerDocFrame['type'] {
@@ -497,13 +480,7 @@ export class DocFrameClient extends EventTarget {
     }
   }
 
-  /**
-   * Every subscribe advertises `supports_reseed`: this client answers a
-   * `stale_schema_reseed_required` refusal with {@link reseed}. A server
-   * that predates the flag ignores it.
-   *
-   * @returns whether the subscribe frame actually left the transport.
-   */
+  /** @returns whether the subscribe frame actually left the transport. */
   subscribe(workflowId: string, stateVector: Uint8Array): boolean {
     return this.send('doc_subscribe', {
       v: DOC_PROTOCOL_VERSION,
@@ -513,12 +490,6 @@ export class DocFrameClient extends EventTarget {
     })
   }
 
-  /**
-   * Ask the server to re-mint a document it refused as an older schema from
-   * `workflow`, the serialized graph this tab currently shows.
-   *
-   * @returns whether the reseed frame actually left the transport.
-   */
   reseed(
     workflowId: string,
     expectedSeq: number,

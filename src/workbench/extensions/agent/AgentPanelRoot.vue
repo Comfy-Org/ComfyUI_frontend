@@ -672,12 +672,10 @@ function targetWorkflowTurnContext(
     : { id, tabPath: target.path }
 }
 
-function serializedCanvas(
-  target: ComfyWorkflow
-): DraftSnapshot['content'] | undefined {
+function serializedCanvas(target: ComfyWorkflow) {
   if (target.path === workflowStore.activeWorkflow?.path)
     target.changeTracker?.prepareForSave()
-  return target.activeState ?? undefined
+  return target.activeState
 }
 
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
@@ -691,8 +689,7 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
   const target = boundOrOpenWorkflowFor(workflowId)
-  if (!target) return null
-  return serializedCanvas(target) ?? null
+  return target ? serializedCanvas(target) : null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {

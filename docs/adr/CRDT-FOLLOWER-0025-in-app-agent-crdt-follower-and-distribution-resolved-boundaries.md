@@ -293,7 +293,7 @@ path:
 
 ## Amendment (2026-09-26): re-minting a document the host refuses as stale-schema
 
-One narrow exception applies to “the follower never sends the whole graph.” If
+One narrow exception applies to "the follower never sends the whole graph." If
 the host cannot read a stored document because it uses an older schema, and the
 subscribe advertised `supports_reseed`, the host refuses with
 `stale_schema_reseed_required`. The follower may answer each refusal once with a

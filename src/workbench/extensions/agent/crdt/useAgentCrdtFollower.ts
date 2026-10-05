@@ -31,11 +31,7 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import {
-  RESEED_CONFLICT,
-  STALE_SCHEMA_RESEED_REQUIRED,
-  isRetryableReseedCode
-} from './docFrameCodes'
+import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -285,11 +281,6 @@ export function useAgentCrdtFollower(
   getGraph: () => LGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
   applierDeps: AgentCrdtApplierDeps = {},
-  /**
-   * The serialized graph the tab bound to `workflowId` currently shows. The
-   * canvas is authoritative here because the server projection can lag human
-   * edits.
-   */
   canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
 ) {
   const productGate = useAgentPanelStore()
@@ -502,20 +493,13 @@ function startAgentCrdtFollower(
     }
   }
 
-  function tryReseed(detail: {
-    workflowId?: unknown
-    code?: unknown
-  }): boolean {
+  function tryReseed(): boolean {
     const target = subscribedWorkflowId.value
-    if (detail.code !== STALE_SCHEMA_RESEED_REQUIRED || target === null)
-      return false
-    if (detail.workflowId !== undefined && detail.workflowId !== target)
-      return false
-    if (!bridge.canReseed(target)) return false
+    if (target === null || !bridge.canReseed(target)) return false
     const canvas = canvasFor(target)
     if (!hasNodes(canvas) || !bridge.reseed(target, canvas)) return false
     recordDevEvent('doc_reseed_sent', { workflowId: target })
-    lifecycle.onReseedSent(target)
+    lifecycle.onSubscribeSent(target)
     return true
   }
   const onReseedResult: EventListener = (event) => {
@@ -529,14 +513,9 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_reseed_result', detail)
     const code = typeof detail.code === 'string' ? detail.code : undefined
-    if (detail.ok !== true && isRetryableReseedCode(code)) {
-      lifecycle.onSubscribeRefused(code)
-      return
-    }
-    // The bridge resets and resubscribes after this listener returns for an
-    // ok/conflict result. Anything else is final for this document.
-    if (detail.ok !== true && detail.code !== RESEED_CONFLICT)
-      lifecycle.stopProbing()
+    if (detail.ok === true || code === RESEED_CONFLICT) return
+    if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
+    else lifecycle.stopProbing()
   }
 
   function handleRejectedSubscription(
@@ -545,15 +524,11 @@ function startAgentCrdtFollower(
       ok?: unknown
       code?: unknown
       message?: unknown
-      expectedSeq?: unknown
     } | null
   ) {
-    const refusal = tryReseed(detail ?? {})
+    const refusal = tryReseed()
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
-    // FE #16637 residual: a refusal is the earliest signal the sender can
-    // get that its in-flight batch's doc is gone — don't make it wait out
-    // the 10 s result-silence window to notice on its own.
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -567,7 +542,6 @@ function startAgentCrdtFollower(
       ok?: unknown
       code?: unknown
       message?: unknown
-      expectedSeq?: unknown
     } | null
     const ok = detail?.ok === true
     connected.value = ok
