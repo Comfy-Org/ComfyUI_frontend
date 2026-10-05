@@ -114,6 +114,13 @@ export interface AgentSessionDeps {
     // describe the pre-await originating tab, not a later switch. See
     // TurnOrigin for why "no origin tab" is a value rather than an omission.
     current(origin?: TurnOrigin): WorkflowTurnContext | undefined
+    /**
+     * Whether `current(origin)` returned nothing because the client could not
+     * identify the selected tab's cloud workflow, as opposed to because the tab
+     * has none or none is selected. Only the first is a turn the server must
+     * not be told has no tab selected - see `targetCannotBeNamed`.
+     */
+    unidentifiedTarget?(origin?: TurnOrigin): boolean
     adopted(
       workflowId: string,
       sent: WorkflowTurnContext | undefined,
@@ -1095,7 +1102,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (workflowTargetChanged(originContext, wfContext)) {
+      if (
+        workflowTargetChanged(originContext, wfContext) ||
+        targetCannotBeNamed(originContext, wfContext, origin)
+      ) {
         recordUnavailableTarget(text)
         return false
       }
@@ -1132,6 +1142,35 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): boolean {
     if (origin?.id === undefined) return false
     return current?.id !== origin.id
+  }
+
+  /**
+   * A tab was selected when the send started, this turn cannot name its cloud
+   * workflow, and the client cannot conclude the tab *has* no cloud workflow
+   * either - only that it failed to identify which one.
+   *
+   * Posting that sends neither `workflow_id` nor `current_tab_unbound`, which
+   * is the one input combination the server reads as "no tab is selected"
+   * rather than "selected-but-unbound": the turn silently retargets at the
+   * thread's remembered workflow and the model is told no workflow is selected,
+   * while the composer still names the tab on screen. That is PM-1847, and it
+   * is invisible from `agent_turn_started` because the server always ends up
+   * with some workflow.
+   *
+   * Refused instead, which keeps the draft and re-lists the cloud index on the
+   * next attempt - the same refusal the target picker already gives for an id
+   * it cannot resolve (`prepareWorkflowSelection` -> `warnWorkflowUnavailable`).
+   * A tab the client can positively say has no cloud workflow is unaffected:
+   * that turn still goes out, and an unsaved tab still mints through
+   * `current_tab_unbound`.
+   */
+  function targetCannotBeNamed(
+    origin: WorkflowTurnContext | undefined,
+    current: WorkflowTurnContext | undefined,
+    turnOrigin: TurnOrigin
+  ): boolean {
+    if (origin === undefined || current !== undefined) return false
+    return workflow?.unidentifiedTarget?.(turnOrigin) ?? false
   }
 
   async function sendMessage(
