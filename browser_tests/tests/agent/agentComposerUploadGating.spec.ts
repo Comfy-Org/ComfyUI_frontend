@@ -12,7 +12,7 @@ import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 // send, no newline and no message — the composer just went dead, which is what
 // the reporter hit after attaching dozens of images. Blocking the send is
 // correct (the refs are not resolved yet); doing it without saying so is not.
-const ATTACHMENT_COUNT = 3
+const ATTACHMENT_COUNT = 5
 
 function pngAttachments(count: number) {
   return Array.from({ length: count }, (_, index) => ({
