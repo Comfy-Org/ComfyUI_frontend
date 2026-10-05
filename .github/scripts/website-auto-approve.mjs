@@ -285,32 +285,17 @@ async function stopWithSummary({ github, config, reviews, headSha, message }) {
   summary(message)
 }
 
-async function main() {
-  const config = configuration()
-  const github = githubClient(config.token, config.repository)
-  await assertApproverIdentity(github, config.expectedApprover)
-
-  const pull = await github.request(`/pulls/${config.prNumber}`)
-  const reviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
-  const failure = eligibilityFailure({ pull, config })
-  if (failure) {
+async function validateWebsitePaths(github, config, pull, reviews) {
+  const files = await github.paginate(`/pulls/${config.prNumber}/files`)
+  if (!hasCompleteChangedFileList(files, pull.changed_files)) {
     await stopWithSummary({
       github,
       config,
       reviews,
-      headSha: pull?.head?.sha,
-      message: failure
+      headSha: pull.head.sha,
+      message: 'Skipped: could not enumerate every changed file.'
     })
-    return
-  }
-  assertNotSelfApproval(pull, config.expectedApprover)
-
-  const liveHeadSha = pull.head.sha
-
-  const files = await github.paginate(`/pulls/${config.prNumber}/files`)
-  if (!hasCompleteChangedFileList(files, pull.changed_files)) {
-    summary('Skipped: could not enumerate every changed file.')
-    return
+    return false
   }
   const paths = changedPaths(files)
   if (paths === null || !isWebsiteOnly(paths)) {
@@ -318,12 +303,15 @@ async function main() {
       github,
       config,
       reviews,
-      headSha: liveHeadSha,
+      headSha: pull.head.sha,
       message: 'Skipped: at least one changed file is outside apps/website/**.'
     })
-    return
+    return false
   }
+  return true
+}
 
+async function revalidatePull(github, config, liveHeadSha) {
   const recheckedPull = await github.request(`/pulls/${config.prNumber}`)
   const recheckedReviews = await github.paginate(
     `/pulls/${config.prNumber}/reviews`
@@ -349,12 +337,12 @@ async function main() {
     })
     return
   }
+  return recheckedReviews
+}
+
+async function approveCurrentHead(github, config, liveHeadSha, reviews) {
   if (
-    alreadyApprovedCurrentHead(
-      recheckedReviews,
-      config.expectedApprover,
-      liveHeadSha
-    )
+    alreadyApprovedCurrentHead(reviews, config.expectedApprover, liveHeadSha)
   ) {
     summary(
       `Already approved ${liveHeadSha.slice(0, 12)} as @${config.expectedApprover}.`
@@ -399,6 +387,35 @@ async function main() {
   summary(
     `Approved ${liveHeadSha.slice(0, 12)} as @${config.expectedApprover}.`
   )
+}
+
+async function main() {
+  const config = configuration()
+  const github = githubClient(config.token, config.repository)
+  await assertApproverIdentity(github, config.expectedApprover)
+
+  const pull = await github.request(`/pulls/${config.prNumber}`)
+  const reviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
+  const failure = eligibilityFailure({ pull, config })
+  if (failure) {
+    await stopWithSummary({
+      github,
+      config,
+      reviews,
+      headSha: pull?.head?.sha,
+      message: failure
+    })
+    return
+  }
+  assertNotSelfApproval(pull, config.expectedApprover)
+
+  const liveHeadSha = pull.head.sha
+  if (!(await validateWebsitePaths(github, config, pull, reviews))) return
+
+  const recheckedReviews = await revalidatePull(github, config, liveHeadSha)
+  if (!recheckedReviews) return
+
+  await approveCurrentHead(github, config, liveHeadSha, recheckedReviews)
 }
 
 if (
