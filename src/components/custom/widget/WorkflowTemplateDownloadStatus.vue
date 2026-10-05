@@ -124,7 +124,7 @@ function namedLabel(key: string): string {
       class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
     >
       <span
-        class="block h-full w-1/3 animate-pulse rounded-full bg-primary-background motion-reduce:animate-none"
+        class="block h-full w-full animate-pulse rounded-full bg-[repeating-linear-gradient(135deg,currentColor_0_0.25rem,transparent_0.25rem_0.5rem)] text-primary-background motion-reduce:animate-none"
       />
     </span>
     <span class="shrink-0">
@@ -155,8 +155,10 @@ function namedLabel(key: string): string {
       <span
         :class="
           cn(
-            'block h-full rounded-full bg-primary-background',
-            status.downloadState.fraction === null && 'w-1/3',
+            'block h-full rounded-full',
+            status.downloadState.fraction === null
+              ? 'w-full bg-[repeating-linear-gradient(135deg,currentColor_0_0.25rem,transparent_0.25rem_0.5rem)] text-primary-background'
+              : 'bg-primary-background',
             status.downloadState.fraction === null &&
               status.downloadState.activity === 'active' &&
               'animate-pulse motion-reduce:animate-none'
