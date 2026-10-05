@@ -302,6 +302,9 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     )
     await toast.getByRole('button', { name: 'Cancel Download' }).click()
     await cancellation
+    await expect(
+      toast.getByText('Cancelled', { exact: true }).first()
+    ).toBeVisible()
 
     const advanceReconciliation = async () => {
       const response = page.waitForResponse(
@@ -309,8 +312,6 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
           candidate.url().endsWith(`/tasks/${taskId}`) &&
           candidate.request().method() === 'GET'
       )
-      await page.clock.runFor(10_001)
-      await page.evaluate(() => Promise.resolve())
       await page.clock.runFor(10_001)
       await (await response).finished()
       await page.clock.runFor(1)
