@@ -826,6 +826,90 @@ describe('CancelSubscriptionDialogContent', () => {
     })
   })
 
+  describe('legacy rail portal cancel while the call is pending', () => {
+    const confirm = () =>
+      userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+    function pendingPortal() {
+      let resolvePortal!: () => void
+      vi.mocked(useBillingContext().cancelSubscription).mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          resolvePortal = resolve
+        })
+      )
+      return () => resolvePortal()
+    }
+
+    function terminalEvents() {
+      return vi
+        .mocked(useTelemetry()!.trackSubscriptionCancellation)
+        .mock.calls.filter(([stage]) =>
+          ['confirmed', 'abandoned', 'failed'].includes(stage)
+        )
+    }
+
+    it('aborts instead of reporting success when the workspace switches to workspace billing mid-call', async () => {
+      setSubscription(subscription())
+      const scopeCurrent = ref(true)
+      const resolvePortal = pendingPortal()
+
+      renderComponent({ isScopeCurrent: () => scopeCurrent.value })
+      await confirm()
+      scopeCurrent.value = false
+      mockShouldUseWorkspaceBilling.value = true
+      resolvePortal()
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'warn' })
+        )
+      )
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(terminalEvents()).toHaveLength(0)
+    })
+
+    it('aborts instead of reporting success when dismissed, then switched, before the call resolves', async () => {
+      setSubscription(subscription())
+      const scopeCurrent = ref(true)
+      const resolvePortal = pendingPortal()
+
+      const { unmount } = renderComponent({
+        isScopeCurrent: () => scopeCurrent.value
+      })
+      await confirm()
+      unmount()
+      scopeCurrent.value = false
+      mockShouldUseWorkspaceBilling.value = true
+      resolvePortal()
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'warn' })
+        )
+      )
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+      expect(terminalEvents()).toHaveLength(0)
+    })
+
+    it('reports exactly one abandoned when dismissed while the call is pending', async () => {
+      setSubscription(subscription())
+      const resolvePortal = pendingPortal()
+
+      const { unmount } = renderComponent()
+      await confirm()
+      unmount()
+      expect(terminalEvents()).toHaveLength(0)
+      resolvePortal()
+
+      await waitFor(() => expect(terminalEvents()).toHaveLength(1))
+      expect(terminalEvents()[0][0]).toBe('abandoned')
+    })
+  })
+
   describe('formattedEndDate fallbacks', () => {
     it('uses the localized fallback when no cancel timestamp is available', () => {
       setSubscription(subscription())

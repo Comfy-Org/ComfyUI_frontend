@@ -130,10 +130,16 @@ onMounted(() => {
   cancelReport.intent()
 })
 
-onUnmounted(() => {
-  if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
+function reportAbandoned() {
   telemetry?.trackSubscriptionCancellation('abandoned', cancellationMetadata())
   cancelReport.abandoned()
+}
+
+let unmounted = false
+onUnmounted(() => {
+  unmounted = true
+  if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
+  reportAbandoned()
 })
 
 const formattedEndDate = computed(() => {
@@ -229,6 +235,9 @@ function reportWorkspaceConfirmed() {
 }
 
 function awaitStripeCancel() {
+  // Dismissed while the portal call was pending: nothing was observed and no
+  // other terminal event will fire.
+  if (unmounted) return reportAbandoned()
   isAwaitingStripe.value = true
   isLoading.value = false
   // The cancel may have been observed while the portal call was pending.
@@ -256,8 +265,10 @@ function handleCancelError(error: unknown) {
   reportCancelFailure(error)
 }
 
-// Routing resolves inside the cancel call, so pick the rail after it returns.
+// Routing resolves inside the cancel call, so pick the rail after it returns,
+// but only while the scope is unchanged (the call throws if it changed mid-wait).
 async function finishCancel(confirmedBeforeCall: boolean) {
+  if (!isScopeCurrent()) return abortForScopeChange()
   if (!shouldUseWorkspaceBilling.value) return awaitStripeCancel()
   if (!confirmedBeforeCall) reportWorkspaceConfirmed()
   await finishWorkspaceCancel()
