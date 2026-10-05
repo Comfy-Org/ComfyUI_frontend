@@ -1072,6 +1072,40 @@ describe('createBillingOperationLifecycle', () => {
       expect(storedPointer(storage)).toMatchObject({ settled: 'succeeded' })
     })
 
+    it.for([
+      {
+        settledAs: 'succeeded',
+        answers: SETTLED_ANSWERS,
+        revisitedAs: opStatus({ status: 'succeeded' })
+      },
+      {
+        settledAs: 'reconciliation_needed',
+        answers: [
+          httpOk(opStatus()),
+          httpOk(opStatus({ status: 'reconciliation_needed' }))
+        ],
+        revisitedAs: opStatus({ status: 'succeeded' })
+      }
+    ])(
+      'reports nothing when a revisit reads back an operation this tab already reported as $settledAs',
+      async ({ answers, revisitedAs }) => {
+        const storage = await settleOwnOperation(answers)
+        const reloaded = harness({
+          storage,
+          retainSettled: true,
+          answers: [httpOk(revisitedAs)]
+        })
+
+        await reloaded.lifecycle.recover({ includeSettled: true })
+        await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 1.5)
+
+        expect(reloaded.lifecycle.get('op-1')).toMatchObject({
+          phase: 'succeeded'
+        })
+        expect(reloaded.telemetry).toEqual([])
+      }
+    )
+
     it('marks an operation this tab issued and left pending as awaited here when it comes back settled', async () => {
       const storage = memoryStorage()
       const left = harness({ storage, retainSettled: true })
