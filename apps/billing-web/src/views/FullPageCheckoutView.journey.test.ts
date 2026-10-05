@@ -22,6 +22,7 @@ import type {
 } from '@/test/fakeBillingClient'
 import {
   createFakeBillingClient,
+  hostedPendingOperation,
   pendingOperation,
   previewOf,
   succeededOperation
@@ -163,6 +164,8 @@ const journeyNames = () => journey().map(({ name }) => name)
 
 const payButton = () =>
   screen.getByRole('button', { name: 'Pay and subscribe' })
+const confirmUpgradeButton = () =>
+  screen.getByRole('button', { name: 'Confirm upgrade' })
 
 const VISA: SavedPaymentMethod = {
   id: 'pm_visa',
@@ -318,8 +321,13 @@ describe('the full-page checkout journey', () => {
   ])('$name', async ({ options, arrange, path, last }) => {
     await renderCheckout(options, arrange, path)
 
-    await waitFor(() => expect(journey()).toHaveLength(2))
-    expect(journeyNames()[0]).toBe('billing.checkout.entered')
+    await waitFor(() =>
+      expect(journeyNames()).toEqual([
+        'billing.checkout.entered',
+        'billing.checkout.preview_failed',
+        'billing.checkout.ended'
+      ])
+    )
     expect(journey()[1]).toMatchObject(last)
   })
 
@@ -416,7 +424,8 @@ describe('the full-page checkout journey', () => {
         'billing.checkout.payment_submit_attempted',
         'billing.checkout.method_selected',
         'billing.checkout.submitted',
-        'billing.checkout.operation_linked'
+        'billing.checkout.operation_linked',
+        'billing.checkout.ended'
       ])
     )
     const [, , , , , submitted, linked] = journey()
@@ -491,7 +500,7 @@ describe('the full-page checkout journey', () => {
           value: previewOf({ transition_type: 'upgrade' })
         }
       },
-      choose: () => userEvent.click(payButton()),
+      choose: () => userEvent.click(confirmUpgradeButton()),
       selected: { rail: 'on_file' }
     }
   ])(
@@ -543,7 +552,7 @@ describe('the full-page checkout journey', () => {
       name: 'Keep my subscription and renew it'
     })
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmUpgradeButton())
 
     expect(journeyNames().slice(2)).toEqual(['billing.checkout.pay_blocked'])
     expect(journey()[2]).toMatchObject({
@@ -552,7 +561,7 @@ describe('the full-page checkout journey', () => {
     })
 
     await userEvent.click(box)
-    await userEvent.click(payButton())
+    await userEvent.click(confirmUpgradeButton())
 
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
     expect(journeyNames().slice(2)).toEqual([
@@ -822,5 +831,184 @@ describe('the full-page operation a Pay links', () => {
     await waitFor(() => expect(linked()).toHaveLength(1))
 
     expect(linked()).toMatchObject([{ billing_op_id: 'op_9' }])
+  })
+})
+
+describe('the full-page checkout exits and endings', () => {
+  beforeEach(() => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+  })
+
+  const leavePage = () => {
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+  }
+  const exitsOf = () =>
+    journey().filter(({ name }) => name === 'billing.checkout.abandoned')
+
+  it.for<{ name: string; leave: () => Promise<void> | void; exit: string }>([
+    { name: 'the page goes away', leave: leavePage, exit: 'page_exit' },
+    {
+      name: 'the customer goes Back',
+      leave: () =>
+        userEvent.click(screen.getByRole('button', { name: 'Back' })),
+      exit: 'back'
+    }
+  ])(
+    'reports a checkout abandoned once, at its last phase, when $name',
+    async ({ leave, exit }) => {
+      await renderCheckout()
+      await waitFor(() =>
+        expect(journeyNames()).toContain('billing.checkout.preview_ready')
+      )
+
+      await leave()
+      leavePage()
+
+      expect(exitsOf()).toEqual([
+        expect.objectContaining({
+          phase: 'abandoned',
+          last_phase: 'preview_ready',
+          exit,
+          billing_surface: 'billing_web'
+        })
+      ])
+    }
+  )
+
+  async function payWithAlipayHeld() {
+    const fake = await renderCheckout()
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    form.emit('confirm', 'ctoken_1', 'alipay')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    return fake
+  }
+
+  it('reports an abandon for a page that closes while its Alipay request is still pending', async () => {
+    await payWithAlipayHeld()
+
+    leavePage()
+
+    expect(exitsOf()).toEqual([
+      expect.objectContaining({ last_phase: 'submitted', exit: 'page_exit' })
+    ])
+  })
+
+  it('reports no abandon for a page whose Alipay challenge took it to the provider', async () => {
+    const fake = await payWithAlipayHeld()
+    fake.publishOperation({
+      ...pendingOperation('op_3ds'),
+      authenticationState: 'requires_action',
+      challenge: { clientSecret: 'cs', status: 'in_progress' }
+    })
+    await nextTick()
+
+    leavePage()
+
+    expect(exitsOf()).toEqual([])
+  })
+
+  it('reports an abandon for a page the customer came Back to from a hosted step, then closed', async () => {
+    const fake = await renderCheckout()
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    fake.subscribe.mockImplementation(() => new Promise(() => {}))
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    form.emit('confirm', 'ctoken_1', 'card')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    const hosted = hostedPendingOperation('https://pay.test/3ds', 'op_hosted')
+    fake.publishOperation(hosted)
+    await waitFor(() =>
+      expect(window.location.assign).toHaveBeenCalledWith(
+        'https://pay.test/3ds'
+      )
+    )
+    leavePage()
+    expect(exitsOf()).toEqual([])
+
+    fake.recover.mockResolvedValue({ status: 'ok', value: hosted })
+    const restored = new Event('pageshow')
+    Object.defineProperty(restored, 'persisted', { value: true })
+    window.dispatchEvent(restored)
+    await waitFor(() => expect(fake.recover).toHaveBeenCalledTimes(2))
+    leavePage()
+
+    expect(exitsOf()).toEqual([
+      expect.objectContaining({ phase: 'abandoned', exit: 'page_exit' })
+    ])
+  })
+
+  it('reports an abandon after an ending the customer retried past', async () => {
+    await renderCheckout({}, (fake) =>
+      fake.readCapabilities.mockResolvedValueOnce({
+        status: 'error',
+        code: 'REQUEST_FAILED'
+      })
+    )
+    await waitFor(() =>
+      expect(journeyNames()).toContain('billing.checkout.ended')
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await waitFor(() =>
+      expect(journeyNames()).toContain('billing.checkout.preview_ready')
+    )
+
+    leavePage()
+
+    expect(exitsOf()).toEqual([
+      expect.objectContaining({
+        last_phase: 'preview_ready',
+        exit: 'page_exit'
+      })
+    ])
+  })
+
+  it('reports the ending its own payment reached, and no abandon after it', async () => {
+    const fake = await renderCheckout({
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    form.emit('confirm', 'ctoken_1', 'card')
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(journeyNames()).toContain('billing.checkout.ended')
+    )
+
+    leavePage()
+
+    expect(
+      journey().filter(({ name }) => name === 'billing.checkout.ended')
+    ).toEqual([
+      expect.objectContaining({
+        phase: 'ended',
+        ending_kind: 'success',
+        attribution: 'started'
+      })
+    ])
+    expect(exitsOf()).toEqual([])
+  })
+
+  it('reports an ending no payment reached without an attribution', async () => {
+    await renderCheckout({
+      capabilities: {},
+      denials: { can_subscribe_self_serve: 'not_workspace_owner' }
+    })
+
+    await waitFor(() =>
+      expect(journeyNames()).toContain('billing.checkout.ended')
+    )
+    const [ended] = journey().filter(
+      ({ name }) => name === 'billing.checkout.ended'
+    )
+    expect(ended).toMatchObject({ ending_kind: 'refused' })
+    expect(ended).not.toHaveProperty('attribution')
   })
 })

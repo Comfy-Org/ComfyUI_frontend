@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { customerStorySchema } from '../content/customers.schema'
+import { customerStorySchema } from '@/content/customers.schema'
 import {
   filterAndSortCustomerCards,
   nextStory,

@@ -1,18 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import type {
-  CustomerSort,
-  StoryCard,
-  WatchStoryCard
-} from '../../utils/customers'
+import type { Locale } from '@/i18n/translations'
+import type { CustomerSort, StoryCard, WatchStoryCard } from '@/utils/customers'
 
-import { translationsFor } from '../../i18n/translations'
-import { filterAndSortCustomerCards } from '../../utils/customers'
-import DirectorySearchField from '../common/DirectorySearchField.vue'
-import DirectorySelect from '../common/DirectorySelect.vue'
-import DirectoryToggleGroup from '../common/DirectoryToggleGroup.vue'
+import { translationsFor } from '@/i18n/translations'
+import { filterAndSortCustomerCards } from '@/utils/customers'
+import DirectorySearchField from '@/components/common/DirectorySearchField.vue'
+import DirectorySelect from '@/components/common/DirectorySelect.vue'
+import DirectoryToggleGroup from '@/components/common/DirectoryToggleGroup.vue'
 import StorySection from './StorySection.vue'
 import WatchSection from './WatchSection.vue'
 

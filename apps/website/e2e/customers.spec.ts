@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { customerVideoStories } from '../src/data/customerVideos'
-import { t, translationsFor } from '../src/i18n/translations'
+import { customerVideoStories } from '@/data/customerVideos'
+import { t, translationsFor } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 

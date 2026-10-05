@@ -1,7 +1,7 @@
 import type { CollectionEntry } from 'astro:content'
 
-import type { CustomerStoryFrontmatter } from '../content/customers.schema'
-import type { CustomerVideoStory } from '../data/customerVideos'
+import type { CustomerStoryFrontmatter } from '@/content/customers.schema'
+import type { CustomerVideoStory } from '@/data/customerVideos'
 
 export type CustomerStoryEntry = CollectionEntry<'customers'>
 

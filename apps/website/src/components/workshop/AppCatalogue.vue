@@ -2,12 +2,12 @@
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, nextTick, watch } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { ac } from '../../lib/workshop/catalogue-apps'
-import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { ac } from '@/lib/workshop/catalogue-apps'
+import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import CardRow from './CardRow.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 

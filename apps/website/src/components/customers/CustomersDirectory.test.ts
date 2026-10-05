@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { StoryCard, WatchStoryCard } from '../../utils/customers'
+import type { StoryCard, WatchStoryCard } from '@/utils/customers'
 import CustomersDirectory from './CustomersDirectory.vue'
 
 const watchStories: WatchStoryCard[] = [

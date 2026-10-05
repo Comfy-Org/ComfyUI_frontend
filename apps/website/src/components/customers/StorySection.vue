@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import type { StoryCard as StoryCardType } from '../../utils/customers'
-import SectionLabel from '../common/SectionLabel.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { StoryCard as StoryCardType } from '@/utils/customers'
+import SectionLabel from '@/components/common/SectionLabel.vue'
 import StoryCard from './StoryCard.vue'
 
 const { stories, locale = 'en' } = defineProps<{

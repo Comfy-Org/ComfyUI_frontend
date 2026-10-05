@@ -1,10 +1,10 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { externalLinks } from '../src/config/routes'
-import { drops } from '../src/data/drops'
-import type { Locale } from '../src/i18n/translations'
-import { t } from '../src/i18n/translations'
+import { externalLinks } from '@/config/routes'
+import { drops } from '@/data/drops'
+import type { Locale } from '@/i18n/translations'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/launches'

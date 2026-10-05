@@ -2,13 +2,13 @@
 import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { usePersonalWorkspaceSwitch } from '../../../composables/usePersonalWorkspaceSwitch'
-import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
-import { useTopUpWatch } from '../../../config/workshop-credits'
-import { useWorkshopModelBalance } from '../../../config/workshop-model-balance'
-import { useWorkshopSession } from '../../../config/workshop-session-state'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+import { usePersonalWorkspaceSwitch } from '@/composables/usePersonalWorkspaceSwitch'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { useTopUpWatch } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   member = false,

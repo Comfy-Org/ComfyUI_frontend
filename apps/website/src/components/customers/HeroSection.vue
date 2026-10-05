@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { useHeroAnimation } from '../../composables/useHeroAnimation'
-import SectionLabel from '../common/SectionLabel.vue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { ScrollTrigger } from '../../scripts/gsapSetup'
+import { useHeroAnimation } from '@/composables/useHeroAnimation'
+import SectionLabel from '@/components/common/SectionLabel.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { ScrollTrigger } from '@/scripts/gsapSetup'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

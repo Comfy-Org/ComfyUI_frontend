@@ -1,20 +1,20 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
-import BreadcrumbBar from '../components/common/BreadcrumbBar.vue'
-import ContactSection from '../components/customers/ContactSection.vue'
-import FeedbackSection from '../components/customers/FeedbackSection.vue'
-import HeroSection from '../components/customers/HeroSection.vue'
-import CustomersDirectory from '../components/customers/CustomersDirectory.vue'
-import { customerVideoStories, formatDuration } from '../data/customerVideos'
-import { toCardProps } from '../utils/customers'
-import { loadStories } from '../utils/loadStories'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import BreadcrumbBar from '@/components/common/BreadcrumbBar.vue'
+import ContactSection from '@/components/customers/ContactSection.vue'
+import FeedbackSection from '@/components/customers/FeedbackSection.vue'
+import HeroSection from '@/components/customers/HeroSection.vue'
+import CustomersDirectory from '@/components/customers/CustomersDirectory.vue'
+import { customerVideoStories, formatDuration } from '@/data/customerVideos'
+import { toCardProps } from '@/utils/customers'
+import { loadStories } from '@/utils/loadStories'
 import {
   absoluteUrl,
   itemListNode,
   jsonLdId,
   pageContext,
   videoObjectNode
-} from '../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 const stories = (await loadStories('en')).map(toCardProps)
 

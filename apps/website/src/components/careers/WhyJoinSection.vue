@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import WireNodeLayout from '../common/WireNodeLayout.vue'
+import WireNodeLayout from '@/components/common/WireNodeLayout.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
