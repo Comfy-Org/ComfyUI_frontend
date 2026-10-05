@@ -1,8 +1,12 @@
 import type {
   AgentPostMessageRequest,
-  UploadImageResponse
+  UploadImageResponse,
+  WorkflowResponse
 } from '@comfyorg/ingest-types'
-import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zUploadImageResponse,
+  zWorkflowResponse
+} from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
@@ -53,6 +57,12 @@ export class AgentResponseUnreadableError extends Error {
     super('Unreadable agent response body', { cause })
     this.name = 'AgentResponseUnreadableError'
   }
+}
+
+/** A workflow index and whether pagination reached its last page. */
+export interface CloudWorkflowListing {
+  entries: CloudWorkflowEntry[]
+  complete: boolean
 }
 
 export type OpenTabsSnapshot = Pick<
@@ -451,7 +461,7 @@ export function createAgentRestClient() {
     )
   }
 
-  async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
+  async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
     const entries: CloudWorkflowEntry[] = []
     let hasMore: boolean
     let cursor: string | undefined
@@ -476,7 +486,17 @@ export function createAgentRestClient() {
       console.warn(
         `[agent] cloud workflow index truncated at ${entries.length} entries`
       )
-    return entries
+    return { entries, complete: !hasMore }
+  }
+
+  async function getCloudWorkflow(
+    workflowId: string
+  ): Promise<WorkflowResponse> {
+    return request(
+      `/workflows/${encodeURIComponent(workflowId)}`,
+      { method: 'GET' },
+      zWorkflowResponse
+    )
   }
 
   async function cancelMessage(
@@ -528,6 +548,7 @@ export function createAgentRestClient() {
     getRunMode,
     putRunMode,
     listCloudWorkflows,
+    getCloudWorkflow,
     cancelMessage,
     answerAsk,
     uploadImage

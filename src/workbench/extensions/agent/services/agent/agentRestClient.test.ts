@@ -198,26 +198,34 @@ describe('agentRestClient route + method', () => {
     respond(page(0, [{ id: 'wf-1', name: 'one' }], true, 'next page'))
     respond(page(1, [{ id: 'wf-2', name: 'two' }], false))
 
-    const workflows = await makeClient().listCloudWorkflows()
+    const listing = await makeClient().listCloudWorkflows()
 
     expect(fetchApi.mock.calls[0][0]).toBe('/workflows?limit=100')
     expect(fetchApi.mock.calls[1][0]).toBe(
       '/workflows?limit=100&after=next%20page'
     )
-    expect(workflows.map((w) => w.id)).toEqual(['wf-1', 'wf-2'])
+    expect(listing.entries.map((w) => w.id)).toEqual(['wf-1', 'wf-2'])
+    // The walk reached a page that said so, which is the only thing that lets a
+    // caller read an absent id as evidence.
+    expect(listing.complete).toBe(true)
   })
 
+  // A listing that gave up mid-walk must say so. Callers use an absent id as
+  // proof a workflow is gone, and a page it never read is not proof of
+  // anything.
   it('stops pagination when the server does not provide a new cursor', async () => {
     respond(
       jsonResponse(200, {
-        data: [],
-        pagination: { offset: 0, limit: 100, total: 0, has_more: true }
+        data: [{ id: 'wf-1', name: 'one' }],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: true }
       })
     )
 
-    await makeClient().listCloudWorkflows()
+    const listing = await makeClient().listCloudWorkflows()
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
+    expect(listing.entries.map(({ id }) => id)).toEqual(['wf-1'])
+    expect(listing.complete).toBe(false)
   })
 
   it('stops when pagination cycles through previously seen cursors', async () => {
@@ -235,8 +243,9 @@ describe('agentRestClient route + method', () => {
         })
       )
     }
-    await makeClient().listCloudWorkflows()
+    const listing = await makeClient().listCloudWorkflows()
     expect(fetchApi).toHaveBeenCalledTimes(3)
+    expect(listing.complete).toBe(false)
   })
 
   it('includes saved workflows beyond the fifth page', async () => {
@@ -254,10 +263,56 @@ describe('agentRestClient route + method', () => {
         })
       )
     }
-    expect(
-      (await makeClient().listCloudWorkflows()).map(({ id }) => id)
-    ).toEqual(['wf-0', 'wf-1', 'wf-2', 'wf-3', 'wf-4', 'wf-5'])
+    const listing = await makeClient().listCloudWorkflows()
+    expect(listing.entries.map(({ id }) => id)).toEqual([
+      'wf-0',
+      'wf-1',
+      'wf-2',
+      'wf-3',
+      'wf-4',
+      'wf-5'
+    ])
+    expect(listing.complete).toBe(true)
   })
+})
+
+// The one read that can tell a live version-less draft from a deleted
+// workflow: cloud's `GetByID` excludes soft-deleted rows but, unlike `List`,
+// not version-less ones.
+describe('getCloudWorkflow', () => {
+  it('GETs the encoded single-workflow path and returns the row', async () => {
+    respond(
+      jsonResponse(200, {
+        id: 'wf/1',
+        latest_version: 0,
+        created_by: 'user-1',
+        created_at: '2026-09-11T10:00:00Z',
+        updated_at: '2026-09-11T10:00:00Z'
+      })
+    )
+
+    const row = await makeClient().getCloudWorkflow('wf/1')
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/workflows/wf%2F1')
+    expect(init.method).toBe('GET')
+    // A draft that no save or run has promoted is live and reads version 0.
+    expect(row.latest_version).toBe(0)
+  })
+
+  it.for([403, 404, 500])(
+    'rejects with status %i so a 404 can be told from a refusal',
+    async (status) => {
+      respond(jsonResponse(status, { error: 'nope' }))
+
+      await expect(makeClient().getCloudWorkflow('wf-1')).rejects.toMatchObject(
+        {
+          name: 'AgentApiError',
+          status
+        }
+      )
+    }
+  )
 })
 
 describe('postMessage wire body', () => {
