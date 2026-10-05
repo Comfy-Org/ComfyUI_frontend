@@ -134,9 +134,21 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
+  const auth = useAuthStore()
+  if (auth.currentUser === null && auth.signedInWithSso) {
+    settle(code, state)
+    useToastStore().add({
+      severity: 'warn',
+      summary: t('desktopLogin.ssoUnavailableSummary'),
+      detail: t('desktopLogin.ssoUnavailableDetail'),
+      life: 8000
+    })
+    return
+  }
+
   // No session yet (e.g. code captured on the login page): keep the stash and
   // let a post-login trigger redeem it.
-  const user = useAuthStore().currentUser
+  const user = auth.currentUser
   if (!user) return
 
   // Mid-handoff the imminent hard reload would destroy an open dialog; keep

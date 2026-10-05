@@ -18,7 +18,10 @@ import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecover
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
-import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import {
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -65,6 +68,7 @@ import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -3329,4 +3333,124 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
       await expect(submission).resolves.toMatchObject({ status: 'failed' })
     })
   })
+})
+
+describe('an SSO session with no Firebase login reaching Firebase-only paths', () => {
+  const STORED_API_KEY = 'stored-api-key'
+
+  beforeEach(() => {
+    identity.reset()
+    firebaseSignOut.mockReset()
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    remoteConfig.value = {}
+    localStorage.clear()
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN)
+  })
+
+  it.for([
+    { sso: true, provider: 'saml.workos', inApp: true, code: 'S' },
+    { sso: true, provider: 'oidc.workos', inApp: true, code: 'O' },
+    { sso: true, provider: 'google.com', inApp: false, code: 'G' },
+    { sso: false, provider: 'saml.workos', inApp: false, code: 'F' }
+  ])(
+    'a pending desktop login code on a $provider session-only tab (sso_enabled $sso)',
+    async ({ sso, provider, inApp, code }) => {
+      const desktopCode = `dlc_${code.repeat(43)}`
+      installServer({ userId: 'user-a', provider }, { sso_enabled: sso })
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolve(null)
+      await router.push('/cloud/login')
+
+      await router.push(`/user-select?desktop_login_code=${desktopCode}`)
+
+      const { path, query } = router.currentRoute.value
+      const ssoNotice = useToastStore().messagesToAdd.filter(
+        ({ summary }) =>
+          summary === "Desktop sign-in isn't available for SSO accounts yet"
+      )
+      expect({
+        path,
+        switchAccount: query.switchAccount,
+        noticed: ssoNotice.length,
+        stashedCode: getPreservedQueryParam(
+          PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
+          'desktop_login_code'
+        )
+      }).toEqual(
+        inApp
+          ? {
+              path: '/user-select',
+              switchAccount: undefined,
+              noticed: 1,
+              stashedCode: undefined
+            }
+          : {
+              path: '/cloud/login',
+              switchAccount: 'true',
+              noticed: 0,
+              stashedCode: desktopCode
+            }
+      )
+    }
+  )
+
+  describe.for([{ unified: false }, { unified: true }])(
+    'the legacy auth getters (unified_cloud_auth $unified)',
+    ({ unified }) => {
+      it.for([
+        { sso: true, header: 'Bearer session-jwt-1', token: 'session-jwt-1' },
+        { sso: false, header: undefined, token: undefined }
+      ])(
+        'authorize a session-only tab on the session first (sso_enabled $sso)',
+        async ({ sso, header, token }) => {
+          installIngest({ sso_enabled: sso, unified_cloud_auth: unified })
+          await refreshRemoteConfig({ useAuth: false })
+          const authStore = useAuthStore()
+          identity.resolve(null)
+          await bootCloudIdentity()
+          expect(authStore.sessionUser?.id).toBe('user-a')
+
+          const expectedHeader = header ? { Authorization: header } : null
+          expect(await authStore.getAuthHeader()).toEqual(expectedHeader)
+          expect(await authStore.getWorkspaceAuthHeader()).toEqual(
+            expectedHeader
+          )
+          expect(await authStore.getAuthToken()).toBe(token)
+        }
+      )
+    }
+  )
+
+  it.for([
+    { sso: true, login: 'session', keyKept: false },
+    { sso: true, login: 'firebase', keyKept: false },
+    { sso: false, login: 'firebase', keyKept: true }
+  ])(
+    'a stored API key outlives a $login sign-out only with SSO off (sso_enabled $sso)',
+    async ({ sso, login, keyKept }) => {
+      installServer({ userId: 'user-a' }, { sso_enabled: sso })
+      await refreshRemoteConfig({ useAuth: false })
+      localStorage.setItem('comfy_api_key', STORED_API_KEY)
+      const authStore = useAuthStore()
+      if (login === 'firebase') {
+        await authStore.login('user-a@example.com', 'password')
+      } else {
+        identity.resolve(null)
+      }
+      await bootCloudIdentity()
+      expect(authStore.isAuthenticated).toBe(true)
+
+      await authStore.logout()
+
+      expect(authStore.isAuthenticated).toBe(false)
+      expect(useApiKeyAuthStore().getApiKey()).toBe(
+        keyKept ? STORED_API_KEY : null
+      )
+    }
+  )
 })
