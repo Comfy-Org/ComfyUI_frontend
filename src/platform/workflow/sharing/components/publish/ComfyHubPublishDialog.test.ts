@@ -1,4 +1,5 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToast } from '@/components/ui/toast'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
@@ -11,15 +12,6 @@ import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd
-  })
-}))
 
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 
@@ -135,6 +127,21 @@ function createTestI18n() {
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+})
 
 beforeEach(() => {
   vi.mocked(useWorkflowStore().saveWorkflow).mockResolvedValue(undefined)
@@ -253,9 +260,7 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(vi.mocked(useToast().success)).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledOnce()
   })
 
@@ -285,12 +290,8 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
-    expect(mockToastAdd).not.toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(vi.mocked(useToast().error)).toHaveBeenCalled()
+    expect(vi.mocked(useToast().success)).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
   })
 
@@ -306,12 +307,12 @@ describe('ComfyHubPublishDialog', () => {
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail:
+    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        description:
           'Something went wrong while publishing your workflow: unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
-      })
+      }
     )
   })
 
@@ -323,12 +324,12 @@ describe('ComfyHubPublishDialog', () => {
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail:
+    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect.any(String),
+      {
+        description:
           'Something went wrong while publishing your workflow. Please try again.'
-      })
+      }
     )
     expect(onClose).not.toHaveBeenCalled()
   })

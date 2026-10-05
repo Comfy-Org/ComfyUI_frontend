@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useToast } from '@/components/ui/toast'
 import { useDialogService } from '@/services/dialogService'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
@@ -51,6 +52,21 @@ function createInvite(
     ...overrides
   }
 }
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+})
 
 describe('sortMembers', () => {
   it('places owners before members', () => {
@@ -333,15 +349,6 @@ function setOriginalOwner(id = 'creator-1') {
     createMember({ id, role: 'owner', isOriginalOwner: true })
   ]
 }
-
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd
-  })
-}))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
@@ -671,11 +678,9 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'workspacePanel.toast.inviteResent'
-        })
+      expect(vi.mocked(useToast().success)).toHaveBeenCalledWith(
+        'workspacePanel.toast.inviteResent',
+        { duration: 2000 }
       )
     })
 
@@ -685,11 +690,8 @@ describe('useMembersPanel', () => {
       )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          summary: 'workspacePanel.toast.inviteResendFailed'
-        })
+      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+        'workspacePanel.toast.inviteResendFailed'
       )
     })
   })

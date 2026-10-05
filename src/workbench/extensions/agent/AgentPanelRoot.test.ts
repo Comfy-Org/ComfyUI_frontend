@@ -7010,9 +7010,9 @@ describe('AgentPanelRoot workflow binding', () => {
       await screen.findAllByText('Historical prompt')
       await vi.waitFor(() => {
         expect(
-          useToast()
-            .toasts.filter((toast) => toast.kind === 'warning')
-            .map(({ title }) => title)
+          useToast().toasts.flatMap((toast) =>
+            toast.kind === 'warning' ? [toast.title] : []
+          )
         ).toEqual(toasts)
         expect(
           screen

@@ -659,10 +659,12 @@ describe('Composer', () => {
         ).toBeChecked()
       )
       expect(screen.getByRole('status')).toBeEmptyDOMElement()
-      expect(useToast().toasts).toContainEqual({
-        severity: 'error',
-        detail: i18n.global.t('agent.runModeSaveFailed')
-      })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          title: i18n.global.t('agent.runModeSaveFailed')
+        })
+      )
       expect(telemetry.trackAgentRunModeChanged).not.toHaveBeenCalled()
     })
 

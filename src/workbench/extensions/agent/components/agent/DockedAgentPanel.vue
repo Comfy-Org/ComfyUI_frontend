@@ -115,7 +115,6 @@ useWorkspaceInsetRight(() =>
   docked.value && !isOverlay.value ? width.value : 0
 )
 const agentRunModeStore = useAgentRunModeStore()
-useWorkspaceInsetRight(() => (docked.value ? width.value : 0))
 
 void agentRunModeStore.load().catch((error: unknown) => {
   reportError(error, {

@@ -4,6 +4,7 @@ import type { User } from 'firebase/auth'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
+import { useToast } from '@/components/ui/toast'
 
 import { WorkspaceApiError } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
@@ -56,14 +57,6 @@ vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('firebase/auth'))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd
-  })
-}))
 
 const apps: App<Element>[] = []
 
@@ -106,6 +99,21 @@ function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
 
 afterEach(() => {
   for (const app of apps.splice(0)) app.unmount()
+})
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
 })
 
 describe('useInviteUrlLoader', () => {
@@ -163,17 +171,19 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'valid-token'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: 'Invite Accepted',
-        detail: {
-          text: 'You have been added to Test Workspace',
-          workspaceId: 'ws-123',
-          workspaceName: 'Test Workspace'
-        },
-        group: 'invite-accepted',
-        closable: true
-      })
+      expect(useToast().toasts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'custom',
+            props: {
+              title: 'Invite Accepted',
+              text: 'You have been added to Test Workspace',
+              workspaceId: 'ws-123',
+              workspaceName: 'Test Workspace'
+            }
+          })
+        ])
+      )
     })
 
     it('shows the invalid-link dialog instead of a toast on 404', async () => {
@@ -274,9 +284,7 @@ describe('useInviteUrlLoader', () => {
       expect(
         vi.mocked(useDialogService().showInviteLinkInvalidDialog)
       ).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(vi.mocked(useToast().error)).toHaveBeenCalled()
     })
 
     it('falls back to the toast when the dialog chunk fails to load', async () => {
@@ -293,9 +301,7 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await expect(loadInviteFromUrl()).resolves.toBeUndefined()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(vi.mocked(useToast().error)).toHaveBeenCalled()
       vi.mocked(useDialogService().showInviteLinkInvalidDialog).mockReset()
     })
 
@@ -311,11 +317,10 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'invalid-token'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to Accept Invite',
-        detail: 'Invalid invite'
-      })
+      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+        'Failed to Accept Invite',
+        { description: 'Invalid invite' }
+      )
     })
 
     it('cleans up URL after processing invite', async () => {
@@ -376,11 +381,10 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'any-token-format=='
       )
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to Accept Invite',
-        detail: 'Invalid token'
-      })
+      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+        'Failed to Accept Invite',
+        { description: 'Invalid token' }
+      )
     })
 
     it('ignores empty invite param', async () => {

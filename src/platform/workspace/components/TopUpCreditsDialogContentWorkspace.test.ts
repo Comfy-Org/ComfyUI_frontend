@@ -3,6 +3,7 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 
+import { useToast } from '@/components/ui/toast'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   failedTopup,
@@ -80,15 +81,6 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd
-  })
-}))
-
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
   usdToCredits: (usd: number) => usd
@@ -164,6 +156,21 @@ async function clickAddCredits() {
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Add credits' }))
 }
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+})
 
 beforeEach(() => {
   stubFirebaseAuthHarness()
@@ -619,12 +626,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          detail:
-            'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
-        })
-      )
+      expect(mockToastAdd).toHaveBeenCalledWith('error', 'Purchase Failed', {
+        description:
+          'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
+      })
     )
   })
 
@@ -727,11 +732,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('credit purchase is still open')
-        })
+      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+        expect.any(String),
+        {
+          description: expect.stringContaining('credit purchase is still open')
+        }
       )
     )
   })
@@ -975,11 +980,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
     )
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Purchase Failed',
-      detail: 'Failed to purchase credits: An unknown error occurred'
-    })
+    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      'Purchase Failed',
+      { description: 'Failed to purchase credits: An unknown error occurred' }
+    )
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
