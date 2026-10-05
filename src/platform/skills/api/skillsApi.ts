@@ -38,12 +38,11 @@ async function toApiError(response: Response): Promise<SkillPacksApiError> {
     if (
       typeof body === 'object' &&
       body !== null &&
-      typeof (body as { error?: unknown }).error === 'string'
+      !('message' in body) &&
+      'error' in body &&
+      typeof body.error === 'string'
     ) {
-      return new SkillPacksApiError(
-        (body as { error: string }).error,
-        response.status
-      )
+      return new SkillPacksApiError(body.error, response.status)
     }
   } catch {
     // Fall through to the canonical ErrorResponse parse below.
