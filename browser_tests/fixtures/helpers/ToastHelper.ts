@@ -6,18 +6,27 @@ export class ToastHelper {
   public readonly toastErrors: Locator
   public readonly toastSuccesses: Locator
   public readonly toastWarnings: Locator
+  public readonly toastLoadings: Locator
+  public readonly alerts: Locator
 
   constructor(private readonly page: Page) {
-    this.visibleToasts = page.getByTestId('toast').filter({ visible: true })
-    this.toastErrors = page
-      .getByTestId('toast')
-      .and(page.locator('[data-toast-kind="error"]'))
-    this.toastSuccesses = page
-      .getByTestId('toast')
-      .and(page.locator('[data-toast-kind="success"]'))
-    this.toastWarnings = page
-      .getByTestId('toast')
-      .and(page.locator('[data-toast-kind="warning"]'))
+    const toasts = page.getByTestId('toast')
+    this.visibleToasts = toasts.filter({ visible: true })
+    this.toastErrors = toasts.and(page.locator('[data-toast-kind="error"]'))
+    this.toastSuccesses = toasts.and(
+      page.locator('[data-toast-kind="success"]')
+    )
+    this.toastWarnings = toasts.and(page.locator('[data-toast-kind="warning"]'))
+    this.toastLoadings = toasts.and(page.locator('[data-toast-kind="loading"]'))
+    this.alerts = toasts.and(page.getByRole('alert'))
+  }
+
+  withText(text: string | RegExp): Locator {
+    return this.visibleToasts.filter({ hasText: text })
+  }
+
+  async dismiss(toast: Locator): Promise<void> {
+    await toast.getByTestId('toast-close').click()
   }
 
   async closeToasts(requireCount = 0): Promise<void> {

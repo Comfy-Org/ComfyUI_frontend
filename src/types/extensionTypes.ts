@@ -49,6 +49,17 @@ export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension
 
+/**
+ * @deprecated Use `toast.success/error/info/warning(title, options)`.
+ */
+export interface ToastMessageOptions {
+  severity?: 'success' | 'info' | 'warn' | 'error' | 'secondary' | 'contrast'
+  summary?: string
+  detail?: string
+  closable?: boolean
+  life?: number
+}
+
 export type ToastManager = {
   success(title: string, options?: ToastOptions): ToastId
   error(title: string, options?: ToastOptions): ToastId
@@ -57,6 +68,14 @@ export type ToastManager = {
   loading(title: string, options?: ToastOptions): ToastId
   dismiss(id: ToastId): void
   dismissAll(): void
+  /** @deprecated Use `success/error/info/warning`. */
+  add(message: ToastMessageOptions): void
+  /** @deprecated Use `dismiss(id)`. */
+  remove(message: ToastMessageOptions): void
+  /** @deprecated Use `dismissAll()`. */
+  removeAll(): void
+  /** @deprecated Use `warning(title, { description })`. */
+  addAlert(message: string): void
 }
 
 export interface ExtensionManager {

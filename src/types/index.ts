@@ -37,7 +37,8 @@ import type {
   CommandManager,
   ExtensionManager,
   SidebarTabExtension,
-  ToastManager
+  ToastManager,
+  ToastMessageOptions
 } from './extensionTypes'
 
 export type { NodeId, SerializedNodeId } from './nodeId'
@@ -86,7 +87,8 @@ export type {
   BottomPanelExtension,
   ToastManager,
   ExtensionManager,
-  CommandManager
+  CommandManager,
+  ToastMessageOptions
 }
 
 interface CapturedMessages {

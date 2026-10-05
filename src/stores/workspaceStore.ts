@@ -4,11 +4,12 @@ import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast'
+import { createExtensionToastManager } from '@/platform/extensions/extensionToastManager'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@/platform/settings/types'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
-import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
+import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
@@ -28,7 +29,7 @@ function workspaceStoreSetup() {
    */
   const focusMode = ref(false)
 
-  const toast = computed<ToastManager>(() => useToast())
+  const toast = computed(() => createExtensionToastManager(useToast()))
   const queueSettings = computed(() => useQueueSettingsStore())
   const command = computed(() => ({
     commands: useCommandStore().commands,
