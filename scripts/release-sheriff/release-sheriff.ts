@@ -641,9 +641,11 @@ function reportUnowned(unowned: string[]) {
   if (unowned.length === 0) return
   output(
     'degraded',
-    `${unowned.join('; ')}. GitHub drops an assignee without push access and ` +
-      'rejects a review request for a non-collaborator, so these PRs are ' +
-      'unowned or unmergeable: backport-auto-merge.yaml needs an approval.'
+    `${unowned.join('; ')}. Cause not established: GitHub drops an assignee ` +
+      'without push access and rejects a non-collaborator reviewer, but a ' +
+      'failed or unreadable API call is indistinguishable here. Either way ' +
+      'these PRs are unowned or unmergeable — backport-auto-merge.yaml ' +
+      'needs an approval.'
   )
   process.exitCode = 1
 }
@@ -672,12 +674,14 @@ function runAssignment(
   const unowned = actions.flatMap((action) => {
     const failures: string[] = []
     if (action.assign && !assignSheriff(repo, action, sheriff)) {
-      failures.push(`#${action.number} is not assigned to \`${sheriff}\``)
+      failures.push(
+        `#${action.number} is not confirmed assigned to \`${sheriff}\``
+      )
     }
     const reviewer = action.requestReview ? action.reviewer : null
     if (reviewer && !requestReviewFrom(repo, action, reviewer)) {
       failures.push(
-        `#${action.number} has no review request for \`${reviewer}\``
+        `#${action.number} has no confirmed review request for \`${reviewer}\``
       )
     }
     return failures
