@@ -21,6 +21,7 @@ export class AgentPanel {
   public readonly workflowPicker: Locator
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
+  public readonly composerUploadStatus: Locator
   public readonly attachmentChips: Locator
   public readonly composer: Locator
   public readonly composerPromptArea: Locator
@@ -64,6 +65,7 @@ export class AgentPanel {
     })
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
+    this.composerUploadStatus = this.root.getByTestId('composer-upload-status')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')

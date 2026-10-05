@@ -245,6 +245,10 @@ function onEnter(event: KeyboardEvent): void {
   composer.submit()
 }
 
+const uploadingAttachmentCount = computed(
+  () => composer.attachments.value.filter((item) => item.uploading).length
+)
+
 const primaryActionTooltip = computed(() =>
   running.value ? t('agent.stop') : t('agent.send')
 )
@@ -510,6 +514,28 @@ defineExpose({
           :uploading="item.uploading"
           @remove="composer.removeReference(`asset:${item.id}`)"
         />
+      </div>
+
+      <!-- Mounted empty rather than v-if'd: a live region created in the same
+           mutation as its first message is not reliably announced, and that
+           announcement is the whole point of this row. `aria-live` rather than
+           `role="status"` so an always-present node does not widen what the
+           run-mode popover's own status announcer matches. -->
+      <div
+        data-testid="composer-upload-status"
+        aria-live="polite"
+        aria-atomic="true"
+        :class="
+          cn(
+            'flex items-center gap-1 text-xs text-muted-foreground',
+            uploadingAttachmentCount && 'px-3 pb-3'
+          )
+        "
+      >
+        <template v-if="uploadingAttachmentCount">
+          <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
+          {{ t('agent.uploadingAttachments', uploadingAttachmentCount) }}
+        </template>
       </div>
 
       <div
