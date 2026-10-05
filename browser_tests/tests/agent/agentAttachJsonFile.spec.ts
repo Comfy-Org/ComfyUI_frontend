@@ -41,12 +41,17 @@ test.describe(
       // that was reported (the OS picker hid .json files) and the actual fix
       // (AGENT_ATTACH_ACCEPT now lists .json/application/json).
       await fileInput.setInputFiles(assetPath('default.json'))
-      await expect(assetSection).toContainText('default.json')
+      const attachment = assetSection.getByRole('group', {
+        name: 'default.json',
+        exact: true
+      })
+      await expect(attachment).toBeVisible()
       await expect(
         assetSection.locator(`[aria-label="${enMessages.agent.uploading}"]`)
       ).toHaveCount(0)
 
-      await assetSection
+      await attachment.hover()
+      await attachment
         .getByRole('button', { name: enMessages.agent.remove, exact: true })
         .click()
       await expect(assetSection).toHaveCount(0)
