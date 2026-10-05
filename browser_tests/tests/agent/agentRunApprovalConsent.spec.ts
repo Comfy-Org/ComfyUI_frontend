@@ -485,11 +485,16 @@ test.describe('Agent delete approval', { tag: ['@cloud', '@agent'] }, () => {
         const held = new Promise<void>((resolve) => {
           release = resolve
         })
-        await page.route(`**${DELETE_PATH}`, async (route) => {
+        // The ask id is URL-encoded on the wire, so match the decoded path.
+        const isDeleteAnswer = (url: URL) =>
+          decodeURIComponent(url.pathname) === DELETE_PATH
+        await page.route(isDeleteAnswer, async (route) => {
           await held
           await route.fallback()
         })
-        const posted = page.waitForRequest(`**${DELETE_PATH}`)
+        const posted = page.waitForRequest((request) =>
+          isDeleteAnswer(new URL(request.url()))
+        )
         await button.click()
         await posted
         await expect(button).toBeDisabled()
