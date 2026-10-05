@@ -3361,9 +3361,9 @@ describe('billingOperationStore', () => {
         actionUrl,
         authenticationRequiredSeen: true
       })
-      expect(vi.mocked(useToast().error)).not.toHaveBeenCalledWith(
-        'billingOperation.topupTimeout'
-      )
+      expect(
+        vi.mocked(useToast().error).mock.calls.map(([title]) => title)
+      ).not.toContain('billingOperation.topupTimeout')
     })
   })
 

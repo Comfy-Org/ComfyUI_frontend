@@ -191,7 +191,7 @@ describe('useBillingSdkStore', () => {
     harness.publish(pendingTopup())
     expect(toast.toasts).toEqual([
       expect.objectContaining({
-        kind: 'info',
+        kind: 'loading',
         title: 'Processing payment — adding credits...',
         duration: Number.POSITIVE_INFINITY
       })
@@ -217,7 +217,7 @@ describe('useBillingSdkStore', () => {
     harness.publish(pendingSubscription())
     expect(toast.toasts).toEqual([
       expect.objectContaining({
-        kind: 'info',
+        kind: 'loading',
         title: 'Processing payment — setting up your workspace...'
       })
     ])
