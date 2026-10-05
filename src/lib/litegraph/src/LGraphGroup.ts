@@ -60,12 +60,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   title: string
   font?: string
   font_size: number = LiteGraph.GROUP_TEXT_SIZE
-  private readonly bounds = new Rectangle(
-    10,
-    10,
-    LGraphGroup.minWidth,
-    LGraphGroup.minHeight
-  )
+  declare private readonly bounds: Rectangle
   /** @deprecated See {@link _children} */
   _nodes: LGraphNode[] = []
   _children: Set<Positionable> = new Set()
@@ -99,27 +94,46 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   /** Title text colour, cached until the background colour changes */
   _titleTextColor: string = LGraphGroup.defaultColour
 
-  readonly _pos: Point = createMutationView(this.bounds.pos, {
-    synchronize: () => this.syncBoundsFromStore(),
-    commit: () => this.commitBounds(),
-    observe: this.bounds
-  })
-  readonly _size: Size = createMutationView(this.bounds.size, {
-    synchronize: () => this.syncBoundsFromStore(),
-    commit: () => this.commitBounds(),
-    observe: this.bounds
-  })
-  readonly _bounding = createMutationView(this.bounds, {
-    synchronize: () => this.syncBoundsFromStore(),
-    commit: () => this.commitBounds(),
-    mapValue: (property, value) => {
-      if (property === 'pos') return this._pos
-      if (property === 'size') return this._size
-      return value
-    }
-  })
+  declare readonly _pos: Point
+  declare readonly _size: Size
+  declare readonly _bounding: Rectangle
 
   constructor(title?: string, id?: GroupId) {
+    const bounds = new Rectangle(
+      10,
+      10,
+      LGraphGroup.minWidth,
+      LGraphGroup.minHeight
+    )
+    const sync = {
+      synchronize: () => this.syncBoundsFromStore(),
+      commit: () => this.commitBounds()
+    }
+    const _pos = createMutationView(bounds.pos, { ...sync, observe: bounds })
+    const _size = createMutationView(bounds.size, { ...sync, observe: bounds })
+    const _bounding = createMutationView(bounds, {
+      ...sync,
+      mapValue: (property, value) => {
+        if (property === 'pos') return _pos
+        if (property === 'size') return _size
+        return value
+      }
+    })
+    // Non-enumerable and non-writable: snapshots of the group (JSON, spread)
+    // omit them, and assigning one back cannot replace the geometry storage.
+    const fixed = (value: unknown): PropertyDescriptor => ({
+      value,
+      enumerable: false,
+      writable: false,
+      configurable: false
+    })
+    Object.defineProperties(this, {
+      bounds: fixed(bounds),
+      _pos: fixed(_pos),
+      _size: fixed(_size),
+      _bounding: fixed(_bounding)
+    })
+
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = toGroupId(id ?? -1)
     this.title = title || 'Group'

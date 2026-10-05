@@ -453,6 +453,40 @@ describe('group layout in layoutStore', () => {
     expect(group.serialize().bounding).toEqual([11, 12, 410, 310])
   })
 
+  describe('geometry survives a JSON copy assigned back onto the group', () => {
+    function clobberWithJsonCopy(group: LGraphGroup) {
+      const copy: Record<string, unknown> = JSON.parse(JSON.stringify(group))
+      delete copy.graph
+      Object.assign(group, copy)
+    }
+
+    test('keeps syncing with the store and accepting writes', () => {
+      const graph = new LGraph()
+      const group = addedGroup(graph, toGroupId(811))
+
+      clobberWithJsonCopy(group)
+
+      expect(() => group.syncBoundsFromStore()).not.toThrow()
+      group.pos = [12, 34]
+      group.size = [420, 240]
+      expect([...group.pos]).toEqual([12, 34])
+      expect([...group.size]).toEqual([420, 240])
+      expect([...group.boundingRect]).toEqual([12, 34, 420, 240])
+      expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+        id: group.id,
+        position: { x: 12, y: 34 },
+        size: { width: 420, height: 240 }
+      })
+    })
+
+    test('does not expose geometry storage as own enumerable state', () => {
+      const group = new LGraphGroup('group', toGroupId(812))
+
+      expect(Object.keys(group)).not.toContain('bounds')
+      expect(JSON.parse(JSON.stringify(group))).not.toHaveProperty('bounds')
+    })
+  })
+
   test('group collections react to nested bounds updates', () => {
     const graph = new LGraph()
     const group = addedGroup(graph, toGroupId(808))
