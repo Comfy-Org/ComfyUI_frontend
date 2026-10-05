@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { AnchorHTMLAttributes } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{
   titleKey: TranslationKey

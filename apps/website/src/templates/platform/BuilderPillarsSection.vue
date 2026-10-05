@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import PlatformFeatureGrid from './PlatformFeatureGrid.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

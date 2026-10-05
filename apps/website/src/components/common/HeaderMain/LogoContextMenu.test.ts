@@ -4,13 +4,12 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+import { websiteRoot } from '@website/paths'
+
 import LogoContextMenu from './LogoContextMenu.vue'
 
 function servedIcon(file: string) {
-  return readFileSync(
-    join(import.meta.dirname, '../../../../public/icons', file),
-    'utf8'
-  )
+  return readFileSync(join(websiteRoot, 'public/icons', file), 'utf8')
 }
 
 async function openMenu(locale?: 'en' | 'zh-CN') {

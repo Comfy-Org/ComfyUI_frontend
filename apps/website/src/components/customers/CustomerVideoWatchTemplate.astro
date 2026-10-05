@@ -7,24 +7,24 @@
 // src/pages/customers/[slug].astro) with the video standing in for the
 // article's hero/body media, per explicit product direction to base these
 // pages on the article template rather than a bespoke video-page layout.
-import BreadcrumbBar from '../common/BreadcrumbBar.vue'
+import BreadcrumbBar from '@/components/common/BreadcrumbBar.vue'
 import CustomerWatchPage from './CustomerWatchPage.vue'
 import WhatsNextSection from './WhatsNextSection.vue'
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import { getRoutes } from '../../config/routes'
-import type { CustomerVideoStory } from '../../data/customerVideos'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { getRoutes } from '@/config/routes'
+import type { CustomerVideoStory } from '@/data/customerVideos'
 import {
   customerVideoPath,
   isoDuration,
   otherCustomerVideoStories
-} from '../../data/customerVideos'
-import { fetchTranscript } from '../../lib/videoTranscript'
+} from '@/data/customerVideos'
+import { fetchTranscript } from '@/lib/videoTranscript'
 import {
   absoluteUrl,
   jsonLdId,
   pageContext,
   videoObjectNode
-} from '../../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 interface Props {
   story: CustomerVideoStory

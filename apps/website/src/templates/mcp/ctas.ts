@@ -1,6 +1,6 @@
-import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import { externalLinks } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 export interface McpCta {
   label: string

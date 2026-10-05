@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RouterRoadmapCardId } from '../../scripts/posthog'
+import type { RouterRoadmapCardId } from '@/scripts/posthog'
 
 const { card } = defineProps<{ card: RouterRoadmapCardId }>()
 </script>

@@ -1,13 +1,13 @@
-import { localizeHref } from '../config/routes'
-import type { Locale, LocalizedText } from '../i18n/translations'
-import type { CalendarEvent } from '../utils/calendar'
-import type { JsonLdNode } from '../utils/jsonLd'
+import { localizeHref } from '@/config/routes'
+import type { Locale, LocalizedText } from '@/i18n/translations'
+import type { CalendarEvent } from '@/utils/calendar'
+import type { JsonLdNode } from '@/utils/jsonLd'
 import {
   DEFAULT_OG_IMAGE,
   absoluteUrl,
   eventNode,
   jsonLdId
-} from '../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 export type EventCategory =
   | 'livestream'

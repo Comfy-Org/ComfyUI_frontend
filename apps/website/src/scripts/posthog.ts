@@ -23,7 +23,7 @@ import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
-import { WORKSHOP_CLOUD_ENV } from '../config/workshop-env'
+import { WORKSHOP_CLOUD_ENV } from '@/config/workshop-env'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 import { captureWorkshopHealth } from './workshop-datadog'
 

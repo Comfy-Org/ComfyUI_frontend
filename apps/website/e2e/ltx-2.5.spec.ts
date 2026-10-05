@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
-import { creatorReviews } from '../src/data/creatorReviews'
-import { ltxPage } from '../src/data/ltx'
-import { t } from '../src/i18n/translations'
-import type { ModelLaunchCta } from '../src/templates/model-launch/types'
-import { faqAnswerPlainText } from '../src/utils/faqAnswer'
+import { getRoutes } from '@/config/routes'
+import { creatorReviews } from '@/data/creatorReviews'
+import { ltxPage } from '@/data/ltx'
+import { t } from '@/i18n/translations'
+import type { ModelLaunchCta } from '@/templates/model-launch/types'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 

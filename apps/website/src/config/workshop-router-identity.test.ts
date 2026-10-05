@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import rawAudit from '../data/workshop-router-identity-audit.json'
-import availability from '../data/workshop-router-availability.json'
-import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
-import catalog from '../content/workshop-models.json'
-import display from '../content/workshop-display.json'
-import packedAliases from '../content/workshop-router-aliases.json'
+import rawAudit from '@/data/workshop-router-identity-audit.json'
+import availability from '@/data/workshop-router-availability.json'
+import rawSnapshots from '@/data/workshop-router-openapi.snapshot.json'
+import catalog from '@/content/workshop-models.json'
+import display from '@/content/workshop-display.json'
+import packedAliases from '@/content/workshop-router-aliases.json'
 import { filterWorkshopModels, countByModality } from './models-catalogue'
 import type { WorkshopModelDetail } from './models-catalogue'
 import {

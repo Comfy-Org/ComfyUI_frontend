@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
-import { useHeroLogo } from '../../composables/useHeroLogo'
+import { useHeroLogo } from '@/composables/useHeroLogo'
 
 const { label } = defineProps<{ label: string }>()
 

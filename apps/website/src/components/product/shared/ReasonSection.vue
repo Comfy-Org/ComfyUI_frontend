@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
 export interface Reason {

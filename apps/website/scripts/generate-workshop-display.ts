@@ -1,19 +1,20 @@
 import { realpathSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 import {
   workshopDisplayEntriesSchema,
   workshopDisplaySourceSchema
-} from '../src/content/workshop-display.schema'
+} from '@/content/workshop-display.schema'
 import type {
   WorkshopDisplayEntry,
   WorkshopDisplaySource
-} from '../src/content/workshop-display.schema'
-import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
-import { workshopModelSchema } from '../src/content/workshop-models.schema'
-import { deriveWorkshopFields } from '../src/config/workshop-fields'
-import { workshopContract } from '../src/config/workshop-contract-catalog'
+} from '@/content/workshop-display.schema'
+import { websiteRoot } from '@website/paths'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
+import { deriveWorkshopFields } from '@/config/workshop-fields'
+import { workshopContract } from '@/config/workshop-contract-catalog'
 import { splitWorkshopDisplay } from './workshop-display-use-cases'
 import { repairWorkshopExamples } from './workshop-example-repairs'
 
@@ -21,16 +22,10 @@ import { repairWorkshopExamples } from './workshop-example-repairs'
  * The display overlay, packed the same way as the catalog: one JSON array,
  * one model/use-case entry per line, validated by Zod before the runtime join.
  */
-const OVERLAY = resolve(
-  import.meta.dirname,
-  '../src/content/workshop-display.json'
-)
+const OVERLAY = join(websiteRoot, 'src/content/workshop-display.json')
 
 /** The catalog this overlay must line up with. */
-const CATALOG = resolve(
-  import.meta.dirname,
-  '../src/content/workshop-models.json'
-)
+const CATALOG = join(websiteRoot, 'src/content/workshop-models.json')
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale, LocalizedText } from '../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
-import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
-import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
-import type { Drop } from '../../data/drops'
-import { NEW_BADGE, drops, isRecentLaunch } from '../../data/drops'
-import { translationsFor } from '../../i18n/translations'
+import CardArticleGallery01 from '@/components/blocks/CardArticleGallery01.vue'
+import type { CardArticleGalleryItem } from '@/components/blocks/CardArticleGallery01.vue'
+import type { Drop } from '@/data/drops'
+import { NEW_BADGE, drops, isRecentLaunch } from '@/data/drops'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

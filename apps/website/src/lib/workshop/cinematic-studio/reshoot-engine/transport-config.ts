@@ -1,6 +1,6 @@
 import { WORKSHOP_LOCAL_DEV } from 'astro:env/client'
 
-import { WORKSHOP_RESHOOT_PROXY_ID } from '../../../../config/workshop-env'
+import { WORKSHOP_RESHOOT_PROXY_ID } from '@/config/workshop-env'
 import type { ReshootTransport } from './transport'
 import { appProxyTransport, devProxyTransport } from './transport'
 

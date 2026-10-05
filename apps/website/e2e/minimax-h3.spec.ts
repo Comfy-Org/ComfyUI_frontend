@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
-import { creatorReviews } from '../src/data/creatorReviews'
-import { minimaxLinks, minimaxPage } from '../src/data/minimax'
-import { t } from '../src/i18n/translations'
-import { faqAnswerPlainText } from '../src/utils/faqAnswer'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { creatorReviews } from '@/data/creatorReviews'
+import { minimaxLinks, minimaxPage } from '@/data/minimax'
+import { t } from '@/i18n/translations'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 

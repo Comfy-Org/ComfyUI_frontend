@@ -8,12 +8,12 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { usePreviewVideo } from '../../composables/usePreviewVideo'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { usePreviewVideo } from '@/composables/usePreviewVideo'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
-import Badge from '../ui/badge/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import FeaturedBannerPagination from './FeaturedBannerPagination.vue'
 

@@ -3,14 +3,14 @@ import { Check, Music2 } from '@lucide/vue'
 import { useElementVisibility, useMounted, whenever } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 
-import type { PlaygroundExample } from '../../config/workshop-playground'
+import type { PlaygroundExample } from '@/config/workshop-playground'
 import {
   exampleAlt,
   isVideoUrl,
   videoPosterUrl
-} from '../../config/workshop-playground'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/workshop-playground'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 

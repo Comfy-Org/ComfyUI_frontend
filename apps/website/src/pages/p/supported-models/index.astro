@@ -1,12 +1,12 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro'
-import { models } from '../../../config/models'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { models } from '@/config/models'
 import {
   absoluteUrl,
   itemListNode,
   jsonLdId,
   pageContext
-} from '../../../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 const canonicalModels = models.filter((model) => !model.canonicalSlug)
 

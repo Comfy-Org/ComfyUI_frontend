@@ -12,9 +12,9 @@ import {
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { SortOrder } from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { SortOrder } from '@/config/models-catalogue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   orders,

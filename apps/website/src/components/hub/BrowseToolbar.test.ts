@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useHubStore } from '../../composables/useHubStore'
+import { useHubStore } from '@/composables/useHubStore'
 import BrowseToolbar from './BrowseToolbar.vue'
 
 const labels = {

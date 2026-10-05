@@ -3,11 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { workshopContractSchema } from '../src/config/workshop-contract'
+import { workshopContractSchema } from '@/config/workshop-contract'
 import {
   parseRouterResponse,
   releaseRouterOutputs
-} from '../src/config/workshop-response'
+} from '@/config/workshop-response'
 import { captureRouterOutputs } from './router-model-evidence'
 
 const contract = workshopContractSchema.parse({

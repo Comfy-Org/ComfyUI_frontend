@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { BrandButtonVariants } from '../../components/common/brandButton.variants'
-import type { Locale } from '../../i18n/translations'
+import type { BrandButtonVariants } from '@/components/common/brandButton.variants'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchHero } from './types'
 
-import BrandButton from '../../components/common/BrandButton.vue'
-import { translationsFor } from '../../i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   primaryCta,

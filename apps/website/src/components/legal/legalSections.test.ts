@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { getRoutes } from '../../config/routes'
-import { t, te } from '../../i18n/translations'
-import en from '../../locales/en/main.json' with { type: 'json' }
+import { getRoutes } from '@/config/routes'
+import { t, te } from '@/i18n/translations'
+import en from '@/locales/en/main.json' with { type: 'json' }
 
 const PREFIX = 'affiliate-terms'
 const EXPECTED_SECTION_IDS = [

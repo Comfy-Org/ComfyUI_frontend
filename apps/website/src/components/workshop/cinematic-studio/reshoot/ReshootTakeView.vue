@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { CircleStop, LoaderCircle } from '@lucide/vue'
 import { useTimestamp } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { ReshootTake } from '../../../../composables/useReshoot'
-import { formatElapsed } from '../../../../config/workshop-run'
-import type { Locale } from '../../../../i18n/translations'
+import type { ReshootTake } from '@/composables/useReshoot'
+import { formatElapsed } from '@/config/workshop-run'
+import type { Locale } from '@/i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
 
 const {

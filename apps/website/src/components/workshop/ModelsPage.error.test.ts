@@ -4,21 +4,21 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { workshopModels } from '../../config/workshop-browse-content'
+import { workshopModels } from '@/config/workshop-browse-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
-import { prepareModelPage } from '../../routes/models/model-page'
+import { prepareModelPage } from '@/routes/models/model-page'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopAuthFlag
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import ModelsPage from './ModelsPage.vue'
 
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>

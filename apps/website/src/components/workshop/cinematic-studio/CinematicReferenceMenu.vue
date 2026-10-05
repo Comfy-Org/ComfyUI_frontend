@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { Clapperboard, Film, Plus, UserRound, X } from '@lucide/vue'
 import {
   DropdownMenuContent,
@@ -14,8 +14,8 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
+import type { Locale } from '@/i18n/translations'
+import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
 import CinematicTooltip from './CinematicTooltip.vue'
 import type { ReferenceKind } from './reference-kind'
 import { useImagePreview } from './useImagePreview'

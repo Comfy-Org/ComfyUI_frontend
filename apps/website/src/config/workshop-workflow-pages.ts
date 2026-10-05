@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
-import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
-import categories from '../content/workshop-workflow-categories.json'
+import type { WorkshopDisplayEntry } from '@/content/workshop-display.schema'
+import categories from '@/content/workshop-workflow-categories.json'
 import type {
   WorkflowWorkshopModel,
   WorkflowWorkshopModelDetail

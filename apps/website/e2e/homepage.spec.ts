@@ -1,14 +1,13 @@
-import { fileURLToPath } from 'node:url'
-
+import { join } from 'node:path'
 import { expect } from '@playwright/test'
+
+import { repoRoot } from '@website/paths'
 
 import { test } from './fixtures/workshopVisibility'
 
-const caseStudyVideoPath = fileURLToPath(
-  new URL(
-    '../../../public/assets/images/cloud-subscription.webm',
-    import.meta.url
-  )
+const caseStudyVideoPath = join(
+  repoRoot,
+  'public/assets/images/cloud-subscription.webm'
 )
 
 test.describe('Homepage @smoke', () => {

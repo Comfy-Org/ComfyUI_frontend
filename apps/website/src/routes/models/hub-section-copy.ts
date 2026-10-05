@@ -1,4 +1,4 @@
-import type { CatalogueTab } from '../../components/workshop/CatalogueTabs.vue'
+import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
 
 // Server-rendered only: translations.ts ships whole to every island, so page head copy lives here.
 export const HUB_SECTION_COPY = {

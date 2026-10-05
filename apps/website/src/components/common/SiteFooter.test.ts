@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks, getRoutes } from '../../config/routes'
+import { externalLinks, getRoutes } from '@/config/routes'
 import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {

@@ -42,6 +42,7 @@ export const buttonVariants = cva({
       'icon-sm': 'size-5 p-0',
       icon: 'size-8 rounded-lg',
       'icon-lg': 'size-10 rounded-lg',
+      link: 'gap-1 px-0 py-2 text-sm/5 font-normal hover:underline',
       brand:
         'h-12 rounded-2xl px-5 font-formula text-sm font-semibold tracking-[0.7px] uppercase lg:h-13 xl:h-14 2xl:h-16',
       'brand-icon': 'size-10 rounded-2xl xl:size-12',
@@ -82,6 +83,7 @@ const sizes = [
   'icon-sm',
   'icon',
   'icon-lg',
+  'link',
   'brand',
   'brand-icon'
 ] as const satisfies Array<ButtonVariants['size']>

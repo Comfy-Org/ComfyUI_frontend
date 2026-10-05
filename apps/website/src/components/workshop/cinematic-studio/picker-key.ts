@@ -1,14 +1,14 @@
 import type {
   DirectionGroup,
   LookPart
-} from '../../../lib/workshop/cinematic-studio/catalog'
+} from '@/lib/workshop/cinematic-studio/catalog'
 import {
   cameraGroups,
   gradeGroup,
   lookGroups
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 export type PickerKey = 'camera' | LookPart | 'grade'
 

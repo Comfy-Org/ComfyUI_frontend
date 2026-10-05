@@ -4,19 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, nextTick } from 'vue'
 import type { Ref } from 'vue'
 
-import { discoveryProviders } from '../../data/modelDiscovery'
+import { discoveryProviders } from '@/data/modelDiscovery'
 import type {
   DiscoveryProvider,
   DiscoveryWorkflow
-} from '../../data/modelDiscovery'
+} from '@/data/modelDiscovery'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>

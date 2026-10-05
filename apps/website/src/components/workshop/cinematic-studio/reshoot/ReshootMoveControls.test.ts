@@ -5,8 +5,8 @@ import { defineComponent, h } from 'vue'
 import {
   DEFAULT_CAMERA,
   frameTime
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { translationsFor } from '../../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import { translationsFor } from '@/i18n/translations'
 import ReshootMoveControls from './ReshootMoveControls.vue'
 
 const { t: rc } = translationsFor('en')

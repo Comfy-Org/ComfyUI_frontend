@@ -3,17 +3,17 @@ import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides } from '../../lib/workshop/featured-slides'
+import { modelSlides } from '@/lib/workshop/featured-slides'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock(import('../../composables/useReducedMotion'), () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 

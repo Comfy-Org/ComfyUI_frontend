@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { computed } from 'vue'
 
-import type { PlaygroundExample } from '../../../../config/workshop-playground'
-import { RESHOOT_EXAMPLE } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import type { Locale } from '../../../../i18n/translations'
-import ExamplesTab from '../../ExamplesTab.vue'
+import type { PlaygroundExample } from '@/config/workshop-playground'
+import { RESHOOT_EXAMPLE } from '@/lib/workshop/cinematic-studio/reshoot'
+import type { Locale } from '@/i18n/translations'
+import ExamplesTab from '@/components/workshop/ExamplesTab.vue'
 
 const { activeId, locale = 'en' } = defineProps<{
   activeId?: string

@@ -1,68 +1,68 @@
 import { useMounted, useObjectUrl } from '@vueuse/core'
 import { computed, onScopeDispose, reactive, ref, shallowRef, watch } from 'vue'
 
-import { refreshWorkshopCredits } from '../config/workshop-credits'
-import { useWorkshopSession } from '../config/workshop-session-state'
-import type { RunFailure } from '../config/workshop-run'
-import { workshopIdempotencyKey } from '../config/workshop-snippets'
-import type { Locale } from '../i18n/translations'
-import { translationsFor } from '../i18n/translations'
-import { RESHOOT_APP_SLUG } from '../lib/workshop/cinematic-studio/analytics'
-import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { RunFailure } from '@/config/workshop-run'
+import { workshopIdempotencyKey } from '@/config/workshop-snippets'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { RESHOOT_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import { studioGate } from '@/lib/workshop/cinematic-studio/gate'
 import type {
   CameraKey,
   ReshootAspect,
   ReshootCamera,
   ReshootMotion,
   ReshootSize
-} from '../lib/workshop/cinematic-studio/reshoot'
+} from '@/lib/workshop/cinematic-studio/reshoot'
 import {
   DEFAULT_CAMERA,
   RESHOOT_EXAMPLE,
   clipFits,
   withKey
-} from '../lib/workshop/cinematic-studio/reshoot'
-import { clipSecondsOf } from '../lib/workshop/cinematic-studio/reshoot-clip'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import { clipSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
 import type {
   Pose,
   Vec3
-} from '../lib/workshop/cinematic-studio/reshoot-engine/camera'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/camera'
 import {
   estimatePivot,
   focalPx
-} from '../lib/workshop/cinematic-studio/reshoot-engine/camera'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/camera'
 import {
   cameraAt,
   keyIndexAt,
   roundCamera
-} from '../lib/workshop/cinematic-studio/reshoot-path'
-import type { Geometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
-import { readGeometry } from '../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
-import type { ReshootRun } from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
+} from '@/lib/workshop/cinematic-studio/reshoot-path'
+import type { Geometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import { readGeometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import type { ReshootRun } from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
 import {
   failureNote,
   quoteNote,
   runPrice
-} from '../lib/workshop/cinematic-studio/reshoot-engine/notes'
-import type { ReshootRunPhase } from '../lib/workshop/cinematic-studio/reshoot-engine/run'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
+import type { ReshootRunPhase } from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
 import {
   downloadOutput,
   runJob
-} from '../lib/workshop/cinematic-studio/reshoot-engine/run'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
 import type {
   ReshootQuote,
   ReshootTransport
-} from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { ReshootError } from '../lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { reshootTransport } from '../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
-import type { ReshootClip } from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
+import { reshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import type { ReshootClip } from '@/lib/workshop/cinematic-studio/reshoot-engine/workflow'
 import {
   analyzeWorkflow,
   generateSeconds,
   generateWorkflow
-} from '../lib/workshop/cinematic-studio/reshoot-engine/workflow'
-import { captureWorkshopEvent, useWorkshopAuthFlag } from '../scripts/posthog'
-import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/workflow'
+import { captureWorkshopEvent, useWorkshopAuthFlag } from '@/scripts/posthog'
+import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
 
 /** Waits before asking for the price again after a failed quote. */
 const QUOTE_RETRY_MS = [5_000, 15_000, 30_000, 60_000]

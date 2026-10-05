@@ -1,6 +1,6 @@
 import type { APIRoute, GetStaticPaths } from 'astro'
 
-import { workshopPages } from '../../config/workshop-page-content'
+import { workshopPages } from '@/config/workshop-page-content'
 import { prepareModelPage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () =>

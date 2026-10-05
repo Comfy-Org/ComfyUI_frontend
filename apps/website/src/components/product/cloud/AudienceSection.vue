@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { externalLinks } from '../../../config/routes'
-import { translationsFor } from '../../../i18n/translations'
-import CardArrow from '../../common/CardArrow.vue'
-import GlassCard from '../../common/GlassCard.vue'
+import { externalLinks } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import CardArrow from '@/components/common/CardArrow.vue'
+import GlassCard from '@/components/common/GlassCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

@@ -3,28 +3,28 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { FilterBadgeType } from '../../composables/useHubStore'
-import { useHubStore } from '../../composables/useHubStore'
-import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
+import type { FilterBadgeType } from '@/composables/useHubStore'
+import { useHubStore } from '@/composables/useHubStore'
+import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
 import {
   USE_CASES,
   filterWorkshopModels,
   sortWorkshopModels,
   useCasesFor
-} from '../../config/models-catalogue'
-import { workshopModels as defaultWorkshopModels } from '../../config/workshop-browse-content'
-import { groupModels } from '../../config/model-family'
-import hubTemplates from '../../data/hubTemplates.json'
-import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
+} from '@/config/models-catalogue'
+import { workshopModels as defaultWorkshopModels } from '@/config/workshop-browse-content'
+import { groupModels } from '@/config/model-family'
+import hubTemplates from '@/data/hubTemplates.json'
+import { hubWorkflowPath } from '@/lib/hub/workflow-detail'
 import {
   partnerModelFor,
   useCaseForTemplate
-} from '../../lib/hub/template-use-case'
-import { tagDisplayName } from '../../lib/hub/tag-aliases'
-import { withFacetFields } from '../../lib/hub/facet-fields'
-import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/lib/hub/template-use-case'
+import { tagDisplayName } from '@/lib/hub/tag-aliases'
+import { withFacetFields } from '@/lib/hub/facet-fields'
+import type { HubTemplate } from '@/lib/hub/types'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import type {
   FacetGroupConfig,
   SortOption,
@@ -33,9 +33,9 @@ import type {
 import HubUseCaseNav from './HubUseCaseNav.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
-import WorkshopHero from '../workshop/WorkshopHero.vue'
-import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
-import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
+import WorkshopHero from '@/components/workshop/WorkshopHero.vue'
+import WorkshopModelCard from '@/components/workshop/WorkshopModelCard.vue'
+import WorkshopSearchField from '@/components/workshop/WorkshopSearchField.vue'
 
 const {
   locale = 'en',

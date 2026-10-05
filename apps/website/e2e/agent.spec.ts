@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { tAgent } from '../src/components/agent/agentTranslations'
-import { t } from '../src/i18n/translations'
+import { tAgent } from '@/components/agent/agentTranslations'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/agent/'

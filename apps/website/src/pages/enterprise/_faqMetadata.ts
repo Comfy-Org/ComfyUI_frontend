@@ -1,5 +1,5 @@
-import { faqAnswerPlainText } from '../../utils/faqAnswer'
-import { faqPageNode } from '../../utils/jsonLd'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
+import { faqPageNode } from '@/utils/jsonLd'
 
 interface FaqMetadataItem {
   question: string

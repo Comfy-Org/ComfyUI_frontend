@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { ChevronDown, Maximize, RectangleHorizontal } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type {
   ReshootAspect,
   ReshootSize
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
+} from '@/lib/workshop/cinematic-studio/reshoot'
 import {
   RESHOOT_ASPECTS,
   RESHOOT_SIZES
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import type { Locale } from '../../../../i18n/translations'
-import { FORMAT_TRIGGER_CLASS } from '../cinematic-menu-trigger'
-import CinematicMenu from '../CinematicMenu.vue'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import type { Locale } from '@/i18n/translations'
+import { FORMAT_TRIGGER_CLASS } from '@/components/workshop/cinematic-studio/cinematic-menu-trigger'
+import CinematicMenu from '@/components/workshop/cinematic-studio/CinematicMenu.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

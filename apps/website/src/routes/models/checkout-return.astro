@@ -1,5 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 ---
 
 <BaseLayout
@@ -31,7 +31,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 </BaseLayout>
 
 <script>
-  import { announceTopUpReturnFromLocation } from '../../lib/workshop/topup-return'
+  import { announceTopUpReturnFromLocation } from '@/lib/workshop/topup-return'
 
   announceTopUpReturnFromLocation()
   if (window.opener) {

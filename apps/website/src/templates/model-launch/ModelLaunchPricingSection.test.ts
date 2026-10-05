@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { minimaxPage } from '../../data/minimax'
+import { minimaxPage } from '@/data/minimax'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
 
 // The live /minimax config, so a refactor of the shared banner cannot quietly

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
-import { usePreviewVideo } from '../../composables/usePreviewVideo'
-import type { WorkshopModel } from '../../config/models-catalogue'
+import { usePreviewVideo } from '@/composables/usePreviewVideo'
+import type { WorkshopModel } from '@/config/models-catalogue'
 
 const { model } = defineProps<{ model: WorkshopModel }>()
 const video = useTemplateRef<HTMLVideoElement>('video')

@@ -10,7 +10,7 @@ import {
   workshopDatadogEnvironment
 } from './workshop-datadog'
 import type { LogsEvent } from '@datadog/browser-logs'
-import { WorkshopRouterError } from '../config/workshop-router-errors'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
 import { workshopFailureAnalytics } from './workshop-analytics'
 
 const run: WorkshopRunAnalytics = {

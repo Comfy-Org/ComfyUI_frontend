@@ -2,10 +2,10 @@ import type {
   ModalityFilter,
   TaskInput,
   WorkshopModel
-} from '../../config/models-catalogue'
-import { modalityOf, splitTask } from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/models-catalogue'
+import { modalityOf, splitTask } from '@/config/models-catalogue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const modalityLabelKey: Record<
   Exclude<ModalityFilter, 'all'>,

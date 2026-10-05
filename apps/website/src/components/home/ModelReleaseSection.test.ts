@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, nextTick } from 'vue'
 import type { Ref } from 'vue'
 
-import { modelReleaseLinks } from '../../config/model-release-links'
-import { getRoutes } from '../../config/routes'
-import { useWorkshopEnabled } from '../../scripts/posthog'
+import { modelReleaseLinks } from '@/config/model-release-links'
+import { getRoutes } from '@/config/routes'
+import { useWorkshopEnabled } from '@/scripts/posthog'
 import ModelReleaseSection from './ModelReleaseSection.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 

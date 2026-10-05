@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import type { StoryCard } from '../../utils/customers'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { StoryCard } from '@/utils/customers'
 
 const { story, locale = 'en' } = defineProps<{
   story: StoryCard

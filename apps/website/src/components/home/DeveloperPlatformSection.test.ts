@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks, getRoutes } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { t } from '@/i18n/translations'
 import DeveloperPlatformSection from './DeveloperPlatformSection.vue'
 
 describe('DeveloperPlatformSection', () => {

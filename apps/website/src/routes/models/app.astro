@@ -1,15 +1,15 @@
 ---
 import type { GetStaticPaths } from 'astro'
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CinematicStudioPage from '@/components/workshop/cinematic-studio/CinematicStudioPage.vue'
+import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import {
   runnableCinematicModels,
   runnableCinematicVideoModels
-} from '../../lib/workshop/cinematic-studio/models'
-import { priceCinematicModels } from '../../lib/workshop/cinematic-studio/pricing'
-import { appModels, appPagePaths } from '../../config/workshop-app-content'
-import type { AppWorkshopModel } from '../../config/models-catalogue'
+} from '@/lib/workshop/cinematic-studio/models'
+import { priceCinematicModels } from '@/lib/workshop/cinematic-studio/pricing'
+import { appModels, appPagePaths } from '@/config/workshop-app-content'
+import type { AppWorkshopModel } from '@/config/models-catalogue'
 
 export const getStaticPaths: GetStaticPaths = () => appPagePaths()
 

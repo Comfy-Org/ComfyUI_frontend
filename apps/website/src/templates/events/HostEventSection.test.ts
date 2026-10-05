@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import HostEventSection from './HostEventSection.vue'
 
 describe('HostEventSection', () => {

@@ -5,7 +5,7 @@ import {
   estimateWorkshopRunCredits
 } from './workshop-node-pricing'
 import { workshopNodePricingSchema } from './workshop-node-pricing.schema'
-import pricing from '../data/workshop-node-pricing.json'
+import pricing from '@/data/workshop-node-pricing.json'
 
 describe('node-based Models price estimates', () => {
   it.for([

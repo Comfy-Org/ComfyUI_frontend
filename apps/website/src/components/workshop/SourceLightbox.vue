@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import DialogContent from '../ui/dialog/DialogContent.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 
 const { closeLabel } = defineProps<{ closeLabel: string }>()
 const emit = defineEmits<{ dismiss: [] }>()

@@ -1,7 +1,7 @@
 import type {
   DiscoveryProvider,
   DiscoveryWorkflow
-} from '../../data/modelDiscovery'
+} from '@/data/modelDiscovery'
 
 type LoadDiscoveryProviders = () => Promise<readonly DiscoveryProvider[]>
 type LoadDiscoveryWorkflows = () => Promise<readonly DiscoveryWorkflow[]>
@@ -12,7 +12,7 @@ type LoadDiscoveryWorkflows = () => Promise<readonly DiscoveryWorkflow[]>
  * not Models is in the build.
  */
 const loadCatalogueProviders: LoadDiscoveryProviders = async () =>
-  (await import('../../data/modelDiscovery')).discoveryProviders
+  (await import('@/data/modelDiscovery')).discoveryProviders
 
 /**
  * The providers the homepage discovery section lists, loaded only when Models
@@ -28,7 +28,7 @@ export async function resolveDiscoveryProviders(
 }
 
 const loadCatalogueWorkflows: LoadDiscoveryWorkflows = async () =>
-  (await import('../../data/modelDiscovery')).discoveryWorkflows
+  (await import('@/data/modelDiscovery')).discoveryWorkflows
 
 /** The workflows behind the section's second tab, on the same terms. */
 export async function resolveDiscoveryWorkflows(

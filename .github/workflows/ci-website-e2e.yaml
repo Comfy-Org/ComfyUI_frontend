@@ -23,11 +23,6 @@ jobs:
       - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
-        with:
-          # website-e2e is emitted whatever the verdict, so a candidate that
-          # touches neither the website nor packages skips the suite without
-          # stalling the queue.
-          evaluate-candidate: 'true'
 
   # Built once; `astro preview` in each shard serves the downloaded dist/.
   website-build:

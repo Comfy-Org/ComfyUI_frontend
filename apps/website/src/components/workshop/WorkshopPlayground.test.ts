@@ -4,16 +4,16 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
-import type { WorkshopDetailModel } from '../../config/workshop-detail'
+import type { WorkshopDetailModel } from '@/config/workshop-detail'
 import {
   popWorkshopForm,
   runBeforeSignInLeave,
   stashWorkshopForm
-} from '../../config/workshop-return'
-import { useWorkshopSession } from '../../config/workshop-session-state'
+} from '@/config/workshop-return'
+import { useWorkshopSession } from '@/config/workshop-session-state'
 import WorkshopPlayground from './WorkshopPlayground.vue'
 
-vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('@/config/workshop-session-state'))
 
 const model: WorkshopDetailModel = {
   id: 'bfl/flux-3',

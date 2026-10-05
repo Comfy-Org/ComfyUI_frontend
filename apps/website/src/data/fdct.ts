@@ -1,5 +1,5 @@
-import type { Locale } from '../i18n/translations'
-import { translationsFor } from '../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 export interface FdctPageData {
   ctas: {

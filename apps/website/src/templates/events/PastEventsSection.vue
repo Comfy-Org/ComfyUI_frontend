@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { ComfyEvent } from '../../data/events'
-import type { Locale } from '../../i18n/translations'
+import type { ComfyEvent } from '@/data/events'
+import type { Locale } from '@/i18n/translations'
 
-import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
-import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
-import { localizeHref } from '../../config/routes'
-import { eventPath, eventVideoId, pastEvents } from '../../data/events'
-import { translationsFor } from '../../i18n/translations'
-import {
-  PAST_EVENTS_PAGE_SIZE,
-  pastCtaLabel
-} from '../../utils/eventsDirectory'
+import CardArticleGallery01 from '@/components/blocks/CardArticleGallery01.vue'
+import type { CardArticleGalleryItem } from '@/components/blocks/CardArticleGallery01.vue'
+import { localizeHref } from '@/config/routes'
+import { eventPath, eventVideoId, pastEvents } from '@/data/events'
+import { translationsFor } from '@/i18n/translations'
+import { PAST_EVENTS_PAGE_SIZE, pastCtaLabel } from '@/utils/eventsDirectory'
 
 const { locale = 'en', events = pastEvents } = defineProps<{
   locale?: Locale

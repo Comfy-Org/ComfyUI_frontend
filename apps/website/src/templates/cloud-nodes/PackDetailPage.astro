@@ -1,14 +1,14 @@
 ---
-import PackDetail from '../../components/cloud-nodes/PackDetail.vue'
-import { localizeHref } from '../../config/routes'
-import type { Pack } from '../../data/cloudNodes'
-import BaseLayout from '../../layouts/BaseLayout.astro'
+import PackDetail from '@/components/cloud-nodes/PackDetail.vue'
+import { localizeHref } from '@/config/routes'
+import type { Pack } from '@/data/cloudNodes'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 import {
   absoluteUrl,
   jsonLdId,
   pageContext,
   softwareApplicationNode
-} from '../../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 interface Props {
   pack: Pack

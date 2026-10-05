@@ -1,4 +1,4 @@
-import type { WorkshopModelDetail } from '../../../config/models-catalogue'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
 
 export type StudioGate =
   | 'unavailable'

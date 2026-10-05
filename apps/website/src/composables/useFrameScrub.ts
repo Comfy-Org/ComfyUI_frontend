@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted } from 'vue'
 
-import { gsap } from '../scripts/gsapSetup'
+import { gsap } from '@/scripts/gsapSetup'
 import { prefersReducedMotion } from './useReducedMotion'
 
 interface FrameScrubOptions {

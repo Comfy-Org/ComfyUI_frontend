@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import generatedModels from './workshop-models.generated.json'
-import catalog from '../content/workshop-models.json'
-import display from '../content/workshop-display.json'
-import availability from '../data/workshop-router-availability.json'
+import catalog from '@/content/workshop-models.json'
+import display from '@/content/workshop-display.json'
+import availability from '@/data/workshop-router-availability.json'
 import { routerAliasById, workshopModels } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContentInputs } from './workshop-content-inputs'

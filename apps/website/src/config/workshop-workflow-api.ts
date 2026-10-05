@@ -2,7 +2,7 @@ import { z } from 'astro/zod'
 import { zJobCancelResponse, zPromptResponse } from '@comfyorg/ingest-types/zod'
 import type { PromptRequest } from '@comfyorg/ingest-types'
 
-import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
 import type { FieldErrors } from './workshop-playground'

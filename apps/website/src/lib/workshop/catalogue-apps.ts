@@ -1,4 +1,4 @@
-import type { Locale, LocalizedText } from '../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
 /**
  * Copy for the Apps half only. It ships with that half's lazy chunk rather

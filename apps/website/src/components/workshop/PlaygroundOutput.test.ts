@@ -9,11 +9,11 @@ import {
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { RunOutput, RunState } from '../../config/workshop-run'
+import type { RunOutput, RunState } from '@/config/workshop-run'
 import PlaygroundOutput from './PlaygroundOutput.vue'
-import { downloadOutput } from '../../config/workshop-output-download'
+import { downloadOutput } from '@/config/workshop-output-download'
 
-vi.mock(import('../../config/workshop-output-download'), () => ({
+vi.mock(import('@/config/workshop-output-download'), () => ({
   downloadOutput: vi.fn(async () => true)
 }))
 

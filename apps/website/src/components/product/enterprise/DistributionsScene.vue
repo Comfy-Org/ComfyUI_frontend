@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import { prefersReducedMotion } from '../../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 
 // Scene ported from Comfy-Org/comfy-website-animations distributions.html.
 // The source pillar outlines shipped as ~95KB degenerate paths (thousands of

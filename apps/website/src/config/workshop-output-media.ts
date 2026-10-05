@@ -1,4 +1,4 @@
-import { combineAbortSignals } from '../utils/abortSignal'
+import { combineAbortSignals } from '@/utils/abortSignal'
 import type { RunOutput } from './workshop-run'
 
 const EXTENSIONS = new Map([

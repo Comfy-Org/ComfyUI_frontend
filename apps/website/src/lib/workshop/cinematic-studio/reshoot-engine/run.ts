@@ -1,4 +1,4 @@
-import { waitFor } from '../../../../config/workshop-router'
+import { waitFor } from '@/config/workshop-router'
 import type { ReshootJob, ReshootTransport } from './transport'
 import { ReshootError } from './transport'
 

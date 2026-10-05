@@ -9,7 +9,7 @@ import {
   watch
 } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 
 const { src, active = true } = defineProps<{
   /** Scene descriptor; relative clip names resolve against its `assets/`

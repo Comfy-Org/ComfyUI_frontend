@@ -7,19 +7,19 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { modelCases } from '../../acceptance/cases'
+import { modelCases } from '@website/acceptance/cases'
 import {
   runAndVerify,
   test,
   useOwnInputs,
   waitForBalance
-} from '../../acceptance/fixtures'
+} from '@website/acceptance/fixtures'
 import {
   expectedCharge,
   liveSettings,
   requiredSetting
-} from '../../acceptance/settings'
-import { hubModelHref } from '../../src/config/hub-models'
+} from '@website/acceptance/settings'
+import { hubModelHref } from '@/config/hub-models'
 
 const topupDollars = 10
 

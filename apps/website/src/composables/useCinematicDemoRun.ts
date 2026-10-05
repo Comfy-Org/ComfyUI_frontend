@@ -1,16 +1,16 @@
 import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, readonly, shallowRef } from 'vue'
 
-import type { RunFailure } from '../config/workshop-run'
-import type { WorkshopSession } from '../config/workshop-session-state'
-import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
-import type { StudioGate } from '../lib/workshop/cinematic-studio/gate'
-import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
+import type { RunFailure } from '@/config/workshop-run'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import type { AspectRatio } from '@/lib/workshop/cinematic-studio/catalog'
+import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { Reel, ReelEvent } from '@/lib/workshop/cinematic-studio/reel'
 import {
   EMPTY_REEL,
   isRendering,
   reduceReel
-} from '../lib/workshop/cinematic-studio/reel'
+} from '@/lib/workshop/cinematic-studio/reel'
 
 const DEMO_FRAMES = [
   'bus-stop',

@@ -4,8 +4,8 @@ import { useMediaControls } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { src, locale = 'en' } = defineProps<{ src: string; locale?: Locale }>()
 const { t } = translationsFor(locale)

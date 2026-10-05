@@ -4,19 +4,19 @@ import { computed, ref, watch } from 'vue'
 import {
   refreshWorkshopCredits,
   useWorkshopCredits
-} from '../../config/workshop-credits'
-import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { leaveForSignIn } from '../../config/workshop-return'
-import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
-import { listWorkspaces } from '../../lib/workshop/workspaces'
+} from '@/config/workshop-credits'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { leaveForSignIn } from '@/config/workshop-return'
+import type { WorkspaceWithRole } from '@/lib/workshop/workspaces'
+import { listWorkspaces } from '@/lib/workshop/workspaces'
 import {
   cancelWorkshopRun,
   workshopRunInFlight
-} from '../../config/workshop-run-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { useWorkshopAuthFlag } from '../../scripts/posthog'
+} from '@/config/workshop-run-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { useWorkshopAuthFlag } from '@/scripts/posthog'
 import HeaderAccountMenu from './HeaderAccountMenu.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 

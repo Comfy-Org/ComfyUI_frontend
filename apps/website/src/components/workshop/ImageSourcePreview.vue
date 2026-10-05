@@ -2,12 +2,12 @@
 import { ImageOff } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
-import type { SourcePreviewProps } from '../../composables/useSourceUrl'
-import { useSourceUrl } from '../../composables/useSourceUrl'
-import { translationsFor } from '../../i18n/translations'
-import Dialog from '../ui/dialog/Dialog.vue'
-import DialogTitle from '../ui/dialog/DialogTitle.vue'
-import DialogTrigger from '../ui/dialog/DialogTrigger.vue'
+import type { SourcePreviewProps } from '@/composables/useSourceUrl'
+import { useSourceUrl } from '@/composables/useSourceUrl'
+import { translationsFor } from '@/i18n/translations'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogTrigger from '@/components/ui/dialog/DialogTrigger.vue'
 import SourceLightbox from './SourceLightbox.vue'
 
 const { file, src, name, locale = 'en' } = defineProps<SourcePreviewProps>()

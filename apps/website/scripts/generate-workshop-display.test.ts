@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import rawCatalog from '../src/content/workshop-models.json'
-import rawDisplay from '../src/content/workshop-display.json'
-import rawRepairs from '../src/data/workshop-example-repairs.json'
-import { workshopDisplaySchema } from '../src/content/workshop-display.schema'
-import { workshopModelSchema } from '../src/content/workshop-models.schema'
+import rawCatalog from '@/content/workshop-models.json'
+import rawDisplay from '@/content/workshop-display.json'
+import rawRepairs from '@/data/workshop-example-repairs.json'
+import { workshopDisplaySchema } from '@/content/workshop-display.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
 import { buildWorkshopDisplay } from './generate-workshop-display'
 
 const catalog = new Map(

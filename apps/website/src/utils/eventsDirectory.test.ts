@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyEvent } from '../data/events'
+import type { ComfyEvent } from '@/data/events'
 
 import {
   DIRECTORY_FILTER_ALL,

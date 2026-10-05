@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { rememberShelf } from '../../lib/workshop/shelf-memory'
+import { rememberShelf } from '@/lib/workshop/shelf-memory'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 
 afterEach(() => {

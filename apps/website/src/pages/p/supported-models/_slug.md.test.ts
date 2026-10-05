@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { PRICING_URL } from '../../../config/model-pricing'
-import { models } from '../../../config/models'
+import { PRICING_URL } from '@/config/model-pricing'
+import { models } from '@/config/models'
 import { GET, getStaticPaths } from './[slug].md'
 
 type Model = (typeof models)[number]

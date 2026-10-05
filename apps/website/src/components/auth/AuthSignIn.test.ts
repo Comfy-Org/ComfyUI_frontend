@@ -16,11 +16,11 @@ import type {
   TurnstileRenderOptions
 } from '@comfyorg/account-core/turnstileScript'
 
-import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
+import { removeAllToasts, useAuthToasts } from '@/config/auth-toast-state'
 import {
   testCredential,
   testFirebaseUser
-} from '../../config/__fixtures__/workshopSessionFakes'
+} from '@/config/__fixtures__/workshopSessionFakes'
 import {
   isNewWorkshopUser,
   isWorkshopProvisioningError,
@@ -30,16 +30,16 @@ import {
   signInWorkshopWithGoogle,
   signOutWorkshop,
   signUpWorkshopWithEmail
-} from '../../config/workshop-firebase'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-firebase'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { t } from '@/i18n/translations'
 import {
   captureAuthCompleted,
   captureAuthFailed,
   captureSignupOpened,
   useWorkshopAuthFlag,
   useWorkshopTurnstileMode
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import AuthSignIn from './AuthSignIn.vue'
 import AuthToast from './AuthToast.vue'
 
@@ -48,9 +48,9 @@ const handles = vi.hoisted(() => ({
   embedded: false
 }))
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-firebase'))
-vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-firebase'))
+vi.mock(import('@/config/workshop-session-state'))
 
 const authFlag = ref(true)
 const authUser = ref<User | null>(null)

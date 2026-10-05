@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { DiscoveryWorkflow } from '../../data/modelDiscovery'
+import type { DiscoveryWorkflow } from '@/data/modelDiscovery'
 import DiscoveryWorkflowCard from './DiscoveryWorkflowCard.vue'
 
 const workflow: DiscoveryWorkflow = {

@@ -2,7 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
 import { ref, toValue } from 'vue'
 
-import { linkLeavingPage } from '../lib/workshop/leaving-link'
+import { linkLeavingPage } from '@/lib/workshop/leaving-link'
 
 /**
  * While takes render, leaving the page asks first: the browser's own prompt

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CircleDashed } from '@lucide/vue'
 
-import type { DirectionOption } from '../../../lib/workshop/cinematic-studio/catalog'
+import type { DirectionOption } from '@/lib/workshop/cinematic-studio/catalog'
 
 const { option } = defineProps<{
   option: Pick<DirectionOption, 'preview' | 'palette'>

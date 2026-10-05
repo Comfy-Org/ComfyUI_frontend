@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { assert, describe, expect, it } from 'vitest'
 
+import { websiteRoot } from '@website/paths'
+
 import { productWorkflow } from './productWorkflow'
 import { createWorkflowMotion } from './workflowMotion'
 
@@ -32,7 +34,7 @@ describe('conditioner workflow', () => {
 
   it('ships only the two authored cursor overrides alongside generated CSS', () => {
     const overrides = readFileSync(
-      join(import.meta.dirname, '../../styles/product-workflow-keyframes.css'),
+      join(websiteRoot, 'src/styles/product-workflow-keyframes.css'),
       'utf8'
     )
     const names = Array.from(

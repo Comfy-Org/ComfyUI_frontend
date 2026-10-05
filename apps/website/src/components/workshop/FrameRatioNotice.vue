@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { AlertTriangle } from '@lucide/vue'
 
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { id, locale = 'en' } = defineProps<{
   id: string

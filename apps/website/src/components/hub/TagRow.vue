@@ -10,8 +10,8 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { hubTagUrl } from '../../lib/hub/routes'
-import { tagDisplayName } from '../../lib/hub/tag-aliases'
+import { hubTagUrl } from '@/lib/hub/routes'
+import { tagDisplayName } from '@/lib/hub/tag-aliases'
 
 // Inside a card that is itself a link, the chips cannot be anchors.
 const {

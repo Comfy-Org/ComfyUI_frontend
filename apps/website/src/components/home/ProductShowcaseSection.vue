@@ -3,9 +3,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import NodeBadge from '../common/NodeBadge.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import NodeBadge from '@/components/common/NodeBadge.vue'
 import LottieScene from './LottieScene.vue'
 import VideoMaskScene from './VideoMaskScene.vue'
 
