@@ -1,10 +1,12 @@
 import { t } from '@/i18n'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
 import {
   captureInputLayout,
+  inputLink,
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import {
@@ -18,6 +20,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
+import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 export function dynamicGroupWidget(
@@ -146,6 +149,12 @@ export function dynamicGroupWidget(
     const inputs = previous.inputs.filter(
       (input) => !input.name.startsWith(`${prefix}.`)
     )
+    const promotedSlots = previous.inputs.flatMap((input) => {
+      const link = previous.links.get(input)
+      return !inputs.includes(input) && link?.origin_id === SUBGRAPH_INPUT_ID
+        ? [link.origin_slot]
+        : []
+    })
     const result = replaceNodeInputs(
       node,
       previous,
@@ -163,6 +172,8 @@ export function dynamicGroupWidget(
     previous.inputs.forEach((input, slot) => {
       if (!inputs.includes(input)) node.onInputRemoved?.(slot, input)
     })
+    for (const slot of promotedSlots)
+      disconnectOrphanedPromotion(node.graph, slot)
     return true
   }
 
@@ -172,19 +183,6 @@ export function dynamicGroupWidget(
     row = t('dynamicGroup.row', { group: group_name, index: index + 1 })
   ) {
     return `${row} ${fields[field][1]?.display_name ?? field}`
-  }
-
-  function renamePromotedInputLabel(
-    slot: number,
-    previous: string,
-    next: string
-  ) {
-    const graph = node.graph
-    if (!graph || !isSubgraph(graph)) return
-    const link = node.getInputLink(slot)
-    if (link?.origin_id !== SUBGRAPH_INPUT_ID) return
-    const promoted = graph.inputs[link.origin_slot]
-    if (promoted.label === previous) graph.renameInput(promoted, next)
   }
 
   function renameRowLabels(
@@ -204,7 +202,7 @@ export function dynamicGroupWidget(
       if (!input) continue
       if (input.label === previous) input.label = next
       input.localized_name = next
-      renamePromotedInputLabel(slot, previous, next)
+      renamePromotedInputLabel(node, slot, previous, next)
     }
   }
 
@@ -284,7 +282,7 @@ export function dynamicGroupWidget(
     const previous = input.localized_name
     if (!input.label || input.label === previous) input.label = label
     input.localized_name = label
-    if (previous) renamePromotedInputLabel(slot, previous, label)
+    if (previous) renamePromotedInputLabel(node, slot, previous, label)
     return input
   }
 
@@ -361,6 +359,42 @@ export function dynamicGroupWidget(
   })
   controller.value = initialCount
   return { widget: controller }
+}
+
+function promotionHosts(subgraph: Subgraph) {
+  return mapUniqueNodes(subgraph.rootGraph, (node) =>
+    node.isSubgraphNode() && node.subgraph === subgraph ? node : undefined
+  )
+}
+
+function renamePromotedInputLabel(
+  node: LGraphNode,
+  slot: number,
+  previous: string,
+  next: string
+) {
+  const graph = node.graph
+  if (!isSubgraph(graph)) return
+  const link = inputLink(graph, node.id, slot)
+  if (link?.origin_id !== SUBGRAPH_INPUT_ID) return
+  const promoted = graph.inputs[link.origin_slot]
+  if (promoted.label !== previous) return
+  graph.renameInput(promoted, next)
+  for (const host of promotionHosts(graph))
+    renamePromotedInputLabel(host, link.origin_slot, previous, next)
+}
+
+function disconnectOrphanedPromotion(
+  graph: LGraph | Subgraph | null,
+  slot: number
+) {
+  if (!isSubgraph(graph) || graph.inputs[slot]?.linkIds.length) return
+  for (const host of promotionHosts(graph)) {
+    const link = host.graph && inputLink(host.graph, host.id, slot)
+    if (link?.origin_id !== SUBGRAPH_INPUT_ID) continue
+    host.disconnectInput(slot)
+    disconnectOrphanedPromotion(host.graph, link.origin_slot)
+  }
 }
 
 class DynamicGroupNoticeWidget extends VueOnlyWidget<IBaseWidget> {
