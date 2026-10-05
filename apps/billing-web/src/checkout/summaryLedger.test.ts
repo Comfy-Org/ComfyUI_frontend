@@ -3,7 +3,8 @@ import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import type { SummaryLedger } from '@/checkout/summaryLedger'
 import {
   buildSummaryLedger,
-  formatHeadlineMoney
+  formatHeadlineMoney,
+  planPurchaseOf
 } from '@/checkout/summaryLedger'
 import { createBillingI18n } from '@/i18n'
 import { previewOf } from '@/test/fakeBillingClient'
@@ -432,44 +433,96 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: "team commit change priced at a proration instant: neutral, no proration copy, today's grant dated",
+      name: 'raised team commitment itemizing its proration: the tier-upgrade summary, remaining and unused time at the server amounts',
       quote: {
         transition_type: 'upgrade',
         proration_at: PRICED_AT,
-        amount_due_cents: 12_345,
-        cost_today_cents: 12_345,
-        renewal_amount_cents: 140_000,
+        amount_due_cents: 19_000,
+        cost_today_cents: 19_000,
+        proration_remaining_cents: 38_000,
+        proration_unused_cents: 19_000,
+        renewal_amount_cents: 40_000,
         renewal_at: JULY_28,
-        credits_today_cents: 5000,
-        credits_next_period_cents: 140_000,
-        credits_today: 10_550,
-        credits_next_period: 295_400,
-        current_plan: planOf('TEAM', 'MONTHLY', 70_000),
-        new_plan: planOf('TEAM', 'MONTHLY', 140_000)
+        credits_today_cents: 19_000,
+        credits_next_period_cents: 40_000,
+        credits_today: 40_090,
+        credits_next_period: 84_400,
+        current_plan: planOf('TEAM', 'MONTHLY', 20_000),
+        new_plan: planOf('TEAM', 'MONTHLY', 40_000)
       },
       ledger: {
-        family: 'charge_now',
-        eyebrow: 'Change to Team Plan · Comfy Studios',
-        headline: { amount: '$123.45', currency: 'USD' },
+        family: 'prorated_change',
+        eyebrow: 'Upgrade to Team Plan · Comfy Studios',
+        headline: { amount: '$190', currency: 'USD' },
         credits: {
-          count: '10,550',
+          count: '40,090',
           qualifier: 'credits added today (expire July\u00A028)'
         },
         items: [
           {
-            label: 'Team Plan',
-            amount: '$123.45',
+            label: 'Remaining time on Team Plan',
+            amount: '$380.00',
+            sublines: ['Credits refill to 84,400 each month']
+          },
+          {
+            label: 'Unused time on Team Plan',
+            amount: '−$190.00',
+            sublines: [],
+            credit: true
+          }
+        ],
+        discounts: [],
+        chips: [],
+        acceptsPromo: true,
+        total: '$190.00',
+        trailing: [
+          'Existing credits are kept',
+          'Renews at $400.00 on July\u00A028,\u00A02026'
+        ]
+      }
+    },
+    {
+      name: 'raised team commitment without itemized proration: one prorated row at the net charge',
+      quote: {
+        transition_type: 'upgrade',
+        proration_at: PRICED_AT,
+        amount_due_cents: 19_000,
+        cost_today_cents: 19_000,
+        renewal_amount_cents: 40_000,
+        renewal_at: JULY_28,
+        credits_today_cents: 19_000,
+        credits_next_period_cents: 40_000,
+        credits_today: 40_090,
+        credits_next_period: 84_400,
+        current_plan: planOf('TEAM', 'MONTHLY', 20_000),
+        new_plan: planOf('TEAM', 'MONTHLY', 40_000)
+      },
+      ledger: {
+        family: 'prorated_change',
+        eyebrow: 'Upgrade to Team Plan · Comfy Studios',
+        headline: { amount: '$190', currency: 'USD' },
+        credits: {
+          count: '40,090',
+          qualifier: 'credits added today (expire July\u00A028)'
+        },
+        items: [
+          {
+            label: 'Team Plan - Prorated',
+            amount: '$190.00',
             sublines: [
-              '$1,400 /mo, billed monthly',
-              'Credits refill to 295,400 each month'
+              'Remaining time for Team plan, less unused time from Team plan',
+              'Credits refill to 84,400 each month'
             ]
           }
         ],
         discounts: [],
         chips: [],
         acceptsPromo: true,
-        total: '$123.45',
-        trailing: ['Renews at $1,400.00 on July\u00A028,\u00A02026']
+        total: '$190.00',
+        trailing: [
+          'Existing credits are kept',
+          'Renews at $400.00 on July\u00A028,\u00A02026'
+        ]
       }
     }
   ])('$name', ({ quote, ledger }) => {
@@ -1319,6 +1372,55 @@ describe('buildSummaryLedger credit counts', () => {
     const { credits, items } = ledgerOf(quote)
 
     expect({ credits, sublines: items[0]?.sublines }).toEqual(expected)
+  })
+})
+
+describe('the eyebrow and the Pay button name the same purchase', () => {
+  it.for<{
+    name: string
+    quote: Partial<SubscriptionPreview>
+    eyebrow: string
+    purchase: ReturnType<typeof planPurchaseOf>
+  }>([
+    {
+      name: 'a tier upgrade',
+      quote: {
+        transition_type: 'upgrade',
+        proration_at: PRICED_AT,
+        current_plan: planOf('CREATOR', 'MONTHLY', 3500),
+        new_plan: planOf('PRO', 'MONTHLY', 10_000)
+      },
+      eyebrow: 'Upgrade to Pro Plan',
+      purchase: 'upgrade'
+    },
+    {
+      name: 'a raised team commitment',
+      quote: {
+        transition_type: 'upgrade',
+        proration_at: PRICED_AT,
+        current_plan: planOf('TEAM', 'MONTHLY', 20_000),
+        new_plan: planOf('TEAM', 'MONTHLY', 40_000)
+      },
+      eyebrow: 'Upgrade to Team Plan',
+      purchase: 'upgrade'
+    },
+    {
+      name: 'a lowered team commitment',
+      quote: {
+        transition_type: 'downgrade',
+        is_immediate: false,
+        effective_at: JULY_28,
+        current_plan: planOf('TEAM', 'MONTHLY', 40_000),
+        new_plan: planOf('TEAM', 'MONTHLY', 20_000)
+      },
+      eyebrow: 'Switch to Team Plan',
+      purchase: 'change'
+    }
+  ])('$name', ({ quote, eyebrow, purchase }) => {
+    expect({
+      eyebrow: ledgerOf(quote, null).eyebrow,
+      purchase: planPurchaseOf(previewOf({ currency: 'usd', ...quote }))
+    }).toEqual({ eyebrow, purchase })
   })
 })
 

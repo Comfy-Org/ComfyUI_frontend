@@ -137,10 +137,9 @@ export function formatHeadlineMoney(
   }).format(cents / 100)
 }
 
-function verbOf(quote: SubscriptionPreview, commitChange: boolean) {
+function verbOf(quote: SubscriptionPreview) {
   if (quote.transition_type === 'new_subscription') return 'subscribe'
-  if (quote.transition_type !== 'upgrade') return 'switch'
-  return commitChange ? 'change' : 'upgrade'
+  return quote.transition_type === 'upgrade' ? 'upgrade' : 'switch'
 }
 
 function planLabeller({ t, tierName }: Pick<LedgerContext, 't' | 'tierName'>) {
@@ -171,7 +170,7 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
   const money = (cents: number) => formatQuoteMoney(cents, currency, locale)
   const planLabel = planLabeller(context)
   const plan = planLabel(next, cadenceChanges)
-  const action = t(`${S}.verb.${verbOf(quote, commitChange)}`, { plan })
+  const action = t(`${S}.verb.${verbOf(quote)}`, { plan })
   const dueCents = quote.amount_due_cents ?? quote.cost_today_cents
   const formatCount = (count: number | undefined) =>
     count === undefined
@@ -517,8 +516,7 @@ function chargeNowLedger(r: QuoteReading): FamilyLedger {
  * reported; a slot whose number the quote does not carry is left out rather
  * than derived. The family is the server's too: an immediate `upgrade`
  * priced at a `proration_at` instant is prorated, while a reset-to-yearly
- * `duration_change` carries `proration_at` but charges in full. A team commit
- * change is held at the neutral charge until its proration copy is confirmed.
+ * `duration_change` carries `proration_at` but charges in full.
  */
 export function buildSummaryLedger(
   quote: SubscriptionPreview,
@@ -533,8 +531,7 @@ function familyLedger(r: QuoteReading): FamilyLedger {
   if (!r.quote.is_immediate) return scheduledLedger(r)
   if (
     r.quote.transition_type === 'upgrade' &&
-    r.quote.proration_at !== undefined &&
-    !r.commitChange
+    r.quote.proration_at !== undefined
   )
     return proratedLedger(r)
   return chargeNowLedger(r)

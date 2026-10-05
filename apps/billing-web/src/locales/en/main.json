@@ -378,7 +378,6 @@
           "subscribe": "Subscribe to {plan}",
           "upgrade": "Upgrade to {plan}",
           "switch": "Switch to {plan}",
-          "change": "Change to {plan}",
           "topUp": "Add credits"
         },
         "scoped": "{action} · {workspace}",
