@@ -86,40 +86,60 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
       await viewer.waitForOpen()
     })
 
-    await test.step('centre the viewer beside the panel above the sm breakpoint', async () => {
+    await test.step('size the viewer against the docked panel either side of the sm breakpoint', async () => {
       // The viewer keeps its own inset-aware width cap while every other dialog
       // now resolves against the raw viewport. The cap is declared twice —
       // unprefixed and `sm:`-prefixed — because the `full` dialog size already
       // ships `sm:max-w-[calc(100vw-1rem)]`, which outranks an unprefixed cap
-      // above the breakpoint, so only the prefixed declaration is live here.
-      // The narrow-viewport steps below run under `sm:` and cannot see it: drop
-      // it and they still pass while the viewer covers the panel.
+      // above the breakpoint. So the prefixed declaration is the live one above
+      // `sm` and the unprefixed one below it, and the loop runs a viewport each
+      // side so neither can drift unobserved. The pre-existing steps below only
+      // bound the viewer rather than sizing it, which is why dropping the
+      // prefixed declaration left them green while the viewer covered the panel.
       //
       // This dialog is always on the centring term of the clamp's `max()`,
       // never its 0.5rem gutter floor: the cap holds the width at or under
       // `100vw - inset - 1rem`, which leaves centring at least 8px, so the
       // floor can at best tie. That makes the viewer's x unusable as evidence
       // on its own, and a floor assertion here vacuous. What is asserted is
-      // the width the live cap produces, which is what dropping the prefixed
-      // declaration changes, and equal gutters either side of the viewer. The
-      // floor itself is covered by `dialogAgentPanelInset.spec.ts`, where a
-      // dialog without an inset-aware cap does sit on it.
-      for (const width of [1280, 1920, 2560]) {
+      // the width the live cap produces and equal gutters either side of the
+      // viewer. The floor itself is covered by `dialogAgentPanelInset.spec.ts`,
+      // where a dialog without an inset-aware cap does sit on it.
+      //
+      // Measure only once the open transition has finished: `waitForOpen` only
+      // asserts visibility, and `data-[state=open]:zoom-in-95` would otherwise
+      // put a scaled box in the trace as the first thing that failed.
+      await expect
+        .poll(() => viewer.dialog.evaluate((el) => el.getAnimations().length))
+        .toBe(0)
+
+      for (const width of [1280, 1920, 2560, 500]) {
         await page.setViewportSize({ width, height: 800 })
 
         await expect(async () => {
           const dialogBox = await viewer.dialog.boundingBox()
           const panelBox = await panel.boundingBox()
-          const inset = await page.evaluate(
+          // Read the resolved value, not the inline style the panel happens to
+          // write today, and require a px length. `parseFloat(...) || 0` would
+          // turn a renamed or unparseable property into the same 0 that overlay
+          // mode legitimately publishes, which is the distinction the next
+          // assertion exists to draw.
+          const publishedInset = await page.evaluate(
             (property) =>
-              parseFloat(
-                document.documentElement.style.getPropertyValue(property)
-              ) || 0,
+              getComputedStyle(document.documentElement)
+                .getPropertyValue(property)
+                .trim(),
             '--workspace-inset-right'
           )
           expect(dialogBox).not.toBeNull()
           expect(panelBox).not.toBeNull()
           if (!dialogBox || !panelBox) return
+
+          expect(
+            publishedInset,
+            'the workspace inset is published as a px length'
+          ).toMatch(/^-?\d+(\.\d+)?px$/)
+          const inset = Number.parseFloat(publishedInset)
 
           // The panel is docked against the right edge, so its left edge is the
           // boundary of the visible workspace. Its width is the resizable
@@ -151,8 +171,11 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
             'the viewer fills the workspace up to its own 80vw width'
           )
 
+          // Both gutters resolve against `100vw - inset`, the same boundary
+          // production centres on, so the slack stays in the assertions above
+          // rather than compounding into this one.
           expectPixels(
-            panelBox.x - (dialogBox.x + dialogBox.width),
+            width - inset - (dialogBox.x + dialogBox.width),
             dialogBox.x,
             'the viewer sits centred between the viewport and panel edges'
           )
