@@ -1,10 +1,17 @@
 <template>
+  <!--
+    Right-inset, not right-0: a docked surface takes layout width this fixed
+    box cannot see, so `right-0` parks the nudge on top of the Agent panel's
+    starter prompts and composer (PM-1872). Unlike a dialog, the nudge is
+    narrow enough to always fit beside the panel, so it steps aside rather
+    than covering it.
+  -->
   <div
     v-if="onScreen"
     role="region"
     :aria-labelledby="titleId"
     data-testid="first-run-nudge"
-    class="fixed right-0 bottom-0 z-1000 flex w-80 animate-in flex-col overflow-hidden rounded-tl-xl border-t border-l border-border-default/50 bg-base-background shadow-lg duration-500 fade-in-0"
+    class="fixed right-(--workspace-inset-right,0px) bottom-0 z-1000 flex w-80 animate-in flex-col overflow-hidden rounded-tl-xl border-t border-l border-border-default/50 bg-base-background shadow-lg duration-500 fade-in-0"
   >
     <div class="relative h-50 w-full bg-secondary-background">
       <img :src="NUDGE_IMAGE" alt="" class="size-full object-cover" />
