@@ -22,16 +22,20 @@ let initialAnchorHandled = false
 async function applyEntries(nextEntries: ChangelogEntry[]) {
   entries.value = nextEntries
   if (initialAnchorHandled) return
-  initialAnchorHandled = true
+  if (!window.location.hash) {
+    initialAnchorHandled = true
+    return
+  }
   await nextTick()
-  if (disposed) return
+  if (disposed || initialAnchorHandled) return
   const entry = nextEntries.find(
     (entry) => `#${releaseId(entry.label)}` === window.location.hash
   )
-  if (entry)
-    document
-      .getElementById(releaseId(entry.label))
-      ?.scrollIntoView({ block: 'start' })
+  if (!entry) return
+  const element = document.getElementById(releaseId(entry.label))
+  if (!element) return
+  element.scrollIntoView({ block: 'start' })
+  initialAnchorHandled = true
 }
 const loading = ref(true)
 const failed = ref(false)

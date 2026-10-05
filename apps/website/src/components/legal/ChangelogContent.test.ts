@@ -110,4 +110,34 @@ describe('ChangelogContent', () => {
     )
     expect(screen.getAllByRole('article')).toHaveLength(1)
   })
+  it('waits for a fresh release when its initial hash is absent from saved notes', async () => {
+    const originalURL = window.location.href
+    window.history.replaceState(null, '', '#v2')
+    const scroll = vi
+      .spyOn(HTMLElement.prototype, 'scrollIntoView')
+      .mockImplementation(() => {})
+    const cachedSource = source
+    localStorage.setItem(
+      CHANGELOG_CACHE_KEY,
+      JSON.stringify({ source: cachedSource, checkedAt: Date.now() })
+    )
+    let finish: ((response: Response) => void) | undefined
+    const pending = new Promise<Response>((resolve) => {
+      finish = resolve
+    })
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(pending))
+    try {
+      render(ChangelogContent)
+      await screen.findByRole('heading', { name: 'v1' })
+      expect(scroll).not.toHaveBeenCalled()
+      finish!(new Response(source.replace('v1', 'v2') + source))
+      await screen.findByRole('heading', { name: 'v2' })
+      await waitFor(() => expect(scroll).toHaveBeenCalledOnce())
+      expect(scroll.mock.instances[0]).toBe(
+        screen.getByRole('article', { name: 'v2' })
+      )
+    } finally {
+      window.history.replaceState(null, '', originalURL)
+    }
+  })
 })
