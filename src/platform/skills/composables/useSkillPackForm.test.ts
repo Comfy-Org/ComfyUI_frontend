@@ -68,24 +68,19 @@ function deferred<T>() {
   return { promise, resolve, reject }
 }
 
-/**
- * `useSkillPackForm` reads i18n and the store, so it has to run inside a
- * component. The harness exposes the composable's return value directly.
- */
 function mountForm(pack?: SkillPack) {
   const visible = ref(true)
-  const onSaved = vi.fn()
   let api!: ReturnType<typeof useSkillPackForm>
   render(
     defineComponent({
       setup() {
-        api = useSkillPackForm({ pack: () => pack, visible, onSaved })
+        api = useSkillPackForm({ pack: () => pack, visible })
         return () => null
       }
     }),
     { global: { plugins: [i18n] } }
   )
-  return { ...api, onSaved, visible }
+  return { ...api, visible }
 }
 
 describe('useSkillPackForm', () => {
@@ -157,9 +152,8 @@ describe('useSkillPackForm', () => {
   it('counts the description in code points, not UTF-16 units', async () => {
     const saved = makePack({ description: '😀'.repeat(700) })
     vi.mocked(publishSkillPack).mockResolvedValue(saved)
-    const { form, errors, fieldError, onSaved, handleSubmit } = mountForm()
+    const { form, errors, fieldError, handleSubmit } = mountForm()
     form.name = 'my-pack'
-    // 700 astral code points is 1400 UTF-16 units but under the 1024 cap.
     form.description = '😀'.repeat(700)
     form.body = 'do the thing'
 
@@ -168,7 +162,6 @@ describe('useSkillPackForm', () => {
     expect(errors.description).toBe('')
     expect(publishSkillPack).toHaveBeenCalledOnce()
     expect(fieldError.value).toBeNull()
-    expect(onSaved).toHaveBeenCalledOnce()
     expect(useSkillPacksStore().packs).toEqual([saved])
   })
 
@@ -262,7 +255,7 @@ describe('useSkillPackForm', () => {
     const saved = makePack({ name: 'my-pack' })
     vi.mocked(publishSkillPack).mockResolvedValue(saved)
     const store = useSkillPacksStore()
-    const { form, onSaved, handleSubmit } = mountForm()
+    const { form, handleSubmit, visible } = mountForm()
     form.name = '  my-pack  '
     form.description = 'load me'
     form.body = 'do the thing'
@@ -275,13 +268,13 @@ describe('useSkillPackForm', () => {
       body: 'do the thing'
     })
     expect(store.packs).toEqual([saved])
-    expect(onSaved).toHaveBeenCalledOnce()
+    expect(visible.value).toBe(false)
   })
 
   it('submits once when publish is repeated while pending', async () => {
     const pending = deferred<SkillPack>()
     vi.mocked(publishSkillPack).mockReturnValue(pending.promise)
-    const { form, handleSubmit, onSaved } = mountForm()
+    const { form, handleSubmit } = mountForm()
     Object.assign(form, {
       name: 'my-pack',
       description: 'load me',
@@ -294,7 +287,6 @@ describe('useSkillPackForm', () => {
     await Promise.all([first, repeated])
 
     expect(publishSkillPack).toHaveBeenCalledOnce()
-    expect(onSaved).toHaveBeenCalledOnce()
   })
 
   it('waits for an earlier save before submitting a reopened form', async () => {
@@ -363,7 +355,7 @@ describe('useSkillPackForm', () => {
   it('preserves a reopened draft when an earlier save completes', async () => {
     const pending = deferred<SkillPack>()
     vi.mocked(publishSkillPack).mockReturnValue(pending.promise)
-    const { form, handleSubmit, visible, onSaved } = mountForm()
+    const { form, handleSubmit, visible } = mountForm()
     Object.assign(form, {
       name: 'my-pack',
       description: 'load me',
@@ -381,7 +373,6 @@ describe('useSkillPackForm', () => {
 
     expect(visible.value).toBe(true)
     expect(form.body).toBe('new unsaved draft')
-    expect(onSaved).not.toHaveBeenCalled()
     expect(useSkillPacksStore().packs).toEqual([makePack()])
   })
 

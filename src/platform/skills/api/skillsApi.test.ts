@@ -7,6 +7,18 @@ import { listSkillPacks } from './skillsApi'
 vi.mock(import('@/scripts/api'))
 
 describe('skill pack error responses', () => {
+  it('preserves plain-text proxy failure messages', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response('Upstream service unavailable', { status: 502 })
+    )
+
+    await expect(listSkillPacks()).rejects.toMatchObject({
+      name: 'SkillPacksApiError',
+      status: 502,
+      message: 'Upstream service unavailable'
+    })
+  })
+
   it.for([
     {
       status: 400,

@@ -51,23 +51,7 @@ function capturedOptions() {
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  missingWarn: false,
-  fallbackWarn: false,
-  messages: {
-    en: {
-      g: { edit: 'Edit', delete: 'Delete' },
-      skillPacks: {
-        title: 'Agent Skill Packs',
-        panelDescription: 'Teach the agent a preference',
-        yourPacks: 'Your Packs',
-        addPack: 'Add Skill Pack',
-        noPacks: 'No skill packs yet',
-        packSize: '{bytes} bytes',
-        deleteConfirmTitle: 'Delete Skill Pack',
-        deleteConfirmMessage: 'Delete {name}?'
-      }
-    }
-  }
+  messages: { en }
 })
 
 function renderPanel() {
@@ -100,7 +84,7 @@ describe('SkillPacksPanel', () => {
     vi.mocked(publishSkillPack).mockResolvedValue(saved)
     render(SkillPacksPanel, {
       global: {
-        plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+        plugins: [i18n]
       }
     })
     const row = await screen.findByRole('button', { name: mockPack.name })
@@ -122,6 +106,25 @@ describe('SkillPacksPanel', () => {
     await waitFor(() => expect(row).toHaveFocus())
     expect(useSkillPacksStore().packs).toEqual([saved])
     expect(listSkillPacks).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'Add Skill Pack' }))
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toBeEnabled()
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('')
+    expect(screen.getByRole('textbox', { name: 'Trigger line' })).toHaveValue(
+      ''
+    )
+    expect(screen.getByRole('textbox', { name: 'Instructions' })).toHaveValue(
+      ''
+    )
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    await user.click(row)
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toBeDisabled()
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      saved.name
+    )
+    expect(screen.getByRole('textbox', { name: 'Instructions' })).toHaveValue(
+      saved.body
+    )
   })
 
   it('opens the existing editor with full instructions when a row is clicked', async () => {
@@ -143,7 +146,9 @@ describe('SkillPacksPanel', () => {
     await user.click(await screen.findByRole('button', { name: 'Delete' }))
 
     const opts = capturedOptions()
-    expect(opts.props?.promptText).toBe('Delete my-render-defaults?')
+    expect(opts.props?.promptText).toBe(
+      'Are you sure you want to delete "my-render-defaults"? This action cannot be undone.'
+    )
     expect(opts.footerProps?.confirmVariant).toBe('destructive')
   })
 

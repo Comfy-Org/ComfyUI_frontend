@@ -41,9 +41,7 @@ export function useSkillPacks() {
   }
 
   /**
-   * A 404 here is ambiguous by contract — the pack is already gone, or the
-   * cohort gate is off — so drop the row either way and let the follow-up list
-   * request settle which it was.
+   * Delete 404 means missing pack or disabled gate; re-list to distinguish them.
    */
   async function deleteSkillPack(pack: SkillPack) {
     operatingPackName.value = pack.name

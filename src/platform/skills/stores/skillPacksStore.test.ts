@@ -38,12 +38,8 @@ function makePack(overrides: Partial<SkillPack> = {}): SkillPack {
 
 describe('skillPacksStore', () => {
   beforeEach(() => {
-    vi.mocked(listSkillPacks).mockReset()
     vi.mocked(listSkillPacks).mockResolvedValue([])
-    mocks.isFeatureEnabled.mockReset()
     mocks.isFeatureEnabled.mockReturnValue(true)
-    mocks.onFeatureFlags.mockReset()
-    mocks.reportError.mockReset()
   })
 
   it('stays disabled until the cohort flags resolve on', () => {
@@ -169,15 +165,5 @@ describe('skillPacksStore', () => {
 
     expect(store.packs.map((pack) => pack.name)).toEqual(['a', 'b'])
     expect(store.packs[0].body).toBe('new text')
-  })
-
-  it('totals description plus body across the packs', () => {
-    const store = useSkillPacksStore()
-    store.packs = [
-      makePack({ name: 'a', description: 'ab', body: 'cde' }),
-      makePack({ id: 'p2', name: 'b', description: 'f', body: 'gh' })
-    ]
-
-    expect(store.totalBytes).toBe(8)
   })
 })

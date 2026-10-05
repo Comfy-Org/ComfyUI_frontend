@@ -30,7 +30,7 @@
               v-if="errors.name"
               :id="`${nameId}-help`"
               role="alert"
-              class="text-destructive"
+              class="text-destructive-background"
             >
               {{ errors.name }}
             </small>
@@ -55,7 +55,7 @@
               v-if="errors.description"
               :id="`${descriptionId}-help`"
               role="alert"
-              class="text-destructive"
+              class="text-destructive-background"
             >
               {{ errors.description }}
             </small>
@@ -81,7 +81,7 @@
               v-if="errors.body"
               :id="`${bodyId}-help`"
               role="alert"
-              class="text-destructive"
+              class="text-destructive-background"
             >
               {{ errors.body }}
             </small>
@@ -94,9 +94,9 @@
             v-if="budgetError"
             data-testid="skill-pack-budget-error"
             role="alert"
-            class="border-destructive flex flex-col gap-1 rounded-lg border p-3"
+            class="flex flex-col gap-1 rounded-lg border border-destructive-background p-3"
           >
-            <span class="text-destructive text-sm font-medium">
+            <span class="text-sm font-medium text-destructive-background">
               {{ $t('skillPacks.atLimitTitle') }}
             </span>
             <span class="text-sm text-muted">{{ budgetError }}</span>
@@ -109,7 +109,7 @@
             v-else-if="fieldError"
             data-testid="skill-pack-field-error"
             role="alert"
-            class="text-destructive text-sm"
+            class="text-sm text-destructive-background"
           >
             {{ fieldError }}
           </span>
@@ -154,10 +154,6 @@ const { pack } = defineProps<{
 
 const visible = defineModel<boolean>('visible', { default: false })
 
-const emit = defineEmits<{
-  saved: []
-}>()
-
 const { t } = useI18n()
 const titleId = useId()
 const nameId = useId()
@@ -174,8 +170,7 @@ const {
   handleSubmit
 } = useSkillPackForm({
   pack: () => pack,
-  visible,
-  onSaved: () => emit('saved')
+  visible
 })
 
 const bodySizeLabel = computed(() =>

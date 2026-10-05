@@ -42,12 +42,7 @@
       />
     </div>
 
-    <SkillPackFormDialog v-model:visible="createDialogVisible" />
-
-    <SkillPackFormDialog
-      v-model:visible="editDialogVisible"
-      :pack="selectedPack"
-    />
+    <SkillPackFormDialog v-model:visible="editorVisible" :pack="selectedPack" />
   </div>
 </template>
 
@@ -70,21 +65,17 @@ const dialogStore = useDialogStore()
 const { packs, loading, operatingPackName, fetchSkillPacks, deleteSkillPack } =
   useSkillPacks()
 
-const createDialogVisible = ref(false)
-const editDialogVisible = ref(false)
+const editorVisible = ref(false)
 const selectedPack = ref<SkillPack | undefined>()
 
 function openCreateDialog() {
-  createDialogVisible.value = true
+  selectedPack.value = undefined
+  editorVisible.value = true
 }
 
-/**
- * The list response carries the full `body` on every row, so the editor opens
- * straight from it — there is no fetch-one endpoint and none is needed.
- */
 function openEditDialog(pack: SkillPack) {
   selectedPack.value = pack
-  editDialogVisible.value = true
+  editorVisible.value = true
 }
 
 function confirmDelete(pack: SkillPack) {

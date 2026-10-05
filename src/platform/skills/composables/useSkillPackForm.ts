@@ -17,52 +17,29 @@ import {
   utf8ByteLength
 } from '../types'
 
-interface SkillPackFormState {
-  name: string
-  description: string
-  body: string
-}
-
-interface SkillPackFormErrors {
-  name: string
-  description: string
-  body: string
-}
-
 interface UseSkillPackFormOptions {
-  /** The pack being edited; absent for a new one. */
   pack?: MaybeRefOrGetter<SkillPack | undefined>
   visible: { value: boolean }
-  onSaved: () => void
-}
-
-function isReservedName(name: string): boolean {
-  return RESERVED_PACK_NAMES.some((reserved) => reserved === name)
 }
 
 export function useSkillPackForm(options: UseSkillPackFormOptions) {
   const { t } = useI18n()
-  const { pack: packRef, visible, onSaved } = options
+  const { pack: packRef, visible } = options
   const store = useSkillPacksStore()
 
   const loading = ref(false)
   let formGeneration = 0
-  /** A 400: the request can be edited into a valid one. */
   const fieldError = ref<string | null>(null)
-  /**
-   * A 409: nothing about this pack can be edited to make it fit, another pack
-   * has to go. The server message names the limit and the overage, so it is
-   * surfaced verbatim rather than restated in invented copy.
-   */
+  // The server's 409 message names the configured limit and overage.
   const budgetError = ref<string | null>(null)
 
-  const form = reactive<SkillPackFormState>({
+  const form = reactive({
     name: '',
     description: '',
     body: ''
   })
 
-  const errors = reactive<SkillPackFormErrors>({
+  const errors = reactive({
     name: '',
     description: '',
     body: ''
@@ -73,9 +50,6 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
   )
 
   const bodyBytes = computed(() => utf8ByteLength(form.body))
-  const descriptionCodePoints = computed(() =>
-    codePointLength(form.description)
-  )
 
   function resetForm() {
     const pack = toValue(packRef)
@@ -119,7 +93,7 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       errors.name = t('skillPacks.errors.nameCharset')
       return false
     }
-    if (isReservedName(name)) {
+    if (RESERVED_PACK_NAMES.some((reserved) => reserved === name)) {
       errors.name = t('skillPacks.errors.nameReserved', { name })
       return false
     }
@@ -139,7 +113,7 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       errors.description = t('skillPacks.errors.descriptionSingleLine')
       return false
     }
-    if (descriptionCodePoints.value > MAX_DESCRIPTION_CODE_POINTS) {
+    if (codePointLength(form.description) > MAX_DESCRIPTION_CODE_POINTS) {
       errors.description = t('skillPacks.errors.descriptionTooLong', {
         max: MAX_DESCRIPTION_CODE_POINTS
       })
@@ -205,7 +179,6 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       })
       store.upsertPack(saved)
       if (generation !== formGeneration) return
-      onSaved()
       visible.value = false
     } catch (error) {
       handlePublishFailure(error, generation)
