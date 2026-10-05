@@ -78,32 +78,43 @@ describe('SkillPacksPanel', () => {
     mockShowConfirmDialog.mockReturnValue(DIALOG_HANDLE)
   })
 
-  it.for([[], [mockPack]])(
-    'keeps the cached result visible during refresh (%j)',
-    async (cached) => {
-      const store = useSkillPacksStore()
-      vi.mocked(listSkillPacks).mockResolvedValueOnce(cached)
-      await store.fetchPacks()
-      let resolveRefresh!: (packs: SkillPack[]) => void
-      vi.mocked(listSkillPacks).mockReturnValueOnce(
-        new Promise((resolve) => {
-          resolveRefresh = resolve
-        })
-      )
+  it('keeps the cached empty state visible during refresh', async () => {
+    const cached: SkillPack[] = []
+    const store = useSkillPacksStore()
+    vi.mocked(listSkillPacks).mockResolvedValueOnce(cached)
+    await store.fetchPacks()
+    let resolveRefresh!: (packs: SkillPack[]) => void
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRefresh = resolve
+      })
+    )
 
-      renderPanel()
+    renderPanel()
 
-      if (cached.length) {
-        expect(
-          screen.getByRole('button', { name: mockPack.name })
-        ).toBeVisible()
-      } else {
-        expect(screen.getByText(en.skillPacks.noPacks)).toBeVisible()
-      }
-      resolveRefresh(cached)
-      await waitFor(() => expect(store.loading).toBe(false))
-    }
-  )
+    expect(screen.getByText(en.skillPacks.noPacks)).toBeVisible()
+    resolveRefresh(cached)
+    await waitFor(() => expect(store.loading).toBe(false))
+  })
+
+  it('keeps cached skill rows visible during refresh', async () => {
+    const cached: SkillPack[] = [mockPack]
+    const store = useSkillPacksStore()
+    vi.mocked(listSkillPacks).mockResolvedValueOnce(cached)
+    await store.fetchPacks()
+    let resolveRefresh!: (packs: SkillPack[]) => void
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRefresh = resolve
+      })
+    )
+
+    renderPanel()
+
+    expect(screen.getByRole('button', { name: mockPack.name })).toBeVisible()
+    resolveRefresh(cached)
+    await waitFor(() => expect(store.loading).toBe(false))
+  })
 
   it('preserves edited data and restores row focus after saving', async () => {
     const user = userEvent.setup()
