@@ -9,12 +9,20 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
+import type {
+  AuthRejectionStatus,
+  AuthRejectionTags
+} from '@/platform/auth/authRejection'
+import {
+  authRejectionTags,
+  isAuthRejectionStatus
+} from '@/platform/auth/authRejection'
 import {
   markErrorReported,
   reportError
 } from '@/platform/telemetry/reportError'
-import type { AuthCredential, AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
+import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 
 import {
   zAgentAnswerAccepted,
@@ -90,100 +98,45 @@ type ReportedAuthCredential = AuthCredential | 'unreported'
  */
 const AUTH_REJECTED_MESSAGE = 'Agent API request rejected by authentication'
 
-const MAX_CLASSIFIED_TEXT_LENGTH = 500
-const OTHER = 'other'
-
-/**
- * Backend values are reported only when they are on these lists; anything else
- * is tagged `other`. The backend text is uncontrolled and can carry user,
- * workspace or key identifiers, and an open value space would also make the
- * tags unbounded in cardinality.
- */
-const KNOWN_AUTH_ERROR_TYPES: ReadonlySet<string> = new Set([
-  'auth_type_not_allowed'
-])
-const KNOWN_AUTH_ERROR_CODES: ReadonlySet<string> = new Set([
-  'UNAUTHORIZED',
-  'FORBIDDEN',
-  'csrf_invalid',
-  'workspace_access_denied',
-  'workspace_id_invalid',
-  'origin_not_allowed',
-  'cross_site_request'
-])
-const KNOWN_ACCEPTED_METHODS: ReadonlySet<string> = new Set([
-  'bearer_jwt',
-  'x_api_key',
-  'session_cookie',
-  'cookie'
-])
-const MAX_ACCEPTED_METHODS = 8
-
-/** Fixed phrases a backend refusal is classified into; the text itself is dropped. */
-const KNOWN_REASONS: readonly (readonly [phrase: string, reason: string])[] = [
-  ['authentication method not allowed', 'auth_method_not_allowed'],
-  ['unauthorized', 'unauthorized']
-]
-
-interface AuthRejectionDetails {
-  reason?: string
-  errorType?: string
-  errorCode?: string
-  accepted?: string
-}
-
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === 'object' && value !== null
-    ? (value as Record<string, unknown>)
-    : undefined
-}
-
-function allowlisted(
-  value: unknown,
-  known: ReadonlySet<string>
-): string | undefined {
-  if (typeof value !== 'string' || value.length === 0) return undefined
-  return known.has(value) ? value : OTHER
-}
-
-function classifyReason(text: string): string | undefined {
-  const bounded = text.slice(0, MAX_CLASSIFIED_TEXT_LENGTH).toLowerCase()
-  if (bounded.trim().length === 0) return undefined
-  return (
-    KNOWN_REASONS.find(([phrase]) => bounded.includes(phrase))?.[1] ?? OTHER
-  )
-}
-
-function acceptedMethods(value: unknown): string | undefined {
-  if (!Array.isArray(value)) return undefined
-  const methods = value
-    .filter((entry): entry is string => typeof entry === 'string')
-    .slice(0, MAX_ACCEPTED_METHODS)
-    .map((entry) => (KNOWN_ACCEPTED_METHODS.has(entry) ? entry : OTHER))
-  return methods.length > 0 ? [...new Set(methods)].join(',') : undefined
-}
-
-/**
- * The bounded fields of an auth rejection that tell its causes apart. Ingest
- * answers a credential the route does not take with
- * `{ accepted: [...], error: { type: 'auth_type_not_allowed', message } }`,
- * and its other auth refusals with `{ code, message }`. Every reported value
- * comes from a fixed list, never from the response text.
- */
-function describeAuthRejection(
-  body: unknown,
+interface AuthRejection {
+  status: AuthRejectionStatus
+  operation: AgentApiOperation
+  authScheme: ReportedAuthScheme
+  credential: ReportedAuthCredential
+  body: unknown
   message: string
-): AuthRejectionDetails {
-  const record = asRecord(body)
-  const error = asRecord(record?.error)
-  const text = typeof record?.message === 'string' ? record.message : message
-  return {
-    reason: classifyReason(text),
-    errorType: allowlisted(error?.type, KNOWN_AUTH_ERROR_TYPES),
-    errorCode:
-      allowlisted(record?.code, KNOWN_AUTH_ERROR_CODES) ??
-      allowlisted(error?.code, KNOWN_AUTH_ERROR_CODES),
-    accepted: acceptedMethods(record?.accepted)
+}
+
+/**
+ * Reports an auth rejection and says whether it was delivered. Diagnostics
+ * fail open: nothing in here may change the error the caller receives, so
+ * tag-building and the reporter are each allowed to fail on their own.
+ */
+function reportAuthRejection({
+  status,
+  operation,
+  authScheme,
+  credential,
+  body,
+  message
+}: AuthRejection): boolean {
+  let backendTags: AuthRejectionTags = {}
+  try {
+    backendTags = authRejectionTags(body, message)
+  } catch (error) {
+    console.warn('Could not classify the agent auth rejection:', error)
+  }
+  try {
+    reportError(new Error(AUTH_REJECTED_MESSAGE), {
+      surface: 'agent',
+      errorType: 'agent_api_auth_rejected',
+      tags: { operation, status, authScheme, credential, ...backendTags },
+      level: 'warning'
+    })
+    return true
+  } catch (error) {
+    console.warn('Could not report the agent auth rejection:', error)
+    return false
   }
 }
 
@@ -549,23 +502,17 @@ export function createAgentRestClient() {
       body,
       retryAfterSeconds
     )
-    if (response.status === 401 || response.status === 403) {
-      const details = describeAuthRejection(body, message)
-      reportError(new Error(AUTH_REJECTED_MESSAGE), {
-        surface: 'agent',
-        errorType: 'agent_api_auth_rejected',
-        tags: withoutUndefined({
-          operation,
-          status: response.status,
-          authScheme,
-          credential,
-          backendReason: details.reason,
-          backendErrorType: details.errorType,
-          backendErrorCode: details.errorCode,
-          acceptedMethods: details.accepted
-        }),
-        level: 'warning'
+    if (
+      isAuthRejectionStatus(response.status) &&
+      reportAuthRejection({
+        status: response.status,
+        operation,
+        authScheme,
+        credential,
+        body,
+        message
       })
+    ) {
       // Callers still receive the backend text for the UI, but their generic
       // catch boundaries must not emit it as a second, separately-grouped
       // report after the complete bounded diagnostic above.

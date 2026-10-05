@@ -17,6 +17,10 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import {
+  authCredentialOf,
+  notifyAuthCredential
+} from '@/platform/auth/authCredential'
 import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
@@ -78,7 +82,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
@@ -144,20 +148,6 @@ interface QueuePromptRequestBody {
 }
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
-
-/**
- * Which cloud auth path a request actually took, for error diagnostics (PM-1802).
- *
- * `none` means no auth scheme was used at all, which covers both a non-cloud
- * distribution and a cloud request whose auth header was unavailable. Those are
- * the same statement about the request - nothing authenticated it - and the
- * deploy surface already distinguishes them, so this stays three values rather
- * than growing a fourth that only restates `isCloud`.
- */
-export type AuthScheme = 'web-session' | 'cloud-auth-header' | 'none'
-
-/** What credential a request carried, for telemetry; never the credential itself. */
-export type AuthCredential = 'session-cookie' | 'bearer' | 'api-key' | 'none'
 
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
@@ -635,19 +625,13 @@ export class ComfyApi extends EventTarget {
     if (!authHeader) {
       return { scheme: 'none', credential: 'none', unifiedRetryOn401: false }
     }
-    const credential: AuthCredential =
-      'Authorization' in authHeader
-        ? 'bearer'
-        : 'X-API-KEY' in authHeader
-          ? 'api-key'
-          : 'none'
 
     for (const [key, value] of Object.entries(authHeader)) {
       addHeaderEntry(headers, key, value)
     }
     return {
       scheme: 'cloud-auth-header',
-      credential,
+      credential: authCredentialOf(authHeader),
       unifiedRetryOn401: await shouldRemintCloudRequest()
     }
   }
@@ -693,17 +677,17 @@ export class ComfyApi extends EventTarget {
       if (sendOnWebSession) {
         onAuthHeader?.(true)
         onAuthScheme?.('web-session')
-        onAuthCredential?.('session-cookie')
+        notifyAuthCredential(onAuthCredential, 'session-cookie')
       } else {
         const cloudAuth = await this.addCloudAuthHeader(headers, onAuthHeader)
         unifiedRetryOn401 = cloudAuth.unifiedRetryOn401
         onAuthScheme?.(cloudAuth.scheme)
-        onAuthCredential?.(cloudAuth.credential)
+        notifyAuthCredential(onAuthCredential, cloudAuth.credential)
       }
     } else {
       onAuthHeader?.(false)
       onAuthScheme?.('none')
-      onAuthCredential?.('none')
+      notifyAuthCredential(onAuthCredential, 'none')
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)

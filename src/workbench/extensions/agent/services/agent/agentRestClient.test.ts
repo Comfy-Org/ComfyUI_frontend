@@ -4,7 +4,8 @@ import {
   markErrorReported,
   reportError
 } from '@/platform/telemetry/reportError'
-import type { AuthCredential, AuthScheme } from '@/scripts/api'
+import type { AuthCredential, AuthScheme } from '@/types/authTypes'
+import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
@@ -655,7 +656,7 @@ describe('error mapping', () => {
       status: 401,
       authScheme: 'none',
       credential: 'unreported',
-      backendReason: 'unauthorized'
+      backendReason: 'other'
     })
   })
 
@@ -671,7 +672,7 @@ describe('error mapping', () => {
       status: 401,
       authScheme: 'unreported',
       credential: 'unreported',
-      backendReason: 'unauthorized'
+      backendReason: 'other'
     })
   })
 
@@ -796,52 +797,49 @@ describe('error mapping', () => {
     )
   })
 
-  it('maps unknown backend codes, types and accepted methods to other and bounds the list', async () => {
+  it('still throws the original error unchanged when the reporter throws', async () => {
+    vi.mocked(reportError).mockImplementationOnce(() => {
+      throw new Error('sink down')
+    })
     respondWithAuthScheme(
-      jsonResponse(403, {
-        code: 'ws_7d1e4b2a5c3f4a689e0b1f2a3b4c5d6e',
-        accepted: [
-          'bearer_jwt',
-          1,
-          null,
-          'x_api_key',
-          'custom_scheme_a',
-          'custom_scheme_b',
-          'a',
-          'b',
-          'c',
-          'd',
-          'e'
-        ],
-        error: { type: 'brand_new_type', message: 'nope' }
-      }),
-      'web-session',
-      'session-cookie'
+      jsonResponse(403, { error: 'access denied' }),
+      'cloud-auth-header',
+      'bearer'
     )
 
-    await makeClient()
+    const error = await makeClient()
       .getRunMode()
       .catch((e: unknown) => e)
 
-    expect(reportedTags()).toMatchObject({
-      backendErrorType: 'other',
-      backendErrorCode: 'other',
-      acceptedMethods: 'bearer_jwt,x_api_key,other'
-    })
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect(error).toMatchObject({ status: 403, message: 'access denied' })
+    expect(markErrorReported).not.toHaveBeenCalled()
   })
 
-  it('falls back to error.code when the top-level code is not a string', async () => {
+  it('still reports the base tags when classifying the backend body throws', async () => {
+    const classify = vi
+      .spyOn(authRejection, 'authRejectionTags')
+      .mockImplementationOnce(() => {
+        throw new Error('classifier bug')
+      })
     respondWithAuthScheme(
-      jsonResponse(403, { code: 403, error: { code: 'csrf_invalid' } }),
-      'web-session',
-      'session-cookie'
+      jsonResponse(403, { error: 'access denied' }),
+      'cloud-auth-header',
+      'bearer'
     )
 
-    await makeClient()
+    const error = await makeClient()
       .getRunMode()
       .catch((e: unknown) => e)
+    classify.mockRestore()
 
-    expect(reportedTags()).toMatchObject({ backendErrorCode: 'csrf_invalid' })
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect(reportedTags()).toEqual({
+      operation: 'get_run_mode',
+      status: 403,
+      authScheme: 'cloud-auth-header',
+      credential: 'bearer'
+    })
   })
 
   it('never reports a thread, message or ask id from the failing path (PM-1802)', async () => {
@@ -928,7 +926,7 @@ describe('error mapping', () => {
       status: 401,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'unauthorized'
+      backendReason: 'other'
     })
   })
 
