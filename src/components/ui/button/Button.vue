@@ -49,7 +49,11 @@ const WithoutTooltip: FunctionalComponent = (_, { slots }) =>
       :class="cn(buttonVariants({ variant, size }), customClass)"
       v-bind="$attrs"
     >
-      <i v-if="loading" class="pi pi-spin pi-spinner" aria-hidden="true" />
+      <i
+        v-if="loading"
+        class="icon-[lucide--loader-circle] size-4 shrink-0 animate-spin"
+        aria-hidden="true"
+      />
       <template v-if="loading">
         <span class="sr-only"><slot /></span>
       </template>
