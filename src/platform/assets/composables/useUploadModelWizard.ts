@@ -233,7 +233,7 @@ export function useUploadModelWizard(
 
   async function uploadPreviewImage(
     filename: string
-  ): Promise<string | undefined> {
+  ): Promise<{ id: string; createdNew: boolean } | undefined> {
     if (!wizardData.value.previewImage) return undefined
 
     try {
@@ -251,7 +251,10 @@ export function useUploadModelWizard(
         name: `${baseFilename}_preview.${extension}`,
         tags: ['preview']
       })
-      return previewAsset.id
+      return {
+        id: previewAsset.id,
+        createdNew: previewAsset.created_new
+      }
     } catch (error) {
       console.error('Failed to upload preview image:', error)
       return undefined
@@ -416,11 +419,11 @@ export function useUploadModelWizard(
         wizardData.value.metadata?.name ||
         'model'
 
-      const previewId = await uploadPreviewImage(filename)
+      const preview = await uploadPreviewImage(filename)
       if (isStaleUpload(generation)) {
-        if (previewId) {
+        if (preview?.createdNew) {
           try {
-            await assetService.deleteAsset(previewId)
+            await assetService.deleteAsset(preview.id)
           } catch (error) {
             console.error('Failed to clean up stale preview image:', error)
           }
@@ -438,7 +441,7 @@ export function useUploadModelWizard(
         source_url: wizardData.value.url,
         tags,
         user_metadata: userMetadata,
-        preview_id: previewId
+        preview_id: preview?.id
       })
 
       if (result.type === 'async' && result.task.status !== 'completed') {

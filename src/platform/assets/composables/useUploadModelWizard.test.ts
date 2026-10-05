@@ -109,7 +109,8 @@ describe('useUploadModelWizard', () => {
     let finishPreview!: () => void
     vi.mocked(assetService.uploadAssetFromBase64).mockReturnValue(
       new Promise((resolve) => {
-        finishPreview = () => resolve(fromPartial({ id: 'preview-id' }))
+        finishPreview = () =>
+          resolve(fromPartial({ id: 'preview-id', created_new: true }))
       })
     )
 
@@ -130,6 +131,32 @@ describe('useUploadModelWizard', () => {
     expect(assetService.deleteAsset).toHaveBeenCalledWith('preview-id')
     expect(wizard.currentStep.value).toBe(1)
     expect(wizard.isUploading.value).toBe(false)
+  })
+
+  it('does not delete a deduplicated preview after reset', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    let finishPreview!: () => void
+    vi.mocked(assetService.uploadAssetFromBase64).mockReturnValue(
+      new Promise((resolve) => {
+        finishPreview = () =>
+          resolve(fromPartial({ id: 'shared-preview', created_new: false }))
+      })
+    )
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/shared-preview'
+    wizard.wizardData.value.previewImage = 'data:image/png;base64,cHJldmlldw=='
+    wizard.selectedModelType.value = 'checkpoints'
+
+    const upload = wizard.uploadModel()
+    await vi.waitFor(() => {
+      expect(assetService.uploadAssetFromBase64).toHaveBeenCalledOnce()
+    })
+    wizard.resetWizard()
+    finishPreview()
+
+    await expect(upload).resolves.toBeNull()
+    expect(assetService.deleteAsset).not.toHaveBeenCalled()
   })
 
   it('does not reopen a reset wizard after a synchronous refresh finishes', async () => {
@@ -167,6 +194,7 @@ describe('useUploadModelWizard', () => {
 
     await expect(upload).resolves.toBeNull()
     expect(wizard.currentStep.value).toBe(1)
+    expect(wizard.uploadStatus.value).toBeUndefined()
   })
 
   it('tracks a backend task that resolves after the wizard is reset', async () => {
