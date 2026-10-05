@@ -2,14 +2,10 @@
 import type { GetStaticPaths } from 'astro'
 import { getCollection } from 'astro:content'
 
-import WorkshopPlayground from '../../../components/workshop/WorkshopPlayground.vue'
-import type { WorkshopDetailModel } from '../../../config/workshop-detail'
-import {
-  relatedWorkshopModels,
-  toDetailModel
-} from '../../../config/workshop-detail'
-import { t } from '../../../i18n/translations'
-import BaseLayout from '../../../layouts/BaseLayout.astro'
+import WorkshopPlayground from '@/components/workshop/WorkshopPlayground.vue'
+import type { WorkshopDetailModel } from '@/config/workshop-detail'
+import { relatedWorkshopModels, toDetailModel } from '@/config/workshop-detail'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const models = (await getCollection('workshopModels')).map((entry) =>
@@ -39,7 +35,7 @@ const { model, related } = Astro.props
       class="mb-8 text-sm text-primary-comfy-canvas/55"
     >
       <a href="/workshop/" class="hover:text-primary-comfy-yellow">
-        {t('workshop.model.breadcrumb')}
+        {Astro.locals.t('workshop.model.breadcrumb')}
       </a>
       <span aria-hidden="true" class="mx-2">/</span>
       <span aria-current="page" class="text-primary-comfy-canvas">
@@ -71,13 +67,13 @@ const { model, related } = Astro.props
     <section class="mt-20 border-t border-primary-comfy-canvas/10 pt-10">
       <div class="flex items-center justify-between gap-4">
         <h2 class="text-2xl font-semibold text-primary-comfy-canvas">
-          {t('workshop.model.related')}
+          {Astro.locals.t('workshop.model.related')}
         </h2>
         <a
           href="/workshop/"
           class="text-sm text-primary-comfy-yellow hover:underline"
         >
-          {t('workshop.model.browseAll')}
+          {Astro.locals.t('workshop.model.browseAll')}
         </a>
       </div>
       <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

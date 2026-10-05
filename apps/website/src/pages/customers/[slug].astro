@@ -1,19 +1,13 @@
 ---
-import BreadcrumbBar from '../../components/common/BreadcrumbBar.vue'
-import CustomerArticle from '../../components/customers/CustomerArticle.astro'
-import DetailHeroSection from '../../components/customers/DetailHeroSection.vue'
-import WhatsNextSection from '../../components/customers/WhatsNextSection.vue'
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import { customerVideoForStory } from '../../data/customerVideos'
-import { t } from '../../i18n/translations'
-import { nextStory, storySlug } from '../../utils/customers'
-import { loadStories } from '../../utils/loadStories'
-import {
-  absoluteUrl,
-  articleNode,
-  jsonLdId,
-  pageContext
-} from '../../utils/jsonLd'
+import BreadcrumbBar from '@/components/common/BreadcrumbBar.vue'
+import CustomerArticle from '@/components/customers/CustomerArticle.astro'
+import DetailHeroSection from '@/components/customers/DetailHeroSection.vue'
+import WhatsNextSection from '@/components/customers/WhatsNextSection.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { customerVideoForStory } from '@/data/customerVideos'
+import { nextStory, storySlug } from '@/utils/customers'
+import { loadStories } from '@/utils/loadStories'
+import { absoluteUrl, articleNode, jsonLdId, pageContext } from '@/utils/jsonLd'
 
 export async function getStaticPaths() {
   const stories = await loadStories('en')
@@ -39,8 +33,8 @@ const article = articleNode({
   locale
 })
 
-const homeLabel = t('breadcrumb.home', locale)
-const collectionLabel = t('nav.customerStories', locale)
+const homeLabel = Astro.locals.t('breadcrumb.home')
+const collectionLabel = Astro.locals.t('nav.customerStories')
 const relatedVideo = customerVideoForStory(storySlug(entry.id))
 ---
 
@@ -65,7 +59,7 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
       { label: collectionLabel, href: '/customers/' },
       { label: entry.data.title }
     ]}
-    label={t('ui.breadcrumb', locale)}
+    label={Astro.locals.t('ui.breadcrumb')}
   />
   <DetailHeroSection
     label={entry.data.category}
@@ -79,7 +73,7 @@ const relatedVideo = customerVideoForStory(storySlug(entry.id))
       href={`/customers/videos/${relatedVideo.slug}/`}
       class="text-sm font-semibold tracking-wide text-primary-comfy-yellow uppercase hover:underline"
     >
-      {t('customers.article.watchVideo', locale)}
+      {Astro.locals.t('customers.article.watchVideo')}
     </a>
   </div>}
   <WhatsNextSection

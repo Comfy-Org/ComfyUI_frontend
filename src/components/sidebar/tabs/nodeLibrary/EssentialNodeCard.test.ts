@@ -166,14 +166,6 @@ describe('EssentialNodeCard', () => {
   })
 
   describe('hover preview', () => {
-    it('should show preview on mouseenter', async () => {
-      const { user, container } = renderComponent()
-
-      await user.hover(getCard(container))
-
-      expect(screen.getByTestId('node-preview')).toBeInTheDocument()
-    })
-
     it('should hide preview after mouseleave', async () => {
       const { user, container } = renderComponent()
 

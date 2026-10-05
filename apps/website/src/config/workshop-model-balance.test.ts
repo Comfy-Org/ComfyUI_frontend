@@ -25,7 +25,7 @@ import type { WorkshopSession } from './workshop-session-state'
 
 const firebaseEvaluated = vi.hoisted(() => vi.fn())
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-session-state'))
 vi.mock(import('./workshop-credits'))
 vi.mock(import('./workshop-billing-sdk'))
@@ -42,7 +42,7 @@ async function mountBalance({
   authEnabled?: boolean
   scope?: ReturnType<typeof effectScope>
 } = {}) {
-  const posthog = await import('../scripts/posthog')
+  const posthog = await import('@/scripts/posthog')
   vi.mocked(posthog.useWorkshopAuthFlag).mockReturnValue(
     readonly(ref(authEnabled))
   )
@@ -175,7 +175,7 @@ describe('useWorkshopModelBalance', () => {
     const sent = stubCloud({ ...SESSION_FLAGS })
     const { balance } = await mountBalance()
     const { default: HeaderMain } =
-      await import('../components/common/HeaderMain/HeaderMain.vue')
+      await import('@/components/common/HeaderMain/HeaderMain.vue')
     render(HeaderMain, { props: { workshopInBuild: true } })
 
     expect(await screen.findAllByTestId('header-session-credits')).toHaveLength(

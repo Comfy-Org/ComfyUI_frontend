@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { customerVideoStories } from '../src/data/customerVideos'
-import { t } from '../src/i18n/translations'
+import { customerVideoStories } from '@/data/customerVideos'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 test.describe('Customers @smoke', () => {
@@ -13,16 +13,20 @@ test.describe('Customers @smoke', () => {
     page
   }) => {
     const breadcrumb = page.getByRole('navigation', {
-      name: t('ui.breadcrumb', 'en')
+      name: t('ui.breadcrumb', {}, { locale: 'en' })
     })
     await expect(
-      breadcrumb.getByRole('link', { name: t('breadcrumb.home', 'en') })
+      breadcrumb.getByRole('link', {
+        name: t('breadcrumb.home', {}, { locale: 'en' })
+      })
     ).toHaveAttribute('href', '/')
     await expect(
-      breadcrumb.getByText(t('nav.customerStories', 'en'))
+      breadcrumb.getByText(t('nav.customerStories', {}, { locale: 'en' }))
     ).toBeVisible()
     await expect(
-      breadcrumb.locator('a', { hasText: t('nav.customerStories', 'en') })
+      breadcrumb.locator('a', {
+        hasText: t('nav.customerStories', {}, { locale: 'en' })
+      })
     ).toHaveCount(0)
   })
 
@@ -43,16 +47,21 @@ test.describe('Customers @smoke', () => {
   test('the WATCH group links each video story to its dedicated watch page', async ({
     page
   }) => {
-    const watchHeading = page.getByText(t('customers.group.watch', 'en'), {
-      exact: true
-    })
+    const watchHeading = page.getByText(
+      t('customers.group.watch', {}, { locale: 'en' }),
+      {
+        exact: true
+      }
+    )
     await expect(watchHeading).toBeVisible()
 
     for (const story of customerVideoStories) {
       const card = page.locator(`a[href="/customers/videos/${story.slug}/"]`)
       await expect(card).toBeVisible()
       await expect(card).toContainText(story.company)
-      await expect(card).toContainText(t('customers.video.watchStory', 'en'))
+      await expect(card).toContainText(
+        t('customers.video.watchStory', {}, { locale: 'en' })
+      )
     }
   })
 
@@ -60,7 +69,9 @@ test.describe('Customers @smoke', () => {
     page
   }) => {
     await expect(
-      page.getByText(t('customers.group.read', 'en'), { exact: true })
+      page.getByText(t('customers.group.read', {}, { locale: 'en' }), {
+        exact: true
+      })
     ).toBeVisible()
   })
 

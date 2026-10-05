@@ -7,8 +7,6 @@ const CLOUD_WORKFLOW_PAGE_SIZE = 100
 export const zCloudWorkflowPage = zWorkflowListResponse
 export type CloudWorkflowPage = WorkflowListResponse
 export type CloudWorkflowEntry = CloudWorkflowPage['data'][number]
-/** The part of an entry a caller that matches by name reads. */
-export type CloudWorkflowRef = Pick<CloudWorkflowEntry, 'id' | 'name'>
 
 export function cloudWorkflowPageRoute({
   name,

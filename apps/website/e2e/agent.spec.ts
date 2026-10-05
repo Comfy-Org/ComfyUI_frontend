@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { tAgent } from '../src/components/agent/agentTranslations'
-import { t } from '../src/i18n/translations'
+import { tAgent } from '@/components/agent/agentTranslations'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/agent/'
@@ -139,17 +139,19 @@ test.describe('Agent navigation @smoke', () => {
       const nav = page.getByRole('navigation', { name: 'Main navigation' })
       await nav
         .getByTestId('desktop-nav-links')
-        .getByRole('button', { name: t('nav.products', locale) })
+        .getByRole('button', {
+          name: t('nav.products', {}, { locale })
+        })
         .hover()
-      const headerLink = nav
-        .getByTestId('nav-dropdown')
-        .getByRole('link', { name: t('nav.comfyAgent', locale) })
+      const headerLink = nav.getByTestId('nav-dropdown').getByRole('link', {
+        name: t('nav.comfyAgent', {}, { locale })
+      })
       await expect(headerLink).toBeVisible()
       await expect(headerLink).toHaveAttribute('href', expectedHref)
 
-      const footerLink = page
-        .getByRole('contentinfo')
-        .getByRole('link', { name: t('nav.comfyAgent', locale) })
+      const footerLink = page.getByRole('contentinfo').getByRole('link', {
+        name: t('nav.comfyAgent', {}, { locale })
+      })
       await expect(footerLink).toHaveAttribute('href', expectedHref)
     })
   }

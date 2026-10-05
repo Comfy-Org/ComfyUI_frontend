@@ -3,13 +3,13 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import HubTypeBadge from '../hub/HubTypeBadge.vue'
-import { getLogoPath } from '../../lib/hub/model-logos'
-import { nameWithoutTask, taskLabelFor } from '../../lib/workshop/task-label'
-import TagRow from '../hub/TagRow.vue'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import HubTypeBadge from '@/components/hub/HubTypeBadge.vue'
+import { getLogoPath } from '@/lib/hub/model-logos'
+import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
+import TagRow from '@/components/hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
 import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
@@ -26,6 +26,7 @@ const {
   /** The card is listed under a heading that already names its kind. */
   underHeading?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const workflow = computed(() =>
   model.type === 'CLOUD' || model.type === 'SERVERLESS' ? model : undefined
@@ -37,10 +38,10 @@ const workflowModels = computed(() =>
 )
 const providerName = computed(() =>
   model.type === 'APP'
-    ? t('workshop.card.comfyApp', locale)
+    ? t('workshop.card.comfyApp')
     : (workflowModels.value?.join(', ') ??
       model.provider ??
-      t('workshop.card.partnerNode', locale))
+      t('workshop.card.partnerNode'))
 )
 
 const logo = computed(

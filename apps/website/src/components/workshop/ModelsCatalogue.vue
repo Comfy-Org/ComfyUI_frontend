@@ -7,25 +7,25 @@ import type {
   AppWorkshopModel,
   WorkflowWorkshopModel,
   WorkshopModel
-} from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/models-catalogue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
-import type { WorkshopPageType } from '../../scripts/workshop-analytics'
+import type { WorkshopPageType } from '@/scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
   useWorkshopEnabled
-} from '../../scripts/posthog'
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { ac } from '../../lib/workshop/catalogue-apps'
+} from '@/scripts/posthog'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { ac } from '@/lib/workshop/catalogue-apps'
 import {
   loadAppCatalogue,
   loadWorkflowCatalogue
-} from '../../lib/workshop/catalogue-components'
-import { isWorkshopModelShown } from '../../scripts/workshop-model-flags'
+} from '@/lib/workshop/catalogue-components'
+import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
 const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
@@ -41,6 +41,7 @@ const {
   locale?: Locale
   section?: CatalogueTab
 }>()
+const { t } = translationsFor(locale)
 
 const inSection = ref(false)
 // A category replaces the page's own heading and the switch between
@@ -132,7 +133,7 @@ whenever(
         "
         :aria-hidden="tab !== section"
       >
-        {{ t(subtitle, locale) }}
+        {{ t(subtitle) }}
       </p>
     </div>
   </div>

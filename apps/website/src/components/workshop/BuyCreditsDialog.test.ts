@@ -9,19 +9,19 @@ import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL,
   WORKSHOP_SUBSCRIPTION_URL
-} from '../../config/workshop-env'
-import type { WorkshopBuyCreditsTrigger } from '../../config/workshop-buy-credits'
+} from '@/config/workshop-env'
+import type { WorkshopBuyCreditsTrigger } from '@/config/workshop-buy-credits'
 import {
   clearTopUpWatch,
   refreshWorkshopCredits,
   useTopUpWatch,
   useWorkshopCredits,
   watchForTopUp
-} from '../../config/workshop-credits'
-import { workshopTopupCommand } from '../../config/workshop-billing-sdk'
-import { readBillingSdkTopupEnabled } from '../../config/workshop-features'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { captureWorkshopEvent } from '../../scripts/posthog'
+} from '@/config/workshop-credits'
+import { workshopTopupCommand } from '@/config/workshop-billing-sdk'
+import { readBillingSdkTopupEnabled } from '@/config/workshop-features'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 import BuyCreditsDialog from './BuyCreditsDialog.vue'
 
 type WorkshopCreditsState = ReturnType<typeof useWorkshopCredits>
@@ -32,11 +32,11 @@ type ActiveSession = WorkshopSessionState['session']['value']
 type WorkshopUser = WorkshopSessionState['user']['value']
 type WorkshopSessionFailure = WorkshopSessionState['sessionFailure']['value']
 
-vi.mock(import('../../config/workshop-credits'))
-vi.mock(import('../../config/workshop-billing-sdk'))
-vi.mock(import('../../config/workshop-features'))
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-billing-sdk'))
+vi.mock(import('@/config/workshop-features'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/scripts/posthog'))
 
 const auth = {
   user: ref<WorkshopUser>(null),

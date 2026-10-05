@@ -1,7 +1,3 @@
-import type {
-  CloudWorkflowEntry,
-  CloudWorkflowRef
-} from '@/platform/workflow/cloud/cloudWorkflowPages'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type {
@@ -14,7 +10,15 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
+import {
+  computed,
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+  reactive,
+  ref
+} from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
@@ -34,7 +38,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -256,6 +260,7 @@ import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegistry'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -476,20 +481,6 @@ function agentThread({
     updated_at: last_message_at,
     workflow_id: '',
     ...overrides
-  }
-}
-
-function cloudWorkflowEntry({
-  id,
-  name
-}: CloudWorkflowRef): CloudWorkflowEntry {
-  return {
-    id,
-    name,
-    created_at: '2026-09-01T00:00:00Z',
-    updated_at: '2026-09-01T00:00:00Z',
-    created_by: 'user-1',
-    latest_version: 1
   }
 }
 
@@ -2429,6 +2420,43 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  // The whole point of client_message_id is that the analytics event and the turn
+  // POST carry the SAME value: the server echoes the posted one onto
+  // agent_turn_started, and the funnel joins that to the value on
+  // app:agent_message_sent. If the two ever diverge the join returns zero rows and
+  // nothing else breaks, so neither side's own test would catch it - only this one.
+  it('posts the same client_message_id it reports, so message and turn can be joined', async () => {
+    const messageBodies: Record<string, unknown>[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        messageBodies.push(
+          JSON.parse(String(init?.body)) as Record<string, unknown>
+        )
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+
+    renderWithSelectedTarget()
+    await screen.findByRole('textbox')
+    telemetry.trackAgentMessageSent.mockClear()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await waitFor(() => {
+      expect(messageBodies).toHaveLength(1)
+      expect(telemetry.trackAgentMessageSent).toHaveBeenCalled()
+    })
+    const posted = messageBodies[0].client_message_id
+    expect(posted).toBeTypeOf('string')
+    expect(posted).not.toBe('')
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({ client_message_id: posted })
+    )
+  })
+
   it('uses the submitted filename when the upload response omits a name', async () => {
     const messageBodies: unknown[] = []
     vi.stubGlobal(
@@ -3942,7 +3970,12 @@ describe('AgentPanelRoot history', () => {
     // The server has no delete endpoint yet, so the tombstone must hold the
     // thread out of the next refresh instead of letting it resurrect.
     useAgentChatHistoryStore().replaceAll([
-      { id: 'th-active', title: 'build a duck', updatedAt: Date.now() }
+      {
+        id: 'th-active',
+        title: 'build a duck',
+        updatedAt: Date.now(),
+        titleSource: 'server'
+      }
     ])
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
@@ -3987,6 +4020,83 @@ describe('AgentPanelRoot history', () => {
     expect(history.sessions[1]).toMatchObject({
       id: 'th-10',
       title: 'make a duck'
+    })
+  })
+
+  describe('history row title for the active chat', () => {
+    function stubActiveThread(serverTitle: string): void {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.endsWith('/api/agent/threads'))
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-active',
+                  title: serverTitle,
+                  preview: 'delete everything on this canvas',
+                  last_message_at: '2026-07-07T10:00:00Z'
+                })
+              ])
+            )
+          if (url.includes('/messages'))
+            return json(200, [
+              {
+                id: 'active-user',
+                thread_id: 'th-active',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'active-turn',
+                content: { text: 'Clear entire canvas' }
+              }
+            ])
+          return json(200, [])
+        })
+      )
+      useAgentConversationStore().setThreadId('th-active')
+    }
+
+    async function openHistory(): Promise<void> {
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await screen.findByRole('heading', {
+        name: i18n.global.t('agent.history')
+      })
+    }
+
+    it('shows the first user message while the server title is empty', async () => {
+      stubActiveThread('')
+      renderWithSelectedTarget()
+      await screen.findByRole('button', { name: 'Clear entire canvas' })
+
+      await openHistory()
+
+      expect(
+        await screen.findByRole('button', { name: 'Clear entire canvas' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('delete everything on this canvas')
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps the server title when one exists', async () => {
+      stubActiveThread('Canvas cleanup')
+      renderWithSelectedTarget()
+      await screen.findByRole('button', { name: 'Clear entire canvas' })
+
+      await openHistory()
+
+      expect(
+        await screen.findByRole('button', { name: 'Canvas cleanup' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Clear entire canvas' })
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -4469,6 +4579,157 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
   })
 
+  it('releases the minimap graph-activity layer even when another teardown step throws', () => {
+    const errorHandler = vi.fn()
+    const first = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    vi.spyOn(
+      useWorkflowTabActivityStore(),
+      'setCreating'
+    ).mockImplementationOnce(() => {
+      throw new Error('teardown failed')
+    })
+
+    first.unmount()
+    // Contained and reported, not escaped: a step that throws must not reach
+    // Vue's error handling, which re-throws out of `invokeArrayFns` and would
+    // abandon the remaining hooks and the rest of `unmountComponent`.
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'teardown failed' }),
+      expect.objectContaining({
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step: 'clearCreatingTab' }
+      })
+    )
+    expect(errorHandler).not.toHaveBeenCalled()
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
+      })
+    )
+  })
+
+  it('resets the canvas sync gate when an earlier teardown step throws', () => {
+    const errorHandler = vi.fn()
+    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
+      docOpMinterDeps.current = deps
+      return fromPartial<DocOpMinter>({
+        detach: vi.fn(() => {
+          throw new Error('detach failed')
+        })
+      })
+    })
+    const panel = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+    // Cleared so the only recorded call is the teardown reset, not this
+    // instance's own live gate registered while it was mounted.
+    setCanvasSyncGate.mockClear()
+
+    panel.unmount()
+
+    // PM-1575: the gate is reset to the always-safe default even though a
+    // step three places ahead of it threw.
+    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
+    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe(false)
+    expect(outcomeCount?.()).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'detach failed' }),
+      expect.objectContaining({
+        errorType: 'failure_tearing_down_agent_panel',
+        tags: { step: 'detachDocOpMinter' }
+      })
+    )
+    expect(errorHandler).not.toHaveBeenCalled()
+  })
+
+  it('resets the canvas sync gate when reporting a failed teardown step throws', () => {
+    const errorHandler = vi.fn()
+    vi.mocked(attachDocOpMinter).mockImplementationOnce((deps) => {
+      docOpMinterDeps.current = deps
+      return fromPartial<DocOpMinter>({
+        detach: vi.fn(() => {
+          throw new Error('detach failed')
+        })
+      })
+    })
+    const panel = render(AgentPanelRoot, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+    setCanvasSyncGate.mockClear()
+    // The reporter is the one part of the loop outside its own try/catch; a
+    // telemetry sink torn down ahead of the panel must not take the remaining
+    // releases with it.
+    vi.mocked(reportError).mockImplementationOnce(() => {
+      throw new Error('reporter failed')
+    })
+
+    panel.unmount()
+
+    expect(setCanvasSyncGate).toHaveBeenCalledOnce()
+    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe(false)
+    expect(outcomeCount?.()).toBe(0)
+    expect(errorHandler).not.toHaveBeenCalled()
+  })
+
+  it('does not claim the minimap graph-activity layer when setup throws', () => {
+    vi.mocked(useFreeUsePlacement).mockImplementationOnce(() => {
+      throw new Error('setup failed')
+    })
+    // Mounted without Testing Library, whose error handler lets a failed
+    // setup finish mounting; Vue itself aborts the mount.
+    const app = createApp(AgentPanelRoot).use(i18n)
+    expect(() => app.mount(document.createElement('div'))).toThrow(
+      'setup failed'
+    )
+
+    renderWithSelectedTarget().unmount()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
+      })
+    )
+  })
+
+  it('still paints graph activity when a replacement panel sets up before the old one unmounts', async () => {
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    const outgoing = renderWithSelectedTarget()
+    // The handover order the fix above cannot cover: a replacement host builds
+    // its panel while the outgoing one is still mounted and holding the id.
+    renderWithSelectedTarget()
+    outgoing.unmount()
+
+    useAgentGraphActivityStore().recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(301)]
+    )
+    await nextTick()
+
+    expect(
+      getMinimapDecorations({
+        rootGraphId: toRootGraphId('graph-1'),
+        owningGraphId: toOwningGraphId('graph-1')
+      }).map(({ target }) => target.nodeId)
+    ).toEqual(['301'])
+  })
+
   it('clears workflow activity when the panel unmounts', () => {
     const activity = useWorkflowTabActivityStore()
     activity.setEditing('workflows/active.json')
@@ -4504,7 +4765,7 @@ describe('AgentPanelRoot a11y id guard', () => {
   // class) reached main unnoticed because the fast suite never asserted the id
   // count. Assert the document-level count, not a getBy* query, so a second
   // copy of the id fails loudly here instead of only in the Playwright suite
-  // (agentPanelLifecycle.spec.ts, still test.fixme pending FE #16919).
+  // (agentPanelLifecycle.spec.ts, re-enabled in #17132).
   it('renders exactly one #agent-panel-title on the success path', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -4816,7 +5077,7 @@ describe('AgentPanelRoot workflow binding', () => {
               ? cloudWorkflows()
               : cloudWorkflows
           return json(200, {
-            data: workflows.map(cloudWorkflowEntry),
+            data: workflows,
             pagination: {
               offset: 0,
               limit: 100,
@@ -5816,9 +6077,7 @@ describe('AgentPanelRoot workflow binding', () => {
           }
           if (url.includes('/workflows'))
             return json(200, {
-              data: [
-                cloudWorkflowEntry({ id: 'wf-portrait', name: 'portrait' })
-              ],
+              data: [{ id: 'wf-portrait', name: 'portrait' }],
               pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           return json(
@@ -5933,9 +6192,7 @@ describe('AgentPanelRoot workflow binding', () => {
             ])
           if (url.includes('/workflows'))
             return json(200, {
-              data: [
-                cloudWorkflowEntry({ id: 'wf-portrait', name: 'portrait' })
-              ],
+              data: [{ id: 'wf-portrait', name: 'portrait' }],
               pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           return json(
@@ -6151,7 +6408,7 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/messages')) return json(200, history)
         if (url.includes('/workflows'))
           return json(200, {
-            data: [cloudWorkflowEntry({ id: 'wf-minted', name: 'minted' })],
+            data: [{ id: 'wf-minted', name: 'minted' }],
             pagination: { offset: 0, limit: 100, total: 1, has_more: false }
           })
         return json(200, agentThreadList())
@@ -6250,7 +6507,7 @@ describe('AgentPanelRoot workflow binding', () => {
             return json(200, { assets: [], total: 0, has_more: false })
           if (url.includes('/workflows'))
             return json(200, {
-              data: [cloudWorkflowEntry({ id: 'wf-old', name: 'old' })],
+              data: [{ id: 'wf-old', name: 'old' }],
               pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           return json(
@@ -6497,9 +6754,7 @@ describe('AgentPanelRoot workflow binding', () => {
             )
           if (url.includes('/workflows'))
             return json(200, {
-              data: [
-                cloudWorkflowEntry({ id: 'wf-history', name: 'history-target' })
-              ],
+              data: [{ id: 'wf-history', name: 'history-target' }],
               pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           return json(200, {})
@@ -6896,7 +7151,7 @@ describe('AgentPanelRoot workflow binding', () => {
             lookupCount++
             await pendingLookup
             return json(200, {
-              data: [cloudWorkflowEntry({ id: 'wf-other', name: 'other' })],
+              data: [{ id: 'wf-other', name: 'other' }],
               pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           }
@@ -7558,9 +7813,7 @@ describe('AgentPanelRoot workflow binding', () => {
             // Re-targeting the fresh tab saves it as a new cloud workflow.
             data: fresh.isTemporary
               ? []
-              : [
-                  cloudWorkflowEntry({ id: 'wf-new', name: 'Unsaved Workflow' })
-                ],
+              : [{ id: 'wf-new', name: 'Unsaved Workflow' }],
             pagination: { offset: 0, limit: 100, total: 0, has_more: false }
           })
         return json(200, agentThreadList())
@@ -8253,12 +8506,7 @@ describe('AgentPanelRoot workflow binding', () => {
           const data =
             workflowsCalls === 1
               ? []
-              : [
-                  cloudWorkflowEntry({
-                    id: 'wf-cloud-current',
-                    name: 'current'
-                  })
-                ]
+              : [{ id: 'wf-cloud-current', name: 'current' }]
           return new Response(
             JSON.stringify({
               data,
@@ -9503,12 +9751,7 @@ describe('AgentPanelRoot workflow binding', () => {
           if (workflowRequestCount === 1) return initialWorkflowResponse
           return Promise.resolve(
             json(200, {
-              data: [
-                cloudWorkflowEntry({
-                  id: 'wf-video',
-                  name: 'video_minimax_h3_i2v'
-                })
-              ],
+              data: [{ id: 'wf-video', name: 'video_minimax_h3_i2v' }],
               pagination: {
                 offset: 0,
                 limit: 100,

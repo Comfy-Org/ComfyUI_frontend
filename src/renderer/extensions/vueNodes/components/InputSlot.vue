@@ -38,21 +38,26 @@
 
     <!-- Slot Name -->
     <div class="flex h-full min-w-0 items-center">
-      <span
+      <EditableText
         v-if="!props.dotOnly && !hasNoLabel"
-        :class="
+        class="min-w-0"
+        :label-class="
           cn(
-            'truncate text-node-component-slot-text',
+            'block truncate text-node-component-slot-text',
             hasError && 'font-medium text-error'
           )
         "
-      >
-        {{
+        :is-editing
+        :model-value="
           slotData.label ||
           slotData.localized_name ||
           (slotData.name ?? `Input ${index}`)
-        }}
-      </span>
+        "
+        @cancel="isEditing = false"
+        @dblclick="isEditing = true"
+        @edit="onEditLabel"
+      >
+      </EditableText>
     </div>
   </div>
 </template>
@@ -61,8 +66,10 @@
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -147,4 +154,18 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   index: props.index,
   type: 'input'
 })
+
+const isEditing = ref(false)
+function onEditLabel(val: string) {
+  const canvas = useCanvasStore().getCanvas()
+  isEditing.value = false
+  if (!props.nodeId) return
+
+  const newLabel = val.trim() || undefined
+  const slot = canvas.graph?.getNodeById(props.nodeId)?.inputs?.[props.index]
+  if (!slot || slot.label === newLabel) return
+
+  slot.label = newLabel
+  canvas.setDirty(true, true)
+}
 </script>

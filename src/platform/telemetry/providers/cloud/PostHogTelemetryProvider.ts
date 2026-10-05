@@ -2,13 +2,14 @@ import {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   getBillingTelemetryEventName,
   getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
-  getCloudAppBillingTelemetryEventPayload
+  getCloudAppBillingTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
 } from '@comfyorg/account-core/billing'
 import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
@@ -442,6 +443,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
@@ -521,10 +526,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
-    this.trackEvent(
-      getCheckoutJourneyTelemetryEventName(event),
-      getCheckoutJourneyTelemetryEventPayload(event)
-    )
+    const name = getCheckoutJourneyTelemetryEventName(event)
+    const payload = getCloudAppCheckoutJourneyTelemetryEventPayload(event)
+    if (event.phase === 'abandoned' && event.exit === 'page_exit') {
+      this.captureOnTeardown(name, payload)
+      return
+    }
+    this.trackEvent(name, payload)
   }
 
   trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {

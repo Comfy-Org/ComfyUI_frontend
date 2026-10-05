@@ -2,12 +2,12 @@
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, nextTick, watch } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { ac } from '../../lib/workshop/catalogue-apps'
-import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { ac } from '@/lib/workshop/catalogue-apps'
+import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import CardRow from './CardRow.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
@@ -17,6 +17,7 @@ const { apps, locale = 'en' } = defineProps<{
   apps: readonly CatalogueApp[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 const emit = defineEmits<{ section: [boolean] }>()
@@ -37,7 +38,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
         @click="browseAll = false"
       >
         <ChevronLeft class="size-4" aria-hidden="true" />
-        {{ t('workshop.sections.back', locale) }}
+        {{ t('workshop.sections.back') }}
       </button>
       <h2
         class="mt-5 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"

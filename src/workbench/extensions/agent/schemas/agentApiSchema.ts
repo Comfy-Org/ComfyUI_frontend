@@ -7,7 +7,8 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
-  zToolCallSummary
+  zToolCallSummary,
+  zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
 import type {
   AgentAnswerAccepted,
@@ -94,6 +95,21 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
 )
 export type AgentRunModeValue = AgentRunModePreference['mode']
 
+const SKILL_NAME_MAX = 256
+
+/**
+ * Display-only, so an over-long name is clamped. Rejecting it would drop
+ * the live frame or the whole persisted transcript.
+ */
+const zSkillName = z
+  .string()
+  .nullish()
+  .transform((skill) =>
+    typeof skill === 'string'
+      ? Array.from(skill).slice(0, SKILL_NAME_MAX).join('')
+      : skill
+  )
+
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
@@ -102,8 +118,16 @@ export type AgentRunModeValue = AgentRunModePreference['mode']
  * backend only ever persists terminal rows (`status: 'success' | 'error'`);
  * a row a dead turn left in `pending`/`running` has no wire-status mapping
  * and is dropped server-side rather than reaching this parser.
+ *
+ * This is also the element type of `zAgentMessageContent.tool_calls` below,
+ * which is what lets a persisted `skill` reach `parseToolCallEntry` at all —
+ * the generated `zToolCallSummary` has no `skill` key and no `.passthrough()`,
+ * so using it there stripped the field before the transcript parser saw it.
  */
-export const zPersistedToolCallSummary = zToolCallSummary
+export const zPersistedToolCallSummary = zToolCallSummary.extend({
+  skill: zSkillName
+})
+export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
  * The generated `AgentMessage.content` schema narrows to just `tool_calls`
@@ -116,7 +140,7 @@ export const zPersistedToolCallSummary = zToolCallSummary
  */
 const zAgentMessageContent = z
   .object({
-    tool_calls: z.array(zToolCallSummary).optional()
+    tool_calls: z.array(zPersistedToolCallSummary).optional()
   })
   .passthrough()
 
@@ -131,6 +155,17 @@ export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 
 export const zAgentThreads = zGeneratedAgentThreadListResponse.passthrough()
+
+export const zCloudWorkflowIndex = zWorkflowListResponse
+  .pick({ pagination: true })
+  .extend({
+    data: z.array(
+      z.object({ id: z.string(), name: z.string().optional() }).passthrough()
+    )
+  })
+export type CloudWorkflowEntry = z.infer<
+  typeof zCloudWorkflowIndex
+>['data'][number]
 
 export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 
@@ -156,7 +191,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
-    skill: z.string().optional(),
+    skill: zSkillName,
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),
