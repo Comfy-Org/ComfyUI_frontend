@@ -182,125 +182,59 @@ legitimate re-mint rather than an identity collision — which is why
 
 > **Amended (2026-10-04):** "two widgets on one node cannot share a name" is an
 > **invariant**, not a limitation to work around. A second widget under a name
-> another widget already holds is not a second identity; it is the same
-> identity twice, and nothing downstream can tell the two apart.
+> another widget already holds is the same identity twice, and nothing
+> downstream can tell the two apart.
 >
-> The repeat is renamed to `name#1` before any id is derived. Where it cannot
-> be — a `name` that cannot be written at all — the widget is **refused**: it
-> is dropped from `node.widgets` and reported. A widget whose name yields no id
-> at all is refused the same way, and that is not only an accessor that throws:
-> a value that will not coerce to a string and one `encodeURIComponent` rejects
-> are the same failure (`src/types/widgetId.ts`). First occurrence wins;
-> renamable collisions elsewhere on the node are still renamed.
+> A repeat is renamed to the first `name#n` that neither the node nor the
+> store holds. A widget whose `name` cannot be written at all is **refused**:
+> it is dropped from `node.widgets`, its own store entry is released, and the
+> refusal is reported. A widget whose name yields no id (an accessor that
+> throws, a value that will not coerce to a string, or one
+> `encodeURIComponent` rejects) is refused the same way. First occurrence
+> wins.
 >
-> **Refusal keys on whether the write was possible, not on whether it landed,
-> and the difference is load-bearing.** `BaseWidget.set name` delegates to
-> `widgetValueStore.renameWidget()` and returns without changing the name
-> whenever the store declines — which it does when the node has no entries,
-> precisely the state an ambiguous pair leaves a node in and the state a node
-> is in after it has been removed from the graph. So a failed read-back is a
-> recoverable store refusal at least as often as it is a hostile object, and
-> removing on it destroys ordinary, renamable widgets on the very nodes this
-> repairs: a node deleted and undone comes back a widget short, saving one
-> `widgets_values` entry for a two-widget node. The read-back still decides
-> whether the pair is **reported**; `nameIsWritable` decides whether the widget
-> is **removed**, and it is deliberately the same predicate
-> `ensureUniqueWidgetNames` uses to decide it may rename at all — `setNodeId`
-> gates registration on that, so two copies of the rule disagreeing is a widget
-> destroyed over a disagreement.
+> Removal keys on whether the write was _possible_, not on whether it landed.
+> A writable widget whose rename is declined anyway is **kept** and reported,
+> because removing it costs the user a widget and a saved value. Since a
+> rename with no store entry to move now lands locally, that state comes only
+> from a setter that accepts a write and ignores it.
 >
-> Four stable `errorType`s, because the causes need different alerts and
-> collapsing them sends whoever reads one after a collision that does not
-> exist: `failure_renaming_widget_duplicate_name` for a duplicate that could
-> not be renamed apart, `failure_reading_widget_name` for a widget no id can be
-> derived from, `failure_resolving_widget_duplicate_name` for a pair the node
-> **keeps**, and `failure_tearing_down_refused_widget` for a removal whose own
-> teardown threw. The third is not a report of lost widgets, but it is not
-> transient either: a kept pair now comes only from a setter that accepts a
-> write and ignores it, which no later commit resolves, so the report is
-> deduplicated per name rather than repeated per commit.
+> Four stable `errorType`s distinguish the outcomes:
+> `failure_renaming_widget_duplicate_name` (refused duplicate),
+> `failure_reading_widget_name` (no derivable id),
+> `failure_resolving_widget_duplicate_name` (kept duplicate, reported once per
+> widget rather than on every commit) and `failure_tearing_down_refused_widget`
+> (a refused widget's own teardown threw).
 >
-> **There are two enforcement points, and looking only at the first one is
-> misleading.** `attachNodeToStores` calls `refuseAmbiguousNodeWidgets` as a
-> node joins a graph, which is the one that catches a node built detached and
-> then added. `syncWidgetOrder` catches every later mutation — `node.widgets`
-> is a mutation view, so `addWidget`, a raw `push`, a splice and a whole-array
-> assignment all commit through it — but it enforces nothing until `graphId`
-> exists, so it does not cover the join itself.
+> There are two enforcement points: `attachNodeToStores` as a node joins a
+> graph, and `syncWidgetOrder` for every later `node.widgets` mutation
+> (`addWidget`, a raw `push`, a splice, a whole-array assignment). Their
+> boundaries are part of the decision:
 >
-> These boundaries are part of the decision:
+> - Enforcement starts at the join, not during construction: no `WidgetId`
+>   exists before then, and `litegraphService` still matches a freshly created
+>   widget by name.
+> - Renamability is judged after `toConcreteWidget`, which gives a raw widget
+>   the class's writable `name`.
+> - An empty name is declined by the store, not refused: that widget still
+>   renders, fires its callback and serializes.
+> - Redefining a `name` is not an array mutation, so a name pinned after the
+>   join stands until the next `node.widgets` mutation.
+> - `SubgraphNode` replaces `widgets` with a computed getter, so neither point
+>   runs on it and an ambiguous pair there keeps the previous behaviour.
+> - A refusal shifts the positional values of a workflow saved before this
+>   change. That needs a widget whose `name` cannot be written and no saved
+>   name register, and it is accepted: an index map built at the join and read
+>   during restore would move values on every later load once it went stale.
 >
-> - **Enforcement starts when the node joins a graph**, not when a detached
->   node is built. No `WidgetId` exists before then, so there is no identity to
->   collide over — and renaming during construction changes names that
->   `litegraphService` still matches a freshly created widget on. `LGraph.add`
->   normalizes the widgets view _before_ assigning `node.graph`, which is why
->   the join needs its own call rather than falling out of that commit.
-> - **Renamability is judged after normalization.** `toConcreteWidget` merges
->   the concrete class's writable `name` accessor over a plain object's pinned
->   one, so a raw widget that looks unrenamable usually is not. Normalizing
->   first does mean `BaseWidget`'s constructor reads a hostile `name` before
->   the refusal sees it, so the conversion is guarded **for that one case**:
->   a widget whose name cannot be read falls through to be refused instead of
->   throwing out of the commit and wedging every later one. Any other
->   conversion failure still throws, because the refusal has no reason to drop
->   that widget and swallowing it would leave an unconverted object on the node
->   with nothing reported. The guard also only covers the commit path — a raw
->   `push`, a splice, a whole-array assignment. `addCustomWidget` converts
->   before it pushes, so `addWidget` and `addDOMWidget` with a hostile accessor
->   still throw to their caller and never reach the refusal. And the verdict
->   that decides whether to swallow is one read taken before the conversion,
->   so a getter that answers _inconsistently_ — throwing on one read and not
->   the next — can still land either way. Closing that needs the conversion to
->   happen inside the walk, which is a larger change than this one; the trade
->   is recorded here rather than left implicit.
-> - **An un-keyable name is declined, not refused.** An empty name mints
->   `graphId:nodeId:`, which the store will not key on. That widget still
->   renders, still fires its callback and still serializes, so deleting it
->   would lose a working widget and shift every positional value after it.
->   Refusal is for a name that is _ambiguous_ with another widget's, not for
->   one the store happens not to track.
-> - **The two points cover array mutations and the join, not every way a name
->   changes.** Redefining a `name` is not an array mutation, so an extension
->   that adds a widget under a unique name in `onAdded` and then pins it onto
->   an existing one leaves the ambiguous pair standing until some later
->   `node.widgets` mutation commits. That is deliberate — enforcing on every
->   property write would mean watching every widget — but it means "caught at
->   the join" is true of the join itself, not of what `onAdded` does after it.
-> - **`SubgraphNode` does not commit through this path, and neither
->   enforcement point runs on it.** It redefines `widgets` as a computed getter
->   over its promoted widgets and overrides `addCustomWidget`, so an ambiguous
->   pair there keeps the pre-existing behaviour. The join-time call is gated on
->   the node still exposing this module's mutation view: the getter rebuilds
->   the array on every read, so a refusal there would splice a throwaway copy
->   and report a refusal that did not happen. Two promoted inputs carrying the
->   same inner widget name reach exactly that state, so the gate is
->   load-bearing rather than defensive.
-> - **A removal shifts the positional values of a workflow saved before it, and
->   that is accepted here rather than fixed.** `LGraph.configure` adds each node
->   before configuring it, so the refusal has already run by the time values are
->   restored, and positional restore counts the widgets the node has _now_ — so
->   for `[a, dup, b]` saved as `[1, 2, 3]`, `b` is handed `2` and `3` is
->   dropped. It takes all three of a pre-change workflow, a widget whose `name`
->   cannot be written, and no name register: a renamable duplicate is kept
->   rather than removed, and a saved `widgets_values_named` restores each widget
->   under its own name instead. All three measured at this head in
->   `widgetsView.refusalValueRestore.test.ts`. Carrying the refused widget's
->   original slot through `createWidgetRestorationState` as an index map would
->   close the remainder; it is not done here because that record has to be built
->   at the join and read back during restore, and a stale one would move values
->   on every later load — a worse failure than the one it fixes.
+> A serialized `(name, occurrence)` identity was proposed instead
+> ([#19717](https://github.com/Comfy-Org/ComfyUI_frontend/pull/19717)) and
+> rejected: it adds a second widget-identity format to preserve a state that
+> should not occur.
 >
-> A serialized `(name, occurrence)` identity was proposed instead, so that both
-> widgets could be persisted ([#19717](https://github.com/Comfy-Org/ComfyUI_frontend/pull/19717)).
-> It was rejected: it adds a second widget-identity format, read by one
-> register and by nothing else, to preserve a state that should not occur. The
-> fix belongs where the state is created.
->
-> Refusing is also a repair, not only a restriction. Before it, a node carrying
-> an ambiguous pair registered **no** widget in the store — `BaseWidget.setNodeId`
-> bails for every widget on the node — so nothing the user typed on that node
-> survived a reload.
+> Before this, a node carrying an ambiguous pair registered **no** widget in the
+> store, because `BaseWidget.setNodeId` bails for every widget on the node, so
+> nothing the user typed on that node survived a reload.
 
 #### Future work
 
