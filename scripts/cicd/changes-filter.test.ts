@@ -135,7 +135,8 @@ it.for(['merge_group', 'push', 'workflow_dispatch'])(
       'packages-changes': true,
       'storybook-changes': true,
       'docs-changes': true,
-      'dependency-changes': true
+      'dependency-changes': true,
+      'website-only-changes': false
     })
   }
 )
