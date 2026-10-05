@@ -5,6 +5,40 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { useAgentComposerStore } from './agentComposerStore'
 
 describe('composer reference ownership', () => {
+  it('releases invalidated snapshot previews while retaining the current tray and ignoring repeated invalidation and stale settlement', () => {
+    const store = useAgentComposerStore()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const retained = {
+      id: 'retained',
+      name: 'retained.png',
+      ref: 'retained.png',
+      previewUrl: 'blob:retained'
+    }
+    store.addAttachment({
+      id: 'old',
+      name: 'old.png',
+      ref: 'old.png',
+      previewUrl: 'blob:old'
+    })
+    store.addAttachment(retained)
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: store.attachments,
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    store.restorePrompt({ text: 'New draft', references: [] }, [retained])
+    store.invalidateSubmission()
+    store.invalidateSubmission()
+    store.settleSubmission(id, false)
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:old')
+    expect(store.attachments).toEqual([retained])
+    expect(store.draft).toBe('New draft')
+    expect(store.takeFailedSubmission()).toBeUndefined()
+    expect(store.referenceAttachment('old')).toBe(false)
+    expect(store.referenceAttachment('retained')).toBe(true)
+  })
+
   it('keeps every asset occurrence and updates all of them after upload', () => {
     const store = useAgentComposerStore()
     store.addAttachment({
