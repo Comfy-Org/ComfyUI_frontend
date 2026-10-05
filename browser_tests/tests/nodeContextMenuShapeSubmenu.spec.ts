@@ -113,5 +113,23 @@ test.describe(
         .poll(async () => (await menu.boundingBox())?.x)
         .toBeCloseTo(initialBox.x + expectedDelta, 0)
     })
+
+    for (const motion of ['pan', 'zoom'] as const) {
+      test(
+        `menu follows nodes in every ${motion} frame`,
+        { tag: '@vue-nodes' },
+        async ({ comfyPage }) => {
+          await comfyPage.page.setViewportSize({ width: 1600, height: 1200 })
+          await openMoreOptionsMenu(comfyPage, 'KSampler')
+
+          const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
+          const { errors, nodeMovement } =
+            await comfyPage.contextMenu.measureCanvasTracking(node, motion)
+
+          expect(nodeMovement).toBeGreaterThan(20)
+          expect(Math.max(...errors)).toBeLessThanOrEqual(1)
+        }
+      )
+    }
   }
 )

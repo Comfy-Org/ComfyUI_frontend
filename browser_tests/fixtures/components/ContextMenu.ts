@@ -126,6 +126,61 @@ export class ContextMenu {
     await submenu.getByRole('menuitemradio', { name, exact: true }).click()
   }
 
+  async measureCanvasTracking(node: Locator, motion: 'pan' | 'zoom') {
+    const nodeElement = await node.elementHandle()
+
+    return this.ariaMenu.evaluate(
+      async (menu, { nodeElement, motion }) => {
+        const { ds } = window.app!.canvas
+        const initialTransform = {
+          x: ds.offset[0],
+          y: ds.offset[1],
+          scale: ds.scale
+        }
+        const initialNode = nodeElement.getBoundingClientRect()
+        const initialMenu = menu.getBoundingClientRect()
+        const errors: number[] = []
+
+        try {
+          for (let frame = 0; frame < 12; frame++) {
+            if (motion === 'pan') {
+              ds.offset[0] += 4 / ds.scale
+              ds.offset[1] -= 3 / ds.scale
+            } else {
+              ds.scale *= 1.01
+            }
+            await new Promise(requestAnimationFrame)
+
+            const nodeRect = nodeElement.getBoundingClientRect()
+            const menuRect = menu.getBoundingClientRect()
+            const scale = nodeRect.width / initialNode.width
+            errors.push(
+              Math.hypot(
+                menuRect.x -
+                  (nodeRect.x + (initialMenu.x - initialNode.x) * scale),
+                menuRect.y -
+                  (nodeRect.y + (initialMenu.y - initialNode.y) * scale)
+              )
+            )
+          }
+
+          const finalNode = nodeElement.getBoundingClientRect()
+          return {
+            errors,
+            nodeMovement: Math.hypot(
+              finalNode.x - initialNode.x,
+              finalNode.y - initialNode.y
+            )
+          }
+        } finally {
+          ds.offset = [initialTransform.x, initialTransform.y]
+          ds.scale = initialTransform.scale
+        }
+      },
+      { nodeElement, motion }
+    )
+  }
+
   /**
    * Click a litegraph menu entry. Selects the most recently opened matching
    * entry so nested submenu items can be reached without being shadowed by
