@@ -933,6 +933,7 @@
     "Copy Image": "Copiar Imagem",
     "Delete": "Excluir",
     "Distribute Nodes": "Distribuir Nós",
+    "Download Images": "Baixar imagens",
     "Duplicate": "Duplicar",
     "Edit Subgraph Widgets": "Editar Widgets do Subgrafo",
     "Expand": "Expandir",
@@ -1809,6 +1810,7 @@
     "download": "Baixar",
     "downloadAudio": "Baixar áudio",
     "downloadImage": "Baixar imagem",
+    "downloadImages": "Baixar imagens",
     "downloadVideo": "Baixar vídeo",
     "downloadWithSize": "Baixar ({size})",
     "downloading": "Baixando",
@@ -3364,6 +3366,11 @@
     "moreHelp": "Para mais ajuda, visite a",
     "outputs": "Saídas",
     "type": "Tipo"
+  },
+  "nodeOutputsExport": {
+    "download": "Baixar ({count})",
+    "downloadAll": "Baixar tudo",
+    "title": "Baixar recursos"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Alternativas Compatíveis",

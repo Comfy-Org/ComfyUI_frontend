@@ -933,6 +933,7 @@
     "Copy Image": "کپی تصویر",
     "Delete": "حذف",
     "Distribute Nodes": "توزیع Nodeها",
+    "Download Images": "دانلود تصاویر",
     "Duplicate": "تکرار",
     "Edit Subgraph Widgets": "ویرایش ویجت‌های Subgraph",
     "Expand": "باز کردن",
@@ -1809,6 +1810,7 @@
     "download": "دانلود",
     "downloadAudio": "دانلود صوت",
     "downloadImage": "دانلود تصویر",
+    "downloadImages": "دانلود تصاویر",
     "downloadVideo": "دانلود ویدیو",
     "downloadWithSize": "دانلود ({size})",
     "downloading": "در حال دانلود",
@@ -3364,6 +3366,11 @@
     "moreHelp": "برای راهنمایی بیشتر، مراجعه کنید به",
     "outputs": "خروجی‌ها",
     "type": "نوع"
+  },
+  "nodeOutputsExport": {
+    "download": "دانلود ({count})",
+    "downloadAll": "دانلود همه",
+    "title": "دانلود دارایی‌ها"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "گزینه‌های سازگار",

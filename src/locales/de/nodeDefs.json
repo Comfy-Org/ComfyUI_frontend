@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1- oder ISO-639-3-Sprachcode (z. B. 'en', 'es', 'fra'). Für automatische Erkennung leer lassen."
+        "tooltip": "ISO-639-1-Sprachcode (z. B. „en“, „es“, „ja“). Für automatische Erkennung leer lassen."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1- oder ISO-639-3-Sprachcode (z. B. „en“, „es“, „fra“). Für automatische Erkennung leer lassen."
+        "tooltip": "ISO-639-1-Sprachcode (z. B. „en“, „es“, „ja“). Für automatische Erkennung leer lassen."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",

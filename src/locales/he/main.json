@@ -933,6 +933,7 @@
     "Copy Image": "העתקת תמונה",
     "Delete": "מחיקה",
     "Distribute Nodes": "פיזור הצמתים",
+    "Download Images": "הורדת תמונות",
     "Duplicate": "שכפול",
     "Edit Subgraph Widgets": "עריכת פקדי תת-הגרף",
     "Expand": "הרחבה",
@@ -1809,6 +1810,7 @@
     "download": "הורדה",
     "downloadAudio": "הורדת שמע",
     "downloadImage": "הורדת תמונה",
+    "downloadImages": "הורדת תמונות",
     "downloadVideo": "הורדת סרטון",
     "downloadWithSize": "הורדה ({size})",
     "downloading": "מוריד",
@@ -3364,6 +3366,11 @@
     "moreHelp": "לעזרה נוספת, בקר ב",
     "outputs": "פלטים",
     "type": "סוג"
+  },
+  "nodeOutputsExport": {
+    "download": "הורדה ({count})",
+    "downloadAll": "הורדת הכול",
+    "title": "הורדת נכסים"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "חלופות תואמות",

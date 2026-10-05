@@ -933,6 +933,7 @@
     "Copy Image": "이미지 복사",
     "Delete": "삭제",
     "Distribute Nodes": "노드 배치",
+    "Download Images": "이미지 다운로드",
     "Duplicate": "복제",
     "Edit Subgraph Widgets": "서브그래프 위젯 편집",
     "Expand": "확장",
@@ -1809,6 +1810,7 @@
     "download": "다운로드",
     "downloadAudio": "오디오 다운로드",
     "downloadImage": "이미지 다운로드",
+    "downloadImages": "이미지 다운로드",
     "downloadVideo": "비디오 다운로드",
     "downloadWithSize": "다운로드 ({size})",
     "downloading": "다운로드 중",
@@ -3364,6 +3366,11 @@
     "moreHelp": "더 자세한 도움말은",
     "outputs": "출력",
     "type": "유형"
+  },
+  "nodeOutputsExport": {
+    "download": "다운로드 ({count})",
+    "downloadAll": "모두 다운로드",
+    "title": "에셋 다운로드"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "호환 가능한 대안",

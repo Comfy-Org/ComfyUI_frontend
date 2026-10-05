@@ -933,6 +933,7 @@
     "Copy Image": "画像をコピー",
     "Delete": "削除",
     "Distribute Nodes": "ノードを分布",
+    "Download Images": "画像をダウンロード",
     "Duplicate": "複製",
     "Edit Subgraph Widgets": "サブグラフウィジェットを編集",
     "Expand": "展開",
@@ -1809,6 +1810,7 @@
     "download": "ダウンロード",
     "downloadAudio": "オーディオをダウンロード",
     "downloadImage": "画像をダウンロード",
+    "downloadImages": "画像をダウンロード",
     "downloadVideo": "ビデオをダウンロード",
     "downloadWithSize": "ダウンロード（{size}）",
     "downloading": "ダウンロード中",
@@ -3364,6 +3366,11 @@
     "moreHelp": "さらに詳しい情報は、",
     "outputs": "出力",
     "type": "タイプ"
+  },
+  "nodeOutputsExport": {
+    "download": "ダウンロード（{count}）",
+    "downloadAll": "すべてダウンロード",
+    "title": "アセットをダウンロード"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "互換性のある代替案",

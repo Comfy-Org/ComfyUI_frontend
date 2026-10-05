@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "言語コード",
-        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+        "tooltip": "ISO 639-1言語コード（例: 'en'、'es'、'ja'）。自動検出するには空欄のままにしてください。"
       },
       "model": {
         "name": "モデル",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+        "tooltip": "ISO 639-1言語コード（例: 'en'、'es'、'ja'）。自動検出するには空欄のままにしてください。"
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",

@@ -933,6 +933,7 @@
     "Copy Image": "نسخ الصورة",
     "Delete": "حذف",
     "Distribute Nodes": "توزيع العقد",
+    "Download Images": "تنزيل الصور",
     "Duplicate": "تكرار",
     "Edit Subgraph Widgets": "تعديل عناصر الرسم البياني الفرعي",
     "Expand": "توسيع",
@@ -1809,6 +1810,7 @@
     "download": "تنزيل",
     "downloadAudio": "تنزيل الصوت",
     "downloadImage": "تنزيل الصورة",
+    "downloadImages": "تنزيل الصور",
     "downloadVideo": "تنزيل الفيديو",
     "downloadWithSize": "تنزيل ({size})",
     "downloading": "جارٍ التحميل",
@@ -3364,6 +3366,11 @@
     "moreHelp": "لمزيد من المساعدة، زر",
     "outputs": "المُخرجات",
     "type": "النوع"
+  },
+  "nodeOutputsExport": {
+    "download": "تنزيل ({count})",
+    "downloadAll": "تنزيل الكل",
+    "title": "تنزيل الموارد"
   },
   "nodeReplacement": {
     "compatibleAlternatives": "بدائل متوافقة",
