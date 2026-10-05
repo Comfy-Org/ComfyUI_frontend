@@ -240,16 +240,26 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     { flush: 'sync' }
   )
 
+  function selectMentionSection(
+    section: Exclude<MentionSection, 'root'>,
+    from: number,
+    to: number
+  ): void {
+    if (section === 'nodes') loadMentionNodes()
+    options.editor()?.replaceText(from, to, '')
+    dispatchMention({ type: 'sectionSelected', section })
+    if (section === 'workflows') options.requestWorkflows()
+  }
+
   async function pickMention(match: MentionMatch): Promise<void> {
     const state = mention.value
     if (state.status === 'closed' || isMentionDisabled(match)) return
     if (match.kind === 'section') {
-      if (match.id === 'nodes') loadMentionNodes()
-      options
-        .editor()
-        ?.replaceText(state.start + 1, state.start + 1 + state.query.length, '')
-      dispatchMention({ type: 'sectionSelected', section: match.id })
-      if (match.id === 'workflows') options.requestWorkflows()
+      selectMentionSection(
+        match.id,
+        state.start + 1,
+        state.start + 1 + state.query.length
+      )
       return
     }
     if (match.kind === 'back') {
