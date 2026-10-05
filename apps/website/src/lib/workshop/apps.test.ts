@@ -19,9 +19,9 @@ describe('workshopAppHref', () => {
       workshopApps('en', appModels).find(({ key }) => key === 'reshoot')
         ?.thumbnail
     ).toEqual({
-      url: '/videos/reshoot/thumbnail.mp4',
+      url: 'https://media.comfy.org/website/workshop/apps/reshoot/thumbnail.mp4',
       kind: 'video',
-      poster: '/videos/reshoot/poster.jpg'
+      poster: 'https://media.comfy.org/website/workshop/apps/reshoot/poster.jpg'
     })
   })
 })
