@@ -28,15 +28,17 @@ const LIVE_DEFECT_CEILING = 25
 const SOURCE_ROOTS = ['browser_tests', 'src']
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx'])
 
-function isTestExpression(expression: ts.Expression): boolean {
-  if (ts.isIdentifier(expression)) {
-    return expression.text === 'it' || expression.text === 'test'
-  }
+function isTestExpression(
+  expression: ts.Expression,
+  playwrightRunners: ReadonlySet<string>
+): boolean {
+  if (ts.isIdentifier(expression)) return playwrightRunners.has(expression.text)
   if (!ts.isPropertyAccessExpression(expression)) return false
 
-  const object = expression.expression.getText()
+  const { root } = callChain(expression)
   return (
-    (object === 'it' || object === 'test') &&
+    root !== undefined &&
+    playwrightRunners.has(root) &&
     ['fixme', 'only', 'skip'].includes(expression.name.text)
   )
 }
@@ -55,7 +57,11 @@ function hasTestBody(node: ts.CallExpression): boolean {
   )
 }
 
-function testTitle(node: ts.CallExpression): string {
+function testTitle(
+  node: ts.CallExpression,
+  runner: string,
+  playwrightRunners: ReadonlySet<string>
+): string {
   if (hasTestBody(node)) {
     const declaredTitle = literalTitle(node.arguments.at(0))
     if (declaredTitle) return declaredTitle
@@ -68,7 +74,12 @@ function testTitle(node: ts.CallExpression): string {
   ) {
     if (!ts.isCallExpression(parent)) continue
 
-    if (!isTestExpression(parent.expression)) continue
+    const { root } = callChain(parent.expression)
+    if (
+      root !== runner ||
+      !isTestExpression(parent.expression, playwrightRunners)
+    )
+      continue
 
     const title = literalTitle(parent.arguments.at(0))
     if (title) return title
@@ -91,6 +102,82 @@ function callChain(expression: ts.Expression): {
   return { ...chain, properties: [...chain.properties, expression.name.text] }
 }
 
+function importedPlaywrightRunners(node: ts.Node): string[] {
+  if (
+    !ts.isImportDeclaration(node) ||
+    !ts.isStringLiteral(node.moduleSpecifier) ||
+    !node.moduleSpecifier.text.includes('/fixtures/')
+  )
+    return []
+  const bindings = node.importClause?.namedBindings
+  if (!bindings || !ts.isNamedImports(bindings)) return []
+  return bindings.elements
+    .map(({ name }) => name.text)
+    .filter((name) => /(?:fixture|test)$/i.test(name))
+}
+
+function extendedPlaywrightRunner(
+  node: ts.Node,
+  runners: ReadonlySet<string>
+): string | undefined {
+  if (
+    !ts.isVariableDeclaration(node) ||
+    !ts.isIdentifier(node.name) ||
+    !node.initializer ||
+    !ts.isCallExpression(node.initializer)
+  )
+    return
+  const { root, properties } = callChain(node.initializer.expression)
+  if (root && runners.has(root) && properties.includes('extend'))
+    return node.name.text
+}
+
+function forOfRunnerAliases(
+  node: ts.Node,
+  runners: ReadonlySet<string>
+): string[] {
+  if (!ts.isForOfStatement(node)) return []
+  const valuesExpression = ts.isAsExpression(node.expression)
+    ? node.expression.expression
+    : node.expression
+  if (
+    !ts.isVariableDeclarationList(node.initializer) ||
+    !ts.isArrayLiteralExpression(valuesExpression)
+  )
+    return []
+  const binding = node.initializer.declarations[0].name
+  if (!ts.isArrayBindingPattern(binding)) return []
+
+  return binding.elements.flatMap((element, index) => {
+    if (!ts.isBindingElement(element) || !ts.isIdentifier(element.name))
+      return []
+    const values = valuesExpression.elements.map((value) =>
+      ts.isArrayLiteralExpression(value) ? value.elements[index] : null
+    )
+    return values.length > 0 &&
+      values.every(
+        (value) => value && ts.isIdentifier(value) && runners.has(value.text)
+      )
+      ? [element.name.text]
+      : []
+  })
+}
+
+function playwrightRunnerNames(sourceFile: ts.SourceFile): Set<string> {
+  const runners = new Set(['test'])
+
+  function visit(node: ts.Node) {
+    importedPlaywrightRunners(node).forEach((name) => runners.add(name))
+    const extendedRunner = extendedPlaywrightRunner(node, runners)
+    if (extendedRunner) runners.add(extendedRunner)
+    forOfRunnerAliases(node, runners).forEach((name) => runners.add(name))
+    ts.forEachChild(node, visit)
+  }
+
+  visit(sourceFile)
+  return runners
+}
+
 function isVitestFailure(root: string | undefined, properties: string[]) {
   return (
     root !== undefined &&
@@ -102,25 +189,26 @@ function isVitestFailure(root: string | undefined, properties: string[]) {
 function isPlaywrightFailure(
   root: string | undefined,
   properties: string[],
-  file: string
+  playwrightRunners: ReadonlySet<string>
 ) {
   return (
     root !== undefined &&
     properties.includes('fail') &&
-    (root === 'test' || file.startsWith('browser_tests/'))
+    playwrightRunners.has(root)
   )
 }
 
 function expectedFailureKind(
   node: ts.CallExpression,
-  file: string
+  playwrightRunners: ReadonlySet<string>
 ): ExpectedFailureKind | undefined {
   if (ts.isCallExpression(node.parent) && node.parent.expression === node)
     return
 
   const { root, properties } = callChain(node.expression)
   if (isVitestFailure(root, properties)) return 'vitest'
-  if (isPlaywrightFailure(root, properties, file)) return 'playwright'
+  if (isPlaywrightFailure(root, properties, playwrightRunners))
+    return 'playwright'
 }
 
 function vitestTitle(node: ts.CallExpression): string {
@@ -134,6 +222,7 @@ export function inspectSource(source: string, file: string): ExpectedFailure[] {
     ts.ScriptTarget.Latest,
     true
   )
+  const playwrightRunners = playwrightRunnerNames(sourceFile)
   const found: Omit<ExpectedFailure, 'id'>[] = []
 
   function visit(node: ts.Node) {
@@ -142,11 +231,15 @@ export function inspectSource(source: string, file: string): ExpectedFailure[] {
       return
     }
 
-    const kind = expectedFailureKind(node, file)
+    const kind = expectedFailureKind(node, playwrightRunners)
 
     if (kind) {
       const position = sourceFile.getLineAndCharacterOfPosition(node.getStart())
-      const title = kind === 'vitest' ? vitestTitle(node) : testTitle(node)
+      const { root } = callChain(node.expression)
+      const title =
+        kind === 'vitest'
+          ? vitestTitle(node)
+          : testTitle(node, root!, playwrightRunners)
       found.push({ kind, file, line: position.line + 1, title })
     }
 
@@ -233,7 +326,7 @@ async function run() {
   if (
     added.length === 0 &&
     removed.length === 0 &&
-    liveDefects <= LIVE_DEFECT_CEILING
+    liveDefects === LIVE_DEFECT_CEILING
   ) {
     console.log(
       `Expected-failure baseline matches: ${liveDefects} live defects, ${baseline.length - liveDefects} infrastructure assertions.`
@@ -251,9 +344,9 @@ async function run() {
       `Resolved or renamed expected failure still in baseline: ${entry.id}`
     )
   }
-  if (liveDefects > LIVE_DEFECT_CEILING) {
+  if (liveDefects !== LIVE_DEFECT_CEILING) {
     console.error(
-      `Live-defect count ${liveDefects} exceeds the fixed ceiling ${LIVE_DEFECT_CEILING}.`
+      `Live-defect count ${liveDefects} must equal LIVE_DEFECT_CEILING (${LIVE_DEFECT_CEILING}); lower the ceiling when a pin is fixed.`
     )
   }
   console.error(

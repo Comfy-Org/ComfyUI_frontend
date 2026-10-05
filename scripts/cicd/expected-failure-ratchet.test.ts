@@ -13,6 +13,7 @@ describe('expected failure inventory', () => {
       })
       test.fail(true, 'declaration-level defect')
       test.fail.only('focused browser defect', () => {})
+      const fixture = test.extend({})
       fixture.fail(true, 'fixture teardown defect')
       it.skip.fails('skipped unit defect', () => {})
       it.fails.each([1])('parameterized unit defect', () => {})
@@ -51,23 +52,42 @@ describe('expected failure inventory', () => {
         id: 'playwright:browser_tests/example.spec.ts:<declaration-level>:2',
         kind: 'playwright',
         file: 'browser_tests/example.spec.ts',
-        line: 10,
+        line: 11,
         title: '<declaration-level>'
       },
       {
         id: 'vitest:browser_tests/example.spec.ts:skipped unit defect:1',
         kind: 'vitest',
         file: 'browser_tests/example.spec.ts',
-        line: 11,
+        line: 12,
         title: 'skipped unit defect'
       },
       {
         id: 'vitest:browser_tests/example.spec.ts:parameterized unit defect:1',
         kind: 'vitest',
         file: 'browser_tests/example.spec.ts',
-        line: 12,
+        line: 13,
         title: 'parameterized unit defect'
       }
     ])
+  })
+
+  it('uses extended fixture declaration titles in inventory IDs', () => {
+    const inventoryId = (title: string) =>
+      inspectSource(
+        `
+          import { baseFixture } from '@e2e/fixtures/baseFixture'
+          const fixture = baseFixture.extend({})
+          fixture('${title}', () => fixture.fail(true))
+        `,
+        'browser_tests/fixture.spec.ts'
+      )[0].id
+
+    expect(inventoryId('old title')).toBe(
+      'playwright:browser_tests/fixture.spec.ts:old title:1'
+    )
+    expect(inventoryId('new title')).toBe(
+      'playwright:browser_tests/fixture.spec.ts:new title:1'
+    )
   })
 })
