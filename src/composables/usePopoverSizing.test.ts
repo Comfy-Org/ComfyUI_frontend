@@ -38,43 +38,31 @@ describe('useOverlayChildStyle', () => {
   it('renders above the closest Reka dialog', () => {
     const { overlayScopeRef, contentStyle } = mountComposable()
 
-    overlayScopeRef.value = appendOverlay('reka-dialog', 5000)
+    overlayScopeRef.value = appendOverlay(5000)
 
     expect(contentStyle.value).toEqual({ zIndex: 5001 })
-  })
-
-  it('renders above the closest PrimeVue overlay mask', () => {
-    const { overlayScopeRef, contentStyle } = mountComposable()
-
-    overlayScopeRef.value = appendOverlay('prime-overlay', 4200)
-
-    expect(contentStyle.value).toEqual({ zIndex: 4201 })
   })
 
   it('does not drop below the Reka select overlay z-index floor', () => {
     const { overlayScopeRef, contentStyle } = mountComposable()
 
-    overlayScopeRef.value = appendOverlay('reka-dialog', 1200)
+    overlayScopeRef.value = appendOverlay(1200)
 
     expect(contentStyle.value).toEqual({ zIndex: 3000 })
   })
 
-  it('preserves existing stacking when the PrimeVue overlay z-index is not numeric', () => {
+  it('preserves existing stacking when the dialog z-index is not numeric', () => {
     const { overlayScopeRef, contentStyle } = mountComposable()
 
-    overlayScopeRef.value = appendOverlay('reka-dialog')
+    overlayScopeRef.value = appendOverlay()
 
     expect(contentStyle.value).toEqual({})
   })
 })
 
-function appendOverlay(
-  kind: 'reka-dialog' | 'prime-overlay',
-  zIndex?: number
-): HTMLElement {
+function appendOverlay(zIndex?: number): HTMLElement {
   const overlay = document.createElement('div')
-  if (kind === 'reka-dialog') overlay.dataset.rekaDialogContent = ''
-  else overlay.className = 'p-overlay-mask'
+  overlay.dataset.rekaDialogContent = ''
   if (zIndex !== undefined) {
     overlay.style.zIndex = String(zIndex)
   }

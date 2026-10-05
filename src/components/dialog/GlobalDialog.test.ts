@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -10,7 +9,7 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import {
   onRekaFocusOutside,
   onRekaPointerDownOutside
-} from '@/components/dialog/rekaPrimeVueBridge'
+} from '@/components/dialog/dialogDismissGuards'
 import UiDialog from '@/components/ui/dialog/Dialog.vue'
 import UiDialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
@@ -119,11 +118,11 @@ const ClosedNonModalDialog = defineComponent({
 
 function mountDialog() {
   return render(GlobalDialog, {
-    global: { plugins: [PrimeVue, i18n] }
+    global: { plugins: [i18n] }
   })
 }
 
-describe('GlobalDialog Reka parity with PrimeVue', () => {
+describe('GlobalDialog', () => {
   it('omits the close button when closable is false', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -387,7 +386,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
   it('keeps checkout open on the scrim while preserving explicit dismissal', async () => {
     render(GlobalDialog, {
       global: {
-        plugins: [PrimeVue, i18n],
+        plugins: [i18n],
         stubs: {
           UnifiedPricingTable: true,
           SubscriptionAddPaymentPreviewWorkspace: true,
@@ -515,7 +514,8 @@ describe('shouldPreventRekaDismiss', () => {
   }
 
   it.for([
-    ['class', 'p-overlay-mask'],
+    ['data-reka-popper-content-wrapper', ''],
+    ['role', 'listbox'],
     ['data-toast-kind', 'info'],
     ['data-toast-dock', '']
   ] as const)(
@@ -535,7 +535,7 @@ describe('shouldPreventRekaDismiss', () => {
     }
   )
 
-  it('allows dismiss when target is outside any PrimeVue overlay', () => {
+  it('allows dismiss when target is outside any portaled layer', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: undefined }, event)
     expect(event.defaultPrevented).toBe(false)
@@ -575,19 +575,22 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it('focus-outside on a sibling PrimeVue dialog portal does not dismiss the parent', () => {
-    const overlay = document.createElement('div')
-    overlay.className = 'p-dialog'
-    const inner = document.createElement('button')
-    overlay.appendChild(inner)
-    document.body.appendChild(overlay)
+  it.for(['listbox', 'menu'])(
+    'focus-outside on a sibling %s portal does not dismiss the parent',
+    (role) => {
+      const overlay = document.createElement('div')
+      overlay.setAttribute('role', role)
+      const inner = document.createElement('button')
+      overlay.appendChild(inner)
+      document.body.appendChild(overlay)
 
-    const event = makeEvent(inner)
-    onRekaFocusOutside(event)
+      const event = makeEvent(inner)
+      onRekaFocusOutside(event)
 
-    expect(event.defaultPrevented).toBe(true)
-    overlay.remove()
-  })
+      expect(event.defaultPrevented).toBe(true)
+      overlay.remove()
+    }
+  )
 
   it('focus-outside on a toast does not dismiss the parent', () => {
     const toast = document.createElement('div')
