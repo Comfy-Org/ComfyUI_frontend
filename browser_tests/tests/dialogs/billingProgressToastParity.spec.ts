@@ -316,7 +316,9 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
             hasText: SUBSCRIPTION_ACTION_REQUIRED
           })
         ).toBeVisible()
-        await expect(page.getByText(SUBSCRIPTION_PROCESSING)).toBeHidden()
+        await expect(
+          new ToastHelper(page).withText(SUBSCRIPTION_PROCESSING)
+        ).toBeHidden()
       })
 
       test('stays quiet after a reload finds the subscribe parked on a payment method', async ({
@@ -338,10 +340,12 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await firstRead
         await operationRead(page)
 
-        await expect(page.getByText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
-        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
-          0
-        )
+        await expect(
+          new ToastHelper(page).withText(SUBSCRIPTION_PROCESSING)
+        ).toHaveCount(0)
+        await expect(
+          new ToastHelper(page).withText(SUBSCRIPTION_ACTION_REQUIRED)
+        ).toHaveCount(0)
       })
 
       for (const { parked, operation } of [
@@ -401,7 +405,9 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await page.reload()
         await waitForCloudApp(page)
 
-        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
+        await expect(
+          new ToastHelper(page).withText(SUBSCRIPTION_ACTION_REQUIRED)
+        ).toBeVisible()
       })
 
       test('announces a processing top-up and clears it once it settles', async ({
@@ -438,10 +444,12 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await cancel.confirmCancelButton.click()
         await expect(cancel.root).toBeHidden()
 
-        await expect(page.getByText(/Processing payment/)).toHaveCount(0)
-        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
-          0
-        )
+        await expect(
+          new ToastHelper(page).withText(/Processing payment/)
+        ).toHaveCount(0)
+        await expect(
+          new ToastHelper(page).withText(SUBSCRIPTION_ACTION_REQUIRED)
+        ).toHaveCount(0)
       })
     })
   }
