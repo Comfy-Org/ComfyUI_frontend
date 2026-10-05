@@ -166,6 +166,16 @@ function dynamicComboWidget(
     const previous = captureInputLayout(node)
     const inputLinks = new Map(previous.links)
     const removedInputs = remove(node.inputs, isInGroup)
+    //Rebuilding regenerates a nested autogrow child at its static minimum,
+    //so re-applying a serialized value drops every link past it. Re-homing
+    //those needs the ordinals back; a user picking a different option is
+    //genuinely discarding them and must not resurrect any.
+    const restoring = app.configuringGraph || removedOption === value
+    const retainedNames = restoring
+      ? removedInputs
+          .filter((input) => inputLinks.has(input))
+          .map((input) => input.name)
+      : []
     for (const widget of remove(node.widgets, isInGroup)) {
       const optionValues = removedWidgetValues.get(removedOption) ?? new Map()
       optionValues.set(widget.name, {
@@ -202,7 +212,9 @@ function dynamicComboWidget(
           isOptional: idx !== 0
         })
         specToAdd.display_name = key
-        addNodeInput(node, specToAdd)
+        if (specToAdd.type === 'COMFY_AUTOGROW_V3')
+          applyAutogrow(node, specToAdd, retainedNames)
+        else addNodeInput(node, specToAdd)
       }
     })
 
@@ -788,7 +800,36 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     }
   )
 }
-function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
+/**
+ * Highest ordinal of `groupName` named by `retainedNames`, or -1 for none.
+ * Membership resolves through the group's registration, so an unrelated
+ * dotted input sharing the prefix cannot inflate the count.
+ */
+function highestRetainedOrdinal(
+  node: AutogrowNode,
+  groupName: string,
+  retainedNames: readonly string[]
+): number {
+  let highest = -1
+  for (const name of retainedNames) {
+    if (!name.startsWith(`${groupName}.`)) continue
+    const ordinal = resolveAutogrowOrdinal(name, groupName, node)
+    if (ordinal !== undefined && ordinal > highest) highest = ordinal
+  }
+  return highest
+}
+
+/**
+ * @param retainedNames Linked input names the caller is about to re-home
+ * onto the rebuilt group. Grows far enough to define each, rather than
+ * stopping at `min` and leaving the rest to be dropped (PN-1520, FE-2443).
+ * Still bounded by `max`/`names`.
+ */
+function applyAutogrow(
+  node: LGraphNode,
+  inputSpecV2: InputSpecV2,
+  retainedNames: readonly string[] = []
+) {
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)
@@ -812,6 +853,10 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
     prefix,
     inputSpecs: inputsV2
   }
-  for (let i = 0; i === 0 || i < min + 1; i++)
+  const lastOrdinal = Math.max(
+    min,
+    highestRetainedOrdinal(node, inputSpecV2.name, retainedNames)
+  )
+  for (let i = 0; i === 0 || i < lastOrdinal + 1; i++)
     addAutogrowGroup(i, inputSpecV2.name, node)
 }

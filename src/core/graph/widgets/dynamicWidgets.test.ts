@@ -16,7 +16,10 @@ import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef as ComfyNodeDefV1,
+  InputSpec
+} from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
@@ -956,5 +959,230 @@ describe('Autogrow followed by an ordinary combo child (FE-258)', () => {
       ),
       maskConnected: inputNames(reloadedNode).includes('model.mask*')
     }).toEqual({ images: before, maskConnected: true })
+  })
+})
+
+const SEEDANCE_NODE_TYPE = 'test/SeedanceLikeReferences'
+
+/**
+ * Shaped after the Seedance partner nodes (PN-1520): two `IO.Autogrow`
+ * groups nested inside one `IO.DynamicCombo` option.
+ */
+function seedanceNodeDef(min: number): ComfyNodeDefV1 {
+  const autogrow = (type: string, count: number): Required<InputSpec> => [
+    'COMFY_AUTOGROW_V3',
+    {
+      template: {
+        input: { required: { ref: [type, {}] } },
+        names: Array.from({ length: count }, (_, i) => `ref_${i + 1}`),
+        min
+      }
+    }
+  ]
+  return {
+    name: SEEDANCE_NODE_TYPE,
+    display_name: 'Seedance Like References',
+    category: 'testing',
+    python_module: 'nodes',
+    description: '',
+    input: {
+      required: {
+        model: [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              {
+                key: 'seedance-1-pro',
+                inputs: {
+                  required: {
+                    seed: ['INT', { default: 0 }],
+                    reference_images: autogrow('IMAGE', 8),
+                    reference_videos: autogrow('VIDEO', 4)
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    output: ['VIDEO'],
+    output_name: ['VIDEO'],
+    output_node: false
+  }
+}
+
+class RefSourceNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'RefSource')
+    this.addOutput('image', 'IMAGE')
+    this.addOutput('video', 'VIDEO')
+  }
+}
+
+/** Names of `prefix` inputs on `node` that carry a link, in slot order. */
+function connectedUnder(node: LGraphNode, prefix: string): string[] {
+  return node.inputs.flatMap((input, slot) =>
+    input.name.startsWith(prefix) && node.getInputLink(slot) ? [input.name] : []
+  )
+}
+
+function connectRefs(
+  graph: LGraph,
+  node: LGraphNode,
+  group: string,
+  outputSlot: number,
+  count: number
+) {
+  for (let i = 1; i <= count; i++) {
+    const name = `model.${group}.ref_${i}`
+    const slot = node.inputs.findIndex((input) => input.name === name)
+    assert.ok(slot !== -1, `slot for ${name}`)
+    const source = new RefSourceNode()
+    graph.add(source)
+    assert.ok(source.connect(outputSlot, node, slot), `connect ${name}`)
+  }
+}
+
+describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', () => {
+  beforeEach(() => {
+    LiteGraph.registerNodeType('test/RefSource', RefSourceNode)
+  })
+
+  // `min` sets how many slots the group regenerates on rebuild, so it alone
+  // decided how many links used to survive: the enterprise report's "first 3"
+  // is min=2, and FE-2443's "five or more images" threshold is min=4.
+  test.for([
+    { min: 0, images: 5, videos: 2 },
+    { min: 2, images: 6, videos: 2 },
+    { min: 4, images: 8, videos: 4 }
+  ])(
+    'min=$min keeps all $images image and $videos video links',
+    async ({ min, images, videos }) => {
+      await useLitegraphService().registerNodeDef(
+        SEEDANCE_NODE_TYPE,
+        seedanceNodeDef(min)
+      )
+      const graph = new LGraph()
+      const node = LiteGraph.createNode(SEEDANCE_NODE_TYPE)
+      assert.ok(node, 'seedance node')
+      graph.add(node)
+      connectRefs(graph, node, 'reference_images', 0, images)
+      connectRefs(graph, node, 'reference_videos', 1, videos)
+
+      const reloaded = new LGraph()
+      reloaded.configure(structuredClone(graph.serialize()))
+      const reloadedNode = reloaded.getNodeById(node.id)
+      assert.ok(reloadedNode, 'reloaded node')
+
+      expect({
+        images: connectedUnder(reloadedNode, 'model.reference_images.'),
+        videos: connectedUnder(reloadedNode, 'model.reference_videos.')
+      }).toEqual({
+        images: connectedUnder(node, 'model.reference_images.'),
+        videos: connectedUnder(node, 'model.reference_videos.')
+      })
+    }
+  )
+
+  test('does not grow a group past the ordinals its names declare', async () => {
+    await useLitegraphService().registerNodeDef(
+      SEEDANCE_NODE_TYPE,
+      seedanceNodeDef(0)
+    )
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(SEEDANCE_NODE_TYPE)
+    assert.ok(node, 'seedance node')
+    graph.add(node)
+    connectRefs(graph, node, 'reference_videos', 1, 4)
+
+    const reloaded = new LGraph()
+    reloaded.configure(structuredClone(graph.serialize()))
+    const reloadedNode = reloaded.getNodeById(node.id)
+    assert.ok(reloadedNode, 'reloaded node')
+
+    const videoSlots = reloadedNode.inputs.filter((input) =>
+      input.name.startsWith('model.reference_videos.')
+    )
+    expect({
+      connected: connectedUnder(reloadedNode, 'model.reference_videos.').length,
+      slots: videoSlots.length
+    }).toEqual({ connected: 4, slots: 4 })
+  })
+})
+
+const SWITCHABLE_NODE_TYPE = 'test/SwitchableAutogrowOption'
+
+const switchableNodeDef: ComfyNodeDefV1 = {
+  name: SWITCHABLE_NODE_TYPE,
+  display_name: 'Switchable Autogrow Option',
+  category: 'testing',
+  python_module: 'nodes',
+  description: '',
+  input: {
+    required: {
+      model: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'many-refs',
+              inputs: {
+                required: {
+                  seed: ['INT', { default: 0 }],
+                  reference_images: [
+                    'COMFY_AUTOGROW_V3',
+                    {
+                      template: {
+                        input: { required: { ref: ['IMAGE', {}] } },
+                        names: ['ref_1', 'ref_2', 'ref_3', 'ref_4'],
+                        min: 0
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              key: 'no-refs',
+              inputs: { required: { seed: ['INT', { default: 0 }] } }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  output: ['IMAGE'],
+  output_name: ['IMAGE'],
+  output_node: false
+}
+
+describe('Autogrow regrowth is scoped to restoring a value', () => {
+  beforeEach(async () => {
+    LiteGraph.registerNodeType('test/RefSource', RefSourceNode)
+    await useLitegraphService().registerNodeDef(
+      SWITCHABLE_NODE_TYPE,
+      switchableNodeDef
+    )
+  })
+
+  test('a user switching options discards its links instead of regrowing for them', () => {
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(SWITCHABLE_NODE_TYPE)
+    assert.ok(node, 'switchable node')
+    graph.add(node)
+    connectRefs(graph, node, 'reference_images', 0, 3)
+    expect(connectedUnder(node, 'model.reference_images.')).toHaveLength(3)
+
+    const combo = node.widgets?.find((widget) => widget.name === 'model')
+    assert.ok(combo, 'model combo widget')
+    combo.value = 'no-refs'
+
+    expect({
+      refInputs: node.inputs.filter((input) =>
+        input.name.startsWith('model.reference_images.')
+      ).length,
+      links: graph.links.size
+    }).toEqual({ refInputs: 0, links: 0 })
   })
 })
