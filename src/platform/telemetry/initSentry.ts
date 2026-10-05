@@ -1,5 +1,9 @@
 import type { App } from 'vue'
-import { browserApiErrorsIntegration, init as sentryInit } from '@sentry/vue'
+import {
+  browserApiErrorsIntegration,
+  eventFiltersIntegration,
+  init as sentryInit
+} from '@sentry/vue'
 
 import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
 
@@ -24,7 +28,7 @@ export function initSentry({
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,
     beforeSend: sentryThirdPartyErrorFilter,
-    denyUrls: [/^(?:chrome|moz|safari-web)-extension:\/\//],
+    denyUrls: [/^(?:chrome|moz|safari(?:-web)?|ms-browser)-extension:\/\//],
     // Only set these for non-cloud builds
     ...(isCloud
       ? {
@@ -36,7 +40,7 @@ export function initSentry({
           ]
         }
       : {
-          integrations: [],
+          integrations: [eventFiltersIntegration()],
           autoSessionTracking: false,
           defaultIntegrations: false
         })
