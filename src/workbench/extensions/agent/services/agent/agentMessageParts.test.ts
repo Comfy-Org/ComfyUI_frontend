@@ -1,0 +1,343 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { assert, describe, expect, it } from 'vitest'
+
+import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
+import type { AskUserResolution, MessagePart } from './agentMessageParts'
+import {
+  ASK_USER_LIMITS,
+  askIdOf,
+  isAskPart,
+  isRenderedAskKind,
+  retireAskParts,
+  toAskOrNoticePart,
+  toAskPart
+} from './agentMessageParts'
+
+type AskInput = Parameters<typeof toAskPart>[0]
+
+const askUser = (ask: Partial<AskInput> = {}): AskInput => ({
+  kind: 'ask_user',
+  ask_id: 'turn-1:call-1',
+  prompt: 'Which model should I use?',
+  options: [
+    { id: 'sdxl', label: 'SDXL', description: 'Fast, 1024px' },
+    { id: 'flux', label: 'Flux Dev' }
+  ],
+  min_selections: 1,
+  max_selections: 1,
+  allow_other: false,
+  ...ask
+})
+
+describe('toAskPart ask_user', () => {
+  it('keeps the prompt and every option, with descriptions only where given', () => {
+    expect(toAskPart(askUser())).toEqual({
+      type: 'askUser',
+      askId: 'turn-1:call-1',
+      prompt: 'Which model should I use?',
+      options: [
+        { id: 'sdxl', label: 'SDXL', description: 'Fast, 1024px' },
+        { id: 'flux', label: 'Flux Dev', description: undefined }
+      ],
+      minSelections: 1,
+      maxSelections: 1,
+      allowOther: false
+    })
+  })
+
+  it('carries multi-choice bounds and allow_other through', () => {
+    expect(
+      toAskPart(
+        askUser({ min_selections: 2, max_selections: 3, allow_other: true })
+      )
+    ).toMatchObject({ minSelections: 2, maxSelections: 3, allowOther: true })
+  })
+
+  it('treats a blank description as absent', () => {
+    const part = toAskPart(
+      askUser({
+        options: [
+          { id: 'a', label: 'A', description: '   ' },
+          { id: 'b', label: 'B' }
+        ]
+      })
+    )
+    expect(part).toMatchObject({
+      type: 'askUser',
+      options: [
+        { id: 'a', label: 'A', description: undefined },
+        { id: 'b', label: 'B', description: undefined }
+      ]
+    })
+  })
+
+  it.for([undefined, 'mystery'])(
+    'renders nothing for an ask whose kind is %s',
+    (kind) => {
+      expect(toAskPart(askUser({ kind }))).toBeUndefined()
+    }
+  )
+
+  it('keeps a lone option when free text is allowed and drops an empty ask', () => {
+    expect(
+      toAskPart(
+        askUser({
+          options: [{ id: 'a', label: 'A' }],
+          allow_other: true
+        })
+      )?.type
+    ).toBe('askUser')
+    expect(toAskPart(askUser({ options: [] }))).toBeUndefined()
+  })
+
+  it('clamps out-of-range bounds into a satisfiable range', () => {
+    expect(
+      toAskPart(askUser({ min_selections: 5, max_selections: 0 }))
+    ).toMatchObject({ minSelections: 1, maxSelections: 1 })
+    expect(
+      toAskPart(askUser({ min_selections: -1, max_selections: 2 }))
+    ).toMatchObject({ minSelections: 0, maxSelections: 2 })
+  })
+
+  it('caps the bounds at what can actually be chosen', () => {
+    expect(
+      toAskPart(askUser({ min_selections: 3, max_selections: 5 }))
+    ).toMatchObject({ minSelections: 2, maxSelections: 2 })
+    expect(
+      toAskPart(
+        askUser({ min_selections: 4, max_selections: 4, allow_other: true })
+      )
+    ).toMatchObject({ minSelections: 3, maxSelections: 3 })
+  })
+
+  it('keeps the first of options that share an id, as the server does', () => {
+    const part = toAskPart(
+      askUser({
+        options: [
+          { id: 'a', label: 'First' },
+          { id: 'b', label: 'B' },
+          { id: 'a', label: 'Second' }
+        ],
+        max_selections: 3
+      })
+    )
+    expect(part).toMatchObject({
+      options: [
+        { id: 'a', label: 'First' },
+        { id: 'b', label: 'B' }
+      ],
+      maxSelections: 2
+    })
+  })
+
+  it('bounds the option count and text lengths of an untrusted ask', () => {
+    const part = toAskPart(
+      askUser({
+        prompt: 'p'.repeat(ASK_USER_LIMITS.prompt + 10),
+        options: Array.from(
+          { length: ASK_USER_LIMITS.options + 25 },
+          (_, index) => ({
+            id: `o${index}`,
+            label: 'l'.repeat(ASK_USER_LIMITS.label + 10),
+            description: 'd'.repeat(ASK_USER_LIMITS.description + 10)
+          })
+        )
+      })
+    )
+    assert(part?.type === 'askUser')
+    expect(part.options).toHaveLength(ASK_USER_LIMITS.options)
+    expect(part.prompt).toHaveLength(ASK_USER_LIMITS.prompt)
+    expect(part.options[0].label).toHaveLength(ASK_USER_LIMITS.label)
+    expect(part.options[0].description).toHaveLength(
+      ASK_USER_LIMITS.description
+    )
+  })
+
+  it('still maps run approvals, and no kind outside the contract', () => {
+    expect(
+      toAskPart(
+        askUser({
+          kind: 'run_approval',
+          context: { workflow_id: 'wf-1', workflow_name: 'Portrait' }
+        })
+      )
+    ).toEqual({
+      type: 'runApproval',
+      askId: 'turn-1:call-1',
+      workflowId: 'wf-1',
+      workflowName: 'Portrait'
+    })
+    expect(
+      toAskPart(
+        askUser({
+          kind: 'permission',
+          context: { target_kind: 'host', target: 'example.org' }
+        })
+      )
+    ).toBeUndefined()
+  })
+})
+
+describe('RENDERED_ASK_KINDS', () => {
+  it.for(RENDERED_ASK_KINDS)('renders a card for %s', (kind) => {
+    expect(isRenderedAskKind(kind)).toBe(true)
+    expect(toAskPart(askUser({ kind }))).toBeDefined()
+  })
+
+  it.for(['paused', 'delete_approval', 'permission', 'toString', undefined])(
+    'does not claim %s',
+    (kind) => {
+      expect(isRenderedAskKind(kind)).toBe(false)
+    }
+  )
+})
+
+describe('isAskPart', () => {
+  it('recognises every ask card and nothing else', () => {
+    const samples: MessagePart[] = [
+      { type: 'runApproval', askId: 'a' },
+      fromPartial<MessagePart>({ type: 'askUser', askId: 'b' }),
+      { type: 'text', text: '', state: 'done' },
+      { type: 'tool', callId: 'c', name: 'x', state: 'done' },
+      { type: 'paywall' }
+    ]
+    expect(samples.map(isAskPart)).toEqual([true, true, false, false, false])
+  })
+})
+
+describe('toAskOrNoticePart', () => {
+  it('returns the card for a renderable ask', () => {
+    expect(toAskOrNoticePart(askUser()).type).toBe('askUser')
+  })
+
+  it('stands a notice in for an ask it cannot render', () => {
+    expect(toAskOrNoticePart(askUser({ kind: undefined }))).toEqual({
+      type: 'askUnavailable',
+      askId: 'turn-1:call-1'
+    })
+  })
+})
+
+describe('askIdOf', () => {
+  it('names the ask of every ask card and stand-in, and nothing else', () => {
+    const samples: MessagePart[] = [
+      { type: 'runApproval', askId: 'a' },
+      fromPartial<MessagePart>({ type: 'askUser', askId: 'b' }),
+      { type: 'askUnavailable', askId: 'c' },
+      { type: 'notice', level: 'warning', text: 'plain notice' },
+      { type: 'text', text: '', state: 'done' }
+    ]
+    expect(samples.map(askIdOf)).toEqual(['a', 'b', 'c', undefined, undefined])
+  })
+})
+
+describe('retireAskParts', () => {
+  const question = toAskPart(askUser({ ask_id: 'q' }))
+  assert(question)
+  const parts: MessagePart[] = [
+    { type: 'text', text: 'before', state: 'done' },
+    { type: 'runApproval', askId: 'run' },
+    { type: 'askUnavailable', askId: 'odd' },
+    question
+  ]
+
+  it('drops a run approval and a stand-in notice, and leaves the rest alone', () => {
+    expect(retireAskParts(parts, 'run')).toEqual([parts[0], parts[2], question])
+    expect(retireAskParts(parts, 'odd')).toEqual([parts[0], parts[1], question])
+  })
+
+  it('keeps an ask_user card read-only with its resolution', () => {
+    expect(
+      retireAskParts(parts, 'q', { status: 'answered', selected: ['flux'] }).at(
+        -1
+      )
+    ).toEqual({
+      ...question,
+      resolution: { status: 'answered', selected: ['flux'] }
+    })
+  })
+
+  const resolve = (
+    shown: AskUserResolution[],
+    next: AskUserResolution | undefined
+  ) =>
+    retireAskParts(
+      shown.reduce(
+        (current, resolution) => retireAskParts(current, 'q', resolution),
+        parts
+      ),
+      'q',
+      next
+    ).at(-1)
+
+  it.for<{
+    name: string
+    shown: AskUserResolution[]
+    next?: AskUserResolution
+    expected: AskUserResolution
+  }>([
+    {
+      name: 'a server answer replaces a local retirement',
+      shown: [{ status: 'retired', selected: [] }],
+      next: { status: 'answered', selected: ['sdxl'] },
+      expected: { status: 'answered', selected: ['sdxl'] }
+    },
+    {
+      name: 'a server cancel replaces an unknown outcome',
+      shown: [{ status: 'unknown', selected: [] }],
+      next: { status: 'closed', selected: [] },
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'a server answer replaces an unknown outcome',
+      shown: [{ status: 'unknown', selected: [] }],
+      next: { status: 'answered', selected: ['flux'] },
+      expected: { status: 'answered', selected: ['flux'] }
+    },
+    {
+      name: 'an unknown outcome outlasts a local retirement',
+      shown: [{ status: 'unknown', selected: [] }],
+      expected: { status: 'unknown', selected: [] }
+    },
+    {
+      name: 'a server answer outlasts a local retirement',
+      shown: [{ status: 'answered', selected: ['sdxl'] }],
+      expected: { status: 'answered', selected: ['sdxl'] }
+    },
+    {
+      name: 'a server cancel outlasts a local retirement',
+      shown: [{ status: 'closed', selected: [] }],
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'a server cancel outlasts an unknown outcome',
+      shown: [{ status: 'closed', selected: [] }],
+      next: { status: 'unknown', selected: [] },
+      expected: { status: 'closed', selected: [] }
+    },
+    {
+      name: 'a named answer replaces an unnamed one',
+      shown: [{ status: 'answered', selected: [] }],
+      next: { status: 'answered', selected: ['flux'] },
+      expected: { status: 'answered', selected: ['flux'] }
+    },
+    {
+      name: 'a named answer outlasts an unnamed one',
+      shown: [{ status: 'answered', selected: ['flux'] }],
+      next: { status: 'answered', selected: [] },
+      expected: { status: 'answered', selected: ['flux'] }
+    }
+  ])('$name', ({ shown, next, expected }) => {
+    expect(resolve(shown, next)).toMatchObject({ resolution: expected })
+  })
+
+  it('retires with no resolution as a local retirement', () => {
+    expect(retireAskParts(parts, 'q').at(-1)).toMatchObject({
+      resolution: { status: 'retired', selected: [] }
+    })
+  })
+
+  it('returns the same array when no part belongs to the ask', () => {
+    expect(retireAskParts(parts, 'missing')).toBe(parts)
+  })
+})

@@ -1,5 +1,7 @@
 import type {
   ActivityPart,
+  AskUnavailablePart,
+  AskUserPart,
   MessagePart,
   NoticePart,
   PaywallPart,
@@ -10,11 +12,12 @@ import type {
 
 export type AgentMessageGroup =
   | { kind: 'text'; parts: TextPart[] }
-  | { kind: 'notice'; part: NoticePart }
+  | { kind: 'notice'; part: NoticePart | AskUnavailablePart }
   | { kind: 'paywall'; part: PaywallPart }
   | { kind: 'trace' }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
   | { kind: 'runApproval'; part: RunApprovalPart }
+  | { kind: 'askUser'; part: AskUserPart }
 
 type TextGroup = Extract<AgentMessageGroup, { kind: 'text' }>
 type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
@@ -26,7 +29,7 @@ type InterruptingPart = Exclude<MessagePart, TextPart | ActivityPart>
  * joined text (no prose between them) still coalesce into one grid, exactly
  * as they would within a single text part. Every activity part folds into
  * one trace group placed where the first one occurs; anything user-facing
- * (tab link, run approval, paywall, notice) closes the open text group.
+ * (tab link, ask card, paywall, notice) closes the open text group.
  */
 export function groupMessageParts(
   parts: readonly MessagePart[]
@@ -79,10 +82,14 @@ function pushInterruptingGroup(
     case 'runApproval':
       out.push({ kind: 'runApproval', part })
       return
+    case 'askUser':
+      out.push({ kind: 'askUser', part })
+      return
     case 'paywall':
       out.push({ kind: 'paywall', part })
       return
     case 'notice':
+    case 'askUnavailable':
       out.push({ kind: 'notice', part })
       return
   }

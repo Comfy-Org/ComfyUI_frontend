@@ -6,6 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
+import { askIdOf } from '../../services/agent/agentMessageParts'
 
 import { useAgentConversationStore } from './agentConversationStore'
 
@@ -853,6 +854,155 @@ describe('useAgentConversationStore', () => {
 
     store.ingest(done('assistant-message-1'))
     expect(store.isStreaming).toBe(false)
+  })
+
+  describe('ask_user', () => {
+    const pendingAskUser = {
+      message_id: 'assistant-message-1',
+      ask_id: 'turn-1:call-1',
+      kind: 'ask_user',
+      prompt: 'Which style?',
+      options: [
+        { id: 'oil', label: 'Oil' },
+        { id: 'ink', label: 'Ink' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: true
+    }
+    const askUserTranscript = (): AgentMessages => [
+      historyRow(1, 'user', 'turn-1', 'Paint it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: pendingAskUser
+        }
+      ])[0]
+    ]
+    const askUserCards = (
+      store: ReturnType<typeof useAgentConversationStore>
+    ) =>
+      store.messages.flatMap((message) =>
+        message.parts.filter((part) => part.type === 'askUser')
+      )
+
+    it('restores a pending question as the live turn and ignores its redelivery', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+
+      expect(store.activeTurnId).toBe('assistant-message-1')
+      expect(store.isStreaming).toBe(true)
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({ askId: 'turn-1:call-1', allowOther: true })
+      ])
+
+      // A resubscribe replays the live ask frame for the restored card.
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...pendingAskUser, thread_id: 'th' }
+        })
+      )
+      expect(askUserCards(store)).toHaveLength(1)
+
+      store.ingest(
+        chat({
+          type: 'agent_ask_resolved',
+          data: {
+            message_id: 'assistant-message-1',
+            thread_id: 'th',
+            ask_id: 'turn-1:call-1',
+            status: 'answered',
+            selected: ['ink']
+          }
+        })
+      )
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          resolution: { status: 'answered', selected: ['ink'] }
+        })
+      ])
+      expect(store.isStreaming).toBe(true)
+    })
+
+    it.for(['run_approval', 'something_new'])(
+      'does not put a %s ask back when it is replayed after it resolved',
+      (kind) => {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        const ask = {
+          ...pendingAskUser,
+          ask_id: 'turn-1:call-2',
+          kind,
+          thread_id: 'th'
+        }
+        store.hydrate(askUserTranscript())
+        store.ingest(chat({ type: 'agent_ask', data: ask }))
+        store.retireAsk('turn-1:call-2', 'th')
+
+        store.ingest(chat({ type: 'agent_ask', data: ask }))
+
+        expect(
+          store.messages.flatMap((message) => message.parts.map(askIdOf))
+        ).not.toContain('turn-1:call-2')
+      }
+    )
+
+    // The resolved frame can land while this client's POST is still out; the
+    // POST settling afterwards must not erase the server's answer that a
+    // refetch rebuilds the card from.
+    it('keeps the server answer through a later commit and refetch', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.recordAskSelection('turn-1:call-1', { selected: ['oil'] })
+      store.retireAsk('turn-1:call-1', 'th', {
+        status: 'answered',
+        selected: ['ink']
+      })
+
+      store.commitAsk('turn-1:call-1', 'th')
+      store.hydrate(askUserTranscript())
+
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          resolution: { status: 'answered', selected: ['ink'] }
+        })
+      ])
+    })
+
+    // The read-only card is the record of the user's answer; a refetch that
+    // still lists the ask as pending must neither re-arm it nor erase it.
+    it('rebuilds a retired question read-only from a transcript that still lists it', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.retireAsk('turn-1:call-1', undefined, {
+        status: 'answered',
+        selected: [],
+        otherText: 'watercolor'
+      })
+
+      store.hydrate(askUserTranscript())
+
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          askId: 'turn-1:call-1',
+          resolution: {
+            status: 'answered',
+            selected: [],
+            otherText: 'watercolor'
+          }
+        })
+      ])
+      expect(store.activeTurnId).toBe('assistant-message-1')
+    })
   })
 
   // PM-1658. The server reports an ask as pending until its answer is
@@ -1764,6 +1914,51 @@ describe('useAgentConversationStore', () => {
       { type: 'tool', name: 'add_node', state: 'done', ok: true }
     ])
   })
+
+  // A lost agent_ask_resolved leaves the question pending locally while the
+  // server has finished the turn; settling must not hand back a live form.
+  it.for([
+    {
+      name: 'a persisted reply',
+      persisted: [
+        { type: 'text' as const, text: 'done', state: 'done' as const }
+      ],
+      kept: ['text']
+    },
+    { name: 'an empty terminal row', persisted: undefined, kept: [] }
+  ])(
+    'drops a pending question and its stand-in when $name settles the turn',
+    ({ persisted, kept }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      const ask = {
+        message_id: 't1',
+        thread_id: 'th',
+        prompt: 'Which style?',
+        options: [{ id: 'oil', label: 'Oil' }],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...ask, ask_id: 'q-1', kind: 'ask_user' }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...ask, ask_id: 'q-2', kind: 'something_new' }
+        })
+      )
+
+      store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+
+      expect(store.messages[0].parts.map((part) => part.type)).toEqual(kept)
+    }
+  )
 
   it('splits persisted text around a local tab link when there is no tool', () => {
     const store = useAgentConversationStore()

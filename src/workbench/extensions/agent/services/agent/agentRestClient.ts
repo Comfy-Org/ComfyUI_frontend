@@ -19,6 +19,7 @@ import { api } from '@/scripts/api'
 import type * as AgentAuth from './agentAuth'
 
 import {
+  RENDERED_ASK_KINDS,
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
   zAgentError,
@@ -31,9 +32,11 @@ import {
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerAccepted,
+  AgentAnswerRequest,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
+  RenderedAskKind,
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry
@@ -201,7 +204,11 @@ export interface PostMessageInput {
  * published from the cloud repo's `openapi.yaml`, so the field is only typed
  * locally until the next package release carries it. One line to delete then.
  */
-type TurnPostBody = AgentPostMessageRequest & { client_message_id?: string }
+type TurnPostBody = AgentPostMessageRequest & {
+  client_message_id?: string
+  // Lands in the generated types when the backend spec ships `ask_kinds`.
+  ask_kinds?: RenderedAskKind[]
+}
 
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
@@ -531,6 +538,7 @@ export function createAgentRestClient() {
   ): Promise<AgentTurnAccepted> {
     const body = withoutUndefined<TurnPostBody>({
       content: req.content,
+      ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: req.workflowId,
       open_tabs: req.tabs?.open_tabs,
       current_tab: req.tabs?.current_tab,
@@ -661,12 +669,14 @@ export function createAgentRestClient() {
   async function answerAsk(
     threadId: string,
     askId: string,
-    selected: string[]
+    answer: AgentAnswerRequest
   ): Promise<AgentAnswerAccepted> {
+    // The ask id in the path is what binds this answer: free text only ever
+    // travels with the ask whose card collected it.
     return request(
       'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
+      { ...jsonInit('POST', answer), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
       zAgentAnswerAccepted
     )
   }

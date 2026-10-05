@@ -98,6 +98,7 @@ import {
 } from './composables/agent/useCanvasSelection'
 import type {
   AgentActiveTabData,
+  AgentAnswerRequest,
   AgentThreadSummary
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
@@ -1381,12 +1382,25 @@ function forgetApproval(askId: string): void {
 
 async function onAnswerAsk(
   askId: string,
-  selection: 'run' | 'cancel'
+  answer: AgentAnswerRequest
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
   const decidedAt = Date.now()
-  if (await answerAsk(askId, selection))
-    trackApprovalResolved(askId, selection, decidedAt, shownAt)
+  // Only a run-approval card records when it was shown, so an `ask_user`
+  // that happens to offer `run` or `cancel` never reports as one.
+  const decision =
+    shownAt === undefined ? undefined : runApprovalDecision(answer)
+  if ((await answerAsk(askId, answer)) && decision)
+    trackApprovalResolved(askId, decision, decidedAt, shownAt)
+}
+
+/** The run-approval decision an answer carries, if it is one. */
+function runApprovalDecision(
+  answer: AgentAnswerRequest
+): 'run' | 'cancel' | undefined {
+  if (answer.selected.length !== 1 || answer.other_text) return undefined
+  const [choice] = answer.selected
+  return choice === 'run' || choice === 'cancel' ? choice : undefined
 }
 
 void refreshCloudWorkflowIds()
