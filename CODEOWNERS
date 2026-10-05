@@ -75,10 +75,33 @@
 # crossing that side of the boundary still has no required reviewer.
 /packages/account-core/src/core/billing/               @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/billing-web/                                @dante01yoon @Comfy-Org/comfy_frontend_devs
-/apps/website/src/lib/workshop/                   @dante01yoon @Comfy-Org/comfy_website_devs
-/apps/website/src/config/workshop-account.ts      @dante01yoon @Comfy-Org/comfy_website_devs
-/apps/website/src/config/workshop-balance.ts      @dante01yoon @Comfy-Org/comfy_website_devs
-/apps/website/src/config/workshop-credits.ts      @dante01yoon @Comfy-Org/comfy_website_devs
+/apps/website/src/lib/workshop/                   @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
+/apps/website/src/config/workshop-account.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
+/apps/website/src/config/workshop-balance.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
+/apps/website/src/config/workshop-credits.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
+
+# In-app agent
+# Currently no other owner; the approver team is the sole code owner here.
+/src/workbench/extensions/agent/                  @Comfy-Org/comfy-standard-approver
+/src/extensions/core/agentPanel.ts                @Comfy-Org/comfy-standard-approver
+/src/extensions/core/agentPanel.test.ts           @Comfy-Org/comfy-standard-approver
+/src/stores/agentNodeSelectionStore.ts            @Comfy-Org/comfy-standard-approver
+/src/stores/agentNodeSelectionStore.test.ts       @Comfy-Org/comfy-standard-approver
+/src/components/graph/agentPanelMount.test.ts     @Comfy-Org/comfy-standard-approver
+/src/components/topbar/AgentEntryButton.vue       @Comfy-Org/comfy-standard-approver
+/src/components/topbar/AgentEntryButton.stories.ts @Comfy-Org/comfy-standard-approver
+/src/components/topbar/WorkflowAgentTargetIndicator.vue @Comfy-Org/comfy-standard-approver
+/src/platform/settings/constants/agent.ts         @Comfy-Org/comfy-standard-approver
+/src/platform/telemetry/utils/getAgentPanelOpen.ts      @Comfy-Org/comfy-standard-approver
+/src/platform/telemetry/utils/getAgentPanelOpen.test.ts @Comfy-Org/comfy-standard-approver
+/browser_tests/tests/agent/                       @Comfy-Org/comfy-standard-approver
+/browser_tests/assets/agent/                      @Comfy-Org/comfy-standard-approver
+/browser_tests/fixtures/data/agent/               @Comfy-Org/comfy-standard-approver
+/browser_tests/fixtures/**/*gent*                 @Comfy-Org/comfy-standard-approver
+/browser_tests/tests/dialogs/dialogAgentPanelInset.spec.ts @Comfy-Org/comfy-standard-approver
+/browser_tests/tests/load3d/load3dAgentUpdate.spec.ts      @Comfy-Org/comfy-standard-approver
+/browser_tests/tests/performance/agentComposer.spec.ts     @Comfy-Org/comfy-standard-approver
+/browser_tests/tests/sidebar/agentVideoAsset.spec.ts       @Comfy-Org/comfy-standard-approver
 
 # Translations - native-language reviewers
 # NOTE: GitHub only honors a code owner that has WRITE access to this repo.
