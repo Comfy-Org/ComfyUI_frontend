@@ -444,6 +444,28 @@ describe('WorkspaceAuthGate', () => {
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
+
+    it('mints nothing when unmounted while the session lookup is pending', async () => {
+      releaseRequests()
+      let settleScope = (_scope: WebSessionRequestScope | undefined) => {}
+      const pendingScope = new Promise<WebSessionRequestScope | undefined>(
+        (resolve) => {
+          settleScope = resolve
+        }
+      )
+      releaseRequests = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({ scope: () => pendingScope })
+      )
+
+      const { unmount } = mountComponent()
+      await flushPromises()
+      unmount()
+      settleScope(undefined)
+      await flushPromises()
+
+      expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
+    })
   })
 
   describe('error handling', () => {

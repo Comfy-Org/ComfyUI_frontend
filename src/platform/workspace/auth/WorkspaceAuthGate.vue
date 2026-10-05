@@ -168,6 +168,7 @@ async function initialize(): Promise<void> {
 
     const workspaceAuthStore = useWorkspaceAuthStore()
     const needsUnifiedToken = await requiresUnifiedToken()
+    if (generation !== initializationGeneration) return
     if (needsUnifiedToken) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return
