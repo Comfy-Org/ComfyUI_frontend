@@ -117,17 +117,22 @@ defineExpose({ hide, show, toggle, visible })
 
 <template>
   <DropdownMenuRoot :open="visible" :modal="false" @update:open="updateOpen">
-    <DropdownMenuTrigger as-child>
-      <button
-        ref="trigger"
-        :data-menu-owner="ownerId"
-        type="button"
-        tabindex="-1"
-        aria-hidden="true"
-        class="pointer-events-none fixed size-px opacity-0"
-        :style="{ left: `${anchorPosition.x}px`, top: `${anchorPosition.y}px` }"
-      />
-    </DropdownMenuTrigger>
+    <Teleport to="body">
+      <DropdownMenuTrigger as-child>
+        <button
+          ref="trigger"
+          :data-menu-owner="ownerId"
+          type="button"
+          tabindex="-1"
+          aria-hidden="true"
+          class="pointer-events-none fixed size-px opacity-0"
+          :style="{
+            left: `${anchorPosition.x}px`,
+            top: `${anchorPosition.y}px`
+          }"
+        />
+      </DropdownMenuTrigger>
+    </Teleport>
     <DropdownMenuPortal>
       <DropdownMenuContent
         :id="providedId ?? generatedId"
