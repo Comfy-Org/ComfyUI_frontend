@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { MODEL_DEVELOPERS, modelDeveloper } from '@/config/model-vendors'
-import { modelsUrlKind } from '@/config/models-url-registry'
+import { modelsUrlKind, modelsUrlPaths } from '@/config/models-url-registry'
 import { workshopModels } from '@/config/workshop-browse-content'
 import {
   getWorkshopPageDetail,
@@ -149,12 +149,20 @@ describe('modelsHubJsonLd', () => {
   const directoryUrls = directoryModels.flatMap(({ href }) =>
     href === undefined ? [] : [`${siteUrl}${href}`]
   )
+  const [workflowPath] = modelsUrlPaths('workflow')
 
-  function listedUrls(models: Parameters<typeof modelsHubJsonLd>[0]['models']) {
+  function listedUrls(
+    models: Parameters<typeof modelsHubJsonLd>[0]['models'],
+    launch: Pick<
+      Parameters<typeof modelsHubJsonLd>[0],
+      'launched' | 'workflowsLaunched'
+    > = { launched: 'all', workflowsLaunched: false }
+  ) {
     return modelsHubJsonLd({
       models,
       url: hubUrl,
-      siteUrl
+      siteUrl,
+      ...launch
     }).extraJsonLd.flatMap(({ itemListElement }) =>
       Array.isArray(itemListElement)
         ? itemListElement.map((element: { url: string }) => element.url)
@@ -166,7 +174,8 @@ describe('modelsHubJsonLd', () => {
     const { pageType, mainEntityId, extraJsonLd } = modelsHubJsonLd({
       models: directoryModels,
       url: hubUrl,
-      siteUrl
+      siteUrl,
+      launched: 'all'
     })
     expect(directoryUrls.length).toBeGreaterThan(0)
     expect(pageType).toBe('CollectionPage')
@@ -181,24 +190,52 @@ describe('modelsHubJsonLd', () => {
   it('lists only absolute, unique model page URLs from the registry', () => {
     const urls = listedUrls(directoryModels)
     expect(new Set(urls).size).toBe(urls.length)
-    for (const listed of urls) {
-      const { origin, pathname } = new URL(listed)
-      expect(origin).toBe(siteUrl)
-      expect(pathname).toMatch(/\/$/)
-      expect(modelsUrlKind(pathname)).toBe('model')
-    }
+    expect(
+      urls.map((listed) => {
+        const { origin, pathname } = new URL(listed)
+        return {
+          origin,
+          trailingSlash: pathname.endsWith('/'),
+          kind: modelsUrlKind(pathname)
+        }
+      })
+    ).toEqual(
+      urls.map(() => ({ origin: siteUrl, trailingSlash: true, kind: 'model' }))
+    )
   })
 
-  it('leaves out links that are not indexable model pages', () => {
+  it('leaves out links that are not model pages, even with workflows launched', () => {
     const [listedModel] = directoryModels
+    expect(workflowPath).toBeDefined()
     expect(
-      listedUrls([
-        { name: 'No page' },
-        { name: 'Workflow', href: '/hub/workflows/example/' },
-        { name: 'Unknown', href: '/hub/models/not-a-model/' },
-        listedModel
-      ])
+      listedUrls(
+        [
+          { name: 'No page' },
+          { name: 'Workflow', href: workflowPath },
+          { name: 'Unknown', href: '/hub/models/not-a-model/' },
+          listedModel
+        ],
+        { launched: 'all', workflowsLaunched: true }
+      )
     ).toEqual([`${siteUrl}${listedModel.href}`])
+  })
+
+  it('lists only the model pages the launch keeps', () => {
+    const [kept] = directoryModels
+    const dropped = directoryModels
+      .filter(({ routerId }) => routerId !== kept.routerId)
+      .slice(0, 1)
+    expect(dropped).toHaveLength(1)
+    expect(
+      listedUrls([kept, ...dropped], { launched: new Set([kept.routerId]) })
+    ).toEqual([`${siteUrl}${kept.href}`])
+  })
+
+  it('resolves a link without a trailing slash to the canonical page URL', () => {
+    const [model] = directoryModels
+    expect(
+      listedUrls([{ name: model.name, href: model.href?.replace(/\/$/, '') }])
+    ).toEqual([`${siteUrl}${model.href}`])
   })
 
   it('keeps the Home > Models breadcrumb but drops the list when nothing is listed', () => {
