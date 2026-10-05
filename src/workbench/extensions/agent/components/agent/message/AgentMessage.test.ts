@@ -6,6 +6,7 @@ import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
 import type {
+  AskUserResolution,
   AssistantMessage,
   RunApprovalPart
 } from '../../../services/agent/agentMessageParts'
@@ -855,7 +856,7 @@ describe('AgentMessage delete approval', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
   })
 
-  it('still asks when context.nodes is malformed, without a node list', () => {
+  it('shows the notice, not an armed Delete, when context.nodes is malformed', () => {
     render(AgentMessage, {
       props: {
         message: deleteMessage({
@@ -866,10 +867,13 @@ describe('AgentMessage delete approval', () => {
     })
 
     expect(
-      screen.getByText('Delete the 2 nodes you added?')
+      screen.getByText(
+        'The agent asked a question this panel cannot show. Stop the turn to continue.'
+      )
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
-    expect(screen.queryByRole('list')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Delete' })
+    ).not.toBeInTheDocument()
   })
 
   it('says how many delete targets the list leaves out', () => {
@@ -889,21 +893,31 @@ describe('AgentMessage delete approval', () => {
     expect(nodes.getByText('1 more node not listed')).toBeInTheDocument()
   })
 
-  it.for([
+  it.for<{ name: string; resolution: AskUserResolution; text: string }>([
     {
       name: 'delete',
-      resolution: { answered: true, selected: ['delete'] },
+      resolution: { status: 'answered', selected: ['delete'] },
       text: 'You chose to delete them.'
     },
     {
       name: 'keep',
-      resolution: { answered: true, selected: ['keep'] },
+      resolution: { status: 'answered', selected: ['keep'] },
       text: 'You chose to keep them.'
     },
     {
+      name: 'an answer the server did not name',
+      resolution: { status: 'answered', selected: [] },
+      text: 'Answered.'
+    },
+    {
       name: 'no answer',
-      resolution: { answered: false, selected: [] },
+      resolution: { status: 'closed', selected: [] },
       text: 'This request was closed without an answer.'
+    },
+    {
+      name: 'an unconfirmed answer',
+      resolution: { status: 'unknown', selected: [] },
+      text: "We couldn't confirm your answer. Check the canvas before trying again."
     }
   ])(
     'reads back $name once resolved, with no buttons left',

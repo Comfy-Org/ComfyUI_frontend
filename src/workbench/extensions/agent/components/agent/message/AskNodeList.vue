@@ -13,7 +13,6 @@ const { t } = useI18n()
 
 <template>
   <ul
-    v-if="nodes.length > 0 || hiddenCount > 0"
     :aria-label="t('agent.deleteApproval.nodes')"
     class="m-0 flex max-h-40 list-none flex-col gap-0.5 overflow-y-auto rounded-md bg-component-node-background p-2 text-xs/5"
   >
