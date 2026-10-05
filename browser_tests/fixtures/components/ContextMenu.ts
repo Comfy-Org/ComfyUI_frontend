@@ -33,6 +33,13 @@ export class ContextMenu {
     return this.anyMenu.getByRole('menuitem', { name, exact: true })
   }
 
+  async distanceFrom(point: { x: number; y: number }): Promise<number> {
+    return this.ariaMenu.evaluate((element, point) => {
+      const { x, y } = element.getBoundingClientRect()
+      return Math.hypot(x - point.x, y - point.y)
+    }, point)
+  }
+
   async hoverItem(name: string, area: 'padding' | 'content') {
     const item = this.menuItem(name)
     const position = await item.evaluate((element, area) => {
