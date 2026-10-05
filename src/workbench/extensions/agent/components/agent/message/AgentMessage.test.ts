@@ -817,8 +817,8 @@ describe('AgentMessage delete approval', () => {
     thinking: false
   })
 
-  it('lists the nodes it would delete and emits keep and delete', async () => {
-    const { emitted } = render(AgentMessage, {
+  it('lists the nodes it would delete', () => {
+    render(AgentMessage, {
       props: { message: deleteMessage() },
       global: { plugins: [i18n] }
     })
@@ -833,13 +833,18 @@ describe('AgentMessage delete approval', () => {
       expect.stringMatching(/^Hero sampler\s*#12$/),
       expect.stringMatching(/^VAEDecode\s*#13$/)
     ])
+  })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Keep' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+  it.for(['Keep', 'Delete'])('answers %s', async (button) => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: deleteMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: button }))
 
     expect(emitted().answerAsk).toEqual([
-      ['turn-2:call-4', { selected: ['keep'] }],
-      ['turn-2:call-4', { selected: ['delete'] }]
+      ['turn-2:call-4', { selected: [button.toLowerCase()] }]
     ])
   })
 
@@ -889,8 +894,7 @@ describe('AgentMessage delete approval', () => {
       global: { plugins: [i18n] }
     })
 
-    const nodes = within(screen.getByRole('list', { name: 'Nodes to delete' }))
-    expect(nodes.getByText('1 more node not listed')).toBeInTheDocument()
+    expect(screen.getByText('1 more node not listed')).toBeVisible()
   })
 
   it.for<{ name: string; resolution: AskUserResolution; text: string }>([

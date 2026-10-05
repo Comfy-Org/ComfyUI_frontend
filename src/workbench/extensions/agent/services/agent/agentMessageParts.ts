@@ -256,7 +256,7 @@ function toAskNodeRef(value: unknown): AskNodeRef | undefined {
   const { id, title, type } = parsed.data
   const name = title?.trim() || type?.trim()
   return {
-    id: clip(String(id), ASK_USER_LIMITS.label),
+    id: String(id),
     name: name ? clip(name, ASK_USER_LIMITS.label) : undefined
   }
 }
