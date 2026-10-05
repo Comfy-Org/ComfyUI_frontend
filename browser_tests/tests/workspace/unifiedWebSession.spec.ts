@@ -5,6 +5,7 @@ import type { Page, Request } from '@playwright/test'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   PROMPT_ACCEPTED,
+  SESSION_REVOKED,
   WEB_SESSION_COOKIE,
   WEB_SESSION_CSRF_TOKEN,
   WEB_SESSION_MINT,
@@ -184,7 +185,7 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
         ? route.fulfill({
             status: 401,
             contentType: 'application/json',
-            body: JSON.stringify({ code: 'session_revoked' })
+            body: JSON.stringify(SESSION_REVOKED)
           })
         : route.fallback()
     )
