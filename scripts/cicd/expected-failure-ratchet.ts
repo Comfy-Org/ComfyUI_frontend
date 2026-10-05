@@ -141,7 +141,7 @@ function createsRunner(
   )
 }
 
-function extendedPlaywrightRunner(
+function derivedRunner(
   node: ts.Node,
   runners: ReadonlySet<string>
 ): string | undefined {
@@ -191,7 +191,7 @@ function playwrightRunnerNames(sourceFile: ts.SourceFile): Set<string> {
 
   function visit(node: ts.Node) {
     importedPlaywrightRunners(node).forEach((name) => runners.add(name))
-    const extendedRunner = extendedPlaywrightRunner(node, runners)
+    const extendedRunner = derivedRunner(node, runners)
     if (extendedRunner) runners.add(extendedRunner)
     forOfRunnerAliases(node, runners).forEach((name) => runners.add(name))
     ts.forEachChild(node, visit)
@@ -205,7 +205,7 @@ function vitestRunnerNames(sourceFile: ts.SourceFile): Set<string> {
   const runners = new Set(['it', 'test'])
 
   function visit(node: ts.Node) {
-    const extendedRunner = extendedPlaywrightRunner(node, runners)
+    const extendedRunner = derivedRunner(node, runners)
     if (extendedRunner) runners.add(extendedRunner)
     ts.forEachChild(node, visit)
   }
@@ -263,7 +263,7 @@ export function inspectSource(source: string, file: string): ExpectedFailure[] {
     ts.ScriptTarget.Latest,
     true
   )
-  const playwrightRunners = file.startsWith('browser_tests/')
+  const playwrightRunners = /^(?:browser_tests|apps\/[^/]+\/e2e)\//.test(file)
     ? playwrightRunnerNames(sourceFile)
     : new Set<string>()
   const vitestRunners = vitestRunnerNames(sourceFile)

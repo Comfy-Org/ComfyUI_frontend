@@ -110,6 +110,30 @@ describe('expected failure inventory', () => {
     ])
   })
 
+  it('recognizes Playwright failures in app e2e suites', () => {
+    const source = `
+      test('known app defect', () => test.fail(true))
+      test.fail('declared app defect', () => {})
+    `
+
+    expect(inspectSource(source, 'apps/website/e2e/example.spec.ts')).toEqual([
+      {
+        id: 'playwright:apps/website/e2e/example.spec.ts:known app defect:1',
+        kind: 'playwright',
+        file: 'apps/website/e2e/example.spec.ts',
+        line: 2,
+        title: 'known app defect'
+      },
+      {
+        id: 'playwright:apps/website/e2e/example.spec.ts:declared app defect:1',
+        kind: 'playwright',
+        file: 'apps/website/e2e/example.spec.ts',
+        line: 3,
+        title: 'declared app defect'
+      }
+    ])
+  })
+
   it('does not classify extended Vitest runners as Playwright failures', () => {
     const source = `
       const customTest = test.extend({})
