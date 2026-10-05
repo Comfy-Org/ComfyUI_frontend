@@ -124,8 +124,10 @@ render(SearchInput, {
 })
 ```
 
-Prefer real project plugins and stores over substitutes. Mock only boundaries
-that the project does not own, such as a network service.
+Prefer real project plugins, stores, and other collaborators over substitutes.
+When a double is needed, mock the project-owned boundary around the external
+service, not the third-party API itself (see
+`docs/guidance/testing-principles.md`).
 
 ## Wait for Vue updates
 
