@@ -1,4 +1,5 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToast } from '@/components/ui/toast'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,19 +14,6 @@ import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/S
 vi.mock(import('@/platform/telemetry'))
 
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
-
-vi.mock<unknown>(
-  import('@/components/ui/toast'),
-
-  () => ({
-    useToast: () => ({
-      success: mockToast.add,
-      error: mockToast.add,
-      info: mockToast.add,
-      warning: mockToast.add
-    })
-  })
-)
 
 vi.mock(import('@formkit/auto-animate/vue'), () => ({
   vAutoAnimate: {}
@@ -124,6 +112,21 @@ const i18n = createI18n({
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToast.add('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToast.add('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToast.add('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToast.add('warning', ...args)
+  )
+})
 
 describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
@@ -474,10 +477,9 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).toContain('Create link')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to load publish status'
-      })
+      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+        'Failed to load publish status'
+      )
     })
 
     it('shows error toast when publishWorkflow rejects', async () => {
@@ -495,10 +497,8 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).not.toContain('Anyone with this link...')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Publish failed'
+      expect(vi.mocked(useToast().error)).toHaveBeenCalledWith('Error', {
+        description: 'Publish failed'
       })
     })
 

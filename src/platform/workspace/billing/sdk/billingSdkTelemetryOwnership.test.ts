@@ -62,17 +62,6 @@ vi.mock<unknown>(
     })
   })
 )
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warning: vi.fn(),
-    dismiss: vi.fn(),
-    dismissAll: vi.fn()
-  })
-}))
-
 const CREDENTIAL: AccountCredential = {
   token: 'workspace-jwt',
   expiresAt: Date.now() + 60 * 60 * 1000,

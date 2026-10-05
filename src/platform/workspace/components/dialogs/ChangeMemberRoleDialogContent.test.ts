@@ -1,4 +1,5 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useToast } from '@/components/ui/toast'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -10,15 +11,6 @@ import ChangeMemberRoleDialogContent from './ChangeMemberRoleDialogContent.vue'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
-
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd
-  })
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -36,6 +28,21 @@ function renderDialog(targetRole: WorkspaceRole) {
   })
   return { ...result, user }
 }
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+})
 
 beforeEach(() => {
   vi.mocked(useTeamWorkspaceStore().changeMemberRole).mockResolvedValue(
@@ -77,9 +84,7 @@ describe('ChangeMemberRoleDialogContent', () => {
         key: 'change-member-role'
       })
     )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(vi.mocked(useToast().success)).toHaveBeenCalled()
   })
 
   it('shows demote copy and confirms with Demote to member', async () => {
@@ -116,11 +121,7 @@ describe('ChangeMemberRoleDialogContent', () => {
       })
     )
 
-    await waitFor(() =>
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
-    )
+    await waitFor(() => expect(vi.mocked(useToast().error)).toHaveBeenCalled())
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 

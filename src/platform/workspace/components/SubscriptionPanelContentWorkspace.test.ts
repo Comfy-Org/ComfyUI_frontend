@@ -212,15 +212,6 @@ vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warning: vi.fn()
-  })
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

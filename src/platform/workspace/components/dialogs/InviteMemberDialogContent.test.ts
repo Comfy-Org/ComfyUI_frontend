@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useToast } from '@/components/ui/toast'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -22,15 +23,6 @@ const mockOccupiedSeats = ref<number | null>(0)
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd
-  })
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -72,6 +64,21 @@ function emailInput() {
 function inviteButton() {
   return screen.getByRole('button', { name: 'workspacePanel.invite' })
 }
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+})
 
 beforeEach(() => {
   const billing = useBillingContext()
@@ -232,9 +239,7 @@ describe('InviteMemberDialogContent', () => {
     )
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(vi.mocked(useToast().error)).toHaveBeenCalled()
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 1
@@ -259,9 +264,7 @@ describe('InviteMemberDialogContent', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(vi.mocked(useToast().error)).toHaveBeenCalled()
     expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
   })

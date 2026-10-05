@@ -1,4 +1,5 @@
 import { useDialogStore } from '@/stores/dialogStore'
+import { useToast } from '@/components/ui/toast'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
@@ -42,18 +43,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('@/components/ui/toast'),
-
-  () => ({
-    useToast: () => ({
-      success: mockToastAdd,
-      error: mockToastAdd,
-      info: mockToastAdd,
-      warning: mockToastAdd
-    })
-  })
-)
 
 const apps: App<Element>[] = []
 
@@ -168,6 +157,21 @@ function createDeferred() {
   })
   return { promise, resolve }
 }
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+})
 
 beforeEach(() => {
   Object.assign(useDialogStore(), { dialogStack: [] })
@@ -455,11 +459,9 @@ describe('useSharedWorkflowUrlLoader', () => {
       'Test Workflow',
       { openSource: 'shared_url', shareId: 'share-id-1' }
     )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'Failed to import workflow assets'
-      })
+    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      expect.any(String),
+      { description: 'Failed to import workflow assets' }
     )
   })
 
@@ -563,10 +565,8 @@ describe('useSharedWorkflowUrlLoader', () => {
 
     expect(loaded).toBe('failed')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load shared workflow'
+    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith('Error', {
+      description: 'Failed to load shared workflow'
     })
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
