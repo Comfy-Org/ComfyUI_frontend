@@ -193,24 +193,41 @@ function onClose() {
   dialogStore.closeDialog({ key: 'cancel-subscription' })
 }
 
-async function onConfirmCancel() {
-  if (!isScopeCurrent()) {
-    didScopeAbort.value = true
-    toast.add({
-      severity: 'warn',
-      summary: t('subscription.cancelDialog.workspaceChanged')
-    })
-    dialogStore.closeDialog({ key: 'cancel-subscription' })
-    return
-  }
-  if (
+function abortForScopeChange() {
+  didScopeAbort.value = true
+  toast.add({
+    severity: 'warn',
+    summary: t('subscription.cancelDialog.workspaceChanged')
+  })
+  dialogStore.closeDialog({ key: 'cancel-subscription' })
+}
+
+function lacksWorkspaceCancelPermission() {
+  return (
     shouldUseWorkspaceBilling.value &&
     !(isCloud
       ? canCancel.value
       : permissions.value.canManageSubscriptionLifecycle)
-  ) {
-    return
+  )
+}
+
+function reportCancelFailure(error: unknown) {
+  if (!shouldUseWorkspaceBilling.value) {
+    telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
+    cancelReport.confirmed({ operationFollows: false })
+    cancelReport.failed(categorizeBillingApiError(error))
   }
+  toast.add({
+    severity: 'error',
+    summary: t('subscription.cancelDialog.failed'),
+    detail: getErrorMessage(error) ?? t('g.unknownError')
+  })
+  isLoading.value = false
+}
+
+async function onConfirmCancel() {
+  if (!isScopeCurrent()) return abortForScopeChange()
+  if (lacksWorkspaceCancelPermission()) return
 
   // The legacy rail only opens the Stripe portal, so it reports `confirmed`
   // once the cancellation is observed instead of on click.
@@ -227,18 +244,7 @@ async function onConfirmCancel() {
   try {
     await cancelSubscription(isScopeCurrent)
   } catch (error) {
-    const errorMessage = getErrorMessage(error)
-    if (!shouldUseWorkspaceBilling.value) {
-      telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
-      cancelReport.confirmed({ operationFollows: false })
-      cancelReport.failed(categorizeBillingApiError(error))
-    }
-    toast.add({
-      severity: 'error',
-      summary: t('subscription.cancelDialog.failed'),
-      detail: errorMessage ?? t('g.unknownError')
-    })
-    isLoading.value = false
+    reportCancelFailure(error)
     return
   }
 
