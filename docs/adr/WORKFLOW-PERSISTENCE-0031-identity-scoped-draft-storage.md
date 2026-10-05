@@ -89,10 +89,17 @@ The existing V1-to-V2 format migration remains for the unchanged non-Cloud
 `personal` scope. Cloud startup does not move a workspace key into whichever
 identity resolves first.
 
-A cross-tab migration protocol, a read-only legacy fallback, or an explicit
-decision not to migrate is follow-up work. It requires its own decision because
-`localStorage` provides no compare-and-swap primitive and a read-then-write
-claim cannot establish exclusive ownership across tabs.
+This PR explicitly ships without a Cloud fallback or migration. On the first
+Cloud load after deployment, tabs, unsaved or temporary drafts, and Agent state
+stored under the old workspace-only keys are not restored. The identity-scoped
+stores start empty and populate only from subsequent activity. A successful
+Cloud logout removes the unreadable V2 workspace-only keys so they cannot hold
+origin quota indefinitely or retain a signed-out user's workflow JSON.
+
+Any migration protocol must ship before this storage-layout change if retaining
+that state is required. It needs its own decision because `localStorage`
+provides no compare-and-swap primitive and a read-then-write claim cannot
+establish exclusive ownership across tabs.
 
 ## Consequences
 
@@ -107,8 +114,10 @@ claim cannot establish exclusive ownership across tabs.
 
 ### Negative
 
-- Existing Cloud workspace-keyed drafts are not automatically visible under
-  the new identity-scoped keys until the separate migration decision lands.
+- The first Cloud load after deployment does not restore previously open tabs,
+  unsaved or temporary drafts, or Agent thread state and workflow bindings from
+  workspace-only keys. Those legacy V2 keys are removed at the next successful
+  Cloud logout.
 - State changed only in memory while ownership is unresolved is lost if the tab
   closes before resolution.
 - Two tabs of the same user and workspace still share one scope. Logout in one
