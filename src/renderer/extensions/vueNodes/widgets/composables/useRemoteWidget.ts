@@ -160,6 +160,7 @@ export function useRemoteWidget<
   const cacheKey = createCacheKey(remoteConfig)
   let isLoaded = false
   let refreshQueued = false
+  let removed = false
 
   const setSuccess = (entry: CacheEntry<T>, data: T) => {
     entry.retryCount = 0
@@ -300,6 +301,7 @@ export function useRemoteWidget<
   function getValue(onFulfilled?: () => void) {
     void fetchValue()
       .then((data) => {
+        if (removed) return
         if (isFirstLoad()) onFirstLoad(data)
         if (refreshQueued && data !== defaultValue) {
           onRefresh()
@@ -358,10 +360,14 @@ export function useRemoteWidget<
     // Register event listener
     api.addEventListener('execution_success', handleExecutionSuccess)
 
-    // Cleanup on node removal
-    node.onRemoved = useChainCallback(node.onRemoved, function () {
+    const cleanup = () => {
       api.removeEventListener('execution_success', handleExecutionSuccess)
+    }
+    widget.onRemove = useChainCallback(widget.onRemove, () => {
+      removed = true
+      cleanup()
     })
+    node.onRemoved = useChainCallback(node.onRemoved, cleanup)
 
     return autoRefreshWidget
   }

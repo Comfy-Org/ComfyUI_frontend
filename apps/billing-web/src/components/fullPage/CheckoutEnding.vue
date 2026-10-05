@@ -6,6 +6,7 @@ import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { ScheduledChange } from '@/checkout/checkoutPage'
 import type {
   EndingKind,
   EndingScreen,
@@ -37,10 +38,23 @@ const ENDINGS: Readonly<
       readonly tone: Tone
       readonly primary?: 'close' | 'retry' | 'view_plans' | 'add_credits'
       readonly support: boolean
+      /** This page's own Pay ended here, so the tab can close itself. */
+      readonly closeFooter?: true
     }
   >
 > = {
-  success: { tone: 'done', primary: 'close', support: false },
+  success: {
+    tone: 'done',
+    primary: 'close',
+    support: false,
+    closeFooter: true
+  },
+  scheduled: {
+    tone: 'done',
+    primary: 'close',
+    support: false,
+    closeFooter: true
+  },
   completed: { tone: 'done', primary: 'close', support: false },
   already_completed: { tone: 'done', primary: 'close', support: false },
   in_progress: { tone: 'waiting', support: true },
@@ -109,18 +123,33 @@ const bodyKey = computed(() => {
     return `${copyKey.value}.body.${screen.cause}`
   return `${copyKey.value}.body`
 })
-const bodyParams = computed(() =>
-  screen.kind === 'refused' && screen.copy === 'change_scheduled'
-    ? {
-        workspace,
-        plan: namedPlan(
-          { t, tierName: (tier) => coded('tier', tier) },
-          screen.scheduled.plan,
-          screen.scheduled.plan.duration === 'ANNUAL'
-        ),
-        date: longDate(screen.scheduled.effectiveAt, locale.value)
-      }
-    : { workspace }
+const planName = (plan: ScheduledChange['plan']) =>
+  namedPlan(
+    { t, tierName: (tier) => coded('tier', tier) },
+    plan,
+    plan.duration === 'ANNUAL'
+  )
+const bodyParams = computed(() => {
+  if (screen.kind === 'refused' && screen.copy === 'change_scheduled')
+    return {
+      workspace,
+      plan: planName(screen.scheduled.plan),
+      date: longDate(screen.scheduled.effectiveAt, locale.value)
+    }
+  if (screen.kind === 'scheduled')
+    return {
+      workspace,
+      plan: planName(screen.change.plan),
+      date: longDate(screen.change.effectiveAt, locale.value),
+      kept: planName(screen.kept)
+    }
+  return { workspace }
+})
+/** A refusal the server worded reads in its words. */
+const body = computed(
+  () =>
+    ('serverMessage' in screen ? screen.serverMessage : undefined) ??
+    t(bodyKey.value, bodyParams.value)
 )
 const code = computed(() => ('code' in screen ? screen.code : undefined))
 const receipt = computed(() => endingReceipt(screen))
@@ -188,7 +217,7 @@ function act() {
           {{ title }}
         </h1>
         <p class="m-0 text-sm/5 text-muted-foreground">
-          {{ t(bodyKey, bodyParams) }}
+          {{ body }}
         </p>
         <i18n-t
           v-if="screen.kind === 'in_progress'"
@@ -265,7 +294,7 @@ function act() {
           {{ t(`checkout.fullPage.ending.actions.${primary}`) }}
         </button>
         <SuccessCloseFooter
-          v-if="screen.kind === 'success'"
+          v-if="ending.closeFooter"
           :closes-itself
           @close="emit('close')"
         />

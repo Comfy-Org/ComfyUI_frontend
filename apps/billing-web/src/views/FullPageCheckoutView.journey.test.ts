@@ -164,6 +164,8 @@ const journeyNames = () => journey().map(({ name }) => name)
 
 const payButton = () =>
   screen.getByRole('button', { name: 'Pay and subscribe' })
+const confirmUpgradeButton = () =>
+  screen.getByRole('button', { name: 'Confirm upgrade' })
 
 const VISA: SavedPaymentMethod = {
   id: 'pm_visa',
@@ -498,7 +500,7 @@ describe('the full-page checkout journey', () => {
           value: previewOf({ transition_type: 'upgrade' })
         }
       },
-      choose: () => userEvent.click(payButton()),
+      choose: () => userEvent.click(confirmUpgradeButton()),
       selected: { rail: 'on_file' }
     }
   ])(
@@ -550,7 +552,7 @@ describe('the full-page checkout journey', () => {
       name: 'Keep my subscription and renew it'
     })
 
-    await userEvent.click(payButton())
+    await userEvent.click(confirmUpgradeButton())
 
     expect(journeyNames().slice(2)).toEqual(['billing.checkout.pay_blocked'])
     expect(journey()[2]).toMatchObject({
@@ -559,7 +561,7 @@ describe('the full-page checkout journey', () => {
     })
 
     await userEvent.click(box)
-    await userEvent.click(payButton())
+    await userEvent.click(confirmUpgradeButton())
 
     await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
     expect(journeyNames().slice(2)).toEqual([

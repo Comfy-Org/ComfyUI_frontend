@@ -157,6 +157,9 @@ const PreviewSchema = zPreviewSubscribeResponse.extend({
   cost_today_cents: wireCents,
   credits_next_period_cents: wireCents,
   credits_today_cents: wireCents,
+  /** Whole credits as granted. Not in ingest-types until cloud PR 11905 syncs. */
+  credits_today: wireCents.nonnegative().optional(),
+  credits_next_period: wireCents.nonnegative().optional(),
   renewal_amount_cents: wireCents.optional(),
   subtotal_cents: wireCents.optional(),
   balance_applied_cents: wireCents.optional(),

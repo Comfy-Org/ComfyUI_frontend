@@ -76,6 +76,8 @@ export interface SimplifiedWidget<
   /** Localized display label (falls back to name if not provided) */
   label?: string
 
+  displayLabel?: string
+
   /** Widget options including filtered PrimeVue props */
   options?: O
 

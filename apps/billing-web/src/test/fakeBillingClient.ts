@@ -52,6 +52,8 @@ const READ_AT = 1_700_000_000_000
 export interface FakeBillingClientOptions {
   readonly plans?: BillingResult<BillingPlansData>
   readonly paymentMethods?: BillingResult<readonly SavedPaymentMethod[]>
+  /** Methods an earlier read left cached, before this page reads its own. */
+  readonly cachedPaymentMethods?: readonly SavedPaymentMethod[]
   readonly preview?: PreviewSubscribeResult
   readonly portalUrl?: string
   /** Overrides `portalUrl` when the portal itself should answer with a failure. */
@@ -121,6 +123,7 @@ export function createFakeBillingClient(
       value: { current_plan_slug: undefined, plans: [] }
     },
     paymentMethods = { status: 'ok', value: [] },
+    cachedPaymentMethods,
     preview = { status: 'error', code: 'REQUEST_FAILED' },
     portalUrl = 'https://billing.stripe.test/session',
     portal: portalOutcome = { status: 'ok', value: { url: portalUrl } },
@@ -302,7 +305,12 @@ export function createFakeBillingClient(
     },
     paymentMethods: {
       read: readPaymentMethods,
-      getSnapshot: () => undefined,
+      getSnapshot: () =>
+        cachedPaymentMethods && {
+          scope: SCOPE,
+          methods: cachedPaymentMethods,
+          readAt: READ_AT
+        },
       invalidate: invalidatePaymentMethods,
       dispose: () => {}
     },

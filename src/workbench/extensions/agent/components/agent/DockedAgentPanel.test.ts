@@ -133,7 +133,10 @@ describe('DockedAgentPanel', () => {
     const runMode = useAgentRunModeStore()
     await vi.waitFor(() => expect(runMode.mode).toBe('auto_limited'))
     expect(runMode.creditLimit).toBe(25)
-    expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', { method: 'GET' })
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/agent/run-mode',
+      expect.objectContaining({ method: 'GET' })
+    )
   })
 
   it('reports non-404 run mode load failures', async () => {

@@ -15,9 +15,11 @@ import type {
   RailView
 } from '@/checkout/checkoutPage'
 import type { KeepSubscriptionCopy } from '@/checkout/keepSubscription'
+import type { PlanPurchase } from '@/checkout/summaryLedger'
 import { isLocked, railView, submitPhaseOf } from '@/checkout/checkoutPage'
 import type { PayContext } from '@/components/fullPage/CheckoutPayAction.vue'
 import CheckoutPayAction from '@/components/fullPage/CheckoutPayAction.vue'
+import MethodOnFile from '@/components/fullPage/MethodOnFile.vue'
 import PaymentFormError from '@/components/fullPage/PaymentFormError.vue'
 import PaymentTabsRail from '@/components/fullPage/PaymentTabsRail.vue'
 import type { PayChoice } from '@/composables/useFullPageCheckout'
@@ -36,7 +38,7 @@ const {
   reopening,
   keepSubscription,
   savedMethods = [],
-  purchase = 'plan'
+  purchase = 'subscribe'
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
@@ -47,7 +49,7 @@ const {
   /** The notice a plan set to end shows above Pay, worded for this quote. */
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
-  purchase?: 'plan' | 'credits'
+  purchase?: PlanPurchase | 'credits'
 }>()
 
 const emit = defineEmits<{
@@ -173,6 +175,7 @@ const copy = computed<StripePaymentCopy>(() => ({
         class="flex flex-col gap-6"
         @submit.prevent="emit('pay', undefined)"
       >
+        <MethodOnFile :methods="savedMethods" />
         <CheckoutPayAction
           :purchase
           v-bind="payContext"
