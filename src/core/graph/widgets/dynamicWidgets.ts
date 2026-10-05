@@ -32,6 +32,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
+import { dynamicGroupWidget } from './dynamicGroupWidget'
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
@@ -243,7 +244,11 @@ function dynamicComboWidget(
     }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
-    for (const { input, link, slot } of result.replacements) {
+    //A callback can grow the group it lands on, shifting every input after
+    //it, so the slot captured before the batch is stale for later entries.
+    for (const { input, link } of result.replacements) {
+      const slot = node.inputs.indexOf(input)
+      if (slot === -1) continue
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
     restoreRemovedValues(value, addedWidgetNames)
@@ -295,7 +300,10 @@ function dynamicComboWidget(
   return { widget, minWidth, minHeight }
 }
 
-export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3: dynamicComboWidget }
+export const dynamicWidgets = {
+  COMFY_DYNAMICCOMBO_V3: dynamicComboWidget,
+  COMFY_DYNAMICGROUP_V3: dynamicGroupWidget
+}
 const dynamicInputs: Record<
   string,
   (node: LGraphNode, inputSpec: InputSpecV2) => void
@@ -503,6 +511,7 @@ function addAutogrowGroup(
     )) {
       const link = inputLinks.get(existingInput)
       if (link && !inputLinks.has(newInput)) inputLinks.set(newInput, link)
+      if (existingInput.label) newInput.label = existingInput.label
     }
   }
 
@@ -523,22 +532,20 @@ function addAutogrowGroup(
 }
 
 const ORDINAL_REGEX = /\d+$/
+
 function resolveAutogrowOrdinal(
   inputName: string,
   groupName: string,
   node: AutogrowNode
 ): number | undefined {
-  //TODO preslice groupname?
   const name = inputName.slice(groupName.length + 1)
   const { names } = node.comfyDynamic.autogrow[groupName]
   if (names) {
-    const ordinal = names.findIndex((s) => s === name)
-    return ordinal === -1 ? undefined : ordinal
+    const index = names.indexOf(name)
+    return index === -1 ? undefined : index
   }
   const match = name.match(ORDINAL_REGEX)
-  if (!match) return undefined
-  const ordinal = parseInt(match[0])
-  return ordinal !== ordinal ? undefined : ordinal
+  return match ? parseInt(match[0]) : undefined
 }
 function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
@@ -558,17 +565,72 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
 
-export function reconcileAutogrowInputs(node: LGraphNode): void {
-  if (!node.comfyDynamic?.autogrow) return
-  withComfyAutogrow(node)
+function hasAutogrowGroups(node: LGraphNode): node is AutogrowNode {
+  return !!node.comfyDynamic?.autogrow
+}
+
+/**
+ * The live autogrow group `name` belongs to, from the node's own
+ * `comfyDynamic.autogrow` registration -- real provenance from
+ * `applyAutogrow`/`addAutogrowGroup`, rather than inferred from the name's
+ * shape. Confirms membership with `resolveAutogrowOrdinal`, the same check
+ * growth and shrink use, so a name that merely starts with a group's prefix
+ * without resolving to one of its members doesn't false-match. Undefined
+ * when the node has no autogrow groups, or `name` isn't a member of any of
+ * them.
+ */
+export function liveAutogrowGroupOf(
+  node: LGraphNode,
+  name: string
+): string | undefined {
+  if (!hasAutogrowGroups(node)) return undefined
   for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
-    const slot = node.inputs.findLastIndex(
-      (input, index) =>
-        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
-        node.getInputLink(index)
-    )
-    if (slot !== -1) autogrowInputConnected(slot, node)
+    if (!name.startsWith(`${groupName}.`)) continue
+    if (resolveAutogrowOrdinal(name, groupName, node) !== undefined) {
+      return groupName
+    }
   }
+  return undefined
+}
+
+function highestAutogrowOrdinal(node: AutogrowNode, groupName: string): number {
+  let highest = -1
+  for (const input of node.inputs) {
+    if (!input.name.startsWith(`${groupName}.`)) continue
+    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+    if (ordinal !== undefined && ordinal > highest) highest = ordinal
+  }
+  return highest
+}
+
+/**
+ * Grows the autogrow group `name` belongs to until the node holds an input by
+ * that name, and returns its live index. A local connect onto a slot the bound
+ * document has not seen mints a `grow` op (`docOpMinter.mintConnect`); this is
+ * the read leg of that exchange, for a slot the host grew whose live
+ * counterpart does not exist yet. Growth starts above the group's highest live
+ * ordinal, so the slots already carrying links are left alone. Undefined when
+ * `name` belongs to no autogrow group of this node, or the group's `max` stops
+ * short of it.
+ */
+export function growAutogrowInput(
+  node: LGraphNode,
+  name: string
+): number | undefined {
+  if (!hasAutogrowGroups(node)) return undefined
+  const groupName = liveAutogrowGroupOf(node, name)
+  if (groupName === undefined) return undefined
+  const ordinal = resolveAutogrowOrdinal(name, groupName, node)
+  if (ordinal === undefined) return undefined
+  for (
+    let next = highestAutogrowOrdinal(node, groupName) + 1;
+    next <= ordinal;
+    next++
+  ) {
+    addAutogrowGroup(next, groupName, node)
+  }
+  const index = node.inputs.findIndex((input) => input.name === name)
+  return index === -1 ? undefined : index
 }
 
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
@@ -584,7 +646,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     : undefined
   if (!autogrowGroup) return
 
-  const { min = 1, inputSpecs } = autogrowGroup
+  const { min, inputSpecs } = autogrowGroup
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 

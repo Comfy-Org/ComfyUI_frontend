@@ -1,8 +1,9 @@
 /**
- * The whole network the app can reach, answered from the test: the Firebase
- * identity endpoints an email sign-in touches, the Cloud token exchange, and
- * every billing route the SDK reads or commands. Anything else is refused, so
- * a spec that passes here has not talked to a real service.
+ * The whole network the app can reach, answered from the test: `/api/features`
+ * for the Firebase project the app resolves at runtime, the Firebase identity
+ * endpoints an email sign-in touches, the Cloud token exchange, and every
+ * billing route the SDK reads or commands. Anything else is refused, so a
+ * spec that passes here has not talked to a real service.
  *
  * Every answer is a cross-origin response as far as the browser is concerned,
  * so each one carries the CORS headers a real Cloud would, and a preflight is
@@ -10,7 +11,13 @@
  */
 import type { BrowserContext, Request, Route } from '@playwright/test'
 
-import { CLOUD_ORIGIN, E2E_ORIGIN, E2E_USER, PORTAL_URL } from './env'
+import {
+  CLOUD_ORIGIN,
+  E2E_FIREBASE_CONFIG,
+  E2E_ORIGIN,
+  E2E_USER,
+  PORTAL_URL
+} from './env'
 import type { CloudScenario } from './scenario'
 import { defaultScenario, inAnHour, succeededOperation } from './scenario'
 
@@ -126,7 +133,10 @@ const SECURETOKEN_REPLY: Reply = {
   }
 }
 
-type ScenarioReply = (scenario: CloudScenario) => Reply
+type ScenarioReply = (
+  scenario: CloudScenario,
+  request: RecordedRequest
+) => Reply
 
 const NO_SUCH_ROUTE: Reply = {
   status: 404,
@@ -136,6 +146,18 @@ const NO_SUCH_ROUTE: Reply = {
 const OPERATION_PATH = /^\/billing\/ops\/([^/]+)$/
 
 const GET_REPLIES = new Map<string, ScenarioReply>([
+  [
+    '/features',
+    (scenario, request) => ({
+      body:
+        request.authorization !== null && scenario.checkoutUi !== undefined
+          ? {
+              firebase_config: E2E_FIREBASE_CONFIG,
+              billing_web_checkout_ui: scenario.checkoutUi
+            }
+          : { firebase_config: E2E_FIREBASE_CONFIG }
+    })
+  ],
   ['/billing/status', (scenario) => ({ body: scenario.status })],
   ['/billing/balance', (scenario) => ({ body: scenario.balance })],
   ['/billing/plans', (scenario) => ({ body: scenario.plans })],
@@ -172,6 +194,18 @@ const POST_REPLIES = new Map<string, ScenarioReply>([
     })
   ],
   ['/billing/preview-subscribe', (scenario) => ({ body: scenario.preview })],
+  ['/billing/topup/quote', (scenario) => ({ body: scenario.topupQuote })],
+  [
+    '/billing/topup',
+    (scenario) => ({
+      body: {
+        amount_cents: scenario.topupQuote.amount_cents,
+        billing_op_id: 'op_topup',
+        status: 'pending',
+        topup_id: 'topup_e2e'
+      }
+    })
+  ],
   [
     '/billing/subscribe',
     () => ({ body: { billing_op_id: 'op_subscribe', status: 'subscribed' } })
@@ -194,11 +228,12 @@ const POST_REPLIES = new Map<string, ScenarioReply>([
  */
 function builtInGetReply(
   scenario: CloudScenario,
-  path: string,
+  request: RecordedRequest,
   issued: ReadonlySet<string>
 ): Reply | undefined {
+  const { path } = request
   const known = GET_REPLIES.get(path)
-  if (known) return known(scenario)
+  if (known) return known(scenario, request)
   const operation = OPERATION_PATH.exec(path)
   if (!operation) return undefined
   const id = decodeURIComponent(operation[1])
@@ -214,9 +249,9 @@ function builtInReply(
 ): Reply {
   const { method, path } = request
   if (method === 'GET')
-    return builtInGetReply(scenario, path, issued) ?? NO_SUCH_ROUTE
+    return builtInGetReply(scenario, request, issued) ?? NO_SUCH_ROUTE
   if (method === 'POST')
-    return POST_REPLIES.get(path)?.(scenario) ?? NO_SUCH_ROUTE
+    return POST_REPLIES.get(path)?.(scenario, request) ?? NO_SUCH_ROUTE
   return NO_SUCH_ROUTE
 }
 
@@ -275,6 +310,17 @@ export async function installMockCloud(
     if (operationId !== undefined) issued.add(operationId)
     return json(route, reply)
   })
+
+  // The host app's front page, where plan selection lives: a return lands here.
+  await context.route(
+    (url) => url.origin === CLOUD_ORIGIN && url.pathname === '/',
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<!doctype html><title>Host app</title><h1>Host app</h1>'
+      })
+  )
 
   // Where a hosted redirect lands: a page of its own, so a spec can assert
   // the navigation without the browser reaching the provider.

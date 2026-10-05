@@ -1,5 +1,9 @@
 # Run the model-page generation tests
 
+Scheduled sweeps and real browser acceptance run in GitHub Actions under the
+**Workshop:** prefix. See [live acceptance](acceptance/README.md) for cadence,
+accounts, billing expectations, reports, and the remaining acceptance scope.
+
 The tester calls `router_render(slug, {})` with the same initial inputs,
 parameter mappings, media conversion, temporary uploads, Router client and
 response parser as the model pages. A pass requires downloading and decoding
@@ -301,3 +305,25 @@ For generic parameter mappings, endpoint adapters and response handling, see
 [the shared rendering guide](ROUTER_RENDER.md). The recorded sweep notes cover
 [image results](reviews/2026-09-11-image-sweep.md) and
 [audio/video results](reviews/2026-09-11-audio-video-sweep.md).
+
+## Workflow pages
+
+Cloud workflow pages (`/models/workflows/…`) run a whole graph on Cloud rather
+than one Router model, so they have their own sweep:
+
+```bash
+# Free: every page, graph file, sample and example input
+pnpm --filter @comfyorg/website test:workflow-pages
+
+# Paid: also run each page's own defaults on Cloud and download every output
+PUBLIC_WORKSHOP_CLOUD_ENV=prod COMFY_API_KEY=... \
+  pnpm --filter @comfyorg/website test:workflow-pages --execute \
+  --repeat workflows/product-photo-to-video=3
+```
+
+`--execute` first confirms the key's Cloud workspace has funds, then submits each
+default, waits for Cloud and requires every selected output to download. A failure
+records Cloud's own node and error message from `GET /api/jobs/{id}`. The
+`Workshop: Workflow Sweep` action runs the free check every six hours and the paid
+run daily, using `WORKSHOP_WORKFLOW_API_KEY` (falling back to
+`WORKSHOP_ROUTER_API_KEY`); that key's workspace needs Cloud credits.

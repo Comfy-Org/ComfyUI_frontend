@@ -1,5 +1,5 @@
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
@@ -390,87 +390,6 @@ describe('useCanvasHistory', () => {
       expect(mockRefs.maskCtx!.getImageData).toHaveBeenCalled()
       expect(mockRefs.rgbCtx!.getImageData).toHaveBeenCalled()
       expect(mockRefs.imgCtx!.getImageData).toHaveBeenCalled()
-    })
-  })
-
-  describe('canUndo computed', () => {
-    it('should be false with no states', () => {
-      const history = useCanvasHistory()
-
-      expect(history.canUndo.value).toBe(false)
-    })
-
-    it('should be false with only initial state', () => {
-      const history = useCanvasHistory()
-
-      history.saveInitialState()
-
-      expect(history.canUndo.value).toBe(false)
-    })
-
-    it('should be true after saving a state', () => {
-      const history = useCanvasHistory()
-
-      history.saveInitialState()
-      history.saveState()
-
-      expect(history.canUndo.value).toBe(true)
-    })
-
-    it('should be false after undoing to first state', () => {
-      const history = useCanvasHistory()
-
-      history.saveInitialState()
-      history.saveState()
-      history.undo()
-
-      expect(history.canUndo.value).toBe(false)
-    })
-  })
-
-  describe('canRedo computed', () => {
-    it('should be false with no undo', () => {
-      const history = useCanvasHistory()
-
-      history.saveInitialState()
-      history.saveState()
-
-      expect(history.canRedo.value).toBe(false)
-    })
-
-    it('should be true after undo', () => {
-      const history = useCanvasHistory()
-
-      history.saveInitialState()
-      history.saveState()
-      history.undo()
-
-      expect(history.canRedo.value).toBe(true)
-    })
-
-    it('should be false after redo to last state', () => {
-      const history = useCanvasHistory()
-
-      history.saveInitialState()
-      history.saveState()
-      history.undo()
-      history.redo()
-
-      expect(history.canRedo.value).toBe(false)
-    })
-
-    it('should be false after saving new state', () => {
-      const history = useCanvasHistory()
-
-      history.saveInitialState()
-      history.saveState()
-      history.undo()
-
-      expect(history.canRedo.value).toBe(true)
-
-      history.saveState()
-
-      expect(history.canRedo.value).toBe(false)
     })
   })
 

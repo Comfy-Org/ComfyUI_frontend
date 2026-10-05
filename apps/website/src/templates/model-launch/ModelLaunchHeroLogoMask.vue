@@ -6,7 +6,7 @@ import {
   COMFY_LOGO_PATH,
   COMFY_LOGO_VIEWBOX,
   useHeroLogo
-} from '../../composables/useHeroLogo'
+} from '@/composables/useHeroLogo'
 
 const { imageSrc } = defineProps<{ imageSrc: string }>()
 

@@ -1,12 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  INodeSlot
-} from '@/lib/litegraph/src/interfaces'
-import { NodeInputSlot, NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
@@ -15,121 +9,7 @@ import type {
 } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
 import type { NodeId } from '@/types/nodeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { UUID } from '@/utils/uuid'
-
-const SERIALISABLE_SLOT_FIELDS = [
-  'name',
-  'localized_name',
-  'label',
-  'type',
-  'dir',
-  'removable',
-  'shape',
-  'color_off',
-  'color_on',
-  'locked',
-  'nameLocked',
-  'pos'
-] as const satisfies readonly (keyof INodeSlot)[]
-
-function copyOwnFields<T extends object>(
-  target: T,
-  source: T,
-  fields: readonly (keyof T)[]
-): void {
-  Object.assign(
-    target,
-    Object.fromEntries(
-      fields.flatMap((field) =>
-        Object.hasOwn(source, field) ? [[field, source[field]]] : []
-      )
-    )
-  )
-}
-
-function patchInputSlot(
-  target: INodeInputSlot,
-  incoming: INodeInputSlot
-): void {
-  copyOwnFields(target, incoming, SERIALISABLE_SLOT_FIELDS)
-  copyOwnFields(target, incoming, ['widget'])
-  if (
-    !(toRaw(target) instanceof NodeInputSlot) &&
-    Object.hasOwn(incoming, 'link')
-  ) {
-    target.link = incoming.link
-  }
-}
-
-function patchOutputSlot(
-  target: INodeOutputSlot,
-  incoming: INodeOutputSlot
-): void {
-  copyOwnFields(target, incoming, SERIALISABLE_SLOT_FIELDS)
-  copyOwnFields(target, incoming, ['slot_index'])
-  if (
-    !(toRaw(target) instanceof NodeOutputSlot) &&
-    Object.hasOwn(incoming, 'links')
-  ) {
-    target.links = incoming.links
-  }
-}
-
-function copyInputSlot(incoming: INodeInputSlot): INodeInputSlot {
-  const slot: INodeInputSlot = {
-    name: incoming.name,
-    type: incoming.type,
-    boundingRect: incoming.boundingRect
-  }
-  patchInputSlot(slot, incoming)
-  return slot
-}
-
-function copyOutputSlot(incoming: INodeOutputSlot): INodeOutputSlot {
-  const slot: INodeOutputSlot = {
-    name: incoming.name,
-    type: incoming.type,
-    boundingRect: incoming.boundingRect
-  }
-  patchOutputSlot(slot, incoming)
-  return slot
-}
-
-function mergeSlotsByName<Slot extends { name: string }>(
-  existing: Slot[],
-  incoming: readonly Slot[],
-  patch: (target: Slot, incoming: Slot) => void,
-  copy: (incoming: Slot) => Slot
-): void {
-  const used = new Set<number>()
-  const matches = incoming.map((incomingSlot) => {
-    const index = existing.findIndex(
-      (slot, candidate) =>
-        !used.has(candidate) && slot.name === incomingSlot.name
-    )
-    if (index === -1) return undefined
-    used.add(index)
-    return { index, slot: existing[index] }
-  })
-  const insertions: number[] = []
-
-  for (const [incomingIndex, incomingSlot] of incoming.entries()) {
-    const match = matches[incomingIndex]
-    if (match) {
-      patch(match.slot, incomingSlot)
-      continue
-    }
-
-    const anchor =
-      matches.slice(incomingIndex + 1).find((candidate) => candidate)?.index ??
-      existing.length - insertions.length
-    const insertionIndex =
-      anchor + insertions.filter((prior) => prior <= anchor).length
-    existing.splice(insertionIndex, 0, copy(incomingSlot))
-    insertions.push(anchor)
-  }
-}
 
 /**
  * One {@link NodeState} per node in a root-flat, owner-indexed bucket.
@@ -168,8 +48,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
    */
   function registerNode(
     graphScope: GraphScope,
-    state: NodeState,
-    _context?: RemoteMutationContext
+    state: NodeState
   ): NodeState | undefined {
     const existingBucket = roots.get(graphScope.rootGraphId)
     const incumbent = existingBucket?.byId.get(state.id)
@@ -209,10 +88,6 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     })
   }
 
-  function getNode(rootGraphId: UUID, nodeId: NodeId): NodeState | undefined {
-    return roots.get(toRootGraphId(rootGraphId))?.byId.get(nodeId)
-  }
-
   function ownsNode(graphScope: GraphScope, state: NodeState): boolean {
     const registered = roots.get(graphScope.rootGraphId)?.byId.get(state.id)
     return (
@@ -221,11 +96,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     )
   }
 
-  function deleteNode(
-    graphScope: GraphScope,
-    state: NodeState,
-    _context?: RemoteMutationContext
-  ): boolean {
+  function deleteNode(graphScope: GraphScope, state: NodeState): boolean {
     const bucket = roots.get(graphScope.rootGraphId)
     const registered = bucket?.byId.get(state.id)
     if (
@@ -242,86 +113,11 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     return true
   }
 
-  function updateNodeSlots(
-    graphScope: GraphScope,
-    nodeId: NodeId,
-    slots: Pick<NodeState, 'inputs' | 'outputs'>,
-    _context?: RemoteMutationContext
-  ): boolean {
-    const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
-    if (!state || state.graphId !== graphScope.owningGraphId) return false
-    mergeSlotsByName(state.inputs, slots.inputs, patchInputSlot, copyInputSlot)
-    mergeSlotsByName(
-      state.outputs,
-      slots.outputs,
-      patchOutputSlot,
-      copyOutputSlot
-    )
-    return true
-  }
-
-  function updateNode(
-    graphScope: GraphScope,
-    nodeId: NodeId,
-    replacement: NodeState,
-    _context?: RemoteMutationContext
-  ): boolean {
-    const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
-    if (!state || state.graphId !== graphScope.owningGraphId) return false
-
-    state.inputs.splice(0, state.inputs.length, ...replacement.inputs)
-    state.outputs.splice(0, state.outputs.length, ...replacement.outputs)
-    assignNodeFields(state, replacement)
-    return true
-  }
-
-  /**
-   * Replaces every scalar field of a node from `replacement` while leaving
-   * its `inputs` and `outputs` arrays untouched. Used when the slot layout is
-   * owned elsewhere (e.g. a live subgraph host whose promoted slots are bound
-   * to widgets) and only title/mode/flags/properties/colors may change.
-   */
-  function updateNodeFields(
-    graphScope: GraphScope,
-    nodeId: NodeId,
-    replacement: NodeState,
-    _context?: RemoteMutationContext
-  ): boolean {
-    const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
-    if (!state || state.graphId !== graphScope.owningGraphId) return false
-    assignNodeFields(state, replacement)
-    return true
-  }
-
-  function assignNodeFields(state: NodeState, replacement: NodeState): void {
-    const {
-      graphId: _graphId,
-      id: _id,
-      inputs: _inputs,
-      outputs: _outputs,
-      ...next
-    } = replacement
-    Object.assign(state, {
-      bgcolor: undefined,
-      boxcolor: undefined,
-      color: undefined,
-      lastSerialization: undefined,
-      resizable: undefined,
-      shape: undefined,
-      showAdvanced: undefined,
-      titleMode: undefined,
-      ...next
-    } satisfies Omit<NodeState, 'graphId' | 'id' | 'inputs' | 'outputs'>)
-  }
-
   function clearGraph(rootGraphId: UUID): void {
     roots.delete(toRootGraphId(rootGraphId))
   }
 
-  function clearOwner(
-    graphScope: GraphScope,
-    _context?: RemoteMutationContext
-  ): void {
+  function clearOwner(graphScope: GraphScope): void {
     const bucket = roots.get(graphScope.rootGraphId)
     const ids = bucket?.idsByOwner.get(graphScope.owningGraphId)
     if (!bucket || !ids) return
@@ -335,11 +131,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     clearGraph,
     deleteNode,
     getGraphNodesFor,
-    getNode,
     ownsNode,
-    registerNode,
-    updateNode,
-    updateNodeFields,
-    updateNodeSlots
+    registerNode
   }
 })

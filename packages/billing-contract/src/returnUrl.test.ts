@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { readWorkspaceLink } from '@comfyorg/account-core/workspaceLink'
+
 import { buildReturnUrl, parseReturnResult } from './returnUrl'
 
 describe('buildReturnUrl', () => {
@@ -9,6 +11,7 @@ describe('buildReturnUrl', () => {
       const url = buildReturnUrl({
         target: 'comfyui_workspace',
         environment: 'production',
+        workspace: undefined,
         result,
         reference: 'op_42'
       })
@@ -25,6 +28,7 @@ describe('buildReturnUrl', () => {
       buildReturnUrl({
         target: 'comfyui_credits',
         environment: 'staging',
+        workspace: undefined,
         result: 'success'
       })?.href
     ).toBe(
@@ -36,6 +40,7 @@ describe('buildReturnUrl', () => {
     const url = buildReturnUrl({
       target: 'comfyui_workspace',
       environment: 'production',
+      workspace: undefined,
       result: 'success',
       reference: 'op 42/../'
     })
@@ -47,6 +52,7 @@ describe('buildReturnUrl', () => {
     const url = buildReturnUrl({
       target: 'comfyui_workspace',
       environment: 'production',
+      workspace: undefined,
       reference: 'op_42'
     })
 
@@ -55,9 +61,67 @@ describe('buildReturnUrl', () => {
 
   it('returns nothing for a target the environment cannot resolve', () => {
     expect(
-      buildReturnUrl({ target: 'platform_account', environment: 'test' })
+      buildReturnUrl({
+        target: 'platform_account',
+        environment: 'test',
+        workspace: 'ws_team'
+      })
     ).toBeUndefined()
   })
+
+  it.for([
+    [
+      'comfyui_workspace',
+      'https://cloud.comfy.org/?workspace=ws_team&billing_result=success'
+    ],
+    [
+      'comfyui_credits',
+      'https://cloud.comfy.org/?settings=plan-credits&workspace=ws_team&billing_result=success'
+    ],
+    [
+      'platform_account',
+      'https://platform.comfy.org/?workspace=ws_team&billing_result=success'
+    ]
+  ] as const)(
+    'names the billed workspace on the way back to %s',
+    ([target, href]) => {
+      const url = buildReturnUrl({
+        target,
+        environment: 'production',
+        workspace: 'ws_team',
+        result: 'success'
+      })
+
+      expect(url?.href).toBe(href)
+      expect(readWorkspaceLink(url ?? '')).toEqual({
+        status: 'ok',
+        workspaceId: 'ws_team'
+      })
+    }
+  )
+
+  it('names no workspace when billing has none to report', () => {
+    const url = buildReturnUrl({
+      target: 'comfyui_credits',
+      environment: 'production',
+      workspace: undefined
+    })
+
+    expect(url?.href).toBe('https://cloud.comfy.org/?settings=plan-credits')
+  })
+
+  it.for(['', 'ws team', 'ws/../other'])(
+    'drops a workspace id %j that is not opaque',
+    (workspace) => {
+      const url = buildReturnUrl({
+        target: 'comfyui_workspace',
+        environment: 'production',
+        workspace
+      })
+
+      expect(url?.href).toBe('https://cloud.comfy.org/')
+    }
+  )
 })
 
 describe('parseReturnResult', () => {

@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "תהליך עבודה ריק חדש"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "הפעל מחדש את תהליך ההיכרות"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },

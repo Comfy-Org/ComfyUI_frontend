@@ -1,4 +1,4 @@
-import { modelReleaseSlides } from '../data/modelRelease'
+import { modelReleaseSlides } from '@/data/modelRelease'
 
 export async function modelReleaseLinks(
   enabled: boolean
@@ -10,7 +10,7 @@ export async function modelReleaseLinks(
       const model = slide.workshopSlug
         ? getWorkshopModel(slide.workshopSlug)
         : undefined
-      return model ? [[slide.id, model.href]] : []
+      return model?.href ? [[slide.id, model.href]] : []
     })
   )
 }

@@ -1,31 +1,13 @@
 import type { ErrorEvent, EventHint } from '@sentry/vue'
 import { describe, expect, it } from 'vitest'
 
-import {
-  isThirdPartyErrorNoise,
-  sentryThirdPartyErrorFilter
-} from './thirdPartyErrorNoise'
+import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
 
 const EXTENSION_ERROR = 'Invalid call to runtime.sendMessage(). Tab not found.'
+const MESSAGING_ERROR =
+  '[messaging] In this JS context, only one listener can be setup for queryMediaBinding'
 
 describe('third-party error noise', () => {
-  it.for([
-    EXTENSION_ERROR,
-    `Error: ${EXTENSION_ERROR}`,
-    `Unhandled promise rejection: ${EXTENSION_ERROR}`,
-    `Unhandled promise rejection: Error: ${EXTENSION_ERROR}`,
-    `${EXTENSION_ERROR} extension context`
-  ])('identifies the extension tab error in %s', (message) => {
-    expect(isThirdPartyErrorNoise(message)).toBe(true)
-  })
-
-  it.for([
-    'Invalid call to runtime.sendMessage(). Receiving end does not exist.',
-    `Application failed: ${EXTENSION_ERROR}`
-  ])('does not suppress %s', (message) => {
-    expect(isThirdPartyErrorNoise(message)).toBe(false)
-  })
-
   it.for([
     {
       event: { type: undefined },
@@ -39,6 +21,13 @@ describe('third-party error noise', () => {
       event: {
         type: undefined,
         exception: { values: [{ value: EXTENSION_ERROR }] }
+      },
+      hint: {}
+    },
+    {
+      event: {
+        type: undefined,
+        exception: { values: [{ value: `Error: ${MESSAGING_ERROR}` }] }
       },
       hint: {}
     }

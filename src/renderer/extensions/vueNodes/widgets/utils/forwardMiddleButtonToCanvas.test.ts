@@ -1,24 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
+import { app } from '@/scripts/app'
 
-const { processMouseDown, processMouseMove, processMouseUp } = vi.hoisted(
-  () => ({
-    processMouseDown: vi.fn(),
-    processMouseMove: vi.fn(),
-    processMouseUp: vi.fn()
-  })
-)
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: {
-      processMouseDown,
-      processMouseMove,
-      processMouseUp
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 describe('forwardMiddleButtonToCanvas', () => {
   let inputEl: HTMLElement
@@ -37,8 +22,8 @@ describe('forwardMiddleButtonToCanvas', () => {
     inputEl.dispatchEvent(new PointerEvent('pointermove', { buttons: 5 }))
     inputEl.dispatchEvent(new PointerEvent('pointerup', { button: 1 }))
 
-    expect(processMouseDown).not.toHaveBeenCalled()
-    expect(processMouseMove).toHaveBeenCalledTimes(1)
-    expect(processMouseUp).toHaveBeenCalledTimes(1)
+    expect(app.canvas.processMouseDown).not.toHaveBeenCalled()
+    expect(app.canvas.processMouseMove).toHaveBeenCalledTimes(1)
+    expect(app.canvas.processMouseUp).toHaveBeenCalledTimes(1)
   })
 })

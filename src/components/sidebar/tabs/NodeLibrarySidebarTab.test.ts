@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useLitegraphService } from '@/services/litegraphService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 
 import NodeLibrarySidebarTab from './NodeLibrarySidebarTab.vue'
@@ -16,7 +18,6 @@ const {
   captureRoot,
   getRoot,
   resetRoot,
-  mockAddNodeOnGraph,
   mockSearchNode,
   mockOrganizeNodes,
   mockToggleNodeOnEvent
@@ -30,7 +31,6 @@ const {
     resetRoot: () => {
       capturedRoot = null
     },
-    mockAddNodeOnGraph: vi.fn(),
     mockSearchNode: vi.fn(() => []),
     mockOrganizeNodes: vi.fn(
       (): TreeNode => ({
@@ -43,9 +43,7 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
   DEFAULT_GROUPING_ID: 'group',
@@ -155,7 +153,16 @@ describe('NodeLibrarySidebarTab', () => {
     expect(leaf?.leaf).toBe(true)
 
     await leaf?.handleClick?.(new MouseEvent('click'))
-    expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNode)
+    expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(mockNode)
+  })
+
+  it('closes node help when the panel unmounts', () => {
+    const { unmount } = renderComponent()
+    useNodeHelpStore().openHelp(mockNode)
+
+    unmount()
+
+    expect(useNodeHelpStore().isHelpOpen).toBe(false)
   })
 
   it('adds and removes filters', async () => {

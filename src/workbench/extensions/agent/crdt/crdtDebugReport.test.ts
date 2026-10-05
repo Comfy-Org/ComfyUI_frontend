@@ -57,6 +57,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     outcomes: {
       received: 3,
       applied: 3,
+      appliedLive: 3,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -215,6 +216,7 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('backend unreachable')
     expect(report).toContain('doc-1')
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_debug_report_source_failed',
       tags: { source: 'System stats' },
       level: 'warning'

@@ -1,15 +1,18 @@
 export type {
   BillingEnvironment,
   BillingIntent,
-  BillingProduct
+  BillingProduct,
+  BillingSource
 } from './contract.js'
 export {
   BILLING_CONTRACT_VERSION,
   BILLING_INTENTS,
   BILLING_PRODUCTS,
+  BILLING_SOURCES,
   billingIntentPath,
   isBillingIntent,
-  isBillingProduct
+  isBillingProduct,
+  isBillingSource
 } from './contract.js'
 export type {
   BillingEntry,
@@ -23,6 +26,7 @@ export type {
   BillingEntryUrlResult
 } from './entryUrl.js'
 export { buildBillingEntryUrl } from './entryUrl.js'
+export { isContractIdentifier } from './identifiers.js'
 export type { ReturnTarget } from './returnTargets.js'
 export {
   RETURN_TARGETS,

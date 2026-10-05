@@ -1,5 +1,5 @@
-import type { RunOutput } from '../../config/workshop-run'
-import type { TranslationKey } from '../../i18n/translations'
+import type { RunOutput } from '@/config/workshop-run'
+import type { TranslationKey } from '@/i18n/translations'
 
 const KIND_KEYS: Record<RunOutput['kind'], TranslationKey> = {
   image: 'workshop.output.kindImage',
@@ -21,7 +21,7 @@ export interface OutputLabel {
  * which no visitor asked for by name.
  */
 export function outputLabels(
-  outputs: readonly RunOutput[]
+  outputs: readonly Pick<RunOutput, 'kind'>[]
 ): readonly OutputLabel[] {
   const keys = outputs.map((output, index) =>
     index > 0 && output.kind === 'text'

@@ -1,4 +1,5 @@
 import { until } from '@vueuse/core'
+import { delay } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import {
   createRouter,
@@ -8,6 +9,9 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { CloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
+import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -16,7 +20,10 @@ import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
-import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import {
+  hasPendingDesktopLoginCode,
+  installDesktopLoginRedemption
+} from '@/platform/cloud/onboarding/desktopLoginRedemption'
 import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
@@ -108,6 +115,8 @@ router.afterEach(() => {
   trackPageView()
 })
 
+const PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS = 3_000
+
 if (isCloud) {
   const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
@@ -131,8 +140,26 @@ if (isCloud) {
     const path = to.path
     return PUBLIC_ROUTE_PATHS.has(path)
   }
+  async function publicRouteSignIn(): Promise<CloudSignIn> {
+    return Promise.race([
+      cloudSignIn(),
+      delay(PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS).then(() => 'signed_out' as const)
+    ])
+  }
+  const watchedSessions = new WeakSet<object>()
+  /** Re-runs this guard on the current route, which then sends the tab to sign-in. */
+  function rerouteWhenSignedOutElsewhere(): void {
+    const webSession = useCloudWebSessionStore()
+    if (watchedSessions.has(webSession)) return
+    watchedSessions.add(webSession)
+    webSession.onSignedOutElsewhere(() => {
+      const { path, query, hash } = router.currentRoute.value
+      void router.replace({ path, query, hash, force: true })
+    })
+  }
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {
+    rerouteWhenSignedOutElsewhere()
     const authStore = useAuthStore()
 
     // Wait for Firebase auth to initialize
@@ -147,9 +174,18 @@ if (isCloud) {
       }
     }
 
-    // Pass authenticated users
-    const authHeader = await authStore.getAuthHeader()
-    const isLoggedIn = !!authHeader
+    let signIn = isPublicRoute(to)
+      ? await publicRouteSignIn()
+      : await cloudSignIn()
+    if (signIn === 'pending' && !isPublicRoute(to)) {
+      await useCloudWebSessionStore().whenDecided()
+      signIn = await cloudSignIn()
+    }
+    const needsFirebaseForDesktopCode =
+      signIn === 'signed_in' &&
+      authStore.currentUser === null &&
+      hasPendingDesktopLoginCode()
+    const isLoggedIn = signIn === 'signed_in' && !needsFirebaseForDesktopCode
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     // Allow public routes
@@ -171,10 +207,12 @@ if (isCloud) {
       return next()
     }
 
-    const query =
-      to.fullPath === '/'
-        ? undefined
-        : { previousFullPath: encodeURIComponent(to.fullPath) }
+    const query = {
+      ...(to.fullPath !== '/' && {
+        previousFullPath: encodeURIComponent(to.fullPath)
+      }),
+      ...(needsFirebaseForDesktopCode && { switchAccount: 'true' })
+    }
 
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
@@ -211,7 +249,9 @@ if (isCloud) {
         await import('@/platform/cloud/onboarding/auth')
       try {
         // Check user's actual status
-        const surveyCompleted = await getSurveyCompletedStatus()
+        const surveyCompleted = await getSurveyCompletedStatus(
+          useAuthStore().userId
+        )
 
         // Survey is required for all users (when feature flag enabled)
         if (!surveyCompleted) {

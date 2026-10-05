@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import { useBannerImage } from '../../composables/useBannerImage'
+import { useBannerImage } from '@/composables/useBannerImage'
 
 const {
   bannerUrl,

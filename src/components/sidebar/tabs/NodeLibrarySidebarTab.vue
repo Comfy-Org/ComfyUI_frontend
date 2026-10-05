@@ -85,31 +85,31 @@
         </Popover>
       </template>
       <template #header>
-        <div class="px-2 2xl:px-4">
-          <div class="flex items-center gap-1">
-            <SearchInput
-              ref="searchBoxRef"
-              v-model="searchQuery"
-              data-testid="node-library-search"
-              class="node-lib-search-box"
-              :placeholder="
-                $t('g.searchPlaceholder', { subject: $t('g.nodes') })
-              "
-              @search="handleSearch"
-            />
+        <SidebarTopArea>
+          <SearchInput
+            ref="searchBoxRef"
+            v-model="searchQuery"
+            data-testid="node-library-search"
+            class="node-lib-search-box"
+            :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
+            @search="handleSearch"
+          />
+          <template #actions>
             <Button
-              variant="textonly"
+              variant="secondary"
               size="icon"
-              class="filter-button shrink-0"
+              class="filter-button"
               :aria-label="$t('g.filter')"
               @click="(e: Event) => searchFilter?.toggle(e)"
             >
-              <i class="pi pi-filter" />
+              <i class="icon-[lucide--list-filter] size-4" />
             </Button>
-          </div>
+          </template>
+        </SidebarTopArea>
+        <div class="px-4">
           <div
             v-if="filters?.length"
-            class="search-filters flex flex-wrap gap-2 pt-2"
+            class="search-filters flex flex-wrap gap-2 pb-2"
           >
             <SearchFilterChip
               v-for="filter in filters"
@@ -135,7 +135,8 @@
           />
           <div
             v-show="nodeBookmarkStore.bookmarks.length > 0"
-            class="m-2 border-t border-dashed border-interface-stroke"
+            role="separator"
+            class="m-2 border-0 border-t border-dashed border-interface-stroke"
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
@@ -170,6 +171,7 @@ import {
   h,
   nextTick,
   onMounted,
+  onUnmounted,
   ref,
   render
 } from 'vue'
@@ -181,6 +183,7 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import NodeHelpPage from '@/components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue'
 import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
@@ -242,6 +245,8 @@ const searchQuery = ref<string>('')
 
 const { currentHelpNode, isHelpOpen } = storeToRefs(nodeHelpStore)
 const { openHelp, closeHelp } = nodeHelpStore
+
+onUnmounted(closeHelp)
 
 const groupingOptions = computed(() =>
   nodeOrganizationService.getGroupingStrategies().map((strategy) => ({

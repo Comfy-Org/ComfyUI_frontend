@@ -204,7 +204,6 @@ import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { useWorkspaceActivity } from '@/platform/workspace/composables/useWorkspaceActivity'
 import type {
@@ -213,6 +212,7 @@ import type {
 } from '@/platform/workspace/composables/useWorkspaceActivity'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { userBadgeColor } from '@/platform/workspace/utils/badgeColor'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { formatRelativeTime } from '@/platform/workspace/utils/relativeTime'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -235,7 +235,7 @@ const selfUserId = computed(() =>
   canViewTeamUsage.value ? null : (resolvedUserInfo.value?.id ?? '')
 )
 
-const fullActivityUrl = `${getComfyPlatformBaseUrl()}/profile/usage`
+const fullActivityUrl = computed(() => platformLink('/profile/usage'))
 
 const {
   page,

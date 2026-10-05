@@ -17,6 +17,7 @@
  * an origin nobody hosts, or with no way back, is stranded.
  */
 import type {
+  BillingEntryInput,
   BillingEnvironment,
   BillingIntent,
   ReturnTarget
@@ -25,16 +26,22 @@ import {
   buildBillingEntryUrl,
   resolveReturnTarget
 } from '@comfyorg/billing-contract'
+import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import type { HostedBillingDestination } from '@/config/billingWeb'
 import { getBillingWebUrl } from '@/config/billingWeb'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
-import type { DeployEnv } from '@/platform/telemetry/initDatadogRum'
 import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
 
 export type HostedBillingRoute =
   | { readonly kind: 'billing_web'; readonly url: URL }
   | { readonly kind: 'provider' }
+
+/** The caller-supplied part of the entry, as opposed to the environment the host resolves for itself. */
+export type HostedBillingRouteFields = Pick<
+  BillingEntryInput,
+  'plan' | 'workspaceId' | 'teamCreditStopId' | 'correlationId' | 'source'
+>
 
 const PROVIDER: HostedBillingRoute = { kind: 'provider' }
 
@@ -90,6 +97,7 @@ function underBase(base: URL, entry: URL): URL {
 export function hostedBillingRoute(
   destination: HostedBillingDestination,
   intent: BillingIntent,
+  fields: HostedBillingRouteFields = {},
   billingWebBase: URL | null = getBillingWebUrl(),
   environment: BillingEnvironment | undefined = hostBillingEnvironment()
 ): HostedBillingRoute {
@@ -99,6 +107,7 @@ export function hostedBillingRoute(
   }
 
   const entry = buildBillingEntryUrl({
+    ...fields,
     billingOrigin: billingWebBase,
     intent,
     product: PRODUCT,
