@@ -52,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+import { defaultWindow, useEventListener } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -97,6 +98,7 @@ const telemetry = useTelemetry()
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
 const isAwaitingStripe = ref(false)
+let wasCancelledAtConfirm = false
 const didScopeAbort = ref(false)
 const cancelReport = createCancelFlowReporter(
   telemetry,
@@ -150,10 +152,22 @@ const description = computed(() =>
 )
 
 watch(
-  () => isAwaitingStripe.value && !!subscription.value?.isCancelled,
-  (observed) => {
-    if (!observed) return
+  () => !!subscription.value?.isCancelled,
+  (cancelled) => {
+    if (
+      !cancelled ||
+      !isAwaitingStripe.value ||
+      wasCancelledAtConfirm ||
+      didCancelSucceed.value
+    )
+      return
+    if (!isScopeCurrent()) {
+      didScopeAbort.value = true
+      dialogStore.closeDialog({ key: 'cancel-subscription' })
+      return
+    }
     didCancelSucceed.value = true
+    isAwaitingStripe.value = false
     telemetry?.trackSubscriptionCancellation(
       'confirmed',
       cancellationMetadata()
@@ -167,6 +181,12 @@ watch(
     })
   }
 )
+
+// The shared watcher gives up after a few minutes; keep checking on return from Stripe.
+useEventListener(defaultWindow, 'focus', () => {
+  if (!isAwaitingStripe.value) return
+  fetchStatus().catch(() => {})
+})
 
 function onClose() {
   if (isLoading.value) return
@@ -195,6 +215,7 @@ async function onConfirmCancel() {
   // The legacy rail only opens the Stripe portal, so it reports `confirmed`
   // once the cancellation is observed instead of on click.
   const isLegacyRail = !shouldUseWorkspaceBilling.value
+  wasCancelledAtConfirm = !!subscription.value?.isCancelled
   if (!isLegacyRail) {
     telemetry?.trackSubscriptionCancellation(
       'confirmed',

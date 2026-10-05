@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useDialogStore } from '@/stores/dialogStore'
@@ -631,6 +632,92 @@ describe('CancelSubscriptionDialogContent', () => {
       expect(
         useTelemetry()?.trackSubscriptionCancellation
       ).not.toHaveBeenCalledWith('abandoned', expect.anything())
+    })
+
+    async function confirmWith(isCancelled: { value: boolean }, props = {}) {
+      useBillingContext().subscription = computed(() =>
+        subscription({ isCancelled: isCancelled.value })
+      )
+      vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
+        undefined
+      )
+      const view = renderComponent(props)
+      await confirm()
+      await screen.findByText(/Finish cancelling on the Stripe page/i)
+      return view
+    }
+
+    it('does not report success when the workspace changed and another workspace was cancelled', async () => {
+      const isCancelled = ref(false)
+      const scopeCurrent = ref(true)
+      await confirmWith(isCancelled, {
+        isScopeCurrent: () => scopeCurrent.value
+      })
+
+      scopeCurrent.value = false
+      isCancelled.value = true
+
+      await waitFor(() =>
+        expect(useDialogStore().closeDialog).toHaveBeenCalled()
+      )
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(confirmedCalls()).toHaveLength(0)
+    })
+
+    it('does not report success for a subscription already cancelled at confirm', async () => {
+      const isCancelled = ref(true)
+      await confirmWith(isCancelled)
+
+      isCancelled.value = false
+      isCancelled.value = true
+      await nextTick()
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(confirmedCalls()).toHaveLength(0)
+    })
+
+    it('sends confirmed exactly once when isCancelled flips repeatedly', async () => {
+      const isCancelled = ref(false)
+      await confirmWith(isCancelled)
+
+      isCancelled.value = true
+      await nextTick()
+      isCancelled.value = false
+      await nextTick()
+      isCancelled.value = true
+      await nextTick()
+
+      expect(confirmedCalls()).toHaveLength(1)
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+    })
+
+    it('refreshes status on window focus while awaiting Stripe', async () => {
+      await confirmWith(ref(false))
+      vi.mocked(useBillingContext().fetchStatus).mockClear()
+
+      window.dispatchEvent(new Event('focus'))
+
+      expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports a blocked portal tab as failed with an error toast and no confirmed', async () => {
+      setSubscription(subscription())
+      vi.mocked(useBillingContext().cancelSubscription).mockRejectedValueOnce(
+        new PaymentPopupBlockedError('blocked')
+      )
+
+      renderComponent()
+      await confirm()
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      )
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).toHaveBeenCalledWith('failed', expect.anything())
+      expect(confirmedCalls()).toHaveLength(0)
     })
 
     it('reports abandoned, not confirmed, when closed before the cancel is observed', async () => {
