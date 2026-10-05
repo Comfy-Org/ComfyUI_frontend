@@ -1,13 +1,12 @@
 import { getActivePinia } from 'pinia'
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
@@ -36,9 +35,12 @@ function createFilter(
   }
 }
 
-describe('NodeSearchBoxPopover', () => {
-  let openModal: HTMLElement | undefined
+const OpenDialog = defineComponent({
+  directives: { rekaZIndex: vRekaZIndex },
+  template: '<div v-reka-z-index data-testid="open-dialog" />'
+})
 
+describe('NodeSearchBoxPopover', () => {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -104,7 +106,7 @@ describe('NodeSearchBoxPopover', () => {
 
     const result = render(NodeSearchBoxPopover, {
       global: {
-        plugins: [i18n, PrimeVue, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           NodeSearchBox: NodeSearchBoxStub,
           NodeSearchContent: NodeSearchContentStub,
@@ -142,13 +144,6 @@ describe('NodeSearchBoxPopover', () => {
 
   beforeEach(() => {
     vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    if (openModal) {
-      ZIndex.clear(openModal)
-      openModal = undefined
-    }
   })
 
   describe('addFilter duplicate prevention', () => {
@@ -218,10 +213,9 @@ describe('NodeSearchBoxPopover', () => {
     expect(screen.getByLabelText('filter count')).toHaveTextContent('0')
   })
 
-  it('opens above an existing lifted dialog', async () => {
-    openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
-    const dialogZIndex = Number(openModal.style.zIndex)
+  it('opens above an already open dialog', async () => {
+    render(OpenDialog)
+    const dialogZIndex = Number(screen.getByTestId('open-dialog').style.zIndex)
     const { pinia } = renderComponent({
       'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
     })

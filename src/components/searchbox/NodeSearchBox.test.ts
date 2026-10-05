@@ -1,7 +1,6 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -16,6 +15,11 @@ import { FuseFilter } from '@/utils/fuseUtil'
 import NodeSearchBox from './NodeSearchBox.vue'
 
 vi.mock(import('@/platform/telemetry'))
+
+const OpenDialog = defineComponent({
+  directives: { rekaZIndex: vRekaZIndex },
+  template: '<div v-reka-z-index data-testid="open-dialog" />'
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -145,11 +149,9 @@ describe('NodeSearchBox', () => {
     }
   )
 
-  it('opens its filter dialog above search opened over a lifted modal', async () => {
-    const openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
-    onTestFinished(() => ZIndex.clear(openModal))
-    const managerZIndex = Number(openModal.style.zIndex)
+  it('opens its filter dialog above search opened over another dialog', async () => {
+    render(OpenDialog)
+    const managerZIndex = Number(screen.getByTestId('open-dialog').style.zIndex)
     const Harness = defineComponent({
       components: { NodeSearchBox },
       directives: { rekaZIndex: vRekaZIndex },
