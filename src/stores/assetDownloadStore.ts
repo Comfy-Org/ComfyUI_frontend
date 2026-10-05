@@ -16,6 +16,7 @@ import {
 } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
+import { t } from '@/i18n'
 
 export type AssetDownloadStatus =
   | TaskStatus
@@ -33,8 +34,7 @@ const recheckableStatuses = new Set<AssetDownloadStatus>([
   'created',
   'running',
   'failed',
-  'cancellation_pending',
-  'cancellation_unconfirmed'
+  'cancellation_pending'
 ])
 const reconcilableTaskStatuses = new Set<TaskStatus>([
   'completed',
@@ -177,9 +177,9 @@ function createReconciledDownloadMessage(
   task: TaskResponse
 ): AssetDownloadWsMessage | undefined {
   const result = parseDownloadFileResult(task.result)
-  // A completed download needs a valid result (or an asset id already learned
-  // from the socket) before it can be recorded as a completed asset.
-  if (task.status === 'completed' && !result && !download.assetId) return
+  // The task status is authoritative even when an older backend returns a
+  // result shape we cannot parse. Preserve the fields learned from the socket
+  // so the row can still settle instead of polling forever.
   const reconciledResult: Partial<DownloadFileResult> = result ?? {}
   const assetId = resultValue(reconciledResult.asset_id, download.assetId)
   const assetName = requiredResultValue(
@@ -221,6 +221,7 @@ function isSettledDownload(download: AssetDownload) {
 
 function beginPendingCancellation(download: AssetDownload) {
   download.status = 'cancellation_pending'
+  download.error = undefined
   download.cancellationReconcileAttempts = 0
   download.lastUpdate = Date.now()
 }
@@ -229,7 +230,13 @@ function settleUnknownDownloadStatus(
   existing: AssetDownload | undefined,
   data: AssetDownloadWsMessage
 ) {
-  if (!existing || isSettledDownload(existing)) return
+  if (
+    !existing ||
+    isSettledDownload(existing) ||
+    existing.status === 'cancellation_pending' ||
+    existing.status === 'failed'
+  )
+    return
   existing.status = 'failed'
   existing.error = data.error || `Unknown task status: ${data.status}`
   existing.lastUpdate = Date.now()
@@ -239,6 +246,9 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
   const cancellingTaskIds = ref(new Set<TaskId>())
   const reconcilingTasks = new Map<TaskId, Promise<void>>()
+  const dismissedPendingDownloads = new Map<TaskId, string | undefined>()
+  const taskNotFoundAttempts = new Map<TaskId, number>()
+  const terminalReconciledFailures = new Set<TaskId>()
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
@@ -264,8 +274,10 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     )
   )
   const recheckableDownloads = computed(() =>
-    downloadList.value.filter((download) =>
-      isDownloadRecheckable(download.status)
+    downloadList.value.filter(
+      (download) =>
+        isDownloadRecheckable(download.status) &&
+        !terminalReconciledFailures.has(download.taskId)
     )
   )
   const hasRecheckableDownloads = computed(
@@ -287,14 +299,40 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   function trackDownload(taskId: TaskId, modelType: string, assetName: string) {
     if (downloads.value.has(taskId)) return
 
+    dismissedPendingDownloads.delete(taskId)
+    taskNotFoundAttempts.delete(taskId)
+    terminalReconciledFailures.delete(taskId)
     downloads.value.set(
       taskId,
       generateDownloadTrackingPlaceholder(taskId, modelType, assetName)
     )
   }
 
+  function consumeDismissedDownload(data: AssetDownloadWsMessage): boolean {
+    if (!dismissedPendingDownloads.has(data.task_id)) return false
+
+    const modelType = dismissedPendingDownloads.get(data.task_id)
+    if (data.status === 'completed' && modelType) {
+      lastCompletedDownload.value = {
+        taskId: data.task_id,
+        modelType,
+        timestamp: Date.now()
+      }
+    }
+    if (data.status === 'completed' || data.status === 'cancelled') {
+      dismissedPendingDownloads.delete(data.task_id)
+    }
+    return true
+  }
+
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
     const data = e.detail
+    if (consumeDismissedDownload(data)) return
+    if (
+      terminalReconciledFailures.has(data.task_id) &&
+      activeStatuses.has(data.status)
+    )
+      return
     const existing = downloads.value.get(data.task_id)
 
     // WebSocket payloads are not runtime-validated at the event boundary.
@@ -330,6 +368,29 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
   }
 
+  function handleTaskNotFound(download: AssetDownload) {
+    if (
+      download.status === 'cancellation_pending' ||
+      download.status === 'cancellation_unconfirmed'
+    ) {
+      taskNotFoundAttempts.delete(download.taskId)
+      finalizeCancellation(download)
+      return
+    }
+
+    const attempts = (taskNotFoundAttempts.get(download.taskId) ?? 0) + 1
+    taskNotFoundAttempts.set(download.taskId, attempts)
+    if (attempts < 2) {
+      download.lastUpdate = Date.now()
+      return
+    }
+    taskNotFoundAttempts.delete(download.taskId)
+    terminalReconciledFailures.add(download.taskId)
+    download.status = 'failed'
+    download.error = t('progressToast.taskUnavailable')
+    download.lastUpdate = Date.now()
+  }
+
   async function runReconciliation(download: AssetDownload) {
     const result = await taskService.getTask(download.taskId)
     if (downloads.value.get(download.taskId) !== download) return
@@ -339,14 +400,12 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       // cancellation has nothing left to wait for. Other lookup failures are
       // transient and must not consume the authoritative reconciliation bound.
       if (result.error instanceof TaskNotFoundError) {
-        if (download.status === 'cancellation_pending') {
-          finalizeCancellation(download)
-        }
-        return
+        handleTaskNotFound(download)
       }
       return
     }
 
+    taskNotFoundAttempts.delete(download.taskId)
     const task = result.value
     if (
       download.status === 'cancellation_pending' &&
@@ -361,6 +420,9 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       download.lastUpdate = Date.now()
       noteAuthoritativePendingCancellation(download)
       return
+    }
+    if (task.status === 'failed') {
+      terminalReconciledFailures.add(download.taskId)
     }
     handleAssetDownload(
       new CustomEvent('asset_download', {
@@ -425,6 +487,10 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   function clearFinishedDownloads() {
     for (const download of finishedDownloads.value) {
+      if (download.status === 'cancellation_unconfirmed') {
+        dismissedPendingDownloads.set(download.taskId, download.modelType)
+      }
+      taskNotFoundAttempts.delete(download.taskId)
       downloads.value.delete(download.taskId)
     }
   }
@@ -435,6 +501,13 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         isDownloadFinished(download.status) ||
         download.status === 'cancellation_pending'
       ) {
+        if (
+          download.status === 'cancellation_pending' ||
+          download.status === 'cancellation_unconfirmed'
+        ) {
+          dismissedPendingDownloads.set(download.taskId, download.modelType)
+        }
+        taskNotFoundAttempts.delete(download.taskId)
         downloads.value.delete(download.taskId)
       }
     }
@@ -461,6 +534,9 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       if (result.value === 'missing') {
         beginPendingCancellation(current)
         await reconcileDownload(current, true)
+        const latest = downloads.value.get(taskId)
+        if (!latest) return { ok: true, value: false }
+        if (latest.status === 'cancelled') return { ok: true, value: true }
         return { ok: true, value: false }
       }
 

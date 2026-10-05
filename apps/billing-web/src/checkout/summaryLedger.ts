@@ -216,6 +216,11 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
     creditsNextPeriod: formatCount(nextPeriodCount),
     currency: currency.toUpperCase(),
     dueCents,
+    /**
+     * Today's charge before promotions and account balance: the server's
+     * subtotal when it itemizes them. `cost_today_cents` is already net.
+     */
+    itemCents: quote.subtotal_cents ?? quote.cost_today_cents,
     recurringCents: quote.renewal_amount_cents ?? quote.cost_next_period_cents,
     /**
      * The discounts that get a row. A `plan` discount is a catalog coupon the
@@ -351,7 +356,7 @@ function proratedItems(r: QuoteReading): LedgerRow[] {
     return [
       {
         label: r.t(`${S}.item.prorated`, { plan: r.plan }),
-        amount: r.money(r.quote.cost_today_cents),
+        amount: r.money(r.itemCents),
         sublines: [
           r.t(`${S}.item.remainingTime`, {
             plan: r.tierName(r.next.tier),
@@ -385,7 +390,7 @@ function proratedLedger(r: QuoteReading): FamilyLedger {
     family: 'prorated_change',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: grantedToday(r),
-    items: moneyItems(r, r.quote.cost_today_cents, proratedItems(r)),
+    items: moneyItems(r, r.itemCents, proratedItems(r)),
     trailing: [
       r.t(`${S}.trailing.creditsKept`, {}),
       renewalLine(r),
@@ -504,10 +509,10 @@ function chargeNowLedger(r: QuoteReading): FamilyLedger {
     family: 'charge_now',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: chargeNowCredits(r),
-    items: moneyItems(r, r.quote.cost_today_cents, [
+    items: moneyItems(r, r.itemCents, [
       {
         label: r.plan,
-        amount: r.money(r.quote.cost_today_cents),
+        amount: r.money(r.itemCents),
         ...('comparedRate' in rateLine
           ? { comparedRate: rateLine.comparedRate, sublines: refills }
           : { sublines: [rateLine.subline, ...refills] })
