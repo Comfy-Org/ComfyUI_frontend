@@ -9625,7 +9625,7 @@ describe('AgentPanelRoot workflow binding', () => {
         seq: 1
       })
 
-      ws.emit('reconnected')
+      ws.connect()
 
       await sendFromComposer('second message')
 
@@ -9647,6 +9647,25 @@ describe('AgentPanelRoot workflow binding', () => {
         workflow_id: 'wf-42',
         draft: { content: { id: 'wf-42' } }
       })
+    })
+
+    // A reconnect reopens recovery of the same document, so a verdict from the
+    // previous socket no longer lets an authoritative draft overwrite it.
+    it('withholds the draft again once a reconnect retries a refused document', async () => {
+      const bodies = await bindAndSettle()
+      ws.emitEvent('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: false,
+        code: 'schema_version_mismatch'
+      })
+
+      ws.connect()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+      expect(bodies[1]).not.toHaveProperty('draft')
     })
   })
 
