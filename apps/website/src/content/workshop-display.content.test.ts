@@ -21,7 +21,6 @@ import {
   appCatalog,
   workflowCatalog
 } from '../config/workshop-workflow-catalog'
-import { hubModelSlugs } from '../config/hub-models'
 import { isWorkshopModelDisabled } from '../config/workshop-model-availability'
 
 const here = import.meta.dirname
@@ -47,7 +46,13 @@ const STILL = new Set(['image', 'svg'])
 
 describe('the display overlay against the catalog', () => {
   it.for([
-    { id: 'minimax/hailuo-03', name: 'MiniMax H3 Text-to-Video' },
+    // MiniMax H3 is disabled (awaiting its publish review), so it has no
+    // /hub/models URL row yet.
+    {
+      id: 'minimax/hailuo-03',
+      name: 'MiniMax H3 Text-to-Video',
+      href: undefined
+    },
     {
       id: 'minimax/hailuo-03-regeneration',
       name: 'MiniMax H3 Video Regeneration'
@@ -55,13 +60,14 @@ describe('the display overlay against the catalog', () => {
     {
       id: 'vertexai/gemini-3-pro-image',
       name: 'Nano Banana Pro Text-to-Image',
+      href: '/hub/models/nano-banana-pro-text-to-image/',
       // The first content record for this model is its edit page; the
       // generate page is the one the Router slug resolves to.
       contentName: 'Nano Banana Pro Image Edit'
     }
   ])(
     'preserves Rob’s display name for $id independently of Router eligibility',
-    ({ id, name, contentName }) => {
+    ({ id, name, contentName, href }) => {
       const catalogEntry = catalogById.get(id)
       if (!catalogEntry) throw new Error('Missing renamed model')
       const detail = getRouterWorkshopModelDetail(catalogEntry.slug)
@@ -75,17 +81,19 @@ describe('the display overlay against the catalog', () => {
       const routerId = routerAliasById.get(id)?.routerId ?? id
       expect(detail?.routerId).toBe(routerId)
       expect(detail?.slug.startsWith(`${catalogEntry.slug}--`)).toBe(true)
-      // A disabled page (MiniMax H3 awaits its publish review) has no
-      // /hub/models URL row yet.
-      if (isWorkshopModelDisabled(detail?.slug ?? ''))
-        expect(detail?.href).toBeUndefined()
-      else
-        expect(detail?.href).toBe(
-          `/hub/models/${hubModelSlugs.get(detail?.slug ?? '')}/`
-        )
+      expect(detail?.href).toBe(href)
       if (detail?.execution) expect(detail.execution.id).toBe(routerId)
     }
   )
+
+  it('pins which href fixtures are disabled', () => {
+    expect(
+      [
+        'minimax--hailuo-03--generate-videos',
+        'vertexai--gemini-3-pro-image--generate-images'
+      ].filter(isWorkshopModelDisabled)
+    ).toEqual(['minimax--hailuo-03--generate-videos'])
+  })
 
   it('falls back to the catalog name when content has no override', () => {
     const entry = catalog.find((model) => {
