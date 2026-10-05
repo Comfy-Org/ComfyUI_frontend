@@ -257,9 +257,7 @@ test.describe(
       const totalSteps = await tourLength(card)
 
       for (let step = 1; step < totalSteps; step++) {
-        await expect(card).toContainText(`Step ${step} of ${totalSteps}`, {
-          timeout: 10_000
-        })
+        await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
         await expect(card).toHaveAttribute('aria-busy', 'false')
         await expect
           .poll(
