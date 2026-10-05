@@ -348,6 +348,7 @@
       "signOut": "退出登录",
       "signUpLink": "在这里注册",
       "signingIn": "正在为你登录…",
+      "ssoRedirecting": "正在前往你所在组织的登录页面…",
       "submit": "登录",
       "useEmailInstead": "改用邮箱"
     },
