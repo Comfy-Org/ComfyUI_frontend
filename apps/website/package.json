@@ -44,6 +44,7 @@
     "check:models-html": "tsx ./scripts/check-models-html.ts",
     "list:models-pages": "tsx ./scripts/list-models-pages.ts",
     "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
+    "indexnow:submit": "tsx ./scripts/indexnow-submit.ts",
     "check:link-slashes": "tsx ./scripts/check-internal-link-slashes.ts",
     "workshop:generate": "tsx ./scripts/generate-workshop-models.ts",
     "workshop:generate-versions": "tsx ./scripts/generate-workshop-versions.ts",

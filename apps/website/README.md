@@ -524,14 +524,14 @@ non-production build doesn't.
 Every build writes `indexnow-manifest.json`: each sitemap URL mapped to a hash
 of its markdown twin, so header, footer and asset-hash changes don't count, and
 noindex pages are left out. The `deploy-production` job saves the live manifest
-before it deploys, then `scripts/indexnow-submit.ts` sends the added, changed
+before it deploys, then `pnpm indexnow:submit` sends the added, changed
 and removed URLs to IndexNow (Bing, Yandex, Naver, Seznam, Yep). Google does not
 use IndexNow. The step only warns on failure and never fails the deploy;
 previews never run it. The key lives in `src/config/indexnow.ts` and its file in
 `public/`. To see the payload without sending it:
 
 ```bash
-pnpm exec tsx scripts/indexnow-submit.ts --current dist/indexnow-manifest.json \
+pnpm indexnow:submit --current dist/indexnow-manifest.json \
   --previous prev.json --previous-status 404 --dry-run
 ```
 

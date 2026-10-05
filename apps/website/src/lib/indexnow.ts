@@ -11,7 +11,7 @@ import { htmlToTwin, renderTwin } from '@/lib/markdown-twin'
 /** Sitemap URL → sha256 of the page's crawler-visible content. */
 export type IndexNowManifest = Record<string, string>
 
-interface IndexNowPayload {
+export interface IndexNowPayload {
   host: string
   key: string
   keyLocation: string
@@ -61,7 +61,7 @@ function isManifest(value: unknown): value is IndexNowManifest {
   )
 }
 
-export function parseManifest(body: string): IndexNowManifest | undefined {
+function parseManifest(body: string): IndexNowManifest | undefined {
   try {
     const parsed: unknown = JSON.parse(body)
     return isManifest(parsed) ? parsed : undefined
@@ -74,10 +74,7 @@ export function parseManifest(body: string): IndexNowManifest | undefined {
  * A 404 means no manifest was ever deployed, so every URL is new. Any other
  * failure skips the run rather than resubmitting the whole site.
  */
-export function parsePreviousManifest(
-  status: number,
-  body: string
-): PreviousManifest {
+function parsePreviousManifest(status: number, body: string): PreviousManifest {
   if (status === 404) return { kind: 'first-run' }
   if (status !== 200)
     return { kind: 'unavailable', reason: `live manifest returned ${status}` }
@@ -118,4 +115,31 @@ export function indexNowPayloads(
     })
   }
   return payloads
+}
+
+type SubmissionPlan =
+  | { kind: 'skip'; reason: string }
+  | { kind: 'submit'; summary: string; payloads: IndexNowPayload[] }
+
+export function planSubmission(
+  currentBody: string,
+  previousStatus: number,
+  previousBody: string
+): SubmissionPlan {
+  const current = parseManifest(currentBody)
+  if (!current)
+    return { kind: 'skip', reason: 'the build has no valid manifest' }
+  const previous = parsePreviousManifest(previousStatus, previousBody)
+  if (previous.kind === 'unavailable')
+    return { kind: 'skip', reason: previous.reason }
+  const { added, changed, removed } = diffManifests(
+    previous.kind === 'found' ? previous.manifest : {},
+    current
+  )
+  const firstRun = previous.kind === 'first-run' ? ' (first run)' : ''
+  return {
+    kind: 'submit',
+    summary: `IndexNow: ${added.length} added, ${changed.length} changed, ${removed.length} removed${firstRun}`,
+    payloads: indexNowPayloads([...added, ...changed, ...removed])
+  }
 }

@@ -220,7 +220,7 @@ jobs:
         env:
           PREVIOUS_STATUS: ${{ steps.indexnow-previous.outputs.status || '0' }}
         run: |
-          pnpm exec tsx scripts/indexnow-submit.ts \
+          pnpm indexnow:submit \
             --current "$GITHUB_WORKSPACE/.vercel/output/static/indexnow-manifest.json" \
             --previous "$RUNNER_TEMP/indexnow-previous.json" \
             --previous-status "$PREVIOUS_STATUS"

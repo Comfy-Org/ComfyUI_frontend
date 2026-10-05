@@ -3,7 +3,7 @@
  * a production deploy added, changed or removed. Always exits 0: a failed
  * ping is logged as a warning and must never fail the deploy.
  *
- *   tsx scripts/indexnow-submit.ts --current <manifest> \
+ *   pnpm indexnow:submit --current <manifest> \
  *     --previous <file> --previous-status <http code> [--dry-run]
  */
 import { appendFileSync, readFileSync } from 'node:fs'
@@ -14,12 +14,8 @@ import {
   INDEXNOW_KEY,
   INDEXNOW_KEY_LOCATION
 } from '@/config/indexnow'
-import {
-  diffManifests,
-  indexNowPayloads,
-  parseManifest,
-  parsePreviousManifest
-} from '@/lib/indexnow'
+import type { IndexNowPayload } from '@/lib/indexnow'
+import { planSubmission } from '@/lib/indexnow'
 
 const { values } = parseArgs({
   options: {
@@ -55,34 +51,7 @@ async function keyFileIsLive(): Promise<boolean> {
   return response.ok && (await response.text()).trim() === INDEXNOW_KEY
 }
 
-async function main(): Promise<void> {
-  const current = parseManifest(readText(values.current))
-  if (!current) return warn(`no valid manifest at ${values.current}`)
-
-  const previous = parsePreviousManifest(
-    Number(values['previous-status']),
-    readText(values.previous)
-  )
-  if (previous.kind === 'unavailable') return warn(previous.reason)
-
-  const diff = diffManifests(
-    previous.kind === 'found' ? previous.manifest : {},
-    current
-  )
-  const urls = [...diff.added, ...diff.changed, ...diff.removed]
-  report(
-    `IndexNow: ${diff.added.length} added, ${diff.changed.length} changed, ${diff.removed.length} removed${previous.kind === 'first-run' ? ' (first run)' : ''}`
-  )
-  const payloads = indexNowPayloads(urls)
-
-  if (values['dry-run']) {
-    process.stdout.write(`${JSON.stringify(payloads, null, 2)}\n`)
-    return report(`IndexNow dry run: ${payloads.length} request(s) not sent`)
-  }
-  if (payloads.length === 0) return
-  if (!(await keyFileIsLive()))
-    return warn(`key file ${INDEXNOW_KEY_LOCATION} does not serve the key`)
-
+async function send(payloads: IndexNowPayload[]): Promise<void> {
   for (const [index, payload] of payloads.entries()) {
     const response = await fetch(INDEXNOW_ENDPOINT, {
       method: 'POST',
@@ -94,6 +63,27 @@ async function main(): Promise<void> {
       return warn(`${batch} returned HTTP ${response.status}`)
     report(`IndexNow ${batch}: HTTP ${response.status}`)
   }
+}
+
+async function main(): Promise<void> {
+  const plan = planSubmission(
+    readText(values.current),
+    Number(values['previous-status']),
+    readText(values.previous)
+  )
+  if (plan.kind === 'skip') return warn(plan.reason)
+  report(plan.summary)
+
+  if (values['dry-run']) {
+    process.stdout.write(`${JSON.stringify(plan.payloads, null, 2)}\n`)
+    return report(
+      `IndexNow dry run: ${plan.payloads.length} request(s) not sent`
+    )
+  }
+  if (plan.payloads.length === 0) return
+  if (!(await keyFileIsLive()))
+    return warn(`key file ${INDEXNOW_KEY_LOCATION} does not serve the key`)
+  await send(plan.payloads)
 }
 
 try {

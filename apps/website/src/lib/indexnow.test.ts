@@ -11,7 +11,7 @@ import {
   diffManifests,
   indexNowPayloads,
   pageFingerprint,
-  parsePreviousManifest
+  planSubmission
 } from './indexnow'
 
 const page = ({
@@ -75,17 +75,31 @@ describe('diffManifests', () => {
   })
 })
 
-describe('parsePreviousManifest', () => {
+describe('planSubmission', () => {
+  const current = JSON.stringify({ [url('a/')]: 'h1' })
+
   it.for([
-    [404, '', 'first-run'],
-    [200, '{"https://comfy.org/":"h1"}', 'found'],
-    [200, '<html>not json</html>', 'unavailable'],
-    [200, '["https://comfy.org/"]', 'unavailable'],
-    [500, '', 'unavailable'],
-    [0, '', 'unavailable']
-  ] as const)('HTTP %i %s → %s', ([status, body, kind]) => {
-    expect(parsePreviousManifest(status, body).kind).toBe(kind)
+    [404, '', 'IndexNow: 1 added, 0 changed, 0 removed (first run)'],
+    [200, current, 'IndexNow: 0 added, 0 changed, 0 removed']
+  ] as const)('live manifest HTTP %i → %s', ([status, body, summary]) => {
+    expect(planSubmission(current, status, body)).toMatchObject({
+      kind: 'submit',
+      summary
+    })
   })
+
+  it.for([
+    ['a 5xx live manifest', current, 503, ''],
+    ['a failed fetch', current, 0, ''],
+    ['an HTML live manifest', current, 200, '<html></html>'],
+    ['an array live manifest', current, 200, '["https://comfy.org/"]'],
+    ['a missing build manifest', '', 404, '']
+  ] as const)(
+    'skips rather than resubmitting the site on %s',
+    ([, currentBody, status, body]) => {
+      expect(planSubmission(currentBody, status, body).kind).toBe('skip')
+    }
+  )
 })
 
 describe('indexNowPayloads', () => {
