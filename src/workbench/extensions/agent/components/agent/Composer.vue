@@ -35,7 +35,10 @@ import { composerPromptForSend } from '../../utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type {
+  ComposerAttachment,
+  ComposerSubmitSource
+} from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
@@ -83,7 +86,8 @@ const emit = defineEmits<{
   send: [
     text: string,
     attachments: ComposerAttachment[],
-    workflowReferences?: WorkflowReference[]
+    workflowReferences: WorkflowReference[] | undefined,
+    source: ComposerSubmitSource
   ]
   stop: [method: AgentStopMethod]
   attach: []
@@ -110,7 +114,7 @@ const duplicateIdClass =
 const running = computed(() => streaming || submitting)
 
 const composer = useComposer({
-  onSend: (text, attachments) => {
+  onSend: (text, attachments, source) => {
     if (workflowSelecting || submitting) return
     if (!hasWorkflowTarget) {
       emit('workflowTargetRequired')
@@ -135,9 +139,10 @@ const composer = useComposer({
             end - start,
             Math.max(0, reference.textOffset - start)
           )
-        }))
+        })),
+        source
       )
-    } else emit('send', text, attachments)
+    } else emit('send', text, attachments, undefined, source)
   },
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
@@ -242,7 +247,7 @@ function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
   if (running.value) return
-  composer.submit()
+  composer.submit('enter')
 }
 
 const primaryActionTooltip = computed(() =>
@@ -254,7 +259,7 @@ const primaryActionShortcut = computed(() =>
 
 function onPrimaryAction(): void {
   if (running.value) emit('stop', 'button')
-  else composer.submit()
+  else composer.submit('button')
 }
 
 const composerContainerRef = useTemplateRef<HTMLDivElement>(

@@ -290,7 +290,7 @@ describe('Composer', () => {
     useAgentComposerStore().setText('  make art  ')
     const { emitted } = mount()
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    expect(emitted().send[0]).toEqual(['make art', []])
+    expect(emitted().send[0]).toEqual(['make art', [], undefined, 'button'])
     expect(useAgentComposerStore().draft).toBe('  make art  ')
   })
 
@@ -1129,7 +1129,12 @@ describe('Composer', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
-      expect(emitted().send[0]).toEqual(['use this workflow', [], references])
+      expect(emitted().send[0]).toEqual([
+        'use this workflow',
+        [],
+        references,
+        'button'
+      ])
     })
 
     it('keeps spaces next to boundary chips when trimming a sent prompt', async () => {
@@ -1149,7 +1154,8 @@ describe('Composer', () => {
         [
           { id: 'a', name: 'A', textOffset: 5 },
           { id: 'b', name: 'B', textOffset: 11 }
-        ]
+        ],
+        'button'
       ])
     })
 
@@ -1184,7 +1190,7 @@ describe('Composer', () => {
       expect(screen.queryByRole('menu')).toBeNull()
 
       await userEvent.keyboard('{Enter}')
-      expect(emitted().send[0]).toEqual(['hi @k', []])
+      expect(emitted().send[0]).toEqual(['hi @k', [], undefined, 'enter'])
     })
 
     it('ignores an @ inside a word', async () => {

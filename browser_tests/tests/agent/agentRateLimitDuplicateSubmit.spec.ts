@@ -27,10 +27,6 @@ test.describe(
       await expect(agentPanel.composer).toHaveText(prompt)
       await expect(agentPanel.sendButton).toBeEnabled()
 
-      test.fail(
-        true,
-        'Repeated Enter presses duplicate the rejected prompt and turn request'
-      )
       await agentPanel.composer.press('Enter')
       await agentPanel.composer.press('Enter')
       await expect(agentPanel.composer).toHaveText(prompt)

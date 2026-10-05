@@ -9,7 +9,7 @@ import type { WorkflowReference } from '../../types/workflowReference'
 import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment, ComposerSubmitSource } from './useComposer'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
@@ -53,6 +53,30 @@ export function useAgentDraftSubmission(
 ) {
   const composer = useAgentComposerStore()
   const { selection } = options
+  let rejectedEnterPrompt: typeof composer.prompt | null = null
+
+  watch(
+    () => composer.prompt,
+    (prompt, previous) => {
+      if (previous === rejectedEnterPrompt && prompt !== previous)
+        rejectedEnterPrompt = null
+    },
+    { flush: 'sync' }
+  )
+
+  function cannotSubmit(
+    text: string,
+    attachments: ComposerAttachment[],
+    source: ComposerSubmitSource
+  ): boolean {
+    return (
+      !options.canSubmit() ||
+      composer.submission?.phase === 'pending' ||
+      (!text.trim() && attachments.length === 0) ||
+      attachments.some((attachment) => attachment.uploading) ||
+      (source === 'enter' && composer.prompt === rejectedEnterPrompt)
+    )
+  }
 
   function recoverFailedSubmission(): void {
     const snapshot = composer.takeFailedSubmission()
@@ -85,17 +109,11 @@ export function useAgentDraftSubmission(
   async function submit(
     text: string,
     attachments: ComposerAttachment[],
-    references: WorkflowReference[] = []
+    references: WorkflowReference[] = [],
+    source: ComposerSubmitSource = 'button'
   ): Promise<void> {
     const target = options.target()
-    if (
-      !options.canSubmit() ||
-      composer.submission?.phase === 'pending' ||
-      target === null ||
-      (!text.trim() && attachments.length === 0) ||
-      attachments.some((attachment) => attachment.uploading)
-    )
-      return
+    if (target === null || cannotSubmit(text, attachments, source)) return
 
     options.onSubmit()
     const prompt = composer.prompt
@@ -123,6 +141,7 @@ export function useAgentDraftSubmission(
       { clientMessageId: uuidv4(), inputMethod, starterPrompt }
     )
     composer.settleSubmission(submissionId, sent)
+    if (!sent && source === 'enter') rejectedEnterPrompt = composer.prompt
   }
 
   return { submit }
