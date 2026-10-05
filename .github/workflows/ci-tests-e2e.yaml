@@ -491,7 +491,7 @@ jobs:
           [[ "$PREFLIGHT" != "success" ]] && echo "CI prerequisites did not pass ($PREFLIGHT)" && exit 1
           [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          [[ "$DYNAMIC_GROUP" != "success" ]] && echo "DynamicGroup E2E did not pass ($DYNAMIC_GROUP)" && exit 1
+          [[ "$DYNAMIC_GROUP" != "success" ]] && echo "E2E failed: DynamicGroup did not pass ($DYNAMIC_GROUP)" && exit 1
           [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" || "$VIDEO" == "failure" ]] && echo "E2E failed" && exit 1
           [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" || "$VIDEO" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
           [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
