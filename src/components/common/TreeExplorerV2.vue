@@ -2,7 +2,7 @@
   <ContextMenuRoot :modal="false">
     <ContextMenuTrigger as-child :disabled="!showContextMenu">
       <TreeRoot
-        :expanded="[...expandedKeys]"
+        v-model:expanded="expandedKeys"
         :items="root.children ?? []"
         :get-key="(item) => item.key"
         :get-children="
@@ -10,7 +10,9 @@
         "
         class="m-0 min-w-0 p-0 px-2 pb-2"
         @contextmenu="preventEmptyContextMenu"
-        @pointerdown="preventEmptyContextMenu"
+        @pointerdown="
+          $event.pointerType !== 'mouse' && preventEmptyContextMenu($event)
+        "
       >
         <TreeVirtualizer
           v-slot="{ item }"

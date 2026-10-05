@@ -329,14 +329,6 @@ function handleNodeClick(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
   if (node.type === 'node' && node.data) {
     startDrag(node.data)
   }
-  if (node.type === 'folder') {
-    const index = expandedKeys.value.indexOf(node.key)
-    if (index === -1) {
-      expandedKeys.value = [...expandedKeys.value, node.key]
-    } else {
-      expandedKeys.value = expandedKeys.value.filter((k) => k !== node.key)
-    }
-  }
 }
 
 async function handleSearch() {

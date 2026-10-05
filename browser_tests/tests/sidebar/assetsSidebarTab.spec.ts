@@ -184,24 +184,31 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await mockViewFiles(page, viewFiles)
   })
 
-  test('uses one hover background across an asset menu row', async ({
+  for (const area of ['padding', 'content'] as const) {
+    test(`uses one hover background over asset menu ${area}`, async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      const menu = comfyPage.contextMenu
+      await tab.open()
+      await tab.rightClickAsset('alpha')
+
+      await menu.hoverItem('Export workflow', area)
+      await expect(async () => {
+        const { row, content } =
+          await menu.getItemBackgrounds('Export workflow')
+        expect(content).toBe(row)
+      }).toPass({ timeout: 5000 })
+    })
+  }
+
+  test('opens the asset inspector from the context menu', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
     const menu = comfyPage.contextMenu
     await tab.open()
     await tab.rightClickAsset('alpha')
-
-    for (const area of ['padding', 'content'] as const) {
-      await test.step(`Hover the item ${area}`, async () => {
-        await menu.hoverItem('Export workflow', area)
-        await expect(async () => {
-          const { row, content } =
-            await menu.getItemBackgrounds('Export workflow')
-          expect(content).toBe(row)
-        }).toPass({ timeout: 5000 })
-      })
-    }
 
     await menu.clickMenuItemExact('Inspect asset')
     await expect(comfyPage.mediaLightbox.root).toBeVisible()
