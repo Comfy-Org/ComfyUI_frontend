@@ -8,6 +8,7 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { toError } from '@/utils/errorUtil'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 interface UserCloudStatus {
   status: 'active'
@@ -123,6 +124,7 @@ async function readStoredSurvey(signal?: AbortSignal): Promise<StoredSurvey> {
     const data: unknown = await response.json()
     return classifyStoredSurvey(data)
   } catch (error) {
+    if (signal?.aborted || isAbortError(error)) return 'unknown'
     reportError(error, {
       surface: 'platform',
       errorType: 'network_error',
@@ -217,6 +219,9 @@ export async function submitSurvey(
 
     return { status: 'stored' }
   } catch (error) {
+    if (identityChanged.signal.aborted || isAbortError(error)) {
+      return { status: 'failed', cause: error }
+    }
     captureApiError(
       toError(error),
       '/settings',

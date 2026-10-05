@@ -29,6 +29,53 @@ describe('third-party error noise', () => {
     }
   )
 
+  it.for([
+    {
+      event: { type: undefined },
+      hint: {
+        originalException: new DOMException(
+          'The user aborted a request.',
+          'AbortError'
+        )
+      }
+    },
+    {
+      event: { type: undefined },
+      hint: {
+        originalException: Object.assign(new Error('aborted'), {
+          name: 'AbortError'
+        })
+      }
+    },
+    {
+      event: {
+        type: undefined,
+        exception: {
+          values: [{ type: 'AbortError', value: 'The user aborted a request.' }]
+        }
+      },
+      hint: {}
+    }
+  ] satisfies Array<{ event: ErrorEvent; hint: EventHint }>)(
+    'drops intentional AbortErrors from Sentry',
+    ({ event, hint }) => {
+      expect(sentryThirdPartyErrorFilter(event, hint)).toBeNull()
+    }
+  )
+
+  it('keeps other error types', () => {
+    const event = {
+      type: undefined,
+      exception: { values: [{ type: 'TypeError', value: 'Failed to fetch' }] }
+    } satisfies ErrorEvent
+
+    expect(
+      sentryThirdPartyErrorFilter(event, {
+        originalException: new TypeError('Failed to fetch')
+      })
+    ).toBe(event)
+  })
+
   it('keeps ordinary Sentry events unchanged', () => {
     const event = {
       type: undefined,
