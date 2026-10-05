@@ -566,6 +566,7 @@ describe('useSubscriptionCheckout', () => {
 
   beforeEach(() => {
     mockFetchStatus.mockResolvedValue(undefined)
+    vi.mocked(useBillingOperationStore().startOperation).mockReset()
     mockOpenHostedBillingTab.mockReturnValue(false)
     railState.rail = null
     Object.assign(useBillingOperationStore(), {

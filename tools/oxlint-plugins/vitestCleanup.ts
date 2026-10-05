@@ -460,19 +460,66 @@ function isMockInstanceCleanup(statement: Node): boolean {
   )
 }
 
+function leadsHookBody(ancestors: readonly Node[], boundaryIndex: number) {
+  const body = ancestors.at(boundaryIndex + 1)
+  if (body?.type !== 'BlockStatement') return true
+  const statement = ancestors.at(boundaryIndex + 2)
+  if (statement?.type !== 'ExpressionStatement') return false
+  const statements = (body as BlockStatement).body
+  return statements
+    .slice(0, statements.indexOf(statement))
+    .every(isMockInstanceCleanup)
+}
+
+function isBeforeEachStatement(context: RuleContext, statement: Node) {
+  return (
+    statement.type === 'ExpressionStatement' &&
+    isVitestCallbackCall(
+      context,
+      unwrapChain((statement as ExpressionStatement).expression),
+      BEFORE_EACH_IMPORTS
+    )
+  )
+}
+
+function runsFirstAmongBeforeEachHooks(
+  context: RuleContext,
+  hookAncestors: readonly Node[]
+): boolean {
+  let innermost = true
+  for (let index = hookAncestors.length - 2; index >= 0; index--) {
+    const scope = hookAncestors[index]
+    if (scope.type !== 'Program' && scope.type !== 'BlockStatement') continue
+    const statements = (scope as BlockStatement).body
+    const ownStatement = hookAncestors[index + 1]
+    const earlierHooks = innermost
+      ? statements.slice(0, statements.indexOf(ownStatement))
+      : statements.filter((statement) => statement !== ownStatement)
+    if (
+      earlierHooks.some((statement) =>
+        isBeforeEachStatement(context, statement)
+      )
+    ) {
+      return false
+    }
+    innermost = false
+  }
+  return true
+}
+
 function precedesBeforeEachSetup(
   context: RuleContext,
   node: CallExpression
 ): boolean {
   const ancestors = context.sourceCode.getAncestors(node)
   const boundaryIndex = enclosingExecutionBoundaryIndex(ancestors)
-  const body = ancestors.at(boundaryIndex + 1)
-  if (body?.type !== 'BlockStatement') return true
-  const statements = (body as BlockStatement).body
-  const statementIndex = statements.findIndex(
-    (statement) => statement === ancestors[boundaryIndex + 2]
+  return (
+    leadsHookBody(ancestors, boundaryIndex) &&
+    runsFirstAmongBeforeEachHooks(
+      context,
+      ancestors.slice(0, boundaryIndex - 1)
+    )
   )
-  return statements.slice(0, statementIndex).every(isMockInstanceCleanup)
 }
 
 function isRedundantMockInstanceCleanup(

@@ -257,7 +257,7 @@ LiteGraph.unregisterNodeType()
 LiteGraph.clearRegisteredTypes()
 `
 
-const mockInstanceFixture = `import { afterAll, afterEach, beforeAll, beforeEach, it, vi } from 'vitest'
+const mockInstanceFixture = `import { afterAll, afterEach, beforeAll, beforeEach, describe, it, vi } from 'vitest'
 
 const mock = vi.fn()
 const other = vi.fn()
@@ -267,21 +267,53 @@ afterAll(() => {
   mock.mockClear()
 })
 beforeAll(() => vi.mocked(mock).mockReset())
-beforeEach(() => {
-  other.mockClear()
-  mock.mockReset().mockReturnValue(2)
-  render()
-  other.mockClear()
+describe('leading cleanup', () => {
+  beforeEach(() => {
+    other.mockClear()
+    mock.mockReset().mockReturnValue(2)
+    render()
+    other.mockClear()
+  })
 })
-beforeEach(() => mock?.mockClear())
-beforeEach(() => mock.mockClear())
-beforeEach(() => {
-  mock.mockReturnValue(1)
-  mock.mockReset()
+describe('concise optional cleanup', () => {
+  beforeEach(() => mock?.mockClear())
 })
-beforeEach(() => {
-  mock.mockReturnValue(1)
-  mock.mockRestore()
+describe('concise cleanup', () => {
+  beforeEach(() => mock.mockClear())
+})
+describe('reset after configuration', () => {
+  beforeEach(() => {
+    mock.mockReturnValue(1)
+    mock.mockReset()
+  })
+})
+describe('restore after configuration', () => {
+  beforeEach(() => {
+    mock.mockReturnValue(1)
+    mock.mockRestore()
+  })
+})
+describe('nested setup', () => {
+  beforeEach(() => {
+    if (globalThis.location) {
+      render()
+      mock.mockClear()
+    }
+  })
+})
+describe('earlier hook in the same suite', () => {
+  beforeEach(() => render())
+  beforeEach(() => mock.mockClear())
+})
+describe('outer hook', () => {
+  beforeEach(() => render())
+  describe('inner suite', () => {
+    beforeEach(() => mock.mockClear())
+  })
+})
+describe('later hook in the same suite', () => {
+  beforeEach(() => mock.mockClear())
+  beforeEach(() => render())
 })
 it('allows per-mock cleanup in tests', () => {
   mock.mockClear()
@@ -402,8 +434,12 @@ describe('Vitest cleanup rules', () => {
   })
 
   it('reports per-mock cleanup in hooks unless beforeEach setup ran first', () => {
-    expect(output.match(/resets and restores every mock/g)).toHaveLength(7)
-    expectReportsAt(output, [6, 8, 10, 12, 13, 17, 18], 'mock-instance.test.ts')
+    expect(output.match(/resets and restores every mock/g)).toHaveLength(8)
+    expectReportsAt(
+      output,
+      [6, 8, 10, 13, 14, 20, 23, 56],
+      'mock-instance.test.ts'
+    )
   })
 
   it('reports persistent LiteGraph registrations and redundant cleanup', () => {
