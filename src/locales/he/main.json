@@ -1708,7 +1708,8 @@
     "exportingAssets": "מייצא נכסים",
     "noExportsInQueue": "אין ייצואי {filter} בתור",
     "preparingExport": "מכין ייצוא...",
-    "retryDownload": "נסה להוריד שוב"
+    "retryDownload": "נסה להוריד שוב",
+    "unsupportedDownloadUrl": "כתובת URL להורדת ייצוא אינה נתמכת"
   },
   "feedback": {
     "title": "שתף משוב"
@@ -3617,7 +3618,8 @@
     "importingModels": "מייבא מודלים",
     "noImportsInQueue": "אין {filter} בתור",
     "pending": "ממתין",
-    "progressCount": "{completed} מתוך {total}"
+    "progressCount": "{completed} מתוך {total}",
+    "taskUnavailable": "משימת ההורדה אינה זמינה עוד."
   },
   "queue": {
     "completedIn": "הסתיים תוך {duration}",

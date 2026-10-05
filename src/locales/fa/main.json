@@ -1708,7 +1708,8 @@
     "exportingAssets": "در حال خروجی گرفتن دارایی‌ها",
     "noExportsInQueue": "هیچ خروجی {filter} در صف نیست",
     "preparingExport": "در حال آماده‌سازی خروجی...",
-    "retryDownload": "تلاش مجدد برای دانلود"
+    "retryDownload": "تلاش مجدد برای دانلود",
+    "unsupportedDownloadUrl": "نشانی اینترنتی دانلود خروجی پشتیبانی نمی‌شود"
   },
   "feedback": {
     "title": "ارسال بازخورد"
@@ -3617,7 +3618,8 @@
     "importingModels": "در حال وارد کردن مدل‌ها",
     "noImportsInQueue": "هیچ {filter} در صف نیست",
     "pending": "در انتظار",
-    "progressCount": "{completed} از {total}"
+    "progressCount": "{completed} از {total}",
+    "taskUnavailable": "وظیفهٔ دانلود دیگر در دسترس نیست."
   },
   "queue": {
     "completedIn": "پایان یافته در {duration}",

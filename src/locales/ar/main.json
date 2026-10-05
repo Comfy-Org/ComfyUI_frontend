@@ -1708,7 +1708,8 @@
     "exportingAssets": "جاري تصدير العناصر",
     "noExportsInQueue": "لا يوجد {filter} عمليات تصدير في قائمة الانتظار",
     "preparingExport": "جاري تجهيز التصدير...",
-    "retryDownload": "إعادة محاولة التحميل"
+    "retryDownload": "إعادة محاولة التحميل",
+    "unsupportedDownloadUrl": "عنوان URL لتنزيل التصدير غير مدعوم"
   },
   "feedback": {
     "title": "مشاركة الملاحظات"
@@ -3617,7 +3618,8 @@
     "importingModels": "جاري استيراد النماذج",
     "noImportsInQueue": "لا يوجد {filter} في قائمة الانتظار",
     "pending": "قيد الانتظار",
-    "progressCount": "{completed} من {total}"
+    "progressCount": "{completed} من {total}",
+    "taskUnavailable": "لم تعد مهمة التنزيل متاحة."
   },
   "queue": {
     "completedIn": "انتهى في {duration}",

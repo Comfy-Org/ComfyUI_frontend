@@ -1708,7 +1708,8 @@
     "exportingAssets": "正在导出资源",
     "noExportsInQueue": "队列中没有{filter}导出",
     "preparingExport": "正在准备导出...",
-    "retryDownload": "重试下载"
+    "retryDownload": "重试下载",
+    "unsupportedDownloadUrl": "不支持的导出下载 URL"
   },
   "feedback": {
     "title": "分享反馈"
@@ -3617,7 +3618,8 @@
     "importingModels": "正在导入模型",
     "noImportsInQueue": "队列中没有 {filter}",
     "pending": "待处理",
-    "progressCount": "{completed} / {total}"
+    "progressCount": "{completed} / {total}",
+    "taskUnavailable": "下载任务已不可用。"
   },
   "queue": {
     "completedIn": "{duration} 后完成",
