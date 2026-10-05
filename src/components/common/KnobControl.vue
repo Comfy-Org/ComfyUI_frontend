@@ -8,12 +8,14 @@ const {
   min = 0,
   max = 100,
   step = 1,
+  disabled = false,
   class: className
 } = defineProps<{
   modelValue: number
   min?: number
   max?: number
   step?: number
+  disabled?: boolean
   class?: string
 }>()
 
@@ -26,6 +28,7 @@ const progress = computed(() =>
 const dashOffset = computed(() => 75 * (1 - progress.value))
 
 function setValue(value: number) {
+  if (disabled) return
   const stepped = Math.round((value - min) / step) * step + min
   emit('update:modelValue', Math.min(max, Math.max(min, stepped)))
 }
@@ -65,11 +68,18 @@ function onKeydown(event: KeyboardEvent) {
   <div
     ref="root"
     role="slider"
-    tabindex="0"
+    :tabindex="disabled ? -1 : 0"
     :aria-valuemin="min"
     :aria-valuemax="max"
     :aria-valuenow="modelValue"
-    :class="cn('size-12 cursor-pointer touch-none outline-none', className)"
+    :aria-disabled="disabled || undefined"
+    :class="
+      cn(
+        'size-12 cursor-pointer touch-none outline-none',
+        disabled && 'cursor-not-allowed opacity-50',
+        className
+      )
+    "
     @keydown="onKeydown"
     @pointerdown="onPointerDown"
     @pointermove="(event) => event.buttons === 1 && updateFromPointer(event)"

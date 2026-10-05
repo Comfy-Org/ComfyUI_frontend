@@ -29,4 +29,22 @@ describe('KnobControl', () => {
 
     expect(emitted()['update:modelValue']).toEqual([[10]])
   })
+
+  it('ignores keyboard and pointer input and leaves the tab order when disabled', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(KnobControl, {
+      props: { modelValue: 5, min: 0, max: 10, disabled: true }
+    })
+    const slider = screen.getByRole('slider')
+
+    expect(slider).toHaveAttribute('aria-disabled', 'true')
+    await user.tab()
+    expect(slider).not.toHaveFocus()
+
+    slider.focus()
+    await user.keyboard('{ArrowRight}')
+    await user.pointer({ keys: '[MouseLeft]', target: slider })
+
+    expect(emitted()['update:modelValue']).toBeUndefined()
+  })
 })
