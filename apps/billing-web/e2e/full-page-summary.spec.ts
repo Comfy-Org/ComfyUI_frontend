@@ -157,7 +157,9 @@ test('a held discount and an entered code read as rows, with no Subtotal the quo
 }) => {
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
+    cost_today_cents: 2000,
     amount_due_cents: 2000,
+    subtotal_cents: 5000,
     promotion_code: 'COMFY50',
     discounts: [
       { kind: 'plan', code: 'annual_plan_discount_20', amount_off_cents: 999 },
@@ -214,6 +216,7 @@ test('a promo code on a yearly switch is bounded to the first year', async ({
   switchToYearly(cloud.scenario)
   cloud.scenario.preview = {
     ...cloud.scenario.preview,
+    cost_today_cents: 21_504,
     amount_due_cents: 21_504,
     promotion_code: 'COMFY20',
     discounts: [
@@ -229,6 +232,7 @@ test('a promo code on a yearly switch is bounded to the first year', async ({
   await signIn(YEARLY_CHECKOUT)
 
   await expectSummary(page, [
+    'Creator Yearly$268.80',
     'Promo code−$53.76',
     'First year',
     'Total due today$215.04'
