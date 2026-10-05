@@ -115,7 +115,7 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import {
   onRekaFocusOutside,
   onRekaPointerDownOutside
-} from '@/components/dialog/rekaPrimeVueBridge'
+} from '@/components/dialog/dialogDismissGuards'
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'

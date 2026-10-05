@@ -4,8 +4,6 @@
     {
       "files": ["src/**/*.{ts,tsx,vue}"],
       "excludeFiles": [
-        "src/components/dialog/GlobalDialog.test.ts",
-        "src/components/dialog/bodyPointerEventsRestore.test.ts",
         "src/components/dialog/content/setting/UsageLogsTable.test.ts",
         "src/components/graph/SelectionToolbox.test.ts",
         "src/components/node/NodePreview.test.ts",
@@ -13,7 +11,6 @@
         "src/components/rightSidePanel/errors/ErrorNodeCard.test.ts",
         "src/components/rightSidePanel/errors/MissingPackGroupRow.test.ts",
         "src/components/rightSidePanel/errors/TabErrors.test.ts",
-        "src/components/searchbox/NodeSearchBoxPopover.test.ts",
         "src/components/sidebar/SideToolbar.test.ts",
         "src/main.ts",
         "src/platform/missingModel/components/MissingModelCard.test.ts",
