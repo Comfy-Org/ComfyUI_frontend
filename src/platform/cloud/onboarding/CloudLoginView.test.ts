@@ -405,7 +405,14 @@ describe('CloudLoginView SSO', () => {
     )
 
     it('keeps one SSO check in flight across the SSO and password forms', async () => {
-      const fetchMock = vi.fn<typeof fetch>(() => new Promise(() => {}))
+      const fetchMock = vi.fn<typeof fetch>(
+        (_input, init) =>
+          new Promise((_resolve, reject) =>
+            init?.signal?.addEventListener('abort', () =>
+              reject(init.signal?.reason)
+            )
+          )
+      )
       vi.stubGlobal('fetch', fetchMock)
       await renderLoginView()
 
