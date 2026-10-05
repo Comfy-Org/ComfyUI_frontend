@@ -1,12 +1,4 @@
-// PrimeVue overlays (Select, ColorPicker, Popover, Autocomplete, stacked
-// PrimeVue Dialogs) teleport to body. Reka treats clicks on
-// body-portaled elements as outside its dialog and would auto-dismiss on the
-// first interaction, tearing the overlay down mid-interaction. Treat any
-// PrimeVue overlay click as inside.
-const PRIMEVUE_OVERLAY_SELECTORS =
-  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask'
-
-// Reka portals its own dialogs / popovers / menus into the body too. When a
+// Reka portals its dialogs / popovers / menus into the body. When a
 // nested Reka layer opens on top of a non-modal parent, the parent's
 // DismissableLayer sees the focus shift / pointer-down as "outside" and would
 // dismiss itself. These selectors cover the portaled roots so we can treat
@@ -19,7 +11,7 @@ const REKA_PORTAL_SELECTORS =
 // ordinary scrim click.
 const TOAST_SELECTORS = '[data-toast-kind], [data-toast-dock]'
 
-const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}, ${TOAST_SELECTORS}`
+const OUTSIDE_LAYER_SELECTORS = `${REKA_PORTAL_SELECTORS}, ${TOAST_SELECTORS}`
 
 type OutsideEvent = CustomEvent<{ originalEvent: Event }>
 
@@ -54,7 +46,7 @@ export function onRekaPointerDownOutside(
 }
 
 // Focus / interact-outside fires when focus moves to a sibling portal (a
-// nested Reka or PrimeVue dialog teleported to body). Without this guard a
+// nested dialog teleported to body). Without this guard a
 // non-modal Reka dialog would dismiss itself the moment a nested dialog
 // receives focus.
 //
