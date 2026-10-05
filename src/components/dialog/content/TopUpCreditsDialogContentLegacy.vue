@@ -33,7 +33,7 @@
       </h3>
       <div class="flex gap-2 pt-3">
         <Button
-          v-for="amount in PRESET_AMOUNTS"
+          v-for="amount in TOPUP_AMOUNT_PRESETS_USD"
           :key="amount"
           :autofocus="amount === 50"
           variant="secondary"
@@ -159,6 +159,10 @@
 </template>
 
 <script setup lang="ts">
+import {
+  getTopupAmountPreset,
+  TOPUP_AMOUNT_PRESETS_USD
+} from '@comfyorg/account-core/billing'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -173,13 +177,15 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { isInsufficientCredits = false } = defineProps<{
+const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
 }>()
 
 const { t } = useI18n()
@@ -191,7 +197,6 @@ const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 // Constants
-const PRESET_AMOUNTS = [10, 25, 50, 100]
 const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
 
@@ -266,7 +271,10 @@ async function handleBuy() {
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'started',
-        outcome: 'pending'
+        outcome: 'pending',
+        payment_intent_source: source,
+        amount_cents: payAmount.value * 100,
+        amount_preset: getTopupAmountPreset(selectedPreset.value)
       })
     }
     await authActions.purchaseCreditsDirect(payAmount.value)
@@ -288,6 +296,7 @@ async function handleBuy() {
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
+      payment_intent_source: source,
       ...describeBillingFailure(error)
     })
     toast.add({

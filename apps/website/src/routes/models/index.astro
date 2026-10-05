@@ -1,23 +1,25 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import { workshopModels } from '../../config/workshop-browse-content'
-import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
-import { t } from '../../i18n/translations'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { workshopModels } from '@/config/workshop-browse-content'
+import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import { modelsHubMeta } from './models-hub-meta'
 import { modelsByProvider } from './models-directory'
 
 const { title, description } = modelsHubMeta(workshopModels)
-const directory = modelsByProvider(workshopModels, t('workshop.filter.other'))
+const directory = modelsByProvider(
+  workshopModels,
+  Astro.locals.t('workshop.filter.other')
+)
 ---
 
 <BaseLayout {title} {description} preloadFonts={['Medium']}>
   <script>
-    import '../../scripts/hubNavigation'
+    import '@/scripts/hubNavigation'
   </script>
   <ModelsPage
     section="models"
-    heading={t('workshop.catalogue.heading')}
+    heading={Astro.locals.t('workshop.catalogue.heading')}
     client:load
     transition:persist="hub-catalogue"
   >
@@ -39,10 +41,10 @@ const directory = modelsByProvider(workshopModels, t('workshop.filter.other'))
           class="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3"
         >
           <h2 id="models-directory-heading" class="text-xl font-medium">
-            {t('workshop.catalogue.directory')}
+            {Astro.locals.t('workshop.catalogue.directory')}
           </h2>
           <span class="text-sm text-primary-warm-gray tabular-nums">
-            {t('workshop.catalogue.directoryCount', 'en', {
+            {Astro.locals.t('workshop.catalogue.directoryCount', {
               count: workshopModels.length
             })}
           </span>

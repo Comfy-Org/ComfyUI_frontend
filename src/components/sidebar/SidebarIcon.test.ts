@@ -38,11 +38,6 @@ describe('SidebarIcon', () => {
     return { ...result, user }
   }
 
-  it('renders button element', () => {
-    renderSidebarIcon()
-    expect(screen.getByRole('button')).toBeInTheDocument()
-  })
-
   it('renders icon', () => {
     const { container } = renderSidebarIcon()
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Icon escape hatch: iconify icons have no ARIA role

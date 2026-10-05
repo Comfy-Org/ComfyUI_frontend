@@ -11,16 +11,16 @@ import {
 } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
-import { isWorkflowSlug } from '../../config/models-catalogue'
-import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/translations'
+import { isWorkflowSlug } from '@/config/models-catalogue'
+import { fetchModelsCatalogue } from '@/config/models-catalogue-data'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { translationsFor } from '@/i18n/translations'
 import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 
 import type { CatalogueTab } from './CatalogueTabs.vue'
 import WorkshopGate from './WorkshopGate.vue'
@@ -30,6 +30,7 @@ import {
   workshopHeadingClass
 } from './workshopHeadingClasses'
 
+const { t } = translationsFor('en')
 const {
   slug,
   workflowId,
@@ -42,7 +43,7 @@ const {
   section?: CatalogueTab
 }>()
 
-const loadingLabel = t('workshop.load.pending', 'en')
+const loadingLabel = t('workshop.load.pending')
 const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
 const mounted = useMounted()
 const catalogueRevision = shallowRef(0)
@@ -100,7 +101,7 @@ watch(
     if (!id || !uid || !workspaceId) return
     try {
       const { workflowStorage } =
-        await import('../../config/workshop-workflow-storage')
+        await import('@/config/workshop-workflow-storage')
       if (current)
         savedWorkflow.value = Boolean(
           workflowStorage(
@@ -142,7 +143,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
       'data-testid': 'models-load-error'
     },
     [
-      h('p', { class: 'text-lg' }, t('workshop.load.failed', 'en')),
+      h('p', { class: 'text-lg' }, t('workshop.load.failed')),
       h(
         'button',
         {
@@ -154,7 +155,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
             Content.value = createContent()
           }
         },
-        t('workshop.error.retry', 'en')
+        t('workshop.error.retry')
       )
     ]
   )
@@ -168,8 +169,7 @@ function createContent() {
           ? import('./WorkflowPage.vue')
           : import('./ModelPage.vue')
         void preload.catch(() => undefined)
-        const { fetchModelsPage } =
-          await import('../../config/models-page-data')
+        const { fetchModelsPage } = await import('@/config/models-page-data')
         const { model, ...page } = await fetchModelsPage(slug)
         if (model.routerId === undefined) {
           const { default: WorkflowPage } = await import('./WorkflowPage.vue')
@@ -240,7 +240,7 @@ const Content = shallowRef(createContent())
         :class="inSection ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3'"
       >
         <p :class="workshopEyebrowClass">
-          {{ t('workshop.catalogue.eyebrow', 'en') }}
+          {{ t('workshop.catalogue.eyebrow') }}
         </p>
         <h1 :class="workshopHeadingClass">{{ heading }}</h1>
       </div>

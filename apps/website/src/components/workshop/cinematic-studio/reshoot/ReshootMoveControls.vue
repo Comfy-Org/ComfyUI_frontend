@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { X } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { CameraKey } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { frameTime } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import type { CameraKey } from '@/lib/workshop/cinematic-studio/reshoot'
+import { frameTime } from '@/lib/workshop/cinematic-studio/reshoot'
+import type { Locale } from '@/i18n/translations'
 
 // The move's keys. Scrubbing, keying and the motion curve are on the
 // timeline under the preview; a key here jumps to it.
@@ -19,6 +19,7 @@ const {
   disabled?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ remove: [frame: number] }>()
 const frame = defineModel<number>('frame', { required: true })
@@ -30,10 +31,10 @@ const frame = defineModel<number>('frame', { required: true })
       v-if="disabled"
       class="rounded-xl bg-transparency-white-t8 px-3 py-2 text-xs text-primary-warm-white"
     >
-      {{ rc('reshoot.needsDepth', locale) }}
+      {{ t('reshoot.needsDepth') }}
     </p>
     <p class="text-xs/relaxed text-primary-warm-gray">
-      {{ rc('reshoot.move.help', locale) }}
+      {{ t('reshoot.move.help') }}
     </p>
     <ul v-if="keys.length" class="flex flex-wrap gap-1.5">
       <li
@@ -52,9 +53,7 @@ const frame = defineModel<number>('frame', { required: true })
           type="button"
           :disabled
           class="flex h-full items-center gap-1 pl-2.5"
-          :aria-label="
-            rc('reshoot.move.goTo', locale, { time: frameTime(key.frame) })
-          "
+          :aria-label="t('reshoot.move.goTo', { time: frameTime(key.frame) })"
           @click="frame = key.frame"
         >
           {{ frameTime(key.frame) }}
@@ -66,9 +65,7 @@ const frame = defineModel<number>('frame', { required: true })
           type="button"
           :disabled
           class="grid size-5 place-items-center rounded-md text-primary-warm-gray hover:text-primary-warm-white"
-          :aria-label="
-            rc('reshoot.move.remove', locale, { time: frameTime(key.frame) })
-          "
+          :aria-label="t('reshoot.move.remove', { time: frameTime(key.frame) })"
           @click="emit('remove', key.frame)"
         >
           <X class="size-3" aria-hidden="true" />

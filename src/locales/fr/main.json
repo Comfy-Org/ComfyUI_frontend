@@ -963,25 +963,6 @@
     "workflowName": "Nom du workflow",
     "workflowNamePlaceholder": "Astuce : saisissez un nom descriptif facile à rechercher"
   },
-  "commands": {
-    "clear": "Effacer le workflow",
-    "clipspace": "Ouvrir Clipspace",
-    "dark": "Sombre",
-    "execute": "Exécuter",
-    "help": "Aide",
-    "interrupt": "Annuler l'exécution en cours",
-    "light": "Clair",
-    "manageExtensions": "Gérer les extensions",
-    "queue": "Panneau de file d'attente",
-    "refresh": "Actualiser les définitions de nœud",
-    "resetView": "Réinitialiser la vue du canevas",
-    "run": "Exécuter",
-    "runWorkflow": "Exécuter le workflow",
-    "runWorkflowFront": "Exécuter le workflow (Mettre en file d'attente en premier)",
-    "settings": "Paramètres",
-    "theme": "Thème",
-    "toggleBottomPanel": "Basculer le panneau inférieur"
-  },
   "compositor": {
     "downloadPsd": "Télécharger le PSD",
     "empty": "Exécutez le workflow pour générer un composite",

@@ -1,6 +1,6 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type { ModelLaunchPage } from '@/templates/model-launch/types'
 
-import { externalLinks } from '../config/routes'
+import { externalLinks } from '@/config/routes'
 
 // Wan 3.0 runs through partner nodes rather than open weights. There is no
 // Wan 3.0 docs page yet, so nothing here links to one.

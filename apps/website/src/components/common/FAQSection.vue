@@ -2,9 +2,9 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, reactive, watch } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import SafeRichText from './SafeRichTextContent'
 
 export interface FaqItem {
@@ -30,17 +30,18 @@ const {
   faqCount?: number
   footerKey?: TranslationKey
 }>()
+const { t } = translationsFor(locale)
 
 const title = computed(
-  () => heading ?? (headingKey === undefined ? '' : t(headingKey, locale))
+  () => heading ?? (headingKey === undefined ? '' : t(headingKey))
 )
 
 const faqs = computed<readonly FaqItem[]>(
   () =>
     items ??
     Array.from({ length: faqCount }, (_, i) => ({
-      question: t(`${faqPrefix}.${i + 1}.q` as TranslationKey, locale),
-      answer: t(`${faqPrefix}.${i + 1}.a` as TranslationKey, locale)
+      question: t(`${faqPrefix}.${i + 1}.q` as TranslationKey),
+      answer: t(`${faqPrefix}.${i + 1}.a` as TranslationKey)
     }))
 )
 
@@ -129,7 +130,7 @@ function toggle(index: number) {
           v-if="footerKey"
           as="p"
           class="mt-8 text-sm text-primary-comfy-canvas/70 [&_a]:text-primary-comfy-yellow [&_a]:underline"
-          :html="t(footerKey, locale)"
+          :html="t(footerKey)"
         />
       </div>
     </div>

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { ModelLaunchComparison } from './types'
 
-import { minimaxLicenseComparison } from '../../data/minimaxLicense'
+import { minimaxLicenseComparison } from '@/data/minimaxLicense'
 import ModelLaunchComparisonSection from './ModelLaunchComparisonSection.vue'
 
 const comparison: ModelLaunchComparison = {
