@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useTemplateRef } from 'vue'
+import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
@@ -16,6 +16,14 @@ const colorScheme = computed(() =>
   colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
 )
 onBeforeUnmount(() => player.value?.pause())
+watch(
+  () => mediaUrl,
+  () => {
+    player.value?.pause()
+    failed.value = false
+  }
+)
+defineExpose({ focus: () => player.value?.focus() })
 </script>
 
 <template>
@@ -27,6 +35,7 @@ onBeforeUnmount(() => player.value?.pause())
       :src="mediaUrl"
       :poster="posterUrl"
       controls
+      tabindex="0"
       playsinline
       preload="metadata"
       class="max-h-80 w-full object-contain"
@@ -38,6 +47,7 @@ onBeforeUnmount(() => player.value?.pause())
         :aria-label="name"
         :src="mediaUrl"
         controls
+        tabindex="0"
         preload="metadata"
         class="block w-full"
         @error="failed = true"

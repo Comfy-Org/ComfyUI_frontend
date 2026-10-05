@@ -5359,6 +5359,7 @@
     "failedDetail": "Your onboarding state could not be reset. Please try again."
   },
   "agent": {
+    "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "diagnosticReport": {
       "retry": "Retry copy report",

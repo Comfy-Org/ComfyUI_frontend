@@ -41,6 +41,26 @@ describe('asset drag media sources', () => {
         'http://localhost:8188/api/assets/video-id/content?disposition=inline'
     },
     {
+      label: 'absolute CDN thumbnail',
+      assetsEnabled: true,
+      preview_id: undefined,
+      thumbnail_url: 'https://cdn.example/thumb.webp?signature=poster',
+      preview_url: '/view?filename=clip.mp4',
+      poster: 'https://cdn.example/thumb.webp?signature=poster',
+      media:
+        'http://localhost:8188/api/assets/video-id/content?disposition=inline'
+    },
+    {
+      label: 'protocol-relative CDN thumbnail',
+      assetsEnabled: true,
+      preview_id: undefined,
+      thumbnail_url: '//cdn.example/thumb.webp',
+      preview_url: '/view?filename=clip.mp4',
+      poster: 'http://cdn.example/thumb.webp',
+      media:
+        'http://localhost:8188/api/assets/video-id/content?disposition=inline'
+    },
+    {
       label: 'history video without a poster',
       assetsEnabled: false,
       preview_id: undefined,

@@ -657,7 +657,7 @@ describe('composer asset tray', () => {
       screen.queryByRole('tooltip', { name: asset.name })
     ).not.toBeInTheDocument()
 
-    const trigger = screen.getByTestId('agent-attachment-chip')
+    const trigger = screen.getByTestId('agent-asset-preview-trigger')
     await user.hover(trigger)
     const preview = await screen.findByRole('tooltip', { name: asset.name })
     expect(

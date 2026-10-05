@@ -3,14 +3,8 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { ComposerAttachment } from '../../types/composerAttachment'
-import { createVideoThumbnail } from '../../utils/videoThumbnail'
+import * as videoThumbnail from '../../utils/videoThumbnail'
 import { useAgentComposerStore } from './agentComposerStore'
-
-vi.mock(import('../../utils/videoThumbnail'), () => ({
-  createVideoThumbnail: vi.fn<typeof createVideoThumbnail>(
-    async () => undefined
-  )
-}))
 
 const video: ComposerAttachment = {
   id: 'clip',
@@ -28,15 +22,120 @@ function pendingThumbnail() {
     resolve = complete
   })
   const result = { promise, resolve }
-  vi.mocked(createVideoThumbnail).mockReturnValueOnce(result.promise)
+  vi.mocked(videoThumbnail.createVideoThumbnail).mockReturnValueOnce(
+    result.promise
+  )
   return result
 }
 
 beforeEach(() => {
+  vi.spyOn(videoThumbnail, 'createVideoThumbnail').mockResolvedValue(undefined)
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
 })
 
 describe('composer shared video thumbnail lifetime', () => {
+  it('cancels an invalidated send capture and rejects its late poster while a new draft remains usable', async () => {
+    const obsolete = pendingThumbnail()
+    const current = pendingThumbnail()
+    const store = useAgentComposerStore()
+    store.addAttachment({ ...video, mediaUrl: 'blob:old-video' })
+    const obsoleteSignal = vi.mocked(videoThumbnail.createVideoThumbnail).mock
+      .calls[0][1]
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: store.attachments,
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    store.addAttachment({
+      ...video,
+      id: 'new-video',
+      mediaUrl: 'blob:new-video'
+    })
+    const currentSignal = vi.mocked(videoThumbnail.createVideoThumbnail).mock
+      .calls[1][1]
+    store.setText('New chat draft')
+    store.invalidateSubmission()
+    expect(obsoleteSignal.aborted).toBe(true)
+    expect(currentSignal.aborted).toBe(false)
+    expect(URL.revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:old-video'
+    )
+    obsolete.resolve('blob:late-poster')
+    current.resolve('blob:current-poster')
+    await Promise.all([obsolete.promise, current.promise])
+    store.settleSubmission(id, false)
+    expect(store.takeFailedSubmission()).toBeUndefined()
+    expect(store.draft).toBe('New chat draft')
+    expect(store.attachments).toMatchObject([
+      { id: 'new-video', previewUrl: 'blob:current-poster' }
+    ])
+    expect(store.referenceAttachment(video.id)).toBe(false)
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:late-poster')
+    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith('blob:new-video')
+    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith('blob:current-poster')
+  })
+
+  it('releases the current poster completed during an invalidated send exactly once', async () => {
+    const result = pendingThumbnail()
+    const store = useAgentComposerStore()
+    store.addAttachment({ ...video, mediaUrl: 'blob:video' })
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: store.attachments,
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    result.resolve('blob:completed-poster')
+    await result.promise
+    store.invalidateSubmission()
+    store.invalidateSubmission()
+    store.settleSubmission(id, true)
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2)
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:video')
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:completed-poster')
+    expect(store.submission).toBeNull()
+    expect(store.attachments).toEqual([])
+  })
+
+  it('keeps a snapshot asset and decoder retained by the current draft through invalidation and a repeated send', async () => {
+    const result = pendingThumbnail()
+    const store = useAgentComposerStore()
+    store.addAttachment({ ...video, mediaUrl: 'blob:retained-video' })
+    store.referenceAttachment(video.id)
+    const snapshot = {
+      prompt: store.prompt,
+      attachments: store.attachments,
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    }
+    const first = store.startSubmission(snapshot)
+    store.restorePrompt(snapshot.prompt, snapshot.attachments)
+    store.invalidateSubmission()
+    expect(
+      vi.mocked(videoThumbnail.createVideoThumbnail).mock.calls[0][1].aborted
+    ).toBe(false)
+    result.resolve('blob:retained-poster')
+    await result.promise
+    expect(store.attachments[0].previewUrl).toBe('blob:retained-poster')
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+    const second = store.startSubmission({
+      ...snapshot,
+      attachments: store.attachments
+    })
+    store.settleSubmission(first, false)
+    expect(store.submission?.id).toBe(second)
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+    store.settleSubmission(second, false)
+    const failed = store.takeFailedSubmission()
+    assert.exists(failed)
+    store.restorePrompt(failed.prompt, failed.attachments)
+    expect(store.attachments[0].previewUrl).toBe('blob:retained-poster')
+    expect(store.prompt.references).toHaveLength(1)
+    expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+  })
+
   it('generates once for the included asset and shares the result with every occurrence', async () => {
     const result = pendingThumbnail()
     const store = useAgentComposerStore()
@@ -44,7 +143,7 @@ describe('composer shared video thumbnail lifetime', () => {
     store.referenceAttachment(video.id)
     store.referenceAttachment(video.id)
     store.updateAttachment(video.id, { name: 'Renamed' })
-    expect(createVideoThumbnail).toHaveBeenCalledTimes(1)
+    expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
     result.resolve('blob:poster')
     await result.promise
     expect(store.attachments[0].previewUrl).toBe('blob:poster')
@@ -63,7 +162,7 @@ describe('composer shared video thumbnail lifetime', () => {
       uploading: false
     })
     expect(store.attachments[0].previewUrl).toBe('blob:poster')
-    expect(createVideoThumbnail).toHaveBeenCalledTimes(1)
+    expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
     store.removeReference(`asset:${video.id}`)
     expect(URL.revokeObjectURL).not.toHaveBeenCalled()
     store.removeAttachment(video.id)
@@ -80,7 +179,7 @@ describe('composer shared video thumbnail lifetime', () => {
           ref: '',
           uploading: true
         })
-        expect(createVideoThumbnail).not.toHaveBeenCalled()
+        expect(videoThumbnail.createVideoThumbnail).not.toHaveBeenCalled()
         store.updateAttachment(video.id, {
           mediaKind: 'video',
           mediaUrl: 'blob:clip'
@@ -105,7 +204,7 @@ describe('composer shared video thumbnail lifetime', () => {
       result.resolve('blob:poster')
       await result.promise
       expect(store.attachments[0].previewUrl).toBe('blob:poster')
-      expect(createVideoThumbnail).toHaveBeenCalledTimes(1)
+      expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
     }
   )
 
@@ -118,7 +217,7 @@ describe('composer shared video thumbnail lifetime', () => {
     })
     store.referenceAttachment(video.id)
     expect(store.attachments[0].previewUrl).toBe('/server-poster.png')
-    expect(createVideoThumbnail).not.toHaveBeenCalled()
+    expect(videoThumbnail.createVideoThumbnail).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -146,7 +245,8 @@ describe('composer shared video thumbnail lifetime', () => {
       const result = pendingThumbnail()
       const store = useAgentComposerStore()
       store.addAttachment(video)
-      const signal = vi.mocked(createVideoThumbnail).mock.calls[0][1]
+      const signal = vi.mocked(videoThumbnail.createVideoThumbnail).mock
+        .calls[0][1]
       result.resolve('blob:stale')
       act(store)
       expect(signal.aborted).toBe(true)
@@ -168,7 +268,7 @@ describe('composer shared video thumbnail lifetime', () => {
     store.updateAttachment(video.id, { name: 'Renamed' })
     expect(store.attachments[0].previewUrl).toBeUndefined()
     expect(store.prompt.references).toHaveLength(1)
-    expect(createVideoThumbnail).toHaveBeenCalledTimes(1)
+    expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
   })
 
   it.for([
@@ -190,7 +290,7 @@ describe('composer shared video thumbnail lifetime', () => {
         expect(store.attachments[0].previewUrl).toBe('blob:poster')
         expect(store.prompt.references).toHaveLength(1)
         expect(URL.revokeObjectURL).not.toHaveBeenCalled()
-        expect(createVideoThumbnail).toHaveBeenCalledTimes(1)
+        expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
       }
     }
   ])(

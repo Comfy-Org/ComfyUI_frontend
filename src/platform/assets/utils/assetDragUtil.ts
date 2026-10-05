@@ -19,6 +19,12 @@ import { getAssetUrlFilename } from './assetMetadataUtils'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'
 
+function resolveThumbnailUrl(url: string): URL | null {
+  const source =
+    URL.canParse(url) || url.startsWith('//') ? url : api.apiURL(url)
+  return URL.parse(source, location.href)
+}
+
 function assetMediaSources(asset: AssetItem) {
   const mediaKind = getMediaTypeFromFilename(asset.name)
   const previewUrl = URL.parse(resolvePreviewUrl(asset), location.href)
@@ -32,7 +38,7 @@ function assetMediaSources(asset: AssetItem) {
   const posterUrl = asset.preview_id
     ? previewUrl
     : asset.thumbnail_url && asset.thumbnail_url !== asset.preview_url
-      ? URL.parse(api.apiURL(asset.thumbnail_url), location.href)
+      ? resolveThumbnailUrl(asset.thumbnail_url)
       : undefined
   return {
     media_kind: mediaKind,
