@@ -260,6 +260,23 @@ describe('toAskPart delete_approval', () => {
     expect(part.hiddenNodeCount).toBe(5)
   })
 
+  it('tells apart nodes whose long ids share a prefix', () => {
+    const prefix = 'n'.repeat(ASK_USER_LIMITS.label)
+    expect(
+      toAskPart(
+        deleteApproval({
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: `${prefix}-a` }, { id: `${prefix}-b` }]
+          }
+        })
+      )
+    ).toMatchObject({
+      nodes: [{ id: `${prefix}-a` }, { id: `${prefix}-b` }],
+      hiddenNodeCount: 0
+    })
+  })
+
   it.for([
     {
       name: 'other option ids',
