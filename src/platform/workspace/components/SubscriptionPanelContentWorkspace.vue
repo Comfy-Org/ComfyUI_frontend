@@ -1,5 +1,8 @@
 <template>
-  <div class="flex grow flex-col overflow-auto pt-6">
+  <div
+    class="flex grow flex-col overflow-auto pt-2"
+    @scroll="handlePanelScroll"
+  >
     <!-- Loading state while subscription is being set up -->
     <div
       v-if="isSettingUp"
@@ -171,7 +174,10 @@
                 <h3 class="m-0 text-base font-bold text-text-primary">
                   {{ $t('subscription.tiers.free.name') }}
                 </h3>
-                <div class="flex items-baseline gap-1 font-inter">
+                <div
+                  v-if="!isPriceCycleUnknown"
+                  class="flex items-baseline gap-1 font-inter"
+                >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
@@ -228,7 +234,7 @@
                   />
                 </div>
                 <div
-                  v-if="!isNonCatalogPlan"
+                  v-if="!isNonCatalogPlan && !isPriceCycleUnknown"
                   class="flex items-baseline gap-1 font-inter"
                 >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
@@ -405,6 +411,7 @@
 </template>
 
 <script setup lang="ts">
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTimestamp } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -438,6 +445,8 @@ import {
   formatSubscriptionDate,
   resolveSubscriptionTierKey
 } from './subscriptionPanelWorkspace.logic'
+
+const { handlePanelScroll } = useSettingsHeaderCollapse()
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
@@ -478,7 +487,8 @@ const {
 const { showPricingTable } = useSubscriptionDialog()
 
 const { isResubscribing, handleResubscribe } = useResubscribe()
-const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
+const { displayPrice, priceUnitLabel, isPriceCycleUnknown } =
+  useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
 const isSubscriptionEnded = computed(() => {

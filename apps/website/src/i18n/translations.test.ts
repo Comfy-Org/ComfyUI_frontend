@@ -1,97 +1,145 @@
+import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
-import { t, tAround, translationKeys } from './translations'
+import type { Locale } from '../config/locales'
+import { LOCALE_CODES } from '../config/locales'
+import { translationsFor } from './translations'
 
-describe('translation keys', () => {
-  it('never uses a key as the prefix of another key', () => {
-    const keys = new Set<string>(translationKeys)
-    const collisions = translationKeys.filter((key) => {
-      const segments = key.split('.')
-      return segments
-        .slice(1)
-        .some((_, index) => keys.has(segments.slice(0, index + 1).join('.')))
-    })
-    expect(collisions).toEqual([])
-  })
+type Catalog = { [key: string]: string | Catalog }
+
+const catalogSources = import.meta.glob<string>('../locales/*/*.json', {
+  eager: true,
+  query: '?raw',
+  import: 'default'
 })
 
-describe('t() fallback semantics', () => {
-  it('returns Japanese copy when it exists', () => {
-    expect(t('hero.title', 'ja')).toBe('ビジュアルAIを自在にコントロール')
+function isCatalog(value: unknown): value is Catalog {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.values(value).every(
+      (entry: unknown) => typeof entry === 'string' || isCatalog(entry)
+    )
+  )
+}
+
+function parseCatalog(path: string, source: string): Catalog {
+  const parsed: unknown = JSON.parse(source)
+  if (!isCatalog(parsed)) {
+    throw new Error(`Catalog ${path} must contain nested string messages`)
+  }
+  return parsed
+}
+
+function leafMessages(tree: Catalog, prefix = ''): [string, string][] {
+  return Object.entries(tree).flatMap<[string, string]>(([key, value]) =>
+    typeof value === 'string'
+      ? [[`${prefix}${key}`, value]]
+      : leafMessages(value, `${prefix}${key}.`)
+  )
+}
+
+function valuesForPlaceholders(message: string): Record<string, string> {
+  const names = message
+    .replace(/\{\s*'(?:[^'\\]|\\.)*'\s*\}/g, '')
+    .matchAll(/\{\s*([\w$-]+)\s*\}/g)
+  return Object.fromEntries([...names].map(([, name]) => [name, name]))
+}
+
+const catalogFiles = new Map(
+  Object.entries(catalogSources).map(([path, source]) => [
+    path,
+    parseCatalog(path, source)
+  ])
+)
+
+const catalogs = [...catalogFiles]
+  .filter(([path]) => path.startsWith('../locales/en/'))
+  .map(([path, english]) => {
+    const file = path.slice('../locales/en/'.length)
+    const messages = Object.fromEntries(
+      LOCALE_CODES.flatMap((locale) => {
+        const catalog = catalogFiles.get(`../locales/${locale}/${file}`)
+        return catalog ? [[locale, catalog]] : []
+      })
+    )
+    return { file, english, messages }
   })
 
-  it('falls back to English when Japanese copy is missing', () => {
-    expect(t('tags.partnerNodes', 'ja')).toBe('Partner Nodes')
-  })
-})
-
-describe('t() named values', () => {
-  it('interpolates named values in the locale word order', () => {
-    expect(
-      t('models.list.heroTitle', 'zh-CN', { name: 'Flux', brand: 'ComfyUI' })
-    ).toBe('ComfyUI 中的 Flux')
-  })
-
-  it('fills every occurrence of a repeated placeholder', () => {
-    const message = t('models.faq.whatIs.localAnswer', 'en', {
-      name: 'Flux',
-      description: 'a model',
-      count: 3
-    })
-
-    expect(message.match(/Flux/g)).toHaveLength(3)
-    expect(message).not.toMatch(/\{\w+\}/)
-  })
-
-  it('keeps missing named values visible', () => {
-    expect(t('validation.minLength', 'en')).toBe(
-      'Must be at least {length} characters'
+describe('site translations', () => {
+  it('binds translations to a locale', () => {
+    expect(translationsFor('zh-CN').t('hero.title')).toBe(
+      '视觉 AI 的\n最强可控性'
     )
   })
 
-  it('inserts values literally', () => {
-    expect(t('validation.minLength', 'en', { length: '$&' })).toBe(
-      'Must be at least $& characters'
-    )
+  it('falls back from Japanese to English', () => {
+    const { t } = translationsFor('ja')
+    expect(t('hero.title')).toBe('ビジュアルAIを自在にコントロール')
+    expect(t('tags.partnerNodes')).toBe('Partner Nodes')
   })
-})
 
-describe('tAround', () => {
   it.for([
-    { locale: 'en', parts: ['Flux in ', ''] },
-    { locale: 'zh-CN', parts: ['', ' 中的 Flux'] }
+    ['en', '42 models'],
+    ['zh-CN', '42 个模型'],
+    ['ja', '42 models']
+  ] as const)('renders the model directory count in %s', ([locale, text]) => {
+    expect(
+      translationsFor(locale).t('workshop.catalogue.directoryCount', {
+        count: 42
+      })
+    ).toBe(text)
+  })
+
+  it.for([
+    { locale: 'en', count: 1, expected: '1 node' },
+    { locale: 'en', count: 2, expected: '2 nodes' },
+    { locale: 'zh-CN', count: 2, expected: '2 个节点' }
   ] as const)(
-    'splits the $locale message around the slot',
-    ({ locale, parts }) => {
+    'renders $locale plural copy for $count',
+    ({ locale, count, expected }) => {
+      const { t } = translationsFor(locale)
       expect(
-        tAround('models.list.heroTitle', locale, 'brand', { name: 'Flux' })
-      ).toEqual(parts)
+        t('cloudNodesLaunch.models.nodeCount', { count }, { plural: count })
+      ).toBe(expected)
     }
   )
+})
 
-  it('keeps a value shaped like the slot marker literal', () => {
-    expect(
-      tAround('models.list.heroTitle', 'en', 'brand', { name: '{brand}' })
-    ).toEqual(['{brand} in ', ''])
+describe.for(catalogs)('$file catalog', ({ english, messages }) => {
+  it('includes Chinese copy for every English message', () => {
+    const chinese = messages['zh-CN'] ?? {}
+    const chineseKeys = new Set(leafMessages(chinese).map(([key]) => key))
+    const missing = leafMessages(english)
+      .map(([key]) => key)
+      .filter((key) => !chineseKeys.has(key))
+
+    expect(missing).toEqual([])
   })
 
-  it.for([
-    {
-      key: 'models.faq.whatIs.localAnswer',
-      slot: 'name',
-      error: 'repeats slot {name}'
-    },
-    {
-      key: 'models.list.heroTitle',
-      slot: 'creators',
-      error: 'missing slot {creators}'
-    }
-  ] as const)(
-    'throws "$error" for a slot that is not in the message exactly once',
-    ({ key, slot, error }) => {
-      expect(() =>
-        tAround(key, 'en', slot, { description: 'a model', count: 3 })
-      ).toThrow(error)
-    }
-  )
+  it.for(LOCALE_CODES)('renders every %s message', (locale: Locale) => {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      fallbackLocale: 'en',
+      messages,
+      missingWarn: false,
+      fallbackWarn: false,
+      warnHtmlMessage: false
+    })
+    const localized = new Map(leafMessages(messages[locale] ?? {}))
+    const failures = leafMessages(english).flatMap(([key, fallback]) => {
+      const message = localized.get(key) ?? fallback
+      const values = valuesForPlaceholders(message)
+      try {
+        i18n.global.t(key, values, { locale, plural: 2 })
+        return []
+      } catch (error) {
+        return [[key, error instanceof Error ? error.message : String(error)]]
+      }
+    })
+
+    expect(failures).toEqual([])
+  })
 })

@@ -32,9 +32,8 @@ import {
 } from '../../../scripts/posthog'
 import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
 import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
-import { t } from '../../../i18n/translations'
+import { t, translationsFor } from '../../../i18n/translations'
 import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import {
   runnableCinematicModels,
@@ -43,6 +42,8 @@ import {
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
+
+const { t: tc } = translationsFor('en')
 
 vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
@@ -285,7 +286,11 @@ describe('CinematicStudio', () => {
     expect(notice).toHaveTextContent('request-9')
     await user.click(
       within(notice).getByRole('button', {
-        name: tc('cinematic.state.tryOn', 'en', { model: second.name })
+        name: tc(
+          'cinematic.state.tryOn',
+          { model: second.name },
+          { locale: 'en' }
+        )
       })
     )
 
@@ -312,7 +317,11 @@ describe('CinematicStudio', () => {
     const notice = await screen.findByRole('status')
     await user.click(
       within(notice).getByRole('button', {
-        name: tc('cinematic.state.tryOn', 'en', { model: narrow.name })
+        name: tc(
+          'cinematic.state.tryOn',
+          { model: narrow.name },
+          { locale: 'en' }
+        )
       })
     )
 
@@ -822,9 +831,13 @@ describe('CinematicStudio', () => {
     expect(generateButton()).toBeDisabled()
     expect(
       screen.getByText(
-        tc('cinematic.references.unsupported', 'en', {
-          model: dropsReferences.name
-        })
+        tc(
+          'cinematic.references.unsupported',
+          {
+            model: dropsReferences.name
+          },
+          { locale: 'en' }
+        )
       )
     ).toBeInTheDocument()
     expect(router_render).not.toHaveBeenCalled()
@@ -1126,6 +1139,37 @@ describe('CinematicStudio', () => {
     }
   )
 
+  it('reports switching to Video as a tab_switched event', async () => {
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'tab_switched',
+      properties: {
+        model_slug: CINEMATIC_STUDIO_APP_SLUG,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        tab: 'video'
+      }
+    })
+  })
+
+  it('does not report a tab switch when the URL alone sets the mode', () => {
+    window.history.replaceState(
+      null,
+      '',
+      `/cinematic-studio?model=${videoModels[0].slug}`
+    )
+    renderStudio([...models, ...videoModels])
+
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.some(([event]) => event.name === 'tab_switched')
+    ).toBe(false)
+  })
+
   it('shoots a clip on the first video model in video mode', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio([...models, ...videoModels])
@@ -1249,7 +1293,7 @@ describe('CinematicStudio', () => {
     )
     const estimate = () => screen.findByTestId('cinematic-estimate')
     const credits = (amount: number) =>
-      tc('cinematic.credits.estimate', 'en', { credits: amount })
+      tc('cinematic.credits.estimate', { credits: amount }, { locale: 'en' })
 
     async function shootTakes(
       user: ReturnType<typeof userEvent.setup>,
@@ -1421,9 +1465,13 @@ describe('CinematicStudio', () => {
       },
       {
         role: 'member' as const,
-        body: t('workshop.error.memberNoCredits', 'en', {
-          workspace: 'Studio Team'
-        }),
+        body: t(
+          'workshop.error.memberNoCredits',
+          {
+            workspace: 'Studio Team'
+          },
+          { locale: 'en' }
+        ),
         action: t('workshop.run.switchPersonal'),
         other: t('workshop.run.buyCredits')
       }
@@ -1463,7 +1511,11 @@ describe('CinematicStudio', () => {
 
       const summary = await screen.findByTestId('cinematic-credit-summary')
       expect(summary).toHaveTextContent(
-        tc('cinematic.credits.skipped', 'en', { failed: 1, total: 4 })
+        tc(
+          'cinematic.credits.skipped',
+          { failed: 1, total: 4 },
+          { locale: 'en' }
+        )
       )
       expect(
         within(summary).getByRole('button', {

@@ -15,7 +15,7 @@ import {
 } from '../../config/workshop-run-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { translationsFor } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
 import HeaderAccountMenu from './HeaderAccountMenu.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
@@ -23,6 +23,7 @@ import RunLeaveDialog from './RunLeaveDialog.vue'
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const enabled = useWorkshopAuthFlag()
 const { user, session, sessionFailure, ensureFresh, remint, signOut } =
@@ -273,13 +274,13 @@ const formattedCredits = computed(() =>
 )
 function formatCredits(credits: number): string {
   const key = credits === 1 ? 'auth.header.credit' : 'auth.header.credits'
-  return `${credits.toLocaleString(locale)} ${t(key, locale)}`
+  return `${credits.toLocaleString(locale)} ${t(key)}`
 }
 
 // The chip shows the bare number; the label keeps the unit for a reader
 // who cannot see which chip it is.
 const accountLabel = computed(() => {
-  const account = t('nav.accountMenu', locale)
+  const account = t('nav.accountMenu')
   const current = balance.value
   return current.status === 'ok'
     ? `${account}, ${formatCredits(current.credits)}`
@@ -317,7 +318,7 @@ async function signOutFromMenu() {
       @focus="prepareSignInHref"
       @click="goToSignIn"
     >
-      {{ t('auth.header.signIn', locale) }}
+      {{ t('auth.header.signIn') }}
     </a>
 
     <button
@@ -332,8 +333,7 @@ async function signOutFromMenu() {
         t(
           sessionRetryPending
             ? 'auth.header.sessionRetrying'
-            : 'auth.header.sessionRetry',
-          locale
+            : 'auth.header.sessionRetry'
         )
       }}
     </button>
@@ -344,7 +344,7 @@ async function signOutFromMenu() {
       aria-busy="true"
       class="flex h-10 items-center rounded-2xl border border-primary-comfy-canvas/25 px-4 text-xs font-bold tracking-wider text-primary-comfy-canvas/70 uppercase"
     >
-      {{ t('auth.header.signingIn', locale) }}
+      {{ t('auth.header.signingIn') }}
     </span>
 
     <HeaderAccountMenu

@@ -25,6 +25,7 @@ import {
   OPERATION_POLL_TIMING
 } from './operationPolicy.js'
 import type {
+  BillingChargeBreakdown,
   BillingOperationState,
   BillingOpStatus,
   HostedBillingDestination
@@ -1115,6 +1116,154 @@ describe('createBillingOperationLifecycle', () => {
       )
     })
 
+    const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+
+    it('keeps the receipt a succeeded operation reports', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk(
+            opStatus({
+              status: 'succeeded',
+              amount_charged_cents: 3250,
+              credits_added: 6858,
+              plan: RECEIPT_PLAN
+            })
+          )
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'succeeded',
+        receipt: {
+          amountChargedCents: 3250,
+          creditsAdded: 6858,
+          plan: RECEIPT_PLAN
+        }
+      })
+    })
+
+    const CHARGE_BREAKDOWN: BillingChargeBreakdown = {
+      amount_charged_cents: 2600,
+      currency: 'usd',
+      prorated: false,
+      reasons: [
+        {
+          kind: 'promo_code',
+          amount_cents: 400,
+          discount: {
+            kind: 'promotion',
+            code: 'SAVE20',
+            name: 'Save 20%',
+            duration: 'repeating',
+            duration_in_months: 3
+          }
+        },
+        { kind: 'account_balance', amount_cents: 250 }
+      ]
+    }
+
+    it('keeps the charge breakdown a succeeded operation reports', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk(
+            opStatus({
+              status: 'succeeded',
+              amount_charged_cents: 2600,
+              charge_breakdown: CHARGE_BREAKDOWN
+            })
+          )
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'succeeded',
+        receipt: { amountChargedCents: 2600, chargeBreakdown: CHARGE_BREAKDOWN }
+      })
+    })
+
+    it('does not settle on a status whose charge breakdown is malformed', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk({
+            ...opStatus({ status: 'succeeded' }),
+            charge_breakdown: {
+              ...CHARGE_BREAKDOWN,
+              reasons: [{ kind: 'gift_card', amount_cents: 400 }]
+            }
+          })
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({ phase: 'pending' })
+    })
+
+    it('leaves the receipt off a success that reported none', async () => {
+      const { lifecycle } = harness({
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).not.toHaveProperty('receipt')
+    })
+
+    it('re-reads a success whose credits are still landing, when asked for settled operations', async () => {
+      const charged = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus(charged)),
+          httpOk(opStatus({ ...charged, credits_added: 6858 }))
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      expect(lifecycle.get('op-1')).toMatchObject({
+        receipt: { amountChargedCents: 3250 }
+      })
+
+      await expect(
+        lifecycle.recover({ includeSettled: true })
+      ).resolves.toMatchObject({
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          receipt: { amountChargedCents: 3250, creditsAdded: 6858 }
+        }
+      })
+    })
+
+    it('keeps a success whose credits already landed as it was', async () => {
+      const landed = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250,
+        credits_added: 6858
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus(landed)),
+          httpOk(opStatus({ ...landed, credits_added: 1 }))
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+      const settled = lifecycle.get('op-1')
+
+      await lifecycle.recover({ includeSettled: true })
+
+      expect(lifecycle.get('op-1')).toBe(settled)
+    })
+
     it('re-reads an operation that needed reconciliation, following it forward to success', async () => {
       const storage = memoryStorage()
       const { lifecycle, calls } = harness({
@@ -1402,5 +1551,475 @@ describe('createBillingOperationLifecycle', () => {
       status: 'error',
       code: 'SUPERSEDED'
     })
+  })
+})
+
+describe('payment friction telemetry', () => {
+  function frictionOf(telemetry: BillingOperationTelemetryEvent[]) {
+    return telemetry
+      .filter((event) => event.name.startsWith('billing.checkout.challenge'))
+      .map((event) =>
+        'decline_reason' in event && event.decline_reason !== undefined
+          ? {
+              name: event.name,
+              presentation: event.presentation,
+              decline_reason: event.decline_reason
+            }
+          : { name: event.name, presentation: event.presentation }
+      )
+  }
+
+  const challengeRequired = (clientSecret: string) =>
+    httpOk(
+      opStatus({
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: clientSecret
+      })
+    )
+
+  it('reports a challenge the issued command already carried, with its operation', async () => {
+    const { lifecycle, telemetry } = harness({
+      embedded: true,
+      answers: [challengeRequired('pi_secret')]
+    })
+
+    await lifecycle.begin(
+      'subscription',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+
+    expect(
+      telemetry.filter((event) => event.name.startsWith('billing.checkout.'))
+    ).toEqual([
+      {
+        name: 'billing.checkout.challenge_required',
+        billing_op_id: 'op-1',
+        operation_type: 'subscription',
+        presentation: 'embedded',
+        resumed: false
+      }
+    ])
+  })
+
+  it('reports a challenge a status read surfaces once, however often it is echoed', async () => {
+    const { lifecycle, telemetry } = harness({
+      embedded: true,
+      answers: [httpOk(opStatus()), challengeRequired('pi_secret')]
+    })
+
+    await lifecycle.begin('topup', issued())
+    await flush()
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs * 3)
+
+    expect(frictionOf(telemetry)).toEqual([
+      { name: 'billing.checkout.challenge_required', presentation: 'embedded' }
+    ])
+  })
+
+  it.for([
+    { outcome: 'completed', expected: 'billing.checkout.challenge_completed' },
+    { outcome: 'failed', expected: 'billing.checkout.challenge_failed' }
+  ] as const)(
+    'reports the challenge this tab drove as $outcome',
+    async ({ outcome, expected }) => {
+      const { lifecycle, telemetry } = harness({
+        embedded: true,
+        answers: [challengeRequired('pi_secret')]
+      })
+      await lifecycle.begin(
+        'topup',
+        issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+      )
+      await flush()
+
+      lifecycle.reportChallengeStarted('op-1')
+      lifecycle.reportChallengeSettled('op-1', outcome)
+
+      expect(frictionOf(telemetry)).toEqual([
+        {
+          name: 'billing.checkout.challenge_required',
+          presentation: 'embedded'
+        },
+        { name: expected, presentation: 'embedded' }
+      ])
+    }
+  )
+
+  it('reports a failed challenge once when the server then echoes it as a retryable decline', async () => {
+    const { lifecycle, telemetry } = harness({
+      embedded: true,
+      answers: [
+        challengeRequired('pi_secret'),
+        httpOk(
+          opStatus({
+            authentication_state: 'failed_retryable',
+            decline_reason: 'authentication_failed',
+            payment_intent_client_secret: 'pi_secret'
+          })
+        )
+      ]
+    })
+    await lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+
+    lifecycle.reportChallengeStarted('op-1')
+    lifecycle.reportChallengeSettled('op-1', 'failed')
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs * 2)
+
+    expect(lifecycle.get('op-1')).toMatchObject({
+      declineReason: 'authentication_failed'
+    })
+    expect(frictionOf(telemetry)).toEqual([
+      { name: 'billing.checkout.challenge_required', presentation: 'embedded' },
+      { name: 'billing.checkout.challenge_failed', presentation: 'embedded' }
+    ])
+  })
+
+  it('reports a later, different decline after the failed challenge was echoed', async () => {
+    const declined = (reason: BillingOpStatus['decline_reason']) =>
+      httpOk(
+        opStatus({
+          authentication_state: 'failed_retryable',
+          decline_reason: reason,
+          payment_intent_client_secret: 'pi_secret'
+        })
+      )
+    const { lifecycle, telemetry } = harness({
+      embedded: true,
+      answers: [
+        challengeRequired('pi_secret'),
+        declined('authentication_failed'),
+        declined('card_declined')
+      ]
+    })
+    await lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+
+    lifecycle.reportChallengeStarted('op-1')
+    lifecycle.reportChallengeSettled('op-1', 'failed')
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs * 3)
+
+    expect(frictionOf(telemetry)).toEqual([
+      { name: 'billing.checkout.challenge_required', presentation: 'embedded' },
+      { name: 'billing.checkout.challenge_failed', presentation: 'embedded' },
+      {
+        name: 'billing.checkout.challenge_failed',
+        presentation: 'embedded',
+        decline_reason: 'card_declined'
+      }
+    ])
+  })
+
+  it('reports each retryable decline inside one hosted operation with its reason, once per decline', async () => {
+    const declined = (reason: BillingOpStatus['decline_reason']) =>
+      httpOk(
+        opStatus({
+          authentication_state: 'failed_retryable',
+          decline_reason: reason,
+          action_url: 'https://billing.example/continue'
+        })
+      )
+    const { lifecycle, telemetry } = harness({
+      answers: [
+        declined('card_declined'),
+        declined('card_declined'),
+        declined('insufficient_funds')
+      ]
+    })
+
+    await lifecycle.begin('subscription', issued())
+    await flush()
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs * 3)
+
+    expect(frictionOf(telemetry)).toEqual([
+      {
+        name: 'billing.checkout.challenge_failed',
+        presentation: 'hosted',
+        decline_reason: 'card_declined'
+      },
+      {
+        name: 'billing.checkout.challenge_failed',
+        presentation: 'hosted',
+        decline_reason: 'insufficient_funds'
+      }
+    ])
+  })
+
+  it('does not report the same challenge again when it returns from the hosted page', async () => {
+    const { lifecycle, telemetry } = harness({
+      embedded: true,
+      answers: [
+        challengeRequired('pi_secret'),
+        httpOk(
+          opStatus({
+            authentication_state: 'requires_action',
+            payment_intent_client_secret: 'pi_secret',
+            action_url: 'https://billing.example/continue'
+          })
+        )
+      ]
+    })
+    await lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+
+    lifecycle.switchPresentation('op-1', 'hosted')
+    lifecycle.switchPresentation('op-1', 'embedded')
+
+    expect(frictionOf(telemetry)).toEqual([
+      { name: 'billing.checkout.challenge_required', presentation: 'embedded' }
+    ])
+  })
+})
+
+describe('hosted redirect telemetry', () => {
+  const PAYMENT_PAGE = 'https://billing.example/continue'
+
+  function redirectsOf(telemetry: BillingOperationTelemetryEvent[]) {
+    return telemetry.filter(
+      (event) =>
+        event.name === 'billing.checkout.redirect_started' ||
+        event.name === 'billing.checkout.returned'
+    )
+  }
+
+  it('reports the hosted step the host opened, where it leads and how', async () => {
+    const { lifecycle, telemetry } = harness({
+      destination: 'billing_web',
+      answers: [
+        httpOk(
+          opStatus({
+            phase: 'awaiting_payment_method',
+            action_url: PAYMENT_PAGE
+          })
+        )
+      ]
+    })
+    await lifecycle.begin(
+      'subscription',
+      issued({ operationId: 'op-1', actionUrl: PAYMENT_PAGE })
+    )
+    await flush()
+
+    lifecycle.reportHostedStepOpened('op-1', 'redirect', 'alipay')
+
+    expect(redirectsOf(telemetry)).toEqual([
+      {
+        name: 'billing.checkout.redirect_started',
+        billing_op_id: 'op-1',
+        operation_type: 'subscription',
+        presentation: 'hosted',
+        resumed: false,
+        destination: 'billing_web',
+        step: 'payment_method',
+        navigation: 'redirect',
+        method_kind: 'alipay'
+      }
+    ])
+  })
+
+  it.for([
+    {
+      server: { authentication_state: 'requires_action' },
+      step: 'authentication'
+    },
+    { server: { phase: 'awaiting_invoice_payment' }, step: 'invoice_payment' },
+    { server: { phase: 'in_progress' }, step: 'checkout' }
+  ] as const)(
+    'names the hosted step $step from what the server waits on',
+    async ({ server, step }) => {
+      const { lifecycle, telemetry } = harness({
+        answers: [httpOk(opStatus({ ...server, action_url: PAYMENT_PAGE }))]
+      })
+      await lifecycle.begin('topup', issued())
+      await flush()
+
+      lifecycle.reportHostedStepOpened('op-1', 'new_tab')
+
+      expect(redirectsOf(telemetry)).toEqual([
+        expect.objectContaining({ step, destination: 'stripe' })
+      ])
+    }
+  )
+
+  it('reports the return once when the page the redirect left recovers the operation', async () => {
+    const storage = memoryStorage()
+    const left = harness({
+      storage,
+      answers: [
+        httpOk(
+          opStatus({
+            phase: 'awaiting_payment_method',
+            action_url: PAYMENT_PAGE
+          })
+        )
+      ]
+    })
+    await left.lifecycle.begin(
+      'subscription',
+      issued({ operationId: 'op-1', actionUrl: PAYMENT_PAGE })
+    )
+    await flush()
+    left.lifecycle.reportHostedStepOpened('op-1', 'redirect', 'alipay')
+    left.lifecycle.dispose()
+
+    const pending = statusSnapshot({
+      pending_billing_op_id: 'op-1',
+      pending_billing_op_type: 'subscription'
+    })
+    const back = harness({ storage, status: pending })
+    await back.lifecycle.recover()
+    const reloaded = harness({ storage, status: pending })
+    await reloaded.lifecycle.recover()
+
+    expect(redirectsOf(back.telemetry)).toEqual([
+      {
+        name: 'billing.checkout.returned',
+        billing_op_id: 'op-1',
+        operation_type: 'subscription',
+        presentation: 'hosted',
+        resumed: true,
+        destination: 'stripe',
+        step: 'payment_method',
+        navigation: 'redirect',
+        method_kind: 'alipay'
+      }
+    ])
+    expect(redirectsOf(reloaded.telemetry)).toEqual([])
+  })
+
+  function challengeWithPaymentPage(id: string) {
+    return httpOk(
+      opStatus({
+        id,
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret',
+        action_url: PAYMENT_PAGE
+      })
+    )
+  }
+
+  it('still reports the return after the operation switched presentation on the way out', async () => {
+    const storage = memoryStorage()
+    const left = harness({
+      storage,
+      embedded: true,
+      answers: [challengeWithPaymentPage('op-1')]
+    })
+    await left.lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    left.lifecycle.reportHostedStepOpened('op-1', 'redirect', 'card')
+    expect(left.lifecycle.switchPresentation('op-1', 'hosted')).toBe('switched')
+    left.lifecycle.dispose()
+
+    const back = harness({
+      storage,
+      status: statusSnapshot({
+        pending_billing_op_id: 'op-1',
+        pending_billing_op_type: 'topup'
+      })
+    })
+    await back.lifecycle.recover()
+
+    expect(redirectsOf(back.telemetry)).toEqual([
+      {
+        name: 'billing.checkout.returned',
+        billing_op_id: 'op-1',
+        operation_type: 'topup',
+        presentation: 'hosted',
+        resumed: true,
+        destination: 'stripe',
+        step: 'authentication',
+        navigation: 'redirect',
+        method_kind: 'card'
+      }
+    ])
+  })
+
+  it('reports no return for an operation that never redirected, though another one did', async () => {
+    const storage = memoryStorage()
+    const left = harness({
+      storage,
+      embedded: true,
+      answers: [
+        challengeWithPaymentPage('op-2'),
+        challengeWithPaymentPage('op-1')
+      ]
+    })
+    await left.lifecycle.begin(
+      'subscription',
+      issued({ operationId: 'op-2', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    await left.lifecycle.begin(
+      'topup',
+      issued({ operationId: 'op-1', clientSecret: 'pi_secret' })
+    )
+    await flush()
+    left.lifecycle.reportHostedStepOpened('op-1', 'redirect')
+    expect(left.lifecycle.switchPresentation('op-2', 'hosted')).toBe('switched')
+    left.lifecycle.dispose()
+
+    const back = harness({
+      storage,
+      status: statusSnapshot({
+        pending_billing_op_id: 'op-2',
+        pending_billing_op_type: 'subscription'
+      })
+    })
+    await back.lifecycle.recover()
+
+    expect(redirectsOf(back.telemetry)).toEqual([])
+  })
+
+  it('reports the return once when the customer comes back to this tab from a new one', async () => {
+    const { lifecycle, telemetry } = harness({
+      answers: [httpOk(opStatus({ action_url: PAYMENT_PAGE }))]
+    })
+    await lifecycle.begin('topup', issued())
+    await flush()
+    lifecycle.reportHostedStepOpened('op-1', 'new_tab')
+
+    lifecycle.wake()
+    lifecycle.wake()
+
+    expect(redirectsOf(telemetry)).toEqual([
+      expect.objectContaining({
+        name: 'billing.checkout.redirect_started',
+        navigation: 'new_tab'
+      }),
+      expect.objectContaining({
+        name: 'billing.checkout.returned',
+        navigation: 'new_tab'
+      })
+    ])
+  })
+
+  it('reports no return for a page that redirected away and was never reloaded', async () => {
+    const { lifecycle, telemetry } = harness({
+      answers: [httpOk(opStatus({ action_url: PAYMENT_PAGE }))]
+    })
+    await lifecycle.begin('topup', issued())
+    await flush()
+    lifecycle.reportHostedStepOpened('op-1', 'redirect')
+
+    lifecycle.wake()
+
+    expect(redirectsOf(telemetry).map((event) => event.name)).toEqual([
+      'billing.checkout.redirect_started'
+    ])
   })
 })

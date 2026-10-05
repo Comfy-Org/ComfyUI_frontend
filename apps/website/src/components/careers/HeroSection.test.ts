@@ -39,7 +39,7 @@ describe('HeroSection', () => {
     render(HeroSection, { props: { locale: 'zh-CN' }, global: { stubs } })
 
     expect(screen.getByTestId('video-player').dataset.ariaLabel).toBe(
-      t('careers.hero.videoLabel', 'zh-CN')
+      t('careers.hero.videoLabel', {}, { locale: 'zh-CN' })
     )
   })
 })

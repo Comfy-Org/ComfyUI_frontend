@@ -63,6 +63,8 @@ function createWorkspaceState(
     subscriptionTier: null,
     members: [],
     pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true,
     ...overrides
   }
 }

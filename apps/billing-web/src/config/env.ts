@@ -37,7 +37,7 @@ const HOST_ENVS: Record<string, BillingWebEnv> = {
 }
 
 /** Exact hostnames only: a suffix or substring match would let a lookalike domain claim production. */
-function resolveHostEnv(
+export function resolveHostEnv(
   hostname: string | undefined
 ): BillingWebEnv | undefined {
   return hostname === undefined ? undefined : HOST_ENVS[hostname]

@@ -1,7 +1,7 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, toRaw, watch } from 'vue'
 
 import {
   SIDEBAR_MIN_WIDTH,
@@ -25,7 +25,25 @@ type TargetTracking =
   | { mode: 'uninitialized' }
   | { mode: 'following' }
   | { mode: 'restoring' }
-  | { mode: 'retained'; workflow: ComfyWorkflow | null; unavailable?: true }
+  | { mode: 'retained'; workflow: ComfyWorkflow }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath: string
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable: true
+    }
 
 export type AgentPanelView =
   | { screen: 'chat' }
@@ -74,6 +92,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const targetUnavailable = computed(
     () =>
       targetTracking.value.mode === 'retained' &&
+      targetTracking.value.workflow === null &&
       targetTracking.value.unavailable === true
   )
   const canRestoreWorkflow = computed(
@@ -110,7 +129,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
-    targetTracking.value = { mode: 'retained', workflow }
+    targetTracking.value =
+      workflow === null
+        ? { mode: 'retained', workflow: null }
+        : { mode: 'retained', workflow }
   }
 
   function markWorkflowTargetUnavailable(): void {
@@ -121,20 +143,66 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
   }
 
+  function detachClosedTarget(workflow: ComfyWorkflow): void {
+    targetTracking.value = workflow.isTemporary
+      ? { mode: 'retained', workflow: null }
+      : { mode: 'retained', workflow: null, closedPath: workflow.path }
+  }
+
   // Only a retained target can become detached. A following target belongs to
   // the editor, including its replacement when the visible tab closes.
   watch(
     () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
       const target = targetTracking.value
-      if (
-        target.mode === 'retained' &&
-        target.workflow !== null &&
-        !workflowStore.openWorkflows.includes(target.workflow)
+      if (target.mode !== 'retained') return
+      if (target.workflow !== null) {
+        if (!workflowStore.openWorkflows.includes(target.workflow))
+          detachClosedTarget(target.workflow)
+      } else if (
+        workflowStore.openWorkflows.some(
+          ({ path }) => path === target.closedPath
+        )
       )
         setWorkflowTarget(null)
     }
   )
+
+  function isRetainedTarget(workflow: ComfyWorkflow): boolean {
+    const target = targetTracking.value
+    if (target.mode !== 'retained') return false
+    return target.workflow === null
+      ? target.closedPath === workflow.path
+      : toRaw(target.workflow) === toRaw(workflow)
+  }
+
+  function followClosedTargetRename(oldPath: string, newPath: string): void {
+    const target = targetTracking.value
+    if (
+      target.mode === 'retained' &&
+      target.workflow === null &&
+      target.closedPath === oldPath
+    )
+      targetTracking.value = {
+        mode: 'retained',
+        workflow: null,
+        closedPath: newPath
+      }
+  }
+
+  workflowStore.$onAction(({ name, args, after }) => {
+    if (name === 'deleteWorkflow') {
+      const [workflow] = args
+      if (!workflow.isTemporary)
+        after(() => {
+          if (isRetainedTarget(workflow)) markWorkflowTargetUnavailable()
+        })
+    } else if (name === 'renameWorkflow') {
+      const [workflow] = args
+      const oldPath = workflow.path
+      after(() => followClosedTargetRename(oldPath, workflow.path))
+    }
+  })
 
   let openedAt: number | null = null
   // Guards the pagehide teardown report below: true once this open epoch has

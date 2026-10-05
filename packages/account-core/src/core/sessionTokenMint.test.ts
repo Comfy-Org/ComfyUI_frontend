@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fakeWebSessionUser } from '../testing.js'
 import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth.js'
@@ -18,6 +18,7 @@ interface SentRequest {
   readonly credentials: RequestCredentials | undefined
   readonly headers: Readonly<Record<string, string>>
   readonly body: unknown
+  readonly signal: AbortSignal | null | undefined
 }
 
 function sessionFor(userId: string, csrfToken = 'csrf-1'): WebSession {
@@ -57,8 +58,9 @@ type Respond = (
 
 function setup({
   respond = (_, index) =>
-    json(200, tokenBody(`jwt-${index}`, clock.now + 15 * MINUTE))
-}: { respond?: Respond } = {}) {
+    json(200, tokenBody(`jwt-${index}`, clock.now + 15 * MINUTE)),
+  timeoutMs
+}: { respond?: Respond; timeoutMs?: number } = {}) {
   const sent: SentRequest[] = []
   const state: { session: WebSession | undefined } = {
     session: sessionFor('user-1')
@@ -67,13 +69,15 @@ function setup({
     apiBaseUrl: 'https://cloud.example/api/',
     getSession: () => state.session,
     now: () => clock.now,
+    ...(timeoutMs === undefined ? {} : { timeoutMs }),
     fetchImpl: async (input, init = {}) => {
       const request: SentRequest = {
         url: String(input),
         method: init.method,
         credentials: init.credentials,
         headers: Object.fromEntries(new Headers(init.headers).entries()),
-        body: JSON.parse(String(init.body))
+        body: JSON.parse(String(init.body)),
+        signal: init.signal
       }
       sent.push(request)
       return respond(request, sent.length)
@@ -83,6 +87,15 @@ function setup({
 }
 
 const clock = { now: T0 }
+
+function heldUntilAborted(sent: SentRequest, answered: Promise<Response>) {
+  return new Promise<Response>((resolve, reject) => {
+    sent.signal?.addEventListener('abort', () => {
+      reject(new DOMException('aborted', 'AbortError'))
+    })
+    void answered.then(resolve)
+  })
+}
 
 describe('createSessionTokenMint', () => {
   beforeEach(() => {
@@ -257,6 +270,45 @@ describe('createSessionTokenMint', () => {
     expect([fresh, afterward]).toEqual(['jwt-3', 'jwt-3'])
   })
 
+  it.for<{
+    name: string
+    after: WebSession | undefined
+    expected: Partial<SessionTokenResult>
+  }>([
+    {
+      name: 'the session ended',
+      after: undefined,
+      expected: { status: 'error', code: 'NO_SESSION' }
+    },
+    {
+      name: 'another user took the session',
+      after: sessionFor('user-2'),
+      expected: { status: 'error', code: 'IDENTITY_CHANGED' }
+    },
+    {
+      name: 'the same user re-read the session',
+      after: sessionFor('user-1', 'csrf-2'),
+      expected: { status: 'ok' }
+    }
+  ])('answers a mint that lands after $name', async ({ after, expected }) => {
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { mint, state } = setup({
+      respond: async () => {
+        await held
+        return json(200, tokenBody('jwt-1', clock.now + 15 * MINUTE))
+      }
+    })
+
+    const pending = mint.mint()
+    state.session = after
+    release()
+
+    expect(await pending).toMatchObject(expected)
+  })
+
   it('answers NO_SESSION without a request when signed out', async () => {
     const { mint, sent, state } = setup()
     state.session = undefined
@@ -290,6 +342,12 @@ describe('createSessionTokenMint', () => {
       retryable: false
     },
     {
+      status: 401,
+      body: { code: 'TOKEN_REVOKED', message: 'x' },
+      code: 'SESSION_REVOKED',
+      retryable: false
+    },
+    {
       status: 403,
       body: { code: 'csrf_invalid', message: 'x' },
       code: 'CSRF_STALE',
@@ -315,7 +373,13 @@ describe('createSessionTokenMint', () => {
     },
     {
       status: 404,
-      body: { code: 'not_found', message: 'x' },
+      body: { code: 'NOT_FOUND', message: 'Workspace not found' },
+      code: 'WORKSPACE_ACCESS_DENIED',
+      retryable: false
+    },
+    {
+      status: 404,
+      body: { message: 'Not Found' },
       code: 'SESSION_REQUEST_REFUSED',
       retryable: false
     },
@@ -357,6 +421,63 @@ describe('createSessionTokenMint', () => {
     })
   })
 
+  it('answers a mint that outruns timeoutMs as retryable SESSION_UNAVAILABLE', async () => {
+    const { mint } = setup({
+      timeoutMs: 5000,
+      respond: (sent) => heldUntilAborted(sent, new Promise(() => {}))
+    })
+
+    const pending = mint.mint()
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(await pending).toEqual({
+      status: 'error',
+      code: 'SESSION_UNAVAILABLE',
+      retryable: true
+    })
+  })
+
+  it('answers a 401 whose body outruns timeoutMs as SESSION_UNAVAILABLE, not a dead session', async () => {
+    const { mint } = setup({
+      timeoutMs: 5000,
+      respond: (sent) =>
+        new Response(
+          new ReadableStream({
+            start(body) {
+              sent.signal?.addEventListener('abort', () => {
+                body.error(new DOMException('aborted', 'AbortError'))
+              })
+            }
+          }),
+          { status: 401 }
+        )
+    })
+
+    const pending = mint.mint()
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(await pending).toMatchObject({ code: 'SESSION_UNAVAILABLE' })
+  })
+
+  it('waits for a slow mint when no timeoutMs is given', async () => {
+    let answer = (_response: Response) => {}
+    const answered = new Promise<Response>((resolve) => {
+      answer = resolve
+    })
+    const { mint } = setup({
+      respond: (sent) => heldUntilAborted(sent, answered)
+    })
+
+    const pending = mint.mint()
+    await vi.advanceTimersByTimeAsync(10 * MINUTE)
+    answer(json(200, tokenBody('jwt-slow', clock.now + 15 * MINUTE)))
+
+    expect(await pending).toMatchObject({
+      status: 'ok',
+      credential: { token: 'jwt-slow' }
+    })
+  })
+
   it('refuses a token that is already expired', async () => {
     const { mint } = setup({
       respond: () => json(200, tokenBody('jwt', clock.now))
@@ -395,6 +516,35 @@ describe('createSessionTokenMint', () => {
 
     expect(personal).toBe('jwt-3')
     expect(sent).toHaveLength(3)
+  })
+
+  it('remint replaces a fresh cached token and keeps the other workspaces', async () => {
+    const { mint, sent } = setup()
+
+    await mint.mint()
+    await mint.mint('ws-1')
+    const reminted = await mint.remint()
+    const afterwards = await Promise.all([
+      mint.getWorkspaceToken(),
+      mint.getWorkspaceToken('ws-1')
+    ])
+
+    expect(reminted).toMatchObject({ credential: { token: 'jwt-3' } })
+    expect(afterwards).toEqual(['jwt-3', 'jwt-2'])
+    expect(sent).toHaveLength(3)
+  })
+
+  it('shares one request among concurrent remints', async () => {
+    const { mint, sent } = setup()
+    await mint.mint()
+
+    const reminted = await Promise.all([mint.remint(), mint.remint()])
+
+    expect(reminted).toMatchObject([
+      { credential: { token: 'jwt-2' } },
+      { credential: { token: 'jwt-2' } }
+    ])
+    expect(sent).toHaveLength(2)
   })
 
   it('honours Retry-After on 429 before asking again', async () => {
