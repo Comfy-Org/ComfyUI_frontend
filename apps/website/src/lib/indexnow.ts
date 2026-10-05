@@ -1,3 +1,4 @@
+import { escapeRegExp } from 'es-toolkit'
 import { createHash } from 'node:crypto'
 
 import {
@@ -6,6 +7,8 @@ import {
   INDEXNOW_MAX_URLS_PER_REQUEST,
   INDEXNOW_SITE
 } from '@/config/indexnow'
+import { LOCALE_CODES } from '@/config/locales'
+import { translationsFor } from '@/i18n/translations'
 import { htmlToTwin, renderTwin } from '@/lib/markdown-twin'
 
 /** Sitemap URL → sha256 of the page's crawler-visible content. */
@@ -41,6 +44,25 @@ function isOnSite(url: string): boolean {
   return url.startsWith(`${INDEXNOW_SITE}/`)
 }
 
+const LIVE_PACK_STAT_LABELS = new Set(
+  LOCALE_CODES.flatMap((locale) => {
+    const { t } = translationsFor(locale)
+    return [t('cloudNodes.detail.downloads'), t('cloudNodes.detail.stars')]
+  })
+)
+
+const LIVE_PACK_STAT = new RegExp(
+  `(\\*\\*(?:${[...LIVE_PACK_STAT_LABELS].map(escapeRegExp).join('|')})\\*\\*\\n\\n)[^\\n]*`,
+  'g'
+)
+
+/** Custom-node download and star counts are fetched live on every build. */
+function withoutLiveStats(twin: string, url: string): string {
+  return new URL(url).pathname.includes('/cloud/supported-nodes/')
+    ? twin.replace(LIVE_PACK_STAT, '$1')
+    : twin
+}
+
 /**
  * Fingerprints the page's markdown twin (title, description, canonical and
  * `<main>`), so header, footer and hashed asset names never count as a change.
@@ -48,7 +70,7 @@ function isOnSite(url: string): boolean {
  */
 export function pageFingerprint(html: string, url: string): string | null {
   if (isNoindex(html)) return null
-  const twin = renderTwin(htmlToTwin(html, url))
+  const twin = withoutLiveStats(renderTwin(htmlToTwin(html, url)), url)
   return createHash('sha256').update(twin).digest('hex')
 }
 

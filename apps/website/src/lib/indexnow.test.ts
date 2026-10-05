@@ -42,6 +42,43 @@ describe('pageFingerprint', () => {
     )
   })
 
+  describe('on a custom-node pack page', () => {
+    const pack = ({
+      downloads = '248,487',
+      stars = '50',
+      version = '2.1.0'
+    } = {}) =>
+      page({
+        main: `<dl><dt>Downloads</dt><dd>${downloads}</dd><dt>GitHub stars</dt><dd>${stars}</dd><dt>Latest version</dt><dd>${version}</dd></dl>`
+      })
+    const zhPack = (downloads: string) =>
+      page({ main: `<dl><dt>下载量</dt><dd>${downloads}</dd></dl>` })
+
+    it.for([
+      ['the download count', pack({ downloads: '251,002' }), pack()],
+      ['the star count', pack({ stars: '51' }), pack()],
+      ['the zh-CN download count', zhPack('251,002'), zhPack('248,487')]
+    ])('ignores a change to %s', ([, after, before]) => {
+      const packUrl = url('zh-CN/cloud/supported-nodes/basic_data_handling/')
+      expect(pageFingerprint(after, packUrl)).toBe(
+        pageFingerprint(before, packUrl)
+      )
+    })
+
+    it('changes when the text changes', () => {
+      const packUrl = url('cloud/supported-nodes/basic_data_handling/')
+      expect(pageFingerprint(pack({ version: '2.2.0' }), packUrl)).not.toBe(
+        pageFingerprint(pack(), packUrl)
+      )
+    })
+
+    it('keeps counts on other pages', () => {
+      expect(
+        pageFingerprint(pack({ downloads: '251,002' }), url('a/'))
+      ).not.toBe(pageFingerprint(pack(), url('a/')))
+    })
+  })
+
   it('gives a noindex page no fingerprint, so it is never submitted', () => {
     expect(pageFingerprint(page({ head: NOINDEX }), url('a/'))).toBeNull()
   })
