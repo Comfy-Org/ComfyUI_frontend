@@ -78,6 +78,8 @@ describe('indexing policy', () => {
     '/zh-CN/payment/failed/',
     '/individual-submission',
     '/zh-CN/booking-confirmation/',
+    '/platform/serverless-animation',
+    '/zh-CN/platform/serverless-animation/',
     '/comfy-agent',
     '/comfy-agent/',
     '/case-studies',
@@ -100,6 +102,7 @@ describe('indexing policy', () => {
   it.for([
     '/privacy',
     '/pricing',
+    '/platform',
     '/agent',
     '/agent/',
     '/zh-CN/agent',

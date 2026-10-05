@@ -15,6 +15,7 @@ const ALL_LOCALE_PREFIXES = LOCALE_CODES.map((locale) => LOCALES[locale].prefix)
 
 export const NOINDEX_ROUTES = [
   ...PAYMENT_STATUSES.map((status) => `/payment/${status}`),
+  '/platform/serverless-animation',
   '/individual-submission',
   '/booking-confirmation',
   '/login',
