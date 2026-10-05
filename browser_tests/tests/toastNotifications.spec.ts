@@ -25,22 +25,13 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     ).toBeVisible()
   })
 
-  test('Graph toast fallback respects the workspace inset', async ({
-    comfyPage
-  }) => {
+  test('Toasts stay clear of the workspace inset', async ({ comfyPage }) => {
     const workspaceInset = 240
     await comfyPage.page.evaluate((inset) => {
       document.documentElement.style.setProperty(
         '--workspace-inset-right',
         `${inset}px`
       )
-      document
-        .querySelectorAll<HTMLElement>(
-          '.graph-canvas-panel, .docked-agent-panel'
-        )
-        .forEach((element) => {
-          element.style.setProperty('anchor-name', 'none')
-        })
     }, workspaceInset)
 
     await triggerErrorToast(comfyPage)
