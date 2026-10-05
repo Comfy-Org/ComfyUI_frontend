@@ -66,7 +66,7 @@ export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
  */
 export const zAgentAskNodeRef = z
   .object({
-    id: z.union([z.string(), z.number()]),
+    id: z.union([z.string().trim().min(1), z.number()]),
     type: z.string().optional(),
     title: z.string().optional()
   })

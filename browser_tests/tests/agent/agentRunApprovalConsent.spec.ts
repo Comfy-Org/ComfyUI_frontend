@@ -480,14 +480,27 @@ test.describe('Agent delete approval', { tag: ['@cloud', '@agent'] }, () => {
       })
 
       await test.step('the click posts once, to that ask, and locks the card', async () => {
+        // Hold the answer so the locked state is checked while it is in flight.
+        let release = (): void => {}
+        const held = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        await page.route(`**${DELETE_PATH}`, async (route) => {
+          await held
+          await route.fallback()
+        })
+        const posted = page.waitForRequest(`**${DELETE_PATH}`)
         await button.click()
+        await posted
+        await expect(button).toBeDisabled()
+        await expect(other).toBeDisabled()
+
+        release()
         await expect.poll(() => answers().length).toBe(1)
         expect(answers()[0]).toEqual({
           path: DELETE_PATH,
           body: { selected: [choice] }
         })
-        await expect(button).toBeDisabled()
-        await expect(other).toBeDisabled()
       })
 
       await test.step('the resolved card reads back the answer', async () => {

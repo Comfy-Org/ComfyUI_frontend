@@ -220,6 +220,10 @@ describe('toAskPart delete_approval', () => {
     },
     { name: 'an empty list', context: { action: 'delete_nodes', nodes: [] } },
     {
+      name: 'only blank ids',
+      context: { action: 'delete_nodes', nodes: [{ id: '' }, { id: '   ' }] }
+    },
+    {
       name: 'only unreadable entries',
       context: { action: 'delete_nodes', nodes: [null, 7, { type: 'NoId' }] }
     }
