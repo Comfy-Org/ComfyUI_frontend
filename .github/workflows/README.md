@@ -32,13 +32,17 @@ For GitHub Actions documentation, see [Events that trigger workflows](https://do
 ## Website auto-approval
 
 `pr-website-auto-approve.yaml` removes the human approval wait for explicitly
-allowlisted authors when every changed file is under `apps/website/**`. It runs
+allowlisted authors, or after an allowlisted operator applies
+`website-fast-lane:approve`, when every changed file is under
+`apps/website/**`. It runs
 from the protected default branch on `pull_request_target`, never executes PR code,
 rejects other base branches and fork pull requests, rechecks the live head, and verifies that
 `WEBSITE_APPROVAL_TOKEN` belongs to `webreviewer-bot` before approving. The bot is a member of
 `comfy_website_devs`, so its review satisfies the website path reviewer rule.
 
-The `website-fast-lane:hold` label, draft state, an active non-app reviewer change request, a base
+Approval-label eligibility is provenance-checked against the issue event
+history; label presence by itself is not authorization. The
+`website-fast-lane:hold` label, draft state, an active non-app reviewer change request, a base
 or head change, or a path outside `apps/website/**` stops approval and withdraws an existing
 current-head policy approval when the trusted workflow evaluates the PR. A human change request
 submitted after policy approval blocks merge immediately through GitHub's review rules; the next
@@ -46,8 +50,9 @@ trusted PR event reevaluates and withdraws the policy approval. The review body 
 verdict as policy-only; it must not be interpreted as a diff review.
 
 The Stage 1 author allowlist contains `bertfy` plus `christian-byrne` as the explicitly labeled
-synthetic contributor; the latter must be removed when the canary ends. Expand or retain it only by
-reviewing a change to `WEBSITE_AUTO_APPROVE_AUTHORS` in the workflow. A repository administrator
+synthetic contributor; the latter must be removed when the canary ends. Expand or retain either
+allowlist only by reviewing a change to `WEBSITE_AUTO_APPROVE_AUTHORS` or
+`WEBSITE_AUTO_APPROVE_LABELERS` in the workflow. A repository administrator
 must configure a `website-approval` environment whose deployment branch restriction allows only the
 protected default branch, then provide the bot's classic PAT as that environment's
 `WEBSITE_APPROVAL_TOKEN` secret. Missing or mismatched credentials fail closed.

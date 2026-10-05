@@ -6,6 +6,7 @@ import {
   alreadyApprovedCurrentHead,
   changedPaths,
   hasActiveChangeRequest,
+  hasAuthorizedApprovalLabel,
   hasCompleteChangedFileList,
   hasHoldLabel,
   isSameRepository,
@@ -128,6 +129,53 @@ void test('the explicit hold label stops fast-lane approval', () => {
   assert.equal(
     hasHoldLabel({ labels: [{ name: 'WEBSITE-FAST-LANE:HOLD' }] }),
     true
+  )
+})
+
+void test('approval label requires provenance from an authorized operator', () => {
+  const pull = { labels: [{ name: 'website-fast-lane:approve' }] }
+  const authorized = new Set(['drjkl'])
+  assert.equal(
+    hasAuthorizedApprovalLabel(
+      pull,
+      [
+        {
+          event: 'labeled',
+          label: { name: 'website-fast-lane:approve' },
+          actor: { login: 'DrJKL' }
+        }
+      ],
+      authorized
+    ),
+    true
+  )
+  assert.equal(
+    hasAuthorizedApprovalLabel(
+      pull,
+      [
+        {
+          event: 'labeled',
+          label: { name: 'website-fast-lane:approve' },
+          actor: { login: 'not-authorized' }
+        }
+      ],
+      authorized
+    ),
+    false
+  )
+  assert.equal(
+    hasAuthorizedApprovalLabel(
+      { labels: [] },
+      [
+        {
+          event: 'labeled',
+          label: { name: 'website-fast-lane:approve' },
+          actor: { login: 'DrJKL' }
+        }
+      ],
+      authorized
+    ),
+    false
   )
 })
 

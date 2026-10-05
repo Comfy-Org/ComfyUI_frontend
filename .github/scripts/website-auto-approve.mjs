@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 const API_VERSION = '2022-11-28'
 const PAGE_SIZE = 100
 const HOLD_LABEL = 'website-fast-lane:hold'
+const APPROVE_LABEL = 'website-fast-lane:approve'
 const DECISIVE_REVIEW_STATES = new Set([
   'APPROVED',
   'CHANGES_REQUESTED',
@@ -69,6 +70,24 @@ export function hasHoldLabel(pull) {
   return pull?.labels?.some(
     (label) => label?.name?.toLowerCase() === HOLD_LABEL
   )
+}
+
+function hasLabel(pull, expectedLabel) {
+  return pull?.labels?.some(
+    (label) => label?.name?.toLowerCase() === expectedLabel
+  )
+}
+
+export function hasAuthorizedApprovalLabel(pull, events, approvedLabelers) {
+  if (!hasLabel(pull, APPROVE_LABEL)) return false
+
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+    if (event?.label?.name?.toLowerCase() !== APPROVE_LABEL) continue
+    const actor = event?.actor?.login?.toLowerCase()
+    return event.event === 'labeled' && approvedLabelers.has(actor)
+  }
+  return false
 }
 
 export function hasActiveChangeRequest(reviews) {
@@ -188,6 +207,9 @@ function configuration() {
     expectedApprover: requiredEnv('WEBSITE_APPROVER_LOGIN'),
     approvedAuthors: parseApprovedAuthors(
       requiredEnv('WEBSITE_AUTO_APPROVE_AUTHORS')
+    ),
+    approvedLabelers: parseApprovedAuthors(
+      requiredEnv('WEBSITE_AUTO_APPROVE_LABELERS')
     )
   }
   if (!Number.isSafeInteger(config.prNumber) || config.prNumber <= 0) {
@@ -221,10 +243,11 @@ function headFailure({ pull, config }) {
   return 'Skipped: the pull request head advanced after this workflow started.'
 }
 
-function authorFailure({ pull, config }) {
+function authorizationFailure({ pull, config, events }) {
   const author = pull?.user?.login?.toLowerCase()
   if (author && config.approvedAuthors.has(author)) return
-  return `Skipped: @${author ?? 'unknown'} is not in the website fast-lane author allowlist.`
+  if (hasAuthorizedApprovalLabel(pull, events, config.approvedLabelers)) return
+  return `Skipped: @${author ?? 'unknown'} is not allowlisted and ${APPROVE_LABEL} was not applied by an authorized operator.`
 }
 
 function holdFailure({ pull }) {
@@ -237,7 +260,7 @@ const ELIGIBILITY_CHECKS = [
   baseFailure,
   repositoryFailure,
   headFailure,
-  authorFailure,
+  authorizationFailure,
   holdFailure
 ]
 
@@ -322,7 +345,14 @@ async function revalidatePull(github, config, liveHeadSha) {
   const recheckedReviews = await github.paginate(
     `/pulls/${config.prNumber}/reviews`
   )
-  const recheckedFailure = eligibilityFailure({ pull: recheckedPull, config })
+  const recheckedEvents = await github.paginate(
+    `/issues/${config.prNumber}/events`
+  )
+  const recheckedFailure = eligibilityFailure({
+    pull: recheckedPull,
+    config,
+    events: recheckedEvents
+  })
   if (recheckedFailure) {
     await stopWithSummary({
       github,
@@ -364,16 +394,18 @@ export async function approveCurrentHead(github, config, liveHeadSha, reviews) {
       body: JSON.stringify({
         event: 'APPROVE',
         commit_id: liveHeadSha,
-        body: '[Validation canary] Policy-only automatic approval. No diff review was performed; eligibility was bound to the trusted author, exact head commit, and `apps/website/**` path boundary.'
+        body: '[Validation canary] Policy-only automatic approval. No diff review was performed; eligibility was bound to a trusted author or authorized approval-label event, the exact head commit, and the `apps/website/**` path boundary.'
       })
     }
   )
 
   let verifiedPull
   let verifiedReviews
+  let verifiedEvents
   try {
     verifiedPull = await github.request(`/pulls/${config.prNumber}`)
     verifiedReviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
+    verifiedEvents = await github.paginate(`/issues/${config.prNumber}/events`)
   } catch (error) {
     await dismissApproval(
       github,
@@ -385,7 +417,8 @@ export async function approveCurrentHead(github, config, liveHeadSha, reviews) {
   }
   const verificationFailure = eligibilityFailure({
     pull: verifiedPull,
-    config
+    config,
+    events: verifiedEvents
   })
   if (verificationFailure || hasActiveChangeRequest(verifiedReviews)) {
     const reason =
@@ -412,7 +445,8 @@ async function main() {
 
   const pull = await github.request(`/pulls/${config.prNumber}`)
   const reviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
-  const failure = eligibilityFailure({ pull, config })
+  const events = await github.paginate(`/issues/${config.prNumber}/events`)
+  const failure = eligibilityFailure({ pull, config, events })
   if (failure) {
     await stopWithSummary({
       github,
