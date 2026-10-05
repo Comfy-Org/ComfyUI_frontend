@@ -5,9 +5,9 @@ import {
   featuredProjects as featuredProjectsOf,
   projects as hubProjectsOf,
   technologists as technologistsOf
-} from '../src/data/fdct'
-import { t } from '../src/i18n/translations'
-import { faqAnswerPlainText } from '../src/utils/faqAnswer'
+} from '@/data/fdct'
+import { t } from '@/i18n/translations'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 
 // Locale-independent fields (names, counts, category slugs) are asserted from

@@ -279,6 +279,7 @@ export const TestIds = {
   },
   templates: {
     content: 'template-workflows-content',
+    detail: 'template-workflow-detail',
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {

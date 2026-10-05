@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { prefersReducedMotion } from '../../../composables/useReducedMotion'
-import { externalLinks } from '../../../config/routes'
-import { translationsFor } from '../../../i18n/translations'
-import BrandButton from '../../common/BrandButton.vue'
-import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { externalLinks } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
 import DownloadLocalButton from './DownloadLocalButton.vue'
 import MobileDownloadEmailForm from './MobileDownloadEmailForm.vue'
 

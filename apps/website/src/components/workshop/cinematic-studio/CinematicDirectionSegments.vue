@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -7,13 +7,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type {
   Direction,
   LookPart
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import {
-  gradeGroup,
-  lookGroups
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { shownOption } from '../../../lib/workshop/cinematic-studio/grade-image'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import { gradeGroup, lookGroups } from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { shownOption } from '@/lib/workshop/cinematic-studio/grade-image'
 import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
 import CinematicTooltip from './CinematicTooltip.vue'
 

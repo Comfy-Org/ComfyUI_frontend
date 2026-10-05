@@ -1,4 +1,9 @@
 {
+  "dynamicGroup": {
+    "add": "Add {group}",
+    "remove": "Remove {row}",
+    "row": "{group} #{index}"
+  },
   "g": {
     "shortcutSuffix": " ({shortcut})",
     "megapixelsValue": "{count} MP",
@@ -12,6 +17,7 @@
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
     "downloadAudio": "Download audio",
+    "downloadImages": "Download images",
     "editOrMaskImage": "Edit or mask image",
     "editImage": "Edit image",
     "openLayerEditor": "Open layer editor",
@@ -29,6 +35,7 @@
     "chartLowercase": "chart",
     "file": "file",
     "selectedFile": "Selected file",
+    "selected": "Selected",
     "none": "None",
     "markdown": "markdown",
     "content": "content",
@@ -686,6 +693,7 @@
     "Copy Image": "Copy Image",
     "Paste Image": "Paste Image",
     "Save Image": "Save Image",
+    "Download Images": "Download Images",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
     "FavoriteWidget": "Favorite Widget",
@@ -1225,6 +1233,38 @@
       "title": "Premium template",
       "credits": "Runs with credits"
     },
+    "detail": {
+      "cloudUpsellTitle": "Run this template in Comfy Cloud",
+      "cloudUpsellDescription": "Run on Cloud GPUs without local setup or downloads.",
+      "partnerNodeTitle": "This workflow uses Partner Nodes",
+      "partnerNodeDescription": "Choose whether to run this workflow locally or in Comfy Cloud.",
+      "openInCloud": "Open in Cloud",
+      "requirements": "Template requirements",
+      "models": "Models",
+      "installed": "Installed",
+      "unavailable": "Unavailable",
+      "unknown": "Unknown",
+      "downloadModel": "Download model",
+      "downloadModelNamed": "Download {model}",
+      "downloadQueued": "Queued",
+      "downloadStarting": "Starting",
+      "downloading": "Downloading",
+      "downloadingModel": "Downloading {model}",
+      "downloadPaused": "Paused",
+      "downloadPausedModel": "Paused download for {model}",
+      "downloadPausedProgress": "Paused · {progress}",
+      "downloaded": "Downloaded",
+      "downloadFailed": "Download failed",
+      "downloadCancelled": "Download cancelled",
+      "retryDownload": "Retry",
+      "retryDownloadNamed": "Retry download for {model}",
+      "getItManually": "Get it manually",
+      "usedBy": "Used by {nodes}",
+      "downloadModelsAndOpen": "Download models & open",
+      "openNow": "Open now",
+      "backToTemplates": "Back to {category}",
+      "breadcrumbLabel": "Template navigation"
+    },
     "sort": {
       "relevance": "Relevance",
       "recommended": "Recommended",
@@ -1441,25 +1481,6 @@
     "black": "Black",
     "white": "White",
     "negative": "Negative"
-  },
-  "commands": {
-    "runWorkflow": "Run workflow",
-    "runWorkflowFront": "Run workflow (Queue at front)",
-    "run": "Run",
-    "execute": "Execute",
-    "interrupt": "Cancel current run",
-    "refresh": "Refresh node definitions",
-    "clipspace": "Open Clipspace",
-    "resetView": "Reset canvas view",
-    "clear": "Clear workflow",
-    "toggleBottomPanel": "Toggle Bottom Panel",
-    "theme": "Theme",
-    "dark": "Dark",
-    "light": "Light",
-    "manageExtensions": "Extensions",
-    "settings": "Settings",
-    "help": "Help",
-    "queue": "Queue Panel"
   },
   "queue": {
     "initializingAlmostReady": "Initializing - Almost ready",
@@ -2512,6 +2533,7 @@
     "pleaseSelectNodesToGroup": "Please select the nodes (or other groups) to create a group for",
     "emptyCanvas": "Empty canvas",
     "fileUploadFailed": "File upload failed",
+    "extraResourcesUploadFailed": "Extra resources upload failed",
     "fileTooLarge": "File too large ({size} MB). Maximum supported size is {maxSize} MB",
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
@@ -2592,6 +2614,7 @@
       "appTypeNative": "Native app",
       "appTypeWeb": "Web app",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
+      "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
       "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
       "sessionError": "Failed to establish session. Please try again.",
@@ -3392,8 +3415,14 @@
     "planCredits": {
       "tabs": {
         "activity": "Activity",
-        "overview": "Credits"
+        "overview": "Credits",
+        "invoices": "Invoices"
       }
+    },
+    "invoices": {
+      "nextInvoice": "Next invoice",
+      "usd": "USD",
+      "fullHistory": "Full invoice history"
     },
     "tabs": {
       "dashboard": "Dashboard"
@@ -3512,6 +3541,7 @@
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
+      "deleteWorkspaceAfterPlanEndsTooltip": "You can delete this workspace after your plan ends on {date}",
       "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
@@ -4095,7 +4125,13 @@
       "complete": "Download complete",
       "failed": "Download failed",
       "inProgress": "Downloading {assetName}..."
-    }
+    },
+    "downloadFailed": "Failed to download {name}"
+  },
+  "nodeOutputsExport": {
+    "title": "Download Assets",
+    "downloadAll": "Download all",
+    "download": "Download ({count})"
   },
   "mediaAsset": {
     "assetDelete": {
@@ -5032,6 +5068,7 @@
     "failed": "Failed",
     "finished": "Finished",
     "pending": "Pending",
+    "taskUnavailable": "The download task is no longer available.",
     "progressCount": "{completed} of {total}",
     "filter": {
       "all": "All",
@@ -5051,6 +5088,7 @@
     "exportFailedSingle": "Failed to create ZIP export",
     "downloadExport": "Download export",
     "downloadFailed": "Failed to download \"{name}\"",
+    "unsupportedDownloadUrl": "Unsupported export download URL",
     "retryDownload": "Retry download"
   },
   "workspace": {

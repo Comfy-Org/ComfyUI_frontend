@@ -17,6 +17,7 @@ const { session } = useBillingWebSession()
 const {
   page,
   quote,
+  savedMethods,
   canPay,
   returnLink,
   settingsLink,
@@ -87,6 +88,7 @@ function openBillingSettings() {
         :can-pay="canPay"
         :reopening
         purchase="credits"
+        :saved-methods="savedMethods"
         @pay="pay"
         @continue-verification="continueVerification"
       />

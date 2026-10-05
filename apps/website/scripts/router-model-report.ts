@@ -12,7 +12,7 @@ import {
 import { dirname } from 'node:path'
 import { z } from 'zod'
 
-import { workshopModelAvailability } from '../src/config/workshop-model-availability'
+import { workshopModelAvailability } from '@/config/workshop-model-availability'
 
 const kindSchema = z.enum(['image', 'video', 'audio'])
 const modalitySchema = z.enum([...kindSchema.options, '3d', 'text', 'other'])

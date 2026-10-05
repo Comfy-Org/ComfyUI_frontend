@@ -1058,7 +1058,9 @@ describe('LiveGraphApplier', () => {
     expect(graph.getNodeById(toNodeId(2))).toBeNull()
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('Document node 2 is malformed')
+        message: expect.stringContaining(
+          'Document node 2 (TestSink) is malformed'
+        )
       }),
       expect.objectContaining({ errorType: 'agent_graph_node_malformed' })
     )
