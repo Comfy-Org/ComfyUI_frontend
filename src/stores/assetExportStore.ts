@@ -175,7 +175,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
         return
       }
       const link = document.createElement('a')
-      link.href = url
+      link.href = resolvedUrl.value.href
       link.download = exp.exportName
       link.style.display = 'none'
       link.target = '_blank'
