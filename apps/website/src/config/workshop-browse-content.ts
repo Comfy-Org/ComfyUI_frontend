@@ -4,6 +4,7 @@ import indexJson from '@/content/workshop-router-index.json'
 import aliasesJson from '@/content/workshop-router-aliases.json'
 import displayNames from '@/data/workshop-router-display-names.json'
 import useCaseOverrides from '@/data/workshop-use-case-overrides.json'
+import summaryOverrides from '@/data/workshop-model-summaries.json'
 import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
 import { workshopModelSchema } from '@/content/workshop-models.schema'
 import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
@@ -76,6 +77,10 @@ function taskForUseCases(
 export const workshopDisplayEntries =
   workshopDisplayEntriesSchema.parse(displayJson)
 const displaySlugs = new Set(workshopDisplayEntries.map((entry) => entry.slug))
+const editorialSummaries = new Map(Object.entries(summaryOverrides))
+for (const slug of editorialSummaries.keys())
+  if (!displaySlugs.has(slug))
+    throw new Error(`Model summary names an unknown page: ${slug}`)
 for (const slug of modelOrderRank.keys())
   if (!displaySlugs.has(slug))
     throw new Error(`Recommended model order names an unknown page: ${slug}`)
@@ -160,6 +165,11 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       canonicalNames.get(record.id) ??
       entry.displayName
     const provider = providerName(entry.provider)
+    const summary =
+      editorialSummaries.get(slug) ??
+      (entry.description
+        ? modelSummary(entry.description, name, provider)
+        : undefined)
     return {
       slug,
       name,
@@ -180,9 +190,7 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
             thumbnail: { url: thumbnail.url, kind: thumbnail.kind }
           }
         : {}),
-      ...(entry.description
-        ? { summary: modelSummary(entry.description, name, provider) }
-        : {}),
+      ...(summary ? { summary } : {}),
       ...(overlay.status === 'deprecated'
         ? { status: 'deprecated' as const }
         : {})
