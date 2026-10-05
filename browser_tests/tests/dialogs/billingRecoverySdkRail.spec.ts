@@ -236,7 +236,8 @@ const completeVerification = (dialog: TopUpCreditsDialog) =>
 
 const successToast = (page: Page) =>
   page
-    .locator('.p-toast-message.p-toast-message-success')
+    .getByTestId('toast')
+    .and(page.locator('[data-toast-kind="success"]'))
     .getByText('Credits added successfully')
 
 function transports(requests: Request[]): string[] {
@@ -631,7 +632,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
 
       await expect(
         page
-          .locator('.p-toast-message')
+          .getByTestId('toast')
           .getByText('Verify your payment to add your credits')
       ).toHaveCount(0)
       // Shown as work in progress, not as a step the customer still owes.

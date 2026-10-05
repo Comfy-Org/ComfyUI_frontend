@@ -207,7 +207,7 @@ const payButton = (dialog: TopUpCreditsDialog) =>
   dialog.root.getByRole('button', { name: 'Pay $50.00' })
 
 const successToast = (page: Page) =>
-  page.locator('.p-toast-message.p-toast-message-success')
+  page.getByTestId('toast').and(page.locator('[data-toast-kind="success"]'))
 
 test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
   test('sends a purchase with no saved card to the hosted page and settles it on return', async ({
@@ -274,7 +274,8 @@ test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
 
     await expect(
       page
-        .locator('.p-toast-message.p-toast-message-error')
+        .getByTestId('toast')
+        .and(page.locator('[data-toast-kind="error"]'))
         .getByText('Purchase Failed')
     ).toBeVisible()
     await expect(payButton(dialog)).toBeEnabled()

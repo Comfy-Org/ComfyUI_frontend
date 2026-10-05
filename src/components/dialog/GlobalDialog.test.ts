@@ -591,26 +591,29 @@ describe('shouldPreventRekaDismiss', () => {
   }
 
   it.for([
-    'p-select-overlay',
-    'p-colorpicker-panel',
-    'p-popover',
-    'p-autocomplete-overlay',
-    'p-overlay-mask',
-    'p-dialog',
-    'p-toast-message'
-  ])('prevents dismiss when target is inside %s', (className) => {
-    const overlay = document.createElement('div')
-    overlay.className = className
-    const inner = document.createElement('button')
-    overlay.appendChild(inner)
-    document.body.appendChild(overlay)
+    ['class', 'p-select-overlay'],
+    ['class', 'p-colorpicker-panel'],
+    ['class', 'p-popover'],
+    ['class', 'p-autocomplete-overlay'],
+    ['class', 'p-overlay-mask'],
+    ['class', 'p-dialog'],
+    ['data-testid', 'toast']
+  ] as const)(
+    'prevents dismiss when target is inside %j',
+    ([attribute, value]) => {
+      const overlay = document.createElement('div')
+      overlay.setAttribute(attribute, value)
+      const inner = document.createElement('button')
+      overlay.appendChild(inner)
+      document.body.appendChild(overlay)
 
-    const event = makeEvent(inner)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+      const event = makeEvent(inner)
+      onRekaPointerDownOutside({ dismissableMask: undefined }, event)
 
-    expect(event.defaultPrevented).toBe(true)
-    overlay.remove()
-  })
+      expect(event.defaultPrevented).toBe(true)
+      overlay.remove()
+    }
+  )
 
   it('allows dismiss when target is outside any PrimeVue overlay', () => {
     const event = makeEvent(document.body)
@@ -620,7 +623,6 @@ describe('shouldPreventRekaDismiss', () => {
 
   it('allows dismiss from the empty space beside a toast message', () => {
     const container = document.createElement('div')
-    container.className = 'p-toast'
     document.body.appendChild(container)
 
     const event = makeEvent(container)

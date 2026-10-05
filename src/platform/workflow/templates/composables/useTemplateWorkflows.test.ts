@@ -614,11 +614,13 @@ describe('useTemplateWorkflows', () => {
       expect.stringContaining('Failed to fetch workflow template'),
       { surface: 'graph', errorType: 'error_fetching_workflow_template' }
     )
-    expect(useToastStore().messagesToAdd).toContainEqual({
-      severity: 'error',
-      summary: i18n.global.t('g.error'),
-      detail: i18n.global.t('templateWorkflows.error.loading')
-    })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: i18n.global.t('templateWorkflows.error.loading')
+      })
+    )
   })
 
   it('opens a workflow that only satisfies the legacy load contract', async () => {

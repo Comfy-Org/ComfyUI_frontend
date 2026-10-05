@@ -582,21 +582,18 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await page.goto(`${APP_URL}/?pricing=1`)
     await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await page.evaluate((detail) => {
-      window.app!.extensionManager.toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail,
-        life: 30_000
+      window.app!.extensionManager.toast.error('Error', {
+        description: detail,
+        duration: 30_000
       })
     }, SUBSCRIPTION_IN_PROGRESS_DETAIL)
 
     const toast = page
-      .locator('.p-toast-message')
+      .getByTestId('toast')
+      .and(page.locator('[data-toast-kind="error"]'))
       .filter({ hasText: SUBSCRIPTION_IN_PROGRESS_DETAIL })
     await expect(toast).toBeVisible()
-    // Not getByRole: an open Reka modal marks the toast container aria-hidden,
-    // so the close button is absent from the accessibility tree.
-    await toast.locator('.p-toast-close-button').click()
+    await toast.getByTestId('toast-close').click()
 
     await expect(toast).toHaveCount(0)
     await expect(pricingHeading(page)).toBeVisible()
