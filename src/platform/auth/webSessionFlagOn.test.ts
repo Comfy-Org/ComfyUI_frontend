@@ -31,7 +31,7 @@ import {
 } from '@/platform/auth/session/interactiveSignInMarker'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
-import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequired'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   WebSessionTokenError,

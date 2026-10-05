@@ -4,9 +4,11 @@ import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
 
 import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-
-export const SSO_REQUIRED_DIALOG_KEY = 'sso-required'
 
 export interface SsoRequiredContext {
   readonly email?: string
@@ -24,8 +26,8 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
   if (!useFeatureFlags().flags.ssoEnabled) return false
   const dialogStore = useDialogStore()
   const known = omitBy(context, (value) => value === undefined)
-  void import('@/platform/auth/sso/SsoRequiredDialogContent.vue').then(
-    ({ default: component }) => {
+  void import('@/platform/auth/sso/SsoRequiredDialogContent.vue')
+    .then(({ default: component }) => {
       if (dialogStore.isDialogOpen(SSO_REQUIRED_DIALOG_KEY)) {
         dialogStore.updateDialog({
           key: SSO_REQUIRED_DIALOG_KEY,
@@ -43,8 +45,18 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
           contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
         }
       })
-    }
-  )
+    })
+    .catch((error: unknown) => {
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'failure_loading_sso_required_dialog'
+      })
+      useToastStore().add({
+        severity: 'error',
+        summary: t('auth.sso.required.title'),
+        detail: t('auth.sso.required.body')
+      })
+    })
   return true
 }
 

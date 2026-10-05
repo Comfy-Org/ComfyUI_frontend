@@ -4,9 +4,9 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   presentForRefusal,
   presentForResponse,
-  presentSsoRequired,
-  SSO_REQUIRED_DIALOG_KEY
+  presentSsoRequired
 } from '@/platform/auth/sso/ssoRequired'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
