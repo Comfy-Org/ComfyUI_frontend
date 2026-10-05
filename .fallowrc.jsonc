@@ -58,8 +58,6 @@
     "eslint-plugin-storybook",
     "eslint-plugin-testing-library",
     "postcss-html",
-    // Resolved by path via require.resolve in scripts/vue-tsc-native.ts.
-    "typescript-native-bridge",
     // Executed by models-snippets.test.ts inside the generated Node examples.
     "mime-types"
   ],
