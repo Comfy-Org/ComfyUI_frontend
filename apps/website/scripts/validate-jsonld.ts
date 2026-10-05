@@ -10,7 +10,7 @@ const JSON_LD_BLOCK =
   /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
 const CANONICAL = /<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i
 const FULL_DATE_TIME =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?([+-]\d{2}:\d{2}|Z)$/
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?([+-]\d{2}:\d{2}|Z)$/
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 const VIDEO_FILE = /\.(mp4|webm|mov)(\?|#|$)/i
 const PLACEHOLDER = /^(undefined|null|NaN)$/

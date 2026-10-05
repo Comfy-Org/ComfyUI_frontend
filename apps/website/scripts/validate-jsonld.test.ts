@@ -122,6 +122,11 @@ describe('validateHtml', () => {
           name: 'Talk',
           startDate: '2026-10-07T10:00:00-07:00'
         },
+        {
+          '@type': 'Event',
+          name: 'Launch',
+          startDate: '2026-10-07T17:00:00.000Z'
+        },
         { '@type': 'ImageObject', url: `${site}/a.webp` },
         crumbs([
           { '@type': 'ListItem', position: 1, name: 'Home', item: `${site}/` },
