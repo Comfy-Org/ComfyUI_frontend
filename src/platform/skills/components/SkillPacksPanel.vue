@@ -37,6 +37,7 @@
         :pack="pack"
         :loading="operatingPackName === pack.name"
         :disabled="operatingPackName !== null"
+        :keyboard-navigation="keyboardNavigation"
         @edit="openEditDialog(pack)"
         @delete="confirmDelete(pack)"
       />
@@ -47,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -67,6 +69,16 @@ const { packs, loading, operatingPackName, fetchSkillPacks, deleteSkillPack } =
 
 const editorVisible = ref(false)
 const selectedPack = ref<SkillPack | undefined>()
+const keyboardNavigation = ref(false)
+
+useEventListener('keydown', () => (keyboardNavigation.value = true), {
+  capture: true
+})
+useEventListener(
+  ['pointerdown', 'pointermove'],
+  () => (keyboardNavigation.value = false),
+  { capture: true, passive: true }
+)
 
 function openCreateDialog() {
   selectedPack.value = undefined

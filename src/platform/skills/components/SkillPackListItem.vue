@@ -24,7 +24,13 @@
       />
       <div
         v-else
-        class="pointer-events-none flex items-center gap-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100 touch:pointer-events-auto touch:opacity-100"
+        :class="
+          cn(
+            'pointer-events-none flex items-center gap-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 touch:pointer-events-auto touch:opacity-100',
+            keyboardNavigation &&
+              'group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100'
+          )
+        "
       >
         <Button
           variant="muted-textonly"
@@ -53,6 +59,8 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 
 import type { SkillPack } from '../types'
@@ -61,11 +69,13 @@ import { packByteSize } from '../types'
 const {
   pack,
   loading = false,
-  disabled = false
+  disabled = false,
+  keyboardNavigation = true
 } = defineProps<{
   pack: SkillPack
   loading?: boolean
   disabled?: boolean
+  keyboardNavigation?: boolean
 }>()
 
 const emit = defineEmits<{
