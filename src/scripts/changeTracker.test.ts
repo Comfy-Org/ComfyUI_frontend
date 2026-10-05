@@ -476,6 +476,22 @@ describe('ChangeTracker', () => {
     })
 
     describe('state capture', () => {
+      it('recovers a null tracker state from the live canvas', () => {
+        const tracker = createTracker(createState(1))
+        const recovered = createState(2)
+        Reflect.set(tracker, 'activeState', null)
+        mockCanvasState(recovered)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.activeState).toEqual(recovered)
+        expect(tracker.undoQueue).toEqual([])
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          recovered
+        )
+      })
+
       it('pushes to undoQueue, updates activeState, and calls updateModified', () => {
         const initial = createState(1)
         const tracker = createTracker(initial)

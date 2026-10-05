@@ -376,7 +376,7 @@ export class ChangeTracker {
     }
   }
 
-  updateModified(previousState?: ComfyWorkflowJSON) {
+  updateModified(previousState?: ComfyWorkflowJSON | null) {
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
@@ -424,10 +424,15 @@ export class ChangeTracker {
 
     const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
-      const previousState = this.activeState
-      this.undoQueue.push(previousState)
-      if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
-        this.undoQueue.shift()
+      // The declared field predates the workflow model's honest nullable
+      // contract. A malformed or partially loaded workflow can still leave it
+      // null at runtime; recovery must not put that null into undo history.
+      const previousState = this.activeState as ComfyWorkflowJSON | null
+      if (previousState) {
+        this.undoQueue.push(previousState)
+        if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
+          this.undoQueue.shift()
+        }
       }
 
       this.activeState = currentState
@@ -687,8 +692,9 @@ export class ChangeTracker {
     return false
   }
 
-  static graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
+  static graphEqual(a: ComfyWorkflowJSON | null, b: ComfyWorkflowJSON | null) {
     if (a === b) return true
+    if (!a || !b) return false
 
     // Compare nodes ignoring array position and execution order
     if (
