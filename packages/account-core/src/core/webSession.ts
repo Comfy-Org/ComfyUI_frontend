@@ -8,8 +8,10 @@ import {
   zDeleteSessionResponse,
   zErrorResponse,
   zGetSessionResponse,
-  zRevokeAllSessionsResponse
+  zRevokeAllSessionsResponse,
+  zWebSessionUser
 } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import { COMFY_CLIENT } from './requestAuth.js'
 import { timedSignal } from './requestTimeout.js'
@@ -63,6 +65,13 @@ function failure(
     ...(serverCode === undefined ? {} : { serverCode })
   }
 }
+
+/** Adds `has_personal_workspace` until ingest-types carries it. */
+const zSessionResponse = zGetSessionResponse.extend({
+  user: zWebSessionUser.extend({
+    has_personal_workspace: z.boolean().optional()
+  })
+})
 
 async function readJson(response: Response): Promise<unknown> {
   try {
@@ -126,7 +135,7 @@ export async function readWebSession(
   if ('code' in sent) return sent
 
   const { status } = sent
-  const parsed = zGetSessionResponse.safeParse(sent.body)
+  const parsed = zSessionResponse.safeParse(sent.body)
   if (!parsed.success) return failure('SESSION_UNAVAILABLE', status)
   const { user, csrf_token, expires_at, absolute_expires_at } = parsed.data
   if (expectedUserId !== undefined && user.id !== expectedUserId) {
@@ -140,7 +149,8 @@ export async function readWebSession(
         email: user.email,
         name: user.name,
         emailVerified: user.email_verified,
-        signInProvider: user.sign_in_provider
+        signInProvider: user.sign_in_provider,
+        hasPersonalWorkspace: user.has_personal_workspace
       },
       csrfToken: csrf_token,
       expiresAt: Date.parse(expires_at),
