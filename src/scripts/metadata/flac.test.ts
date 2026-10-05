@@ -58,6 +58,39 @@ describe('FLAC metadata', () => {
     expect(getFromFlacBuffer(buffer)).toEqual({ workflow, prompt })
   })
 
+  it('preserves a valid UTF-8 replacement character in workflow text', () => {
+    const workflow = '{"nodes":[{"title":"\uFFFD"}]}'
+    const buffer = createFlacWithComments([`workflow=${workflow}`])
+
+    expect(getFromFlacBuffer(buffer)).toEqual({ workflow })
+  })
+
+  it.for([
+    { name: 'invalid leading byte', bytes: [0xff] },
+    { name: 'lone continuation byte', bytes: [0x80] },
+    { name: 'truncated multibyte sequence', bytes: [0xe2, 0x82] }
+  ])('rejects an in-bounds $name in a comment', ({ bytes }) => {
+    const buffer = createFlacWithComments([
+      `workflow=${'x'.repeat(bytes.length)}`
+    ])
+    new Uint8Array(buffer).set(bytes, buffer.byteLength - bytes.length)
+
+    expect(() => getFromFlacBuffer(buffer)).toThrow(TypeError)
+  })
+
+  it('resolves empty and logs when a file contains malformed UTF-8', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const buffer = createFlacWithComments(['prompt={}', 'workflow=x'])
+    new Uint8Array(buffer)[buffer.byteLength - 1] = 0xff
+    const file = new File([buffer], 'malformed-utf8.flac')
+
+    expect(await getFromFlacFile(file)).toEqual({})
+    expect(console.error).toHaveBeenCalledWith(
+      'Parser: Error parsing FLAC metadata:',
+      expect.any(TypeError)
+    )
+  })
+
   it('rejects comment lengths that extend beyond the metadata block into following data', () => {
     const metadata = createFlacWithComments(['workflow={}'])
     const bytes = new Uint8Array(metadata.byteLength + 16)

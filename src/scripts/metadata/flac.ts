@@ -75,7 +75,7 @@ function getString(dataView: DataView, offset: number, length: number): string {
   if (offset + length > dataView.byteLength) {
     throw new RangeError('FLAC comment exceeds metadata block')
   }
-  return new TextDecoder().decode(
+  return new TextDecoder('utf-8', { fatal: true }).decode(
     new Uint8Array(dataView.buffer, dataView.byteOffset + offset, length)
   )
 }
