@@ -113,7 +113,7 @@ test('a tier upgrade itemizes the remaining time and the unused-time credit, wit
   ])
 })
 
-test('a raised team commitment reads like a tier upgrade: remaining and unused time, credits added today, and Confirm upgrade', async ({
+test('a raised team commitment reads like a tier upgrade: remaining and unused time named by each rate, credits added today, and Confirm upgrade', async ({
   page,
   cloud,
   signIn
@@ -154,9 +154,9 @@ test('a raised team commitment reads like a tier upgrade: remaining and unused t
     'Upgrade to Team Plan · Personal',
     '$190 USD',
     '40,090 credits added today (expire July 28)',
-    'Remaining time on Team Plan$380.00',
+    'Remaining time on Team $400 /mo$380.00',
     'Credits refill to 84,400 each month',
-    'Unused time on Team Plan−$190.00',
+    'Unused time on Team $200 /mo−$190.00',
     'Total due today$190.00',
     'Existing credits are kept',
     'Renews at $400.00 on July 28, 2026'

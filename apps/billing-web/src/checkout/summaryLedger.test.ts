@@ -433,7 +433,7 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: 'raised team commitment itemizing its proration: the tier-upgrade summary, remaining and unused time at the server amounts',
+      name: 'raised team commitment itemizing its proration: the tier-upgrade summary, each side named by its rate',
       quote: {
         transition_type: 'upgrade',
         proration_at: PRICED_AT,
@@ -460,12 +460,12 @@ describe('buildSummaryLedger', () => {
         },
         items: [
           {
-            label: 'Remaining time on Team Plan',
+            label: 'Remaining time on Team $400 /mo',
             amount: '$380.00',
             sublines: ['Credits refill to 84,400 each month']
           },
           {
-            label: 'Unused time on Team Plan',
+            label: 'Unused time on Team $200 /mo',
             amount: '−$190.00',
             sublines: [],
             credit: true
@@ -482,7 +482,7 @@ describe('buildSummaryLedger', () => {
       }
     },
     {
-      name: 'raised team commitment without itemized proration: one prorated row at the net charge',
+      name: 'raised team commitment without itemized proration: one prorated row, each side named by its rate',
       quote: {
         transition_type: 'upgrade',
         proration_at: PRICED_AT,
@@ -510,7 +510,7 @@ describe('buildSummaryLedger', () => {
             label: 'Team Plan - Prorated',
             amount: '$190.00',
             sublines: [
-              'Remaining time for Team plan, less unused time from Team plan',
+              'Remaining time for Team $400 /mo, less unused time from Team $200 /mo',
               'Credits refill to 84,400 each month'
             ]
           }
