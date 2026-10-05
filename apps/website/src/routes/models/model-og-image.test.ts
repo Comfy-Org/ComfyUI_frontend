@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { appModels } from '@/config/workshop-app-content'
 import { workshopPages } from '@/config/workshop-page-content'
 import { modelOgImage } from './model-page'
 
@@ -31,8 +32,8 @@ describe('modelOgImage', () => {
     expect(modelOgImage({})).toBeUndefined()
   })
 
-  it('never returns a video for any model page', () => {
-    const videoPages = workshopPages
+  it('never returns a video for any model or app page', () => {
+    const videoPages = [...workshopPages, ...appModels]
       .filter((model) => VIDEO_EXTENSION.test(modelOgImage(model) ?? ''))
       .map((model) => model.slug)
     expect(videoPages).toEqual([])

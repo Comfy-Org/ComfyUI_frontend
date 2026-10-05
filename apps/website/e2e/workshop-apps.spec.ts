@@ -118,16 +118,22 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   ).toHaveCount(0)
 })
 
+const APP_MEDIA = 'https://media.comfy.org/website/workshop/apps'
+
 for (const { reducedMotion, paused } of [
   { reducedMotion: 'no-preference', paused: false },
   { reducedMotion: 'reduce', paused: true }
 ] as const) {
-  test(`shows each hub app card's video thumbnail over its poster, ${paused ? 'held still' : 'playing'} with ${reducedMotion} motion`, async ({
+  test(`loads each hub app card's poster and keeps its video thumbnail ${paused ? 'held still' : 'playing'} with ${reducedMotion} motion`, async ({
     page,
     context
   }) => {
     await mockFlags(context, { apps: true, workflows: false })
     await page.emulateMedia({ reducedMotion })
+    const posters: string[] = []
+    page.on('requestfinished', (request) => {
+      if (request.url().endsWith('/poster.jpg')) posters.push(request.url())
+    })
     await page.goto('/hub/apps/')
 
     const artwork = page
@@ -135,25 +141,41 @@ for (const { reducedMotion, paused } of [
       .getByTestId('model-card-media')
     await expect(artwork).toHaveCount(2)
     await expect(artwork.nth(0)).toHaveAttribute(
-      'poster',
-      'https://media.comfy.org/website/workshop/apps/cinematic-studio/poster.jpg'
-    )
-    await expect(artwork.nth(0)).toHaveAttribute(
       'src',
-      'https://media.comfy.org/website/workshop/apps/cinematic-studio/thumbnail.mp4'
-    )
-    await expect(artwork.nth(1)).toHaveAttribute(
-      'poster',
-      'https://media.comfy.org/website/workshop/apps/reshoot/poster.jpg'
+      `${APP_MEDIA}/cinematic-studio/thumbnail-480.mp4`
     )
     await expect(artwork.nth(1)).toHaveAttribute(
       'src',
-      'https://media.comfy.org/website/workshop/apps/reshoot/thumbnail.mp4'
+      `${APP_MEDIA}/reshoot/thumbnail-480.mp4`
     )
+    await expect
+      .poll(() => posters.toSorted())
+      .toEqual([
+        `${APP_MEDIA}/cinematic-studio/poster.jpg`,
+        `${APP_MEDIA}/reshoot/poster.jpg`
+      ])
     await expect(artwork.nth(0)).toHaveJSProperty('paused', paused)
     await expect(artwork.nth(1)).toHaveJSProperty('paused', paused)
   })
 }
+
+test('decodes a frame of each hub app card video while it plays', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/')
+
+  const artwork = page.getByTestId('app-shelf').getByTestId('model-card-media')
+  await expect(artwork).toHaveCount(2)
+  await expect
+    .poll(() =>
+      artwork.evaluateAll((videos: HTMLVideoElement[]) =>
+        videos.map((video) => video.videoWidth > 0 && video.readyState >= 2)
+      )
+    )
+    .toEqual([true, true])
+})
 
 test('hides Re-shoot from the hub apps page and closes its page while its flag is off', async ({
   page,
