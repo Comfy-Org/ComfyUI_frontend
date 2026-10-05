@@ -1,13 +1,14 @@
 import { execFileSync } from 'node:child_process'
 import { readFile, readdir, rename, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { z } from 'zod'
+
+import { websiteRoot } from '@website/paths'
 
 import { packRouterSchemas } from './generate-workshop-router-snapshot'
 import { isDirectExecution } from './script-entry-point'
 
 const routerSchemasPath = 'services/comfy-api/docs/router-schemas'
-const websiteRoot = resolve(import.meta.dirname, '..')
 const snapshotFile = 'src/data/workshop-router-openapi.snapshot.json'
 const snapshotPath = join(websiteRoot, snapshotFile)
 
@@ -74,9 +75,13 @@ export function idsOf(packed: string, source: string): Set<string> {
   return new Set(packedRecords.parse(parsed).map((record) => record.id))
 }
 
+// The committed snapshot is several MB, past execFileSync's 1 MiB default.
+const gitMaxBuffer = 256 * 1024 * 1024
+
 function git(cwd: string, args: string[]): string {
   return execFileSync('git', ['-C', cwd, ...args], {
     encoding: 'utf8',
+    maxBuffer: gitMaxBuffer,
     stdio: ['ignore', 'pipe', 'pipe']
   }).trim()
 }
