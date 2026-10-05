@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyApp } from '@/scripts/app'
 

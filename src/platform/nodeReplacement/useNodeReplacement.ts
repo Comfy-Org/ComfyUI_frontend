@@ -13,7 +13,7 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   removePendingMissingNodeTypesByType,
   updatePendingWarnings

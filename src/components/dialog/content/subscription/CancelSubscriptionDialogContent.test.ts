@@ -1,5 +1,5 @@
 import { computed, nextTick, ref } from 'vue'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import type { CancelRail, SubscriptionInfo } from '@/composables/billing/types'

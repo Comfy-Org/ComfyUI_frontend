@@ -1,4 +1,4 @@
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'

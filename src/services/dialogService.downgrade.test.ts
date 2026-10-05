@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 import type DowngradeContent from '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'

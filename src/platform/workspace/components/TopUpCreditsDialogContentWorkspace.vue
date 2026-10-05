@@ -306,7 +306,7 @@ import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
 } from '@comfyorg/account-core/billing'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

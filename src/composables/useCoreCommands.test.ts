@@ -1,5 +1,5 @@
 import { useDialogService } from '@/services/dialogService'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

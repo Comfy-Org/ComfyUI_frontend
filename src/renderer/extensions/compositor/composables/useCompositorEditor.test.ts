@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'

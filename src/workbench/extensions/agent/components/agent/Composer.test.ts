@@ -13,7 +13,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'

@@ -4,7 +4,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'

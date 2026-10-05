@@ -97,7 +97,7 @@ import { RovingFocusGroup } from 'reka-ui'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'

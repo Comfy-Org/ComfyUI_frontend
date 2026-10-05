@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useTelemetry } from '@/platform/telemetry'

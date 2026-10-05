@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 /**
  * Strategy for recovering from specific error conditions.

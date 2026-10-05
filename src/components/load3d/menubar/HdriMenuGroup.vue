@@ -77,7 +77,7 @@ import {
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
 import type { LightConfig } from '@/extensions/core/load3d/interfaces'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 const { compact = false, sceneHasImage = false } = defineProps<{
   compact?: boolean

@@ -91,7 +91,7 @@ import {
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
 import type { HDRIConfig } from '@/extensions/core/load3d/interfaces'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()

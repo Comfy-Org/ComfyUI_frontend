@@ -81,7 +81,7 @@ import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromA
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import {

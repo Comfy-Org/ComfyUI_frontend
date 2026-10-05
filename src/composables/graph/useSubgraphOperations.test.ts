@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'

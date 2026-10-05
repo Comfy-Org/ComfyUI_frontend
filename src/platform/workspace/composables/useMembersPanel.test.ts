@@ -1,5 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ToastMessageOptions } from '@/types/extensionTypes'
 
 import { createExtensionToastManager } from './extensionToastManager'

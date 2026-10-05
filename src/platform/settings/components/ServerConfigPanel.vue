@@ -66,7 +66,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { FormItem as FormItemType } from '@/platform/settings/types'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { electronAPI } from '@/utils/envUtil'
 

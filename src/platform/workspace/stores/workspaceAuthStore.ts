@@ -37,7 +37,7 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/legacyW
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'

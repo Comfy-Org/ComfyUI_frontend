@@ -13,7 +13,7 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import * as registryService from '@/services/comfyRegistryService'
 import type { components as RegistryComponents } from '@/types/comfyRegistryTypes'

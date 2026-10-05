@@ -11,7 +11,7 @@ import {
   assetFilenameSchema,
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 

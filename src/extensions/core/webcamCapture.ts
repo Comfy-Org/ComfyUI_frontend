@@ -1,6 +1,6 @@
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { api } from '../../scripts/api'

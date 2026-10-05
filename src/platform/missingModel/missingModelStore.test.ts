@@ -22,7 +22,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 import { useMissingModelStore } from './missingModelStore'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 

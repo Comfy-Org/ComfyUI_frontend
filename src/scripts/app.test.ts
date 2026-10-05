@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'

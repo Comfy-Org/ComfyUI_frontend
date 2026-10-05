@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 export const MAX_IMAGE_SIZE_MB = 10
 export const MAX_VIDEO_SIZE_MB = 50

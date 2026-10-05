@@ -1,5 +1,5 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

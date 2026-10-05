@@ -1,5 +1,5 @@
 import { useDialogStore } from '@/stores/dialogStore'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'

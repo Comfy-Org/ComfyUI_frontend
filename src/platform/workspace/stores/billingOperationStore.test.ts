@@ -6,7 +6,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 

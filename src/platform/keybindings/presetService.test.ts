@@ -1,5 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

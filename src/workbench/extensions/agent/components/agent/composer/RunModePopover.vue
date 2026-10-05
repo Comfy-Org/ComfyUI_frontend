@@ -13,7 +13,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'

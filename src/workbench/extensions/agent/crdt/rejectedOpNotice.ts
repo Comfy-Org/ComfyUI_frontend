@@ -2,7 +2,7 @@ import { throttle } from 'es-toolkit'
 import type { ThrottledFunction } from 'es-toolkit'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 

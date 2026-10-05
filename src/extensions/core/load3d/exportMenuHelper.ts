@@ -1,6 +1,6 @@
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 

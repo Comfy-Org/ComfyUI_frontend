@@ -18,7 +18,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'

@@ -2,7 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { AgentWorkflowBindSource } from '@/platform/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'

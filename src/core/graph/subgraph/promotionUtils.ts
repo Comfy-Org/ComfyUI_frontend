@@ -9,7 +9,7 @@ import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview

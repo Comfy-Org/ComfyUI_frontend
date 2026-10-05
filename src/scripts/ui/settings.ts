@@ -1,7 +1,7 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams, Settings } from '@/platform/settings/types'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyApp } from '@/scripts/app'
 
 import { ComfyDialog } from './dialog'

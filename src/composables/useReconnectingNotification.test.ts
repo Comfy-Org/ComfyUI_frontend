@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 

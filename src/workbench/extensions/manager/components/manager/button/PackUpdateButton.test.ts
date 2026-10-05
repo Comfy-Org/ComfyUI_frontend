@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import * as registry from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'

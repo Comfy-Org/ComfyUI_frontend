@@ -135,7 +135,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useI18n } from 'vue-i18n'
 import { useObjectUrl } from '@vueuse/core'
 

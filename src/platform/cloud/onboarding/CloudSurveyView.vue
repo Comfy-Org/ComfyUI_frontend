@@ -19,7 +19,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { isNavigationFailure, useRouter } from 'vue-router'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getSurveyCompletedStatus,

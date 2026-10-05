@@ -1,5 +1,5 @@
 import type { Pinia } from 'pinia'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { getActivePinia } from 'pinia'
 import { useDialogStore } from '@/stores/dialogStore'
 /* oxlint-disable testing-library/no-container */

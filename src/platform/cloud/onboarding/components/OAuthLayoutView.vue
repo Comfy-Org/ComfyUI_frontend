@@ -15,7 +15,7 @@
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
-import { Toaster } from '@/components/ui/toast'
+import Toaster from '@/components/ui/toast/Toaster.vue'
 
 onMounted(() => {
   document.getElementById('splash-loader')?.remove()

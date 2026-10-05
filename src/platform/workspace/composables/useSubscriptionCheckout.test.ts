@@ -1,4 +1,4 @@
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import PaymentRecoveryToast from '@/platform/workspace/components/PaymentRecoveryToast.vue'
 import type { PaymentRecoveryToastProps } from '@/platform/workspace/components/PaymentRecoveryToast.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'

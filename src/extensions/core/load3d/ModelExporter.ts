@@ -6,7 +6,7 @@ import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 export class ModelExporter {
   static detectFormatFromURL(url: string): string | null {

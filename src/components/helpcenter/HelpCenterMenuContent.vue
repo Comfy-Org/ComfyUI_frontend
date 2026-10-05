@@ -154,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'

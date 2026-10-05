@@ -1,4 +1,4 @@
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

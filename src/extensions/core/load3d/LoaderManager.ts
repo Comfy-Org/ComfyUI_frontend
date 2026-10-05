@@ -1,7 +1,7 @@
 import type * as THREE from 'three'
 
 import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
 import { createAdapterRef, fetchModelData } from './ModelAdapter'

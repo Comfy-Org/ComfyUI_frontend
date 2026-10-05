@@ -1,4 +1,4 @@
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'

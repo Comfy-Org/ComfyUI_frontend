@@ -15,7 +15,7 @@ import type {
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { defaultGraph } from '@/scripts/defaultGraph'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {

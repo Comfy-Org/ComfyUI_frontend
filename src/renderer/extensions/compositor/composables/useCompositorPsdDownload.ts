@@ -10,7 +10,7 @@ import {
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { useLayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 export function useCompositorPsdDownload(
   createSession: () => LayerEditorSession = () => useLayerEditorSession()

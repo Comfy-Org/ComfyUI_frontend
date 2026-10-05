@@ -1,7 +1,7 @@
 import { register } from 'extendable-media-recorder'
 import { connect } from 'extendable-media-recorder-wav-encoder'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 
 export interface AudioRecordingError {

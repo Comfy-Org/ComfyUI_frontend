@@ -19,7 +19,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   clearAllWorkspaceStorage,
   prepareWorkflowLogoutTransition

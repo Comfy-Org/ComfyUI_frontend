@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 

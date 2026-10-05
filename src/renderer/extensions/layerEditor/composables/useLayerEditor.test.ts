@@ -1,4 +1,4 @@
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'

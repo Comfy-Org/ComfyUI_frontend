@@ -3,7 +3,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 interface UseLoad3dDragOptions {
   onModelDrop: (file: File) => void | Promise<void>

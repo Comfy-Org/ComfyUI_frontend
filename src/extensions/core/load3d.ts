@@ -37,7 +37,7 @@ import type {
   INumericWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith

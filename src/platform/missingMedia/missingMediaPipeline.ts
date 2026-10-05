@@ -9,7 +9,7 @@ import {
 } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'

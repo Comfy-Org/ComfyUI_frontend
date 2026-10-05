@@ -6,7 +6,7 @@ import {
 } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
