@@ -74,17 +74,14 @@
     >
       <Menu v-if="menuItems.length > 0" :items="menuItems">
         <template #trigger>
-          <Tooltip
-            :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
-            side="right"
-          >
-            <Button
-              variant="muted-textonly"
-              size="icon"
-              :aria-label="$t('g.moreOptions')"
-              icon="icon-[lucide--ellipsis]"
-            />
-          </Tooltip>
+          <Button
+            :tooltip="$t('g.moreOptions')"
+            tooltip-side="right"
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="$t('g.moreOptions')"
+            icon="icon-[lucide--ellipsis]"
+          />
         </template>
       </Menu>
     </div>
@@ -99,7 +96,6 @@ import { useI18n } from 'vue-i18n'
 import Menu from '@/components/ui/menu/Menu.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 

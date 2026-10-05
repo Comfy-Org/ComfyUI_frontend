@@ -1,28 +1,21 @@
 <template>
   <div class="relative">
-    <Tooltip
-      :config="{
-        value: localizedCurrentColorName ?? t('color.noColor'),
-        showDelay: 1000
-      }"
-      side="top"
+    <Button
+      :tooltip="localizedCurrentColorName ?? t('color.noColor')"
+      data-testid="color-picker-button"
+      variant="muted-textonly"
+      :aria-label="t('g.color')"
+      @click="() => (showColorPicker = !showColorPicker)"
     >
-      <Button
-        data-testid="color-picker-button"
-        variant="muted-textonly"
-        :aria-label="t('g.color')"
-        @click="() => (showColorPicker = !showColorPicker)"
-      >
-        <div class="flex items-center gap-1 px-0">
-          <i
-            class="pi pi-circle-fill"
-            data-testid="color-picker-current-color"
-            :style="{ color: currentColor ?? '' }"
-          />
-          <i class="icon-[lucide--chevron-down]" />
-        </div>
-      </Button>
-    </Tooltip>
+      <div class="flex items-center gap-1 px-0">
+        <i
+          class="pi pi-circle-fill"
+          data-testid="color-picker-current-color"
+          :style="{ color: currentColor ?? '' }"
+        />
+        <i class="icon-[lucide--chevron-down]" />
+      </div>
+    </Button>
     <div
       v-if="showColorPicker"
       class="absolute -top-10 left-1/2 -translate-x-1/2"
@@ -39,14 +32,17 @@
           :aria-label="option.localizedName"
           class="px-1 py-2"
         >
-          <Tooltip :config="option.localizedName" side="top">
-            <i
-              class="pi pi-circle-fill"
-              :style="{
-                color: isLightTheme ? option.value.light : option.value.dark
-              }"
-              :data-testid="option.name"
-            />
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <i
+                class="pi pi-circle-fill"
+                :style="{
+                  color: isLightTheme ? option.value.light : option.value.dark
+                }"
+                :data-testid="option.name"
+              />
+            </TooltipTrigger>
+            <TooltipContent>{{ option.localizedName }}</TooltipContent>
           </Tooltip>
         </ToggleGroupItem>
       </ToggleGroup>
@@ -62,6 +58,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type {
   ColorOption as CanvasColorOption,

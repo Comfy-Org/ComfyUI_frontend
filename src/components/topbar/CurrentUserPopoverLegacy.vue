@@ -29,32 +29,35 @@
     </div>
 
     <div v-if="showWorkspaceSwitcher" class="relative">
-      <Tooltip :config="{ value: workspaceName, showDelay: 300 }" side="right">
-        <Button
-          ref="workspaceSwitcherTrigger"
-          variant="muted-textonly"
-          class="flex h-auto w-full items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
-          :aria-expanded="isWorkspaceSwitcherOpen"
-          aria-haspopup="menu"
-          aria-controls="workspace-switcher-panel"
-          data-testid="workspace-switcher-trigger"
-          @click="isWorkspaceSwitcherOpen = !isWorkspaceSwitcherOpen"
-          @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
-        >
-          <div class="flex w-0 flex-1 items-center gap-2">
-            <WorkspaceProfilePic
-              class="size-6 shrink-0 text-xs"
-              :workspace-name
-              :subscription-tier="tier"
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <Button
+            ref="workspaceSwitcherTrigger"
+            variant="muted-textonly"
+            class="flex h-auto w-full items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+            :aria-expanded="isWorkspaceSwitcherOpen"
+            aria-haspopup="menu"
+            aria-controls="workspace-switcher-panel"
+            data-testid="workspace-switcher-trigger"
+            @click="isWorkspaceSwitcherOpen = !isWorkspaceSwitcherOpen"
+            @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+          >
+            <div class="flex w-0 flex-1 items-center gap-2">
+              <WorkspaceProfilePic
+                class="size-6 shrink-0 text-xs"
+                :workspace-name
+                :subscription-tier="tier"
+              />
+              <span class="truncate text-sm text-base-foreground">
+                {{ workspaceName }}
+              </span>
+            </div>
+            <i
+              class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
             />
-            <span class="truncate text-sm text-base-foreground">
-              {{ workspaceName }}
-            </span>
-          </div>
-          <i
-            class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
-          />
-        </Button>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">{{ workspaceName }}</TooltipContent>
       </Tooltip>
 
       <div
@@ -79,19 +82,17 @@
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
       }}</span>
-      <Tooltip
-        :config="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
+      <Button
+        :tooltip="$t('credits.unified.tooltip')"
+        tooltip-side="right"
+        variant="muted-textonly"
+        size="icon-sm"
+        class="mr-auto"
+        :aria-label="$t('credits.unified.tooltip')"
+        data-testid="credits-info-button"
       >
-        <Button
-          variant="muted-textonly"
-          size="icon-sm"
-          class="mr-auto"
-          :aria-label="$t('credits.unified.tooltip')"
-          data-testid="credits-info-button"
-        >
-          <i class="icon-[lucide--circle-help]" />
-        </Button>
-      </Tooltip>
+        <i class="icon-[lucide--circle-help]" />
+      </Button>
       <Button
         v-if="showAddCredits"
         variant="secondary"
@@ -167,6 +168,8 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'

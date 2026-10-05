@@ -180,7 +180,9 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
 
     await userEvent.hover(screen.getByRole('spinbutton'))
 
-    expect(screen.getByRole('tooltip')).toHaveTextContent(/precision limit/i)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      /precision limit/i
+    )
   })
 
   it('does not show tooltip for safe integer values', async () => {

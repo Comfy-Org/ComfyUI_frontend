@@ -2,17 +2,14 @@
   <div class="shrink-0 self-center">
     <Menu :items="menuItems" max-height="viewport">
       <template #trigger>
-        <Tooltip
-          :config="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
-          side="right"
-        >
-          <Button
-            variant="muted-textonly"
-            size="icon"
-            :aria-label="$t('g.moreWorkflows')"
-            icon="icon-[lucide--ellipsis]"
-          />
-        </Tooltip>
+        <Button
+          :tooltip="$t('g.moreWorkflows')"
+          tooltip-side="right"
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('g.moreWorkflows')"
+          icon="icon-[lucide--ellipsis]"
+        />
       </template>
       <template #item="{ item }">
         <i v-if="item.icon" :class="item.icon" />
@@ -31,7 +28,6 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 

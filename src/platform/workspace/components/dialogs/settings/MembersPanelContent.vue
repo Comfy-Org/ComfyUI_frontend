@@ -68,25 +68,27 @@
             size="lg"
             class="w-64"
           />
-          <Tooltip
-            v-if="showInviteButton"
-            :config="
-              inviteTooltip
-                ? { value: inviteTooltip, showDelay: 0 }
-                : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
-            "
-            side="right"
-          >
-            <Button
-              variant="secondary"
-              size="lg"
-              :disabled="isInviteDisabled"
-              :aria-label="$t('workspacePanel.inviteMember')"
-              @click="handleInviteMember"
-            >
-              {{ $t('workspacePanel.invite') }}
-              <i class="pi pi-plus text-sm" />
-            </Button>
+          <Tooltip v-if="showInviteButton">
+            <TooltipTrigger as-child>
+              <span
+                :tabindex="isInviteDisabled ? 0 : undefined"
+                class="inline-flex"
+              >
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  :disabled="isInviteDisabled"
+                  :aria-label="$t('workspacePanel.inviteMember')"
+                  @click="handleInviteMember"
+                >
+                  {{ $t('workspacePanel.invite') }}
+                  <i class="pi pi-plus text-sm" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="right">{{
+              inviteTooltip || $t('workspacePanel.inviteMember')
+            }}</TooltipContent>
           </Tooltip>
           <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
         </div>
@@ -276,6 +278,8 @@ import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSe
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'

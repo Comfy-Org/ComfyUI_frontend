@@ -1,378 +1,164 @@
-import { ZIndex } from '@primeuix/utils/zindex'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { defineComponent, ref } from 'vue'
+
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 
 import Tooltip from './Tooltip.vue'
-import { resetTooltipInputModality } from './tooltipInputModality'
+import TooltipContent from './TooltipContent.vue'
+import TooltipProvider from './TooltipProvider.vue'
+import TooltipTrigger from './TooltipTrigger.vue'
 
-const openDialogs: HTMLElement[] = []
-
-afterEach(() => {
-  for (const dialog of openDialogs.splice(0)) ZIndex.clear(dialog)
-  resetTooltipInputModality()
+const TooltipHarness = defineComponent({
+  components: { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger },
+  directives: { RekaZIndex: vRekaZIndex },
+  props: {
+    side: { type: String, default: undefined },
+    disabled: { type: Boolean, default: false }
+  },
+  setup() {
+    return { dialogs: ref(0) }
+  },
+  template: `
+    <TooltipProvider :delay-duration="0">
+      <Tooltip :disabled>
+        <TooltipTrigger as-child>
+          <button>Trigger</button>
+        </TooltipTrigger>
+        <TooltipContent :side>Helpful text</TooltipContent>
+      </Tooltip>
+      <button @click="dialogs++">Open dialog</button>
+      <div v-for="n in dialogs" :key="n" v-reka-z-index data-testid="dialog" />
+    </TooltipProvider>
+  `
 })
 
-function renderTooltip(
-  config: string | { value: string; showDelay?: number } = 'Helpful text',
-  side: 'top' | 'right' | 'bottom' | 'left' = 'top'
-) {
-  return render(Tooltip, {
-    props: { config, side },
-    slots: { default: '<button>Trigger</button>' }
-  })
-}
-
 describe('Tooltip', () => {
-  it('suppresses a disabled tooltip without disabling its trigger', async () => {
-    const user = userEvent.setup()
-    const { rerender } = render(Tooltip, {
-      props: { config: 'Stop the current run', disabled: true },
-      slots: { default: '<button>Stop</button>' }
-    })
-    const trigger = screen.getByRole('button', { name: 'Stop' })
-
-    await user.tab()
-    expect(trigger).toBeEnabled()
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-
-    await user.tab()
-    await rerender({ disabled: false })
-    await user.tab()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      'Stop the current run'
-    )
-  })
-
-  it('opens after the configured hover delay', async () => {
-    vi.useFakeTimers()
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    renderTooltip({ value: 'Delayed text', showDelay: 300 })
-
-    await user.hover(screen.getByRole('button'))
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-
-    await vi.advanceTimersByTimeAsync(300)
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Delayed text')
-  })
-
-  it('opens from pointer entry without requiring pointer movement', async () => {
-    vi.useFakeTimers()
-    renderTooltip({ value: 'Delayed text', showDelay: 300 })
-
-    screen
-      .getByRole('button')
-      .dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }))
-    await vi.advanceTimersByTimeAsync(300)
-
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Delayed text')
-  })
-
   it('opens on keyboard focus and describes its trigger', async () => {
     const user = userEvent.setup()
-    renderTooltip()
+    render(TooltipHarness)
 
-    await user.tab()
-
-    expect((await screen.findByRole('tooltip')).textContent).toBe(
-      'Helpful text'
-    )
-    expect(screen.getByRole('button')).toHaveAccessibleDescription(
-      'Helpful text'
-    )
-  })
-
-  it('closes a focused tooltip when another trigger is hovered', async () => {
-    const user = userEvent.setup()
-    render({
-      components: { Tooltip },
-      template: `
-        <Tooltip config="Change workflow" :ignore-non-keyboard-focus="false">
-          <button>Workflow</button>
-        </Tooltip>
-        <Tooltip config="Agent target for this chat">
-          <span role="img" aria-label="Target" />
-        </Tooltip>
-      `
-    })
-
-    await user.tab()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      'Change workflow'
-    )
-    await user.hover(screen.getByRole('img', { name: 'Target' }))
-
-    await vi.waitFor(() => {
-      expect(screen.getAllByRole('tooltip')).toHaveLength(1)
-      expect(screen.getByRole('tooltip')).toHaveTextContent(
-        'Agent target for this chat'
-      )
-    })
-  })
-
-  it('does not repeat an aria-label as its accessible description', async () => {
-    const user = userEvent.setup()
-    render({
-      components: { Tooltip },
-      template: `
-        <Tooltip config="Helpful text" aria-label="Helpful text">
-          <button>Trigger</button>
-        </Tooltip>
-      `
-    })
-
-    await user.tab()
-
-    const trigger = screen.getByRole('button')
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
-    expect(trigger).toHaveAccessibleName('Helpful text')
-    expect(trigger).not.toHaveAccessibleDescription()
-  })
-
-  it('keeps distinct tooltip text as its accessible description', async () => {
-    const user = userEvent.setup()
-    render({
-      components: { Tooltip },
-      template: `
-        <Tooltip config="More context" aria-label="Action">
-          <button>Trigger</button>
-        </Tooltip>
-      `
-    })
-
-    await user.tab()
-
-    const trigger = screen.getByRole('button')
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('More context')
-    expect(trigger).toHaveAccessibleName('Action')
-    expect(trigger).toHaveAccessibleDescription('More context')
-  })
-
-  it('dismisses a focus-opened tooltip when a touch interaction starts', async () => {
-    const user = userEvent.setup()
-    renderTooltip()
-    const outside = document.createElement('div')
-    document.body.append(outside)
-
-    await user.tab()
-    await screen.findByRole('tooltip')
-    await fireEvent.touchStart(outside)
-
-    await vi.waitFor(() => {
-      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    })
-    outside.remove()
-  })
-
-  it('dismisses an open tooltip on a captured wheel event', async () => {
-    const user = userEvent.setup()
-    const view = renderTooltip()
-
-    await user.hover(screen.getByRole('button'))
-    await screen.findByRole('tooltip')
-    await fireEvent.wheel(window)
-
-    await vi.waitFor(() => {
-      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    })
-    view.unmount()
-  })
-
-  it('removes wheel dismissal when the tooltip unmounts', () => {
-    const removeEventListener = vi.spyOn(window, 'removeEventListener')
-
-    const view = renderTooltip()
-    view.unmount()
-
-    expect(removeEventListener).toHaveBeenCalledWith(
-      'wheel',
-      expect.any(Function),
-      true
-    )
-  })
-
-  it('cancels a pending hover tooltip when a touch interaction starts', async () => {
-    vi.useFakeTimers()
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    renderTooltip({ value: 'Delayed text', showDelay: 300 })
-    const outside = document.createElement('div')
-    document.body.append(outside)
-
-    await user.hover(screen.getByRole('button'))
-    await fireEvent.touchStart(outside)
-    await vi.advanceTimersByTimeAsync(300)
-
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    outside.remove()
-  })
-
-  it('suppresses hover tooltips that begin immediately after touch', async () => {
-    vi.useFakeTimers()
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    renderTooltip({ value: 'Delayed text', showDelay: 300 })
-    const outside = document.createElement('div')
-    document.body.append(outside)
-
-    await fireEvent.touchStart(outside)
-    await user.hover(screen.getByRole('button'))
-    await vi.advanceTimersByTimeAsync(300)
-
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    outside.remove()
-  })
-
-  it('does not open from focus transferred by a pointer interaction', async () => {
-    vi.useFakeTimers()
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    renderTooltip()
-    const trigger = screen.getByRole('button')
-
-    await user.click(trigger)
-
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-  })
-
-  it('opens when mouse hover follows a pointer interaction', async () => {
-    vi.useFakeTimers()
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    renderTooltip()
-    const trigger = screen.getByRole('button')
-    const outside = document.createElement('button')
-    document.body.append(outside)
-
-    await user.click(outside)
-    await user.hover(trigger)
-
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful text')
-    outside.remove()
-  })
-
-  it('preserves touch suppression while all tooltips are unmounted', async () => {
-    vi.useFakeTimers()
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    const first = renderTooltip()
-    const outside = document.createElement('button')
-    document.body.append(outside)
-
-    await fireEvent.touchStart(outside)
-    first.unmount()
-    renderTooltip()
-    const trigger = screen.getByRole('button', { name: 'Trigger' })
-    await fireEvent.focus(trigger)
-
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-
-    await vi.advanceTimersByTimeAsync(1000)
-    await fireEvent.blur(trigger)
-    await fireEvent.focus(trigger)
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-
-    const pointerMove = new PointerEvent('pointermove', {
-      bubbles: true,
-      pointerType: 'mouse'
-    })
-    Object.defineProperty(pointerMove, 'movementX', { value: 10 })
-    Object.defineProperty(pointerMove, 'movementY', { value: 0 })
-    trigger.dispatchEvent(pointerMove)
-    await user.hover(trigger)
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful text')
-    outside.remove()
-  })
-
-  it('restores keyboard tooltips after a touch interaction', async () => {
-    vi.useFakeTimers()
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    renderTooltip()
-    const outside = document.createElement('div')
-    document.body.append(outside)
-
-    await fireEvent.touchStart(outside)
     await user.tab()
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
-    outside.remove()
+    expect(
+      screen.getByRole('button', { name: 'Trigger' })
+    ).toHaveAccessibleDescription('Helpful text')
   })
 
-  it('opens on click without bubbling or duplicating the accessible label', async () => {
-    const cardClick = vi.fn()
+  it('opens on hover', async () => {
     const user = userEvent.setup()
-    const Card = {
-      components: { Tooltip },
+    render(TooltipHarness)
+
+    await user.hover(screen.getByRole('button', { name: 'Trigger' }))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
+  })
+
+  it('opens on hover when the trigger content stops pointer moves', async () => {
+    const user = userEvent.setup()
+    render({
+      components: { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger },
       template: `
-        <div @click="cardClick">
-          <Tooltip config="Helpful text" open-on-click suppress-description>
-            <button aria-label="Helpful text">Trigger</button>
+        <TooltipProvider :delay-duration="0">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <div><button @pointermove.stop>Widget control</button></div>
+            </TooltipTrigger>
+            <TooltipContent>Widget value</TooltipContent>
           </Tooltip>
-        </div>
-      `,
-      setup: () => ({ cardClick })
-    }
-    render(Card)
-
-    const trigger = screen.getByRole('button')
-    await user.click(trigger)
-
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
-    expect(cardClick).not.toHaveBeenCalled()
-    expect(trigger).toHaveAccessibleName('Helpful text')
-    expect(trigger).not.toHaveAccessibleDescription('Helpful text')
-  })
-
-  it('dismisses a click-opened tooltip with Escape', async () => {
-    const user = userEvent.setup()
-    render(Tooltip, {
-      props: { config: 'Helpful text', openOnClick: true },
-      slots: { default: '<button>Trigger</button>' }
+        </TooltipProvider>
+      `
     })
 
-    await user.click(screen.getByRole('button'))
+    await user.hover(screen.getByRole('button', { name: 'Widget control' }))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+  })
+
+  it('dismisses with Escape', async () => {
+    const user = userEvent.setup()
+    render(TooltipHarness)
+
+    await user.tab()
     await screen.findByRole('tooltip')
     await user.keyboard('{Escape}')
 
-    await vi.waitFor(() => {
-      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    })
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
-  it('recomputes its modal lift each time it opens', async () => {
-    const firstDialog = document.createElement('div')
-    ZIndex.set('modal', firstDialog, 2400)
-    openDialogs.push(firstDialog)
+  it('dismisses with Escape even when an app shortcut claims the key', async () => {
+    const claimEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') event.preventDefault()
+    }
+    window.addEventListener('keydown', claimEscape)
+    onTestFinished(() => window.removeEventListener('keydown', claimEscape))
     const user = userEvent.setup()
-    renderTooltip()
-    const trigger = screen.getByRole('button')
+    render(TooltipHarness)
 
-    await user.hover(trigger)
-    expect(
-      Number((await screen.findByTestId('tooltip-positioner')).style.zIndex)
-    ).toBe(Number(firstDialog.style.zIndex) + 1)
-    await user.unhover(trigger)
-    await vi.waitFor(() => {
-      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    })
+    await user.tab()
+    await screen.findByRole('tooltip')
+    await user.keyboard('{Escape}')
 
-    const laterDialog = document.createElement('div')
-    ZIndex.set('modal', laterDialog, 2400)
-    openDialogs.push(laterDialog)
-    await user.hover(trigger)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
 
-    expect(
-      Number((await screen.findByTestId('tooltip-positioner')).style.zIndex)
-    ).toBe(Number(laterDialog.style.zIndex) + 1)
+  it('stays closed while disabled', async () => {
+    const user = userEvent.setup()
+    render(TooltipHarness, { props: { disabled: true } })
+
+    await user.tab()
+
+    expect(screen.getByRole('button', { name: 'Trigger' })).toHaveFocus()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('portals its content out of the trigger subtree', async () => {
+    const user = userEvent.setup()
+    const { container } = render(TooltipHarness)
+
+    await user.tab()
+
+    const tooltip = await screen.findByRole('tooltip')
+    expect(container).not.toContainElement(tooltip)
+    expect(document.body).toContainElement(tooltip)
   })
 
   it.for(['top', 'right', 'bottom', 'left'] as const)(
     'places content on the %s side',
     async (side) => {
       const user = userEvent.setup()
-      renderTooltip('Helpful text', side)
+      render(TooltipHarness, { props: { side } })
 
-      await user.hover(screen.getByRole('button'))
+      await user.tab()
 
-      expect(await screen.findByTestId('tooltip-positioner')).toHaveAttribute(
+      await screen.findByRole('tooltip')
+      expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
         'data-side',
         side
       )
     }
   )
+
+  it('lifts above the topmost dialog each time it opens', async () => {
+    const user = userEvent.setup()
+    render(TooltipHarness)
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+    const openDialog = screen.getByRole('button', { name: 'Open dialog' })
+    const contentZIndex = async () =>
+      Number((await screen.findByTestId('tooltip-content')).style.zIndex)
+    const topDialogZIndex = () =>
+      Math.max(
+        ...screen.getAllByTestId('dialog').map((el) => Number(el.style.zIndex))
+      )
+
+    await user.click(openDialog)
+    await user.hover(trigger)
+    expect(await contentZIndex()).toBe(topDialogZIndex() + 1)
+
+    await user.click(openDialog)
+    await user.hover(trigger)
+    expect(await contentZIndex()).toBe(topDialogZIndex() + 1)
+  })
 })

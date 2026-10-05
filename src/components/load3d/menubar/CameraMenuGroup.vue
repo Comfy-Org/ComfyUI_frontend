@@ -1,49 +1,59 @@
 <template>
-  <Tooltip :config="tip(t('load3d.menuBar.switchProjection'))" side="bottom">
-    <button
-      :class="actionClass(false)"
-      type="button"
-      :aria-label="compact ? t('load3d.menuBar.switchProjection') : undefined"
-      @click="switchCamera"
-    >
-      <i class="icon-[lucide--camera] size-4" />
-      <span v-if="!compact">{{ cameraTypeLabel }}</span>
-    </button>
+  <Tooltip>
+    <TooltipTrigger as-child>
+      <button
+        :class="actionClass(false)"
+        type="button"
+        :aria-label="compact ? t('load3d.menuBar.switchProjection') : undefined"
+        @click="switchCamera"
+      >
+        <i class="icon-[lucide--camera] size-4" />
+        <span v-if="!compact">{{ cameraTypeLabel }}</span>
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom">{{
+      t('load3d.menuBar.switchProjection')
+    }}</TooltipContent>
   </Tooltip>
 
-  <Tooltip v-if="hasCustomUp" :config="tip(upActionLabel)" side="bottom">
-    <button
-      :class="actionClass(false)"
-      type="button"
-      :aria-label="compact ? upActionLabel : undefined"
-      @click="toggleUp"
-    >
-      <i
-        :class="
-          cn(
-            useCustomUp
-              ? 'icon-[lucide--compass]'
-              : 'icon-[lucide--rotate-ccw]',
-            'size-4'
-          )
-        "
-      />
-      <span v-if="!compact">{{ upLabel }}</span>
-    </button>
+  <Tooltip v-if="hasCustomUp">
+    <TooltipTrigger as-child>
+      <button
+        :class="actionClass(false)"
+        type="button"
+        :aria-label="compact ? upActionLabel : undefined"
+        @click="toggleUp"
+      >
+        <i
+          :class="
+            cn(
+              useCustomUp
+                ? 'icon-[lucide--compass]'
+                : 'icon-[lucide--rotate-ccw]',
+              'size-4'
+            )
+          "
+        />
+        <span v-if="!compact">{{ upLabel }}</span>
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom">{{ upActionLabel }}</TooltipContent>
   </Tooltip>
 
   <Popover v-if="isPerspective" v-model:open="fovOpen">
     <PopoverTrigger as-child>
-      <Tooltip :config="tip(t('load3d.menuBar.fov'))" side="bottom">
-        <button
-          :class="actionClass(false)"
-          type="button"
-          :aria-label="compact ? t('load3d.menuBar.fov') : undefined"
-        >
-          <i class="icon-[lucide--focus] size-4" />
-          <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
-        </button>
-      </Tooltip>
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="t('load3d.menuBar.fov')"
+        tooltip-side="bottom"
+        :class="actionClass(false)"
+        type="button"
+        :aria-label="compact ? t('load3d.menuBar.fov') : undefined"
+      >
+        <i class="icon-[lucide--focus] size-4" />
+        <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
+      </Button>
     </PopoverTrigger>
     <PopoverContent
       side="bottom"
@@ -72,14 +82,16 @@ import { useI18n } from 'vue-i18n'
 
 import {
   actionClass,
-  formPanelClass,
-  tip
+  formPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { CameraConfig } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverTrigger } from 'reka-ui'

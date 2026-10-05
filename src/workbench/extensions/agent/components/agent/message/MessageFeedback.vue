@@ -8,6 +8,8 @@ import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
@@ -63,96 +65,74 @@ async function downloadAssets(): Promise<void> {
   <div
     class="flex w-full items-center justify-start gap-1 text-muted-foreground"
   >
-    <Tooltip
-      :config="t('agent.helpful')"
-      :delay-duration="300"
-      :ignore-non-keyboard-focus="false"
-      disable-closing-trigger
-      :collision-padding="8"
+    <Button
+      :tooltip="t('agent.helpful')"
+      type="button"
+      :variant="vote === 'up' ? 'textonly' : 'muted-textonly'"
+      size="icon-sm"
+      :aria-label="t('agent.helpful')"
+      :aria-pressed="vote === 'up'"
+      class="size-6"
+      @click="setVote('up')"
     >
-      <Button
-        type="button"
-        :variant="vote === 'up' ? 'textonly' : 'muted-textonly'"
-        size="icon-sm"
-        :aria-label="t('agent.helpful')"
-        :aria-pressed="vote === 'up'"
-        class="size-6"
-        @click="setVote('up')"
-      >
-        <span class="icon-[lucide--thumbs-up] size-3" />
-      </Button>
-    </Tooltip>
-    <Tooltip
-      :config="t('agent.notHelpful')"
-      :delay-duration="300"
-      :ignore-non-keyboard-focus="false"
-      disable-closing-trigger
-      :collision-padding="8"
+      <span class="icon-[lucide--thumbs-up] size-3" />
+    </Button>
+    <Button
+      :tooltip="t('agent.notHelpful')"
+      type="button"
+      :variant="vote === 'down' ? 'textonly' : 'muted-textonly'"
+      size="icon-sm"
+      :aria-label="t('agent.notHelpful')"
+      :aria-pressed="vote === 'down'"
+      class="size-6"
+      @click="setVote('down')"
     >
-      <Button
-        type="button"
-        :variant="vote === 'down' ? 'textonly' : 'muted-textonly'"
-        size="icon-sm"
-        :aria-label="t('agent.notHelpful')"
-        :aria-pressed="vote === 'down'"
-        class="size-6"
-        @click="setVote('down')"
-      >
-        <span class="icon-[lucide--thumbs-down] size-3" />
-      </Button>
-    </Tooltip>
-    <Tooltip
+      <span class="icon-[lucide--thumbs-down] size-3" />
+    </Button>
+    <Button
       v-if="assets.length"
-      :config="t('agent.downloadAssets')"
-      :delay-duration="300"
-      :ignore-non-keyboard-focus="false"
-      disable-closing-trigger
-      :collision-padding="8"
+      :tooltip="t('agent.downloadAssets')"
+      type="button"
+      variant="muted-textonly"
+      size="icon-sm"
+      :aria-label="t('agent.downloadAssets')"
+      :disabled="downloading"
+      class="size-6 rounded-lg"
+      @click="downloadAssets"
     >
-      <Button
-        type="button"
-        variant="muted-textonly"
-        size="icon-sm"
-        :aria-label="t('agent.downloadAssets')"
-        :disabled="downloading"
-        class="size-6 rounded-lg"
-        @click="downloadAssets"
-      >
-        <span class="icon-[lucide--download] size-3" />
-      </Button>
-    </Tooltip>
+      <span class="icon-[lucide--download] size-3" />
+    </Button>
     <div
       class="flex h-6 w-14 rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground has-data-[state=open]:bg-secondary-background-hover has-data-[state=open]:text-base-foreground"
     >
-      <Tooltip
-        :config="copied ? t('agent.copied') : t('agent.copy')"
-        :delay-duration="300"
-        :ignore-non-keyboard-focus="false"
-        disable-closing-trigger
-        :collision-padding="8"
-      >
-        <Button
-          type="button"
-          variant="muted-textonly"
-          size="unset"
-          :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-          :class="
-            cn(
-              'h-6 w-8 rounded-l-lg rounded-r-none focus-visible:z-10',
-              copied ? 'text-base-foreground' : 'text-inherit'
-            )
-          "
-          @click="copyPlainText()"
-        >
-          <span
+      <Tooltip :ignore-non-keyboard-focus="false" disable-closing-trigger>
+        <TooltipTrigger as-child>
+          <Button
+            type="button"
+            variant="muted-textonly"
+            size="unset"
+            :aria-label="copied ? t('agent.copied') : t('agent.copy')"
             :class="
               cn(
-                'size-3',
-                copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+                'h-6 w-8 rounded-l-lg rounded-r-none focus-visible:z-10',
+                copied ? 'text-base-foreground' : 'text-inherit'
               )
             "
-          />
-        </Button>
+            @click="copyPlainText()"
+          >
+            <span
+              :class="
+                cn(
+                  'size-3',
+                  copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+                )
+              "
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{{
+          copied ? t('agent.copied') : t('agent.copy')
+        }}</TooltipContent>
       </Tooltip>
       <Menu
         :items="copyMenuItems"

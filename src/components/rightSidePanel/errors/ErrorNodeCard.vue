@@ -133,35 +133,27 @@
               <div aria-hidden="true" class="h-px w-full bg-interface-stroke" />
 
               <div class="flex items-center justify-between gap-2">
-                <Tooltip
-                  :config="t('rightSidePanel.getHelpTooltip')"
-                  side="top"
+                <Button
+                  :tooltip="t('rightSidePanel.getHelpTooltip')"
+                  variant="textonly"
+                  size="sm"
+                  class="justify-start gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
+                  @click="handleGetHelp"
                 >
-                  <Button
-                    variant="textonly"
-                    size="sm"
-                    class="justify-start gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
-                    @click="handleGetHelp"
-                  >
-                    <i class="icon-[lucide--external-link] size-4" />
-                    {{ t('g.getHelpAction') }}
-                  </Button>
-                </Tooltip>
-                <Tooltip
-                  :config="t('rightSidePanel.findOnGithubTooltip')"
-                  side="top"
+                  <i class="icon-[lucide--external-link] size-4" />
+                  {{ t('g.getHelpAction') }}
+                </Button>
+                <Button
+                  :tooltip="t('rightSidePanel.findOnGithubTooltip')"
+                  variant="textonly"
+                  size="sm"
+                  class="justify-end gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
+                  data-testid="error-card-find-on-github"
+                  @click="handleCheckGithub(error)"
                 >
-                  <Button
-                    variant="textonly"
-                    size="sm"
-                    class="justify-end gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
-                    data-testid="error-card-find-on-github"
-                    @click="handleCheckGithub(error)"
-                  >
-                    <i class="icon-[lucide--github] size-4" />
-                    {{ t('g.findOnGithub') }}
-                  </Button>
-                </Tooltip>
+                  <i class="icon-[lucide--github] size-4" />
+                  {{ t('g.findOnGithub') }}
+                </Button>
               </div>
             </div>
           </div>
@@ -172,8 +164,6 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

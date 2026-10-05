@@ -172,25 +172,21 @@
                     : t('rightSidePanel.missingNodePacks.installAll')
                 }}
               </Button>
-              <Tooltip
+              <Button
                 v-else-if="group.type === 'swap_nodes'"
-                :config="
+                :tooltip="
                   t(
                     'nodeReplacement.replaceAllWarning',
                     'Replaces all available nodes in this group.'
                   )
                 "
-                side="top"
+                variant="secondary"
+                size="sm"
+                class="shrink-0"
+                @click.stop="handleReplaceAll()"
               >
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  class="shrink-0"
-                  @click.stop="handleReplaceAll()"
-                >
-                  {{ t('nodeReplacement.replaceAll', 'Replace All') }}
-                </Button>
-              </Tooltip>
+                {{ t('nodeReplacement.replaceAll', 'Replace All') }}
+              </Button>
               <Button
                 v-else-if="
                   group.type === 'missing_model' &&
@@ -283,20 +279,19 @@
                 >
                   <div class="flex min-w-0 items-center gap-2">
                     <span class="flex min-w-0 flex-1 items-center gap-1">
-                      <Tooltip
-                        :config="{
-                          value: item.displayDetails || undefined,
-                          showDelay: 300
-                        }"
-                        side="top"
-                      >
-                        <button
-                          type="button"
-                          class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
-                          @click="handleLocateNode(item.nodeId)"
-                        >
-                          {{ item.label }}
-                        </button>
+                      <Tooltip :disabled="!item.displayDetails">
+                        <TooltipTrigger as-child>
+                          <button
+                            type="button"
+                            class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+                            @click="handleLocateNode(item.nodeId)"
+                          >
+                            {{ item.label }}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{{
+                          item.displayDetails
+                        }}</TooltipContent>
                       </Tooltip>
                       <Button
                         v-if="item.displayDetails"
@@ -392,6 +387,8 @@
 
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'

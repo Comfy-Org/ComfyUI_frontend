@@ -1,27 +1,20 @@
 <template>
-  <Tooltip
-    :config="{
-      value: buttonTooltip,
-      showDelay: 600
-    }"
-    side="bottom"
+  <Button
+    :tooltip="buttonTooltip"
+    tooltip-side="bottom"
+    class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
+    variant="subscribe"
+    size="unset"
+    data-testid="subscribe-to-run-button"
+    @click="handleSubscribeToRun"
   >
-    <Button
-      class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
-      variant="subscribe"
-      size="unset"
-      data-testid="subscribe-to-run-button"
-      @click="handleSubscribeToRun"
-    >
-      <i class="pi pi-lock" />
-      {{ buttonLabel }}
-    </Button>
-  </Tooltip>
+    <i class="pi pi-lock" />
+    {{ buttonLabel }}
+  </Button>
 </template>
 
 <script setup lang="ts">
 import { registerSubscribeToRunPrompt } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'

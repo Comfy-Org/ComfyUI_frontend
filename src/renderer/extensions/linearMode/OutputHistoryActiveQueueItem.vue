@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
@@ -29,22 +27,21 @@ function clearQueue(close: () => void) {
   >
     <Popover side="top" :show-arrow="false" @focus-outside.prevent>
       <template #button>
-        <Tooltip :config="t('linearMode.queue.clickToClear')" side="top">
-          <Button
-            :aria-label="t('linearMode.queue.clickToClear')"
-            variant="textonly"
-            size="unset"
-            class="flex size-10 items-center justify-center rounded-sm bg-secondary-background"
-          >
-            <Loader
-              :variant="
-                queueStore.runningTasks.length ? 'loader-circle' : 'loader'
-              "
-              size="sm"
-              class="text-muted-foreground"
-            />
-          </Button>
-        </Tooltip>
+        <Button
+          :tooltip="t('linearMode.queue.clickToClear')"
+          :aria-label="t('linearMode.queue.clickToClear')"
+          variant="textonly"
+          size="unset"
+          class="flex size-10 items-center justify-center rounded-sm bg-secondary-background"
+        >
+          <Loader
+            :variant="
+              queueStore.runningTasks.length ? 'loader-circle' : 'loader'
+            "
+            size="sm"
+            class="text-muted-foreground"
+          />
+        </Button>
       </template>
       <template #default="{ close }">
         <Button

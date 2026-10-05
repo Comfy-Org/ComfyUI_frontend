@@ -1,26 +1,17 @@
 <template>
-  <Tooltip
-    :config="{
-      value: t('selectionToolbox.executeButton.tooltip'),
-      showDelay: 1000
-    }"
-    side="top"
+  <Button
+    :tooltip="t('selectionToolbox.executeButton.tooltip')"
+    variant="primary"
+    :aria-label="t('selectionToolbox.executeButton.tooltip')"
+    @mouseenter="() => handleMouseEnter()"
+    @mouseleave="() => handleMouseLeave()"
+    @click="handleClick"
   >
-    <Button
-      variant="primary"
-      :aria-label="t('selectionToolbox.executeButton.tooltip')"
-      @mouseenter="() => handleMouseEnter()"
-      @mouseleave="() => handleMouseLeave()"
-      @click="handleClick"
-    >
-      <i class="icon-[lucide--play]" />
-    </Button>
-  </Tooltip>
+    <i class="icon-[lucide--play]" />
+  </Button>
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

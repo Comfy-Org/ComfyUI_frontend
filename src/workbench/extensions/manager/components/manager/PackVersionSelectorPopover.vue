@@ -39,17 +39,18 @@
             <div v-if="option.value === 'nightly'" class="w-4"></div>
             <Tooltip
               v-else-if="option.hasConflict"
-              :config="{
-                value: option.conflictMessage,
-                showDelay: 300
-              }"
-              side="right"
+              :disabled="!option.conflictMessage"
             >
-              <i
-                class="icon-[lucide--triangle-alert] text-warning-background"
-                role="img"
-                :aria-label="option.conflictMessage"
-              />
+              <TooltipTrigger as-child>
+                <i
+                  class="icon-[lucide--triangle-alert] text-warning-background"
+                  role="img"
+                  :aria-label="option.conflictMessage"
+                />
+              </TooltipTrigger>
+              <TooltipContent side="right">{{
+                option.conflictMessage
+              }}</TooltipContent>
             </Tooltip>
             <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             <span>{{ option.label }}</span>
@@ -108,6 +109,8 @@ import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'

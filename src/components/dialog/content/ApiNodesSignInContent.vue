@@ -65,18 +65,26 @@
       <div
         class="flex flex-wrap items-center justify-between gap-x-2.5 gap-y-2 pt-4"
       >
-        <Tooltip :config="t('apiNodesSignInDialog.tooltip')" side="bottom">
-          <a
-            :href="partnerNodesDocsUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-1 text-xs text-muted-foreground no-underline duration-150 hover:text-base-foreground motion-safe:transition-colors"
-          >
-            <i class="icon-[lucide--info] size-4 shrink-0" aria-hidden="true" />
-            <span class="leading-4">
-              {{ t('apiNodesSignInDialog.whatArePartnerNodes') }}
-            </span>
-          </a>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <a
+              :href="partnerNodesDocsUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-center gap-1 text-xs text-muted-foreground no-underline duration-150 hover:text-base-foreground motion-safe:transition-colors"
+            >
+              <i
+                class="icon-[lucide--info] size-4 shrink-0"
+                aria-hidden="true"
+              />
+              <span class="leading-4">
+                {{ t('apiNodesSignInDialog.whatArePartnerNodes') }}
+              </span>
+            </a>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{{
+            t('apiNodesSignInDialog.tooltip')
+          }}</TooltipContent>
         </Tooltip>
         <Button
           variant="inverted"
@@ -96,6 +104,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

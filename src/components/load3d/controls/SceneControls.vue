@@ -1,101 +1,80 @@
 <template>
   <div class="flex flex-col">
-    <Tooltip
-      :config="{ value: $t('load3d.showGrid'), showDelay: 300 }"
-      side="right"
+    <Button
+      :tooltip="$t('load3d.showGrid')"
+      tooltip-side="right"
+      variant="textonly"
+      size="icon"
+      :class="cn('rounded-full', showGrid && 'ring-2 ring-white/50')"
+      :aria-label="$t('load3d.showGrid')"
+      @click="toggleGrid"
     >
-      <Button
-        variant="textonly"
-        size="icon"
-        :class="cn('rounded-full', showGrid && 'ring-2 ring-white/50')"
-        :aria-label="$t('load3d.showGrid')"
-        @click="toggleGrid"
-      >
-        <i class="pi pi-table text-lg text-base-foreground" />
-      </Button>
-    </Tooltip>
+      <i class="pi pi-table text-lg text-base-foreground" />
+    </Button>
 
     <template v-if="!hdriActive">
       <div v-if="!hasBackgroundImage">
-        <Tooltip
-          :config="{
-            value: $t('load3d.backgroundColor'),
-            showDelay: 300
-          }"
-          side="right"
+        <Button
+          :tooltip="$t('load3d.backgroundColor')"
+          tooltip-side="right"
+          variant="textonly"
+          size="icon"
+          class="rounded-full"
+          :aria-label="$t('load3d.backgroundColor')"
+          @click="openColorPicker"
         >
-          <Button
-            variant="textonly"
-            size="icon"
-            class="rounded-full"
-            :aria-label="$t('load3d.backgroundColor')"
-            @click="openColorPicker"
-          >
-            <i class="pi pi-palette text-lg text-base-foreground" />
-            <input
-              ref="colorPickerRef"
-              type="color"
-              :value="backgroundColor"
-              class="pointer-events-none absolute m-0 size-0 p-0 opacity-0"
-              @input="
-                updateBackgroundColor(($event.target as HTMLInputElement).value)
-              "
-            />
-          </Button>
-        </Tooltip>
+          <i class="pi pi-palette text-lg text-base-foreground" />
+          <input
+            ref="colorPickerRef"
+            type="color"
+            :value="backgroundColor"
+            class="pointer-events-none absolute m-0 size-0 p-0 opacity-0"
+            @input="
+              updateBackgroundColor(($event.target as HTMLInputElement).value)
+            "
+          />
+        </Button>
       </div>
 
       <div v-if="showBackgroundImage && !hasBackgroundImage">
-        <Tooltip
-          :config="{
-            value: $t('load3d.uploadBackgroundImage'),
-            showDelay: 300
-          }"
-          side="right"
+        <Button
+          :tooltip="$t('load3d.uploadBackgroundImage')"
+          tooltip-side="right"
+          variant="textonly"
+          size="icon"
+          class="rounded-full"
+          :aria-label="$t('load3d.uploadBackgroundImage')"
+          @click="openImagePicker"
         >
-          <Button
-            variant="textonly"
-            size="icon"
-            class="rounded-full"
-            :aria-label="$t('load3d.uploadBackgroundImage')"
-            @click="openImagePicker"
-          >
-            <i class="pi pi-image text-lg text-base-foreground" />
-            <input
-              ref="imagePickerRef"
-              type="file"
-              accept="image/*"
-              class="pointer-events-none absolute m-0 size-0 p-0 opacity-0"
-              @change="uploadBackgroundImage"
-            />
-          </Button>
-        </Tooltip>
+          <i class="pi pi-image text-lg text-base-foreground" />
+          <input
+            ref="imagePickerRef"
+            type="file"
+            accept="image/*"
+            class="pointer-events-none absolute m-0 size-0 p-0 opacity-0"
+            @change="uploadBackgroundImage"
+          />
+        </Button>
       </div>
     </template>
 
     <div v-if="showBackgroundImage && hasBackgroundImage">
-      <Tooltip
-        :config="{
-          value: $t('load3d.panoramaMode'),
-          showDelay: 300
-        }"
-        side="right"
+      <Button
+        :tooltip="$t('load3d.panoramaMode')"
+        tooltip-side="right"
+        variant="textonly"
+        size="icon"
+        :class="
+          cn(
+            'rounded-full',
+            backgroundRenderMode === 'panorama' && 'ring-2 ring-white/50'
+          )
+        "
+        :aria-label="$t('load3d.panoramaMode')"
+        @click="toggleBackgroundRenderMode"
       >
-        <Button
-          variant="textonly"
-          size="icon"
-          :class="
-            cn(
-              'rounded-full',
-              backgroundRenderMode === 'panorama' && 'ring-2 ring-white/50'
-            )
-          "
-          :aria-label="$t('load3d.panoramaMode')"
-          @click="toggleBackgroundRenderMode"
-        >
-          <i class="pi pi-globe text-lg text-base-foreground" />
-        </Button>
-      </Tooltip>
+        <i class="pi pi-globe text-lg text-base-foreground" />
+      </Button>
     </div>
 
     <PopupSlider
@@ -109,30 +88,22 @@
     />
 
     <div v-if="showBackgroundImage && hasBackgroundImage">
-      <Tooltip
-        :config="{
-          value: $t('load3d.removeBackgroundImage'),
-          showDelay: 300
-        }"
-        side="right"
+      <Button
+        :tooltip="$t('load3d.removeBackgroundImage')"
+        tooltip-side="right"
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        :aria-label="$t('load3d.removeBackgroundImage')"
+        @click="removeBackgroundImage"
       >
-        <Button
-          variant="textonly"
-          size="icon"
-          class="rounded-full"
-          :aria-label="$t('load3d.removeBackgroundImage')"
-          @click="removeBackgroundImage"
-        >
-          <i class="pi pi-times text-lg text-base-foreground" />
-        </Button>
-      </Tooltip>
+        <i class="pi pi-times text-lg text-base-foreground" />
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { computed, ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'

@@ -1,59 +1,69 @@
 <template>
-  <Tooltip :config="tip(t('load3d.gizmo.toggle'))" side="bottom">
-    <button
-      :class="actionClass(gizmoEnabled)"
-      :aria-pressed="gizmoEnabled"
-      type="button"
-      :aria-label="compact ? t('load3d.gizmo.toggle') : undefined"
-      @click="toggleGizmo"
-    >
-      <i class="icon-[lucide--axis-3d] size-4" />
-      <span v-if="!compact">{{ t('load3d.gizmo.toggle') }}</span>
-    </button>
+  <Tooltip>
+    <TooltipTrigger as-child>
+      <button
+        :class="actionClass(gizmoEnabled)"
+        :aria-pressed="gizmoEnabled"
+        type="button"
+        :aria-label="compact ? t('load3d.gizmo.toggle') : undefined"
+        @click="toggleGizmo"
+      >
+        <i class="icon-[lucide--axis-3d] size-4" />
+        <span v-if="!compact">{{ t('load3d.gizmo.toggle') }}</span>
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom">{{
+      t('load3d.gizmo.toggle')
+    }}</TooltipContent>
   </Tooltip>
 
   <template v-if="gizmoEnabled">
     <template v-if="!compact">
-      <Tooltip
-        v-for="m in modeDefs"
-        :key="m.mode"
-        :config="tip(t(m.labelKey))"
-        side="bottom"
-      >
-        <button
-          :class="actionClass(gizmoMode === m.mode)"
-          :aria-pressed="gizmoMode === m.mode"
-          type="button"
-          @click="setGizmoMode(m.mode)"
-        >
-          <i :class="cn(m.icon, 'size-4')" />
-          <span>{{ t(m.labelKey) }}</span>
-        </button>
+      <Tooltip v-for="m in modeDefs" :key="m.mode">
+        <TooltipTrigger as-child>
+          <button
+            :class="actionClass(gizmoMode === m.mode)"
+            :aria-pressed="gizmoMode === m.mode"
+            type="button"
+            @click="setGizmoMode(m.mode)"
+          >
+            <i :class="cn(m.icon, 'size-4')" />
+            <span>{{ t(m.labelKey) }}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{{ t(m.labelKey) }}</TooltipContent>
       </Tooltip>
-      <Tooltip :config="tip(t('load3d.gizmo.reset'))" side="bottom">
-        <button
-          :class="actionClass(false)"
-          type="button"
-          @click="resetGizmoTransform"
-        >
-          <i class="icon-[lucide--rotate-ccw] size-4" />
-          <span>{{ t('load3d.gizmo.reset') }}</span>
-        </button>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <button
+            :class="actionClass(false)"
+            type="button"
+            @click="resetGizmoTransform"
+          >
+            <i class="icon-[lucide--rotate-ccw] size-4" />
+            <span>{{ t('load3d.gizmo.reset') }}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{{
+          t('load3d.gizmo.reset')
+        }}</TooltipContent>
       </Tooltip>
     </template>
     <Popover v-else v-model:open="modeMenuOpen">
       <PopoverTrigger as-child>
-        <Tooltip :config="tip(activeModeLabel)" side="bottom">
-          <button
-            :class="actionClass(false)"
-            type="button"
-            :aria-label="activeModeLabel"
-            data-testid="gizmo-mode-menu"
-          >
-            <i :class="cn(activeModeDef.icon, 'size-4')" />
-            <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
-          </button>
-        </Tooltip>
+        <Button
+          variant="textonly"
+          size="unset"
+          :tooltip="activeModeLabel"
+          tooltip-side="bottom"
+          :class="actionClass(false)"
+          type="button"
+          :aria-label="activeModeLabel"
+          data-testid="gizmo-mode-menu"
+        >
+          <i :class="cn(activeModeDef.icon, 'size-4')" />
+          <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         side="bottom"
@@ -84,15 +94,17 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
   actionClass,
-  menuPanelClass,
-  tip
+  menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'

@@ -1,44 +1,28 @@
 <template>
-  <Tooltip
+  <Button
     v-if="isUnpackVisible"
-    :config="{
-      value: $t('commands.Comfy_Graph_UnpackSubgraph.label'),
-      showDelay: 1000
-    }"
-    side="top"
+    :tooltip="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
+    variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
+    data-testid="convert-to-subgraph-button"
+    @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
   >
-    <Button
-      variant="muted-textonly"
-      :aria-label="$t('commands.Comfy_Graph_UnpackSubgraph.label')"
-      data-testid="convert-to-subgraph-button"
-      @click="() => commandStore.execute('Comfy.Graph.UnpackSubgraph')"
-    >
-      <i class="icon-[lucide--expand] size-4" />
-    </Button>
-  </Tooltip>
-  <Tooltip
+    <i class="icon-[lucide--expand] size-4" />
+  </Button>
+  <Button
     v-else-if="isConvertVisible"
-    :config="{
-      value: $t('commands.Comfy_Graph_ConvertToSubgraph.label'),
-      showDelay: 1000
-    }"
-    side="top"
+    :tooltip="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
+    variant="muted-textonly"
+    size="icon"
+    :aria-label="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
+    data-testid="convert-to-subgraph-button"
+    @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
   >
-    <Button
-      variant="muted-textonly"
-      size="icon"
-      :aria-label="$t('commands.Comfy_Graph_ConvertToSubgraph.label')"
-      data-testid="convert-to-subgraph-button"
-      @click="() => commandStore.execute('Comfy.Graph.ConvertToSubgraph')"
-    >
-      <i class="icon-[lucide--shrink] size-4" />
-    </Button>
-  </Tooltip>
+    <i class="icon-[lucide--shrink] size-4" />
+  </Button>
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

@@ -23,12 +23,16 @@ vi.mock<unknown>(
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeTooltips'),
-  () => ({
-    useNodeTooltips: () => ({
-      getOutputSlotTooltip: () => '',
-      createTooltipConfig: (text: string) => ({ value: text })
-    })
-  })
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useNodeTooltips: () => ({
+        getOutputSlotTooltip: () => '',
+        tooltipsEnabled: ref(true),
+        tooltipDelay: ref(0)
+      })
+    }
+  }
 )
 
 vi.mock<unknown>(

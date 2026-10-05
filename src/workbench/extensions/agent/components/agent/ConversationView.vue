@@ -8,8 +8,6 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -250,21 +248,17 @@ watch(
       </div>
     </div>
 
-    <Tooltip
+    <Button
       v-if="!shouldFollowLatest"
-      :config="buildTooltipConfig(t('agent.latest'))"
-      side="top"
+      :tooltip="t('agent.latest')"
+      type="button"
+      variant="secondary"
+      size="icon"
+      :aria-label="t('agent.latest')"
+      class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
+      @click="scrollToLatest"
     >
-      <Button
-        type="button"
-        variant="secondary"
-        size="icon"
-        :aria-label="t('agent.latest')"
-        class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
-        @click="scrollToLatest"
-      >
-        <span class="icon-[lucide--chevron-down] size-4" />
-      </Button>
-    </Tooltip>
+      <span class="icon-[lucide--chevron-down] size-4" />
+    </Button>
   </div>
 </template>

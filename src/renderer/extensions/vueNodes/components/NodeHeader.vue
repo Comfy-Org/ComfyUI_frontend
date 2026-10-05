@@ -38,21 +38,24 @@
           </Button>
         </div>
         <!-- Node Title -->
-        <Tooltip :config="tooltipConfig" side="top">
-          <div
-            class="flex min-w-0 flex-1 items-center gap-2"
-            data-testid="node-title"
-          >
-            <div class="flex-1 truncate">
-              <EditableText
-                :model-value="displayTitle"
-                :is-editing="isEditing"
-                :input-attrs="{ 'data-testid': 'node-title-input' }"
-                @edit="handleTitleEdit"
-                @cancel="handleTitleCancel"
-              />
+        <Tooltip :disabled="!tooltipText" :delay-duration="tooltipDelay">
+          <TooltipTrigger as-child>
+            <div
+              class="flex min-w-0 flex-1 items-center gap-2"
+              data-testid="node-title"
+            >
+              <div class="flex-1 truncate">
+                <EditableText
+                  :model-value="displayTitle"
+                  :is-editing="isEditing"
+                  :input-attrs="{ 'data-testid': 'node-title-input' }"
+                  @edit="handleTitleEdit"
+                  @cancel="handleTitleCancel"
+                />
+              </div>
             </div>
-          </div>
+          </TooltipTrigger>
+          <TooltipContent>{{ tooltipText }}</TooltipContent>
         </Tooltip>
       </div>
 
@@ -74,6 +77,8 @@
 
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed, onErrorCaptured, ref } from 'vue'
 
@@ -117,17 +122,13 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
+const { getNodeDescription, tooltipDelay } = useNodeTooltips(
   nodeData?.type || ''
 )
 
-const tooltipConfig = computed(() => {
-  if (isEditing.value) {
-    return { value: '', disabled: true }
-  }
-  const description = getNodeDescription.value
-  return createTooltipConfig(description)
-})
+const tooltipText = computed(() =>
+  isEditing.value ? '' : getNodeDescription.value
+)
 
 const resolveTitle = (info: NodeState | undefined) => {
   const untitledLabel = st('g.untitled', 'Untitled')

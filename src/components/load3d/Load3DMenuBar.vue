@@ -7,21 +7,20 @@
     >
       <Popover v-model:open="categoryMenuOpen">
         <PopoverTrigger as-child>
-          <Tooltip
-            :config="compact ? tip(activeLabel) : undefined"
-            side="bottom"
+          <Button
+            variant="textonly"
+            size="unset"
+            :tooltip="compact ? activeLabel : undefined"
+            tooltip-side="bottom"
+            :class="chipClass"
+            type="button"
+            :aria-label="compact ? activeLabel : undefined"
+            data-testid="load3d-category-menu"
           >
-            <button
-              :class="chipClass"
-              type="button"
-              :aria-label="compact ? activeLabel : undefined"
-              data-testid="load3d-category-menu"
-            >
-              <i v-if="compact" :class="cn(activeIcon, 'size-4')" />
-              <template v-else>{{ activeLabel }}</template>
-              <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
-            </button>
-          </Tooltip>
+            <i v-if="compact" :class="cn(activeIcon, 'size-4')" />
+            <template v-else>{{ activeLabel }}</template>
+            <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+          </Button>
         </PopoverTrigger>
         <PopoverContent
           side="bottom"
@@ -136,45 +135,44 @@
           v-if="enableViewer && node"
           :node="node as LGraphNode"
         />
-        <Tooltip
-          v-if="canFitToViewer"
-          :config="tip(t('load3d.fitToViewer'))"
-          side="top"
-        >
-          <button
-            :class="iconBtnClass"
-            type="button"
-            :aria-label="t('load3d.fitToViewer')"
-            @click="emit('fitToViewer')"
-          >
-            <i class="icon-[lucide--scan] size-4" />
-          </button>
+        <Tooltip v-if="canFitToViewer">
+          <TooltipTrigger as-child>
+            <button
+              :class="iconBtnClass"
+              type="button"
+              :aria-label="t('load3d.fitToViewer')"
+              @click="emit('fitToViewer')"
+            >
+              <i class="icon-[lucide--scan] size-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{{ t('load3d.fitToViewer') }}</TooltipContent>
         </Tooltip>
-        <Tooltip
-          v-if="canCenterCameraOnModel"
-          :config="tip(t('load3d.centerCameraOnModel'))"
-          side="top"
-        >
-          <button
-            :class="iconBtnClass"
-            type="button"
-            :aria-label="t('load3d.centerCameraOnModel')"
-            @click="emit('centerCamera')"
-          >
-            <i class="icon-[lucide--crosshair] size-4" />
-          </button>
+        <Tooltip v-if="canCenterCameraOnModel">
+          <TooltipTrigger as-child>
+            <button
+              :class="iconBtnClass"
+              type="button"
+              :aria-label="t('load3d.centerCameraOnModel')"
+              @click="emit('centerCamera')"
+            >
+              <i class="icon-[lucide--crosshair] size-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{{ t('load3d.centerCameraOnModel') }}</TooltipContent>
         </Tooltip>
         <Popover v-if="canExport" v-model:open="exportOpen">
           <PopoverTrigger as-child>
-            <Tooltip :config="tip(t('load3d.export'))" side="top">
-              <button
-                :class="iconBtnClass"
-                type="button"
-                :aria-label="t('load3d.export')"
-              >
-                <i class="icon-[lucide--download] size-4" />
-              </button>
-            </Tooltip>
+            <Button
+              variant="textonly"
+              size="unset"
+              :tooltip="t('load3d.export')"
+              :class="iconBtnClass"
+              type="button"
+              :aria-label="t('load3d.export')"
+            >
+              <i class="icon-[lucide--download] size-4" />
+            </Button>
           </PopoverTrigger>
           <PopoverContent
             side="top"
@@ -199,7 +197,10 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { useElementSize } from '@vueuse/core'
 import { PopoverTrigger } from 'reka-ui'
@@ -214,8 +215,7 @@ import LightMenuGroup from '@/components/load3d/menubar/LightMenuGroup.vue'
 import {
   chipClass,
   iconBtnClass,
-  menuPanelClass,
-  tip
+  menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
 import RecordMenuControl from '@/components/load3d/menubar/RecordMenuControl.vue'

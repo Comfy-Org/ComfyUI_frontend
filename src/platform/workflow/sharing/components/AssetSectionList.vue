@@ -46,10 +46,13 @@
                 onThumbnailError($event.name, $event.previewUrl)
               "
             />
-            <Tooltip :config="buildTooltipConfig(item.name)" side="right">
-              <span class="truncate text-xs text-base-foreground">
-                {{ item.name }}
-              </span>
+            <Tooltip :disabled="!item.name">
+              <TooltipTrigger as-child>
+                <span class="truncate text-xs text-base-foreground">
+                  {{ item.name }}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right">{{ item.name }}</TooltipContent>
             </Tooltip>
             <span
               v-if="item.in_library"
@@ -66,6 +69,8 @@
 
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import {
   CollapsibleContent,
@@ -78,7 +83,6 @@ import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAss
 import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 const { items } = defineProps<{
   items: AssetInfo[]

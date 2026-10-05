@@ -76,14 +76,13 @@
       v-if="!isCloud"
       class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
     >
-      <Tooltip
-        :config="{
-          value: $t('workspaceSwitcher.scopeTooltip'),
-          showDelay: 300
-        }"
-        side="left"
-      >
-        <i class="pi pi-info-circle text-xs" />
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <i class="pi pi-info-circle text-xs" />
+        </TooltipTrigger>
+        <TooltipContent side="left">{{
+          $t('workspaceSwitcher.scopeTooltip')
+        }}</TooltipContent>
       </Tooltip>
       <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
     </div>
@@ -130,6 +129,8 @@
 
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'

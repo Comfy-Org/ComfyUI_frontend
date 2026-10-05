@@ -2,7 +2,6 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -68,7 +67,6 @@ describe('QueueOverlayHeader', () => {
 
   it('emits clear history from the menu', async () => {
     const user = userEvent.setup()
-    const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
     const clearHistorySpy = vi.fn()
 
     renderHeader({ onClearHistory: clearHistorySpy })
@@ -76,7 +74,6 @@ describe('QueueOverlayHeader', () => {
     expect(
       screen.getByRole('button', { name: 'More options' })
     ).toBeInTheDocument()
-    expect(spy).toHaveBeenCalledWith('More')
 
     await user.click(screen.getByRole('button', { name: 'More options' }))
     await user.click(

@@ -14,8 +14,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -102,19 +100,18 @@ const options: {
 <template>
   <DropdownMenuRoot :open :modal="false" @update:open="onOpenChange">
     <DropdownMenuTrigger as-child>
-      <Tooltip :config="buildTooltipConfig(triggerTooltip)" side="top">
-        <Button
-          variant="muted-textonly"
-          size="md"
-          :class="cn('gap-1', open && 'bg-secondary-background-hover')"
-        >
-          <span>{{ triggerLabel }}</span>
-          <span
-            data-testid="run-mode-chevron"
-            class="icon-[lucide--chevron-down] size-4"
-          />
-        </Button>
-      </Tooltip>
+      <Button
+        :tooltip="triggerTooltip"
+        variant="muted-textonly"
+        size="md"
+        :class="cn('gap-1', open && 'bg-secondary-background-hover')"
+      >
+        <span>{{ triggerLabel }}</span>
+        <span
+          data-testid="run-mode-chevron"
+          class="icon-[lucide--chevron-down] size-4"
+        />
+      </Button>
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent

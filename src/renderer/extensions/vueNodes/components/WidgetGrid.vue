@@ -45,19 +45,19 @@
               :dot-only="row.showsControl"
             />
           </div>
-          <Tooltip
+          <AppInput
             v-if="row.showsControl"
-            :config="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
-            side="left"
+            :widget-id="row.widget.widgetId"
+            :name="row.widget.simplified.name"
+            :enable="
+              canSelectInputs && !row.widget.simplified.options?.disabled
+            "
           >
-            <div class="contents">
-              <AppInput
-                :widget-id="row.widget.widgetId"
-                :name="row.widget.simplified.name"
-                :enable="
-                  canSelectInputs && !row.widget.simplified.options?.disabled
-                "
-              >
+            <Tooltip
+              :disabled="!row.widget.tooltip"
+              :delay-duration="tooltipDelay"
+            >
+              <TooltipTrigger as-child>
                 <component
                   :is="row.widget.vueComponent"
                   :model-value="row.widget.simplified.value"
@@ -76,9 +76,12 @@
                   @contextmenu="row.widget.handleContextMenu"
                   @removed="restoreRowFocus"
                 />
-              </AppInput>
-            </div>
-          </Tooltip>
+              </TooltipTrigger>
+              <TooltipContent side="left">{{
+                row.widget.tooltip
+              }}</TooltipContent>
+            </Tooltip>
+          </AppInput>
         </div>
       </template>
     </div>
@@ -89,7 +92,9 @@
 import { computed, nextTick, useTemplateRef, watch } from 'vue'
 
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import type { TooltipConfig } from '@/components/ui/tooltip'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
@@ -101,7 +106,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
-const EMPTY_TOOLTIP: TooltipConfig = {}
+const settingStore = useSettingStore()
+const tooltipDelay = computed(() =>
+  settingStore.get('LiteGraph.Node.TooltipDelay')
+)
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>

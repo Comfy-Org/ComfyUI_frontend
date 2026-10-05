@@ -12,47 +12,57 @@
       <Tooltip
         v-for="badge in logo.badges"
         :key="badge.provider"
-        :config="{ value: badge.provider, showDelay: 0 }"
-        open-on-click
-        suppress-description
+        :open="openTooltip === `${logo.key}:${badge.provider}`"
+        :delay-duration="0"
+        disable-closing-trigger
+        @update:open="setTooltipOpen(`${logo.key}:${badge.provider}`, $event)"
       >
-        <button
-          type="button"
-          :aria-label="badge.provider"
-          data-testid="logo-badge"
-          class="flex size-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 p-0 backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
-        >
-          <i
-            v-if="badge.iconClass"
-            data-testid="logo-icon"
-            :class="cn('size-3.5 text-white', badge.iconClass)"
-            aria-hidden="true"
-          />
-          <img
-            v-else
-            data-testid="logo-img"
-            :src="badge.logoUrl"
-            alt=""
-            class="size-4 rounded-full object-cover"
-            draggable="false"
-            @error="onImageError(badge.provider)"
-          />
-        </button>
+        <TooltipTrigger as-child>
+          <button
+            type="button"
+            :aria-label="badge.provider"
+            data-testid="logo-badge"
+            class="flex size-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 p-0 backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
+            @click.stop="setTooltipOpen(`${logo.key}:${badge.provider}`, true)"
+          >
+            <i
+              v-if="badge.iconClass"
+              data-testid="logo-icon"
+              :class="cn('size-3.5 text-white', badge.iconClass)"
+              aria-hidden="true"
+            />
+            <img
+              v-else
+              data-testid="logo-img"
+              :src="badge.logoUrl"
+              alt=""
+              class="size-4 rounded-full object-cover"
+              draggable="false"
+              @error="onImageError(badge.provider)"
+            />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{{ badge.provider }}</TooltipContent>
       </Tooltip>
       <Tooltip
         v-if="logo.extraProviders.length"
-        :config="{ value: logo.extraProviders, showDelay: 0 }"
-        open-on-click
-        suppress-description
+        :open="openTooltip === `${logo.key}:extra`"
+        :delay-duration="0"
+        disable-closing-trigger
+        @update:open="setTooltipOpen(`${logo.key}:extra`, $event)"
       >
-        <button
-          type="button"
-          :aria-label="logo.extraProviders.join(', ')"
-          data-testid="logo-extra"
-          class="flex h-7 min-w-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
-        >
-          +{{ logo.extraProviders.length }}
-        </button>
+        <TooltipTrigger as-child>
+          <button
+            type="button"
+            :aria-label="logo.extraProviders.join(', ')"
+            data-testid="logo-extra"
+            class="flex h-7 min-w-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
+            @click.stop="setTooltipOpen(`${logo.key}:extra`, true)"
+          >
+            +{{ logo.extraProviders.length }}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{{ logo.extraProviders.join(', ') }}</TooltipContent>
       </Tooltip>
     </div>
   </div>
@@ -62,6 +72,8 @@
 import { computed, ref } from 'vue'
 
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
 import type { ProviderBadge } from '@/platform/workflow/templates/utils/templateDisplay'
 import { getProviderBadges } from '@/platform/workflow/templates/utils/templateDisplay'
@@ -78,6 +90,12 @@ const {
 }>()
 
 const failedLogos = ref(new Set<string>())
+const openTooltip = ref<string | null>(null)
+
+function setTooltipOpen(key: string, open: boolean) {
+  if (open) openTooltip.value = key
+  else if (openTooltip.value === key) openTooltip.value = null
+}
 
 function onImageError(provider: string) {
   failedLogos.value = new Set([...failedLogos.value, provider])

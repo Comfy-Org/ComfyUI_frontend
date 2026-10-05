@@ -36,11 +36,7 @@ describe('PanelHeader', () => {
       mount(isMaximized)
 
       await userEvent.hover(screen.getByRole('button', { name: label }))
-      expect(
-        await screen.findByText(label, {
-          selector: '[data-slot="tooltip-content"]'
-        })
-      ).toBeVisible()
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(label)
     }
   )
 

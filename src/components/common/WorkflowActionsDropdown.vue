@@ -7,6 +7,8 @@ let restoreFocusOnMount = false
 
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
@@ -202,43 +204,45 @@ onMounted(async () => {
           <Tooltip
             v-for="seg in orderedSegments"
             :key="seg.mode"
-            :config="{
-              value: seg.tooltip,
-              showDelay: 300,
-              hideDelay: 300
-            }"
-            side="bottom"
-            :content-class="seg.tooltipContentClass"
+            :disabled="!seg.tooltip"
           >
-            <Button
-              type="button"
-              variant="textonly"
-              size="unset"
-              :aria-label="seg.ariaLabel"
-              :aria-haspopup="seg.active ? 'menu' : undefined"
-              :aria-expanded="seg.active ? dropdownOpen : undefined"
-              :class="seg.buttonClass"
-              @click="onSegmentClick(seg, $event)"
-              @keydown="onSegmentKeydown(seg, $event)"
-            >
-              <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
-              <span :class="seg.labelClass">
-                <span
-                  class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
-                >
-                  {{ seg.label }}
-                  <i
-                    class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="textonly"
+                size="unset"
+                :aria-label="seg.ariaLabel"
+                :aria-haspopup="seg.active ? 'menu' : undefined"
+                :aria-expanded="seg.active ? dropdownOpen : undefined"
+                :class="seg.buttonClass"
+                @click="onSegmentClick(seg, $event)"
+                @keydown="onSegmentKeydown(seg, $event)"
+              >
+                <i
+                  :class="cn('size-4 shrink-0', seg.icon)"
+                  aria-hidden="true"
+                />
+                <span :class="seg.labelClass">
+                  <span
+                    class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
+                  >
+                    {{ seg.label }}
+                    <i
+                      class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  </span>
                 </span>
-              </span>
-              <span
-                v-if="seg.active && hasUnseenItems"
-                aria-hidden="true"
-                class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
-              />
-            </Button>
+                <span
+                  v-if="seg.active && hasUnseenItems"
+                  aria-hidden="true"
+                  class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" :class="seg.tooltipContentClass">{{
+              seg.tooltip
+            }}</TooltipContent>
           </Tooltip>
         </TransitionGroup>
       </div>

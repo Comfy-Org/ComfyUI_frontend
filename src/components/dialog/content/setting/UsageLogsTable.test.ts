@@ -1,6 +1,5 @@
 import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
@@ -125,8 +124,7 @@ describe('UsageLogsTable', () => {
   function renderComponent() {
     return render(UsageLogsTable, {
       global: {
-        plugins: [PrimeVue, testI18n, getActivePinia()!],
-        directives: { tooltip: Tooltip }
+        plugins: [PrimeVue, testI18n, getActivePinia()!]
       }
     })
   }

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { useTimeout } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
@@ -166,27 +164,20 @@ function replayAppModeTour() {
         class="min-w-0 flex-1 truncate font-bold"
         v-text="workflowStore.activeWorkflow?.filename"
       />
-      <Tooltip
-        :config="{
-          value: t('onboardingCoachmarks.appMode.replay'),
-          showDelay: 300,
-          hideDelay: 300
-        }"
-        side="bottom"
+      <Button
+        :tooltip="t('onboardingCoachmarks.appMode.replay')"
+        tooltip-side="bottom"
+        variant="textonly"
+        size="icon"
+        :aria-label="t('onboardingCoachmarks.appMode.replay')"
+        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+        @click="replayAppModeTour"
       >
-        <Button
-          variant="textonly"
-          size="icon"
-          :aria-label="t('onboardingCoachmarks.appMode.replay')"
-          class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
-          @click="replayAppModeTour"
-        >
-          <i class="icon-[lucide--circle-question-mark] size-4" />
-        </Button>
-      </Tooltip>
+        <i class="icon-[lucide--circle-question-mark] size-4" />
+      </Button>
     </section>
     <div
-      class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
+      class="flex h-full flex-col gap-2 border-x border-interface-stroke bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
         v-coachmark="COACH_IDS.inputsList"

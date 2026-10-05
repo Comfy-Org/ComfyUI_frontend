@@ -4,22 +4,25 @@
     data-testid="load3d-animation-strip"
     @wheel.stop
   >
-    <Tooltip :config="tip(playLabel)" side="top">
-      <button
-        :class="iconBtnClass"
-        type="button"
-        :aria-label="playLabel"
-        @click="playing = !playing"
-      >
-        <i
-          :class="
-            cn(
-              playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]',
-              'size-4'
-            )
-          "
-        />
-      </button>
+    <Tooltip>
+      <TooltipTrigger as-child>
+        <button
+          :class="iconBtnClass"
+          type="button"
+          :aria-label="playLabel"
+          @click="playing = !playing"
+        >
+          <i
+            :class="
+              cn(
+                playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]',
+                'size-4'
+              )
+            "
+          />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{{ playLabel }}</TooltipContent>
     </Tooltip>
 
     <Slider
@@ -42,16 +45,17 @@
 
     <Popover v-model:open="speedOpen">
       <PopoverTrigger as-child>
-        <Tooltip :config="tip(t('load3d.menuBar.playbackSpeed'))" side="top">
-          <button
-            :class="chipClass"
-            type="button"
-            :aria-label="t('load3d.menuBar.playbackSpeed')"
-          >
-            {{ speedLabel }}
-            <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
-          </button>
-        </Tooltip>
+        <Button
+          variant="textonly"
+          size="unset"
+          :tooltip="t('load3d.menuBar.playbackSpeed')"
+          :class="chipClass"
+          type="button"
+          :aria-label="t('load3d.menuBar.playbackSpeed')"
+        >
+          {{ speedLabel }}
+          <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         side="top"
@@ -79,17 +83,18 @@
 
     <Popover v-model:open="clipOpen">
       <PopoverTrigger as-child>
-        <Tooltip :config="tip(t('load3d.menuBar.animationClip'))" side="top">
-          <button
-            :class="cn(chipClass, 'max-w-40')"
-            type="button"
-            :aria-label="t('load3d.menuBar.animationClip')"
-          >
-            <i class="icon-[lucide--clapperboard] size-4 shrink-0" />
-            <span v-if="!compact" class="truncate">{{ selectedClipName }}</span>
-            <i class="icon-[lucide--chevron-down] size-4 shrink-0 opacity-70" />
-          </button>
-        </Tooltip>
+        <Button
+          variant="textonly"
+          size="unset"
+          :tooltip="t('load3d.menuBar.animationClip')"
+          :class="cn(chipClass, 'max-w-40')"
+          type="button"
+          :aria-label="t('load3d.menuBar.animationClip')"
+        >
+          <i class="icon-[lucide--clapperboard] size-4 shrink-0" />
+          <span v-if="!compact" class="truncate">{{ selectedClipName }}</span>
+          <i class="icon-[lucide--chevron-down] size-4 shrink-0 opacity-70" />
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         side="top"
@@ -126,8 +131,7 @@ import { formatAnimationTime } from '@/components/load3d/formatAnimationTime'
 import {
   chipClass,
   iconBtnClass,
-  menuPanelClass,
-  tip
+  menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
@@ -137,7 +141,10 @@ import {
   selectedMenuButtonClass
 } from '@/components/ui/menu/menuStyles'
 import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { AnimationItem } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 

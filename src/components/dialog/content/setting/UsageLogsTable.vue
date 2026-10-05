@@ -63,10 +63,7 @@
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
-                v-tooltip.top="{
-                  escape: false,
-                  value: tooltipContentMap.get(event.event_id ?? '') || ''
-                }"
+                :tooltip="tooltipContentMap.get(event.event_id ?? '')"
                 variant="textonly"
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"

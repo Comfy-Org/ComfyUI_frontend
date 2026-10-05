@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -60,11 +62,6 @@ const footerIconClass = computed(() => {
     return 'icon-[lucide--circle-x] text-muted-foreground'
   return 'icon-[lucide--check-circle] text-jade-600'
 })
-
-const tooltipConfig = computed(() => ({
-  value: footerLabel.value,
-  disabled: isExpanded.value
-}))
 
 function progressPercent(job: AssetExport): number {
   return Math.round(job.progress * 100)
@@ -197,8 +194,11 @@ function closeDialog() {
         class="flex h-12 min-w-0 flex-1 items-center justify-between gap-2 border-t border-border-default px-4"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
-          <Tooltip :config="tooltipConfig" content-class="z-10000" side="top">
-            <i :class="cn('size-4 shrink-0', footerIconClass)" />
+          <Tooltip :disabled="isExpanded">
+            <TooltipTrigger as-child>
+              <i :class="cn('size-4 shrink-0', footerIconClass)" />
+            </TooltipTrigger>
+            <TooltipContent class="z-10000">{{ footerLabel }}</TooltipContent>
           </Tooltip>
           <span
             :class="

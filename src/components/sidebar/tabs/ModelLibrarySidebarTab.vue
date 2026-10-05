@@ -1,30 +1,27 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
     <template #tool-buttons>
-      <Tooltip :config="$t('g.refresh')" side="bottom">
-        <Button
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('g.refresh')"
-          @click="withLoadFailureToast(() => modelStore.refresh())"
-        >
-          <i class="icon-[lucide--refresh-cw] size-4" />
-        </Button>
-      </Tooltip>
-      <Tooltip
-        v-if="!flags.assetsEnabled"
-        :config="$t('g.loadAllFolders')"
-        side="bottom"
+      <Button
+        :tooltip="$t('g.refresh')"
+        tooltip-side="bottom"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.refresh')"
+        @click="withLoadFailureToast(() => modelStore.refresh())"
       >
-        <Button
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('g.loadAllFolders')"
-          @click="withLoadFailureToast(() => modelStore.loadModels())"
-        >
-          <i class="icon-[lucide--cloud-download] size-4" />
-        </Button>
-      </Tooltip>
+        <i class="icon-[lucide--refresh-cw] size-4" />
+      </Button>
+      <Button
+        v-if="!flags.assetsEnabled"
+        :tooltip="$t('g.loadAllFolders')"
+        tooltip-side="bottom"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.loadAllFolders')"
+        @click="withLoadFailureToast(() => modelStore.loadModels())"
+      >
+        <i class="icon-[lucide--cloud-download] size-4" />
+      </Button>
     </template>
     <template #header>
       <SidebarTopArea>
@@ -82,7 +79,6 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'

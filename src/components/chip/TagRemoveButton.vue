@@ -2,9 +2,7 @@
 import type { HTMLAttributes } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { tagRemoveButtonVariants } from '@comfyorg/design-system/tag.variants'
 
@@ -20,20 +18,16 @@ const {
 </script>
 
 <template>
-  <Tooltip
-    :config="tooltip ? buildTooltipConfig(tooltip) : undefined"
-    side="top"
+  <Button
+    :tooltip
+    type="button"
+    variant="textonly"
+    size="icon-sm"
+    :aria-label="label"
+    :class="cn(tagRemoveButtonVariants(), 'opacity-60', className)"
   >
-    <Button
-      type="button"
-      variant="textonly"
-      size="icon-sm"
-      :aria-label="label"
-      :class="cn(tagRemoveButtonVariants(), 'opacity-60', className)"
-    >
-      <slot>
-        <i class="icon-[lucide--x] size-4" aria-hidden="true" />
-      </slot>
-    </Button>
-  </Tooltip>
+    <slot>
+      <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+    </slot>
+  </Button>
 </template>

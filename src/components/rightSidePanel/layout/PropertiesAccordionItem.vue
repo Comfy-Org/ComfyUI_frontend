@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
 import { computed } from 'vue'
 
@@ -28,11 +30,6 @@ const {
 const isCollapse = defineModel<boolean>('collapse', { default: false })
 
 const isExpanded = computed(() => !isCollapse.value && !disabled)
-
-const tooltipConfig = computed(() => {
-  if (!tooltip) return undefined
-  return { value: tooltip, showDelay: tooltipDelay }
-})
 </script>
 
 <template>
@@ -40,35 +37,38 @@ const tooltipConfig = computed(() => {
     <div
       class="sticky top-0 z-10 flex items-center justify-between bg-inherit backdrop-blur-xl"
     >
-      <Tooltip :config="tooltipConfig" side="right">
-        <button
-          type="button"
-          :class="
-            cn(
-              'group flex w-full items-center justify-between border-0 bg-transparent pr-3 pl-4 text-left ring-0 outline-0',
-              size === 'lg' ? 'min-h-16' : 'min-h-12',
-              !disabled && 'cursor-pointer'
-            )
-          "
-          :disabled="disabled"
-          @click="isCollapse = !isCollapse"
-        >
-          <span class="line-clamp-2 flex-1 text-sm font-semibold">
-            <slot name="label">
-              {{ label }}
-            </slot>
-          </span>
-
-          <i
+      <Tooltip :disabled="!tooltip" :delay-duration="tooltipDelay">
+        <TooltipTrigger as-child>
+          <button
+            type="button"
             :class="
               cn(
-                'icon-[lucide--chevron-up] size-4 text-muted-foreground transition-all group-hover:text-base-foreground group-focus:text-base-foreground group-has-[.subbutton:hover]:text-muted-foreground',
-                isCollapse && '-rotate-180',
-                disabled && 'opacity-0'
+                'group flex w-full items-center justify-between border-0 bg-transparent pr-3 pl-4 text-left ring-0 outline-0',
+                size === 'lg' ? 'min-h-16' : 'min-h-12',
+                !disabled && 'cursor-pointer'
               )
             "
-          />
-        </button>
+            :disabled="disabled"
+            @click="isCollapse = !isCollapse"
+          >
+            <span class="line-clamp-2 flex-1 text-sm font-semibold">
+              <slot name="label">
+                {{ label }}
+              </slot>
+            </span>
+
+            <i
+              :class="
+                cn(
+                  'icon-[lucide--chevron-up] size-4 text-muted-foreground transition-all group-hover:text-base-foreground group-focus:text-base-foreground group-has-[.subbutton:hover]:text-muted-foreground',
+                  isCollapse && '-rotate-180',
+                  disabled && 'opacity-0'
+                )
+              "
+            />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right">{{ tooltip }}</TooltipContent>
       </Tooltip>
     </div>
     <TransitionCollapse>

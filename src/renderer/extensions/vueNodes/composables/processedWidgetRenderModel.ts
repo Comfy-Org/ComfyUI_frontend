@@ -1,4 +1,3 @@
-import type { TooltipConfig } from '@/components/ui/tooltip'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
@@ -73,15 +72,12 @@ export interface ProcessedWidget extends WidgetGridItem {
   hasLayoutSize: boolean
   hasError: boolean
   widgetId: WidgetId
-  tooltipConfig: TooltipConfig
+  tooltip: string
   updateHandler: (value: WidgetValue) => void
 }
 
 export interface WidgetUiCallbacks {
-  getTooltipConfig: (
-    widget: WidgetTooltipSource,
-    fullVal?: string
-  ) => TooltipConfig
+  getTooltip: (widget: WidgetTooltipSource, fullVal?: string) => string
   handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
 }
 
@@ -429,7 +425,7 @@ function processWidget(
     isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
-  const tooltipConfig = ctx.ui.getTooltipConfig(
+  const tooltip = ctx.ui.getTooltip(
     { name: widgetState.name, tooltip: renderState?.tooltip },
     valueTooltip
   )
@@ -465,7 +461,7 @@ function processWidget(
     visible,
     suppressedByConnection: visibility?.suppression.byConnection ?? false,
     updateHandler,
-    tooltipConfig,
+    tooltip,
     slotMetadata: slotInfo
   }
 }

@@ -5,28 +5,28 @@
       class="flex-1"
       :placeholder="$t('g.imageUrl')"
     />
-    <Tooltip :config="$t('g.upload')" side="right">
-      <Button
-        variant="secondary"
-        size="sm"
-        :aria-label="$t('g.upload')"
-        :disabled="isUploading"
-        @click="triggerFileInput"
-      >
-        <i :class="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" />
-      </Button>
-    </Tooltip>
-    <Tooltip :config="$t('g.clear')" side="right">
-      <Button
-        variant="destructive"
-        size="sm"
-        :aria-label="$t('g.clear')"
-        :disabled="!modelValue"
-        @click="clearImage"
-      >
-        <i class="pi pi-trash" />
-      </Button>
-    </Tooltip>
+    <Button
+      :tooltip="$t('g.upload')"
+      tooltip-side="right"
+      variant="secondary"
+      size="sm"
+      :aria-label="$t('g.upload')"
+      :disabled="isUploading"
+      @click="triggerFileInput"
+    >
+      <i :class="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" />
+    </Button>
+    <Button
+      :tooltip="$t('g.clear')"
+      tooltip-side="right"
+      variant="destructive"
+      size="sm"
+      :aria-label="$t('g.clear')"
+      :disabled="!modelValue"
+      @click="clearImage"
+    >
+      <i class="pi pi-trash" />
+    </Button>
     <input
       ref="fileInput"
       type="file"
@@ -38,8 +38,6 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

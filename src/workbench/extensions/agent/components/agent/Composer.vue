@@ -11,7 +11,9 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@/platform/telemetry/types'
 
@@ -477,13 +479,8 @@ defineExpose({
 
         <div class="flex items-center gap-1">
           <RunModePopover />
-          <AccessibleTooltip
-            :label="primaryActionTooltip"
-            :skip-delay-duration="0"
-            disable-hoverable-content
-            :collision-padding="8"
-          >
-            <template #trigger>
+          <Tooltip>
+            <TooltipTrigger as-child>
               <Button
                 type="button"
                 :variant="primaryActionVariant"
@@ -495,14 +492,14 @@ defineExpose({
                 <i-lucide:square v-if="running" class="size-4" />
                 <i-lucide:arrow-up v-else class="size-4" />
               </Button>
-            </template>
-            <template #content>
+            </TooltipTrigger>
+            <TooltipContent>
               {{ primaryActionTooltip }}
               <span v-if="primaryActionShortcut" class="ml-1 opacity-50">{{
                 primaryActionShortcut
               }}</span>
-            </template>
-          </AccessibleTooltip>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

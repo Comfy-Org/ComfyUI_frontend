@@ -120,22 +120,16 @@
         >
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
-            <Tooltip
-              :config="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
-              side="right"
+            <Button
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
+              tooltip-side="right"
+              variant="muted-textonly"
+              size="icon-sm"
+              :aria-label="$t('subscription.additionalCreditsInfo')"
+              class="text-muted"
             >
-              <Button
-                variant="muted-textonly"
-                size="icon-sm"
-                :aria-label="$t('subscription.additionalCreditsInfo')"
-                class="text-muted"
-              >
-                <i class="icon-[lucide--info] size-4" />
-              </Button>
-            </Tooltip>
+              <i class="icon-[lucide--info] size-4" />
+            </Button>
             <span
               v-if="isSpendingAdditional"
               class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs/none font-semibold text-base-background uppercase"
@@ -167,22 +161,16 @@
         <div class="flex items-center justify-between gap-2 text-sm">
           <span class="flex items-center gap-1">
             {{ $t('subscription.additionalCredits') }}
-            <Tooltip
-              :config="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
-              side="right"
+            <Button
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
+              tooltip-side="right"
+              variant="muted-textonly"
+              size="icon-sm"
+              :aria-label="$t('subscription.additionalCreditsInfo')"
+              class="text-muted"
             >
-              <Button
-                variant="muted-textonly"
-                size="icon-sm"
-                :aria-label="$t('subscription.additionalCreditsInfo')"
-                class="text-muted"
-              >
-                <i class="icon-[lucide--info] size-4" />
-              </Button>
-            </Tooltip>
+              <i class="icon-[lucide--info] size-4" />
+            </Button>
           </span>
           <span class="flex items-center gap-1 font-bold">
             <i class="icon-[lucide--coins] size-4" />
@@ -225,8 +213,6 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import Skeleton from 'primevue/skeleton'

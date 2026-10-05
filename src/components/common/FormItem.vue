@@ -9,12 +9,11 @@
       >
         <slot name="name-prefix" />
         {{ props.item.name }}
-        <Tooltip
-          v-if="props.item.tooltip"
-          :config="props.item.tooltip"
-          side="right"
-        >
-          <i class="pi pi-info-circle bg-transparent" />
+        <Tooltip v-if="props.item.tooltip">
+          <TooltipTrigger as-child>
+            <i class="pi pi-info-circle bg-transparent" />
+          </TooltipTrigger>
+          <TooltipContent side="right">{{ props.item.tooltip }}</TooltipContent>
         </Tooltip>
         <slot name="name-suffix" />
       </span>
@@ -48,6 +47,8 @@ import Input from '@/components/ui/input/Input.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { FormItem } from '@/platform/settings/types'
 
 const formValue = defineModel<unknown>('formValue')

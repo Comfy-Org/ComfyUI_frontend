@@ -1,6 +1,5 @@
 import type { Component } from 'vue'
 
-import type { TooltipConfig } from '@/components/ui/tooltip'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
@@ -33,7 +32,7 @@ export interface WidgetGridItem {
   hasError?: boolean
   widgetId?: WidgetId
   slotMetadata?: WidgetSlotMetadata
-  tooltipConfig?: TooltipConfig
+  tooltip?: string
   updateHandler?: (value: WidgetValue) => void
   handleContextMenu?: (e: PointerEvent) => void
 }
