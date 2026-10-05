@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 import type { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 export class SidebarTab {
   public readonly tabButton: Locator
@@ -495,14 +496,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   /** Dismiss all visible toast notifications by clicking their close buttons. */
   async dismissToasts() {
-    const closeButtons = this.page.getByTestId('toast-close')
-    for (const btn of await closeButtons.all()) {
-      await btn.click().catch(() => {})
-    }
-    // Wait for all toast elements to fully animate out and detach from DOM
-    await expect(this.page.getByTestId('toast'))
-      .toHaveCount(0)
-      .catch(() => {})
+    await new ToastHelper(this.page).closeToasts()
   }
 
   async switchToImported() {

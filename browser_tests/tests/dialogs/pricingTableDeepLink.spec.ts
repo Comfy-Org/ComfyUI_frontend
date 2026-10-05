@@ -1137,10 +1137,9 @@ test.describe(
         expect((await subscribeResponse).status()).toBe(200)
         expect(subscribeRequests).toHaveLength(1)
 
-        const blockedPopupToast = page
-          .getByTestId('toast')
-          .and(page.locator('[data-toast-kind="error"]'))
-          .filter({ hasText: 'Failed to change plan' })
+        const blockedPopupToast = new ToastHelper(page).toastErrors.filter({
+          hasText: 'Failed to change plan'
+        })
         await expect(blockedPopupToast).toContainText(
           "Couldn't open the payment page — please try again"
         )
