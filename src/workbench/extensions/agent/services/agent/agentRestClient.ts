@@ -13,7 +13,7 @@ import {
   markErrorReported,
   reportError
 } from '@/platform/telemetry/reportError'
-import type { AuthScheme } from '@/scripts/api'
+import type { AuthCredential, AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
 import {
@@ -77,16 +77,75 @@ type AgentApiOperation =
   | 'upload_image'
 
 type ReportedAuthScheme = AuthScheme | 'unreported'
+type ReportedAuthCredential = AuthCredential | 'unreported'
 
 /**
  * The reported message for an auth rejection, constant by construction.
  *
  * The backend's own text is what `AgentApiError` carries to the caller, but it
- * is not what gets reported: it is uncontrolled, is not needed to diagnose
- * PM-1802, and varies enough to fragment issue grouping across what is one
- * failure mode. Status, operation and auth scheme ride as tags instead.
+ * is not the Sentry message: it is uncontrolled and varies enough to fragment
+ * issue grouping across what is one failure mode. Status, operation, auth
+ * scheme and credential kind ride as tags, and the backend's bounded text
+ * rides as an extra.
  */
 const AUTH_REJECTED_MESSAGE = 'Agent API request rejected by authentication'
+
+const MAX_BACKEND_TEXT_LENGTH = 200
+const MAX_TAG_LENGTH = 64
+const MAX_ACCEPTED_METHODS = 8
+
+interface AuthRejectionDetails {
+  message: string
+  errorType?: string
+  errorCode?: string
+  accepted?: string
+}
+
+function boundedText(value: unknown, maxLength: number): string | undefined {
+  if (typeof value !== 'string' || value.length === 0) return undefined
+  return value.slice(0, maxLength)
+}
+
+/** Backend text is untrusted: opaque long runs and emails never reach telemetry. */
+function scrubBackendText(text: string): string {
+  return text
+    .replace(/[^\s@]+@[^\s@]+/g, '[email]')
+    .replace(/[\w+/=.~-]{40,}/g, '[redacted]')
+    .slice(0, MAX_BACKEND_TEXT_LENGTH)
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)
+    : undefined
+}
+
+/**
+ * The bounded fields of an auth rejection that tell its causes apart. Ingest
+ * answers a credential the route does not take with
+ * `{ accepted: [...], error: { type: 'auth_type_not_allowed', message } }`,
+ * and its other auth refusals with `{ code, message }`.
+ */
+function describeAuthRejection(
+  body: unknown,
+  message: string
+): AuthRejectionDetails {
+  const record = asRecord(body)
+  const error = asRecord(record?.error)
+  const accepted = Array.isArray(record?.accepted)
+    ? record.accepted
+        .filter((entry): entry is string => typeof entry === 'string')
+        .slice(0, MAX_ACCEPTED_METHODS)
+        .map((entry) => entry.slice(0, MAX_TAG_LENGTH))
+        .join(',')
+    : undefined
+  return {
+    message: scrubBackendText(message),
+    errorType: boundedText(error?.type, MAX_TAG_LENGTH),
+    errorCode: boundedText(record?.code ?? error?.code, MAX_TAG_LENGTH),
+    accepted: accepted || undefined
+  }
+}
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -432,7 +491,8 @@ export function createAgentRestClient() {
   async function toApiError(
     response: Response,
     operation: AgentApiOperation,
-    authScheme: ReportedAuthScheme
+    authScheme: ReportedAuthScheme,
+    credential: ReportedAuthCredential
   ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
     const message = getErrorMessage(body, response.statusText)
@@ -450,10 +510,20 @@ export function createAgentRestClient() {
       retryAfterSeconds
     )
     if (response.status === 401 || response.status === 403) {
+      const details = describeAuthRejection(body, message)
       reportError(new Error(AUTH_REJECTED_MESSAGE), {
         surface: 'agent',
         errorType: 'agent_api_auth_rejected',
-        tags: { operation, status: response.status, authScheme },
+        tags: withoutUndefined({
+          operation,
+          status: response.status,
+          authScheme,
+          credential,
+          backendErrorType: details.errorType,
+          backendErrorCode: details.errorCode,
+          acceptedMethods: details.accepted
+        }),
+        context: { backendMessage: details.message },
         level: 'warning'
       })
       // Callers still receive the backend text for the UI, but their generic
@@ -471,13 +541,19 @@ export function createAgentRestClient() {
     schema: z.ZodType<T>
   ): Promise<T> {
     let authScheme: ReportedAuthScheme = 'unreported'
+    let credential: ReportedAuthCredential = 'unreported'
     const response = await api.fetchApi(route, {
       ...init,
       onAuthScheme: (scheme) => {
         authScheme = scheme
+      },
+      onAuthCredential: (kind) => {
+        credential = kind
       }
     })
-    if (!response.ok) throw await toApiError(response, operation, authScheme)
+    if (!response.ok) {
+      throw await toApiError(response, operation, authScheme, credential)
+    }
     let payload: unknown
     try {
       payload = await response.json()

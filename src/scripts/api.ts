@@ -156,11 +156,16 @@ const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
  */
 export type AuthScheme = 'web-session' | 'cloud-auth-header' | 'none'
 
+/** What credential a request carried, for telemetry; never the credential itself. */
+export type AuthCredential = 'session-cookie' | 'bearer' | 'api-key' | 'none'
+
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
   onAuthHeader?: (attached: boolean) => void
   /** Reports which auth path was taken, independent of onAuthHeader's attached/not boolean. */
   onAuthScheme?: (scheme: AuthScheme) => void
+  /** Reports the kind of credential sent, to tell a missing token from a wrong one. */
+  onAuthCredential?: (credential: AuthCredential) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -609,7 +614,11 @@ export class ComfyApi extends EventTarget {
   private async addCloudAuthHeader(
     headers: HeadersInit,
     onAuthHeader: FetchApiOptions['onAuthHeader']
-  ): Promise<{ scheme: AuthScheme; unifiedRetryOn401: boolean }> {
+  ): Promise<{
+    scheme: AuthScheme
+    credential: AuthCredential
+    unifiedRetryOn401: boolean
+  }> {
     // Get Firebase JWT token if user is logged in
     const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
       try {
@@ -623,13 +632,16 @@ export class ComfyApi extends EventTarget {
 
     const authHeader = await getAuthHeaderIfAvailable()
     onAuthHeader?.(authHeader !== null)
-    if (!authHeader) return { scheme: 'none', unifiedRetryOn401: false }
+    if (!authHeader) {
+      return { scheme: 'none', credential: 'none', unifiedRetryOn401: false }
+    }
 
     for (const [key, value] of Object.entries(authHeader)) {
       addHeaderEntry(headers, key, value)
     }
     return {
       scheme: 'cloud-auth-header',
+      credential: 'Authorization' in authHeader ? 'bearer' : 'api-key',
       unifiedRetryOn401: await shouldRemintCloudRequest()
     }
   }
@@ -662,6 +674,7 @@ export class ComfyApi extends EventTarget {
       timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
       onAuthHeader,
       onAuthScheme,
+      onAuthCredential,
       ...requestOptions
     } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
@@ -674,14 +687,17 @@ export class ComfyApi extends EventTarget {
       if (sendOnWebSession) {
         onAuthHeader?.(true)
         onAuthScheme?.('web-session')
+        onAuthCredential?.('session-cookie')
       } else {
         const cloudAuth = await this.addCloudAuthHeader(headers, onAuthHeader)
         unifiedRetryOn401 = cloudAuth.unifiedRetryOn401
         onAuthScheme?.(cloudAuth.scheme)
+        onAuthCredential?.(cloudAuth.credential)
       }
     } else {
       onAuthHeader?.(false)
       onAuthScheme?.('none')
+      onAuthCredential?.('none')
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)

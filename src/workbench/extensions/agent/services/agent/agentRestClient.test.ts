@@ -4,7 +4,7 @@ import {
   markErrorReported,
   reportError
 } from '@/platform/telemetry/reportError'
-import type { AuthScheme } from '@/scripts/api'
+import type { AuthCredential, AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
@@ -34,11 +34,22 @@ function respond(response: Response) {
   vi.mocked(api.fetchApi).mockResolvedValueOnce(response)
 }
 
-function respondWithAuthScheme(response: Response, scheme: AuthScheme) {
+function respondWithAuthScheme(
+  response: Response,
+  scheme: AuthScheme,
+  credential?: AuthCredential
+) {
   vi.mocked(api.fetchApi).mockImplementationOnce(async (_route, init) => {
     init?.onAuthScheme?.(scheme)
+    if (credential) init?.onAuthCredential?.(credential)
     return response
   })
+}
+
+/** The `extra` context of the most recent `reportError` call. */
+function reportedContext(): Record<string, unknown> | undefined {
+  expect(reportError).toHaveBeenCalledOnce()
+  return vi.mocked(reportError).mock.calls.at(-1)?.[1].context
 }
 
 function lastCall(): { route: string; init: RequestInit } {
@@ -611,7 +622,11 @@ describe('error mapping', () => {
       tags: {
         operation: 'get_thread_messages',
         status: 401,
-        authScheme: 'web-session'
+        authScheme: 'web-session',
+        credential: 'unreported'
+      },
+      context: {
+        backendMessage: 'Authentication method not allowed for this endpoint'
       },
       level: 'warning'
     })
@@ -630,7 +645,8 @@ describe('error mapping', () => {
     expect(reportedTags()).toEqual({
       operation: 'get_thread_messages',
       status: 403,
-      authScheme: 'cloud-auth-header'
+      authScheme: 'cloud-auth-header',
+      credential: 'unreported'
     })
   })
 
@@ -644,7 +660,8 @@ describe('error mapping', () => {
     expect(reportedTags()).toEqual({
       operation: 'get_thread_messages',
       status: 401,
-      authScheme: 'none'
+      authScheme: 'none',
+      credential: 'unreported'
     })
   })
 
@@ -658,7 +675,115 @@ describe('error mapping', () => {
     expect(reportedTags()).toEqual({
       operation: 'get_thread_messages',
       status: 401,
-      authScheme: 'unreported'
+      authScheme: 'unreported',
+      credential: 'unreported'
+    })
+  })
+
+  it('reports the credential kind and the backend refusal details on an auth-type rejection', async () => {
+    respondWithAuthScheme(
+      jsonResponse(403, {
+        accepted: ['bearer_jwt', 'x_api_key'],
+        error: {
+          type: 'auth_type_not_allowed',
+          message:
+            'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
+        }
+      }),
+      'web-session',
+      'session-cookie'
+    )
+
+    const error = await makeClient()
+      .getRunMode()
+      .catch((e: unknown) => e)
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_api_auth_rejected',
+      tags: {
+        operation: 'get_run_mode',
+        status: 403,
+        authScheme: 'web-session',
+        credential: 'session-cookie',
+        backendErrorType: 'auth_type_not_allowed',
+        acceptedMethods: 'bearer_jwt,x_api_key'
+      },
+      context: {
+        backendMessage:
+          'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
+      },
+      level: 'warning'
+    })
+    expect(reportedError().message).toBe(
+      'Agent API request rejected by authentication'
+    )
+    expect(error).toBeInstanceOf(AgentApiError)
+  })
+
+  it.for([
+    ['session-cookie', 'web-session'],
+    ['bearer', 'cloud-auth-header'],
+    ['api-key', 'cloud-auth-header'],
+    ['none', 'none']
+  ] as const)(
+    'tags the %s credential so cookie-only, missing and wrong tokens stay distinguishable',
+    async ([credential, scheme]) => {
+      respondWithAuthScheme(
+        jsonResponse(401, { code: 'UNAUTHORIZED', message: 'no credential' }),
+        scheme,
+        credential
+      )
+
+      await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(reportedTags()).toMatchObject({
+        authScheme: scheme,
+        credential,
+        backendErrorCode: 'UNAUTHORIZED'
+      })
+    }
+  )
+
+  it('bounds and scrubs the backend text before reporting it', async () => {
+    const token = `eyJ${'a'.repeat(60)}.${'b'.repeat(60)}.${'c'.repeat(60)}`
+    respondWithAuthScheme(
+      jsonResponse(401, {
+        error: `denied for someone@example.com with ${token} ${'x '.repeat(300)}`
+      }),
+      'cloud-auth-header',
+      'bearer'
+    )
+
+    await makeClient()
+      .getRunMode()
+      .catch((e: unknown) => e)
+
+    const backendMessage = String(reportedContext()?.backendMessage)
+    expect(backendMessage).not.toContain('example.com')
+    expect(backendMessage).not.toContain(token)
+    expect(backendMessage).toContain('[redacted]')
+    expect(backendMessage.length).toBeLessThanOrEqual(200)
+  })
+
+  it('caps the reported accepted-methods list and ignores non-string entries', async () => {
+    respondWithAuthScheme(
+      jsonResponse(403, {
+        accepted: ['a', 1, null, 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
+        error: { type: 'auth_type_not_allowed', message: 'nope' }
+      }),
+      'web-session',
+      'session-cookie'
+    )
+
+    await makeClient()
+      .getRunMode()
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toMatchObject({
+      acceptedMethods: 'a,b,c,d,e,f,g,h'
     })
   })
 
@@ -675,7 +800,8 @@ describe('error mapping', () => {
     expect(reportedTags()).toEqual({
       operation: 'answer_thread_ask',
       status: 403,
-      authScheme: 'cloud-auth-header'
+      authScheme: 'cloud-auth-header',
+      credential: 'unreported'
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -699,7 +825,8 @@ describe('error mapping', () => {
     expect(reportedTags()).toEqual({
       operation: 'cancel_thread_message',
       status: 403,
-      authScheme: 'cloud-auth-header'
+      authScheme: 'cloud-auth-header',
+      credential: 'unreported'
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -740,7 +867,8 @@ describe('error mapping', () => {
     expect(reportedTags()).toEqual({
       operation: 'list_cloud_workflows',
       status: 401,
-      authScheme: 'cloud-auth-header'
+      authScheme: 'cloud-auth-header',
+      credential: 'unreported'
     })
   })
 
