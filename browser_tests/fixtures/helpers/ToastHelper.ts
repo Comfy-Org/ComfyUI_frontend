@@ -1,6 +1,12 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
+type ToastKind = 'error' | 'success' | 'warning' | 'loading'
+
+export function toastSelector(kind: ToastKind): string {
+  return `[data-testid="toast"][data-toast-kind="${kind}"]`
+}
+
 export class ToastHelper {
   public readonly visibleToasts: Locator
   public readonly toastErrors: Locator
@@ -12,12 +18,10 @@ export class ToastHelper {
   constructor(private readonly page: Page) {
     const toasts = page.getByTestId('toast')
     this.visibleToasts = toasts.filter({ visible: true })
-    this.toastErrors = toasts.and(page.locator('[data-toast-kind="error"]'))
-    this.toastSuccesses = toasts.and(
-      page.locator('[data-toast-kind="success"]')
-    )
-    this.toastWarnings = toasts.and(page.locator('[data-toast-kind="warning"]'))
-    this.toastLoadings = toasts.and(page.locator('[data-toast-kind="loading"]'))
+    this.toastErrors = page.locator(toastSelector('error'))
+    this.toastSuccesses = page.locator(toastSelector('success'))
+    this.toastWarnings = page.locator(toastSelector('warning'))
+    this.toastLoadings = page.locator(toastSelector('loading'))
     this.alerts = toasts.and(page.getByRole('alert'))
   }
 
