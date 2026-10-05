@@ -225,6 +225,34 @@ function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
   )
 }
 
+const serialisedLinkedInputNames = new WeakMap<LGraphNode, string[]>()
+
+/**
+ * Names of the inputs that carried a link in `nodeData`.
+ *
+ * `LGraphNode.configure` assigns links by slot index against a node built at
+ * its definition's size, so a link saved beyond that lands on whichever input
+ * now occupies its index - frequently a sibling group's. Anything that needs
+ * to know which group genuinely owned a link has to read it from the
+ * serialized data, because the slot it ended up on is not evidence.
+ */
+export function serialisedLinkedInputsOf(
+  node: LGraphNode
+): readonly string[] | undefined {
+  return serialisedLinkedInputNames.get(node)
+}
+
+function recordSerialisedLinkedInputs(
+  node: LGraphNode,
+  nodeData: Pick<ISerialisedNode, 'inputs'>
+): void {
+  const names = (nodeData.inputs ?? []).flatMap((input) =>
+    input.link == null ? [] : [input.name]
+  )
+  if (names.length) serialisedLinkedInputNames.set(node, names)
+  else serialisedLinkedInputNames.delete(node)
+}
+
 /**
  * Realigns a node's input links by name before its group widget values are
  * applied, for nodes that have a group widget child input.
@@ -246,6 +274,8 @@ export function realignGroupWidgetChildLinks(
   node: LGraphNode,
   nodeData: Pick<ISerialisedNode, 'id' | 'inputs'>
 ): void {
+  recordSerialisedLinkedInputs(node, nodeData)
+
   const { graph } = node
   if (!graph) return
 

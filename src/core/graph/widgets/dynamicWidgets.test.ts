@@ -1190,7 +1190,13 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
     { min: 0, images: 5, videos: 2 },
     { min: 2, images: 6, videos: 2 },
     { min: 2, images: 5, videos: 2 },
-    { min: 4, images: 8, videos: 4 }
+    { min: 4, images: 8, videos: 4 },
+    // A group whose sibling carries no links, or only one, is where a link
+    // saved past the definition's size lands on the sibling's slot.
+    { min: 0, images: 5, videos: 0 },
+    { min: 0, images: 6, videos: 0 },
+    { min: 1, images: 8, videos: 1 },
+    { min: 2, images: 8, videos: 1 }
   ])(
     'min=$min keeps all $images image and $videos video links',
     async ({ min, images, videos }) => {
@@ -1243,6 +1249,49 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
       connected: connectedUnder(reloadedNode, 'model.reference_videos.').length,
       slots: videoSlots.length
     }).toEqual({ connected: 4, slots: 4 })
+  })
+
+  test('does not accumulate slots over successive reloads', async () => {
+    await useLitegraphService().registerNodeDef(
+      SEEDANCE_NODE_TYPE,
+      seedanceNodeDef(0)
+    )
+    let graph = new LGraph()
+    const node = LiteGraph.createNode(SEEDANCE_NODE_TYPE)
+    assert.ok(node, 'seedance node')
+    graph.add(node)
+    connectRefs(graph, node, 'reference_images', 0, 1)
+    connectRefs(graph, node, 'reference_videos', 1, 2)
+
+    // Sizing a group from the slots its links ended up on compounds: a link
+    // filed onto the sibling group drags that group one ordinal longer every
+    // reload, without bound.
+    const imageSlots: number[] = []
+    const linkCounts: number[] = []
+    let current: LGraphNode = node
+    for (let generation = 0; generation < 5; generation++) {
+      imageSlots.push(
+        current.inputs.filter((input) =>
+          input.name.startsWith('model.reference_images.')
+        ).length
+      )
+      linkCounts.push(graph.links.size)
+      current = reloadWhileConfiguring(graph, current.id)
+      const nextGraph = current.graph
+      assert.ok(nextGraph, 'reloaded graph')
+      graph = nextGraph
+    }
+
+    // Asserted together so the slot bound cannot be met by destroying a link
+    // instead. The drop to 2 is the residual documented on this group's
+    // follow-up: links are sized for here but still placed by slot index, so
+    // one eventually lands where no name claims it. Closing that makes this
+    // read [3, 3, 3, 3, 3] and this expectation should be updated, not the
+    // behaviour re-broken to match it.
+    expect({ imageSlots, linkCounts }).toEqual({
+      imageSlots: [2, 2, 3, 2, 2],
+      linkCounts: [3, 3, 3, 2, 2]
+    })
   })
 
   test('keeps both groups when a saved non-default option is restored', async () => {

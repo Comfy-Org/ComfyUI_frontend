@@ -22,6 +22,7 @@ import {
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+import { serialisedLinkedInputsOf } from '@/lib/litegraph/src/linkDeduplication'
 import {
   captureInputLayout,
   replaceNodeInputs
@@ -171,11 +172,16 @@ function dynamicComboWidget(
     //those needs the ordinals back; a user picking a different option is
     //genuinely discarding them and must not resurrect any.
     const restoring = app.configuringGraph || removedOption === value
-    const retainedNames = restoring
-      ? removedInputs
+    //Prefer the serialized association: `configure` assigns links by slot
+    //index, so a link saved past the definition's size is sitting on a
+    //sibling group's input by now, and sizing either group from where the
+    //links landed grows one of them further every reload.
+    const retainedNames = !restoring
+      ? []
+      : (serialisedLinkedInputsOf(node) ??
+        removedInputs
           .filter((input) => inputLinks.has(input))
-          .map((input) => input.name)
-      : []
+          .map((input) => input.name))
     for (const widget of remove(node.widgets, isInGroup)) {
       const optionValues = removedWidgetValues.get(removedOption) ?? new Map()
       optionValues.set(widget.name, {
