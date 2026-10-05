@@ -8,7 +8,7 @@ import { nextTick } from 'vue'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import BuilderVisual from './BuilderVisual.vue'
 
 /** Every animation in the diagram, each of which costs main-thread work. */

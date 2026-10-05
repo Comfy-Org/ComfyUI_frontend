@@ -6,10 +6,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
-import {
-  aliasHostHrefs,
-  slashlessPageHrefs
-} from '../src/utils/internalLinkSlashes'
+import { aliasHostHrefs, slashlessPageHrefs } from '@/utils/internalLinkSlashes'
 
 const DIST = join(process.cwd(), 'dist')
 const ORIGINS = ['https://comfy.org']

@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const base: WorkshopModel = {

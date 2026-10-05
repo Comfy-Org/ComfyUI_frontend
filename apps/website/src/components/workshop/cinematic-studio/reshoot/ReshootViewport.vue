@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { LoaderCircle, Minus, Move3d, Plus } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DepthState } from '../../../../composables/useReshoot'
-import type { ReshootCamera } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { DepthState } from '@/composables/useReshoot'
+import type { ReshootCamera } from '@/lib/workshop/cinematic-studio/reshoot'
 import {
   cameraZone,
   clampAxis,
   viewTransform
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
-import type { Locale } from '../../../../i18n/translations'
-import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
-import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import type { ReshootRunPhase } from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
+import type { Locale } from '@/i18n/translations'
+import type { Pose } from '@/lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import ReshootWarp from './ReshootWarp.vue'
 import ReshootZone from './ReshootZone.vue'
 

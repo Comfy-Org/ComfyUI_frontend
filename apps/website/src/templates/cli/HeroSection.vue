@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import ComfyCliTerminal from './ComfyCliTerminal.vue'
 import { cliCtas } from './ctas'
 

@@ -7,7 +7,7 @@
 import type { Ref } from 'vue'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
-import { useWorkshopAuthFlag } from '../scripts/posthog'
+import { useWorkshopAuthFlag } from '@/scripts/posthog'
 import { resolveWorkshopAccountSource } from './workshop-account-source'
 import { useWorkshopCredits } from './workshop-credits'
 import type { SessionBalanceState } from './workshop-session-balance'

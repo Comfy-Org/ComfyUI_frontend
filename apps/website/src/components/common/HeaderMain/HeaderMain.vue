@@ -10,26 +10,20 @@ import {
 import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
-import {
-  isHrefActive,
-  useCurrentPath
-} from '../../../composables/useCurrentPath.ts'
-import type { Locale } from '../../../i18n/translations.ts'
-import { translationsFor } from '../../../i18n/translations.ts'
-import { externalLinks, getRoutes } from '../../../config/routes.ts'
-import type { WorkshopBuyCreditsTrigger } from '../../../config/workshop-buy-credits.ts'
-import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
-import { WORKSHOP_CREDITS_URL } from '../../../config/workshop-env.ts'
-import type { WorkshopAccountSource } from '../../../config/workshop-account-source.ts'
+import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath.ts'
+import type { Locale } from '@/i18n/translations.ts'
+import { translationsFor } from '@/i18n/translations.ts'
+import { externalLinks, getRoutes } from '@/config/routes.ts'
+import type { WorkshopBuyCreditsTrigger } from '@/config/workshop-buy-credits.ts'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits.ts'
+import { WORKSHOP_CREDITS_URL } from '@/config/workshop-env.ts'
+import type { WorkshopAccountSource } from '@/config/workshop-account-source.ts'
 import {
   peekWorkshopAccountSource,
   resolveWorkshopAccountSource
-} from '../../../config/workshop-account-source.ts'
-import {
-  useWorkshopAuthFlag,
-  useWorkshopEnabled
-} from '../../../scripts/posthog.ts'
-import GitHubStarBadge from '../GitHubStarBadge.vue'
+} from '@/config/workshop-account-source.ts'
+import { useWorkshopAuthFlag, useWorkshopEnabled } from '@/scripts/posthog.ts'
+import GitHubStarBadge from '@/components/common/GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import LogoContextMenu from './LogoContextMenu.vue'
@@ -60,16 +54,16 @@ const showAccount = computed(
 const HeaderAccount = defineAsyncComponent(async () => {
   const [source, firebaseHeader] = await Promise.all([
     resolveWorkshopAccountSource(),
-    import('../../workshop/HeaderAccount.vue')
+    import('@/components/workshop/HeaderAccount.vue')
   ])
   return source === 'session'
-    ? import('../../workshop/HeaderSessionAccount.vue')
+    ? import('@/components/workshop/HeaderSessionAccount.vue')
     : firebaseHeader
 })
 const BuyCreditsDialog = defineAsyncComponent<Component>(async () => {
   const [source, dialog] = await Promise.all([
     resolveWorkshopAccountSource(),
-    import('../../workshop/BuyCreditsDialog.vue')
+    import('@/components/workshop/BuyCreditsDialog.vue')
   ])
   return source === 'session' ? { render: () => null } : dialog
 })

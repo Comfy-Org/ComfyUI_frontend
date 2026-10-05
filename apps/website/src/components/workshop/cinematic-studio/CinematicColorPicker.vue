@@ -2,14 +2,14 @@
 import { clamp } from 'es-toolkit'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
-import type { Hsv } from '../../../lib/workshop/cinematic-studio/color-space'
+import type { Locale } from '@/i18n/translations'
+import type { Hsv } from '@/lib/workshop/cinematic-studio/color-space'
 import {
   hexToHsv,
   hsvToHex,
   isHex
-} from '../../../lib/workshop/cinematic-studio/color-space'
-import { translationsFor } from '../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/color-space'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t: tc } = translationsFor(locale)
