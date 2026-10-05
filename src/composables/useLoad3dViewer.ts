@@ -24,7 +24,7 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { useLoad3dService } from '@/services/load3dService'
 

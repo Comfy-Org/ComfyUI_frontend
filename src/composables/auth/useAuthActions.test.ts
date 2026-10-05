@@ -1,5 +1,5 @@
 import { useDialogService } from '@/services/dialogService'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { FirebaseError } from 'firebase/app'

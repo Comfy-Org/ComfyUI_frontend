@@ -1,6 +1,6 @@
 import type { MenuItem } from '@/components/ui/menu/types'
 import { storeToRefs } from 'pinia'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

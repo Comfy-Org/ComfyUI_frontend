@@ -85,7 +85,7 @@
 
 <script setup lang="ts">
 import { defaultWindow, useEventListener, useThrottleFn } from '@vueuse/core'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

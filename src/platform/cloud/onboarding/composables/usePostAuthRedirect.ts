@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useOAuthPostLoginRedirect } from '@/platform/cloud/oauth/useOAuthPostLoginRedirect'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 /**
  * Shared post-authentication redirect logic used by both CloudLoginView and

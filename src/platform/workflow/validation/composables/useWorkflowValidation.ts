@@ -1,5 +1,5 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { fixBadLinks } from '@/utils/linkFixer'

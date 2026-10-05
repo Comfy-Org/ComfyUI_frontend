@@ -5,7 +5,7 @@ import { h } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'

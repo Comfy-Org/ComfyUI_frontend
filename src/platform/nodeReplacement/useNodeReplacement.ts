@@ -16,7 +16,7 @@ import type {
   MissingNodeType,
   NodeReplacement
 } from '@/platform/nodeReplacement/types'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   removePendingMissingNodeTypesByType,
   updatePendingWarnings

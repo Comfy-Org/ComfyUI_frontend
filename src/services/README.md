@@ -407,7 +407,7 @@ describe('useWorkflowService', () => {
       })
     }))
 
-    vi.mock('@/components/ui/toast', () => ({
+    vi.mock('@/components/ui/toast/toastStore', () => ({
       useToast: () => ({
         error: vi.fn()
       })

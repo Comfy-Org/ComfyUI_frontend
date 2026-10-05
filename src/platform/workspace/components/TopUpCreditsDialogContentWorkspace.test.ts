@@ -3,7 +3,7 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   failedTopup,

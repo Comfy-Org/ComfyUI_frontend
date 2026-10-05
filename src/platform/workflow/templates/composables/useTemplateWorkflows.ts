@@ -1,8 +1,8 @@
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToast } from '@/components/ui/toast'
-import type { ToastId } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { ToastId } from '@/components/ui/toast/toastStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'

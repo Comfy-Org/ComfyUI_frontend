@@ -1870,7 +1870,7 @@ export class ComfyApi extends EventTarget {
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
    */
   async freeMemory(options: { freeExecutionCache: boolean }) {
-    const { useToast } = await import('@/components/ui/toast')
+    const { useToast } = await import('@/components/ui/toast/toastStore')
 
     try {
       let mode = ''

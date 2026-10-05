@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

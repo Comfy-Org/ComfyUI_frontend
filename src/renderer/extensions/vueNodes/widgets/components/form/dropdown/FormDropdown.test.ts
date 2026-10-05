@@ -1,4 +1,4 @@
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { getActivePinia } from 'pinia'
 
 import { render, screen } from '@testing-library/vue'

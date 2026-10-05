@@ -9,7 +9,7 @@ import type {
   OnboardingTourSkipReason,
   OnboardingTourStepStage
 } from '@/platform/telemetry/types'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'

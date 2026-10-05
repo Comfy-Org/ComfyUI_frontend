@@ -5,7 +5,7 @@ import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { useWorkspaceUrlLoader as createWorkspaceUrlLoader } from './useWorkspaceUrlLoader'
 

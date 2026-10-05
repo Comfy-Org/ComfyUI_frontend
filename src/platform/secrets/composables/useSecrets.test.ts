@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { render } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'

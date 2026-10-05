@@ -30,7 +30,7 @@ import {
 import type { NodeWithWidgets } from '@/extensions/core/cameraAngle/widgetBridge'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const IMAGE_INPUT_NAME = 'image'

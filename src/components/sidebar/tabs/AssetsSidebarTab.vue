@@ -165,7 +165,7 @@
 
 <script setup lang="ts">
 import { unrefElement, useAsyncState, useStorage } from '@vueuse/core'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   computed,
   defineAsyncComponent,

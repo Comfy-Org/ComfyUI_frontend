@@ -1,6 +1,6 @@
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access -- hidden file input has no role/label, queried by selector */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { ref } from 'vue'

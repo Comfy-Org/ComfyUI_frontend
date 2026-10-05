@@ -56,7 +56,7 @@ vi.mock<unknown>(
   })
 )
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 const apps: App<Element>[] = []
 

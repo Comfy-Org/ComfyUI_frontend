@@ -1,7 +1,7 @@
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { useI18n } from 'vue-i18n'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { assetService } from '@/platform/assets/services/assetService'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAssetExportStore } from '@/stores/assetExportStore'

@@ -10,7 +10,7 @@ import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type { WebSessionCommandResult } from '@comfyorg/account-core/webSession'
 import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'

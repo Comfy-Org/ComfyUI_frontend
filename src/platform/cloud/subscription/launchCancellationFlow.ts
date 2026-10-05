@@ -5,7 +5,7 @@ import type {
 
 import { supportsInAppCancellation } from '@/composables/billing/billingRail'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'

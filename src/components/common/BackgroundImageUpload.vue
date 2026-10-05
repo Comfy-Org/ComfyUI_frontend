@@ -41,7 +41,7 @@ import { ref } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 
 const modelValue = defineModel<string>()

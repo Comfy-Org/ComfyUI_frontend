@@ -10,7 +10,7 @@ import type {
   AgentConsentTrigger
 } from '@/platform/telemetry/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'

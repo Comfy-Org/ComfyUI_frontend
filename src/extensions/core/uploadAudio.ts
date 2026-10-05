@@ -11,7 +11,7 @@ import type {
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   getResourceURL,
   splitFilePath

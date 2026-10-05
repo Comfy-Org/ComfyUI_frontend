@@ -6,8 +6,8 @@ import type {
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { ToastId } from '@/components/ui/toast'
-import { useToast } from '@/components/ui/toast'
+import type { ToastId } from '@/components/ui/toast/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'

@@ -7,7 +7,7 @@ import UnsavedChangesHeader from '@/components/dialog/content/setting/keybinding
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { uploadFile } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
