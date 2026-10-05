@@ -8,7 +8,6 @@
         "src/components/dialog/bodyPointerEventsRestore.test.ts",
         "src/components/dialog/content/setting/UsageLogsTable.test.ts",
         "src/components/graph/SelectionToolbox.test.ts",
-        "src/components/graph/widgets/TextPreviewWidget.test.ts",
         "src/components/node/NodePreview.test.ts",
         "src/components/rightSidePanel/errors/ErrorGroupList.test.ts",
         "src/components/rightSidePanel/errors/ErrorNodeCard.test.ts",
