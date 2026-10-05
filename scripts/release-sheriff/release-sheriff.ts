@@ -100,8 +100,16 @@ export function loadSheriffConfig(): SheriffConfigParse {
       new URL(`../../${SHERIFF_CONFIG_PATH}`, import.meta.url),
       'utf8'
     )
-  } catch {
-    return { config: null, error: null }
+  } catch (cause) {
+    // Only an absent file falls through to Datadog. A file that exists but
+    // cannot be read is reported, because silently re-engaging the rotating
+    // lookup is the coupling this declaration exists to remove.
+    const code = (cause as NodeJS.ErrnoException).code
+    if (code === 'ENOENT') return { config: null, error: null }
+    return {
+      config: null,
+      error: `${SHERIFF_CONFIG_PATH} could not be read (${code ?? 'unknown error'}).`
+    }
   }
   return parseSheriffConfig(raw)
 }

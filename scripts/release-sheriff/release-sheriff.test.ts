@@ -6,6 +6,7 @@ import {
   fetchDirectory,
   fetchOnCallEmails,
   isSheriffPr,
+  loadSheriffConfig,
   nextInRotation,
   parseGithubLogins,
   parseOnCallEmails,
@@ -254,6 +255,19 @@ describe('singleLine', () => {
 
   it('collapses incidental whitespace', () => {
     expect(singleLine('  a\t\tb \n c  ')).toBe('a b c')
+  })
+})
+
+describe('the shipped .github/release-sheriff.json', () => {
+  // parseSheriffConfig is exercised on inline literals above, so all of it
+  // still passes with a typo in the file the workflow actually reads. This is
+  // the gate the file's own comment promises: a PR that blanks a login or
+  // names one person as both sheriff and backup fails here.
+  it('parses, so a bad edit fails the PR that writes it', () => {
+    const { config, error } = loadSheriffConfig()
+
+    expect(error).toBeNull()
+    expect(config).not.toBeNull()
   })
 })
 
@@ -577,7 +591,7 @@ describe('planActions', () => {
     ])
   })
 
-  it('asks the next person in the rotation to review the sheriff’s own PR', () => {
+  it('asks the standby to review the sheriff’s own PR', () => {
     const own = pr({
       number: 3,
       labels: [{ name: 'backport' }],
