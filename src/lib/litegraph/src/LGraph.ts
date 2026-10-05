@@ -38,7 +38,12 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
+  collectReservedGroupIds,
+  collectReservedLinkIds,
+  collectReservedNodeIds,
+  collectReservedRerouteIds,
   createLGraphState,
+  linkIdReservations,
   mintGroupId,
   mintLinkId,
   mintNodeId,
@@ -46,9 +51,14 @@ import {
   observeGroupId,
   observeLinkId,
   observeNodeId,
-  observeRerouteId
+  observeRerouteId,
+  rerouteIdReservations
 } from './idAllocation'
-import type { LGraphState, NodeIdMintMode } from './idAllocation'
+import type {
+  LGraphState,
+  NodeIdMintMode,
+  ReservedIdIndex
+} from './idAllocation'
 import { isRootGraphDocBound } from './docBoundGraphs'
 import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
@@ -176,9 +186,6 @@ import {
   runExtensionSerializeHook
 } from './extensionPersistence'
 import {
-  collectReservedGroupIds,
-  collectReservedLinkIds,
-  collectReservedRerouteIds,
   normalizeSubgraphDefinitions,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
@@ -1353,7 +1360,7 @@ export class LGraph
         groupId === -1 ||
         layoutStore.getGroupLayout(this.rootGraph.id, groupId)
       ) {
-        node.id = mintGroupId(state)
+        node.id = mintGroupId(state, collectReservedGroupIds(this.rootGraph))
       }
       observeGroupId(state, node.id)
 
@@ -1381,10 +1388,23 @@ export class LGraph
       throw 'LiteGraph: max number of nodes in a graph reached'
     }
 
+    const reservedNodeIds: ReservedIdIndex = {
+      has: (candidate) =>
+        [this.rootGraph, ...this.rootGraph.subgraphs.values()].some(
+          (owner) => owner.getNodeById(toNodeId(candidate)) != null
+        ),
+      collect: () =>
+        new Set(
+          [...collectReservedNodeIds(this.rootGraph)]
+            .map(Number)
+            .filter(Number.isSafeInteger)
+        )
+    }
+
     // give him an id
     if (node.id === UNASSIGNED_NODE_ID) {
       const mintMode = nodeIdMintModeFor(this)
-      node.id = mintNodeId(state, mintMode)
+      node.id = mintNodeId(state, mintMode, reservedNodeIds)
     } else {
       observeNodeId(state, node.id)
     }
@@ -1398,7 +1418,7 @@ export class LGraph
     node.graph = this
 
     attachNodeToStores(this, node, () =>
-      mintNodeId(state, nodeIdMintModeFor(this))
+      mintNodeId(state, nodeIdMintModeFor(this), reservedNodeIds)
     )
 
     this._nodes.push(node)
@@ -1846,7 +1866,7 @@ export class LGraph
 
   addFloatingLink(link: LLink): LLink | undefined {
     if (link.id === -1) {
-      link.id = mintLinkId(this.state)
+      link.id = mintLinkId(this.state, linkIdReservations(this.rootGraph))
     }
 
     if (!registerLinkTopology(this, link)) return
@@ -1950,7 +1970,9 @@ export class LGraph
     floating
   }: OptionalProps<SerialisableReroute, 'id'>): Reroute | undefined {
     const rerouteId =
-      id === undefined ? mintRerouteId(this.state) : toRerouteId(id)
+      id === undefined
+        ? mintRerouteId(this.state, rerouteIdReservations(this.rootGraph))
+        : toRerouteId(id)
     observeRerouteId(this.state, rerouteId)
 
     const existingReroute = this.reroutes.get(rerouteId)
@@ -2594,7 +2616,10 @@ export class LGraph
     // Shared definitions may survive, so unpacked groups need fresh layout
     // ids, like the reroutes below.
     for (const groupInfo of groups) {
-      const groupId = mintGroupId(this.rootGraph.state)
+      const groupId = mintGroupId(
+        this.rootGraph.state,
+        collectReservedGroupIds(this.rootGraph)
+      )
       groupInfo.id = groupId
       const group = new LGraphGroup(groupInfo.title, groupId)
       this.add(group, true)
@@ -2683,7 +2708,10 @@ export class LGraph
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
     const oldReroutes = subgraphNode.subgraph.reroutes
     for (const reroute of oldReroutes.values()) {
-      const migratedId = mintRerouteId(this.state)
+      const migratedId = mintRerouteId(
+        this.state,
+        rerouteIdReservations(this.rootGraph)
+      )
       const migratedReroute = this.setReroute({
         id: migratedId,
         pos: [reroute.pos[0] + offsetX, reroute.pos[1] + offsetY],
