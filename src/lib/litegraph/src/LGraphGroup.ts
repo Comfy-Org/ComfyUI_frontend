@@ -131,8 +131,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       if (reported) return
       reported = true
       console.warn(
-        `[LGraphGroup] ${key} was assigned a ${typeof value}, not a coordinate array. The group kept its own buffer. This is usually an extension copying a group by enumerating its own keys; the stack below names it.`,
-        value
+        `[LGraphGroup] ${key} was assigned a ${typeof value}, not a coordinate array. The group kept its own buffer. This is usually an extension copying a group by enumerating its own keys; the stack below names it.`
       )
     }
 
@@ -147,14 +146,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       const buffer = this[key]
       Object.defineProperty(this, key, {
         get: () => buffer,
-        set: (value: ArrayLike<number> | null | undefined) => {
+        set: (value: ArrayLike<unknown> | null | undefined) => {
           if (!Array.isArray(value) && !ArrayBuffer.isView(value))
             reportForeignShape(key, value)
 
           const coords: number[] = []
           for (let index = 0; index < arity; index++) {
-            const coord = Number(value?.[index])
-            if (!Number.isFinite(coord)) return
+            const coord = value?.[index]
+            if (typeof coord !== 'number' || !Number.isFinite(coord)) return
             coords.push(coord)
           }
           write(coords)

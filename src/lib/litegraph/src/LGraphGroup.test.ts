@@ -515,6 +515,25 @@ describe('geometry an extension cannot clobber', () => {
     expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
   })
 
+  test.for([
+    ['a null coordinate', [1, null, 300, 400]],
+    ['a symbol coordinate', [1, 2, Symbol('w'), 400]],
+    ['numeric strings', ['1', '2', '300', '400']],
+    ['a boolean coordinate', [true, 2, 300, 400]],
+    ['too few coordinates', [1, 2]]
+  ] as const)(
+    'an array holding %s is rejected whole',
+    ([, assigned], { expect }) => {
+      const graph = new LGraph()
+      const group = new LGraphGroup('group', toGroupId(818))
+      graph.add(group)
+
+      expect(() => Object.assign(group, { _bounding: assigned })).not.toThrow()
+
+      expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
+    }
+  )
+
   test.for(['bounds', '_pos', '_size', '_bounding'] as const)(
     '%s keeps the descriptor shape the ecosystem already sees',
     (property, { expect }) => {
