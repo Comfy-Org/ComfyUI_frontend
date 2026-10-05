@@ -1,6 +1,6 @@
 import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import type {
   DownloadFileResult,
@@ -93,6 +93,10 @@ interface CompletedDownload {
   modelType: string
   timestamp: number
 }
+interface DismissedDownload {
+  modelType?: string
+  completionNotified: boolean
+}
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
 /**
@@ -102,6 +106,9 @@ const POLL_INTERVAL_MS = 10_000
  * reports a terminal status from pinning the toast open until a page reload.
  */
 const MAX_CANCELLATION_RECONCILE_ATTEMPTS = 6
+const MAX_TASK_NOT_FOUND_ATTEMPTS = 2
+const MAX_FAILED_RECONCILE_ATTEMPTS = 30
+const MAX_DISMISSED_DOWNLOADS = 256
 
 function generateDownloadTrackingPlaceholder(
   taskId: TaskId,
@@ -150,8 +157,8 @@ function finalizeCancellation(download: AssetDownload) {
 /**
  * Record a reconciliation attempt that left a pending cancellation unresolved,
  * exposing an unconfirmed but dismissible state once the attempts are
- * exhausted. It remains recheckable so a late authoritative outcome can
- * replace it.
+ * exhausted. A later WebSocket completion can still replace it, but polling
+ * stops once the bounded reconciliation window is exhausted.
  */
 function noteAuthoritativePendingCancellation(download: AssetDownload) {
   if (download.status !== 'cancellation_pending') return
@@ -246,9 +253,11 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
   const cancellingTaskIds = ref(new Set<TaskId>())
   const reconcilingTasks = new Map<TaskId, Promise<void>>()
-  const dismissedPendingDownloads = new Map<TaskId, string | undefined>()
+  const dismissedPendingDownloads = new Map<TaskId, DismissedDownload>()
   const taskNotFoundAttempts = new Map<TaskId, number>()
-  const terminalReconciledFailures = new Set<TaskId>()
+  const unavailableTaskIds = reactive(new Set<TaskId>())
+  const failedReconcileAttempts = reactive(new Map<TaskId, number>())
+  const settledFailureTaskIds = reactive(new Set<TaskId>())
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
@@ -277,7 +286,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     downloadList.value.filter(
       (download) =>
         isDownloadRecheckable(download.status) &&
-        !terminalReconciledFailures.has(download.taskId)
+        !unavailableTaskIds.has(download.taskId) &&
+        !settledFailureTaskIds.has(download.taskId)
     )
   )
   const hasRecheckableDownloads = computed(
@@ -301,26 +311,43 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     dismissedPendingDownloads.delete(taskId)
     taskNotFoundAttempts.delete(taskId)
-    terminalReconciledFailures.delete(taskId)
+    unavailableTaskIds.delete(taskId)
+    failedReconcileAttempts.delete(taskId)
+    settledFailureTaskIds.delete(taskId)
     downloads.value.set(
       taskId,
       generateDownloadTrackingPlaceholder(taskId, modelType, assetName)
     )
   }
 
+  function rememberDismissedDownload(download: AssetDownload) {
+    dismissedPendingDownloads.delete(download.taskId)
+    dismissedPendingDownloads.set(download.taskId, {
+      modelType: download.modelType,
+      completionNotified: download.status === 'completed'
+    })
+    while (dismissedPendingDownloads.size > MAX_DISMISSED_DOWNLOADS) {
+      const oldestTaskId = dismissedPendingDownloads.keys().next().value
+      if (oldestTaskId === undefined) break
+      dismissedPendingDownloads.delete(oldestTaskId)
+    }
+  }
+
   function consumeDismissedDownload(data: AssetDownloadWsMessage): boolean {
     if (!dismissedPendingDownloads.has(data.task_id)) return false
 
-    const modelType = dismissedPendingDownloads.get(data.task_id)
-    if (data.status === 'completed' && modelType) {
+    const dismissed = dismissedPendingDownloads.get(data.task_id)
+    if (
+      data.status === 'completed' &&
+      dismissed?.modelType &&
+      !dismissed.completionNotified
+    ) {
       lastCompletedDownload.value = {
         taskId: data.task_id,
-        modelType,
+        modelType: dismissed.modelType,
         timestamp: Date.now()
       }
-    }
-    if (data.status === 'completed' || data.status === 'cancelled') {
-      dismissedPendingDownloads.delete(data.task_id)
+      dismissed.completionNotified = true
     }
     return true
   }
@@ -328,11 +355,6 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
     const data = e.detail
     if (consumeDismissedDownload(data)) return
-    if (
-      terminalReconciledFailures.has(data.task_id) &&
-      activeStatuses.has(data.status)
-    )
-      return
     const existing = downloads.value.get(data.task_id)
 
     // WebSocket payloads are not runtime-validated at the event boundary.
@@ -343,6 +365,13 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     }
 
     if (shouldIgnoreDownloadUpdate(existing?.status, data.status)) return
+
+    if (activeStatuses.has(data.status)) {
+      taskNotFoundAttempts.delete(data.task_id)
+      unavailableTaskIds.delete(data.task_id)
+      failedReconcileAttempts.delete(data.task_id)
+      settledFailureTaskIds.delete(data.task_id)
+    }
 
     const download: AssetDownload = {
       taskId: data.task_id,
@@ -369,10 +398,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   }
 
   function handleTaskNotFound(download: AssetDownload) {
-    if (
-      download.status === 'cancellation_pending' ||
-      download.status === 'cancellation_unconfirmed'
-    ) {
+    if (download.status === 'cancellation_pending') {
       taskNotFoundAttempts.delete(download.taskId)
       finalizeCancellation(download)
       return
@@ -380,12 +406,12 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
     const attempts = (taskNotFoundAttempts.get(download.taskId) ?? 0) + 1
     taskNotFoundAttempts.set(download.taskId, attempts)
-    if (attempts < 2) {
+    if (attempts < MAX_TASK_NOT_FOUND_ATTEMPTS) {
       download.lastUpdate = Date.now()
       return
     }
     taskNotFoundAttempts.delete(download.taskId)
-    terminalReconciledFailures.add(download.taskId)
+    unavailableTaskIds.add(download.taskId)
     download.status = 'failed'
     download.error = t('progressToast.taskUnavailable')
     download.lastUpdate = Date.now()
@@ -401,11 +427,14 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       // transient and must not consume the authoritative reconciliation bound.
       if (result.error instanceof TaskNotFoundError) {
         handleTaskNotFound(download)
+      } else {
+        taskNotFoundAttempts.delete(download.taskId)
       }
       return
     }
 
     taskNotFoundAttempts.delete(download.taskId)
+    unavailableTaskIds.delete(download.taskId)
     const task = result.value
     if (
       download.status === 'cancellation_pending' &&
@@ -422,7 +451,14 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       return
     }
     if (task.status === 'failed') {
-      terminalReconciledFailures.add(download.taskId)
+      const attempts = (failedReconcileAttempts.get(download.taskId) ?? 0) + 1
+      failedReconcileAttempts.set(download.taskId, attempts)
+      if (attempts >= MAX_FAILED_RECONCILE_ATTEMPTS) {
+        settledFailureTaskIds.add(download.taskId)
+      }
+    } else {
+      failedReconcileAttempts.delete(download.taskId)
+      settledFailureTaskIds.delete(download.taskId)
     }
     handleAssetDownload(
       new CustomEvent('asset_download', {
@@ -487,10 +523,11 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   function clearFinishedDownloads() {
     for (const download of finishedDownloads.value) {
-      if (download.status === 'cancellation_unconfirmed') {
-        dismissedPendingDownloads.set(download.taskId, download.modelType)
-      }
+      rememberDismissedDownload(download)
       taskNotFoundAttempts.delete(download.taskId)
+      unavailableTaskIds.delete(download.taskId)
+      failedReconcileAttempts.delete(download.taskId)
+      settledFailureTaskIds.delete(download.taskId)
       downloads.value.delete(download.taskId)
     }
   }
@@ -501,13 +538,11 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         isDownloadFinished(download.status) ||
         download.status === 'cancellation_pending'
       ) {
-        if (
-          download.status === 'cancellation_pending' ||
-          download.status === 'cancellation_unconfirmed'
-        ) {
-          dismissedPendingDownloads.set(download.taskId, download.modelType)
-        }
+        rememberDismissedDownload(download)
         taskNotFoundAttempts.delete(download.taskId)
+        unavailableTaskIds.delete(download.taskId)
+        failedReconcileAttempts.delete(download.taskId)
+        settledFailureTaskIds.delete(download.taskId)
         downloads.value.delete(download.taskId)
       }
     }
@@ -528,6 +563,9 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       if (isSettledDownload(current)) {
         return { ok: true, value: result.value === 'cancelling' }
       }
+      unavailableTaskIds.delete(taskId)
+      failedReconcileAttempts.delete(taskId)
+      settledFailureTaskIds.delete(taskId)
 
       // A DELETE 404 can mean the cancellation route is unavailable, not that
       // the task is gone. Re-read the task before deciding how to settle it.

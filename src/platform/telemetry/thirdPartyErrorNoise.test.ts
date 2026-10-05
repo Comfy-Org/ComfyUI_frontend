@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
 
 const EXTENSION_ERROR = 'Invalid call to runtime.sendMessage(). Tab not found.'
+const MESSAGING_ERROR =
+  '[messaging] In this JS context, only one listener can be setup for queryMediaBinding'
 
 describe('third-party error noise', () => {
   it.for([
@@ -19,6 +21,13 @@ describe('third-party error noise', () => {
       event: {
         type: undefined,
         exception: { values: [{ value: EXTENSION_ERROR }] }
+      },
+      hint: {}
+    },
+    {
+      event: {
+        type: undefined,
+        exception: { values: [{ value: `Error: ${MESSAGING_ERROR}` }] }
       },
       hint: {}
     }

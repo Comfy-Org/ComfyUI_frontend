@@ -186,6 +186,7 @@
     "overwrite": "Overwrite",
     "customize": "Customize",
     "experimental": "BETA",
+    "new": "NEW",
     "deprecated": "DEPR",
     "devOnly": "DEV",
     "loadWorkflow": "Load Workflow",
@@ -2980,6 +2981,7 @@
       "title": "Cancel subscription",
       "description": "Your access continues until {date}. You won't be charged again, and your workspace and credits will be preserved. You can resubscribe anytime.",
       "endOfBillingPeriod": "end of billing period",
+      "finishOnStripe": "Your subscription isn't cancelled yet. Finish cancelling on the Stripe page that just opened. Until you do, your plan will renew as usual.",
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription",
@@ -3051,7 +3053,7 @@
     "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",
-    "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
+    "inactiveTeamDescription": "Reactivate your Team plan to add more members and run workflows",
     "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
     "reactivateToUseCredits": "Reactivate your plan to use these credits",
     "salesManagedInactiveCreditsNote": "Spendable once your plan is restored.",
@@ -3161,7 +3163,7 @@
     "teamHeader": "For teams wanting to collaborate. Need more members? {learnMore} about enterprise.",
     "teamHeaderLearnMore": "Learn more",
     "personalHeader": "Personal plans are for individual use only. {action}",
-    "personalHeaderAction": "To add teammates, subscribe to the team plan.",
+    "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
     "scheduledForDate": "Scheduled for {date}",
     "everythingInPlus": "Everything in {plan}, plus:",
@@ -3181,7 +3183,7 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
-      "unavailable": "This team plan is not available right now.",
+      "unavailable": "This Team plan is not available right now.",
       "changePlan": "Change plan",
       "currentPlan": "Current plan"
     },
@@ -3384,7 +3386,7 @@
         "dismiss": "Dismiss"
       },
       "ending": {
-        "title": "Your team plan ends on {date}",
+        "title": "Your Team plan ends on {date}",
         "body": "Members keep full access until then. Resume your plan to keep your team's shared credits.",
         "memberBody": "You can run workflows until then.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
@@ -3393,7 +3395,7 @@
         "contactSales": "Contact sales"
       },
       "planEnded": {
-        "teamTitle": "Your team plan ended on {date}",
+        "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
         "enterpriseTitle": "Your Enterprise plan ended on {date}",
@@ -3471,7 +3473,7 @@
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
       "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
-      "endedTeamTitle": "Your team plan has ended",
+      "endedTeamTitle": "Your Team plan has ended",
       "endedEnterpriseTitle": "Your Enterprise plan has ended",
       "endedPlanTitle": "Your plan has ended",
       "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
@@ -4252,6 +4254,13 @@
     "comfyHubTitle": "Upload to Comfy Workflows",
     "comfyHubDescription": "Comfy Workflows is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",
     "comfyHubButton": "Upload to Comfy Workflows"
+  },
+  "deployToComfyApi": {
+    "title": "Deploy to Comfy API",
+    "buttonLabel": "Deploy to Comfy API",
+    "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
+    "readDocs": "Read the docs",
+    "deployOnPlatform": "Deploy on Platform"
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
