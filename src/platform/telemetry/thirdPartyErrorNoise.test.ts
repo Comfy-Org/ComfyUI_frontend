@@ -4,6 +4,21 @@ import { describe, expect, it } from 'vitest'
 import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
 
 const EXTENSION_ERROR = 'Invalid call to runtime.sendMessage(). Tab not found.'
+const appOrigin = window.location.origin
+
+function frameFor(filename: string) {
+  return { filename }
+}
+
+function minifiedEvent(value: string, stacktraces: unknown[]): ErrorEvent {
+  const event: ErrorEvent = { type: undefined, exception: { values: [] } }
+  Reflect.set(
+    event.exception ?? {},
+    'values',
+    stacktraces.map((stacktrace) => ({ type: 'Error', value, stacktrace }))
+  )
+  return event
+}
 
 describe('third-party error noise', () => {
   it.for([
@@ -30,45 +45,88 @@ describe('third-party error noise', () => {
   )
 
   it.for([
-    { name: 'no stack frames', stacktrace: undefined },
     {
-      name: 'only page-URL frames',
-      stacktrace: {
-        frames: [{ filename: 'https://cloud.example.com/cloud/user-check' }]
-      }
+      name: 'only same-origin page-URL frames',
+      filenames: [`${appOrigin}/cloud/user-check`]
     },
     {
       name: 'only third-party frames',
-      stacktrace: {
-        frames: [{ filename: 'https://cdn.example.com/widget.js' }]
-      }
+      filenames: ['https://cdn.example.com/widget.js']
+    },
+    {
+      name: 'a third-party frame with an assets path',
+      filenames: ['https://cdn.example.com/assets/widget.js']
+    },
+    {
+      name: 'a browser-extension frame with an assets path',
+      filenames: ['chrome-extension://abcdef/assets/index-abc123.js']
     }
-  ])('drops a minified message with $name', ({ stacktrace }) => {
-    const event = {
-      type: undefined,
-      exception: { values: [{ type: 'Error', value: 'pa', stacktrace }] }
-    } satisfies ErrorEvent
-
-    expect(sentryThirdPartyErrorFilter(event, {})).toBeNull()
+  ])('drops a minified message with $name', ({ filenames }) => {
+    expect(
+      sentryThirdPartyErrorFilter(
+        minifiedEvent('pa', [{ frames: filenames.map(frameFor) }]),
+        {}
+      )
+    ).toBeNull()
   })
 
   it.for([
+    { name: 'no stacktrace', stacktrace: undefined },
+    { name: 'a null stacktrace', stacktrace: null },
+    { name: 'an empty frames list', stacktrace: { frames: [] } },
+    { name: 'frames that are not an array', stacktrace: { frames: 'x' } },
     {
-      name: 'a first-party frame',
-      value: 'pa',
-      frames: [
-        { filename: 'https://cdn.example.com/widget.js' },
-        { filename: 'https://cloud.example.com/assets/index-abc123.js' }
-      ]
-    },
-    { name: 'a longer message', value: 'Application failed', frames: [] },
-    { name: 'a four-character message', value: 'abcd', frames: [] },
-    { name: 'a message with punctuation', value: 'p a', frames: [] }
-  ])('keeps a short-message look-alike with $name', ({ value, frames }) => {
-    const event = {
-      type: undefined,
-      exception: { values: [{ value, stacktrace: { frames } }] }
-    } satisfies ErrorEvent
+      name: 'frames without a parseable filename',
+      stacktrace: { frames: [{ filename: '<anonymous>' }, {}] }
+    }
+  ])('keeps a minified message with $name', ({ stacktrace }) => {
+    const event = minifiedEvent('pa', [stacktrace])
+
+    expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
+  })
+
+  it.for([
+    { name: 'a bundled asset', path: '/assets/index-abc123.js' },
+    { name: 'a custom node extension', path: '/extensions/my_node/index.js' }
+  ])('keeps a minified message with a same-origin $name frame', ({ path }) => {
+    const event = minifiedEvent('pa', [
+      {
+        frames: [
+          frameFor('https://cdn.example.com/widget.js'),
+          frameFor(appOrigin + path)
+        ]
+      }
+    ])
+
+    expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
+  })
+
+  it('keeps the event when a frame cannot be inspected', () => {
+    const throwingFrame = Object.defineProperty({}, 'filename', {
+      get: () => {
+        throw new Error('blocked filename access')
+      }
+    })
+    const event = minifiedEvent('pa', [
+      {
+        frames: [frameFor('https://cdn.example.com/widget.js'), throwingFrame]
+      }
+    ])
+
+    expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
+  })
+
+  it.for([
+    { name: 'a longer message', value: 'Application failed' },
+    { name: 'a four-character message', value: 'abcd' },
+    { name: 'a message with punctuation', value: 'p a' },
+    { name: 'an HTTP status', value: '404' },
+    { name: 'a single digit', value: '0' },
+    { name: 'a trailing newline', value: 'abc\n' }
+  ])('keeps a short-message look-alike with $name', ({ value }) => {
+    const event = minifiedEvent(value, [
+      { frames: [frameFor('https://cdn.example.com/widget.js')] }
+    ])
 
     expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
   })
@@ -78,11 +136,37 @@ describe('third-party error noise', () => {
       type: undefined,
       exception: {
         values: [
-          { value: 'pa' },
+          {
+            value: 'pa',
+            stacktrace: {
+              frames: [frameFor('https://cdn.example.com/widget.js')]
+            }
+          },
           {
             value: 'ab',
+            stacktrace: { frames: [frameFor(`${appOrigin}/assets/app.js`)] }
+          }
+        ]
+      }
+    } satisfies ErrorEvent
+
+    expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
+  })
+
+  it('keeps the chain when a linked exception has no minified message', () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          {
+            value: 'pa',
             stacktrace: {
-              frames: [{ filename: 'https://cloud.example.com/assets/app.js' }]
+              frames: [frameFor('https://cdn.example.com/widget.js')]
+            }
+          },
+          {
+            stacktrace: {
+              frames: [frameFor('https://cdn.example.com/widget.js')]
             }
           }
         ]
@@ -90,6 +174,25 @@ describe('third-party error noise', () => {
     } satisfies ErrorEvent
 
     expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
+  })
+
+  it('drops a chain of minified messages that all have third-party frames', () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          { value: 'pa' },
+          {
+            value: 'ab',
+            stacktrace: {
+              frames: [frameFor('https://cdn.example.com/widget.js')]
+            }
+          }
+        ]
+      }
+    } satisfies ErrorEvent
+
+    expect(sentryThirdPartyErrorFilter(event, {})).toBeNull()
   })
 
   it('keeps ordinary Sentry events unchanged', () => {
