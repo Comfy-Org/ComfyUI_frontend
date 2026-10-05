@@ -72,9 +72,10 @@ function parseVorbisComment(dataView: DataView): Record<string, string> {
 }
 
 function getString(dataView: DataView, offset: number, length: number): string {
-  let string = ''
-  for (let i = 0; i < length; i++) {
-    string += String.fromCharCode(dataView.getUint8(offset + i))
+  if (offset + length > dataView.byteLength) {
+    throw new RangeError('FLAC comment exceeds metadata block')
   }
-  return string
+  return new TextDecoder().decode(
+    new Uint8Array(dataView.buffer, dataView.byteOffset + offset, length)
+  )
 }
