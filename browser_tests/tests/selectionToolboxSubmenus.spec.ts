@@ -42,12 +42,7 @@ test.describe(
       )[0]
 
       await openMoreOptions(comfyPage)
-      const shapeSubmenu = await comfyPage.contextMenu.openShapeSubmenu()
-      const boxItem = shapeSubmenu.getByRole('menuitemcheckbox', {
-        name: 'Box',
-        exact: true
-      })
-      await boxItem.click()
+      await comfyPage.contextMenu.selectShape('Box')
       await comfyPage.nextFrame()
 
       await expect.poll(() => nodeRef.getProperty<number>('shape')).toBe(1)

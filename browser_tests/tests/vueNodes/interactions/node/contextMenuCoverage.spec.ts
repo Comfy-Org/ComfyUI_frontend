@@ -49,12 +49,7 @@ test.describe(
 
         await test.step('Choose a shape from the submenu', async () => {
           await openContextMenu(comfyPage, 'KSampler')
-          const shapeSubmenu = await comfyPage.contextMenu.openShapeSubmenu()
-          const boxItem = shapeSubmenu.getByRole('menuitemcheckbox', {
-            name: 'Box',
-            exact: true
-          })
-          await boxItem.click()
+          await comfyPage.contextMenu.selectShape('Box')
         })
 
         await test.step('Apply the chosen shape', async () => {
