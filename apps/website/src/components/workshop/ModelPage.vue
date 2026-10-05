@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
@@ -10,6 +11,7 @@ import type {
 } from '@/config/models-catalogue'
 import { formForContract } from '@/config/workshop-contract'
 import { t } from '@/i18n/translations'
+import { modelDefinition, modelFacts } from '@/lib/workshop/model-definition'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
@@ -43,6 +45,8 @@ const model = computed(() =>
     : page.model
 )
 const modelUseCase = computed(() => useCaseFor(page.model))
+const definition = computed(() => modelDefinition(page.model))
+const facts = computed(() => modelFacts(page.model, page.priceEstimate))
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 const restTags = computed(() =>
@@ -86,11 +90,35 @@ const restTags = computed(() =>
             {{ page.model.name }}
           </h1>
           <p
+            class="text-sm/relaxed text-primary-warm-gray"
+            data-testid="model-definition"
+          >
+            {{ definition }}
+          </p>
+          <p
             v-if="page.model.summary"
             class="text-sm/relaxed text-primary-warm-gray"
           >
             {{ page.model.summary }}
           </p>
+          <dl
+            class="m-0 grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm/relaxed"
+            data-testid="model-facts"
+          >
+            <template v-for="fact in facts" :key="fact.term">
+              <dt class="text-primary-warm-gray">{{ fact.term }}</dt>
+              <dd
+                :class="
+                  cn(
+                    'm-0 min-w-0 wrap-break-word text-primary-warm-white',
+                    fact.mono && 'font-mono text-xs/relaxed'
+                  )
+                "
+              >
+                {{ fact.value }}
+              </dd>
+            </template>
+          </dl>
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
