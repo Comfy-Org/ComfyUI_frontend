@@ -5408,7 +5408,8 @@
       "keep": "Keep",
       "deleted": "You chose to delete them.",
       "kept": "You chose to keep them.",
-      "answeredElsewhere": "This was answered somewhere else.",
+      "answered": "Answered.",
+      "unconfirmed": "We couldn't confirm your answer. Check the canvas before trying again.",
       "closed": "This request was closed without an answer."
     },
     "dismiss": "Dismiss",

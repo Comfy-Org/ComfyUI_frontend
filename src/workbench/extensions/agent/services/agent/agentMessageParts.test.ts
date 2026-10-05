@@ -212,23 +212,37 @@ describe('toAskPart delete_approval', () => {
   })
 
   it.for([
-    { name: 'no context', context: undefined, hidden: 0 },
-    { name: 'no nodes', context: { action: 'delete_nodes' }, hidden: 0 },
+    { name: 'no context', context: undefined },
+    { name: 'no nodes', context: { action: 'delete_nodes' } },
     {
       name: 'nodes not an array',
-      context: { action: 'delete_nodes', nodes: 'oops' },
-      hidden: 0
+      context: { action: 'delete_nodes', nodes: 'oops' }
     },
+    { name: 'an empty list', context: { action: 'delete_nodes', nodes: [] } },
     {
-      name: 'unreadable entries',
-      context: { action: 'delete_nodes', nodes: [null, 7, { type: 'NoId' }] },
-      hidden: 3
+      name: 'only unreadable entries',
+      context: { action: 'delete_nodes', nodes: [null, 7, { type: 'NoId' }] }
     }
-  ])('still asks with $name in context', ({ context, hidden }) => {
-    expect(toAskPart(deleteApproval({ context }))).toMatchObject({
-      type: 'deleteApproval',
-      nodes: [],
-      hiddenNodeCount: hidden
+  ])('falls back to the notice with $name in context', ({ context }) => {
+    expect(toAskOrNoticePart(deleteApproval({ context }))).toEqual({
+      type: 'askUnavailable',
+      askId: 'turn-1:call-1'
+    })
+  })
+
+  it('counts unreadable entries next to readable ones as not listed', () => {
+    expect(
+      toAskPart(
+        deleteApproval({
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: 12, type: 'KSampler' }, { type: 'NoId' }]
+          }
+        })
+      )
+    ).toMatchObject({
+      nodes: [{ id: '12', name: 'KSampler' }],
+      hiddenNodeCount: 1
     })
   })
 

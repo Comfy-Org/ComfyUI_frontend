@@ -263,16 +263,18 @@ function toAskNodeRef(value: unknown): AskNodeRef | undefined {
 
 /**
  * The host's `context.nodes`: unique by id (first wins, as with options),
- * capped, and anything not listed counted as hidden. A list that is not an
- * array lists nothing.
+ * capped, and anything not listed counted as hidden. Nothing when the list is
+ * missing, not an array, or has no readable node, so the card is never shown
+ * without the nodes a Delete would remove.
  */
 function toAskNodeRefs(
   context: AskInput['context']
-): Pick<DeleteApprovalPart, 'nodes' | 'hiddenNodeCount'> {
+): Pick<DeleteApprovalPart, 'nodes' | 'hiddenNodeCount'> | undefined {
   const raw: unknown = context?.nodes
-  if (!Array.isArray(raw)) return { nodes: [], hiddenNodeCount: 0 }
+  if (!Array.isArray(raw)) return undefined
   const readable = raw.flatMap((node) => toAskNodeRef(node) ?? [])
   const unique = uniqBy(readable, (node) => node.id)
+  if (unique.length === 0) return undefined
   const nodes = unique.slice(0, ASK_USER_LIMITS.nodes)
   const duplicates = readable.length - unique.length
   return { nodes, hiddenNodeCount: raw.length - duplicates - nodes.length }
@@ -282,7 +284,8 @@ const DELETE_APPROVAL_OPTIONS = ['delete', 'keep']
 
 /**
  * The delete decision card. It renders its own Delete and Keep buttons, so it
- * needs the host to offer exactly those two options as one required choice.
+ * needs the host to offer exactly those two options as one required choice,
+ * and a readable list of the nodes a Delete would remove.
  */
 function toDeleteApprovalPart(ask: AskInput): DeleteApprovalPart | undefined {
   const optionIds = ask.options.map(({ id }) => id)
@@ -292,12 +295,13 @@ function toDeleteApprovalPart(ask: AskInput): DeleteApprovalPart | undefined {
     ask.min_selections === 1 &&
     ask.max_selections === 1 &&
     !ask.allow_other
-  if (!offersDeleteOrKeep) return undefined
+  const targets = toAskNodeRefs(ask.context)
+  if (!offersDeleteOrKeep || !targets) return undefined
   return {
     type: 'deleteApproval',
     askId: ask.ask_id,
     prompt: clip(ask.prompt, ASK_USER_LIMITS.prompt),
-    ...toAskNodeRefs(ask.context)
+    ...targets
   }
 }
 
