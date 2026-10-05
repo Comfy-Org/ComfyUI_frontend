@@ -39,10 +39,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // weekly, the sheriff shepherds releases. Details in docs/release-process.md.
 const SHERIFF_CONFIG_PATH = '.github/release-sheriff.json'
 
-// Alphanumeric with single internal hyphens, 39 characters max. Checked because
-// the assignee API accepts a login it cannot resolve and silently drops it, so
-// a typo would otherwise surface weeks later as PRs nobody was assigned to,
-// rather than as a failed check on the PR that introduced it.
+// GitHub's own username rule: alphanumeric with single internal hyphens, 39
+// max. Syntax only — a well-formed login belonging to nobody still passes, and
+// is caught at run time by assigneeAccepted instead.
 const GITHUB_LOGIN = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/
 
 export interface SheriffConfig {
@@ -573,9 +572,12 @@ function output(key: string, value: string) {
   }
 }
 
+// Retried like the read calls: a 502 from one sweep would otherwise fail the
+// run and page #frontend-releases for something the next sweep fixes by
+// itself, which is how the alert channel this job posts to gets muted.
 function ghPost(path: string, field: string): boolean {
   try {
-    gh(['api', '--method', 'POST', path, '-f', field, '--silent'])
+    ghWithRetry(['api', '--method', 'POST', path, '-f', field, '--silent'])
     return true
   } catch {
     return false
@@ -596,10 +598,19 @@ export function assigneeAccepted(response: unknown, login: string): boolean {
   )
 }
 
+// Adding an assignee is idempotent, so retrying a lost response re-reads the
+// same list rather than double-assigning.
 function ghAssign(path: string, login: string): boolean {
   try {
     const response: unknown = JSON.parse(
-      gh(['api', '--method', 'POST', path, '-f', `assignees[]=${login}`])
+      ghWithRetry([
+        'api',
+        '--method',
+        'POST',
+        path,
+        '-f',
+        `assignees[]=${login}`
+      ])
     )
     return assigneeAccepted(response, login)
   } catch {
@@ -637,20 +648,18 @@ function requestReviewFrom(
 
 // Reported once rather than per PR: `degraded` is a single workflow output, and
 // appending a second record for one key is how a heredoc output misparses.
-function reportUnowned(unowned: string[]) {
-  if (unowned.length === 0) return
+export function reportUnhandled(unhandled: string[]) {
+  if (unhandled.length === 0) return
   output(
     'degraded',
-    `${unowned.join('; ')}. Cause not established: GitHub drops an assignee ` +
+    `${unhandled.join('; ')}. Cause not established: GitHub drops an assignee ` +
       'without push access and rejects a non-collaborator reviewer, but a ' +
-      'failed or unreadable API call is indistinguishable here. Either way ' +
-      'these PRs are unowned or unmergeable — backport-auto-merge.yaml ' +
-      'needs an approval.'
+      'failed or unreadable API call is indistinguishable here.'
   )
   process.exitCode = 1
 }
 
-function runAssignment(
+export function runAssignment(
   repo: string,
   sheriff: string,
   standby: string | null,
@@ -671,7 +680,7 @@ function runAssignment(
 
   // The two calls are independent on purpose: a failed review request must not
   // undo an assignment that succeeded, and vice versa.
-  const unowned = actions.flatMap((action) => {
+  const unhandled = actions.flatMap((action) => {
     const failures: string[] = []
     if (action.assign && !assignSheriff(repo, action, sheriff)) {
       failures.push(
@@ -686,7 +695,7 @@ function runAssignment(
     }
     return failures
   })
-  reportUnowned(unowned)
+  reportUnhandled(unhandled)
 }
 
 // The pre-config path: resolve the sheriff from the Datadog on-call rota.

@@ -1,4 +1,10 @@
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('node:child_process'), () => ({ execFileSync: vi.fn() }))
 
 import type { PullRequestSummary } from './release-sheriff'
 import {
@@ -14,6 +20,7 @@ import {
   parseRotationKeys,
   parseSheriffConfig,
   planActions,
+  runAssignment,
   resolveSheriff,
   singleLine
 } from './release-sheriff'
@@ -273,6 +280,69 @@ describe('assigneeAccepted', () => {
 
   it.for(unusable)('rejects %s', ([, response]) => {
     expect(assigneeAccepted(response, 'thedatalife')).toBe(false)
+  })
+})
+
+describe('runAssignment', () => {
+  // The caller path for a failed assignment. assigneeAccepted is covered above,
+  // but nothing proved runAssignment acts on a false result -- and if it stops,
+  // a PR silently stays unowned while the run reports success.
+  function run(issueAfterPost: { assignees: { login: string }[] }) {
+    const dir = mkdtempSync(join(tmpdir(), 'release-sheriff-'))
+    const file = join(dir, 'github-output')
+    const priorFile = process.env.GITHUB_OUTPUT
+    const priorCode = process.exitCode
+    process.env.GITHUB_OUTPUT = file
+    process.exitCode = 0
+
+    const candidate = pr({ number: 42, labels: [{ name: 'backport' }] })
+    let listed = false
+    vi.mocked(execFileSync).mockImplementation(((
+      _file: string,
+      args: string[]
+    ) => {
+      if (args[0] === 'pr' && args[1] === 'list') {
+        if (listed) return '[]'
+        listed = true
+        return JSON.stringify([candidate])
+      }
+      if (args.some((arg) => arg.endsWith('/assignees'))) {
+        return JSON.stringify(issueAfterPost)
+      }
+      return ''
+    }) as unknown as typeof execFileSync)
+
+    try {
+      runAssignment('owner/repo', 'thedatalife', 'christian-byrne', 'config')
+      return {
+        exitCode: process.exitCode,
+        degraded: existsSync(file) ? readFileSync(file, 'utf8') : ''
+      }
+    } finally {
+      process.env.GITHUB_OUTPUT = priorFile
+      process.exitCode = priorCode
+      vi.mocked(execFileSync).mockReset()
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  it('fails the run when GitHub drops the assignee it just accepted', () => {
+    const { exitCode, degraded } = run({ assignees: [] })
+
+    expect(exitCode).toBe(1)
+    expect(degraded).toContain('#42 is not confirmed assigned to `thedatalife`')
+    expect(degraded).toMatch(/Cause not established/)
+    // One heredoc record: a second would misparse the first's terminator.
+    expect(degraded.match(/^degraded<<__EOF__$/gm)).toHaveLength(1)
+  })
+
+  it('stays green when GitHub echoes the assignee back', () => {
+    const { exitCode, degraded } = run({
+      assignees: [{ login: 'TheDataLife' }]
+    })
+
+    expect(exitCode).toBe(0)
+    expect(degraded).toBe('')
   })
 })
 
