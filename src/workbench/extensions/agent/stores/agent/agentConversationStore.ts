@@ -19,8 +19,10 @@ import type {
 import {
   askIdOf,
   createAssistantMessage,
+  isOpenAskPart,
   isPendingAskPart,
-  retireAskParts
+  retireAskParts,
+  settleResolution
 } from '../../services/agent/agentMessageParts'
 import {
   normalizeAgentTranscript,
@@ -101,7 +103,7 @@ function anchorLocalParts(
       textOffset = 0
       continue
     }
-    if (part.type === 'runApproval') continue
+    if (isOpenAskPart(part)) continue
     localParts.push({ part, toolCount, textOffset })
   }
   return localParts
@@ -194,7 +196,7 @@ function finishWithPersistedParts(
   persistedParts: AssistantMessage['parts'] | undefined
 ): void {
   if (persistedParts === undefined) {
-    message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+    message.parts = message.parts.filter((part) => !isOpenAskPart(part))
     for (const part of message.parts) {
       if (!('state' in part) || part.state !== 'streaming') continue
       if (part.type === 'tool') {
@@ -425,7 +427,10 @@ export const useAgentConversationStore = defineStore(
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key)
           entry.transport.dropAskPart(askId, resolution)
-      retiredAsksFor(key).set(askId, resolution)
+      // A later local retirement (the POST settling after the frame) must
+      // not erase the server's answer that a refetch rebuilds the card from.
+      const retired = retiredAsksFor(key)
+      retired.set(askId, settleResolution(retired.get(askId), resolution))
       clearAskResolutionWatchdog(askId)
       submittedAskSelections.delete(askId)
       setAskAnswering(askId, false)
@@ -445,20 +450,14 @@ export const useAgentConversationStore = defineStore(
      * keeps the `ask_user` resolution the card was retired with, so a refetch
      * rebuilds it read-only rather than dropping the user's answer.
      */
-    const resolvedAskIds = new Map<
-      string,
-      Map<string, AskUserResolution | undefined>
-    >()
+    const resolvedAskIds = new Map<string, Map<string, AskUserResolution>>()
 
     const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
 
-    function retiredAsksFor(
-      owner?: string
-    ): Map<string, AskUserResolution | undefined> {
+    function retiredAsksFor(owner?: string): Map<string, AskUserResolution> {
       const key = threadKey(owner)
       const retired =
-        resolvedAskIds.get(key) ??
-        new Map<string, AskUserResolution | undefined>()
+        resolvedAskIds.get(key) ?? new Map<string, AskUserResolution>()
       resolvedAskIds.set(key, retired)
       return retired
     }

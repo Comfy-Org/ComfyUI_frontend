@@ -78,9 +78,9 @@ describe('AskUserCard', () => {
   it('caps multi-choice at max and sends ids in option order', async () => {
     const { user, submit, emitted } = renderCard({ maxSelections: 2 })
 
-    expect(screen.getByText('Choose up to 2')).toBeInTheDocument()
+    expect(screen.getByText('Choose 1 to 2')).toBeInTheDocument()
     expect(screen.getByRole('group')).toHaveAccessibleDescription(
-      'Choose up to 2'
+      'Choose 1 to 2'
     )
     await user.click(screen.getByRole('checkbox', { name: 'SD 1.5' }))
     await user.click(screen.getByRole('checkbox', { name: 'SDXL' }))
@@ -108,7 +108,10 @@ describe('AskUserCard', () => {
   it.for([
     { min: 2, max: 2, hint: 'Choose 2' },
     { min: 2, max: 3, hint: 'Choose 2 to 3', allowOther: true },
-    { min: 1, max: 3, hint: 'Choose all that apply' }
+    { min: 1, max: 2, hint: 'Choose 1 to 2' },
+    { min: 1, max: 3, hint: 'Choose at least 1' },
+    { min: 0, max: 3, hint: 'Choose all that apply' },
+    { min: 0, max: 2, hint: 'Choose up to 2' }
   ])(
     'hints "$hint" for min $min / max $max',
     ({ min, max, hint, allowOther }) => {
@@ -143,7 +146,7 @@ describe('AskUserCard', () => {
 
     expect(
       screen.getByRole('textbox', { name: 'Other' })
-    ).toHaveAccessibleDescription('Which model should I use? Choose up to 2')
+    ).toHaveAccessibleDescription('Which model should I use? Choose 1 to 2')
   })
 
   it('disables an empty Other box once the options fill the cap', async () => {
@@ -212,6 +215,43 @@ describe('AskUserCard', () => {
     expect(emitted().answer).toEqual([
       ['ask-1', { selected: [], other_text: '日本' }]
     ])
+  })
+
+  // WebKit can end the composition before the Enter that committed it, so
+  // that keydown arrives with isComposing false.
+  it('does not submit on an Enter that follows compositionend in the same turn', async () => {
+    const { user, emitted } = renderCard({ allowOther: true })
+    const other = screen.getByRole('textbox', { name: 'Other' })
+    await user.type(other, '日本')
+
+    other.dispatchEvent(new CompositionEvent('compositionstart'))
+    other.dispatchEvent(new CompositionEvent('compositionend'))
+    other.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+    )
+    expect(emitted().answer).toBeUndefined()
+
+    await new Promise((resolve) => setTimeout(resolve))
+    await user.keyboard('{Enter}')
+    expect(emitted().answer).toEqual([
+      ['ask-1', { selected: [], other_text: '日本' }]
+    ])
+  })
+
+  it('does not submit on an Enter keydown with the IME key code', async () => {
+    const { user, emitted } = renderCard({ allowOther: true })
+    const other = screen.getByRole('textbox', { name: 'Other' })
+    await user.type(other, '日本')
+
+    other.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        keyCode: 229,
+        bubbles: true
+      })
+    )
+
+    expect(emitted().answer).toBeUndefined()
   })
 
   it('lets an optional single choice be cleared again', async () => {
@@ -295,6 +335,14 @@ describe('AskUserCard', () => {
 
       expect(screen.getByRole('status')).toHaveTextContent('Answered')
       expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+    })
+
+    it('says the question is no longer open here after a local retirement', () => {
+      renderCard({ resolution: { status: 'retired', selected: [] } })
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'This question is no longer open here.'
+      )
     })
 
     it('says the answer could not be confirmed when the outcome is unknown', () => {

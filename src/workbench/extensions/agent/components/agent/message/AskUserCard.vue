@@ -49,12 +49,12 @@ const hint = computed(() => {
   if (single.value || part.resolution) return undefined
   const { minSelections: min, maxSelections: max } = part
   const choosable = part.options.length + (part.allowOther ? 1 : 0)
-  if (min > 1 && min === max) return t('agent.askUser.chooseExactly', { min })
+  if (min > 0 && min === max) return t('agent.askUser.chooseExactly', { min })
   if (max >= choosable)
-    return min > 1
+    return min > 0
       ? t('agent.askUser.chooseAtLeast', { min })
       : t('agent.askUser.chooseAny')
-  if (min > 1) return t('agent.askUser.chooseBetween', { min, max })
+  if (min > 0) return t('agent.askUser.chooseBetween', { min, max })
   return t('agent.askUser.chooseUpTo', { max })
 })
 
@@ -97,9 +97,26 @@ const otherDisabled = computed(
   () => answering || (!exclusive.value && atMax.value && !trimmedOther.value)
 )
 
+// Enter commits an IME candidate; it must not submit. WebKit can fire
+// compositionend before that final keydown, so the composition is tracked
+// here and released only after the current event has been handled, with the
+// legacy 229 key code as a fallback.
+const IME_PROCESS_KEY_CODE = 229
+const composing = ref(false)
+
+function onCompositionEnd(): void {
+  setTimeout(() => {
+    composing.value = false
+  })
+}
+
 function onOtherEnter(event: KeyboardEvent): void {
-  // Enter commits an IME candidate while composing; it must not submit.
-  if (event.isComposing) return
+  if (
+    event.isComposing ||
+    composing.value ||
+    event.keyCode === IME_PROCESS_KEY_CODE
+  )
+    return
   event.preventDefault()
   submit()
 }
@@ -179,6 +196,8 @@ function submit(): void {
           :aria-describedby="otherDescribedBy"
           class="h-8 bg-component-node-background px-3"
           @keydown.enter="onOtherEnter"
+          @compositionstart="composing = true"
+          @compositionend="onCompositionEnd"
         />
       </div>
 
