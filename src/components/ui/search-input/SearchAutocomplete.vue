@@ -1,9 +1,10 @@
 <template>
   <ComboboxRoot
     ref="comboboxRef"
-    v-model="modelValue"
     v-model:open="isOpen"
     ignore-filter
+    :reset-search-term-on-blur="false"
+    :reset-search-term-on-select="false"
     :disabled
     :open-on-focus
     :open-on-click="openOnFocus"

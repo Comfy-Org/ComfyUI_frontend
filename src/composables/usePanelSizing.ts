@@ -173,7 +173,6 @@ export function usePanelSizing(
 
   return {
     panelPercentages,
-    layoutKey,
     panelRefs,
     onResizeStart,
     onResizeDragging,

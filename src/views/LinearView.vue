@@ -87,12 +87,6 @@ function sidePanelMinSize(isBuilder: boolean) {
   )
 }
 
-const panelComposition = computed(() => [
-  ...(leftPanelVisible.value ? ['left'] : []),
-  'center',
-  ...(rightPanelVisible.value ? ['right'] : [])
-])
-const layoutMode = computed(() => (isArrangeMode.value ? 'arrange' : 'app'))
 const workspaceRef = useTemplateRef('workspace')
 const { width: workspaceWidth } = useElementSize(workspaceRef)
 const availableSplitterWidth = computed(() =>
@@ -106,7 +100,6 @@ const availableSplitterWidth = computed(() =>
 )
 const {
   panelPercentages,
-  layoutKey,
   panelRefs,
   onResizeStart,
   onResizeDragging,
@@ -132,10 +125,6 @@ const {
   ],
   availableSplitterWidth,
   () => window.innerWidth * 0.2
-)
-const splitterKey = computed(
-  () =>
-    `${layoutMode.value}-${panelComposition.value.join('-')}-${layoutKey.value}`
 )
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
@@ -173,7 +162,6 @@ function dragDrop(e: DragEvent) {
           hide-workspace-toggles
         />
         <SplitterGroup
-          :key="splitterKey"
           class="h-full flex-1 border-none bg-secondary-background"
           @keydown.capture="onResizeStart"
           @keyup="onResizeEnd"

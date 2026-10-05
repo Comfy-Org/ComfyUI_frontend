@@ -263,7 +263,7 @@ test.describe('App mode usage', () => {
     await expect(comfyPage.appMode.centerPanel).toBeHidden()
   })
 
-  test('Mode toggle survives a sidebar tab remounting the app panel', async ({
+  test('Mode toggle survives sidebar visibility changes', async ({
     comfyPage
   }) => {
     const toggle = comfyPage.appMode.workflowActions.viewModeToggle
@@ -271,7 +271,6 @@ test.describe('App mode usage', () => {
     await expect(comfyPage.appMode.centerPanel).toBeVisible()
     await expect(toggle).toBeVisible()
 
-    // Opening a sidebar tab remounts the app panel; the toggle re-renders with it.
     await comfyPage.menu.assetsTab.tabButton.click()
     await expect(toggle).toBeVisible()
   })
