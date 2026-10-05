@@ -413,7 +413,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       )
 
       await expect(
-        comfyPage.page.getByRole('alert').filter({ hasText: result.result })
+        comfyPage.toast.toastErrors.filter({ hasText: result.result })
       ).toBeVisible()
       await expect(
         comfyPage.page.getByText('Failed', { exact: true })

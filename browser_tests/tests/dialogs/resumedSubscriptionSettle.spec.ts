@@ -14,6 +14,7 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -252,9 +253,9 @@ async function expectResumedSubscribeSettles(page: Page, rail: Rail) {
   await returnToTab(page)
 
   await expect(
-    page
-      .getByRole('alert')
-      .filter({ hasText: 'Subscription updated successfully' })
+    new ToastHelper(page).toastSuccesses.filter({
+      hasText: 'Subscription updated successfully'
+    })
   ).toBeVisible({ timeout: 45_000 })
   const statusReadsAfterSettle = routes.statusRequests.slice(
     statusReadsBeforeSettle
