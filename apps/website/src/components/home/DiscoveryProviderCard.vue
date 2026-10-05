@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { DiscoveryProvider } from '../../data/modelDiscovery'
-import StaticFrame from '../workshop/StaticFrame.vue'
+import type { DiscoveryProvider } from '@/data/modelDiscovery'
+import StaticFrame from '@/components/workshop/StaticFrame.vue'
 
 const { provider } = defineProps<{ provider: DiscoveryProvider }>()
 

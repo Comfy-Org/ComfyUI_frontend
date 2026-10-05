@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { prepareModelRouterRender } from '../../../config/router-render'
-import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import { prepareModelRouterRender } from '@/config/router-render'
+import { getAuthoredRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import { runnableCinematicVideoModels } from './models'
 import { studioRouterForm } from './request'
 import {

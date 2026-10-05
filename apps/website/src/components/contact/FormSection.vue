@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { useHeroAnimation } from '../../composables/useHeroAnimation'
-import { translationsFor } from '../../i18n/translations'
-import HubspotFormEmbed from '../common/HubspotFormEmbed.vue'
-import SectionLabel from '../common/SectionLabel.vue'
-import SocialProofBarSection from '../common/SocialProofBarSection.vue'
+import { useHeroAnimation } from '@/composables/useHeroAnimation'
+import { translationsFor } from '@/i18n/translations'
+import HubspotFormEmbed from '@/components/common/HubspotFormEmbed.vue'
+import SectionLabel from '@/components/common/SectionLabel.vue'
+import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
