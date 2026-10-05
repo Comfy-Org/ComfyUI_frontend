@@ -662,6 +662,10 @@ function startAgentCrdtFollower(
   }
   const handleReconnected = (): void => {
     connected.value = false
+    // A new socket starts a new subscription attempt with a fresh budget, so
+    // the document is being recovered again: the panel must withhold the
+    // draft seed until that attempt confirms or gives up in turn.
+    terminal.value = null
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()

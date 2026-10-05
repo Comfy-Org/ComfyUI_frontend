@@ -636,6 +636,25 @@ describe('useAgentCrdtFollower', () => {
       expect(status().workflowId).toBe('wf-1')
       unmount()
     })
+
+    // A reconnect reopens recovery of the same document with a fresh budget,
+    // so the old verdict no longer holds while that attempt is in flight.
+    it('a reconnect clears a terminal refusal while the new subscribe is in flight', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: false,
+        workflow_id: 'wf-1',
+        code: 'schema_version_mismatch'
+      })
+      expect(status().terminal).toBe('refused')
+
+      agentSocket.open()
+
+      expect(status().terminal).toBeNull()
+      expect(status().connected).toBe(false)
+      expect(status().workflowId).toBe('wf-1')
+      unmount()
+    })
   })
 
   it('FE-1902: persists a binding only once the server confirms it', () => {
