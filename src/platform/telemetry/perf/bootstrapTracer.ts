@@ -15,10 +15,24 @@
  *   bootstrap/settings             | ~0.2 s    (parallel, non-blocking)
  *   bootstrap/workflows            | ~0.3 s    (parallel, non-blocking)
  *   bootstrap/extensions-load      | ~0.5 s    (fetch + import /extensions JS)
+ *     ├ extensions-load-core       | subset    (core entry-point import)
+ *     └ extensions-load-custom     | subset    (backend-provided extension imports)
  *   bootstrap/extensions-init      | ~0.3 s    (extension.init() hooks)
  *   bootstrap/object-info          | ~0.7 s    (GET /api/object_info)
  *   bootstrap/extensions           | ~0.5 s    (addCustomNodeDefs + registerCustomNodes)
  *   bootstrap/extensions-setup     | ~0.5 s    (extension.setup() hooks)
+ *
+ * The two `extensions-load-*` rows are nested inside `extensions-load` rather
+ * than replacing it: the aggregate stays intact for the existing monitors, and
+ * the residual (aggregate minus both children) is `api.getExtensions()` plus
+ * bookkeeping. So read the children and the residual against the aggregate —
+ * never sum rows across the flattened phase map, which would double-count
+ * extension load time.
+ *
+ * These children add two to `phase_count` when both run, so thresholds based
+ * on the old count must shift. Each duration is rounded independently, so the
+ * residual can be off by a millisecond or two in either direction and can read
+ * negative on a fast load. The phase map carries only the rounded values.
  *
  * Startup ends when the loading screen comes down, not when any one subsystem
  * finishes. `complete()` is therefore called from the single place that owns
@@ -55,6 +69,8 @@ const BOOTSTRAP_PHASES = {
     'settings',
     'workflows',
     'extensions-load',
+    'extensions-load-core',
+    'extensions-load-custom',
     'extensions-init',
     'object-info',
     'extensions',
