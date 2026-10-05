@@ -310,7 +310,10 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { SUBSCRIBE_RETRY_MAX_ATTEMPTS } from './crdt/agentCrdtDocLifecycle'
+import {
+  SUBSCRIBE_ACK_TIMEOUT_MS,
+  SUBSCRIBE_RETRY_MAX_ATTEMPTS
+} from './crdt/agentCrdtDocLifecycle'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import {
   AGENT_IDENTITY_RETRY_BASE_MS,
@@ -9628,6 +9631,22 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
       expect(bodies[1]).not.toHaveProperty('draft')
+    })
+
+    // The subscribe goes out on bind and nothing ever answers it: after the
+    // silent budget (three attempts, 15 s apart) no document can arrive.
+    it('seeds the draft again once every subscribe in the silent budget went unanswered', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const bodies = await bindAndSettle()
+
+      await vi.advanceTimersByTimeAsync(SUBSCRIBE_ACK_TIMEOUT_MS * 3)
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toMatchObject({
+        workflow_id: 'wf-42',
+        draft: { content: { id: 'wf-42' } }
+      })
     })
   })
 

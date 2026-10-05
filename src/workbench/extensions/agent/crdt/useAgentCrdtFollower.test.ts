@@ -617,6 +617,25 @@ describe('useAgentCrdtFollower', () => {
       expect(status().terminal).toBeNull()
       unmount()
     })
+
+    // Three unanswered subscribes spend the silent budget (frames at 0 s,
+    // 15 s and 30 s); the lifecycle gives up at 45 s and nothing will arrive.
+    it('reports a terminal timeout once the silent-subscribe budget is spent', () => {
+      vi.useFakeTimers()
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      expect(status().terminal).toBeNull()
+
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+      expect(status().terminal).toBe('timeout')
+      expect(status().workflowId).toBe('wf-1')
+      unmount()
+    })
   })
 
   it('FE-1902: persists a binding only once the server confirms it', () => {

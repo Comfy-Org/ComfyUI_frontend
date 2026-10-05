@@ -23,6 +23,7 @@ import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
+import type { SubscribeGiveUpReason } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta } from './agentCrdtProjection'
 import { createLoggedTransport } from './agentCrdtTransport'
@@ -92,13 +93,14 @@ interface AgentCrdtOutcomeCounters {
 /**
  * Why the follower can no longer deliver the document it intends to follow.
  * `refused`: the host refused the subscribe and the FE-1901 retry budget is
- * spent. `schema_error`: the KA-11 read gate closed on an unreadable doc.
- * Either way `workflowId` (intent) is still set, but nothing will ever arrive
- * for it until a confirmed subscribe or a retarget clears this. Distinct from
- * a plain `connected: false`, which a reconnect produces for a moment and
- * which the subscribe machinery repairs on its own.
+ * spent. `timeout`: every subscribe in the silent budget went unanswered.
+ * `schema_error`: the KA-11 read gate closed on an unreadable doc. Either way
+ * `workflowId` (intent) is still set, but nothing will ever arrive for it
+ * until a confirmed subscribe, a reconnect or a retarget clears this.
+ * Distinct from a plain `connected: false`, which a reconnect produces for a
+ * moment and which the subscribe machinery repairs on its own.
  */
-type AgentCrdtTerminalState = 'refused' | 'schema_error' | null
+type AgentCrdtTerminalState = SubscribeGiveUpReason | 'schema_error' | null
 
 function liveAddedNodeIds(
   added: readonly string[],
@@ -385,8 +387,9 @@ function startAgentCrdtFollower(
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
-    () => {
+    (reason) => {
       connected.value = false
+      terminal.value = reason
     }
   )
   const tabId = createUuidv4()
