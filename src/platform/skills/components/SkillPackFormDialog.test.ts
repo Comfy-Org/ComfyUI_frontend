@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
@@ -31,6 +32,36 @@ function renderForm() {
 }
 
 describe('SkillPackFormDialog', () => {
+  it('returns keyboard focus to the opener after Escape', async () => {
+    const user = userEvent.setup()
+    render(
+      defineComponent({
+        components: { SkillPackFormDialog },
+        setup() {
+          return { visible: ref(false) }
+        },
+        template:
+          '<button @click="visible = true">Add skill</button><SkillPackFormDialog v-model:visible="visible" />'
+      }),
+      {
+        global: {
+          plugins: [
+            createI18n({ legacy: false, locale: 'en', messages: { en } })
+          ]
+        }
+      }
+    )
+    const opener = screen.getByRole('button', { name: 'Add skill' })
+
+    await user.click(opener)
+    const nameInput = await screen.findByRole('textbox', { name: 'Name' })
+    await user.click(nameInput)
+    expect(nameInput).toHaveFocus()
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => expect(opener).toHaveFocus())
+  })
+
   it('preserves and publishes an astral trigger within the code-point limit', async () => {
     const user = userEvent.setup()
     const description = '😀'.repeat(700)
