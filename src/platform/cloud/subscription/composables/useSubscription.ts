@@ -857,6 +857,13 @@ function useSubscriptionInternal() {
     if (scope === observedStatusScope) return
     observedStatusScope = scope
     statusScopeGeneration += 1
+    // The invoice link is a bearer payment URL: never carry it across scopes.
+    if (subscriptionStatus.value?.renewal_invoice) {
+      subscriptionStatus.value = {
+        ...subscriptionStatus.value,
+        renewal_invoice: undefined
+      }
+    }
   }
 
   watch(

@@ -1,4 +1,9 @@
 {
+  "dynamicGroup": {
+    "add": "Add {group}",
+    "remove": "Remove {row}",
+    "row": "{group} #{index}"
+  },
   "g": {
     "shortcutSuffix": " ({shortcut})",
     "megapixelsValue": "{count} MP",
@@ -3517,6 +3522,7 @@
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
+      "deleteWorkspaceAfterPlanEndsTooltip": "You can delete this workspace after your plan ends on {date}",
       "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {

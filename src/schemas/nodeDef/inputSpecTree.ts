@@ -12,6 +12,7 @@ import {
   zAutogrowOptions,
   zDynamicComboOption,
   zDynamicComboSpecV2,
+  zDynamicGroupInputSpec,
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 
@@ -102,6 +103,17 @@ function parseDynamicComboOptions(
 }
 
 const dynamicControls = {
+  COMFY_DYNAMICGROUP_V3: {
+    nestedInputs: (spec) => {
+      const parsed = zDynamicGroupInputSpec.safeParse([spec.type, spec])
+      if (!parsed.success) {
+        warnSpecDrift(spec, parsed.error)
+        return []
+      }
+      return [parsed.data[1].template]
+    },
+    ownTypes: none
+  },
   COMFY_AUTOGROW_V3: {
     nestedInputs: (spec) => {
       const parsed = zAutogrowOptions.safeParse(spec)

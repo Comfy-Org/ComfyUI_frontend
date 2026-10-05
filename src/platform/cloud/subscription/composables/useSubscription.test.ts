@@ -2,7 +2,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope } from 'vue'
+import { computed, effectScope, nextTick } from 'vue'
 
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 
@@ -642,6 +642,30 @@ describe('useSubscription', () => {
       expect(
         useTeamWorkspaceStore().setWorkspaceBillingRail
       ).toHaveBeenCalledWith('workspace-456', 'legacy_stripe')
+    })
+
+    it('drops the previous workspace renewal invoice link on a workspace switch', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        billing_status: 'payment_failed',
+        renewal_invoice: {
+          hosted_invoice_url: 'https://invoice.stripe.com/i/old',
+          amount_due: 100,
+          currency: 'usd'
+        }
+      })
+      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
+      await fetchStatus()
+      expect(subscriptionStatus.value?.renewal_invoice).toBeDefined()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-456'
+      })
+      await nextTick()
+
+      expect(subscriptionStatus.value?.renewal_invoice).toBeUndefined()
+      expect(subscriptionStatus.value?.billing_status).toBe('payment_failed')
     })
 
     it('coalesces concurrent callers into one fetch', async () => {

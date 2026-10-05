@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  markErrorReported,
+  reportError
+} from '@/platform/telemetry/reportError'
+import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 import {
   AgentApiError,
@@ -29,9 +35,29 @@ function respond(response: Response) {
   vi.mocked(api.fetchApi).mockResolvedValueOnce(response)
 }
 
+function respondWithAuthScheme(response: Response, scheme: AuthScheme) {
+  vi.mocked(api.fetchApi).mockImplementationOnce(async (_route, init) => {
+    init?.onAuthScheme?.(scheme)
+    return response
+  })
+}
+
 function lastCall(): { route: string; init: RequestInit } {
   const [route, init] = vi.mocked(api.fetchApi).mock.calls.at(-1)!
   return { route, init: init ?? {} }
+}
+
+/** The tag set of the most recent `reportError` call. */
+function reportedTags(): Record<string, unknown> | undefined {
+  expect(reportError).toHaveBeenCalledOnce()
+  return vi.mocked(reportError).mock.calls.at(-1)?.[1].tags
+}
+
+/** The cause of the most recent `reportError` call, which is typed `unknown`. */
+function reportedError(): Error {
+  const cause = vi.mocked(reportError).mock.calls.at(-1)?.[0]
+  if (!(cause instanceof Error)) throw new Error('no Error was reported')
+  return cause
 }
 
 function contentType(init: RequestInit): string | undefined {
@@ -68,6 +94,7 @@ const turnAccepted = {
 
 beforeEach(() => {
   vi.mocked(api.fetchApi).mockReset()
+  vi.mocked(reportError).mockReset()
 })
 
 describe('agentRestClient route + method', () => {
@@ -534,6 +561,196 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error).not.toBeInstanceOf(AgentApiError)
+  })
+
+  it('reports the operation, status and auth scheme on a 401 (PM-1802)', async () => {
+    respondWithAuthScheme(
+      jsonResponse(401, {
+        error: 'Authentication method not allowed for this endpoint'
+      }),
+      'web-session'
+    )
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    // Exact, not `objectContaining`: the whole point of the tag set is that it
+    // is bounded and carries no user-scoped identifier, which a partial match
+    // cannot falsify.
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_api_auth_rejected',
+      tags: {
+        operation: 'get_thread_messages',
+        status: 401,
+        authScheme: 'web-session'
+      },
+      level: 'warning'
+    })
+  })
+
+  it('reports cloud-auth-header as the scheme when that path was taken (PM-1802)', async () => {
+    respondWithAuthScheme(
+      jsonResponse(403, { error: 'access denied' }),
+      'cloud-auth-header'
+    )
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'get_thread_messages',
+      status: 403,
+      authScheme: 'cloud-auth-header'
+    })
+  })
+
+  it('reports none as the scheme when nothing authenticated the request (PM-1802)', async () => {
+    respondWithAuthScheme(jsonResponse(401, { error: 'unauthorized' }), 'none')
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'get_thread_messages',
+      status: 401,
+      authScheme: 'none'
+    })
+  })
+
+  it('reports unreported rather than guessing when fetchApi drops the callback (PM-1802)', async () => {
+    respond(jsonResponse(401, { error: 'unauthorized' }))
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'get_thread_messages',
+      status: 401,
+      authScheme: 'unreported'
+    })
+  })
+
+  it('never reports a thread, message or ask id from the failing path (PM-1802)', async () => {
+    const identifiers = ['t-secret', 'm-secret', 'ask-secret']
+    respondWithAuthScheme(
+      jsonResponse(403, { error: 'access denied' }),
+      'cloud-auth-header'
+    )
+    await makeClient()
+      .answerAsk('t-secret', 'ask-secret', ['run'])
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'answer_thread_ask',
+      status: 403,
+      authScheme: 'cloud-auth-header'
+    })
+    const serialized = JSON.stringify([
+      reportedError().message,
+      vi.mocked(reportError).mock.calls.at(-1)?.[1]
+    ])
+    expect(
+      identifiers.map((identifier) => serialized.includes(identifier))
+    ).toEqual([false, false, false])
+  })
+
+  it('never reports a message id from a failed cancel path (PM-1802)', async () => {
+    respondWithAuthScheme(
+      jsonResponse(403, { error: 'access denied' }),
+      'cloud-auth-header'
+    )
+
+    await makeClient()
+      .cancelMessage('t-secret', 'm-secret')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'cancel_thread_message',
+      status: 403,
+      authScheme: 'cloud-auth-header'
+    })
+    const serialized = JSON.stringify([
+      reportedError().message,
+      vi.mocked(reportError).mock.calls.at(-1)?.[1]
+    ])
+    expect(
+      ['t-secret', 'm-secret'].map((identifier) =>
+        serialized.includes(identifier)
+      )
+    ).toEqual([false, false])
+  })
+
+  it('never reports a pagination cursor or query value (PM-1802)', async () => {
+    const page = (nextCursor: string) =>
+      jsonResponse(200, {
+        data: [],
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: 0,
+          has_more: true,
+          next_cursor: nextCursor
+        }
+      })
+    respond(page('cursor-secret'))
+    respondWithAuthScheme(
+      jsonResponse(401, { error: 'unauthorized' }),
+      'cloud-auth-header'
+    )
+
+    await makeClient()
+      .listCloudWorkflows()
+      .catch((e: unknown) => e)
+
+    // The second page's route is `/workflows?limit=100&after=cursor-secret`;
+    // only the operation name may reach telemetry.
+    expect(lastCall().route).toContain('cursor-secret')
+    expect(reportedTags()).toEqual({
+      operation: 'list_cloud_workflows',
+      status: 401,
+      authScheme: 'cloud-auth-header'
+    })
+  })
+
+  it('reports a stable message rather than the backend response text (PM-1802)', async () => {
+    respondWithAuthScheme(
+      jsonResponse(401, {
+        error:
+          'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
+      }),
+      'web-session'
+    )
+
+    const error = await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    // Grouping identity must not move with the backend's wording, but the
+    // caller-facing error still carries it for the UI.
+    expect(reportedError().message).toBe(
+      'Agent API request rejected by authentication'
+    )
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect(error).toHaveProperty(
+      'message',
+      'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
+    )
+    expect(markErrorReported).toHaveBeenCalledExactlyOnceWith(error)
+  })
+
+  it('does not report auth telemetry for a non-auth error status', async () => {
+    respond(jsonResponse(503, { error: 'unavailable' }))
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('keeps a genuinely unreadable POST response distinct without exposing its route', async () => {
