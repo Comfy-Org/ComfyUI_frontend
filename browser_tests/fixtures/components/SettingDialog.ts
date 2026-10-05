@@ -29,7 +29,7 @@ export class SettingDialog extends BaseDialog {
     await this.category('Extension').click()
     const button = this.contentArea
       .getByRole('columnheader')
-      .getByRole('button')
+      .getByRole('button', { name: 'More Options' })
     await button.click()
     return button.evaluate((element) => {
       const { x, y, width, height } = element.getBoundingClientRect()
