@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User, UserCredential } from 'firebase/auth'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
 
@@ -30,6 +31,10 @@ import {
   takeInteractiveSignIn
 } from '@/platform/auth/session/interactiveSignInMarker'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import {
+  readSsoHint,
+  rememberSignedInSession
+} from '@/platform/auth/session/ssoReentryStorage'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
@@ -180,7 +185,7 @@ type ServerSession =
   | 'revoked'
   | 'network'
   | 'restore_token_revoked'
-  | { userId: string }
+  | { userId: string; provider?: string }
 
 interface FeatureAnswers {
   probe: boolean
@@ -201,13 +206,13 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
-function sessionBody(userId: string) {
+function sessionBody(userId: string, provider = 'google.com') {
   return {
     user: {
       id: userId,
       email: `${userId}@example.com`,
       email_verified: true,
-      sign_in_provider: 'google.com'
+      sign_in_provider: provider
     },
     csrf_token: `csrf-${userId}`,
     expires_at: new Date(Date.now() + 86_400_000).toISOString(),
@@ -251,7 +256,7 @@ function installServer(
       return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
     }
     if (typeof session === 'object')
-      return jsonResponse(sessionBody(session.userId))
+      return jsonResponse(sessionBody(session.userId, session.provider))
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
     return jsonResponse({ code, message: code }, 401)
   }
@@ -2838,3 +2843,241 @@ describe.for([{ unified: false }, { unified: true }])(
     })
   }
 )
+
+describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => {
+  const SSO_SESSION = { userId: 'user-a', provider: 'saml.workos' }
+  const FIVE_MINUTES_MS = 5 * 60_000
+  const pages: Disposable[] = []
+  let assign: Mock<(url: string | URL) => void>
+
+  beforeEach(() => {
+    identity.reset()
+    firebaseSignOut.mockReset()
+    firebaseSignOut.mockImplementation(async () => identity.signOut())
+    vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    assign = vi.fn<(url: string | URL) => void>()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
+  })
+
+  afterEach(() => {
+    pages.splice(0).forEach((page) => page[Symbol.dispose]())
+    remoteConfig.value = {}
+  })
+
+  const loadPage = async (session: ServerSession, ssoEnabled = true) => {
+    const page = createDisposablePinia()
+    pages.push(page)
+    setActivePinia(page.pinia)
+    const server = installServer(session, { sso_enabled: ssoEnabled })
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    identity.resolve(null)
+    await router.push('/cloud/login')
+    return server
+  }
+
+  const visit = async (path: string) => {
+    await router.push(path)
+    const { path: landed, query } = router.currentRoute.value
+    return { landed, query }
+  }
+
+  const startedAt = (call: number) => {
+    const url = new URL(String(assign.mock.calls[call][0]))
+    return {
+      path: url.pathname,
+      email: url.searchParams.get('email'),
+      returnTo: url.searchParams.get('return_to')
+    }
+  }
+
+  const inAppThenLapsed = async (ssoEnabled: boolean) => {
+    const server = await loadPage(SSO_SESSION, ssoEnabled)
+    await expect(visit('/user-select')).resolves.toMatchObject({
+      landed: '/user-select'
+    })
+    const landings: string[] = []
+    pages.push({
+      [Symbol.dispose]: router.afterEach((to, _from, failure) => {
+        if (!failure) landings.push(to.path)
+      })
+    })
+    server.session = 'none'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+    return landings
+  }
+
+  describe('the hint', () => {
+    it.for<{
+      name: string
+      session: ServerSession
+      ssoEnabled: boolean
+      hint: { email: string } | null
+    }>([
+      {
+        name: 'an SSO session leaves its email',
+        session: SSO_SESSION,
+        ssoEnabled: true,
+        hint: { email: 'user-a@example.com' }
+      },
+      {
+        name: 'an OIDC SSO session leaves its email',
+        session: { userId: 'user-a', provider: 'oidc.workos' },
+        ssoEnabled: true,
+        hint: { email: 'user-a@example.com' }
+      },
+      {
+        name: 'a Google session clears an earlier SSO hint',
+        session: { userId: 'user-a' },
+        ssoEnabled: true,
+        hint: null
+      },
+      {
+        name: 'with the flag off an SSO session leaves nothing',
+        session: SSO_SESSION,
+        ssoEnabled: false,
+        hint: null
+      }
+    ])('$name', async ({ session, ssoEnabled, hint }) => {
+      localStorage.setItem(
+        'Comfy.WebSession.SsoHint',
+        JSON.stringify({ email: 'earlier@example.com' })
+      )
+      if (!ssoEnabled) localStorage.clear()
+
+      await loadPage(session, ssoEnabled)
+
+      expect(readSsoHint()).toEqual(hint)
+    })
+
+    it('is cleared by a sign-out in this tab', async () => {
+      await loadPage(SSO_SESSION)
+      expect(readSsoHint()).not.toBeNull()
+
+      await useAuthStore().logout()
+
+      expect(readSsoHint()).toBeNull()
+    })
+
+    it('is cleared when the session is revoked', async () => {
+      const server = await loadPage(SSO_SESSION)
+      await visit('/user-select')
+
+      server.session = 'revoked'
+      await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+      expect(readSsoHint()).toBeNull()
+    })
+  })
+
+  it('sends a tab whose SSO session lapses under it to SSO, returning to its page', async () => {
+    const landings = await inAppThenLapsed(true)
+
+    await vi.waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    expect(startedAt(0)).toEqual({
+      path: '/api/auth/sso/start',
+      email: 'user-a@example.com',
+      returnTo: '/user-select'
+    })
+    expect(landings).toEqual([])
+  })
+
+  it('with the flag off sends that tab to the plain login page', async () => {
+    const landings = await inAppThenLapsed(false)
+
+    await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
+    expect(router.currentRoute.value.query.sso).toBeUndefined()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('redirects a reload once per tab per five minutes, then opens the SSO entry instead', async () => {
+    rememberSignedInSession({
+      id: 'user-a',
+      email: 'ada@acme.com',
+      emailVerified: true,
+      signInProvider: 'saml.workos'
+    })
+
+    await loadPage('none')
+    await expect(visit('/user-select')).resolves.toMatchObject({
+      landed: '/cloud/login'
+    })
+    expect(assign).toHaveBeenCalledOnce()
+    expect(startedAt(0).email).toBe('ada@acme.com')
+
+    await loadPage('none')
+    await expect(visit('/user-select')).resolves.toEqual({
+      landed: '/cloud/login',
+      query: {
+        previousFullPath: encodeURIComponent('/user-select'),
+        sso: 'open'
+      }
+    })
+    expect(assign).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(FIVE_MINUTES_MS)
+    await loadPage('none')
+    await visit('/user-select')
+    expect(assign).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the login page with the error when SSO comes back with sso_error', async () => {
+    rememberSignedInSession({
+      id: 'user-a',
+      email: 'ada@acme.com',
+      emailVerified: true,
+      signInProvider: 'saml.workos'
+    })
+    await loadPage('none')
+
+    const { landed, query } = await visit(
+      '/user-select?sso_error=SSO_IDP_ERROR'
+    )
+
+    expect(landed).toBe('/cloud/login')
+    expect(query.sso_error).toBe('SSO_IDP_ERROR')
+    expect(query.sso).toBeUndefined()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it.for([{ ssoEnabled: true }, { ssoEnabled: false }])(
+    'sends a visitor with no hint and no session to the plain login page (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled }) => {
+      await loadPage('none', ssoEnabled)
+
+      await expect(visit('/user-select')).resolves.toEqual({
+        landed: '/cloud/login',
+        query: { previousFullPath: encodeURIComponent('/user-select') }
+      })
+      expect(assign).not.toHaveBeenCalled()
+    }
+  )
+
+  it('sends a tab whose Google session lapses under it to the plain login page', async () => {
+    const server = await loadPage({ userId: 'user-a' })
+    await visit('/user-select')
+
+    server.session = 'none'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.path).toBe('/cloud/login')
+    )
+    expect(router.currentRoute.value.query).toEqual({
+      previousFullPath: encodeURIComponent('/user-select')
+    })
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('sends a tab that signed out here to the plain login page', async () => {
+    await loadPage(SSO_SESSION)
+    await visit('/user-select')
+
+    await useAuthStore().logout()
+    await router.push('/cloud/login')
+    const { query } = await visit('/user-select')
+
+    expect(query.sso).toBeUndefined()
+    expect(assign).not.toHaveBeenCalled()
+  })
+})

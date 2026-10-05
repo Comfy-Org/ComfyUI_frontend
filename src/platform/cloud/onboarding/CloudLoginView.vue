@@ -98,6 +98,7 @@ import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useClo
 import { useSsoSignIn } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import { CLOUD_AUTH_LINK_BUTTON_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
 import { SSO_ERROR_MESSAGE_KEY } from '@/platform/cloud/onboarding/sso/ssoErrorMessages'
+import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoReentry'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData } from '@/schemas/signInSchema'
 
@@ -131,6 +132,10 @@ const {
   successSummary: 'Login Completed',
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
+
+if (route.query.sso === SSO_ENTRY_OPEN_QUERY.sso) {
+  switchToSsoForm()
+}
 
 const ssoErrorKey = computed(() => {
   if (!flags.ssoEnabled) return undefined

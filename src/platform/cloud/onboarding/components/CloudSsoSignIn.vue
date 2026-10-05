@@ -36,6 +36,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Message from '@/components/ui/message/Message.vue'
+import { readSsoHint } from '@/platform/auth/session/ssoReentryStorage'
 import { useSsoSignIn } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import {
   CLOUD_AUTH_FIELD_CLASS,
@@ -55,6 +56,6 @@ const { t } = useI18n()
 const { state, busy, trySso } = useSsoSignIn()
 
 const emailInputId = 'cloud-sso-email'
-const email = ref('')
+const email = ref(readSsoHint()?.email ?? '')
 const feedback = computed(() => FEEDBACK[state.value.phase])
 </script>

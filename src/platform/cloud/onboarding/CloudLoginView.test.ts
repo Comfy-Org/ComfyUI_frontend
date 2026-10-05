@@ -257,14 +257,17 @@ describe('CloudLoginView SSO', () => {
   }
 
   describe('with the flag off', () => {
-    it('offers no SSO entry and ignores an sso_error', async () => {
-      await renderLoginView('/cloud/login?sso_error=SSO_ORG_DISABLED')
+    it('offers no SSO entry and ignores an sso_error or sso=open', async () => {
+      await renderLoginView('/cloud/login?sso_error=SSO_ORG_DISABLED&sso=open')
 
       expect(
         screen.queryByRole('button', { name: 'auth.sso.continueWithSso' })
       ).not.toBeInTheDocument()
       expect(
         screen.queryByText('auth.sso.errors.orgDisabled')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByLabelText('auth.sso.emailLabel')
       ).not.toBeInTheDocument()
     })
 
@@ -380,6 +383,33 @@ describe('CloudLoginView SSO', () => {
       )
       expect(discoverCalls(fetchMock)).toHaveLength(1)
       expect(assign).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { query: '', open: false },
+      { query: '?sso=open', open: true },
+      { query: '?sso=1', open: false }
+    ])(
+      'opens the SSO entry on arrival for "$query": $open',
+      async ({ query, open }) => {
+        await renderLoginView(`/cloud/login${query}`)
+
+        expect(screen.queryByLabelText('auth.sso.emailLabel') !== null).toBe(
+          open
+        )
+      }
+    )
+
+    it('prefills the email this browser last signed in with through SSO', async () => {
+      localStorage.setItem(
+        'Comfy.WebSession.SsoHint',
+        JSON.stringify({ email: 'ada@acme.com' })
+      )
+      await renderLoginView('/cloud/login?sso=open')
+
+      expect(screen.getByLabelText('auth.sso.emailLabel')).toHaveValue(
+        'ada@acme.com'
+      )
     })
 
     it.for([
