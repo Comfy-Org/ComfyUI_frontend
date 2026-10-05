@@ -23,6 +23,7 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
@@ -234,12 +235,6 @@ async function payAndOpenVerification(page: Page, routes: TopupRoutes) {
 
 const completeVerification = (dialog: TopUpCreditsDialog) =>
   dialog.root.getByRole('button', { name: 'Complete verification' })
-
-const successToast = (page: Page) =>
-  page
-    .getByTestId('toast')
-    .and(page.locator('[data-toast-kind="success"]'))
-    .getByText('Credits added successfully')
 
 function transports(requests: Request[]): string[] {
   return requests.map((request) => request.resourceType())
@@ -569,6 +564,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
     test('offers the verification again after the customer abandons the hosted page', async ({
       page
     }) => {
+      const toast = new ToastHelper(page)
       test.setTimeout(90_000)
       const routes = await setupTopUp(page)
       const dialog = await payAndOpenVerification(page, routes)
@@ -583,12 +579,15 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       await expect(completeVerification(dialog)).not.toHaveAttribute(
         'aria-busy'
       )
-      await expect(successToast(page)).toHaveCount(0)
+      await expect(
+        toast.toastSuccesses.getByText('Credits added successfully')
+      ).toHaveCount(0)
     })
 
     test('settles the same purchase when the customer retries the verification', async ({
       page
     }) => {
+      const toast = new ToastHelper(page)
       test.setTimeout(90_000)
       const routes = await setupTopUp(page)
       const dialog = await payAndOpenVerification(page, routes)
@@ -601,7 +600,9 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       routes.setOperation(SUCCEEDED)
       await returnToTab(page)
 
-      await expect(successToast(page)).toBeVisible()
+      await expect(
+        toast.toastSuccesses.getByText('Credits added successfully')
+      ).toBeVisible()
       await expect(dialog.root).toBeHidden()
       expect(routes.purchaseRequests).toHaveLength(1)
       expect(operationIdsPolled(routes.pollRequests)).toEqual(
@@ -613,6 +614,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
     test('does not offer the verification again once the bank has accepted it', async ({
       page
     }) => {
+      const toast = new ToastHelper(page)
       test.setTimeout(90_000)
       const routes = await setupTopUp(page)
       const dialog = await payAndOpenVerification(page, routes)
@@ -632,9 +634,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       }
 
       await expect(
-        page
-          .getByTestId('toast')
-          .getByText('Verify your payment to add your credits')
+        toast.visibleToasts.getByText('Verify your payment to add your credits')
       ).toHaveCount(0)
       // Shown as work in progress, not as a step the customer still owes.
       await expect(completeVerification(dialog)).toBeDisabled()
@@ -649,6 +649,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
     test('reports the outcome of a verified purchase after a reload', async ({
       page
     }) => {
+      const toast = new ToastHelper(page)
       test.setTimeout(120_000)
       const routes = await setupTopUp(page)
       await payAndOpenVerification(page, routes)
@@ -662,7 +663,9 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       routes.setOperation(SUCCEEDED)
       await returnToTab(page)
 
-      await expect(successToast(page)).toBeVisible({ timeout: 45_000 })
+      await expect(
+        toast.toastSuccesses.getByText('Credits added successfully')
+      ).toBeVisible({ timeout: 45_000 })
       expect(routes.purchaseRequests).toHaveLength(1)
       expect(transports(routes.pollRequests)).not.toContain('xhr')
       // The step was already done, so the reload has nothing to reopen.
