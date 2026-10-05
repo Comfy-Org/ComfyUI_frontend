@@ -23,6 +23,7 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
@@ -283,7 +284,9 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         const server = await setupToastParity(page, { rails })
 
         await confirmCreatorUpgrade(page)
-        const toast = page.getByText(SUBSCRIPTION_PROCESSING)
+        const toast = new ToastHelper(page).toastLoadings.filter({
+          hasText: SUBSCRIPTION_PROCESSING
+        })
         await expect(toast).toBeVisible()
 
         server.operation = SETTLED_OPERATION
@@ -308,7 +311,11 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
 
         await confirmCreatorUpgrade(page)
 
-        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
+        await expect(
+          new ToastHelper(page).toastWarnings.filter({
+            hasText: SUBSCRIPTION_ACTION_REQUIRED
+          })
+        ).toBeVisible()
         await expect(page.getByText(SUBSCRIPTION_PROCESSING)).toBeHidden()
       })
 
@@ -408,7 +415,9 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           .getByRole('button', { name: 'Add credits', exact: true })
           .click()
         await dialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
-        const toast = page.getByText(TOPUP_PROCESSING)
+        const toast = new ToastHelper(page).toastLoadings.filter({
+          hasText: TOPUP_PROCESSING
+        })
         await expect(toast).toBeVisible()
 
         server.operation = SETTLED_OPERATION
