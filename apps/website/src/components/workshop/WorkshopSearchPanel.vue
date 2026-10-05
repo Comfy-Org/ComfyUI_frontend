@@ -43,6 +43,14 @@ const suggestions = computed(() =>
     : []
 )
 
+function thumbnailKind(model: WorkshopModel) {
+  if (!model.thumbnailUrl) return undefined
+  return (
+    model.thumbnail?.kind ??
+    (isVideoUrl(model.thumbnailUrl) ? 'video' : 'image')
+  )
+}
+
 function sourceOf(model: WorkshopModel): string | undefined {
   if (model.type === 'APP') return t('workshop.card.comfyApp')
   if (model.routerId === undefined) return model.models?.join(', ')
@@ -85,7 +93,7 @@ function sourceOf(model: WorkshopModel): string | undefined {
         @click="emit('pick', model)"
       >
         <video
-          v-if="model.thumbnailUrl && isVideoUrl(model.thumbnailUrl)"
+          v-if="model.thumbnailUrl && thumbnailKind(model) === 'video'"
           :src="videoPosterUrl(model.thumbnailUrl)"
           class="size-10 shrink-0 rounded-lg object-cover"
           aria-hidden="true"
@@ -95,7 +103,7 @@ function sourceOf(model: WorkshopModel): string | undefined {
           preload="metadata"
         />
         <img
-          v-else-if="model.thumbnailUrl"
+          v-else-if="model.thumbnailUrl && thumbnailKind(model) === 'image'"
           :src="model.thumbnailUrl"
           alt=""
           class="size-10 shrink-0 rounded-lg object-cover"
