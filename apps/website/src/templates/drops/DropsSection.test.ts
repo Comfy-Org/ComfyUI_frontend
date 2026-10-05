@@ -42,12 +42,13 @@ const { recentDrop, staleDrop, overriddenDrop } = vi.hoisted(() => ({
   }
 }))
 
-// A focused mock: only recentDrop's launchDate reads as "recent", decoupled
-// from real dates so the test never drifts with the calendar.
+// Deliberately out of launchDate order, oldest first, so a passing display-
+// order test can only mean the component sorted — not that the fixture
+// happened to already be in the right order.
 vi.mock(import('@/data/drops'), () => ({
   NEW_BADGE: { en: 'NEW', 'zh-CN': '新' },
   isRecentLaunch: (launchDate: string) => launchDate === recentDrop.launchDate,
-  drops: [drop(recentDrop), drop(staleDrop), drop(overriddenDrop)]
+  drops: [drop(overriddenDrop), drop(staleDrop), drop(recentDrop)]
 }))
 
 function cards(container: Element) {
@@ -55,6 +56,17 @@ function cards(container: Element) {
   // to one item among several otherwise-identical cards.
   return container.querySelectorAll<HTMLElement>('[data-slot="card"]')
 }
+
+describe('DropsSection order', () => {
+  it('renders drops newest launchDate first, regardless of data-file order', () => {
+    const { container } = render(DropsSection, { props: { locale: 'en' } })
+
+    const titles = Array.from(cards(container)).map(
+      (card) => within(card).getByText(/Drop$/).textContent
+    )
+    expect(titles).toEqual(['Recent Drop', 'Stale Drop', 'Overridden Drop'])
+  })
+})
 
 describe('DropsSection badge', () => {
   it('shows a computed NEW badge for a drop launched within the window', () => {

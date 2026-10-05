@@ -23,8 +23,15 @@ function badgeFor(drop: Drop): string | undefined {
   return isRecentLaunch(drop.launchDate) ? localize(NEW_BADGE) : undefined
 }
 
+// Newest launch first, regardless of insertion order in the data file —
+// `launchDate` is the single source of truth for both ordering and the NEW
+// badge (see `isRecentLaunch`).
+const sortedDrops = computed<Drop[]>(() =>
+  [...drops].sort((a, b) => Date.parse(b.launchDate) - Date.parse(a.launchDate))
+)
+
 const items = computed<CardArticleGalleryItem[]>(() =>
-  drops.map((drop) => ({
+  sortedDrops.value.map((drop) => ({
     id: drop.id,
     badge: badgeFor(drop),
     category: drop.category[locale] || drop.category.en,
