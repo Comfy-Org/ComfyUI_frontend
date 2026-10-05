@@ -7,10 +7,7 @@ import { useI18n } from 'vue-i18n'
 const { description } = defineProps<{ description: string }>()
 const { t } = useI18n()
 
-/**
- * Whether three lines clip this text depends on the rendered width, so it is
- * measured rather than guessed from a character count, and remeasured on resize.
- */
+/** Clipping depends on rendered width, so it is measured rather than counted. */
 const showFullDescription = ref(false)
 const descriptionElement =
   useTemplateRef<HTMLParagraphElement>('descriptionElement')
@@ -25,11 +22,7 @@ function measureDescriptionOverflow() {
 onMounted(measureDescriptionOverflow)
 useResizeObserver(descriptionElement, measureDescriptionOverflow)
 
-/**
- * A clamped paragraph keeps its height when the text changes, so the resize
- * observer never fires and both the measurement and the expanded state would
- * describe the previous template.
- */
+/** A clamped paragraph keeps its height, so the resize observer never fires here. */
 watch(
   () => description,
   () => {

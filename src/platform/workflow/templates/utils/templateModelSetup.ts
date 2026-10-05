@@ -122,12 +122,7 @@ function totalDeclarations(
 /** The state a row's own download is in, as the view's row-downloads reports it. */
 type RowDownloadStatus = { status: string }
 
-/**
- * A row the bulk action would actually start: offered for download, and not
- * already running or finished. Everything else - installed, unavailable,
- * manual, unknown, queued, starting, downloading, done - falls out of these two
- * conditions rather than being listed, so the list cannot drift from the rule.
- */
+/** A row the bulk action would actually start. */
 export function isModelDownloadCandidate(
   row: TemplateModelSetupRow,
   stateFor: (model: ModelWithUrl) => RowDownloadStatus
@@ -148,10 +143,7 @@ export function isModelRowComplete(
 
 /**
  * What a bulk click would transfer. Shares `totalDeclarations`' identity dedupe
- * so a model declared twice is not charged twice, and so this total and the
- * group header's cannot count the same rows differently. `isComplete` is false
- * when any candidate has no declared size; the caller withholds the figure then
- * rather than showing a partial one.
+ * so this and the group header cannot count the same model differently.
  */
 export function remainingModelDownloadTotal(
   rows: readonly TemplateModelSetupRow[],

@@ -353,8 +353,6 @@ describe('WorkflowTemplateDetail', () => {
     ] as const
     renderDetail({ renderedGroups })
 
-    // The whole progress area is the live region, so the label it announces
-    // sits inside it rather than carrying the role itself.
     expect(
       screen.getAllByRole('status').map((region) => region.textContent.trim())
     ).toEqual(['Queued', 'Starting'])
@@ -557,8 +555,7 @@ describe('WorkflowTemplateDetail', () => {
       const retry = screen.getByRole('button', {
         name: 'Retry download for failed.safetensors'
       })
-      // The badge carries the hint visually, but only Retry can be focused, so
-      // it is what has to describe the failure for anyone not using a mouse.
+      // Only Retry can be focused, so it carries the description.
       expect(retry).toHaveAccessibleDescription(
         explained
           ? "The download couldn't be completed. Use Retry to try again."
@@ -583,8 +580,7 @@ describe('WorkflowTemplateDetail', () => {
     trigger.focus()
     await userEvent.click(trigger)
 
-    // The button unmounts as the row starts; without a handover focus falls to
-    // the body and the next Tab restarts at the top of the dialog.
+    // The button unmounts as the row starts.
     await rerender({
       groups: [
         {

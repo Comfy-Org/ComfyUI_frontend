@@ -98,8 +98,7 @@ export const OpenNow: Story = {
         '6.77 GB'
       )
     ],
-    // Detail only opens when something is missing, so the reachable 'no bulk
-    // action' state is an unmet requirement nothing can start automatically.
+    // Reachable only as an unmet requirement nothing can start automatically.
     modelSetup: undefined
   },
   render: withPreview
@@ -145,8 +144,7 @@ export const DownloadableRow: Story = {
         '6.77 GB'
       )
     ],
-    // The checkpoint alone; the installed VAE is not part of what this click
-    // fetches, which is why this differs from the group's 6.77 GB declaration.
+    // The checkpoint alone, so this differs from the group's 6.77 GB.
     modelSetup: { state: 'startable', remainingSize: '6.46 GB' }
   },
   render: withPreview

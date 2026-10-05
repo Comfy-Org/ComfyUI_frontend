@@ -28,12 +28,8 @@ export interface TemplateDetailRow {
 }
 
 /**
- * What the Detail footer should offer, shaped like the footer rather than like
- * the parent's data. Absent means there is nothing to offer - setup is off,
- * every requirement is met, or nothing is startable - and all three render the
- * same single Open now. `remainingSize` lives only in the arm where it can
- * exist, so "startable but size unknown" is representable and "resolving with a
- * size" is not.
+ * What the Detail footer should offer. Absent means nothing to offer - setup
+ * off, requirements met, or nothing startable - which all render a lone Open now.
  */
 export type TemplateModelSetup =
   | { state: 'resolving' }

@@ -304,8 +304,7 @@ describe('remainingModelDownloadTotal', () => {
     const duplicated = model('shared.safetensors')
     const rows = rowsFor([duplicated, 1024], [duplicated, 1024])
 
-    // The group header total dedupes by identity; charging the button twice for
-    // the same file would make the two figures disagree about one download.
+    // Must match the group header, which dedupes by identity.
     expect(remainingModelDownloadTotal(rows, idle)).toEqual({
       bytes: 1024,
       isComplete: true

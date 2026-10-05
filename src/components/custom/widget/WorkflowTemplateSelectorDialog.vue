@@ -1095,10 +1095,7 @@ const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
     : []
 })
 
-/**
- * The rows this click would start. `modelDownloadsAvailable` and the remaining
- * size both read it, so they cannot disagree about what is being offered.
- */
+/** The rows this click would start. */
 const activeDetailModelDownloadCandidates = computed<
   readonly TemplateModelSetupRow[]
 >(() => {
@@ -1113,11 +1110,7 @@ const activeDetailModelDownloadsAvailable = computed(
   () => activeDetailModelDownloadCandidates.value.length > 0
 )
 
-/**
- * Only what this click starts, and only when every one of those rows declares a
- * size. A partial total reads as complete and understates the download, so an
- * unknown size withdraws the figure rather than approximating it.
- */
+/** Withheld unless every candidate declares a size: a partial total reads as complete. */
 const activeDetailModelRequirementsMet = computed(() => {
   const setup = activeDetail.value?.modelSetup
   return Boolean(
@@ -1128,11 +1121,6 @@ const activeDetailModelRequirementsMet = computed(() => {
   )
 })
 
-/**
- * One value shaped like the footer. Absent covers every case that renders a
- * lone Open now, so the component cannot be handed a combination the data
- * cannot produce.
- */
 const activeDetailModelSetup = computed<TemplateModelSetup | undefined>(() => {
   const setup = activeDetail.value?.modelSetup
   if (!setup) return undefined
