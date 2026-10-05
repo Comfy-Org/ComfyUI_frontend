@@ -62,7 +62,6 @@ export function presentSsoRequired(
         component,
         props: known,
         dialogComponentProps: {
-          renderer: 'reka',
           headless: true,
           contentClass: SELF_STYLED_PANEL_CONTENT_CLASS,
           onClose: abandonSsoFlow

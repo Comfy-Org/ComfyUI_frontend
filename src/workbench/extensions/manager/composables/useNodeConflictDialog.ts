@@ -20,7 +20,7 @@ export function useNodeConflictDialog() {
     options: {
       showAfterWhatsNew?: boolean
       conflictedPackages?: ConflictDetectionResult[]
-      dialogComponentProps?: Omit<DialogComponentProps, 'pt'>
+      dialogComponentProps?: DialogComponentProps
       buttonText?: string
       onButtonClick?: () => void
     } = {}

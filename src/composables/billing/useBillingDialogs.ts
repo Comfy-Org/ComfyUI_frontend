@@ -68,7 +68,6 @@ export function useBillingDialogs() {
             dialogStore.closeDialog({ key: 'insufficient-credits-member' })
         },
         dialogComponentProps: {
-          renderer: 'reka',
           headless: true,
           contentClass:
             'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
@@ -87,7 +86,6 @@ export function useBillingDialogs() {
         : TopUpCreditsDialogContentLegacy,
       props: options,
       dialogComponentProps: {
-        renderer: 'reka',
         headless: true,
         contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
       }
@@ -149,7 +147,6 @@ export function useBillingDialogs() {
         onConfirm: () => {}
       },
       dialogComponentProps: {
-        renderer: 'reka',
         size: 'sm',
         contentClass: 'max-w-[360px]'
       }

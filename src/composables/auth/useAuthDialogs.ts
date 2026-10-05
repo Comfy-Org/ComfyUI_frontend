@@ -38,7 +38,6 @@ export function useAuthDialogs() {
           onCancel: () => resolve(false)
         },
         dialogComponentProps: {
-          renderer: 'reka',
           headless: true,
           contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
           closable: true,
@@ -64,7 +63,6 @@ export function useAuthDialogs() {
           onSuccess: () => resolve(true)
         },
         dialogComponentProps: {
-          renderer: 'reka',
           // SignInContent is a fixed w-96 — size 'sm' (max-w-sm) leaves only
           // 352px after the body padding; hug the intrinsic width instead.
           contentClass: HUG_CONTENT_CLASS,
@@ -94,7 +92,6 @@ export function useAuthDialogs() {
           dialogStore.closeDialog({ key: 'global-update-password' })
       },
       dialogComponentProps: {
-        renderer: 'reka',
         contentClass: HUG_CONTENT_CLASS
       }
     })

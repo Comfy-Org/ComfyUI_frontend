@@ -1,8 +1,3 @@
-/**
- * Dialog migration regression net: when callers in `dialogService` open a
- * Reka-migrated dialog, the dialog stack item must carry `renderer: 'reka'`.
- * Catches accidental reverts of the Reka renderer flip.
- */
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/i18n'))
@@ -12,26 +7,24 @@ vi.mock(import('@/platform/telemetry'))
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-describe('dialogService Reka renderer opt-in', () => {
-  it("prompt() sets renderer 'reka' and size 'md'", async () => {
+describe('dialogService dialog options', () => {
+  it("prompt() opens at size 'md'", async () => {
     const result = useDialogService().prompt({ title: 'T', message: 'M' })
     await vi.waitFor(() =>
       expect(useDialogStore().showDialog).toHaveBeenCalled()
     )
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('md')
     args.dialogComponentProps?.onRemoved?.()
     await expect(result).resolves.toBeNull()
   })
 
-  it("confirm() sets renderer 'reka' and size 'md'", async () => {
+  it("confirm() opens at size 'md'", async () => {
     const result = useDialogService().confirm({ title: 'T', message: 'M' })
     await vi.waitFor(() =>
       expect(useDialogStore().showDialog).toHaveBeenCalled()
     )
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('md')
     args.dialogComponentProps?.onRemoved?.()
     await expect(result).resolves.toBeNull()
@@ -139,7 +132,7 @@ describe('dialogService Reka renderer opt-in', () => {
     await expect(result).resolves.toBeNull()
   })
 
-  it("showExecutionErrorDialog() sets renderer 'reka' and size 'lg'", () => {
+  it("showExecutionErrorDialog() opens at size 'lg'", () => {
     useDialogService().showExecutionErrorDialog({
       exception_type: 'RuntimeError',
       exception_message: 'boom',
@@ -148,18 +141,16 @@ describe('dialogService Reka renderer opt-in', () => {
       traceback: ['line 1', 'line 2']
     })
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('lg')
   })
 
-  it("showErrorDialog() sets renderer 'reka' and size 'lg'", () => {
+  it("showErrorDialog() opens at size 'lg'", () => {
     useDialogService().showErrorDialog(new Error('boom'))
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('lg')
   })
 
-  it("showLayoutDialog() defaults to renderer 'reka' headless without pt", () => {
+  it('showLayoutDialog() defaults to headless', () => {
     const Component = { template: '<div />' }
     useDialogService().showLayoutDialog({
       key: 'layout-test',
@@ -167,9 +158,7 @@ describe('dialogService Reka renderer opt-in', () => {
       props: {}
     })
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.headless).toBe(true)
-    expect(args.dialogComponentProps?.pt).toBeUndefined()
   })
 
   it('showLayoutDialog() lets callers override the defaults', () => {
@@ -181,20 +170,17 @@ describe('dialogService Reka renderer opt-in', () => {
       dialogComponentProps: { closable: false, contentClass: 'w-170' }
     })
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.closable).toBe(false)
     expect(args.dialogComponentProps?.contentClass).toBe('w-170')
   })
 
-  it("showSmallLayoutDialog() sets renderer 'reka' with zeroed section padding", () => {
+  it('showSmallLayoutDialog() zeroes section padding', () => {
     const Component = { template: '<div />' }
     useDialogService().showSmallLayoutDialog({
       key: 'small-layout-test',
       component: Component
     })
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
-    expect(args.dialogComponentProps?.pt).toBeUndefined()
     expect(args.dialogComponentProps?.contentClass).toContain('w-fit')
     expect(args.dialogComponentProps?.headerClass).toBe('p-0')
     expect(args.dialogComponentProps?.bodyClass).toBe('p-0 overflow-y-hidden')

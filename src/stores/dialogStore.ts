@@ -5,18 +5,7 @@ import type { Component, HTMLAttributes, Ref } from 'vue'
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
-type DialogPosition =
-  | 'center'
-  | 'top'
-  | 'bottom'
-  | 'left'
-  | 'right'
-  | 'topleft'
-  | 'topright'
-  | 'bottomleft'
-  | 'bottomright'
-
-interface CustomDialogComponentProps {
+export interface DialogComponentProps {
   maximizable?: boolean
   maximized?: boolean
   onClose?: () => void
@@ -35,7 +24,6 @@ interface CustomDialogComponentProps {
    */
   showCloseButton?: boolean
   modal?: boolean
-  position?: DialogPosition
   closeOnEscape?: boolean
   dismissableMask?: boolean
   /**
@@ -46,7 +34,6 @@ interface CustomDialogComponentProps {
    * outside-pointer dismissal are unaffected. Defaults to `true`.
    */
   dismissOnFocusOutside?: boolean
-  unstyled?: boolean
   headless?: boolean
   useAutomaticLabeling?: boolean
   size?: DialogContentSize
@@ -61,9 +48,6 @@ interface CustomDialogComponentProps {
   /** Class applied to the dialog footer on the non-headless path. */
   footerClass?: HTMLAttributes['class']
 }
-
-export type DialogComponentProps = Record<string, unknown> &
-  CustomDialogComponentProps
 
 export interface DialogInstance {
   key: string
@@ -207,16 +191,7 @@ export const useDialogStore = defineStore('dialog', () => {
         closeOnEscape: true,
         dismissableMask: true,
         ...options.dialogComponentProps,
-        maximized: options.dialogComponentProps?.maximized ?? false,
-        onMaximize: () => {
-          dialog.dialogComponentProps.maximized = true
-        },
-        onUnmaximize: () => {
-          dialog.dialogComponentProps.maximized = false
-        },
-        onAfterHide: () => {
-          closeDialog(dialog)
-        }
+        maximized: options.dialogComponentProps?.maximized ?? false
       }
     }
 
@@ -230,8 +205,8 @@ export const useDialogStore = defineStore('dialog', () => {
 
   /**
    * Ensures only the top-most dialog in the stack can be closed with the Escape key.
-   * This is necessary because PrimeVue Dialogs do not handle `closeOnEscape` prop
-   * correctly when multiple dialogs are open.
+   * Each stacked dialog renders its own Reka root, so every one of them would
+   * otherwise react to the same Escape press.
    */
   function updateCloseOnEscapeStates() {
     const topDialog = dialogStack.value.find((d) => d.key === activeKey.value)

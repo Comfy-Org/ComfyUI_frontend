@@ -211,7 +211,6 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
-        renderer: 'reka',
         size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
@@ -282,7 +281,6 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
-        renderer: 'reka',
         size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
@@ -319,7 +317,6 @@ export const useDialogService = () => {
           placeholder
         },
         dialogComponentProps: {
-          renderer: 'reka',
           size: 'md',
           onRemoved: () => {
             resolve(null)
@@ -357,7 +354,6 @@ export const useDialogService = () => {
           denyLabel
         },
         dialogComponentProps: {
-          renderer: 'reka',
           size: 'md',
           onRemoved: () => resolve(null)
         }
@@ -394,7 +390,6 @@ export const useDialogService = () => {
     dialogComponentProps?: DialogComponentProps
   }) {
     const layoutDefaultProps: DialogComponentProps = {
-      renderer: 'reka',
       headless: true,
       modal: true,
       closable: true
@@ -411,7 +406,7 @@ export const useDialogService = () => {
 
   function showSmallLayoutDialog(
     options: Omit<ShowDialogOptions, 'dialogComponentProps'> & {
-      dialogComponentProps?: Omit<DialogComponentProps, 'pt'>
+      dialogComponentProps?: DialogComponentProps
     }
   ) {
     const { dialogComponentProps: callerProps, ...rest } = options
@@ -419,7 +414,6 @@ export const useDialogService = () => {
     return dialogStore.showDialog({
       ...rest,
       dialogComponentProps: {
-        renderer: 'reka',
         closable: true,
         contentClass: `${HUG_CONTENT_CLASS} border-border-default`,
         headerClass: 'p-0',

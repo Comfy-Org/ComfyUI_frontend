@@ -28,7 +28,6 @@ export function useDeployToComfyApiDialog() {
         onDismiss: hide
       },
       dialogComponentProps: {
-        renderer: 'reka',
         dismissableMask: true,
         closeOnEscape: true,
         modal: true,
