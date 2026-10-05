@@ -20,7 +20,7 @@ const frameUrls = Array.from({ length: 75 }, (_, i) => {
   return `https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_${index}.webp`
 })
 
-useFrameScrub(canvasRef, {
+const { isPlaying } = useFrameScrub(canvasRef, {
   urls: frameUrls,
   scrollTrigger: (canvas) => ({
     trigger: canvas,
@@ -270,7 +270,18 @@ const contactColumn: { title: string; links: FooterLink[] } = {
       </div>
 
       <!-- Logo -->
-      <canvas ref="canvasRef" class="pointer-events-none size-52 lg:mt-28" />
+      <div class="pointer-events-none relative size-52 lg:mt-28">
+        <img
+          v-show="!isPlaying"
+          :src="frameUrls.at(-1)"
+          alt=""
+          loading="lazy"
+          decoding="async"
+          crossorigin="anonymous"
+          class="absolute inset-0 size-full"
+        />
+        <canvas ref="canvasRef" class="absolute inset-0 size-full" />
+      </div>
     </div>
   </footer>
 </template>

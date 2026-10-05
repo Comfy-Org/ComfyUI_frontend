@@ -1,5 +1,6 @@
+import { useIntersectionObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { onMounted, onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 import { gsap } from '@/scripts/gsapSetup'
 import { prefersReducedMotion } from './useReducedMotion'
@@ -28,12 +29,10 @@ export function useFrameScrub(
   canvasRef: Ref<HTMLCanvasElement | undefined>,
   options: FrameScrubOptions
 ) {
+  const isPlaying = ref(false)
   let ctx: gsap.Context | undefined
 
-  onMounted(async () => {
-    const canvas = canvasRef.value
-    if (!canvas || prefersReducedMotion()) return
-
+  async function play(canvas: HTMLCanvasElement) {
     const draw = canvas.getContext('2d')
     if (!draw) return
 
@@ -52,6 +51,7 @@ export function useFrameScrub(
     }
 
     drawFrame(0)
+    isPlaying.value = true
 
     const proxy = { frame: 0 }
     ctx = gsap.context(() => {
@@ -64,9 +64,23 @@ export function useFrameScrub(
         }
       })
     })
-  })
+  }
+
+  const { stop } = useIntersectionObserver(
+    canvasRef,
+    ([entry]) => {
+      const canvas = canvasRef.value
+      if (!entry.isIntersecting || !canvas) return
+      stop()
+      if (prefersReducedMotion()) return
+      void play(canvas)
+    },
+    { rootMargin: '100% 0px' }
+  )
 
   onUnmounted(() => {
     ctx?.revert()
   })
+
+  return { isPlaying }
 }
