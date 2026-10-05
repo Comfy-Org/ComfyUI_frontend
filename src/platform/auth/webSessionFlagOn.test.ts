@@ -180,7 +180,7 @@ type ServerSession =
   | 'revoked'
   | 'network'
   | 'restore_token_revoked'
-  | { userId: string }
+  | { userId: string; provider?: string }
 
 interface FeatureAnswers {
   probe: boolean
@@ -201,13 +201,16 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
-function sessionBody(userId: string) {
+function sessionBody(
+  userId: string,
+  { provider = 'google.com' }: { provider?: string } = {}
+) {
   return {
     user: {
       id: userId,
       email: `${userId}@example.com`,
       email_verified: true,
-      sign_in_provider: 'google.com'
+      sign_in_provider: provider
     },
     csrf_token: `csrf-${userId}`,
     expires_at: new Date(Date.now() + 86_400_000).toISOString(),
@@ -251,7 +254,9 @@ function installServer(
       return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
     }
     if (typeof session === 'object')
-      return jsonResponse(sessionBody(session.userId))
+      return jsonResponse(
+        sessionBody(session.userId, { provider: session.provider })
+      )
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
     return jsonResponse({ code, message: code }, 401)
   }
