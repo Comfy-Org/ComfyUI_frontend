@@ -113,15 +113,33 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
         .poll(() => viewer.dialog.evaluate((el) => el.getAnimations().length))
         .toBe(0)
 
-      // 560px is the sub-`sm` case: under the 640px breakpoint, so the
-      // unprefixed cap is live. `isOverlay` flips at
-      // `PANEL_MIN_WIDTH + reservedWorkspaceWidth`, which is 476 for this
-      // fixture because it opens no sidebar tab — with one visible the
-      // reservation is `SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH` and the
-      // threshold is 788, above every width here. The inset assertion below is
+      // 640 is the breakpoint itself, the narrowest viewport at which the
+      // prefixed declaration is live, so it is what pins *where* that happens:
+      // retarget the duplicate from `sm:` to `md:` and every wider sample
+      // stays green while 640 falls back to the generic
+      // `sm:max-w-[calc(100vw-1rem)]` and fails. 560 is the sub-`sm` case,
+      // where the unprefixed declaration is the live one.
+      //
+      // Both narrow samples depend on the panel staying docked. `isOverlay`
+      // compares `requestedWidth + reservedWorkspaceWidth`, so neither term is
+      // a constant: the first is the dragged or maximized panel width, and the
+      // second is `SIDE_TOOLBAR_WIDTH` alone here only because this fixture
+      // opens no sidebar tab — with one visible it is
+      // `SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH` and 560 and 640 would overlay
+      // while the three wider samples would not. The inset assertion below is
       // what holds that precondition, rather than this comment.
-      for (const width of [1280, 1920, 2560, 560]) {
+      for (const width of [1280, 1920, 2560, 640, 560]) {
         await page.setViewportSize({ width, height: 800 })
+        // `setViewportSize` resolves before the page has re-laid out, and the
+        // inset publish is a separate async flush, so without this an
+        // iteration's first attempt can pair a pre-resize box with a
+        // post-resize inset. It also makes `width` legitimate ground truth for
+        // `100vw`: a headed run on a narrower display gets a window-clamped
+        // viewport, and that then fails here, naming the viewport, instead of
+        // further down naming the viewer.
+        await expect
+          .poll(() => page.evaluate(() => window.innerWidth))
+          .toBe(width)
 
         await expect(async () => {
           const dialogBox = await viewer.dialog.boundingBox()
@@ -172,10 +190,19 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
           // `min(80vw, 100vw - inset - 1rem)`. Above ~2180px at the default
           // panel width the 80vw term is the smaller one and the cap stops
           // binding, which is correct and must not fail the step.
+          //
+          // This is a claim about the dialog's box and nothing else. At the
+          // two narrow samples the box is 124px and 204px, which is narrower
+          // than the viewer's own body content, so what it contains is not
+          // laid out usefully there — the canvas pane in particular collapses
+          // to zero width. Pinning the box two-sided is deliberate: it is the
+          // cap's contract, so a production change that gives the viewer a
+          // sub-`sm` floor is a change to that contract and should surface
+          // here rather than pass silently.
           expectPixels(
             dialogBox.width,
             Math.min(width * 0.8, width - inset - VIEWER_CAP_RESERVE),
-            'the viewer fills the workspace up to its own 80vw width'
+            'the viewer box is the width its cap resolves to'
           )
 
           // Both gutters resolve against `100vw - inset`, the same boundary
