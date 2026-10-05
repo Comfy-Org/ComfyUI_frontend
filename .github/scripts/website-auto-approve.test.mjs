@@ -139,6 +139,7 @@ void test('approval label requires provenance from an authorized operator', () =
     hasAuthorizedApprovalLabel(
       pull,
       [
+        { event: 'committed' },
         {
           event: 'labeled',
           label: { name: 'website-fast-lane:approve' },
@@ -153,6 +154,7 @@ void test('approval label requires provenance from an authorized operator', () =
     hasAuthorizedApprovalLabel(
       pull,
       [
+        { event: 'committed' },
         {
           event: 'labeled',
           label: { name: 'website-fast-lane:approve' },
@@ -167,11 +169,27 @@ void test('approval label requires provenance from an authorized operator', () =
     hasAuthorizedApprovalLabel(
       { labels: [] },
       [
+        { event: 'committed' },
         {
           event: 'labeled',
           label: { name: 'website-fast-lane:approve' },
           actor: { login: 'DrJKL' }
         }
+      ],
+      authorized
+    ),
+    false
+  )
+  assert.equal(
+    hasAuthorizedApprovalLabel(
+      pull,
+      [
+        {
+          event: 'labeled',
+          label: { name: 'website-fast-lane:approve' },
+          actor: { login: 'DrJKL' }
+        },
+        { event: 'committed' }
       ],
       authorized
     ),

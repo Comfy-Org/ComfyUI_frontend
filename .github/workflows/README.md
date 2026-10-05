@@ -41,7 +41,9 @@ rejects other base branches and fork pull requests, rechecks the live head, and 
 `comfy_website_devs`, so its review satisfies the website path reviewer rule.
 
 Approval-label eligibility is provenance-checked against the issue event
-history; label presence by itself is not authorization. The
+timeline; the latest matching label event must be from an allowlisted operator
+and later than the latest commit or force-push event. Every new head therefore
+requires a fresh authorized label. Label presence by itself is not authorization. The
 `website-fast-lane:hold` label, draft state, an active non-app reviewer change request, a base
 or head change, or a path outside `apps/website/**` stops approval and withdraws an existing
 current-head policy approval when the trusted workflow evaluates the PR. A human change request

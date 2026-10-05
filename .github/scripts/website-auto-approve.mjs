@@ -81,13 +81,30 @@ function hasLabel(pull, expectedLabel) {
 export function hasAuthorizedApprovalLabel(pull, events, approvedLabelers) {
   if (!hasLabel(pull, APPROVE_LABEL)) return false
 
+  let latestCodeEvent = -1
+  let latestApprovalLabelEvent = -1
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index]
-    if (event?.label?.name?.toLowerCase() !== APPROVE_LABEL) continue
-    const actor = event?.actor?.login?.toLowerCase()
-    return event.event === 'labeled' && approvedLabelers.has(actor)
+    if (
+      latestCodeEvent === -1 &&
+      (event?.event === 'committed' || event?.event === 'head_ref_force_pushed')
+    ) {
+      latestCodeEvent = index
+    }
+    if (
+      latestApprovalLabelEvent === -1 &&
+      event?.label?.name?.toLowerCase() === APPROVE_LABEL
+    ) {
+      latestApprovalLabelEvent = index
+    }
   }
-  return false
+
+  if (latestCodeEvent === -1 || latestApprovalLabelEvent <= latestCodeEvent) {
+    return false
+  }
+  const labelEvent = events[latestApprovalLabelEvent]
+  const actor = labelEvent?.actor?.login?.toLowerCase()
+  return labelEvent.event === 'labeled' && approvedLabelers.has(actor)
 }
 
 export function hasActiveChangeRequest(reviews) {
@@ -346,7 +363,7 @@ async function revalidatePull(github, config, liveHeadSha) {
     `/pulls/${config.prNumber}/reviews`
   )
   const recheckedEvents = await github.paginate(
-    `/issues/${config.prNumber}/events`
+    `/issues/${config.prNumber}/timeline`
   )
   const recheckedFailure = eligibilityFailure({
     pull: recheckedPull,
@@ -405,7 +422,9 @@ export async function approveCurrentHead(github, config, liveHeadSha, reviews) {
   try {
     verifiedPull = await github.request(`/pulls/${config.prNumber}`)
     verifiedReviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
-    verifiedEvents = await github.paginate(`/issues/${config.prNumber}/events`)
+    verifiedEvents = await github.paginate(
+      `/issues/${config.prNumber}/timeline`
+    )
   } catch (error) {
     await dismissApproval(
       github,
@@ -445,7 +464,7 @@ async function main() {
 
   const pull = await github.request(`/pulls/${config.prNumber}`)
   const reviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
-  const events = await github.paginate(`/issues/${config.prNumber}/events`)
+  const events = await github.paginate(`/issues/${config.prNumber}/timeline`)
   const failure = eligibilityFailure({ pull, config, events })
   if (failure) {
     await stopWithSummary({
