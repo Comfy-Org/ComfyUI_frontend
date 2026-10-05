@@ -91,6 +91,26 @@ describe('expected failure inventory', () => {
     )
   })
 
+  it('uses computed test titles instead of positional declaration IDs', () => {
+    const source = `
+      for (const scenario of scenarios) {
+        test(\`rejects \${scenario.kind} collisions\`, () => {
+          test.fail(true)
+        })
+      }
+      test(prefix + ' teardown', () => test.fail(true))
+    `
+
+    expect(
+      inspectSource(source, 'browser_tests/computed-title.spec.ts').map(
+        ({ id }) => id
+      )
+    ).toEqual([
+      'playwright:browser_tests/computed-title.spec.ts:<expression:`rejects ${scenario.kind} collisions`>:1',
+      "playwright:browser_tests/computed-title.spec.ts:<expression:prefix + ' teardown'>:1"
+    ])
+  })
+
   it('recognizes aliased, extended, and merged Playwright runners', () => {
     const source = `
       import { baseFixture as runner } from '@e2e/fixtures/baseFixture'

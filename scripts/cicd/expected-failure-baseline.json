@@ -9,11 +9,11 @@
       "classification": "live-defect"
     },
     {
-      "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<declaration-level>:1",
+      "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:'wipes a duplicated node and replaces it with a phantom node when ' + \"the agent's write lands on the same id\">:1",
       "classification": "live-defect"
     },
     {
-      "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<declaration-level>:2",
+      "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:\"leaves the agent's own graph read disagreeing with the \" + 'still-visible canvas after its write is silently dropped'>:1",
       "classification": "live-defect"
     },
     {
@@ -25,15 +25,15 @@
       "classification": "live-defect"
     },
     {
-      "id": "playwright:browser_tests/tests/agent/agentReplyDrafts.spec.ts:<declaration-level>:1",
+      "id": "playwright:browser_tests/tests/agent/agentReplyDrafts.spec.ts:<expression:`a completed turn keeps its ${selection} approval action live`>:1",
       "classification": "live-defect"
     },
     {
-      "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<declaration-level>:1",
+      "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<expression:`blocks POST ${path} and fails even when the app catches it`>:1",
       "classification": "infrastructure-assertion"
     },
     {
-      "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<declaration-level>:2",
+      "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<expression:`${client} retains the API origin and mutation guards`>:1",
       "classification": "infrastructure-assertion"
     },
     {
@@ -41,7 +41,7 @@
       "classification": "infrastructure-assertion"
     },
     {
-      "id": "playwright:browser_tests/tests/infrastructure/networkIsolation.spec.ts:<declaration-level>:1",
+      "id": "playwright:browser_tests/tests/infrastructure/networkIsolation.spec.ts:<expression:`${name} reports external requests at teardown`>:1",
       "classification": "infrastructure-assertion"
     },
     {
@@ -61,7 +61,7 @@
       "classification": "infrastructure-assertion"
     },
     {
-      "id": "playwright:browser_tests/tests/sidebar/assetPanelDragOntoLoadImageWidget.spec.ts:<declaration-level>:1",
+      "id": "playwright:browser_tests/tests/sidebar/assetPanelDragOntoLoadImageWidget.spec.ts:<expression:title>:1",
       "classification": "live-defect"
     },
     {

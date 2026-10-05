@@ -51,11 +51,11 @@ function isTestExpression(
   )
 }
 
-function literalTitle(node: ts.Expression | undefined): string | undefined {
-  return node &&
-    (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
-    ? node.text
-    : undefined
+function titleText(node: ts.Expression | undefined): string | undefined {
+  if (!node) return
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+    return node.text
+  return `<expression:${node.getText().replace(/\s+/g, ' ')}>`
 }
 
 function hasTestBody(node: ts.CallExpression): boolean {
@@ -71,7 +71,7 @@ function testTitle(
   playwrightRunners: ReadonlySet<string>
 ): string {
   if (hasTestBody(node)) {
-    const declaredTitle = literalTitle(node.arguments.at(0))
+    const declaredTitle = titleText(node.arguments.at(0))
     if (declaredTitle) return declaredTitle
   }
 
@@ -89,7 +89,7 @@ function testTitle(
     )
       continue
 
-    const title = literalTitle(parent.arguments.at(0))
+    const title = titleText(parent.arguments.at(0))
     if (title) return title
   }
 
@@ -191,8 +191,8 @@ function playwrightRunnerNames(sourceFile: ts.SourceFile): Set<string> {
 
   function visit(node: ts.Node) {
     importedPlaywrightRunners(node).forEach((name) => runners.add(name))
-    const extendedRunner = derivedRunner(node, runners)
-    if (extendedRunner) runners.add(extendedRunner)
+    const runner = derivedRunner(node, runners)
+    if (runner) runners.add(runner)
     forOfRunnerAliases(node, runners).forEach((name) => runners.add(name))
     ts.forEachChild(node, visit)
   }
@@ -205,8 +205,8 @@ function vitestRunnerNames(sourceFile: ts.SourceFile): Set<string> {
   const runners = new Set(['it', 'test'])
 
   function visit(node: ts.Node) {
-    const extendedRunner = derivedRunner(node, runners)
-    if (extendedRunner) runners.add(extendedRunner)
+    const runner = derivedRunner(node, runners)
+    if (runner) runners.add(runner)
     ts.forEachChild(node, visit)
   }
 
@@ -253,7 +253,7 @@ function expectedFailureKind(
 }
 
 function vitestTitle(node: ts.CallExpression): string {
-  return literalTitle(node.arguments.at(0)) ?? '<dynamic-title>'
+  return titleText(node.arguments.at(0)) ?? '<missing-title>'
 }
 
 export function inspectSource(source: string, file: string): ExpectedFailure[] {
@@ -347,11 +347,6 @@ function validateBaseline(value: unknown): BaselineEntry[] {
 
 async function run() {
   const inventory = await buildInventory()
-  if (process.argv.includes('--print')) {
-    console.log(JSON.stringify(inventory, null, 2))
-    return
-  }
-
   const baselinePath = path.join(
     process.cwd(),
     'scripts/cicd/expected-failure-baseline.json'
