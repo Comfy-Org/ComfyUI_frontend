@@ -87,7 +87,8 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     answerAsk: vi.fn(
       async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered'
+        status: 'answered',
+        selected: []
       })
     ),
     uploadImage: vi.fn(
@@ -564,7 +565,8 @@ describe('useAgentSession (v1 composition root)', () => {
   it('answers a run approval once and stays busy until its resolution event', async () => {
     const answerAsk = vi.fn(
       async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered'
+        status: 'answered',
+        selected: ['run']
       })
     )
     const rest = fakeRest({ answerAsk })

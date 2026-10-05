@@ -148,6 +148,23 @@ describe('agentRestClient route + method', () => {
     expect(init.body).toBe('{}')
   })
 
+  it.for([
+    {
+      name: 'a status-only 202 from an older backend',
+      body: { status: 'answered' }
+    },
+    {
+      name: 'a 202 that reports the committed answer',
+      body: { status: 'answered', selected: ['run'] }
+    }
+  ])('answerAsk accepts $name', async ({ body }) => {
+    respond(jsonResponse(202, body))
+
+    await expect(
+      makeClient().answerAsk('t7', 'ask-1', ['run'])
+    ).resolves.toEqual(body)
+  })
+
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
     await makeClient().answerAsk('t7/x', 'turn-1:call/1', ['run'])
