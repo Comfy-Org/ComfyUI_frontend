@@ -82,6 +82,7 @@ function capabilitiesResponse(
       can_change_seats: true,
       can_invite_members: true,
       can_downgrade_to_personal: true,
+      can_revert_scheduled_change: false,
       ...overrides
     },
     rollout_defaults_applied: {
