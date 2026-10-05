@@ -8,6 +8,17 @@ import { Load3DViewerHelper } from '@e2e/tests/load3d/Load3DViewerHelper'
 // the 1rem the viewer's own width cap reserves inside the visible workspace.
 const VIEWPORT_GUTTER = 8
 
+// The slack the rest of this file already allows on bounding boxes, so a
+// fractional panel width or transform rounding cannot turn a correct layout
+// into a failure. Note `toBeCloseTo`'s second argument is a digit count, not
+// pixels, so it cannot express this.
+const PIXEL_SLACK = 1
+
+function expectPixels(actual: number, expected: number, label: string): void {
+  expect(actual, label).toBeGreaterThanOrEqual(expected - PIXEL_SLACK)
+  expect(actual, label).toBeLessThanOrEqual(expected + PIXEL_SLACK)
+}
+
 test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
@@ -75,13 +86,23 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
 
     await test.step('centre the viewer beside the panel above the sm breakpoint', async () => {
       // The viewer keeps its own inset-aware width cap while every other dialog
-      // now resolves against the raw viewport, and that cap is what holds it on
-      // the centring branch of the dialog clamp instead of the gutter floor.
-      // The cap is declared twice — unprefixed and `sm:`-prefixed — because
-      // tailwind-merge treats those as separate groups, so only the prefixed one
-      // is live here. The narrow-viewport steps below run under `sm:` and cannot
-      // see it: drop it and they still pass while the viewer covers the panel.
-      for (const width of [1280, 1920]) {
+      // now resolves against the raw viewport. The cap is declared twice —
+      // unprefixed and `sm:`-prefixed — because the `full` dialog size already
+      // ships `sm:max-w-[calc(100vw-1rem)]`, which outranks an unprefixed cap
+      // above the breakpoint, so only the prefixed declaration is live here.
+      // The narrow-viewport steps below run under `sm:` and cannot see it: drop
+      // it and they still pass while the viewer covers the panel.
+      //
+      // Both branches of the dialog's `translate-x` clamp — the 0.5rem gutter
+      // floor and centring inside the visible workspace — are exercised, and
+      // they are not distinguishable from the viewer's x alone: wherever the
+      // inset-aware cap binds, the width is exactly `100vw - inset - 1rem`, so
+      // centring resolves to the same 8px the gutter floor gives. What is
+      // asserted instead is the geometry both branches share — equal gutters
+      // either side of the viewer, never tighter than the floor — plus the
+      // width the live cap produces, which is what the dropped declaration
+      // changes.
+      for (const width of [1280, 1920, 2560]) {
         await page.setViewportSize({ width, height: 800 })
 
         await expect(async () => {
@@ -92,13 +113,36 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
           if (!dialogBox || !panelBox) return
 
           // The panel is docked against the right edge, so its left edge is the
-          // boundary of the visible workspace.
-          expect(panelBox.x + panelBox.width).toBeCloseTo(width, 1)
-          expect(dialogBox.x).toBeCloseTo(VIEWPORT_GUTTER, 1)
-          expect(dialogBox.x + dialogBox.width).toBeCloseTo(
-            panelBox.x - VIEWPORT_GUTTER,
-            1
+          // boundary of the visible workspace. Its width is the resizable
+          // `draggedWidth`, so derive everything from the measured box rather
+          // than pinning coordinates that only hold at its default width.
+          expectPixels(
+            panelBox.x + panelBox.width,
+            width,
+            'the panel is flush with the right edge'
           )
+
+          // `min(80vw, 100vw - inset - 1rem)`: the viewer's own width against
+          // its inset-aware cap. Above ~2180px at the default panel width the
+          // 80vw term is the smaller one and the cap stops binding, which is
+          // correct and must not fail the step.
+          expectPixels(
+            dialogBox.width,
+            Math.min(width * 0.8, panelBox.x - 2 * VIEWPORT_GUTTER),
+            'the viewer fills the workspace up to its own 80vw width'
+          )
+
+          const leftGutter = dialogBox.x
+          const rightGutter = panelBox.x - (dialogBox.x + dialogBox.width)
+          expectPixels(
+            rightGutter,
+            leftGutter,
+            'the viewer sits centred between the viewport and panel edges'
+          )
+          expect(
+            leftGutter,
+            'the viewer keeps at least the clamp gutter at the viewport edge'
+          ).toBeGreaterThanOrEqual(VIEWPORT_GUTTER - PIXEL_SLACK)
         }).toPass({ timeout: 5000 })
       }
     })
