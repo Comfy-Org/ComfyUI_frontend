@@ -10,13 +10,15 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 const GETTING_STARTED_TITLE = enMessages.gettingStarted.title
-const CARD_TESTID_PREFIX = 'getting-started-card-'
 
 /**
  * The viewport PM-1872 was reported at: the attached staging-cloud screenshot
  * is a 2904x1828 2x capture, less the browser chrome above the app.
  */
 const SIGNUP_VIEWPORT = { width: 1452, height: 828 }
+
+/** `w-80` on the nudge. The clamp in the component is written against it. */
+const NUDGE_WIDTH = 320
 
 interface Box {
   x: number
@@ -32,7 +34,11 @@ function overlap(a: Box, b: Box): { x: number; y: number } {
   }
 }
 
-async function boxOf(element: Locator): Promise<Box> {
+async function settledBox(element: Locator): Promise<Box> {
+  // The entrance animation translates the box this is measured against.
+  await expect
+    .poll(() => element.evaluate((node) => node.getAnimations().length))
+    .toBe(0)
   const box = await element.boundingBox()
   if (!box) throw new Error('element is not laid out')
   return box
@@ -43,6 +49,10 @@ async function boxOf(element: Locator): Promise<Box> {
  * is offered the tour, and leaves it. Every ending arms the nudge, and an
  * ending that is not a completed walk is the "Hundreds more where that came
  * from" copy the screenshot shows.
+ *
+ * Runs before the Agent panel is opened. The Getting Started screen is a
+ * teleported `fixed inset-0` overlay, so it intercepts the topbar Agent button
+ * for as long as it is mounted.
  */
 async function skipTheFirstRunTour(page: Page): Promise<void> {
   const gettingStarted = page.getByRole('dialog', {
@@ -50,7 +60,13 @@ async function skipTheFirstRunTour(page: Page): Promise<void> {
   })
   await expect(gettingStarted).toBeVisible()
 
-  const cards = page.locator(`[data-testid^="${CARD_TESTID_PREFIX}"]`)
+  // Not a bare `^="getting-started-card-"` prefix: that also matches the
+  // `getting-started-card-skeleton-<id>` placeholders, which are plain divs
+  // with no select handler, so clicking one while the catalog is still in
+  // flight is a silent no-op.
+  const cards = page.locator(
+    '[data-testid^="getting-started-card-"]:not([data-testid*="-skeleton-"])'
+  )
   await expect(cards.first()).toBeVisible()
   await cards.first().click()
   await expect(gettingStarted).toBeHidden()
@@ -68,7 +84,7 @@ test.describe(
     test.use({ viewport: SIGNUP_VIEWPORT })
 
     test(
-      'does not cover the open Agent panel on signup',
+      'steps aside for the open Agent panel, and never off the screen',
       {
         annotation: {
           type: 'regression',
@@ -87,21 +103,16 @@ test.describe(
           }
         })
 
+        await skipTheFirstRunTour(page)
+
         const agentPanel = new AgentPanel(page)
         await agentPanel.open()
-        await skipTheFirstRunTour(page)
 
         const nudge = page.getByTestId('first-run-nudge')
         await expect(nudge).toBeVisible({ timeout: 15_000 })
-        // The entrance animation translates the box it is measured against.
-        await expect
-          .poll(() => nudge.evaluate((node) => node.getAnimations().length))
-          .toBe(0)
 
-        const [nudgeBox, panelBox] = await Promise.all([
-          boxOf(nudge),
-          boxOf(agentPanel.dockedPanel)
-        ])
+        const nudgeBox = await settledBox(nudge)
+        const panelBox = await settledBox(agentPanel.dockedPanel)
 
         expect(
           panelBox.width,
@@ -114,9 +125,30 @@ test.describe(
           `the nudge covered the Agent panel by ${covered.x}x${covered.y}px, hiding its starter prompts and composer (PM-1872)`
         ).toBeLessThanOrEqual(0)
         expect(
-          nudgeBox.x,
-          'stepping aside must not push the nudge off the left edge'
+          Math.round(nudgeBox.x + nudgeBox.width),
+          'stepping aside means sitting against the panel, not somewhere to the left of it'
+        ).toBe(Math.round(panelBox.x))
+
+        // The panel keeps layout width well below the width needed to seat a
+        // 320px nudge beside it, so an unclamped inset walks the nudge off the
+        // left edge. Covering the panel is the lesser failure; leaving the
+        // viewport is not a fix.
+        const narrow = { width: 700, height: SIGNUP_VIEWPORT.height }
+        await page.setViewportSize(narrow)
+
+        const narrowBox = await settledBox(nudge)
+        expect(
+          narrowBox.x,
+          `at ${narrow.width}px the nudge left edge must stay on screen`
         ).toBeGreaterThanOrEqual(0)
+        expect(
+          Math.round(narrowBox.x + narrowBox.width),
+          `at ${narrow.width}px the nudge must stay inside the viewport at its full width`
+        ).toBeLessThanOrEqual(narrow.width)
+        expect(
+          Math.round(narrowBox.width),
+          'the nudge keeps its size; only its offset is clamped'
+        ).toBe(NUDGE_WIDTH)
       }
     )
   }

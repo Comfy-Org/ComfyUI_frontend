@@ -2,16 +2,26 @@
   <!--
     Right-inset, not right-0: a docked surface takes layout width this fixed
     box cannot see, so `right-0` parks the nudge on top of the Agent panel's
-    starter prompts and composer (PM-1872). Unlike a dialog, the nudge is
-    narrow enough to always fit beside the panel, so it steps aside rather
-    than covering it.
+    starter prompts and composer (PM-1872). Unlike a dialog, the nudge is a
+    fixed 320px, so it steps aside instead of being resized.
+
+    Clamped, because stepping aside and staying on screen stop being the same
+    thing. The panel keeps layout width down to a ~476px window (it only goes
+    overlay below `requestedWidth + reservedWorkspaceWidth`, and the reserve
+    is the 56px rail alone once no sidebar is open), and it widens to 960px
+    maximized — either way the inset can exceed `viewport - 320`. Past that
+    point the nudge covers the panel rather than leaving the viewport, which
+    is the same call `dialogContentVariants` makes. `20rem` is `w-80` below
+    and has to stay in step with it; `100%` cannot stand in for the width
+    here, because a percentage `right` resolves against the containing block,
+    not the box.
   -->
   <div
     v-if="onScreen"
     role="region"
     :aria-labelledby="titleId"
     data-testid="first-run-nudge"
-    class="fixed right-(--workspace-inset-right,0px) bottom-0 z-1000 flex w-80 animate-in flex-col overflow-hidden rounded-tl-xl border-t border-l border-border-default/50 bg-base-background shadow-lg duration-500 fade-in-0"
+    class="fixed right-[max(0px,min(var(--workspace-inset-right,0px),calc(100vw-20rem)))] bottom-0 z-1000 flex w-80 animate-in flex-col overflow-hidden rounded-tl-xl border-t border-l border-border-default/50 bg-base-background shadow-lg duration-500 fade-in-0"
   >
     <div class="relative h-50 w-full bg-secondary-background">
       <img :src="NUDGE_IMAGE" alt="" class="size-full object-cover" />
