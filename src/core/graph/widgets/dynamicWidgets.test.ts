@@ -26,6 +26,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 afterEach(() => {
@@ -965,6 +966,8 @@ describe('Autogrow followed by an ordinary combo child (FE-258)', () => {
 })
 
 const SEEDANCE_NODE_TYPE = 'test/SeedanceLikeReferences'
+const IMAGE_GROUP_NAMES = 8
+const VIDEO_GROUP_NAMES = 4
 
 /**
  * Shaped after the Seedance partner nodes (PN-1520): two `IO.Autogrow`
@@ -1007,8 +1010,8 @@ function seedanceNodeDef(min: number): ComfyNodeDefV1 {
                 inputs: {
                   required: {
                     seed: ['INT', { default: 0 }],
-                    reference_images: autogrow('IMAGE', 8),
-                    reference_videos: autogrow('VIDEO', 4)
+                    reference_images: autogrow('IMAGE', IMAGE_GROUP_NAMES),
+                    reference_videos: autogrow('VIDEO', VIDEO_GROUP_NAMES)
                   }
                 }
               }
@@ -1050,8 +1053,8 @@ const seedanceMultiOptionDef: ComfyNodeDefV1 = {
               inputs: {
                 required: {
                   seed: ['INT', { default: 0 }],
-                  reference_images: autogrowRefs('IMAGE', 8, 2),
-                  reference_videos: autogrowRefs('VIDEO', 4, 0)
+                  reference_images: autogrowRefs('IMAGE', IMAGE_GROUP_NAMES, 2),
+                  reference_videos: autogrowRefs('VIDEO', VIDEO_GROUP_NAMES, 0)
                 }
               }
             }
@@ -1125,6 +1128,33 @@ function refNames(group: string, count: number): string[] {
   return Array.from({ length: count }, (_, i) => `model.${group}.ref_${i + 1}`)
 }
 
+/**
+ * Reloads `graph` into a fresh one the way a workflow tab switch does.
+ * `LGraph.configure` raises `app.configuringGraph` in the running app via an
+ * install the unit environment never performs, and autogrow's own connection
+ * handler branches on it, so a reload test that leaves it false exercises a
+ * path production never takes.
+ */
+function reloadWhileConfiguring(graph: LGraph, nodeId: NodeId): LGraphNode {
+  const reloaded = new LGraph()
+  const appInternals = fromAny<{ configuringGraphLevel: number }, unknown>(app)
+  appInternals.configuringGraphLevel = 1
+  try {
+    reloaded.configure(structuredClone(graph.serialize()))
+  } finally {
+    appInternals.configuringGraphLevel = 0
+  }
+  const reloadedNode = reloaded.getNodeById(nodeId)
+  assert.ok(reloadedNode, 'reloaded node')
+  return reloadedNode
+}
+
+function hasFreeSlot(node: LGraphNode, prefix: string): boolean {
+  return node.inputs.some(
+    (input, slot) => input.name.startsWith(prefix) && !node.getInputLink(slot)
+  )
+}
+
 /** Names of `prefix` inputs on `node` that carry a link, in slot order. */
 function connectedUnder(node: LGraphNode, prefix: string): string[] {
   return node.inputs.flatMap((input, slot) =>
@@ -1159,6 +1189,7 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
   test.for([
     { min: 0, images: 5, videos: 2 },
     { min: 2, images: 6, videos: 2 },
+    { min: 2, images: 5, videos: 2 },
     { min: 4, images: 8, videos: 4 }
   ])(
     'min=$min keeps all $images image and $videos video links',
@@ -1174,17 +1205,20 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
       connectRefs(graph, node, 'reference_images', 0, images)
       connectRefs(graph, node, 'reference_videos', 1, videos)
 
-      const reloaded = new LGraph()
-      reloaded.configure(structuredClone(graph.serialize()))
-      const reloadedNode = reloaded.getNodeById(node.id)
-      assert.ok(reloadedNode, 'reloaded node')
+      const reloadedNode = reloadWhileConfiguring(graph, node.id)
 
       expect({
         images: connectedUnder(reloadedNode, 'model.reference_images.'),
-        videos: connectedUnder(reloadedNode, 'model.reference_videos.')
+        videos: connectedUnder(reloadedNode, 'model.reference_videos.'),
+        // A group that comes back with no free slot has nowhere to attach
+        // the next reference, so the layout is part of the contract.
+        imagesHaveSpare: hasFreeSlot(reloadedNode, 'model.reference_images.'),
+        videosHaveSpare: hasFreeSlot(reloadedNode, 'model.reference_videos.')
       }).toEqual({
         images: refNames('reference_images', images),
-        videos: refNames('reference_videos', videos)
+        videos: refNames('reference_videos', videos),
+        imagesHaveSpare: images < IMAGE_GROUP_NAMES,
+        videosHaveSpare: videos < VIDEO_GROUP_NAMES
       })
     }
   )
@@ -1198,12 +1232,9 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
     const node = LiteGraph.createNode(SEEDANCE_NODE_TYPE)
     assert.ok(node, 'seedance node')
     graph.add(node)
-    connectRefs(graph, node, 'reference_videos', 1, 4)
+    connectRefs(graph, node, 'reference_videos', 1, VIDEO_GROUP_NAMES)
 
-    const reloaded = new LGraph()
-    reloaded.configure(structuredClone(graph.serialize()))
-    const reloadedNode = reloaded.getNodeById(node.id)
-    assert.ok(reloadedNode, 'reloaded node')
+    const reloadedNode = reloadWhileConfiguring(graph, node.id)
 
     const videoSlots = reloadedNode.inputs.filter((input) =>
       input.name.startsWith('model.reference_videos.')
@@ -1232,20 +1263,7 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
     // The production shape the table above cannot reach: the customer's
     // saved model is not the definition's first option, so the restore is
     // recognised only by `app.configuringGraph`.
-    const serialized = structuredClone(graph.serialize())
-    const reloaded = new LGraph()
-    const appInternals = fromAny<{ configuringGraphLevel: number }, unknown>(
-      app
-    )
-    appInternals.configuringGraphLevel = 1
-    try {
-      reloaded.configure(serialized)
-    } finally {
-      appInternals.configuringGraphLevel = 0
-    }
-
-    const reloadedNode = reloaded.getNodeById(node.id)
-    assert.ok(reloadedNode, 'reloaded node')
+    const reloadedNode = reloadWhileConfiguring(graph, node.id)
     expect({
       images: connectedUnder(reloadedNode, 'model.reference_images.'),
       videos: connectedUnder(reloadedNode, 'model.reference_videos.')
@@ -1255,41 +1273,45 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
     })
   })
 
-  test('ignores an out-of-range ordinal in a prefix-named group', async () => {
-    await useLitegraphService().registerNodeDef(PREFIX_NODE_TYPE, prefixNodeDef)
-    const graph = new LGraph()
-    const node = LiteGraph.createNode(PREFIX_NODE_TYPE)
-    assert.ok(node, 'prefix node')
-    graph.add(node)
-    const slot = node.inputs.findIndex(
-      (input) => input.name === 'model.refs.ref0'
-    )
-    assert.ok(slot !== -1, 'prefix-named autogrow slot')
-    const source = new RefSourceNode()
-    graph.add(source)
-    assert.ok(source.connect(0, node, slot), 'connect model.refs.ref0')
+  // Vitest cannot interrupt the synchronous setter, so an unclamped bound
+  // surfaces as this budget expiring rather than as a failed assertion.
+  test(
+    'ignores an out-of-range ordinal in a prefix-named group',
+    { timeout: 2_000 },
+    async () => {
+      await useLitegraphService().registerNodeDef(
+        PREFIX_NODE_TYPE,
+        prefixNodeDef
+      )
+      const graph = new LGraph()
+      const node = LiteGraph.createNode(PREFIX_NODE_TYPE)
+      assert.ok(node, 'prefix node')
+      graph.add(node)
+      const slot = node.inputs.findIndex(
+        (input) => input.name === 'model.refs.ref0'
+      )
+      assert.ok(slot !== -1, 'prefix-named autogrow slot')
+      const source = new RefSourceNode()
+      graph.add(source)
+      assert.ok(source.connect(0, node, slot), 'connect model.refs.ref0')
 
-    // The state a hand-edited workflow leaves behind: a linked input whose
-    // trailing digits parse to an ordinal far beyond the group's `max`.
-    // Re-applying the value must not walk up to it - every ordinal costs an
-    // iteration whether or not a slot results, so `ref900000000` would spin
-    // ~900M times and hang the tab even though no slot is ever added.
-    node.inputs[slot].name = 'model.refs.ref900000000'
+      // The state a hand-edited workflow leaves behind: a linked input whose
+      // trailing digits parse to an ordinal far beyond the group's `max`.
+      // Re-applying the value must not walk up to it - every ordinal costs an
+      // iteration whether or not a slot results, so `ref900000000` would spin
+      // ~900M times and hang the tab even though no slot is ever added.
+      node.inputs[slot].name = 'model.refs.ref900000000'
 
-    const combo = node.widgets?.find((widget) => widget.name === 'model')
-    assert.ok(combo, 'model combo widget')
-    const started = performance.now()
-    combo.value = 'only'
-    const elapsed = performance.now() - started
+      const combo = node.widgets?.find((widget) => widget.name === 'model')
+      assert.ok(combo, 'model combo widget')
+      combo.value = 'only'
 
-    const refSlots = node.inputs.filter((input) =>
-      input.name.startsWith('model.refs.')
-    )
-    expect({
-      slotsWithinMax: refSlots.length <= PREFIX_GROUP_MAX,
-      completedPromptly: elapsed < 5_000
-    }).toEqual({ slotsWithinMax: true, completedPromptly: true })
-  })
+      const refSlots = node.inputs.filter((input) =>
+        input.name.startsWith('model.refs.')
+      )
+      expect(refSlots.length).toBeLessThanOrEqual(PREFIX_GROUP_MAX)
+    }
+  )
 })
 
 const SWITCHABLE_NODE_TYPE = 'test/SwitchableAutogrowOption'
@@ -1401,20 +1423,7 @@ describe('Autogrow regrowth is scoped to restoring a value', () => {
     // `removedOption === value` is false here and only `app.configuringGraph`
     // marks this as a restore. LGraph.configure sets it in the running app
     // via an install the unit environment does not perform.
-    const serialized = structuredClone(graph.serialize())
-    const reloaded = new LGraph()
-    const appInternals = fromAny<{ configuringGraphLevel: number }, unknown>(
-      app
-    )
-    appInternals.configuringGraphLevel = 1
-    try {
-      reloaded.configure(serialized)
-    } finally {
-      appInternals.configuringGraphLevel = 0
-    }
-
-    const reloadedNode = reloaded.getNodeById(node.id)
-    assert.ok(reloadedNode, 'reloaded node')
+    const reloadedNode = reloadWhileConfiguring(graph, node.id)
     expect(connectedUnder(reloadedNode, 'model.reference_images.')).toEqual(
       refNames('reference_images', 4)
     )

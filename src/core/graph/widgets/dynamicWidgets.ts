@@ -862,7 +862,7 @@ function applyAutogrow(
   const lastOrdinal = Math.min(
     Math.max(
       min,
-      highestRetainedOrdinal(node, inputSpecV2.name, retainedNames)
+      highestRetainedOrdinal(node, inputSpecV2.name, retainedNames) + 1
     ),
     groupMax - 1
   )
