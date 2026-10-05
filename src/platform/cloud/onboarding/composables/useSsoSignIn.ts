@@ -1,9 +1,13 @@
 import { useEventListener } from '@vueuse/core'
 import { computed, onScopeDispose, readonly, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { discoverSso, ssoStartUrl } from '@comfyorg/account-core/sso'
 
+import {
+  captureOAuthRequestId,
+  getOAuthRequestId
+} from '@/platform/cloud/oauth/oauthState'
 import type {
   SsoSignInEvent,
   SsoSignInState
@@ -19,6 +23,7 @@ const DEFAULT_RETURN_TO = '/cloud/user-check'
 /** SSO sign-in for the cloud auth pages, where ingest is same-origin. */
 export function useSsoSignIn() {
   const route = useRoute()
+  const router = useRouter()
   const state = ref<SsoSignInState>({ phase: 'idle' })
   const dispatch = (event: SsoSignInEvent) => {
     state.value = reduceSsoSignIn(state.value, event)
@@ -33,6 +38,23 @@ export function useSsoSignIn() {
   useEventListener(window, 'pageshow', (event) => {
     if (event.persisted) dispatch({ type: 'restored' })
   })
+
+  /**
+   * A pending OAuth consent outranks previousFullPath, as it does after a
+   * Firebase sign-in. The callback sets the session cookie that the consent
+   * challenge is authenticated by, so it can land on the consent page directly.
+   */
+  function returnTo(): string {
+    const oauthRequestId =
+      captureOAuthRequestId(route.query) ?? getOAuthRequestId()
+    if (oauthRequestId) {
+      return router.resolve({
+        name: 'cloud-oauth-consent',
+        query: { oauth_request_id: oauthRequestId }
+      }).href
+    }
+    return getSafePreviousFullPath(route.query) ?? DEFAULT_RETURN_TO
+  }
 
   /**
    * Sends an SSO email to its identity provider. True when SSO owns the
@@ -52,7 +74,7 @@ export function useSsoSignIn() {
     window.location.assign(
       ssoStartUrl({
         email,
-        returnTo: getSafePreviousFullPath(route.query) ?? DEFAULT_RETURN_TO,
+        returnTo: returnTo(),
         origin: window.location.origin
       })
     )
