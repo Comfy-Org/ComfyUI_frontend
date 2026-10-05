@@ -145,6 +145,7 @@
     "mixpanel-browser": "catalog:",
     "pinia": "catalog:",
     "posthog-js": "catalog:",
+    "primeicons": "catalog:",
     "reka-ui": "catalog:",
     "semver": "^7.7.2",
     "shiki": "catalog:",
