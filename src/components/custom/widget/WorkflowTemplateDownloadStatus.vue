@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -21,6 +22,30 @@ const { status, rowName } = defineProps<{
 }>()
 const emit = defineEmits<{ download: [] }>()
 const { t } = useI18n()
+
+/**
+ * Requesting a download unmounts the control that requested it, which drops
+ * focus to the body and sends a keyboard user back to the top of the dialog.
+ * The element that replaces it takes focus instead, but only when the user
+ * acted here - a download started elsewhere must not steal it.
+ */
+const statusRegion = ref<HTMLElement | null>(null)
+const restoreFocus = ref(false)
+
+function requestDownload() {
+  restoreFocus.value = true
+  emit('download')
+}
+
+watch(
+  () => status.downloadState?.status,
+  async () => {
+    if (!restoreFocus.value) return
+    restoreFocus.value = false
+    await nextTick()
+    statusRegion.value?.focus()
+  }
+)
 
 type DownloadingState = Extract<
   TemplateModelDownloadState,
@@ -80,7 +105,7 @@ function namedLabel(key: string): string {
     variant="textonly"
     size="unset"
     class="col-start-3 row-start-1 size-8 shrink-0 rounded-md p-1.5"
-    @click="emit('download')"
+    @click="requestDownload()"
   >
     <i aria-hidden="true" class="icon-[tabler--download] size-4" />
   </Button>
@@ -89,23 +114,28 @@ function namedLabel(key: string): string {
       status.downloadState.status === 'queued' ||
       status.downloadState.status === 'starting'
     "
-    class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3 text-xs text-muted-foreground"
+    ref="statusRegion"
+    role="status"
+    tabindex="-1"
+    class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3 text-xs text-muted-foreground focus-visible:outline-none"
   >
     <span
       aria-hidden="true"
       class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
     >
       <span
-        class="block h-full w-1/3 animate-pulse rounded-full bg-primary-background"
+        class="block h-full w-1/3 animate-pulse rounded-full bg-primary-background motion-reduce:animate-none"
       />
     </span>
-    <span role="status" class="shrink-0">
+    <span class="shrink-0">
       {{ getPassiveDownloadLabel(status.downloadState) }}
     </span>
   </span>
   <span
     v-else-if="status.downloadState.status === 'downloading'"
-    class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3"
+    ref="statusRegion"
+    tabindex="-1"
+    class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3 focus-visible:outline-none"
   >
     <span
       role="progressbar"
@@ -129,7 +159,7 @@ function namedLabel(key: string): string {
             status.downloadState.fraction === null && 'w-1/3',
             status.downloadState.fraction === null &&
               status.downloadState.activity === 'active' &&
-              'animate-pulse'
+              'animate-pulse motion-reduce:animate-none'
           )
         "
         :style="

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
@@ -353,9 +353,11 @@ describe('WorkflowTemplateDetail', () => {
     ] as const
     renderDetail({ renderedGroups })
 
-    for (const label of ['Queued', 'Starting']) {
-      expect(screen.getByText(label)).toHaveAttribute('role', 'status')
-    }
+    // The whole progress area is the live region, so the label it announces
+    // sits inside it rather than carrying the role itself.
+    expect(
+      screen.getAllByRole('status').map((region) => region.textContent.trim())
+    ).toEqual(['Queued', 'Starting'])
     expect(
       screen.queryByRole('button', { name: /^(Download|Retry)/ })
     ).not.toBeInTheDocument()
@@ -564,4 +566,45 @@ describe('WorkflowTemplateDetail', () => {
       )
     }
   )
+  it('keeps focus in the row when a download request replaces its button', async () => {
+    const downloadable = {
+      id: 'm1',
+      name: 'model.safetensors',
+      description: 'Checkpoint',
+      status: { kind: 'downloadable', label: 'Download model' }
+    } as const
+    const { rerender } = renderDetail({
+      renderedGroups: [{ id: 'models', label: 'Models', rows: [downloadable] }]
+    })
+
+    const trigger = screen.getByRole('button', {
+      name: 'Download model.safetensors'
+    })
+    trigger.focus()
+    await userEvent.click(trigger)
+
+    // The button unmounts as the row starts; without a handover focus falls to
+    // the body and the next Tab restarts at the top of the dialog.
+    await rerender({
+      groups: [
+        {
+          id: 'models',
+          label: 'Models',
+          rows: [
+            {
+              ...downloadable,
+              status: {
+                kind: 'downloadable',
+                label: 'Download model',
+                downloadState: { status: 'queued', attempt: 1 }
+              }
+            }
+          ]
+        }
+      ]
+    })
+
+    // The queued row takes the focus the vanished button was holding.
+    await waitFor(() => expect(screen.getByRole('status')).toHaveFocus())
+  })
 })
