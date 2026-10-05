@@ -62,7 +62,9 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
             <p
               class="inline-block text-sm text-primary-warm-white md:text-base/6"
             >
-              {{ data.title }}
+              <span :class="cn(data.description && 'mr-1.5 font-bold')">
+                {{ data.title }}
+              </span>
               <span v-if="data.description" class="text-primary-warm-white/80">
                 {{ data.description }}
               </span>

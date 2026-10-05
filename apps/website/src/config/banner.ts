@@ -58,6 +58,21 @@ export const bannerConfig: BannerConfig = {
   }
 }
 
+// Temporary: remove with its `platform.challengeBanner` copy once the Developer Platform Challenge closes.
+export const challengeBannerConfig: BannerConfig = {
+  id: 'dev-platform-challenge',
+  isActive: true,
+  targetSections: ['sitewide'],
+  titleKey: 'platform.challengeBanner.label',
+  descriptionKey: 'platform.challengeBanner.line',
+  link: {
+    href: 'https://blog.comfy.org/p/open-call-comfy-dev-platform-challenge?utm_source=comfy_org&utm_medium=website&utm_campaign=dev_platform_challenge&utm_content=platform_strip_details',
+    titleKey: 'platform.challengeBanner.cta',
+    target: true,
+    buttonVariant: 'underlineLink'
+  }
+}
+
 /** Resolve a config's i18n keys into display strings for the given locale. */
 export function getBannerData(
   config: BannerConfig,
