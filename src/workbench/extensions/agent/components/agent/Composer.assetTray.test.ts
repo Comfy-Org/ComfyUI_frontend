@@ -24,6 +24,12 @@ const asset = {
   previewUrl: 'https://example.com/source.png'
 }
 
+type MediaSurfaces = {
+  chip: HTMLElement
+  trayItem: HTMLElement
+  menuItem: HTMLElement
+}
+
 function setup() {
   const store = useAgentComposerStore()
   store.setNodeScope('workflow-a')
@@ -117,15 +123,14 @@ describe('composer asset tray', () => {
     })
     store.referenceAttachment('video')
     store.referenceAttachment('video')
-    await screen.findAllByTestId('asset-reference-chip')
-    for (const chip of screen.getAllByTestId('asset-reference-chip')) {
-      expect(
-        within(chip).getByRole('img', { name: 'Video' })
-      ).toBeInTheDocument()
-      expect(
-        within(chip).queryByTestId('inline-asset-video')
-      ).not.toBeInTheDocument()
-    }
+    const chips = await screen.findAllByTestId('asset-reference-chip')
+    expect(
+      chips.map((chip) =>
+        within(chip)
+          .getByRole('img', { name: 'Video' })
+          .getAttribute('aria-label')
+      )
+    ).toEqual(['Video', 'Video'])
     store.updateAttachment('video', {
       ref: 'stored.mp4',
       mediaUrl: '/stored.mp4',
@@ -170,17 +175,28 @@ describe('composer asset tray', () => {
       name: 'My video',
       mediaKind: 'video',
       previewUrl: '/poster.png',
-      label: 'Video'
+      indicators: ({ chip, trayItem, menuItem }: MediaSurfaces) => [
+        within(chip).getByAltText(''),
+        within(trayItem).getByAltText('My video'),
+        within(menuItem).getByAltText('')
+      ],
+      sources: ['/poster.png', '/poster.png', '/poster.png'],
+      labels: [null, null, null]
     },
     {
       name: 'Recording',
       mediaKind: 'audio',
       previewUrl: undefined,
-      label: 'Audio'
+      indicators: ({ chip, trayItem, menuItem }: MediaSurfaces) =>
+        [chip, trayItem, menuItem].map((surface) =>
+          within(surface).getByRole('img', { name: 'Audio' })
+        ),
+      sources: [null, null, null],
+      labels: ['Audio', 'Audio', 'Audio']
     }
   ] as const)(
     'uses the same media indicator for $mediaKind in the tray, menu and inline',
-    async ({ name, mediaKind, previewUrl, label }) => {
+    async ({ name, mediaKind, previewUrl, indicators, sources, labels }) => {
       const user = userEvent.setup()
       const { store, editor } = setup()
       store.addAttachment({
@@ -196,16 +212,11 @@ describe('composer asset tray', () => {
       await user.keyboard('@')
       const menuItem = await screen.findByRole('menuitem', { name })
       const trayItem = screen.getByRole('group', { name })
-      for (const surface of [chip, trayItem, menuItem]) {
-        if (previewUrl)
-          expect(
-            within(surface).getByAltText(surface === trayItem ? name : '')
-          ).toHaveAttribute('src', previewUrl)
-        else
-          expect(within(surface).getByRole('img', { name: label })).toHaveClass(
-            'icon-[lucide--music]'
-          )
-      }
+      const images = indicators({ chip, trayItem, menuItem })
+      expect(images.map((image) => image.getAttribute('src'))).toEqual(sources)
+      expect(images.map((image) => image.getAttribute('aria-label'))).toEqual(
+        labels
+      )
       await user.click(menuItem)
       expect(await screen.findAllByTestId('asset-reference-chip')).toHaveLength(
         2

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -19,6 +19,8 @@ const video: ComposerAttachment = {
   mediaKind: 'video',
   mediaUrl: '/clip.mp4'
 }
+
+type ComposerStore = ReturnType<typeof useAgentComposerStore>
 
 function pendingThumbnail() {
   let resolve!: (value: string | undefined) => void
@@ -46,11 +48,15 @@ describe('composer shared video thumbnail lifetime', () => {
     result.resolve('blob:poster')
     await result.promise
     expect(store.attachments[0].previewUrl).toBe('blob:poster')
-    for (const reference of store.prompt.references) {
-      expect(reference.kind).toBe('asset')
-      if (reference.kind === 'asset')
-        expect(reference.attachment.previewUrl).toBe('blob:poster')
-    }
+    expect(store.prompt.references.map((reference) => reference.kind)).toEqual([
+      'asset',
+      'asset'
+    ])
+    expect(
+      store.prompt.references
+        .filter((reference) => reference.kind === 'asset')
+        .map((reference) => reference.attachment.previewUrl)
+    ).toEqual(['blob:poster', 'blob:poster'])
     store.referenceAttachment(video.id)
     store.updateAttachment(video.id, {
       mediaUrl: '/uploaded.mp4',
@@ -64,12 +70,10 @@ describe('composer shared video thumbnail lifetime', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob:poster')
   })
 
-  it.for(['upload-metadata', 'restored-draft'] as const)(
-    'starts shared capture when the video source arrives through %s',
-    async (event) => {
-      const result = pendingThumbnail()
-      const store = useAgentComposerStore()
-      if (event === 'upload-metadata') {
+  it.for([
+    {
+      event: 'upload metadata',
+      act: (store: ComposerStore) => {
         store.addAttachment({
           id: video.id,
           name: 'clip.mp4',
@@ -81,12 +85,23 @@ describe('composer shared video thumbnail lifetime', () => {
           mediaKind: 'video',
           mediaUrl: 'blob:clip'
         })
-      } else
+      }
+    },
+    {
+      event: 'a restored draft',
+      act: (store: ComposerStore) =>
         store.replaceDraft({
           text: '',
           workflowReferences: [],
           attachments: [video]
         })
+    }
+  ])(
+    'starts shared capture when the video source arrives through $event',
+    async ({ act }) => {
+      const result = pendingThumbnail()
+      const store = useAgentComposerStore()
+      act(store)
       result.resolve('blob:poster')
       await result.promise
       expect(store.attachments[0].previewUrl).toBe('blob:poster')
@@ -106,20 +121,34 @@ describe('composer shared video thumbnail lifetime', () => {
     expect(createVideoThumbnail).not.toHaveBeenCalled()
   })
 
-  it.for(['remove', 'replace', 'poster', 'dispose'] as const)(
-    'discards and releases an obsolete capture after %s',
-    async (event) => {
+  it.for([
+    {
+      event: 'removing the asset',
+      act: (store: ComposerStore) => store.removeAttachment(video.id)
+    },
+    {
+      event: 'replacing the video source',
+      act: (store: ComposerStore) =>
+        store.updateAttachment(video.id, { mediaUrl: '/new.mp4' })
+    },
+    {
+      event: 'receiving a trusted poster',
+      act: (store: ComposerStore) =>
+        store.updateAttachment(video.id, { previewUrl: '/server.png' })
+    },
+    {
+      event: 'disposing the composer',
+      act: (store: ComposerStore) => store.$dispose()
+    }
+  ])(
+    'discards and releases an obsolete capture after $event',
+    async ({ act }) => {
       const result = pendingThumbnail()
       const store = useAgentComposerStore()
       store.addAttachment(video)
       const signal = vi.mocked(createVideoThumbnail).mock.calls[0][1]
       result.resolve('blob:stale')
-      if (event === 'remove') store.removeAttachment(video.id)
-      if (event === 'replace')
-        store.updateAttachment(video.id, { mediaUrl: '/new.mp4' })
-      if (event === 'poster')
-        store.updateAttachment(video.id, { previewUrl: '/server.png' })
-      if (event === 'dispose') store.$dispose()
+      act(store)
       expect(signal.aborted).toBe(true)
       await result.promise
       expect(
@@ -142,9 +171,31 @@ describe('composer shared video thumbnail lifetime', () => {
     expect(createVideoThumbnail).toHaveBeenCalledTimes(1)
   })
 
-  it.for([true, false])(
-    'retains/reclaims a poster completed during submission (sent=%s)',
-    async (sent) => {
+  it.for([
+    {
+      outcome: 'reclaims the poster after a successful send',
+      sent: true,
+      assertOutcome: (store: ComposerStore) => {
+        expect(store.attachments).toEqual([])
+        expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:poster')
+      }
+    },
+    {
+      outcome: 'retains the poster when recovering a failed send',
+      sent: false,
+      assertOutcome: (store: ComposerStore) => {
+        const failed = store.takeFailedSubmission()
+        assert.exists(failed)
+        store.restorePrompt(failed.prompt, failed.attachments)
+        expect(store.attachments[0].previewUrl).toBe('blob:poster')
+        expect(store.prompt.references).toHaveLength(1)
+        expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+        expect(createVideoThumbnail).toHaveBeenCalledTimes(1)
+      }
+    }
+  ])(
+    '$outcome when capture completes during submission',
+    async ({ sent, assertOutcome }) => {
       const result = pendingThumbnail()
       const store = useAgentComposerStore()
       store.addAttachment(video)
@@ -158,19 +209,7 @@ describe('composer shared video thumbnail lifetime', () => {
       result.resolve('blob:poster')
       await result.promise
       store.settleSubmission(id, sent)
-      if (sent) {
-        expect(store.attachments).toEqual([])
-        expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:poster')
-      } else {
-        const failed = store.takeFailedSubmission()
-        expect(failed).toBeDefined()
-        if (!failed) throw new Error('Expected failed draft')
-        store.restorePrompt(failed.prompt, failed.attachments)
-        expect(store.attachments[0].previewUrl).toBe('blob:poster')
-        expect(store.prompt.references).toHaveLength(1)
-        expect(URL.revokeObjectURL).not.toHaveBeenCalled()
-        expect(createVideoThumbnail).toHaveBeenCalledTimes(1)
-      }
+      assertOutcome(store)
     }
   )
 })

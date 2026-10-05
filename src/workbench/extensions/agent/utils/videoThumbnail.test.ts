@@ -1,44 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvasElement
+} from '@/utils/__tests__/canvasTestUtils'
+
 import { createVideoThumbnail } from './videoThumbnail'
 
-function mediaPlatform() {
+function mediaPlatform(canvas = document.createElement('canvas')) {
   const video = document.createElement('video')
-  const canvas = document.createElement('canvas')
-  const createElement = document.createElement.bind(document)
-  vi.spyOn(document, 'createElement').mockImplementation((tag, options) => {
-    if (tag === 'video') return video
-    if (tag === 'canvas') return canvas
-    return createElement(tag, options)
-  })
+  const createElement = vi.spyOn(document, 'createElement')
+  vi.when(createElement).calledWith('video').thenReturn(video)
+  vi.when(createElement).calledWith('canvas').thenReturn(canvas)
   Object.defineProperties(video, {
     videoWidth: { value: 1920 },
     videoHeight: { value: 1080 }
   })
   vi.spyOn(video, 'pause').mockImplementation(() => {})
   vi.spyOn(video, 'load').mockImplementation(() => {})
-  vi.spyOn(canvas, 'getContext').mockReturnValue(null)
   return { video, canvas }
 }
 
-function mockCanvasDrawing(canvas: HTMLCanvasElement) {
-  const drawImage = vi.fn<CanvasRenderingContext2D['drawImage']>()
-  Object.defineProperty(canvas, 'getContext', {
-    value: () => ({ drawImage }),
-    configurable: true
-  })
-  return drawImage
-}
-
 beforeEach(() => {
-  vi.useFakeTimers()
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:poster')
 })
 
 describe('video thumbnail capture platform boundary', () => {
   it('captures a bounded first frame without playback, then releases the decoder', async () => {
-    const { video, canvas } = mediaPlatform()
-    const drawImage = mockCanvasDrawing(canvas)
+    const context = createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+    const { video, canvas } = mediaPlatform(
+      createTestCanvasElement({ ctx: context })
+    )
     vi.spyOn(canvas, 'toBlob').mockImplementation((callback) =>
       callback(new Blob(['frame'], { type: 'image/jpeg' }))
     )
@@ -54,14 +46,17 @@ describe('video thumbnail capture platform boundary', () => {
     expect(await result).toBe('blob:poster')
     expect(canvas.width).toBe(320)
     expect(canvas.height).toBe(180)
-    expect(drawImage).toHaveBeenCalledWith(video, 0, 0, 320, 180)
+    expect(context.drawImage).toHaveBeenCalledWith(video, 0, 0, 320, 180)
     expect(video).not.toHaveAttribute('src')
     expect(video.pause).toHaveBeenCalled()
   })
 
   it('does not allocate a poster after cancellation during image encoding', async () => {
-    const { video, canvas } = mediaPlatform()
-    mockCanvasDrawing(canvas)
+    const { video, canvas } = mediaPlatform(
+      createTestCanvasElement({
+        ctx: createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+      })
+    )
     let complete!: BlobCallback
     vi.spyOn(canvas, 'toBlob').mockImplementation((callback) => {
       complete = callback
@@ -76,17 +71,32 @@ describe('video thumbnail capture platform boundary', () => {
     expect(video).not.toHaveAttribute('src')
   })
 
-  it.for(['error', 'timeout', 'abort', 'canvas-unavailable'] as const)(
-    'resolves to a fallback and releases the decoder after %s',
-    async (event) => {
+  it.for([
+    {
+      event: 'a decoding error',
+      act: (video: HTMLVideoElement) => video.dispatchEvent(new Event('error'))
+    },
+    {
+      event: 'a timeout',
+      act: () => vi.advanceTimersByTime(15_000)
+    },
+    {
+      event: 'cancellation',
+      act: (_video: HTMLVideoElement, controller: AbortController) =>
+        controller.abort()
+    },
+    {
+      event: 'an unavailable canvas context',
+      act: (video: HTMLVideoElement) =>
+        video.dispatchEvent(new Event('loadeddata'))
+    }
+  ])(
+    'resolves to a fallback and releases the decoder after $event',
+    async ({ act }) => {
       const { video } = mediaPlatform()
       const controller = new AbortController()
       const result = createVideoThumbnail('/clip.mp4', controller.signal)
-      if (event === 'error') video.dispatchEvent(new Event('error'))
-      if (event === 'abort') controller.abort()
-      if (event === 'timeout') vi.advanceTimersByTime(15_000)
-      if (event === 'canvas-unavailable')
-        video.dispatchEvent(new Event('loadeddata'))
+      act(video, controller)
       expect(await result).toBeUndefined()
       expect(video).not.toHaveAttribute('src')
       expect(video.pause).toHaveBeenCalled()

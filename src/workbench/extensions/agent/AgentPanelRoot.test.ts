@@ -2425,18 +2425,30 @@ describe('AgentPanelRoot attach flow', () => {
       label: 'My clip',
       kind: 'video',
       previewId: 'poster',
-      previewUrl: 'http://localhost:3000/api/assets/poster/content'
+      previewUrl: 'http://localhost:3000/api/assets/poster/content',
+      indicatorLabel: 'My clip',
+      indicatorSource: 'http://localhost:3000/api/assets/poster/content'
     },
     {
       filename: 'song.mp3',
       label: 'My recording',
       kind: 'audio',
       previewId: undefined,
-      previewUrl: undefined
+      previewUrl: undefined,
+      indicatorLabel: 'Audio',
+      indicatorSource: null
     }
   ])(
     'preserves playable $kind metadata from the assets panel through the chat tray',
-    async ({ filename, label, kind, previewId, previewUrl }) => {
+    async ({
+      filename,
+      label,
+      kind,
+      previewId,
+      previewUrl,
+      indicatorLabel,
+      indicatorSource
+    }) => {
       const uploaded = stubUploadFetch()
       renderWithSelectedTarget()
       const store = useAgentComposerStore()
@@ -2458,14 +2470,11 @@ describe('AgentPanelRoot attach flow', () => {
             'http://localhost:3000/api/assets/library-source/content?disposition=inline'
         })
       ])
-      if (kind === 'video')
-        expect(
-          within(trayItem).getByRole('img', { name: label })
-        ).toHaveAttribute('src', previewUrl)
-      else
-        expect(
-          within(trayItem).getByRole('img', { name: 'Audio' })
-        ).toBeInTheDocument()
+      expect(
+        within(trayItem)
+          .getByRole('img', { name: indicatorLabel })
+          .getAttribute('src')
+      ).toBe(indicatorSource)
       expect(store.prompt).toEqual({ text: 'Keep typing', references: [] })
       expect(uploaded).toEqual([])
     }
