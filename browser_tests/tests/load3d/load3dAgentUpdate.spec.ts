@@ -113,7 +113,12 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
         .poll(() => viewer.dialog.evaluate((el) => el.getAnimations().length))
         .toBe(0)
 
-      for (const width of [1280, 1920, 2560, 500]) {
+      // 560px is the sub-`sm` case: under the 640px breakpoint, so the
+      // unprefixed cap is live, and well clear of the docked/overlay threshold
+      // at `PANEL_MIN_WIDTH + SIDE_TOOLBAR_WIDTH` (476), which a narrower
+      // viewport would sit close enough to that a modest change to either
+      // constant would silently turn this case into an overlay-mode one.
+      for (const width of [1280, 1920, 2560, 560]) {
         await page.setViewportSize({ width, height: 800 })
 
         await expect(async () => {
@@ -179,6 +184,19 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
             dialogBox.x,
             'the viewer sits centred between the viewport and panel edges'
           )
+
+          // The box being inside the workspace is not the same as what is
+          // painted being inside it: the header's controls are a fixed width
+          // and nothing in the dialog clips them, so a viewer narrower than
+          // its own chrome paints past its right edge and onto the panel with
+          // every assertion above still green.
+          const overflow = await viewer.dialog.evaluate(
+            (element) => element.scrollWidth - element.clientWidth
+          )
+          expect(
+            overflow,
+            'the viewer paints its chrome inside its own box'
+          ).toBeLessThanOrEqual(0)
         }).toPass({ timeout: 5000 })
       }
     })
