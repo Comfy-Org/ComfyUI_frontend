@@ -201,7 +201,7 @@ describe('useAssetExportStore polling', () => {
 
     expect(store.finishedExports[0]).toMatchObject({
       status: 'failed',
-      error: 'progressToast.failed'
+      error: 'progressToast.taskUnavailable'
     })
   })
 
@@ -345,6 +345,10 @@ describe('assetExportStore triggerDownload', () => {
     {
       name: 'a backslash-prefixed authority URL',
       url: '\\\\storage.example.com/exports/e.zip?signature=abc'
+    },
+    {
+      name: 'a mixed backslash authority URL',
+      url: '\\/storage.example.com/exports/e.zip?signature=abc'
     },
     { name: 'a malformed HTTP URL', url: 'http://' },
     { name: 'a malformed IPv6 URL', url: 'https://[' },
