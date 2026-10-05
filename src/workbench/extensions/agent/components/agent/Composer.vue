@@ -365,8 +365,6 @@ defineExpose({
       <Tooltip
         v-for="(match, index) in mentionMatches"
         :key="`${match.kind}:${match.id}`"
-        :ignore-non-keyboard-focus="false"
-        disable-closing-trigger
         :disabled="!isNodeReferenceDisabled(match)"
       >
         <TooltipTrigger as-child>
@@ -604,11 +602,7 @@ defineExpose({
               width="compact"
               class="agent-scope"
             >
-              <Tooltip
-                :ignore-non-keyboard-focus="false"
-                disable-closing-trigger
-                :disabled="!nodeReferenceDisabledReason"
-              >
+              <Tooltip :disabled="!nodeReferenceDisabledReason">
                 <TooltipTrigger as-child>
                   <MenuItem
                     :disabled="!!nodeReferenceDisabledReason"
