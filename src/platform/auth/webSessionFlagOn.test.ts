@@ -45,6 +45,7 @@ import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import {
   getGlobalSetting,
   setGlobalSetting
@@ -1053,6 +1054,15 @@ describe('workspace API and global settings on the shared web session', () => {
       code: 'plan_required',
       message: 'plan_required'
     })
+  })
+
+  it('maps a 403 no_workspace_access on the session to NoWorkspaceAccessError', async () => {
+    const ingest = await bootOnSession()
+    ingest.refusals.push('no_workspace_access')
+
+    await expect(workspaceApi.getBillingStatus()).rejects.toBeInstanceOf(
+      NoWorkspaceAccessError
+    )
   })
 
   it('returns no workspace auth header and sends nothing', async () => {
