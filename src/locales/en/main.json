@@ -2798,7 +2798,9 @@
     "expiredSummary": "Desktop sign-in failed",
     "expiredDetail": "The sign-in request expired or was already used. Start signing in again from the ComfyUI desktop app.",
     "failedSummary": "Desktop sign-in failed",
-    "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app."
+    "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app.",
+    "ssoUnavailableSummary": "Desktop sign-in isn't available for SSO accounts yet",
+    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app."
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -5104,6 +5106,8 @@
     "inviteAccepted": "Invite Accepted",
     "addedToWorkspace": "You have been added to:",
     "inviteFailed": "Failed to Accept Invite",
+    "inviteSsoUnavailable": "Ask your admin to add you",
+    "inviteSsoUnavailableDetail": "Invite links can't be accepted from an SSO account yet. Ask a workspace admin to add you to the workspace directly.",
     "viewWorkspace": "View workspace",
     "switchFailed": "Failed to switch workspace. Please try again.",
     "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
