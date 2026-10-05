@@ -439,17 +439,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.bindRegisteredState(nodeId)
   }
 
-  /**
-   * Drops the entry this widget is bound to, for a widget the node has just
-   * refused. Its entry sits under the name it registered, which no widget
-   * holds any more — and `registerWidget` keeps an existing value when a later
-   * widget of the same type takes that name, so leaving it hands the next
-   * widget of that name a dead one's value.
-   *
-   * The entry is found by identity rather than by this widget's current name:
-   * a refused duplicate's name is by definition the one another widget kept,
-   * and that widget's entry must not be touched.
-   */
   releaseRegisteredState(): void {
     const graphId = this.node.graph?.rootGraph.id
     const { nodeId, name } = this._state

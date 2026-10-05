@@ -9,17 +9,16 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { RefusedWidget } from '@/types/widgetId'
 import {
   dropUnrenamableDuplicateWidgets,
-  isWidgetNameUnreadable
+  isWidgetNameUnreadable,
+  widgetId
 } from '@/types/widgetId'
 
 import { createArrayMutationView } from '../infrastructure/createMutationView'
+import type { INodeInputSlot } from '../interfaces'
 import { isNodeBindable } from '../utils/type'
 import { getWidgetIds } from '../utils/widget'
+import { BaseWidget } from '../widgets/BaseWidget'
 
-/**
- * `errorType` slugs here follow `src/AGENTS.md`'s
- * `<category>_<operation>_<subject>` form.
- */
 const REFUSAL_TEARDOWN_ERROR_TYPE = 'failure_tearing_down_refused_widget'
 
 interface WidgetsViewState {
@@ -29,16 +28,12 @@ interface WidgetsViewState {
   commit: (widgets: IBaseWidget[]) => void
 }
 
-/** Shared empty result, so the common no-refusal path allocates nothing. */
-const EMPTY_REFUSAL: ReadonlySet<IBaseWidget> = new Set()
-
 /**
- * The unresolved names already reported for a node. A kept pair survives the
- * walk, so every later commit finds it again and `reportError` has no dedupe
- * of its own. Replaced rather than added to, so a name that stops colliding
- * and later collides again is reported again.
+ * The unresolved duplicates already reported for a node. A kept pair survives
+ * the walk, so every later commit finds it again, and `reportError` has no
+ * dedupe of its own.
  */
-const reportedUnresolvedNames = new WeakMap<LGraphNode, Set<string>>()
+const reportedUnresolved = new WeakMap<LGraphNode, Set<IBaseWidget>>()
 
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
 const widgetsViewGetters = new WeakSet<() => IBaseWidget[] | undefined>()
@@ -56,7 +51,6 @@ function safeRead(read: () => unknown): string | undefined {
   }
 }
 
-/** Reports a teardown step that failed, so a half-done release is visible. */
 function reportTeardownFailure(node: LGraphNode, error: unknown): void {
   reportError(error, {
     errorType: REFUSAL_TEARDOWN_ERROR_TYPE,
@@ -73,7 +67,7 @@ function reportTeardownFailure(node: LGraphNode, error: unknown): void {
  * on read. Matching only the reference finds nothing on these nodes.
  */
 function inputBindsWidget(
-  input: LGraphNode['inputs'][number],
+  input: INodeInputSlot,
   widget: IBaseWidget,
   name: string | undefined
 ): boolean {
@@ -81,7 +75,6 @@ function inputBindsWidget(
   return name !== undefined && input.widget?.name === name
 }
 
-/** Drops the slot back-references to a widget the node has just refused. */
 function clearRefusedSlotBindings(
   node: LGraphNode,
   widget: IBaseWidget,
@@ -125,69 +118,47 @@ function releaseRefusedWidget(
 
   // After `onRemove`, which may still read the value through the entry.
   try {
-    widget.releaseRegisteredState?.()
+    if (widget instanceof BaseWidget) widget.releaseRegisteredState()
   } catch (error) {
     reportTeardownFailure(node, error)
   }
 }
 
-/**
- * Enforces the unique-name invariant where `node.widgets` is committed: the
- * array is a mutation view, so `addWidget`, a raw `widgets.push`, a splice and
- * a whole-array assignment all pass through here. A widget removed here is off
- * the node before it can be rendered, and its own entry is released — it may
- * already have one, from a name it held before an extension pinned it onto
- * another widget's.
- *
- * `SubgraphNode` does **not** commit through here and keeps the pre-existing
- * behaviour: it redefines `widgets` as a computed getter over its promoted
- * widgets and overrides `addCustomWidget` to push into its own array.
- */
 function refuseAmbiguousWidgets(
   node: LGraphNode,
   widgets: IBaseWidget[]
 ): ReadonlySet<IBaseWidget> {
-  const refused = dropUnrenamableDuplicateWidgets(widgets)
-  if (!refused.length) {
-    reportedUnresolvedNames.delete(node)
-    return EMPTY_REFUSAL
-  }
-
-  const alreadyReported = takeUnresolvedReportGate(node, refused)
-
-  for (const finding of refused) {
-    // Safe to skip before the teardown below only because a kept pair is
-    // never released.
-    if (alreadyReported(finding)) continue
-
-    // A kept duplicate is still the node's widget and keeps its slot wiring.
-    if (finding.removed) {
-      releaseRefusedWidget(node, finding.widget, finding.name)
-    }
-    reportRefusal(node, finding)
-  }
-
-  return new Set(
-    refused.filter(({ removed }) => removed).map(({ widget }) => widget)
+  const graphId = node.graph?.rootGraph.id
+  const store = useWidgetValueStore()
+  const refused = dropUnrenamableDuplicateWidgets(
+    widgets,
+    (name) =>
+      graphId !== undefined &&
+      store.getWidget(widgetId(graphId, node.id, name)) !== undefined
   )
-}
 
-/** @returns whether a finding was already alerted on before this pass. */
-function takeUnresolvedReportGate(
-  node: LGraphNode,
-  refused: readonly RefusedWidget<IBaseWidget>[]
-): (finding: RefusedWidget<IBaseWidget>) => boolean {
-  const previous = reportedUnresolvedNames.get(node)
+  const previouslyUnresolved = reportedUnresolved.get(node)
   const unresolved = new Set(
     refused
       .filter(({ cause }) => cause === 'unresolved-duplicate')
-      .map(({ name }) => String(name))
+      .map(({ widget }) => widget)
   )
-  if (unresolved.size) reportedUnresolvedNames.set(node, unresolved)
-  else reportedUnresolvedNames.delete(node)
+  if (unresolved.size) reportedUnresolved.set(node, unresolved)
+  else reportedUnresolved.delete(node)
 
-  return ({ cause, name }) =>
-    cause === 'unresolved-duplicate' && !!previous?.has(String(name))
+  const removed = new Set<IBaseWidget>()
+  for (const finding of refused) {
+    if (finding.cause === 'unresolved-duplicate') {
+      if (!previouslyUnresolved?.has(finding.widget)) {
+        reportRefusal(node, finding)
+      }
+      continue
+    }
+    removed.add(finding.widget)
+    releaseRefusedWidget(node, finding.widget, finding.name)
+    reportRefusal(node, finding)
+  }
+  return removed
 }
 
 /**
@@ -246,10 +217,6 @@ function commitsThroughWidgetsView(node: LGraphNode): boolean {
   return !!descriptor?.get && widgetsViewGetters.has(descriptor.get)
 }
 
-/**
- * Whether {@link node} refused {@link widget} — it is not on a node whose list
- * this module owns, so it was dropped for a name it could not be given.
- */
 export function wasWidgetRefused(
   node: LGraphNode,
   widget: IBaseWidget
@@ -269,10 +236,7 @@ export function wasWidgetRefused(
  */
 export function refuseAmbiguousNodeWidgets(node: LGraphNode): void {
   if (!commitsThroughWidgetsView(node)) return
-  // This module's own array, never `node.widgets`. That getter hands back the
-  // mutation view, and the walk's closing splice on the view re-enters
-  // `syncWidgetOrder` — a whole nested commit, run while the refused widget's
-  // slot back-references are still live and before anything is reported.
+  // The raw target: splicing `node.widgets` would re-enter `syncWidgetOrder`.
   const widgets = states.get(node)?.target
   if (!widgets?.length) return
   refuseAmbiguousWidgets(node, widgets)
@@ -293,13 +257,6 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
     try {
       return toConcreteWidget(widget, node)
     } catch (error) {
-      // Only the unreadable-name case is swallowed, and only because the
-      // refusal below is about to take this widget anyway. Conversion reads
-      // `type`, `options` and `value` too, and a failure in any of those
-      // leaves a widget the refusal has no reason to drop — so it keeps
-      // throwing, as it did before. This also only covers the commit path:
-      // `addCustomWidget` converts before it pushes, so `addWidget` and
-      // `addDOMWidget` still throw to their caller.
       if (!unreadable) throw error
       return widget
     }

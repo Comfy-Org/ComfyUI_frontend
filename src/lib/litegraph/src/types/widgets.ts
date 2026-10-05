@@ -488,12 +488,6 @@ export interface IBaseWidget<
 
   readonly widgetId?: WidgetId
 
-  /**
-   * Drops the store entry this widget is bound to, if the store still holds
-   * that entry. Absent on raw widget objects, which hold none.
-   */
-  releaseRegisteredState?(): void
-
   name: string
   options: TOptions
   syncLiveVisibilityOptions?(): void

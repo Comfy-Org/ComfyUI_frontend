@@ -2,13 +2,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-/**
- * What a refusal does to the values of a workflow saved before it existed.
- * Positional restore counts the widgets the node has *now*, so a removed
- * widget's slot is taken by the next widget. ADR-ECS-0008 records that as
- * accepted and names the conditions; these cases pin it so it stays a decision
- * rather than a surprise.
- */
 describe('restoring values onto a node that refused a widget', () => {
   const namedValuesRestore = LiteGraph.namedValuesRestore
 
@@ -45,10 +38,6 @@ describe('restoring values onto a node that refused a widget', () => {
     LiteGraph.namedValuesRestore = namedValuesRestore
   })
 
-  /**
-   * `LGraph.configure` adds each node and configures it afterwards, so the
-   * refusal has already run by the time values are restored.
-   */
   function load(type: string, named?: Record<string, number>) {
     const graph = new LGraph()
     const node = LiteGraph.createNode(type)!

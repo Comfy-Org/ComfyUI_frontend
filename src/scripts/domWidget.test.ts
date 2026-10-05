@@ -107,11 +107,6 @@ describe('BaseDOMWidgetImpl.isVisible', () => {
 })
 
 describe('addWidget on a node that refuses the widget', () => {
-  /**
-   * How the state is reached in the wild: an extension redefines `name` on an
-   * existing widget, so the duplicate cannot be renamed apart and is removed
-   * from the node (ADR-ECS-0008).
-   */
   function pinName(widget: IBaseWidget, name: string): void {
     Object.defineProperty(widget, 'name', {
       value: name,

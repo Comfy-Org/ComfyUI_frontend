@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { WidgetId } from './widgetId'
 import {
@@ -38,29 +38,17 @@ describe('ensureUniqueWidgetNames', () => {
   })
 })
 
-/**
- * A widget whose `name` is whatever a node pack actually assigned. The runtime
- * type is the thing under test, so the narrowing happens once here rather than
- * at each fixture.
- */
-function widgetNamed(name: unknown): { name: string } {
-  return { name } as { name: string }
+function widgetNamed(name: unknown): { name: unknown } {
+  return { name }
 }
 
-/**
- * The widgets the walk took off the array; the cause is asserted separately
- * where it matters. Not every reported widget is removed — an
- * `unresolved-duplicate` is reported and kept — and "was it removed" is what
- * these cases are about.
- */
-function refusedWidgets<T extends { name: string }>(widgets: T[]): T[] {
+function refusedWidgets<T extends { name: unknown }>(widgets: T[]): T[] {
   return dropUnrenamableDuplicateWidgets(widgets)
-    .filter(({ removed }) => removed)
+    .filter(({ cause }) => cause !== 'unresolved-duplicate')
     .map(({ widget }) => widget)
 }
 
-/** Every widget the walk reported, removed or not, against its cause. */
-function reportedCauses<T extends { name: string }>(
+function reportedCauses<T extends { name: unknown }>(
   widgets: T[]
 ): [T, string][] {
   return dropUnrenamableDuplicateWidgets(widgets).map(({ widget, cause }) => [
@@ -70,17 +58,8 @@ function reportedCauses<T extends { name: string }>(
 }
 
 describe('dropUnrenamableDuplicateWidgets', () => {
-  beforeEach(() => {
-    // `ensureUniqueWidgetNames` warns whenever it gives up on a rename, which
-    // is the entry condition for every case here rather than the subject.
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  /** A name that cannot be written, which is how the state is reached. */
-  const pinned = (name: string) => {
-    const widget = {} as { name: string }
-    Object.defineProperty(widget, 'name', { value: name, enumerable: true })
-    return widget
+  function pinned(name: string): { name: string } {
+    return Object.defineProperty({ name }, 'name', { writable: false })
   }
 
   it('refuses nothing and mutates nothing when every name is already unique', () => {
@@ -107,8 +86,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
   })
 
   it('renames the collisions the refusal was masking', () => {
-    // `ensureUniqueWidgetNames` is all-or-nothing, so one unrenamable widget
-    // leaves every other collision on the node standing too.
     const refused = pinned('seed')
     const widgets = [
       { name: 'seed' },
@@ -128,8 +105,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
   it('does not hand a generated name to a widget that already holds it', () => {
     const refused = pinned('seed')
     const widgets = [{ name: 'seed' }, refused, { name: 'seed' }]
-    // `seed#1` is held outright further down the array, so the rename must
-    // reach past it rather than collide with a name nothing renamed.
     widgets.push({ name: 'seed#1' })
 
     expect(refusedWidgets(widgets)).toEqual([refused])
@@ -150,13 +125,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     const unrenamable = pinned('seed')
     const widgets = [{ name: 'seed' }, unrenamable, stubborn]
 
-    // Its descriptor has a setter, so a descriptor check believes the rename
-    // will take; only reading the name back afterwards proves it did not. That
-    // read is what makes the pair *observable* — but it cannot decide removal,
-    // because `BaseWidget`'s own setter declines exactly this way whenever the
-    // store has no entry for the node, which is the ordinary state of a node
-    // carrying an ambiguous pair. The pinned widget beside it is removed; this
-    // one is kept and reported.
     expect(reportedCauses(widgets)).toEqual([
       [unrenamable, 'duplicate-name'],
       [stubborn, 'unresolved-duplicate']
@@ -176,17 +144,8 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     const reported = dropUnrenamableDuplicateWidgets(widgets)
 
     expect(reported).toEqual([
-      {
-        widget: declining,
-        cause: 'unresolved-duplicate',
-        removed: false,
-        // The key the walk read, not what the setter left behind — the caller
-        // must never re-read an accessor the walk has already written to.
-        name: 'seed'
-      }
+      { widget: declining, cause: 'unresolved-duplicate', name: 'seed' }
     ])
-    // Still on the array: removing it would cost the user a widget to repair a
-    // state a later commit can resolve on its own.
     expect(widgets).toHaveLength(2)
     expect(widgets[1]).toBe(declining)
   })
@@ -199,10 +158,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     }
     const widgets = [{ name: 'seed' }, hostile]
 
-    // A name that cannot be read is a `WidgetId` that cannot be derived, and
-    // leaving it on the node makes `ensureUniqueWidgetNames` fail on every
-    // later call — which bails registration for the whole node, including the
-    // widgets that are perfectly addressable. The throw must not escape.
     expect(refusedWidgets(widgets)).toEqual([hostile])
     expect(widgets).toHaveLength(1)
   })
@@ -212,17 +167,11 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     const second = widgetNamed(undefined)
     const widgets = [first, second]
 
-    // `undefined` is a bad identity, not a missing one: two of them collide
-    // with each other and would mint the same `graphId:nodeId:undefined`.
     expect(refusedWidgets(widgets)).toEqual([])
     expect(widgets.map(({ name }) => name)).toEqual([undefined, 'undefined#1'])
   })
 
   it('refuses a name that reads fine but cannot become an id', () => {
-    // Both of these read without throwing and then fail on the way to a
-    // `WidgetId`: one will not coerce to a string at all, the other is a lone
-    // surrogate that `encodeURIComponent` rejects. Letting either escape wedges
-    // the commit that is trying to settle the node's names.
     const unstringifiable = widgetNamed(Object.create(null))
     const unencodable = { name: '\uD800' }
     const fine = { name: 'seed' }
@@ -238,12 +187,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
   })
 
   it('refuses a name that cannot be encoded into an id, but keeps an empty one', () => {
-    // `String(Symbol())` succeeds, so coercion alone says this name is fine —
-    // but `widgetId` encodes the raw value and throws on it.
-    //
-    // An empty name is the opposite case and must NOT be refused: it mints an
-    // id the store declines to key on, which costs the widget nothing, while
-    // deleting it loses a widget that renders and serializes.
     const symbolNamed = widgetNamed(Symbol('seed'))
     const empty = widgetNamed('')
     const fine = widgetNamed('seed')
@@ -254,8 +197,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
   })
 
   it('reports the name the walk read, not one the rename attempts left behind', () => {
-    // The walk writes to a colliding widget before giving up, so the value the
-    // accessor holds afterwards can be a candidate no widget on the node owns.
     const first = widgetNamed('seed')
     let stored = 'seed'
     const normalising = {
@@ -275,11 +216,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
   })
 
   it('records why each widget was refused, rather than leaving it to be guessed', () => {
-    // A hostile accessor need not answer the same way twice, so the cause has
-    // to come from the walk that made the decision.
-    // Reads 1 and 2 are the reserved-names pass and the walk itself; a third
-    // read — which is what re-deriving the cause at the report site costs —
-    // succeeds and would call this a duplicate instead.
     let reads = 0
     const flaky = {
       get name(): string {
@@ -302,63 +238,42 @@ describe('dropUnrenamableDuplicateWidgets', () => {
       'unreadable-name',
       'duplicate-name'
     ])
-    // The widget now reads as a plain duplicate, which is the wrong answer.
     expect(flaky.name).toBe('seed')
   })
 
   it('removes a duplicate whose `name` is a getter-only accessor on its prototype', () => {
     const first = { name: 'seed' }
-    // No *own* `name` descriptor, and the inherited one has no setter — so
-    // every write throws and is swallowed, exactly like the non-writable own
-    // property above. A predicate that inspects only the own object finds
-    // nothing and falls through to `Object.isExtensible`, which answers whether
-    // properties can be *added*, not whether `name` can be written. That makes
-    // this widget look renamable and keeps it forever as an unresolved
-    // duplicate, silently sharing `first`'s identity — the precise case
-    // removal exists for.
-    const inherited = Object.create({
+    const inherited: { name: unknown } = Object.create({
       get name() {
         return 'seed'
       }
-    }) as { name: string }
+    })
+    const widgets = [first, inherited]
 
-    const refused = dropUnrenamableDuplicateWidgets([first, inherited])
+    const refused = dropUnrenamableDuplicateWidgets(widgets)
 
     expect(refused.map(({ cause }) => cause)).toEqual(['duplicate-name'])
-    expect(refused.map(({ removed }) => removed)).toEqual([true])
+    expect(widgets).toEqual([first])
   })
 
   it('refuses a widget whose descriptor trap throws instead of aborting the walk', () => {
     const first = { name: 'seed' }
-    const target = {}
-    Object.defineProperty(target, 'name', {
-      value: 'seed',
-      writable: false,
-      configurable: true
+    const target = Object.defineProperty({ name: 'seed' }, 'name', {
+      writable: false
     })
-    // `nameIsWritable` is reached from `resolveCollision`, which — unlike the
-    // `name` reads in the same walk — is not inside a guard, and
-    // `getOwnPropertyDescriptor`/`isExtensible` both invoke proxy traps. A
-    // throwing trap used to escape the whole walk, which runs inside
-    // `LGraph.add` after node state is partly attached.
     const hostile = new Proxy(target, {
       getOwnPropertyDescriptor() {
         throw new Error('hostile descriptor trap')
       }
-    }) as { name: string }
+    })
 
     const widgets = [first, hostile]
     expect(() => dropUnrenamableDuplicateWidgets(widgets)).not.toThrow()
 
-    // Unaddressable, so refused — and the widget holding the name legitimately
-    // is still there, which a mid-walk throw would have left undecided.
     expect(widgets).toEqual([first])
   })
 
   it('collides names that differ as values but coincide as id strings', () => {
-    // `widgetId` keys on `encodeURIComponent(String(name))`, so these two mint
-    // the same id. Comparing the raw values lets both through and the clash
-    // lands in the store, where nothing is looking for it.
     const widgets = [
       widgetNamed(undefined),
       { name: 'undefined' },
@@ -375,23 +290,16 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     ])
   })
 
-  it('offers another name when a setter rejects only the first one', () => {
-    // `BaseWidget` delegates its `name` setter to the store, which refuses to
-    // move onto an id something else already holds. Refusal deletes a widget,
-    // so one rejected candidate must not be read as unrenamable.
-    let name = 'seed'
-    const picky = {
-      get name() {
-        return name
-      },
-      set name(value: string) {
-        if (value !== 'seed#1') name = value
-      }
-    }
-    const widgets = [{ name: 'seed' }, picky]
+  it('skips a candidate name that is already taken outside the array', () => {
+    const widgets = [{ name: 'seed' }, { name: 'seed' }]
 
-    expect(refusedWidgets(widgets)).toEqual([])
-    expect(widgets.map((widget) => widget.name)).toEqual(['seed', 'seed#2'])
+    const refused = dropUnrenamableDuplicateWidgets(
+      widgets,
+      (name) => name === 'seed#1'
+    )
+
+    expect(refused).toEqual([])
+    expect(widgets.map(({ name }) => name)).toEqual(['seed', 'seed#2'])
   })
 
   it('does not reserve a name one widget rejected against the next widget', () => {
@@ -407,11 +315,7 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     const renamable = { name: 'seed' }
     const widgets = [{ name: 'seed' }, stubborn, renamable]
 
-    // Nothing is removed: `stubborn` declined the write but could have taken
-    // it, so it is reported and kept.
     expect(refusedWidgets(widgets)).toEqual([])
-    // `seed#1` was offered to `stubborn` and did not take, so it is still free
-    // for the next widget — a name one setter refuses is not a name in use.
     expect(offered).toContain('seed#1')
     expect(widgets.map((widget) => widget.name)).toEqual([
       'seed',
@@ -424,8 +328,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     const refused = pinned('seed')
     const widgets = [{ name: 'seed' }, refused, refused]
 
-    // The identity bypass that keeps a reordering widget in place must not
-    // re-admit one whose first occurrence was already refused and reported.
     expect(refusedWidgets(widgets)).toEqual([refused])
     expect(widgets.map(({ name }) => name)).toEqual(['seed'])
   })
@@ -435,7 +337,6 @@ describe('dropUnrenamableDuplicateWidgets', () => {
     const other = pinned('seed')
     const widgets = [shared, shared, other]
 
-    // Identity duplicates are one widget mid-reorder, not a name collision.
     expect(refusedWidgets(widgets)).toEqual([other])
     expect(widgets).toEqual([shared, shared])
   })
