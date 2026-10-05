@@ -346,7 +346,7 @@ async function revalidatePull(github, config, liveHeadSha) {
   return recheckedReviews
 }
 
-async function approveCurrentHead(github, config, liveHeadSha, reviews) {
+export async function approveCurrentHead(github, config, liveHeadSha, reviews) {
   if (
     alreadyApprovedCurrentHead(reviews, config.expectedApprover, liveHeadSha)
   ) {
@@ -369,10 +369,20 @@ async function approveCurrentHead(github, config, liveHeadSha, reviews) {
     }
   )
 
-  const verifiedPull = await github.request(`/pulls/${config.prNumber}`)
-  const verifiedReviews = await github.paginate(
-    `/pulls/${config.prNumber}/reviews`
-  )
+  let verifiedPull
+  let verifiedReviews
+  try {
+    verifiedPull = await github.request(`/pulls/${config.prNumber}`)
+    verifiedReviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
+  } catch (error) {
+    await dismissApproval(
+      github,
+      config.prNumber,
+      createdReview,
+      'Website fast-lane approval withdrawn: post-approval verification failed.'
+    )
+    throw error
+  }
   const verificationFailure = eligibilityFailure({
     pull: verifiedPull,
     config

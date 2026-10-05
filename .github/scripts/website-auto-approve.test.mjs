@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  approveCurrentHead,
   alreadyApprovedCurrentHead,
   changedPaths,
   hasActiveChangeRequest,
@@ -12,6 +13,37 @@ import {
   parseApprovedAuthors,
   targetsDefaultBranch
 } from './website-auto-approve.mjs'
+
+void test('a failed post-approval verification withdraws the new approval', async () => {
+  const calls = []
+  const verificationError = new Error('verification unavailable')
+  const github = {
+    async request(requestPath, options = {}) {
+      calls.push({ requestPath, method: options.method ?? 'GET' })
+      if (options.method === 'POST') return { id: 123 }
+      if (options.method === 'PUT') return null
+      throw verificationError
+    },
+    async paginate() {
+      throw new Error('review verification should not run after pull failure')
+    }
+  }
+
+  await assert.rejects(
+    approveCurrentHead(
+      github,
+      { prNumber: 42, expectedApprover: 'webreviewer-bot' },
+      '0123456789abcdef0123456789abcdef01234567',
+      []
+    ),
+    verificationError
+  )
+  assert.deepEqual(calls, [
+    { requestPath: '/pulls/42/reviews', method: 'POST' },
+    { requestPath: '/pulls/42', method: 'GET' },
+    { requestPath: '/pulls/42/reviews/123/dismissals', method: 'PUT' }
+  ])
+})
 
 void test('requires complete changed-file enumeration', () => {
   const files = [{ filename: 'apps/website/a.astro' }]
