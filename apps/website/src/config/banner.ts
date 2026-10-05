@@ -58,7 +58,6 @@ export const bannerConfig: BannerConfig = {
   }
 }
 
-// Temporary: remove with its `platform.challengeBanner` copy once the Developer Platform Challenge closes.
 export const challengeBannerConfig: BannerConfig = {
   id: 'dev-platform-challenge',
   isActive: true,
