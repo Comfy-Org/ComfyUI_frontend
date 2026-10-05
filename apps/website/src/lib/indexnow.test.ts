@@ -125,12 +125,23 @@ describe('planSubmission', () => {
     })
   })
 
+  it('submits a URL whose fingerprint changed', () => {
+    const previous = JSON.stringify({ [url('a/')]: 'h0' })
+    expect(planSubmission(current, 200, previous)).toMatchObject({
+      kind: 'submit',
+      summary: 'IndexNow: 0 added, 1 changed, 0 removed',
+      payloads: [{ urlList: [url('a/')] }]
+    })
+  })
+
   it.for([
     ['a 5xx live manifest', current, 503, ''],
     ['a failed fetch', current, 0, ''],
     ['an HTML live manifest', current, 200, '<html></html>'],
     ['an array live manifest', current, 200, '["https://comfy.org/"]'],
-    ['a missing build manifest', '', 404, '']
+    ['a missing build manifest', '', 404, ''],
+    ['an empty build manifest', '{}', 200, current],
+    ['a live JSON body that is not a manifest', current, 200, '{"error":"x"}']
   ] as const)(
     'skips rather than resubmitting the site on %s',
     ([, currentBody, status, body]) => {

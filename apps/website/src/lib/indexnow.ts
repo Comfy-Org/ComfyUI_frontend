@@ -79,7 +79,9 @@ function isManifest(value: unknown): value is IndexNowManifest {
     typeof value === 'object' &&
     value !== null &&
     !Array.isArray(value) &&
-    Object.values(value).every((hash) => typeof hash === 'string')
+    Object.entries(value).every(
+      ([url, hash]) => isOnSite(url) && typeof hash === 'string'
+    )
   )
 }
 
@@ -149,7 +151,7 @@ export function planSubmission(
   previousBody: string
 ): SubmissionPlan {
   const current = parseManifest(currentBody)
-  if (!current)
+  if (!current || Object.keys(current).length === 0)
     return { kind: 'skip', reason: 'the build has no valid manifest' }
   const previous = parsePreviousManifest(previousStatus, previousBody)
   if (previous.kind === 'unavailable')
