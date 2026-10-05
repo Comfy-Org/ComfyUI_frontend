@@ -216,6 +216,10 @@ function finishWithPersistedParts(
 
 const MAX_DEPARTED_TURNS = 32
 
+function sameIds(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id) => b.includes(id))
+}
+
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
@@ -484,34 +488,41 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
-     * The resolution an `ask_user` card shows once the server settles it.
-     * The frame names the winning option ids but never the free text, so this
-     * client's own text is shown only when the settled ids are exactly the
-     * ones it sent; another tab's answer must not read as ours.
+     * The resolution a card shows once the server settles it, read only from
+     * what the frame reports. This client's own answer is never echoed as the
+     * committed one: when the frame names no selection, or one that differs
+     * from what this client sent, the card just reads as answered.
      */
     function settledAskResolution(
       askId: string,
       answered: boolean,
-      settled: string[] | null
+      settled: Pick<AgentAnswerRequest, 'other_text'> & {
+        selected: string[] | null
+      }
     ): AskUserResolution {
+      if (!answered) return { status: 'closed', selected: [] }
       const submitted = submittedAskSelections.get(askId)
-      const selected = settled ?? submitted?.selected ?? []
-      const ours =
-        answered &&
-        submitted !== undefined &&
-        submitted.selected.length === selected.length &&
-        submitted.selected.every((id) => selected.includes(id))
-      return ours && submitted.other_text
-        ? { answered, selected, otherText: submitted.other_text }
-        : { answered, selected }
+      const { selected, other_text: otherText } = settled
+      const named =
+        selected !== null &&
+        (submitted === undefined || sameIds(submitted.selected, selected))
+      if (!named) return { status: 'answered', selected: [] }
+      return otherText
+        ? { status: 'answered', selected, otherText }
+        : { status: 'answered', selected }
     }
 
     /** The resolution for an answer the server accepted (202). */
+    /**
+     * A 202 also comes back for a later answer while the server keeps the
+     * first, so it confirms the ask was answered but not with what.
+     */
     function acceptedAskResolution(
       askId: string
     ): AskUserResolution | undefined {
-      const submitted = submittedAskSelections.get(askId)
-      return submitted && { answered: true, ...submitted }
+      return submittedAskSelections.has(askId)
+        ? { status: 'answered', selected: [] }
+        : undefined
     }
 
     const askResolutionWatchdogs = new Map<

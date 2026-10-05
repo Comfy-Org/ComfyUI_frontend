@@ -248,28 +248,46 @@ describe('retireAskParts', () => {
 
   it('keeps an ask_user card read-only with its resolution', () => {
     expect(
-      retireAskParts(parts, 'q', { answered: true, selected: ['flux'] }).at(-1)
+      retireAskParts(parts, 'q', { status: 'answered', selected: ['flux'] }).at(
+        -1
+      )
     ).toEqual({
       ...question,
-      resolution: { answered: true, selected: ['flux'] }
+      resolution: { status: 'answered', selected: ['flux'] }
     })
   })
 
   it('lets a real answer replace a retirement that could not name one, never the reverse', () => {
     const closed = retireAskParts(parts, 'q')
     expect(closed.at(-1)).toMatchObject({
-      resolution: { answered: false, selected: [] }
+      resolution: { status: 'closed', selected: [] }
     })
     const answered = retireAskParts(closed, 'q', {
-      answered: true,
+      status: 'answered',
       selected: ['sdxl']
     })
     expect(answered.at(-1)).toMatchObject({
-      resolution: { answered: true, selected: ['sdxl'] }
+      resolution: { status: 'answered', selected: ['sdxl'] }
     })
     expect(retireAskParts(answered, 'q').at(-1)).toMatchObject({
-      resolution: { answered: true, selected: ['sdxl'] }
+      resolution: { status: 'answered', selected: ['sdxl'] }
     })
+  })
+
+  it('keeps an unknown outcome over a bare closure, and lets an answer replace it', () => {
+    const unknown = retireAskParts(parts, 'q', {
+      status: 'unknown',
+      selected: []
+    })
+    expect(retireAskParts(unknown, 'q').at(-1)).toMatchObject({
+      resolution: { status: 'unknown' }
+    })
+    expect(
+      retireAskParts(unknown, 'q', {
+        status: 'answered',
+        selected: ['flux']
+      }).at(-1)
+    ).toMatchObject({ resolution: { status: 'answered', selected: ['flux'] } })
   })
 
   it('returns the same array when no part belongs to the ask', () => {

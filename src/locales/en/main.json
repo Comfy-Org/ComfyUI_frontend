@@ -5397,7 +5397,7 @@
       "otherPlaceholder": "Type your own answer",
       "answered": "Answered",
       "otherAnswer": "Other: {text}",
-      "answeredElsewhere": "This question was answered somewhere else.",
+      "unconfirmed": "We couldn't confirm your answer was received.",
       "closed": "This question was closed without an answer."
     },
     "dismiss": "Dismiss",

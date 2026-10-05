@@ -1399,7 +1399,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // effect. On a spend authorization that is the wrong way to be wrong, so
       // retire the card and say the outcome is unknown rather than show a raw
       // transport string next to a card that is about to vanish.
-      conversationStore.retireAsk(askId, currentThreadId)
+      conversationStore.retireAsk(askId, currentThreadId, {
+        status: 'unknown',
+        selected: []
+      })
       pushError(i18n.global.t('agent.runApproval.answerUncertain'))
       return false
     }
@@ -1643,7 +1646,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.settledAskResolution(
           event.data.ask_id,
           event.data.status === 'answered',
-          event.data.selected
+          { selected: event.data.selected }
         )
       )
       onAskResolved?.(event.data.ask_id)

@@ -770,12 +770,12 @@ describe('agentEventTransport ask_user', () => {
     {
       name: 'answered',
       event: askResolved('ask-1', ['ink'], 'answered'),
-      resolution: { answered: true, selected: ['ink'] }
+      resolution: { status: 'answered', selected: ['ink'] }
     },
     {
       name: 'cancelled',
       event: askResolved('ask-1', null, 'cancelled'),
-      resolution: { answered: false, selected: [] }
+      resolution: { status: 'closed', selected: [] }
     }
   ])(
     'keeps the card read-only with its resolution when $name',
@@ -800,7 +800,7 @@ describe('agentEventTransport ask_user', () => {
     transport.ingest(askUser('ask-1'))
 
     transport.dropAskPart('ask-1', {
-      answered: true,
+      status: 'answered',
       selected: [],
       otherText: 'watercolor'
     })
@@ -811,7 +811,11 @@ describe('agentEventTransport ask_user', () => {
     expect(emit.mock.calls.at(-1)![0].parts).toEqual([
       expect.objectContaining({
         type: 'askUser',
-        resolution: { answered: true, selected: [], otherText: 'watercolor' }
+        resolution: {
+          status: 'answered',
+          selected: [],
+          otherText: 'watercolor'
+        }
       })
     ])
   })
