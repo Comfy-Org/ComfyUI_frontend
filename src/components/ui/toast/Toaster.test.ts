@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { ZIndex } from '@primeuix/utils/zindex'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 
 import Toaster from './Toaster.vue'
 import { useToast } from './toastStore'
@@ -15,12 +16,6 @@ const i18n = createI18n({
 })
 
 describe('Toaster', () => {
-  const dialogs: HTMLElement[] = []
-
-  afterEach(() => {
-    dialogs.splice(0).forEach((dialog) => ZIndex.clear(dialog))
-  })
-
   function renderToaster() {
     return render(Toaster, { global: { plugins: [i18n] } })
   }
@@ -47,7 +42,7 @@ describe('Toaster', () => {
     const toast = useToast()
 
     toast.error('Save failed', { description: 'Try another location' })
-    toast.custom({ template: '<div>Custom notification</div>' })
+    toast.custom({ template: '<div>Custom notification</div>' }, {})
     await nextTick()
     await vi.advanceTimersByTimeAsync(1000)
 
@@ -62,16 +57,17 @@ describe('Toaster', () => {
 
   it('lifts a new notification above an open dialog', async () => {
     renderToaster()
-    const dialog = document.createElement('div')
-    dialogs.push(dialog)
-    ZIndex.set('modal', dialog, 1700)
+    render({
+      directives: { rekaZIndex: vRekaZIndex },
+      template: '<div v-reka-z-index data-testid="dialog" />'
+    })
 
     useToast().info('Ready')
     await nextTick()
 
     expect(
       Number(screen.getByTestId('toast-viewport').style.zIndex)
-    ).toBeGreaterThan(Number(dialog.style.zIndex))
+    ).toBeGreaterThan(Number(screen.getByTestId('dialog').style.zIndex))
   })
 
   it('automatically dismisses a timed notification', async () => {
