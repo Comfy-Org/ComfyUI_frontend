@@ -868,7 +868,8 @@ export const useAuthStore = defineStore('auth', () => {
     executeAuthAction(() => addCredits(requestBodyContent))
 
   const accessBillingPortal = async (
-    targetTier?: BillingPortalTargetTier
+    targetTier?: BillingPortalTargetTier,
+    options?: { cancelSubscription?: boolean }
   ): Promise<AccessBillingPortalResponse> => {
     const requestOwner = currentUserIdentity()
     const authHeader = await getCustomerAuthHeader()
@@ -886,7 +887,12 @@ export const useAuthStore = defineStore('auth', () => {
         },
         ...(targetTier && {
           body: JSON.stringify({ target_tier: targetTier })
-        })
+        }),
+        // The backend rejects cancel_subscription combined with target_tier.
+        ...(!targetTier &&
+          options?.cancelSubscription === true && {
+            body: JSON.stringify({ cancel_subscription: true })
+          })
       }
     )
 

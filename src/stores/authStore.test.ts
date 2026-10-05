@@ -1837,6 +1837,23 @@ describe('useAuthStore', () => {
       })
     })
 
+    it('sends cancel_subscription only when requested without a target tier', async () => {
+      const bodyOf = () =>
+        mockFetch.mock.calls
+          .filter((call) => (call[0] as string).endsWith('/customers/billing'))
+          .map((call) => call[1]?.body as string | undefined)
+          .at(-1)
+
+      await store.accessBillingPortal(undefined, { cancelSubscription: true })
+      expect(JSON.parse(bodyOf()!)).toEqual({ cancel_subscription: true })
+
+      await store.accessBillingPortal('creator', { cancelSubscription: true })
+      expect(JSON.parse(bodyOf()!)).toEqual({ target_tier: 'creator' })
+
+      await store.accessBillingPortal(undefined, { cancelSubscription: false })
+      expect(bodyOf()).toBeUndefined()
+    })
+
     it('should include target_tier in request body when targetTier provided', async () => {
       await store.accessBillingPortal('creator')
 
