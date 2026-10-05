@@ -201,6 +201,25 @@ export const drops: readonly Drop[] = [
     }
   },
   {
+    id: 'agent',
+    launchDate: '2026-09-29',
+    category: PLATFORM,
+    media: imageFor('Drops_2x2card_Agent.jpg', {
+      en: 'Comfy Agent',
+      'zh-CN': 'Comfy Agent'
+    }),
+    title: { en: 'Comfy Agent', 'zh-CN': 'Comfy Agent' },
+    description: {
+      en: 'The first agent for craft. Describe what you want inside ComfyUI — it plans, builds, and runs workflows beside you.',
+      'zh-CN':
+        '为与你并肩创作而生的第一个智能体。直接在 ComfyUI 里描述你的想法，它会为你规划、构建并运行工作流。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/agent/', 'zh-CN': '/zh-CN/agent/' }
+    }
+  },
+  {
     id: 'comfy-api',
     launchDate: '2026-09-30',
     category: DEVELOPER,
