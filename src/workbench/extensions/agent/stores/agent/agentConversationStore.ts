@@ -512,10 +512,10 @@ export const useAgentConversationStore = defineStore(
         : { status: 'answered', selected }
     }
 
-    /** The resolution for an answer the server accepted (202). */
     /**
-     * A 202 also comes back for a later answer while the server keeps the
-     * first, so it confirms the ask was answered but not with what.
+     * The resolution for an answer the server accepted (202). A 202 also
+     * comes back for a later answer while the server keeps the first, so it
+     * confirms the ask was answered but not with what.
      */
     function acceptedAskResolution(
       askId: string
