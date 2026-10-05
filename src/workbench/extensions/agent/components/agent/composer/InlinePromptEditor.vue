@@ -199,6 +199,7 @@ function assetReferenceView(
   const vnode = h(InlineAssetReference, {
     name: reference.attachment.name,
     previewUrl: reference.attachment.previewUrl,
+    mediaKind: reference.attachment.mediaKind,
     removeLabel: t('agent.removeAssetReference', {
       name: reference.attachment.name
     }),

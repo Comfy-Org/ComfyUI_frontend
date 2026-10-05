@@ -29,9 +29,7 @@ function chipRegistry() {
 }
 
 describe('useAttachment', () => {
-  it('adds previews for picked images but not picked videos', async () => {
-    // A video object URL in an <img> renders as a broken thumbnail, so only
-    // images get a previewUrl.
+  it('keeps image preview URLs separate from picked video sources', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const registry = chipRegistry()
     const { addFiles } = useAttachment({ upload, ...registry })
@@ -47,6 +45,45 @@ describe('useAttachment', () => {
     expect(previews).toEqual({ 'shot.png': true, 'clip.mp4': false })
     expect(upload).toHaveBeenCalledTimes(2)
   })
+
+  it.for([
+    { name: 'clip.mp4', type: 'video/mp4', mediaKind: 'video' },
+    { name: 'recording', type: 'audio/mpeg', mediaKind: 'audio' }
+  ])(
+    'previews picked $mediaKind while uploading and then uses its server file',
+    async ({ name, type, mediaKind }) => {
+      let resolveUpload: (result: {
+        ref: string
+        url: string
+      }) => void = () => {}
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        ...registry,
+        upload: () =>
+          new Promise((resolve) => {
+            resolveUpload = resolve
+          })
+      })
+      const pending = addFiles([new File(['media'], name, { type })])
+      expect(registry.chips[0]).toMatchObject({
+        mediaKind,
+        mediaUrl: expect.stringMatching(/^blob:/),
+        uploading: true
+      })
+      expect(registry.chips[0].previewUrl).toBeUndefined()
+      resolveUpload({
+        ref: 'stored-media',
+        url: '/api/view?filename=stored-media&type=input'
+      })
+      await pending
+      expect(registry.chips[0]).toMatchObject({
+        mediaKind,
+        mediaUrl: '/api/view?filename=stored-media&type=input',
+        uploading: false
+      })
+      expect(registry.chips[0].previewUrl).toBeUndefined()
+    }
+  )
 
   it('rejects files over 20MB before staging or uploading', async () => {
     const upload = vi.fn()

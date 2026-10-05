@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
 
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+
 import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
@@ -18,6 +20,7 @@ import type {
   WorkflowReference
 } from '../../types/workflowReference'
 import { insertComposerReference } from '../../utils/composerPrompt'
+import { createVideoThumbnail } from '../../utils/videoThumbnail'
 import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
 
 interface ComposerDraft extends PromptSnapshot {
@@ -82,10 +85,48 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     referenceIndex: 0
   })
   const retiredAssets = new Set<string>()
+  const thumbnailJobs = new Map<
+    string,
+    { source: string; controller: AbortController }
+  >()
   onScopeDispose(() => {
+    for (const job of thumbnailJobs.values()) job.controller.abort()
+    thumbnailJobs.clear()
     for (const attachment of assetsById.values()) revokePreview(attachment)
   })
 
+  function cancelThumbnail(id: string): void {
+    thumbnailJobs.get(id)?.controller.abort()
+    thumbnailJobs.delete(id)
+  }
+
+  function ensureThumbnail(attachment: ComposerAttachment): void {
+    const { id, mediaUrl, previewUrl } = attachment
+    const kind =
+      attachment.mediaKind ?? getMediaTypeFromFilename(attachment.name)
+    if (kind !== 'video' || !mediaUrl || previewUrl) {
+      cancelThumbnail(id)
+      return
+    }
+    if (thumbnailJobs.get(id)?.source === mediaUrl) return
+    cancelThumbnail(id)
+    const job = { source: mediaUrl, controller: new AbortController() }
+    thumbnailJobs.set(id, job)
+    void createVideoThumbnail(mediaUrl, job.controller.signal).then((url) => {
+      if (!url) return
+      const current = assetsById.get(id)
+      if (
+        thumbnailJobs.get(id) !== job ||
+        !current ||
+        current.previewUrl ||
+        current.mediaUrl !== mediaUrl
+      ) {
+        URL.revokeObjectURL(url)
+        return
+      }
+      updateAttachment(id, { previewUrl: url })
+    })
+  }
   const submission = shallowRef<{
     id: number
     phase: 'pending' | 'failed'
@@ -181,10 +222,19 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     included: ComposerAttachment[] = attachments.value
   ): void {
     for (const attachment of included) {
-      const previous = assetsById.get(attachment.id)
-      if (previous) revokePreview(previous, attachment)
-      assetsById.set(attachment.id, { ...attachment })
+      const current = assetsById.get(attachment.id)
+      const restored = {
+        ...attachment,
+        ...(current?.mediaUrl === attachment.mediaUrl &&
+        current?.previewUrl &&
+        !attachment.previewUrl
+          ? { previewUrl: current.previewUrl }
+          : {})
+      }
+      if (current) revokePreview(current, restored)
+      assetsById.set(attachment.id, restored)
       retiredAssets.delete(attachment.id)
+      ensureThumbnail(restored)
     }
     attachmentIds.value = included.map(({ id }) => id)
     resetPromptHistory()
@@ -305,6 +355,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     assetsById.set(attachment.id, { ...attachment })
     attachmentIds.value = [...attachmentIds.value, attachment.id]
     ++revision
+    ensureThumbnail(attachment)
     return true
   }
 
@@ -322,14 +373,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function revokePreview(
-    attachment: Pick<ComposerAttachment, 'previewUrl'>,
+    attachment: Pick<ComposerAttachment, 'previewUrl' | 'mediaUrl'>,
     retained?: ComposerAttachment
   ): void {
-    if (
-      attachment.previewUrl?.startsWith('blob:') &&
-      attachment.previewUrl !== retained?.previewUrl
-    )
-      URL.revokeObjectURL(attachment.previewUrl)
+    const retainedUrls = new Set([retained?.previewUrl, retained?.mediaUrl])
+    for (const url of new Set([attachment.previewUrl, attachment.mediaUrl]))
+      if (url?.startsWith('blob:') && !retainedUrls.has(url))
+        URL.revokeObjectURL(url)
   }
 
   function updateAttachment(
@@ -342,8 +392,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       return
     }
     const attachment = { ...previous, ...patch, id }
+    if (attachment.mediaUrl !== previous.mediaUrl) cancelThumbnail(id)
     revokePreview(previous, attachment)
     assetsById.set(id, attachment)
+    ensureThumbnail(attachment)
     if (
       prompt.value.references.some(
         (item) => item.kind === 'asset' && item.attachment.id === id
@@ -360,6 +412,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function removeAttachment(id: string): void {
+    cancelThumbnail(id)
     const attachment = assetsById.get(id)
     if (attachment) revokePreview(attachment)
     assetsById.delete(id)
@@ -377,6 +430,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       retained.add(attachment.id)
     for (const [id, attachment] of assetsById)
       if (!retained.has(id)) {
+        cancelThumbnail(id)
         revokePreview(attachment)
         assetsById.delete(id)
         retiredAssets.add(id)

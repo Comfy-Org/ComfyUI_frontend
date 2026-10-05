@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import AssetHoverPreview from './AssetHoverPreview.vue'
 import AssetThumbnail from './AssetThumbnail.vue'
@@ -7,19 +11,25 @@ import AssetThumbnail from './AssetThumbnail.vue'
 const {
   name,
   previewUrl,
+  mediaUrl,
+  mediaKind,
   uploading = false,
   highlighted = false
 } = defineProps<{
   name: string
   previewUrl?: string
+  mediaUrl?: string
+  mediaKind?: MediaKind
   uploading?: boolean
   highlighted?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
+
+const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
 </script>
 
 <template>
-  <AssetHoverPreview :name :preview-url>
+  <AssetHoverPreview :name :preview-url :media-url :media-kind>
     <span
       data-testid="agent-attachment-chip"
       :data-attachment-name="name"
@@ -31,7 +41,20 @@ const emit = defineEmits<{ remove: [] }>()
       <span
         class="relative flex size-full items-center justify-center overflow-hidden rounded-md"
       >
-        <AssetThumbnail :name :preview-url variant="tray" class="size-full" />
+        <AssetThumbnail
+          :name
+          :preview-url
+          :media-kind
+          variant="tray"
+          class="size-full"
+        />
+        <span
+          v-if="kind === 'video' && previewUrl"
+          aria-hidden="true"
+          class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-base-background/80 text-base-foreground"
+        >
+          <span class="icon-[lucide--play] size-3" />
+        </span>
         <span
           v-if="uploading"
           role="status"

@@ -1811,7 +1811,9 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
       id: `asset:${crypto.randomUUID()}`,
       name: asset.name,
       ref: asset.ref,
-      previewUrl: asset.previewUrl
+      previewUrl: asset.previewUrl,
+      mediaUrl: asset.mediaUrl,
+      mediaKind: asset.kind
     })
   }
 

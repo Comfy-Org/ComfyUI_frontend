@@ -1,7 +1,8 @@
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { hasImageType } from '@/utils/eventUtils'
-import { formatSize } from '@/utils/formatUtil'
+import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
+import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
@@ -55,6 +56,23 @@ async function withDeadline<T>(
 }
 
 let stagedCount = 0
+
+function attachmentMediaKind(file: File): MediaKind {
+  if (hasImageType(file)) return 'image'
+  if (hasVideoType(file)) return 'video'
+  if (hasAudioType(file)) return 'audio'
+  return getMediaTypeFromFilename(file.name)
+}
+
+function uploadedPreview(
+  kind: MediaKind,
+  url?: string
+): Partial<ComposerAttachment> {
+  if (!url) return {}
+  if (kind === 'audio' || kind === 'video') return { mediaUrl: url }
+  if (kind === 'image') return { previewUrl: url }
+  return {}
+}
 
 export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
@@ -117,9 +135,17 @@ export function useAttachment(options: UseAttachmentOptions) {
     else activeUploads += 1
     try {
       if (cancelled.has(id)) return false
+      const mediaKind = attachmentMediaKind(file)
+      const playable = mediaKind === 'video' || mediaKind === 'audio'
+      const localUrl =
+        mediaKind === 'image' || playable
+          ? URL.createObjectURL(file)
+          : undefined
       options.update(id, {
         name: file.name,
-        previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
+        mediaKind,
+        previewUrl: mediaKind === 'image' ? localUrl : undefined,
+        mediaUrl: playable ? localUrl : undefined
       })
       const controller = new AbortController()
       inFlight.set(id, controller)
@@ -130,7 +156,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       )
       options.update(id, {
         ref: result.ref,
-        ...(result.url ? { previewUrl: result.url } : {}),
+        ...uploadedPreview(mediaKind, result.url),
         uploading: false
       })
       return true

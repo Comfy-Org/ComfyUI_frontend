@@ -77,6 +77,7 @@ const nodeId = computed(() =>
           v-if="asset"
           :name="asset.name"
           :preview-url="asset.previewUrl"
+          :media-kind="asset.mediaKind"
           variant="menu"
           class="size-5 shrink-0"
         />

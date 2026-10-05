@@ -104,6 +104,116 @@ function setTrayGeometry(
 }
 
 describe('composer asset tray', () => {
+  it('updates every inline video thumbnail without changing its references or opening a preview', async () => {
+    const user = userEvent.setup()
+    const { store } = setup()
+    store.addAttachment({
+      id: 'video',
+      name: 'My video',
+      ref: '',
+      mediaKind: 'video',
+      mediaUrl: 'blob:video',
+      uploading: true
+    })
+    store.referenceAttachment('video')
+    store.referenceAttachment('video')
+    await screen.findAllByTestId('asset-reference-chip')
+    for (const chip of screen.getAllByTestId('asset-reference-chip')) {
+      expect(
+        within(chip).getByRole('img', { name: 'Video' })
+      ).toBeInTheDocument()
+      expect(
+        within(chip).queryByTestId('inline-asset-video')
+      ).not.toBeInTheDocument()
+    }
+    store.updateAttachment('video', {
+      ref: 'stored.mp4',
+      mediaUrl: '/stored.mp4',
+      previewUrl: '/poster.png',
+      uploading: false
+    })
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByTestId('asset-reference-chip')
+          .map((chip) => within(chip).getByAltText('').getAttribute('src'))
+      ).toEqual(['/poster.png', '/poster.png'])
+    )
+    await user.hover(screen.getAllByTestId('asset-reference-chip')[0])
+    expect(screen.getByRole('group', { name: 'My video' })).toHaveAttribute(
+      'data-highlighted',
+      'true'
+    )
+    expect(
+      screen.queryByRole('region', { name: 'My video' })
+    ).not.toBeInTheDocument()
+    expect(store.prompt.references).toHaveLength(2)
+    expect(store.attachments).toHaveLength(1)
+  })
+
+  it('shows the audio type of a renamed inline attachment', async () => {
+    const { store } = setup()
+    store.addAttachment({
+      id: 'audio',
+      name: 'Recording',
+      ref: 'song.mp3',
+      mediaKind: 'audio',
+      mediaUrl: '/song.mp3'
+    })
+    store.referenceAttachment('audio')
+    const chip = await screen.findByTestId('asset-reference-chip')
+    expect(within(chip).getByRole('img', { name: 'Audio' })).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'My video',
+      mediaKind: 'video',
+      previewUrl: '/poster.png',
+      label: 'Video'
+    },
+    {
+      name: 'Recording',
+      mediaKind: 'audio',
+      previewUrl: undefined,
+      label: 'Audio'
+    }
+  ] as const)(
+    'uses the same media indicator for $mediaKind in the tray, menu and inline',
+    async ({ name, mediaKind, previewUrl, label }) => {
+      const user = userEvent.setup()
+      const { store, editor } = setup()
+      store.addAttachment({
+        id: 'media',
+        name,
+        ref: '/file',
+        mediaKind,
+        previewUrl
+      })
+      store.referenceAttachment('media')
+      const chip = await screen.findByTestId('asset-reference-chip')
+      await user.click(editor)
+      await user.keyboard('@')
+      const menuItem = await screen.findByRole('menuitem', { name })
+      const trayItem = screen.getByRole('group', { name })
+      for (const surface of [chip, trayItem, menuItem]) {
+        if (previewUrl)
+          expect(
+            within(surface).getByAltText(surface === trayItem ? name : '')
+          ).toHaveAttribute('src', previewUrl)
+        else
+          expect(within(surface).getByRole('img', { name: label })).toHaveClass(
+            'icon-[lucide--music]'
+          )
+      }
+      await user.click(menuItem)
+      expect(await screen.findAllByTestId('asset-reference-chip')).toHaveLength(
+        2
+      )
+      expect(store.attachments).toHaveLength(1)
+    }
+  )
+
   it('announces all pending uploads outside the scroll viewport and preserves the draft on Enter', async () => {
     const user = userEvent.setup()
     const { store, editor, send } = setup()
