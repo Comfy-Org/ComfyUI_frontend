@@ -37,6 +37,7 @@ class ComfyNodeSearchFilterSelectionPanel {
 export class ComfyNodeSearchBox {
   public readonly input: Locator
   public readonly resultsListbox: Locator
+  public readonly resultOptions: Locator
   public readonly filterButton: Locator
   public readonly filterChips: Locator
   public readonly filterSelectionPanel: ComfyNodeSearchFilterSelectionPanel
@@ -46,6 +47,7 @@ export class ComfyNodeSearchBox {
       '.comfy-vue-node-search-container input[type="text"]'
     )
     this.resultsListbox = page.getByRole('listbox')
+    this.resultOptions = this.resultsListbox.getByRole('option')
     this.filterButton = page.locator(
       '.comfy-vue-node-search-container .filter-button'
     )
@@ -71,6 +73,20 @@ export class ComfyNodeSearchBox {
 
     await expect(nodeOption).toBeVisible()
     await nodeOption.click()
+  }
+
+  async typeQuery(query: string) {
+    await this.input.waitFor({ state: 'visible' })
+    await this.input.press('ControlOrMeta+A')
+    await this.input.pressSequentially(query)
+  }
+
+  async waitForFirstResult(name: string) {
+    await expect(this.resultOptions.first()).toHaveAccessibleName(name)
+  }
+
+  async submitSelectedResult() {
+    await this.input.press('Enter')
   }
 
   async addFilter(filterValue: string, filterType: string) {

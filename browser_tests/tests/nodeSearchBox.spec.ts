@@ -71,6 +71,21 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
   })
 
+  test('Enter adds the top match after typing a query', async ({
+    comfyPage
+  }) => {
+    const initialSamplers =
+      await comfyPage.nodeOps.getNodeRefsByType('KSamplerAdvanced')
+    await comfyPage.canvasOps.doubleClick()
+    await comfyPage.searchBox.typeQuery('KSampler Advanced')
+    await comfyPage.searchBox.waitForFirstResult('KSampler (Advanced)')
+    await comfyPage.searchBox.submitSelectedResult()
+
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeRefsByType('KSamplerAdvanced'))
+      .toHaveLength(initialSamplers.length + 1)
+  })
+
   test('Can auto link node', { tag: '@screenshot' }, async ({ comfyPage }) => {
     const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvasOps.disconnectEdge()

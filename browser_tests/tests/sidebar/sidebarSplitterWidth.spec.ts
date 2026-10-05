@@ -85,6 +85,19 @@ test.describe('Sidebar splitter width independence', () => {
     await expect(search).toBeFocused()
   })
 
+  test('keeps the properties panel visible when the sidebar consumes the center space', async ({
+    comfyMouse,
+    comfyPage
+  }) => {
+    await comfyPage.menu.nodeLibraryTab.open()
+    await comfyPage.actionbar.propertiesButton.click()
+    await expect(comfyPage.menu.propertiesPanel.closeButton).toBeInViewport()
+
+    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, 800)
+
+    await expect(comfyPage.menu.propertiesPanel.closeButton).toBeInViewport()
+  })
+
   test('left and right sidebars use separate localStorage keys', async ({
     comfyMouse,
     comfyPage
