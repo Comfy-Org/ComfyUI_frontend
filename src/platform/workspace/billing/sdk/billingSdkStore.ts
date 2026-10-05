@@ -316,7 +316,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     clearProgressToast(state.id)
     if (progress === undefined) return
     const title = t(PROGRESS_SUMMARY[kind][progress])
-    const id = progress === 'action' ? toast.warning(title) : toast.info(title)
+    const id =
+      progress === 'action' ? toast.warning(title) : toast.loading(title)
     progressToasts.set(state.id, { kind: progress, id })
   }
 

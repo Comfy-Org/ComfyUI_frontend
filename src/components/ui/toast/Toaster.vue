@@ -47,7 +47,8 @@ const icons = {
   error: 'icon-[lucide--circle-x] text-destructive-background',
   info: 'icon-[lucide--info] text-primary-background',
   warning: 'icon-[lucide--triangle-alert] text-warning-background',
-  loading: 'icon-[lucide--loader-circle] animate-spin text-primary-background'
+  loading:
+    'icon-[lucide--loader-circle] motion-safe:animate-spin text-primary-background'
 } as const
 </script>
 
