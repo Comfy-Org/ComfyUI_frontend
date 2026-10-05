@@ -89,7 +89,21 @@ describe('BuildConfiguratorSplit01', () => {
   it('shows a more-options hint after each chip group', () => {
     render(BuildConfiguratorSplit01, { props: baseProps })
 
-    expect(screen.getAllByText('more options')).toHaveLength(4)
+    const hints = screen.getAllByText('more options')
+    expect(hints).toHaveLength(4)
+    for (const hint of hints) {
+      expect(hint.tagName).toBe('SPAN')
+      expect(hint.getAttribute('aria-hidden')).toBe('true')
+      expect(hint.className).not.toContain('underline')
+    }
+  })
+
+  it('renders node and model chips as text only, without status dots', () => {
+    render(BuildConfiguratorSplit01, { props: baseProps })
+
+    for (const name of ['ComfyUI-Manager', 'ControlNet Aux', 'FLUX 3']) {
+      expect(screen.getByRole('button', { name }).innerHTML).toBe(name)
+    }
   })
 
   it('renders the panel without a title when panelTitle is omitted', () => {

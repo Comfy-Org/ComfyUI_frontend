@@ -112,7 +112,7 @@ const pillClasses = (selected: boolean) =>
 
 const chipClasses = (option: ChipOption, selected: boolean) =>
   cn(
-    'flex cursor-pointer items-center gap-2 rounded-full px-3.5 py-2 transition-colors',
+    'cursor-pointer rounded-full px-3.5 py-2 transition-colors',
     option.mono ? 'font-mono text-[11.5px]' : 'text-[13px]',
     selected
       ? 'bg-primary-comfy-plum text-primary-warm-white'
@@ -192,7 +192,8 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               {{ release }}
             </button>
             <span
-              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+              aria-hidden="true"
+              class="self-center text-[13px] text-primary-warm-white/55 select-none"
             >
               {{ moreOptionsLabel }}
             </span>
@@ -217,7 +218,8 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               {{ environmentLabel(environment) }}
             </button>
             <span
-              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+              aria-hidden="true"
+              class="self-center text-[13px] text-primary-warm-white/55 select-none"
             >
               {{ moreOptionsLabel }}
             </span>
@@ -239,18 +241,11 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               :class="chipClasses(node, activeNodeIds.includes(node.id))"
               @click="activeNodeIds = toggleId(activeNodeIds, node.id)"
             >
-              <span
-                class="size-1.5 shrink-0 rounded-full"
-                :class="
-                  activeNodeIds.includes(node.id)
-                    ? 'bg-primary-comfy-yellow'
-                    : 'border border-primary-warm-gray'
-                "
-              />
               {{ node.label }}
             </button>
             <span
-              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+              aria-hidden="true"
+              class="self-center text-[13px] text-primary-warm-white/55 select-none"
             >
               {{ moreOptionsLabel }}
             </span>
@@ -272,18 +267,11 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               :class="chipClasses(model, activeModelIds.includes(model.id))"
               @click="activeModelIds = toggleId(activeModelIds, model.id)"
             >
-              <span
-                class="size-1.5 shrink-0 rounded-full"
-                :class="
-                  activeModelIds.includes(model.id)
-                    ? 'bg-primary-comfy-yellow'
-                    : 'border border-primary-warm-gray'
-                "
-              />
               {{ model.label }}
             </button>
             <span
-              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+              aria-hidden="true"
+              class="self-center text-[13px] text-primary-warm-white/55 select-none"
             >
               {{ moreOptionsLabel }}
             </span>
