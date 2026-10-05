@@ -34,7 +34,6 @@ const SOURCE_ROOTS = [
   'src',
   'tools'
 ]
-const SOURCE_EXTENSIONS = new Set(['.cts', '.mts', '.ts', '.tsx'])
 const TEST_FILE_PATTERN = /\.(?:spec|test)\.[cm]?tsx?$/
 const READ_BATCH_SIZE = 64
 
@@ -310,7 +309,7 @@ async function sourceFiles(root: string): Promise<string[]> {
     entries.map(async (entry) => {
       const entryPath = path.join(root, entry.name)
       if (entry.isDirectory()) return sourceFiles(entryPath)
-      return SOURCE_EXTENSIONS.has(path.extname(entry.name)) ? [entryPath] : []
+      return TEST_FILE_PATTERN.test(entry.name) ? [entryPath] : []
     })
   )
   return nested.flat()
