@@ -2599,7 +2599,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
         kind: 'warning',
-        description: 'movie.mp4 is larger than 24 MB'
+        title: 'movie.mp4 is larger than 24 MB'
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
@@ -2769,7 +2769,7 @@ describe('AgentPanelRoot attach flow', () => {
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
           kind: 'warning',
-          description: 'image.png could not be uploaded'
+          title: 'image.png could not be uploaded'
         })
       )
     )
@@ -2959,7 +2959,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
         kind: 'warning',
-        description: 'big.mp3 is larger than 24 MB'
+        title: 'big.mp3 is larger than 24 MB'
       })
     )
   })
@@ -3610,7 +3610,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
         kind: 'warning',
-        description: 'cat.png could not be uploaded'
+        title: 'cat.png could not be uploaded'
       })
     )
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
@@ -6716,7 +6716,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
           kind: 'warning',
-          description: i18n.global.t('agent.targetWorkflowOpenFailed')
+          title: i18n.global.t('agent.targetWorkflowOpenFailed')
         })
       )
     )
@@ -7515,7 +7515,7 @@ describe('AgentPanelRoot workflow binding', () => {
         kind: 'error',
         title: i18n.global.t('agent.workflowSyncFailedTitle'),
         description: `${i18n.global.t('agent.workflowSyncFailedDetail')} (Expected schema 2, found 1)`,
-        duration: 0
+        duration: Number.POSITIVE_INFINITY
       })
     )
   })
@@ -8052,7 +8052,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
             kind: 'warning',
-            description: i18n.global.t('agent.targetNavigationUnavailable')
+            title: i18n.global.t('agent.targetNavigationUnavailable')
           })
         )
       )
@@ -9337,7 +9337,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(useToast().toasts).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              description: i18n.global.t('agent.targetNavigationUnavailable')
+              title: i18n.global.t('agent.targetNavigationUnavailable')
             })
           ])
         )
