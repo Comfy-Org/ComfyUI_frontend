@@ -37,7 +37,9 @@ export class SidebarTab {
   }
 
   async resize(comfyMouse: ComfyMouse, deltaX: number, startOffset = 0) {
-    const resizeHandle = this.page.getByRole('separator').first()
+    const resizeHandle = this.page.locator(
+      '.side-bar-panel + [role="separator"], [role="separator"]:has(+ .side-bar-panel)'
+    )
     await expect(resizeHandle).toBeVisible()
     const box = await resizeHandle.boundingBox()
     if (!box) throw new Error('Sidebar resize handle has no bounding box')

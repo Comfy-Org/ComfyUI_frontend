@@ -43,6 +43,22 @@ test.describe('Menu', { tag: '@ui' }, () => {
         .poll(() => comfyPage.menu.topbar.getTabNames())
         .toEqual(['Unsaved Workflow'])
     })
+
+    test('An outside click dismisses the menu and switches workflow', async ({
+      comfyPage
+    }) => {
+      const { topbar } = comfyPage.menu
+      const workflowName = `tempWorkflow-${test.info().title}`
+      await topbar.saveWorkflow(workflowName)
+      await topbar.newWorkflowButton.click()
+      await expect(topbar.getActiveTab()).toContainText('Unsaved Workflow')
+      const menu = await topbar.openTopbarMenu()
+
+      await topbar.getWorkflowTab(workflowName).click()
+
+      await expect(menu).toBeHidden()
+      await expect(topbar.getActiveTab()).toContainText(workflowName)
+    })
   })
 
   test.describe('Topbar submmenus', () => {

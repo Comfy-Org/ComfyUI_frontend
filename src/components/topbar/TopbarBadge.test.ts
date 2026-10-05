@@ -91,6 +91,17 @@ describe('TopbarBadge', () => {
       expect(trigger).toHaveAccessibleName('Comfy Cloud')
     })
 
+    it('includes its visible label in the trigger name', () => {
+      renderTopbarBadge(
+        { text: 'Hidden Text', label: 'BETA', icon: 'pi pi-cloud' },
+        'compact'
+      )
+
+      expect(screen.getByRole('button', { name: 'BETA' })).toHaveAccessibleName(
+        'BETA'
+      )
+    })
+
     it('renders a fallback dot when its label is contained in the text', () => {
       renderTopbarBadge(
         { text: 'Preview Environment', label: 'PREVIEW', icon: undefined },

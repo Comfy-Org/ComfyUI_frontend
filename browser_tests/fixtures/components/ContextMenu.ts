@@ -121,6 +121,11 @@ export class ContextMenu {
     return submenu
   }
 
+  async selectShape(name: string): Promise<void> {
+    const submenu = await this.openShapeSubmenu()
+    await submenu.getByRole('menuitemcheckbox', { name, exact: true }).click()
+  }
+
   /**
    * Click a litegraph menu entry. Selects the most recently opened matching
    * entry so nested submenu items can be reached without being shadowed by

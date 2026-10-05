@@ -98,6 +98,55 @@ test.describe('Sidebar splitter width independence', () => {
     await expect(comfyPage.menu.propertiesPanel.closeButton).toBeInViewport()
   })
 
+  test('persists both side panels when one drag resizes across the center minimum', async ({
+    comfyMouse,
+    comfyPage
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 1400, height: 800 })
+    await comfyPage.page.evaluate(() =>
+      localStorage.setItem('Comfy.RightSidePanel.Width', '420')
+    )
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await openSidebarAt(comfyPage, 'left')
+    await comfyPage.actionbar.propertiesButton.click()
+    const sidebar = comfyPage.menu.nodeLibraryTab.panel
+    const properties = comfyPage.page.getByTestId(TestIds.propertiesPanel.root)
+    await expect
+      .poll(async () => (await properties.boundingBox())?.width ?? 0)
+      .toBeCloseTo(420, 0)
+
+    await comfyPage.menu.nodeLibraryTab.resize(comfyMouse, 800)
+    const sidebarWidth = (await sidebar.boundingBox())?.width ?? 0
+    const propertiesWidth = (await properties.boundingBox())?.width ?? 0
+    expect(propertiesWidth).toBeLessThan(340)
+
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => ({
+          left: Math.round(
+            Number(localStorage.getItem('Comfy.Sidebar.LeftWidth'))
+          ),
+          right: Math.round(
+            Number(localStorage.getItem('Comfy.RightSidePanel.Width'))
+          )
+        }))
+      )
+      .toEqual({
+        left: Math.round(sidebarWidth),
+        right: Math.round(propertiesWidth)
+      })
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await comfyPage.menu.nodeLibraryTab.open()
+    await comfyPage.actionbar.propertiesButton.click()
+    await expect
+      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+      .toBeCloseTo(sidebarWidth, 0)
+    await expect
+      .poll(async () => (await properties.boundingBox())?.width ?? 0)
+      .toBeCloseTo(propertiesWidth, 0)
+  })
+
   test('left and right sidebars use separate localStorage keys', async ({
     comfyMouse,
     comfyPage

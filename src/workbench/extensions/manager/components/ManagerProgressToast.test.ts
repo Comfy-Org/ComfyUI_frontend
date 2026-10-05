@@ -179,6 +179,32 @@ it('scrolls the mounted task list when expanded', async () => {
   expect(container.scrollTop).toBe(500)
 })
 
+it('shows the end of the latest log when expanded', async () => {
+  const store = useComfyManagerStore()
+  const log = {
+    taskId: 'done',
+    taskName: 'Installed pack',
+    logs: ['Starting', 'Done']
+  }
+  store.taskLogs = [log]
+  store.succeededTasksLogs = [log]
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  const scrollHeight = vi
+    .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+    .mockReturnValue(500)
+  onTestFinished(() => scrollHeight.mockRestore())
+
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Expand' }))
+
+  expect(screen.getByRole('log', { name: 'Installed pack' }).scrollTop).toBe(
+    500
+  )
+})
+
 it('keeps following the latest log after switching tabs', async () => {
   const store = useComfyManagerStore()
   const succeeded = {

@@ -3,25 +3,30 @@ import { describe, expect, it, vi } from 'vitest'
 import { getMenuAnchorPosition } from './menuAnchor'
 
 describe('getMenuAnchorPosition', () => {
-  it('preserves zero mouse coordinates instead of using the element bounds', () => {
+  it.for([
+    { type: 'click', detail: 1 },
+    { type: 'contextmenu', detail: 0 }
+  ])('preserves zero pointer coordinates for $type', ({ type, detail }) => {
     const target = document.createElement('button')
     vi.spyOn(target, 'getBoundingClientRect').mockReturnValue(
       new DOMRect(20, 30, 40, 50)
     )
-    const event = new MouseEvent('click', { clientX: 0, clientY: 0 })
+    const event = new MouseEvent(type, { detail, clientX: 0, clientY: 0 })
     Object.defineProperty(event, 'currentTarget', { value: target })
 
     expect(getMenuAnchorPosition(event)).toEqual({ x: 0, y: 0 })
   })
 
-  it('uses the trigger position for non-mouse events', () => {
-    const target = document.createElement('button')
-    vi.spyOn(target, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(20, 30, 40, 50)
-    )
-    const event = new Event('open')
-    Object.defineProperty(event, 'target', { value: target })
+  it.for([new Event('open'), new MouseEvent('click', { detail: 0 })])(
+    'anchors non-pointer activation to the trigger',
+    (event) => {
+      const target = document.createElement('button')
+      vi.spyOn(target, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(20, 30, 40, 50)
+      )
+      Object.defineProperty(event, 'target', { value: target })
 
-    expect(getMenuAnchorPosition(event)).toEqual({ x: 20, y: 30 })
-  })
+      expect(getMenuAnchorPosition(event)).toEqual({ x: 20, y: 30 })
+    }
+  )
 })

@@ -14,6 +14,7 @@ const i18n = createI18n({
   messages: {
     en: {
       g: {
+        imageGallery: 'Image gallery',
         galleryImage: 'Gallery image',
         galleryImagePosition: 'Gallery image {index} of {total}',
         galleryThumbnailPosition: 'Gallery thumbnail {index} of {total}',
@@ -64,7 +65,7 @@ describe('WidgetGalleria', () => {
     renderGallery()
 
     expect(
-      screen.getByRole('region', { name: 'Gallery image' })
+      screen.getByRole('region', { name: 'Image gallery' })
     ).toBeInTheDocument()
     expect(
       screen.getByRole('img', { name: 'Gallery image 1 of 3' })
@@ -112,6 +113,43 @@ describe('WidgetGalleria', () => {
     expect(
       screen.getByRole('button', { name: 'Gallery thumbnail 1 of 3' })
     ).not.toHaveAttribute('aria-current')
+  })
+
+  it('moves a single thumbnail tab stop with Arrow, Home, and End keys', async () => {
+    const user = userEvent.setup()
+    renderGallery()
+    const thumbnails = screen.getAllByRole('button', {
+      name: /Gallery thumbnail/
+    })
+
+    expect(thumbnails.map((thumbnail) => thumbnail.tabIndex)).toEqual([
+      0, -1, -1
+    ])
+
+    thumbnails[0].focus()
+    await user.keyboard('{ArrowRight}')
+    expect(thumbnails[1]).toHaveFocus()
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 2 of 3' })
+    ).toHaveAttribute('src', images[1])
+
+    await user.keyboard('{End}')
+    expect(thumbnails[2]).toHaveFocus()
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 3 of 3' })
+    ).toHaveAttribute('src', images[2])
+
+    await user.keyboard('{Home}')
+    expect(thumbnails[0]).toHaveFocus()
+    expect(
+      screen.getByRole('img', { name: 'Gallery image 1 of 3' })
+    ).toHaveAttribute('src', images[0])
+  })
+
+  it('does not render internal widget metadata on the gallery root', () => {
+    renderGallery()
+
+    expect(screen.getByRole('region')).not.toHaveAttribute('widget')
   })
 
   it('clamps the active image when the image list shrinks and recovers after emptying', async () => {

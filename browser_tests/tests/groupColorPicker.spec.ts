@@ -111,6 +111,7 @@ test.describe(
       })
       await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
       await comfyPage.contextMenu.openColorSubmenu()
+      await expect(comfyPage.selectionToolbox).toBeVisible()
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'group-color-right-click-matches-toolbar-swatch.png',

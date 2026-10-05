@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -9,6 +10,7 @@ import {
   useNodeDefStore,
   useNodeFrequencyStore
 } from '@/stores/nodeDefStore'
+import { FuseFilter } from '@/utils/fuseUtil'
 import NodeSearchBox from './NodeSearchBox.vue'
 
 vi.mock(import('@/platform/telemetry'))
@@ -53,6 +55,53 @@ function renderComponent() {
 }
 
 describe('NodeSearchBox', () => {
+  it('uses the parent-owned filters after removing a filter', async () => {
+    useNodeFrequencyStore().isLoaded = true
+    const frequent = new ComfyNodeDefImpl({
+      name: 'Frequent',
+      display_name: 'Frequent',
+      category: 'other',
+      python_module: 'nodes',
+      description: '',
+      input: {},
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false
+    })
+    vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
+      frequent
+    ])
+    const filter = new FuseFilter<ComfyNodeDefImpl>([], {
+      id: 'category',
+      name: 'Category',
+      invokeSequence: 'c',
+      getItemOptions: (node) => [node.category]
+    })
+    const Parent = defineComponent({
+      components: { NodeSearchBox },
+      setup() {
+        const filters = ref([{ filterDef: filter, value: 'sampling' }])
+        return { filters }
+      },
+      template: `
+        <NodeSearchBox
+          v-model:filter-visible="filterVisible"
+          :filters="filters"
+          @remove-filter="filters = filters.filter((item) => item !== $event)"
+        />
+      `,
+      data: () => ({ filterVisible: false })
+    })
+    render(Parent, { global: { plugins: [i18n] } })
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /remove/i }))
+
+    expect(screen.getByRole('option', { name: 'Frequent' })).toBeVisible()
+  })
+
   it('tracks selection with the typed query', async () => {
     vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

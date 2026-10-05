@@ -160,7 +160,7 @@ describe('pixel panel sizing', () => {
     ])
   })
 
-  it('saves only the panel beside the dragged handle, not an automatically squeezed neighbour', async () => {
+  it('persists both side panels changed by one resize gesture', async () => {
     const { leftWidth, rightWidth } = await setupSizing({ left: 800 })
     const handle = screen.getByRole('button', { name: 'Right handle' })
     handle.dispatchEvent(new Event('pointerdown', { bubbles: true }))
@@ -168,7 +168,7 @@ describe('pixel panel sizing', () => {
     rightWidth.value = 250
     handle.dispatchEvent(new Event('pointerup', { bubbles: true }))
     await nextTick()
-    expect(localStorage.getItem('left')).toBe('800')
+    expect(localStorage.getItem('left')).toBe('480')
     expect(localStorage.getItem('right')).toBe('250')
   })
 
@@ -243,5 +243,24 @@ describe('pixel panel sizing', () => {
     await nextTick()
     expect(localStorage.getItem('left')).toBe('550')
     expect(localStorage.getItem('other')).toBe('400')
+  })
+
+  it('does not write either storage identity when the key changes during a gesture', async () => {
+    localStorage.setItem('left', '550')
+    localStorage.setItem('other', '300')
+    const { leftWidth, leftKey } = await setupSizing()
+    const handle = screen.getByRole('button', { name: 'Left handle' })
+    handle.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
+    )
+    leftWidth.value = 520
+    leftKey.value = 'other'
+    handle.dispatchEvent(
+      new KeyboardEvent('keyup', { key: 'ArrowRight', bubbles: true })
+    )
+    await nextTick()
+
+    expect(localStorage.getItem('left')).toBe('550')
+    expect(localStorage.getItem('other')).toBe('300')
   })
 })

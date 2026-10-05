@@ -239,7 +239,7 @@ describe('ComfyQueueButton', () => {
     expect(getQueueButtonIcon()).toHaveClass('icon-[lucide--play]')
   })
 
-  it('selects one queue mode through the radio menu', async () => {
+  it('selects one queue mode without closing the radio menu', async () => {
     const { user } = renderQueueButton()
 
     await user.click(screen.getByTestId('queue-mode-menu-trigger'))
@@ -248,6 +248,7 @@ describe('ComfyQueueButton', () => {
     )
 
     expect(useQueueSettingsStore().mode).toBe('change')
+    expect(screen.getByRole('menu')).toBeVisible()
     expect(
       useTelemetry()?.trackUiButtonClicked
     ).toHaveBeenCalledExactlyOnceWith({

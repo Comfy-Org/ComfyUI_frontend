@@ -68,5 +68,44 @@ test.describe(
         comfyPage.contextMenu.colorSwatch('Blue', submenu)
       ).toBeVisible()
     })
+
+    test('selecting a shape applies it and closes the menu', async ({
+      comfyPage
+    }) => {
+      const menu = await openMoreOptionsMenu(comfyPage, 'KSampler')
+      const rootMenu = menu.first()
+
+      await comfyPage.contextMenu.selectShape('Card')
+
+      await expect(rootMenu).toBeHidden()
+    })
+
+    test('clicking More options again closes the menu', async ({
+      comfyPage
+    }) => {
+      await openMoreOptionsMenu(comfyPage, 'KSampler')
+
+      await comfyPage.page.getByTestId('more-options-button').click()
+
+      await expect(comfyPage.contextMenu.ariaMenu).toBeHidden()
+    })
+
+    test('canvas transforms move the menu by the transformed delta', async ({
+      comfyPage
+    }) => {
+      const menu = await openMoreOptionsMenu(comfyPage, 'KSampler')
+      const initialBox = await menu.boundingBox()
+      if (!initialBox) throw new Error('Node context menu is not visible')
+
+      const expectedDelta = await comfyPage.page.evaluate(() => {
+        const { ds } = window.app!.canvas
+        ds.offset[0] += 100
+        return 100 * ds.scale
+      })
+
+      await expect
+        .poll(async () => (await menu.boundingBox())?.x)
+        .toBeCloseTo(initialBox.x + expectedDelta, 0)
+    })
   }
 )

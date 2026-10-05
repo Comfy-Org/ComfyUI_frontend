@@ -264,6 +264,7 @@ export class Topbar {
   async openSubmenu(menuItemLabel: string): Promise<Locator> {
     const menuItem = this.getMenuItem(menuItemLabel)
     await menuItem.hover()
+    await expect(menuItem).toHaveAttribute('aria-controls', /.+/)
     const submenuId = await menuItem.getAttribute('aria-controls')
     if (!submenuId) {
       throw new Error(`Menu item "${menuItemLabel}" has no submenu`)

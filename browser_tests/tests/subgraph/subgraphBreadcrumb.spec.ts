@@ -139,6 +139,14 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await subgraphNode.navigateIntoSubgraph()
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
+    await expect(subgraphBreadcrumb.panel.rootItem).not.toHaveAttribute(
+      'aria-haspopup',
+      'menu'
+    )
+    await expect(subgraphBreadcrumb.panel.activeItem).toHaveAttribute(
+      'aria-haspopup',
+      'menu'
+    )
     await subgraphBreadcrumb.activateRootWithKeyboard()
 
     await expect

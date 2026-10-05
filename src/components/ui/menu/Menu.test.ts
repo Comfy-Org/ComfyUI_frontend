@@ -393,9 +393,14 @@ describe('Menu', () => {
       target: screen.getByRole('button', { name: 'Target' })
     })
     await screen.findByRole('menu')
-    screen.getByRole('button', { name: 'Outside', hidden: true }).focus()
-    await nextTick()
-    await nextTick()
+    const outside = screen.getByRole('button', {
+      name: 'Outside',
+      hidden: true
+    })
+    const focusOutside = vi.fn()
+    outside.addEventListener('dismissableLayer.focusOutside', focusOutside)
+    outside.focus()
+    await waitFor(() => expect(focusOutside).toHaveBeenCalled())
     await nextTick()
 
     expect(screen.getByRole('menu')).toBeVisible()
@@ -527,7 +532,9 @@ describe('Menu', () => {
     await user.hover(await screen.findByRole('menuitem', { name: 'More' }))
     const child = await screen.findByRole('menuitem', { name: 'Child' })
     child.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await nextTick()
 
-    expect(child).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Child' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'More' })).toBeVisible()
   })
 })

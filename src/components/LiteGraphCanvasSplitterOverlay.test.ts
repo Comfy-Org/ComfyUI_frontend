@@ -11,10 +11,100 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 vi.mock(import('firebase/auth'))
 
 describe('LiteGraphCanvasSplitterOverlay', () => {
+  function renderStatefulSidePanels() {
+    vi.mocked(useSettingStore().get).mockImplementation((id) => {
+      if (id === 'Comfy.Sidebar.Location') return 'left'
+      if (id === 'Comfy.RightSidePanel.IsOpen') return true
+      return false
+    })
+    const sidebarTabStore = useSidebarTabStore()
+    sidebarTabStore.sidebarTabs = [
+      { id: 'probe', title: 'Probe', type: 'custom', render: () => {} }
+    ]
+    sidebarTabStore.activeSidebarTabId = 'probe'
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: { sideToolbar: { sidebar: 'Sidebar' } } }
+    })
+    render(LiteGraphCanvasSplitterOverlay, {
+      slots: {
+        'side-bar-panel': '<input aria-label="Sidebar draft" />',
+        'right-side-panel': '<input aria-label="Properties draft" />'
+      },
+      global: { plugins: [getActivePinia()!, i18n] }
+    })
+  }
+
+  it('preserves side panel state while focus mode hides the panels', async () => {
+    renderStatefulSidePanels()
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Sidebar draft' }),
+      'sidebar value'
+    )
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Properties draft' }),
+      'properties value'
+    )
+
+    useWorkspaceStore().focusMode = true
+    await nextTick()
+    useWorkspaceStore().focusMode = false
+    await nextTick()
+
+    expect(screen.getByRole('textbox', { name: 'Sidebar draft' })).toHaveValue(
+      'sidebar value'
+    )
+    expect(
+      screen.getByRole('textbox', { name: 'Properties draft' })
+    ).toHaveValue('properties value')
+  })
+
+  it('preserves side panel state during Agent node selection', async () => {
+    renderStatefulSidePanels()
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Sidebar draft' }),
+      'sidebar value'
+    )
+    await fireEvent.update(
+      screen.getByRole('textbox', { name: 'Properties draft' }),
+      'properties value'
+    )
+
+    useAgentNodeSelectionStore().enter()
+    await nextTick()
+    useAgentNodeSelectionStore().exit()
+    await nextTick()
+
+    expect(screen.getByRole('textbox', { name: 'Sidebar draft' })).toHaveValue(
+      'sidebar value'
+    )
+    expect(
+      screen.getByRole('textbox', { name: 'Properties draft' })
+    ).toHaveValue('properties value')
+  })
+
+  it('disables the bottom resize handle while the bottom panel is hidden', async () => {
+    useBottomPanelStore().activePanel = null
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: {} }
+    })
+    render(LiteGraphCanvasSplitterOverlay, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    expect(screen.getByRole('separator', { hidden: true })).not.toHaveAttribute(
+      'tabindex',
+      '0'
+    )
+  })
+
   it('persists the final keyboard resize without writing each step', async () => {
     vi.useFakeTimers()
     localStorage.removeItem('bottom-panel-splitter')
