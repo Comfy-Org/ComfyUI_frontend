@@ -251,9 +251,7 @@ function dynamicComboWidget(
     }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
-    //A callback can grow the group it lands on, shifting every input after
-    //it and recreating the one it grows into, so neither the slot captured
-    //before the batch nor the input object is stable for later entries.
+    //Callbacks can grow a group, shifting slots and recreating inputs.
     for (const { input, link } of result.replacements) {
       const slot = node.inputs.findIndex(({ name }) => name === input.name)
       if (slot === -1) continue
@@ -484,11 +482,6 @@ function autogrowOrdinalToName(
   return { name: `${groupName}.${baseName}`, display_name: baseName }
 }
 
-/**
- * Lays out the inputs of autogrow group `ordinal` in `node.inputs` without
- * committing the change. An input of the same name already in the layout is
- * replaced, and the link `inputLinks` holds for it moves to the new input.
- */
 function insertAutogrowGroup(
   ordinal: number,
   groupName: string,
@@ -496,7 +489,8 @@ function insertAutogrowGroup(
   inputLinks: Map<INodeInputSlot, LLink>
 ) {
   const { addNodeInput } = useLitegraphService()
-  const { min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
+  const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
+  if (ordinal >= max) return
   const namedSpecs = inputSpecs.map((input) => ({
     ...input,
     isOptional: ordinal >= min || input.isOptional,
@@ -539,8 +533,6 @@ function addAutogrowGroup(
   groupName: string,
   node: AutogrowNode
 ) {
-  if (ordinal >= node.comfyDynamic.autogrow[groupName].max) return
-
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
   insertAutogrowGroup(ordinal, groupName, node, inputLinks)
@@ -549,28 +541,22 @@ function addAutogrowGroup(
   node.graph?.setDirtyCanvas(true, true)
 }
 
-/**
- * Grows each autogrow group of the current layout until it holds an input for
- * every linked `inputs` entry whose name the group can reach, so a rebuild that
- * hands links over by name finds a slot for each of them. Groups the current
- * layout does not contain are left alone.
- */
 function growAutogrowGroupsToCover(
   node: LGraphNode,
   inputs: readonly INodeInputSlot[],
   inputLinks: Map<INodeInputSlot, LLink>
 ) {
   if (!hasAutogrowGroups(node)) return
+  const liveGroups = new Set(
+    Object.keys(node.comfyDynamic.autogrow).filter(
+      (groupName) => highestAutogrowOrdinal(node, groupName) !== -1
+    )
+  )
   for (const { name } of inputs) {
-    const groupName = liveAutogrowGroupOf(node, name)
-    if (groupName === undefined) continue
-    const ordinal = resolveAutogrowOrdinal(name, groupName, node)
-    const highest = highestAutogrowOrdinal(node, groupName)
-    if (ordinal === undefined || highest === -1) continue
-    const { max } = node.comfyDynamic.autogrow[groupName]
-    for (let next = highest + 1; next <= ordinal && next < max; next++) {
-      insertAutogrowGroup(next, groupName, node, inputLinks)
-    }
+    growAutogrowGroupTo(node, name, (ordinal, groupName) => {
+      if (liveGroups.has(groupName))
+        insertAutogrowGroup(ordinal, groupName, node, inputLinks)
+    })
   }
 }
 
@@ -661,19 +647,35 @@ export function growAutogrowInput(
   name: string
 ): number | undefined {
   if (!hasAutogrowGroups(node)) return undefined
+  const grown = growAutogrowGroupTo(node, name, (ordinal, groupName) =>
+    addAutogrowGroup(ordinal, groupName, node)
+  )
+  if (!grown) return undefined
+  const index = node.inputs.findIndex((input) => input.name === name)
+  return index === -1 ? undefined : index
+}
+
+/**
+ * Calls `grow` for every ordinal of `name`'s group above the highest live one,
+ * up to `name`'s own. False when `name` belongs to no group of this node.
+ */
+function growAutogrowGroupTo(
+  node: AutogrowNode,
+  name: string,
+  grow: (ordinal: number, groupName: string) => void
+): boolean {
   const groupName = liveAutogrowGroupOf(node, name)
-  if (groupName === undefined) return undefined
+  if (groupName === undefined) return false
   const ordinal = resolveAutogrowOrdinal(name, groupName, node)
-  if (ordinal === undefined) return undefined
+  if (ordinal === undefined) return false
   for (
     let next = highestAutogrowOrdinal(node, groupName) + 1;
     next <= ordinal;
     next++
   ) {
-    addAutogrowGroup(next, groupName, node)
+    grow(next, groupName)
   }
-  const index = node.inputs.findIndex((input) => input.name === name)
-  return index === -1 ? undefined : index
+  return true
 }
 
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {

@@ -259,23 +259,11 @@ export function realignGroupWidgetChildLinks(
 }
 
 /**
- * Re-points each link at the slot of the serialized input that references it.
- *
- * `LGraphNode.configure` takes its inputs from `info.inputs`, but a subclass
- * may have laid those out in a different order than they were saved in
- * (`ComfyNode.configure` leads with the node definition and appends the rest),
- * while every link still carries the `target_slot` it was saved with. Until
- * the two agree, anything that reads a slot's link by index attributes it to
- * the wrong input, so this runs before the node replays its connections and
- * before any dynamic input rebuilds its layout from those links.
- *
- * Only the index moves: no connection callbacks fire, since the replay that
- * follows fires them for every input. A link several serialized inputs
- * reference stays where it is when that is one of them, and a slot held by a
- * link no serialized input references is left to {@link LGraph.configure}'s
- * final pass, which removes such links.
+ * Moves each link to the slot of the serialized input that references it,
+ * without firing connection callbacks. A move onto a slot held by a link no
+ * serialized input references is skipped.
  */
-export function alignInputLinksToSerialisedSlots(
+export function realignInputLinksToSerialisedSlots(
   node: LGraphNode,
   info: Pick<ISerialisedNode, 'inputs'>
 ): void {
@@ -306,14 +294,13 @@ export function alignInputLinksToSerialisedSlots(
   }
 }
 
-/** Each link of the node paired with the serialized slots that reference it. */
 function serialisedSlotsByLink(
   node: LGraphNode,
   info: Pick<ISerialisedNode, 'inputs'>
 ): Map<LLink, number[]> {
   const slotsByLink = new Map<LLink, number[]>()
   for (const [slot, input] of (info.inputs ?? []).entries()) {
-    if (input.link == null || slot >= node.inputs.length) continue
+    if (input.link == null) continue
     const link = node.graph?.links.get(toLinkId(input.link))
     if (!link || link.target_id !== node.id) continue
     slotsByLink.set(link, [...(slotsByLink.get(link) ?? []), slot])
@@ -321,21 +308,20 @@ function serialisedSlotsByLink(
   return slotsByLink
 }
 
-/**
- * Removes every move whose destination is held by a link that is not itself
- * moving, until no such move is left: dropping one can strand the next.
- */
 function dropBlockedMoves(
   moving: Map<LinkId, { slot: number }>,
   occupantOf: (slot: number) => LinkId | undefined
 ): void {
-  const blocked = [...moving].filter(([, { slot }]) => {
-    const occupant = occupantOf(slot)
-    return occupant !== undefined && !moving.has(occupant)
-  })
-  if (!blocked.length) return
-  for (const [id] of blocked) moving.delete(id)
-  dropBlockedMoves(moving, occupantOf)
+  let blocked: LinkId[]
+  do {
+    blocked = [...moving]
+      .filter(([, { slot }]) => {
+        const occupant = occupantOf(slot)
+        return occupant !== undefined && !moving.has(occupant)
+      })
+      .map(([id]) => id)
+    for (const id of blocked) moving.delete(id)
+  } while (blocked.length)
 }
 
 /**

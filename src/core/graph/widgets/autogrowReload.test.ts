@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, test, vi } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedGraph,
@@ -7,21 +7,35 @@ import type {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
-import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { reloadSerializedGraph } from '@/utils/__tests__/litegraphTestUtils'
 
-/** Shaped after ByteDance2ReferenceNodeV2 (`_seedance2_reference_inputs`). */
 const TYPE = 'test/SeedanceRef'
 const IMAGES = 'model.reference_images'
 const VIDEOS = 'model.reference_videos'
-const ag = (inputType: string, key: string, names: string[]) => [
-  'COMFY_AUTOGROW_V3',
-  {
-    template: { input: { required: { [key]: [inputType, {}] } }, names, min: 0 }
-  }
-]
-const seq = (p: string, n: number) =>
-  Array.from({ length: n }, (_, i) => `${p}_${i + 1}`)
+
+function ag(inputType: string, key: string, names: string[]) {
+  return [
+    'COMFY_AUTOGROW_V3',
+    {
+      template: {
+        input: { required: { [key]: [inputType, {}] } },
+        names,
+        min: 0
+      }
+    }
+  ]
+}
+function seq(p: string, n: number) {
+  return Array.from({ length: n }, (_, i) => `${p}_${i + 1}`)
+}
+function image(i: number) {
+  return `${IMAGES}.image_${i}`
+}
+function video(i: number) {
+  return `${VIDEOS}.video_${i}`
+}
+
 const seedanceInputs = {
   required: {
     prompt: ['STRING', {}],
@@ -56,7 +70,7 @@ const def: ComfyNodeDefV1 = {
         }
       ]
     }
-  } as never,
+  },
   output: ['VIDEO'],
   output_name: ['VIDEO'],
   output_node: false
@@ -70,40 +84,51 @@ class Src extends LGraphNode {
   }
 }
 
-const linked = (n: LGraphNode) =>
-  n.inputs.flatMap((inp, slot) => (n.getInputLink(slot) ? [inp.name] : []))
-const groupSlots = (n: LGraphNode) =>
-  n.inputs.flatMap(({ name }) =>
+/** Connected inputs as `name<-originNodeId`, in slot order. */
+function linked(n: LGraphNode) {
+  return n.inputs.flatMap((inp, slot) => {
+    const link = n.getInputLink(slot)
+    return link ? [`${inp.name}<-${link.origin_id}`] : []
+  })
+}
+function groupSlots(n: LGraphNode) {
+  return n.inputs.flatMap(({ name }) =>
     name.startsWith(`${IMAGES}.`) || name.startsWith(`${VIDEOS}.`) ? [name] : []
   )
-const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)))
-const settle = async () => {
-  await frame()
-  await frame()
 }
 
-/** A tab switch reloads through LGraph.configure with configuringGraph = true. */
-function reload(data: ISerialisedGraph | SerialisableGraph): LGraph {
+function reloadAsTabSwitch(data: ISerialisedGraph | SerialisableGraph) {
   const spy = vi.spyOn(app, 'configuringGraph', 'get').mockReturnValue(true)
   try {
-    const reloaded = new LGraph()
-    reloaded.configure(data)
-    return reloaded
+    return reloadSerializedGraph(data, () => new LGraph())
   } finally {
     spy.mockRestore()
   }
 }
 
-/** Connects the first `images` image slots and `videos` video slots in turn. */
+function nodeIn(graph: LGraph, id: number) {
+  const node = graph.getNodeById(toNodeId(id))
+  assert.ok(node, `node ${id}`)
+  return node
+}
+
+function selectModel(node: LGraphNode, option: string) {
+  const widget = node.widgets?.find((w) => w.name === 'model')
+  assert.ok(widget, 'model widget')
+  widget.value = option
+}
+
+/** Node 1 is the Seedance node, sources get ids 2.. in connection order. */
 function buildGraph(
   option: string | undefined,
   images: number,
   videos: number
 ) {
   const graph = new LGraph()
-  const node = LiteGraph.createNode(TYPE)!
+  const node = LiteGraph.createNode(TYPE)
+  assert.ok(node, 'seedance node')
   graph.add(node)
-  if (option) node.widgets!.find((w) => w.name === 'model')!.value = option
+  if (option) selectModel(node, option)
   const slotOf = (name: string) => node.inputs.findIndex((i) => i.name === name)
   for (const name of seq(`${IMAGES}.image`, images)) {
     const s = new Src()
@@ -118,7 +143,6 @@ function buildGraph(
   return { graph, node }
 }
 
-/** Removes the links of the named inputs from a saved graph, leaving gaps. */
 function withoutLinks(data: ISerialisedGraph, names: string[]) {
   const inputs = data.nodes.flatMap((node) => node.inputs ?? [])
   const outputs = data.nodes.flatMap((node) => node.outputs ?? [])
@@ -133,166 +157,188 @@ function withoutLinks(data: ISerialisedGraph, names: string[]) {
   return data
 }
 
+function socketOnlyWorkflow(): SerialisableGraph {
+  const sources: SerialisableGraph['nodes'] = [1, 2, 3, 4].map((id) => ({
+    id,
+    type: 'test/Src',
+    pos: [0, id * 100],
+    size: [100, 50],
+    flags: {},
+    order: id - 1,
+    mode: 0,
+    inputs: [],
+    outputs: [
+      { name: 'image', type: 'IMAGE', links: id < 4 ? [50 + id] : [] },
+      { name: 'video', type: 'VIDEO', links: id < 4 ? [] : [54] }
+    ],
+    properties: {}
+  }))
+  return {
+    id: 'ab000000-0000-4000-8000-00000000f243',
+    version: 1,
+    revision: 0,
+    state: { lastNodeId: 26, lastLinkId: 54, lastGroupId: 0, lastRerouteId: 0 },
+    nodes: [
+      ...sources,
+      {
+        id: 26,
+        type: TYPE,
+        pos: [300, 0],
+        size: [300, 400],
+        flags: {},
+        order: 4,
+        mode: 0,
+        inputs: [
+          { name: image(1), type: 'IMAGE', link: 51 },
+          { name: image(2), type: 'IMAGE', link: 52 },
+          { name: image(3), type: 'IMAGE', link: 53 },
+          { name: video(1), type: 'VIDEO', link: 54 },
+          { name: 'model.reference_audios.audio_1', type: 'AUDIO', link: null },
+          { name: 'model.reference_assets.asset_1', type: 'STRING', link: null }
+        ],
+        outputs: [{ name: 'VIDEO', type: 'VIDEO', links: [] }],
+        properties: {},
+        widgets_values: ['Seedance 2.0', '', '480p', '16:9', 5, true, true]
+      }
+    ],
+    links: [51, 52, 53, 54].map((id) => ({
+      id,
+      origin_id: id - 50,
+      origin_slot: id === 54 ? 1 : 0,
+      target_id: 26,
+      target_slot: id - 51,
+      type: id === 54 ? 'VIDEO' : 'IMAGE'
+    }))
+  }
+}
+
 describe('Autogrow-in-DynamicCombo links survive a workflow reload (FE-2443)', () => {
   beforeEach(async () => {
     LiteGraph.registerNodeType('test/Src', Src)
     await useLitegraphService().registerNodeDef(TYPE, def)
   })
 
-  const cases = [
-    { option: undefined, images: 6, videos: 2, gaps: [] },
-    { option: 'Seedance 2.0', images: 6, videos: 2, gaps: [] },
-    { option: 'Seedance 2.0 Fast', images: 6, videos: 2, gaps: [] },
-    { option: undefined, images: 5, videos: 0, gaps: ['image_3', 'image_4'] },
+  test.for([
     {
+      name: 'untouched option, model saved last, no gaps',
+      option: undefined,
+      images: 6,
+      videos: 2,
+      gaps: [],
+      linked: [
+        `${image(1)}<-2`,
+        `${image(2)}<-3`,
+        `${image(3)}<-4`,
+        `${image(4)}<-5`,
+        `${image(5)}<-6`,
+        `${image(6)}<-7`,
+        `${video(1)}<-8`,
+        `${video(2)}<-9`
+      ],
+      slots: [...seq(`${IMAGES}.image`, 7), ...seq(`${VIDEOS}.video`, 3)]
+    },
+    {
+      name: 'option set, model saved first, no gaps',
+      option: 'Seedance 2.0 Fast',
+      images: 6,
+      videos: 2,
+      gaps: [],
+      linked: [
+        `${image(1)}<-2`,
+        `${image(2)}<-3`,
+        `${image(3)}<-4`,
+        `${image(4)}<-5`,
+        `${image(5)}<-6`,
+        `${image(6)}<-7`,
+        `${video(1)}<-8`,
+        `${video(2)}<-9`
+      ],
+      slots: [...seq(`${IMAGES}.image`, 7), ...seq(`${VIDEOS}.video`, 3)]
+    },
+    {
+      name: 'untouched option, gaps inside the image group',
+      option: undefined,
+      images: 5,
+      videos: 0,
+      gaps: [image(3), image(4)],
+      linked: [`${image(1)}<-2`, `${image(2)}<-3`, `${image(5)}<-6`],
+      slots: [...seq(`${IMAGES}.image`, 6), video(1)]
+    },
+    {
+      name: 'option set, model saved first, gaps in both groups',
       option: 'Seedance 2.0 Fast',
       images: 5,
       videos: 2,
-      gaps: ['image_3', 'image_4', 'video_1']
+      gaps: [image(3), image(4), video(1)],
+      linked: [
+        `${image(1)}<-2`,
+        `${image(2)}<-3`,
+        `${image(5)}<-6`,
+        `${video(2)}<-8`
+      ],
+      slots: [...seq(`${IMAGES}.image`, 6), ...seq(`${VIDEOS}.video`, 3)]
     }
-  ]
-  for (const { option, images, videos, gaps } of cases)
-    test(`${images} images + ${videos} videos, gaps [${gaps}] (model ${option ?? 'untouched'}) keep their links and slots`, async () => {
+  ])(
+    '$name keeps its links and slots',
+    ({ option, images, videos, gaps, linked: expectedLinked, slots }) => {
       const { graph, node } = buildGraph(option, images, videos)
-      const gapNames = gaps.map(
-        (gap) => `model.reference_${gap.split('_')[0]}s.${gap}`
-      )
-      const saved = withoutLinks(structuredClone(graph.serialize()), gapNames)
-      const expected = {
-        linked: linked(node).filter((name) => !gapNames.includes(name)),
-        slots: groupSlots(node)
-      }
-      expect(expected.linked).toHaveLength(images + videos - gaps.length)
+      const saved = withoutLinks(graph.serialize(), gaps)
 
-      const reloaded = reload(saved)
-      await settle()
-      const reloadedNode = reloaded.getNodeById(node.id)!
+      const reloadedNode = nodeIn(reloadAsTabSwitch(saved), Number(node.id))
+
       expect({
         linked: linked(reloadedNode),
         slots: groupSlots(reloadedNode)
-      }).toEqual(expected)
-    })
+      }).toEqual({ linked: expectedLinked, slots })
+    }
+  )
 
-  test('a second round-trip of the reloaded graph keeps the same links and slots', async () => {
+  test('a second round-trip of the reloaded graph keeps the same links and slots', () => {
     const { graph, node } = buildGraph(undefined, 6, 2)
     const before = { linked: linked(node), slots: groupSlots(node) }
 
-    const once = reload(structuredClone(graph.serialize()))
-    await settle()
-    const twice = reload(structuredClone(once.serialize()))
-    await settle()
+    const once = reloadAsTabSwitch(graph.serialize())
+    const twiceNode = nodeIn(
+      reloadAsTabSwitch(once.serialize()),
+      Number(node.id)
+    )
 
-    const twiceNode = twice.getNodeById(node.id)!
     expect({ linked: linked(twiceNode), slots: groupSlots(twiceNode) }).toEqual(
       before
     )
   })
 
-  test('switching the option by hand after a reload still hands over only the fresh layout', async () => {
-    const fresh = buildGraph(undefined, 6, 2)
-    fresh.node.widgets!.find((w) => w.name === 'model')!.value =
-      'Seedance 2.0 Fast'
-    await settle()
-    const interactive = linked(fresh.node)
-    expect(interactive).toEqual([`${IMAGES}.image_1`, `${VIDEOS}.video_1`])
+  test('switching the option by hand hands over only the fresh layout', () => {
+    const { node } = buildGraph(undefined, 6, 2)
 
-    const { graph, node } = buildGraph(undefined, 6, 2)
-    const reloaded = reload(structuredClone(graph.serialize()))
-    await settle()
-    const reloadedNode = reloaded.getNodeById(node.id)!
-    reloadedNode.widgets!.find((w) => w.name === 'model')!.value =
-      'Seedance 2.0 Fast'
-    await settle()
+    selectModel(node, 'Seedance 2.0 Fast')
 
-    expect(linked(reloadedNode)).toEqual(interactive)
+    expect(linked(node)).toEqual([`${image(1)}<-2`, `${video(1)}<-8`])
   })
 
-  /**
-   * The saved shape of `browser_tests/assets/subgraphs/autogrow-reference-images.json`:
-   * only sockets are serialized, the combo value rides in `widgets_values`,
-   * and the links count slots in that socket-only layout.
-   */
-  function socketOnlyWorkflow(): SerialisableGraph {
-    const sources = [1, 2, 3].map((id) => ({
-      id,
-      type: 'test/Src',
-      pos: [0, id * 100] as [number, number],
-      size: [100, 50] as [number, number],
-      flags: {},
-      order: id - 1,
-      mode: 0,
-      inputs: [],
-      outputs: [
-        { name: 'image', type: 'IMAGE', links: [50 + id] },
-        { name: 'video', type: 'VIDEO', links: [] }
-      ],
-      properties: {}
-    }))
-    return {
-      id: 'ab000000-0000-4000-8000-00000000f243',
-      version: 1,
-      revision: 0,
-      state: {
-        lastNodeId: 26,
-        lastLinkId: 53,
-        lastGroupId: 0,
-        lastRerouteId: 0
-      },
-      nodes: [
-        ...sources,
-        {
-          id: 26,
-          type: TYPE,
-          pos: [300, 0],
-          size: [300, 400],
-          flags: {},
-          order: 3,
-          mode: 0,
-          inputs: [
-            { name: `${IMAGES}.image_1`, type: 'IMAGE', link: 51 },
-            { name: `${IMAGES}.image_2`, type: 'IMAGE', link: 52 },
-            { name: `${IMAGES}.image_3`, type: 'IMAGE', link: 53 },
-            { name: `${VIDEOS}.video_1`, type: 'VIDEO', link: null },
-            {
-              name: 'model.reference_audios.audio_1',
-              type: 'AUDIO',
-              link: null
-            },
-            {
-              name: 'model.reference_assets.asset_1',
-              type: 'STRING',
-              link: null
-            }
-          ],
-          outputs: [{ name: 'VIDEO', type: 'VIDEO', links: [] }],
-          properties: {},
-          widgets_values: ['Seedance 2.0', '', '480p', '16:9', 5, true, true]
-        }
-      ],
-      links: [51, 52, 53].map((id) => ({
-        id: toLinkId(id),
-        origin_id: id - 50,
-        origin_slot: 0,
-        target_id: 26,
-        target_slot: id - 51,
-        type: 'IMAGE'
-      }))
-    }
-  }
+  test('after a reload, switching the option by hand hands over only the fresh layout', () => {
+    const { graph, node } = buildGraph(undefined, 6, 2)
+    const reloadedNode = nodeIn(
+      reloadAsTabSwitch(graph.serialize()),
+      Number(node.id)
+    )
 
-  test('a socket-only save loads with every reference image connected and one spare slot', async () => {
-    const graph = reload(socketOnlyWorkflow())
-    await settle()
+    selectModel(reloadedNode, 'Seedance 2.0 Fast')
 
-    const node = graph.getNodeById(toNodeId(26))!
-    expect({
-      linked: linked(node),
-      images: node.inputs.flatMap(({ name }) =>
-        name.startsWith(`${IMAGES}.`) ? [name] : []
-      )
-    }).toEqual({
-      linked: seq(`${IMAGES}.image`, 3),
-      images: seq(`${IMAGES}.image`, 4)
+    expect(linked(reloadedNode)).toEqual([`${image(1)}<-2`, `${video(1)}<-8`])
+  })
+
+  test('a socket-only save loads with every reference connected and one spare slot per group', () => {
+    const node = nodeIn(reloadAsTabSwitch(socketOnlyWorkflow()), 26)
+
+    expect({ linked: linked(node), slots: groupSlots(node) }).toEqual({
+      linked: [
+        `${image(1)}<-1`,
+        `${image(2)}<-2`,
+        `${image(3)}<-3`,
+        `${video(1)}<-4`
+      ],
+      slots: [...seq(`${IMAGES}.image`, 4), video(1), video(2)]
     })
   })
 })
