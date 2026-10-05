@@ -194,7 +194,7 @@ test.describe('Sign In dialog — live auth', () => {
       'a dropped connection must surface the network error, not a silent failure'
     ).toBeVisible()
     await expect(
-      comfyPage.page.getByText('Password reset email sent'),
+      comfyPage.toast.withText('Password reset email sent'),
       'a real transport failure must not show the success confirmation'
     ).toBeHidden()
   })
