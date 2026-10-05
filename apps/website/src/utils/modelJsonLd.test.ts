@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import { MODEL_DEVELOPERS, modelDeveloper } from '@/config/model-vendors'
+import { modelsUrlKind } from '@/config/models-url-registry'
+import { workshopModels } from '@/config/workshop-browse-content'
 import {
   getWorkshopPageDetail,
   workshopPagePaths
 } from '@/config/workshop-page-content'
 import type { JsonLdNode } from './jsonLd'
-import { modelPageJsonLd } from './modelJsonLd'
+import { modelPageJsonLd, modelsHubJsonLd } from './modelJsonLd'
+import { modelsByProvider } from '@/routes/models/models-directory'
 
 const siteUrl = 'https://comfy.org'
 const url = 'https://comfy.org/hub/models/example/'
@@ -135,5 +138,77 @@ describe('MODEL_DEVELOPERS', () => {
   it('links only well-formed Wikidata ids', () => {
     for (const developer of Object.values(MODEL_DEVELOPERS))
       if (developer?.wikidata) expect(developer.wikidata).toMatch(/^Q\d+$/)
+  })
+})
+
+describe('modelsHubJsonLd', () => {
+  const hubUrl = 'https://comfy.org/hub/models/'
+  const directoryModels = modelsByProvider(workshopModels, 'Other').flatMap(
+    (group) => group.models
+  )
+  const directoryUrls = directoryModels.flatMap(({ href }) =>
+    href === undefined ? [] : [`${siteUrl}${href}`]
+  )
+
+  function listedUrls(models: Parameters<typeof modelsHubJsonLd>[0]['models']) {
+    return modelsHubJsonLd({
+      models,
+      url: hubUrl,
+      siteUrl
+    }).extraJsonLd.flatMap(({ itemListElement }) =>
+      Array.isArray(itemListElement)
+        ? itemListElement.map((element: { url: string }) => element.url)
+        : []
+    )
+  }
+
+  it('lists every directory link, in the order the directory shows them', () => {
+    const { pageType, mainEntityId, extraJsonLd } = modelsHubJsonLd({
+      models: directoryModels,
+      url: hubUrl,
+      siteUrl
+    })
+    expect(directoryUrls.length).toBeGreaterThan(0)
+    expect(pageType).toBe('CollectionPage')
+    expect(mainEntityId).toBe(`${hubUrl}#itemlist`)
+    expect(extraJsonLd[0]).toMatchObject({
+      '@type': 'ItemList',
+      numberOfItems: directoryUrls.length
+    })
+    expect(listedUrls(directoryModels)).toEqual(directoryUrls)
+  })
+
+  it('lists only absolute, unique model page URLs from the registry', () => {
+    const urls = listedUrls(directoryModels)
+    expect(new Set(urls).size).toBe(urls.length)
+    for (const listed of urls) {
+      const { origin, pathname } = new URL(listed)
+      expect(origin).toBe(siteUrl)
+      expect(pathname).toMatch(/\/$/)
+      expect(modelsUrlKind(pathname)).toBe('model')
+    }
+  })
+
+  it('leaves out links that are not indexable model pages', () => {
+    const [listedModel] = directoryModels
+    expect(
+      listedUrls([
+        { name: 'No page' },
+        { name: 'Workflow', href: '/hub/workflows/example/' },
+        { name: 'Unknown', href: '/hub/models/not-a-model/' },
+        listedModel
+      ])
+    ).toEqual([`${siteUrl}${listedModel.href}`])
+  })
+
+  it('keeps the Home > Models breadcrumb but drops the list when nothing is listed', () => {
+    expect(modelsHubJsonLd({ models: [], url: hubUrl, siteUrl })).toEqual({
+      pageType: 'CollectionPage',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://comfy.org/' },
+        { name: 'Models' }
+      ],
+      extraJsonLd: []
+    })
   })
 })

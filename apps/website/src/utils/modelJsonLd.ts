@@ -1,8 +1,14 @@
+import { isIndexableModelPage } from '@/config/indexing'
 import type { ModelDeveloper } from '@/config/model-vendors'
 import { getRoutes } from '@/config/routes'
 import { t } from '@/i18n/translations'
 import type { Crumb, JsonLdNode } from './jsonLd'
-import { jsonLdId, organizationId, softwareApplicationNode } from './jsonLd'
+import {
+  itemListNode,
+  jsonLdId,
+  organizationId,
+  softwareApplicationNode
+} from './jsonLd'
 
 interface ModelPageJsonLdInput {
   model: {
@@ -89,5 +95,41 @@ export function modelPageJsonLd({
         offers: offerFor(price)
       }
     ]
+  }
+}
+
+interface ModelsHubJsonLdInput {
+  /** The directory's models, in the order the page lists them. */
+  models: readonly { name: string; href?: string }[]
+  url: string
+  siteUrl: string
+}
+
+export function modelsHubJsonLd({
+  models,
+  url,
+  siteUrl
+}: ModelsHubJsonLdInput): {
+  pageType: 'CollectionPage'
+  mainEntityId?: string
+  breadcrumbs: Crumb[]
+  extraJsonLd: JsonLdNode[]
+} {
+  const listed = models.flatMap(({ name, href }) =>
+    href !== undefined && isIndexableModelPage(href)
+      ? [{ name, url: `${siteUrl}${href}` }]
+      : []
+  )
+  const breadcrumbs = [
+    { name: t('breadcrumb.home'), url: `${siteUrl}/` },
+    { name: t('workshop.title') }
+  ]
+  if (listed.length === 0)
+    return { pageType: 'CollectionPage', breadcrumbs, extraJsonLd: [] }
+  return {
+    pageType: 'CollectionPage',
+    mainEntityId: jsonLdId(url, 'itemlist'),
+    breadcrumbs,
+    extraJsonLd: [itemListNode(url, t('workshop.title'), listed)]
   }
 }
