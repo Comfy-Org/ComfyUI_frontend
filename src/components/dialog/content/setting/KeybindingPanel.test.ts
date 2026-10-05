@@ -60,7 +60,7 @@ function renderPanel() {
       directives: { tooltip: () => {} },
       plugins: [i18n],
       stubs: {
-        DropdownMenu: true,
+        Menu: true,
         KeybindingPresetToolbar: true
       }
     }
