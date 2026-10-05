@@ -258,12 +258,10 @@ export function useUploadModelWizard(
     }
   }
 
-  async function refreshModelCaches() {
-    if (!resolvedModelType.value) return
+  async function refreshModelCaches(modelType = resolvedModelType.value) {
+    if (!modelType) return
 
-    const providers = modelToNodeStore.getAllNodeProviders(
-      resolvedModelType.value
-    )
+    const providers = modelToNodeStore.getAllNodeProviders(modelType)
     const results = await Promise.allSettled(
       providers.map((provider) =>
         assetsStore.updateModelsForNodeType(provider.nodeDef.name)
@@ -453,7 +451,12 @@ export function useUploadModelWizard(
         }
       }
 
-      if (isStaleUpload(generation)) return null
+      if (isStaleUpload(generation)) {
+        if (result.type === 'sync' || result.task.status === 'completed') {
+          await refreshModelCaches(modelType)
+        }
+        return null
+      }
 
       if (result.type === 'async' && result.task.status !== 'completed') {
         uploadSuccess = watchAsyncUpload(

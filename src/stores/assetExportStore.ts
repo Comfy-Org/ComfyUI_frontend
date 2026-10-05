@@ -101,7 +101,7 @@ function resolveExportDownloadUrl(
   if (
     !trimmedUrl ||
     trimmedUrl.startsWith('//') ||
-    trimmedUrl.startsWith('\\\\') ||
+    trimmedUrl.startsWith('\\') ||
     trimmedUrl.startsWith('/\\')
   ) {
     return { ok: false, error: t('exportToast.unsupportedDownloadUrl') }
@@ -257,7 +257,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
         bytes_processed: exp.bytesProcessed,
         progress: exp.progress,
         status: 'failed',
-        error: t('progressToast.failed')
+        error: t('progressToast.taskUnavailable')
       })
     }
 
