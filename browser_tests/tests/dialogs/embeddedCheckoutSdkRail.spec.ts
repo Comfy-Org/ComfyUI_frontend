@@ -702,7 +702,8 @@ test.describe('Embedded top-up bank step', { tag: '@cloud' }, () => {
 
     await expect(
       page
-        .locator('.p-toast-message-success')
+        .getByTestId('toast')
+        .and(page.locator('[data-toast-kind="success"]'))
         .getByText('Credits added successfully')
     ).toBeVisible()
     expect(bankSteps(fake)).toEqual([

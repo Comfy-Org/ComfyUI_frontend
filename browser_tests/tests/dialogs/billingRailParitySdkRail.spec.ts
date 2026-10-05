@@ -367,9 +367,10 @@ async function returnToTab(page: Page) {
 }
 
 const successToast = (page: Page) =>
-  page.locator('.p-toast-message-success', {
-    hasText: 'Credits added successfully!'
-  })
+  page
+    .getByTestId('toast')
+    .and(page.locator('[data-toast-kind="success"]'))
+    .filter({ hasText: 'Credits added successfully!' })
 
 /** The plan summary on the success step, which names what was bought. */
 const successSummary = (page: Page) =>
