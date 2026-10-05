@@ -142,21 +142,7 @@ describe('generated Vercel rules', () => {
     {
       source: '/p/supported-models/t5xxl-fp8-e4m3fn-scaled',
       destination: '/p/supported-models/t5xxl-fp16/'
-    }
-  ])(
-    'send $source and $source/ to $destination permanently',
-    ({ source, destination }) => {
-      for (const form of [source, `${source}/`]) {
-        expect(find(form)).toEqual({
-          source: form,
-          destination,
-          permanent: true
-        })
-      }
-    }
-  )
-
-  it.for([
+    },
     { source: '/models', destination: '/hub/models/' },
     {
       source: '/models/workflows/change-material',
@@ -175,25 +161,22 @@ describe('generated Vercel rules', () => {
       destination: `/hub/models/${hubModelAliases.get('vertexai--gemini-3-pro-image')}/`
     }
   ])(
-    'send $source and $source/ to $destination temporarily until comfy-router#46 is live',
+    'send $source and $source/ to $destination permanently',
     ({ source, destination }) => {
       for (const form of [source, `${source}/`]) {
         expect(find(form)).toEqual({
           source: form,
           destination,
-          permanent: false
+          permanent: true
         })
       }
     }
   )
 
-  it('keeps only the listed rows and the old Models addresses temporary', () => {
+  it('keeps only the listed rows temporary', () => {
     expect(
       vercelRedirects
-        .filter(
-          ({ source, permanent }) =>
-            !permanent && source !== '/models' && !source.startsWith('/models/')
-        )
+        .filter(({ permanent }) => !permanent)
         .map(({ source }) => source)
     ).toEqual([
       '/trust',
@@ -269,7 +252,7 @@ describe('old Models addresses', () => {
     )
   ].flatMap((path) => [path, `${path}/`])
 
-  it('each redirect once, temporarily, to a page the site builds', () => {
+  it('each redirect once, permanently, to a page the site builds', () => {
     const landsOnPage = (destination: string) =>
       ['model', 'hub', 'app'].includes(modelsUrlKind(destination) ?? '')
     expect(
@@ -278,7 +261,7 @@ describe('old Models addresses', () => {
         return (
           modelsUrlKind(path) !== 'alias' ||
           rows.length !== 1 ||
-          rows[0].permanent ||
+          !rows[0].permanent ||
           !landsOnPage(rows[0].destination)
         )
       })
