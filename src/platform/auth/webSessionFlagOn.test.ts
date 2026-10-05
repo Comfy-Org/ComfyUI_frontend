@@ -183,7 +183,7 @@ type ServerSession =
   | 'revoked'
   | 'network'
   | 'restore_token_revoked'
-  | { userId: string }
+  | { userId: string; provider?: string }
 
 interface FeatureAnswers {
   probe: boolean
@@ -204,13 +204,19 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
-function sessionBody(userId: string, hasPersonalWorkspace?: boolean) {
+function sessionBody(
+  userId: string,
+  {
+    provider = 'google.com',
+    hasPersonalWorkspace
+  }: { provider?: string; hasPersonalWorkspace?: boolean } = {}
+) {
   return {
     user: {
       id: userId,
       email: `${userId}@example.com`,
       email_verified: true,
-      sign_in_provider: 'google.com',
+      sign_in_provider: provider,
       ...(hasPersonalWorkspace !== undefined && {
         has_personal_workspace: hasPersonalWorkspace
       })
@@ -257,7 +263,9 @@ function installServer(
       return jsonResponse({ code: 'unavailable', message: 'down' }, 503)
     }
     if (typeof session === 'object')
-      return jsonResponse(sessionBody(session.userId))
+      return jsonResponse(
+        sessionBody(session.userId, { provider: session.provider })
+      )
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
     return jsonResponse({ code, message: code }, 401)
   }
@@ -713,7 +721,9 @@ function installIngest(features: Record<string, boolean> = {}) {
     ingest.sessionDown
       ? jsonResponse({ code: 'unavailable', message: 'down' }, 503)
       : jsonResponse({
-          ...sessionBody(ingest.userId, ingest.hasPersonalWorkspace),
+          ...sessionBody(ingest.userId, {
+            hasPersonalWorkspace: ingest.hasPersonalWorkspace
+          }),
           csrf_token: ingest.csrfToken
         })
 
