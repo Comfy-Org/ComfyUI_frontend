@@ -77,9 +77,19 @@ function taskForUseCases(
 export const workshopDisplayEntries =
   workshopDisplayEntriesSchema.parse(displayJson)
 const displaySlugs = new Set(workshopDisplayEntries.map((entry) => entry.slug))
-const editorialSummaries = new Map(Object.entries(summaryOverrides))
+const modelPageSlugs = new Set(
+  workshopDisplayEntries
+    .filter((entry) => entry.type === undefined || entry.type === 'MODEL')
+    .map((entry) => entry.slug)
+)
+const editorialSummaries = new Map(
+  Object.entries(summaryOverrides).map(([slug, summary]) => [
+    slug,
+    summary.trim()
+  ])
+)
 for (const [slug, summary] of editorialSummaries)
-  if (!displaySlugs.has(slug) || !summary.trim())
+  if (!modelPageSlugs.has(slug) || !summary)
     throw new Error(`Invalid model summary for page: ${slug}`)
 for (const slug of modelOrderRank.keys())
   if (!displaySlugs.has(slug))
