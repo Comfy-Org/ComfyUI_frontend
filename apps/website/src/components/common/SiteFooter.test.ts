@@ -5,18 +5,27 @@ import { externalLinks, getRoutes } from '@/config/routes'
 import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
-  it('links the live changelog from the footer', () => {
-    render(SiteFooter, { props: { locale: 'en' } })
-    for (const link of screen.getAllByRole('link', { name: 'Changelog' })) {
-      expect(link.getAttribute('href')).toBe('/changelog')
+  it.for([
+    ['en', 'Changelog', 'Resources'],
+    ['zh-CN', '更新日志', '资源'],
+    ['ja', '変更履歴', 'Resources']
+  ] as const)(
+    'links the live changelog last in footer Resources (%s)',
+    ([locale, name, resources]) => {
+      render(SiteFooter, { props: { locale } })
+      const links = screen.getAllByRole('link', { name })
+      expect(links.map((link) => link.getAttribute('href'))).toEqual(
+        Array(links.length).fill('/changelog/')
+      )
+      const columns = screen.getAllByRole('navigation', { name: resources })
+      expect(
+        columns.map((column) =>
+          within(column).getAllByRole('link').at(-1)?.textContent.trim()
+        )
+      ).toEqual(Array(columns.length).fill(name))
+      expect(getRoutes(locale).changelog).toBe('/changelog/')
     }
-    for (const column of screen.getAllByRole('navigation', {
-      name: 'Resources'
-    })) {
-      const links = within(column).getAllByRole('link')
-      expect(links.at(-1)).toHaveAccessibleName('Changelog')
-    }
-  })
+  )
 
   it.for([
     ['en', 'ComfyUI Models'],

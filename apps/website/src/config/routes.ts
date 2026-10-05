@@ -9,6 +9,7 @@ import type { AppWorkshopModel } from './models-catalogue'
 
 const baseRoutes = {
   home: '/',
+  changelog: '/changelog/',
   download: '/download/',
   cloud: '/cloud/',
   pricing: '/pricing/',
@@ -95,6 +96,7 @@ type Routes = Readonly<Record<RouteKey, string>>
 // page would either duplicate the English video under a Chinese path or lie
 // about having Chinese captions, so these are intentionally English-only.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
+  'changelog',
   'affiliates',
   'affiliateTerms',
   'termsOfService',
@@ -122,7 +124,6 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // workshop: the catalog is English-only. It is also build-gated until launch,
 // but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
-  '/changelog', // authoritative release notes are currently English only
   // Auth surfaces render one page for every locale (copy localizes in the
   // island); a /zh-CN twin does not exist and must not be advertised.
   '/forgot-password',

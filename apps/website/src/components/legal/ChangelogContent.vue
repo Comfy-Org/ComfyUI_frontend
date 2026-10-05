@@ -6,7 +6,8 @@ import {
   CHANGELOG_DOCS,
   CHANGELOG_REFRESH_MS,
   fetchChangelog,
-  readChangelogCache
+  readChangelogCache,
+  releaseId
 } from '@/lib/changelog'
 import type { ChangelogEntry } from '@/lib/changelog'
 import { translationsFor } from '@/i18n/translations'
@@ -17,10 +18,6 @@ const { t } = translationsFor('en')
 
 const entries = ref<ChangelogEntry[]>([])
 let initialAnchorHandled = false
-
-function releaseId(label: string) {
-  return label.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-}
 
 async function applyEntries(nextEntries: ChangelogEntry[]) {
   entries.value = nextEntries

@@ -11,19 +11,49 @@ export interface ChangelogEntry {
   markdown: string
 }
 
-// Mintlify wrappers are data, never executable MDX. Fail closed on format drift
-// rather than silently presenting a partial changelog as current.
+export function releaseId(label: string) {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+}
+
+const attributesPattern =
+  /\s+([\w-]+)\s*=\s*("([^"]*)"|'([^']*)'|\{(?:[^{}]|\{[^{}]*\})*\})/g
+const updatePattern = new RegExp(
+  `<Update(?<attributes>(?:${attributesPattern.source})*)\\s*>(?<markdown>[\\s\\S]*?)<\\/Update>`,
+  'g'
+)
+
+function updateMetadata(attributes: string) {
+  const values = new Map<string, string | undefined>()
+  for (const match of attributes.matchAll(attributesPattern)) {
+    const [, name] = match
+    if (
+      !['label', 'description', 'tags', 'rss'].includes(name) ||
+      values.has(name)
+    )
+      throw new Error('Unsupported update metadata')
+    values.set(name, match.at(3) ?? match.at(4))
+  }
+  return { label: values.get('label'), date: values.get('description') }
+}
+
+// Mintlify wrappers are data, never executable MDX. Optional tags/rss are
+// ignored, including braced metadata; no expression is evaluated. Fail closed
+// on unsupported wrapper syntax rather than presenting partial notes as current.
 export function parseChangelog(source: string): ChangelogEntry[] {
   const body = source.replace(/^---\r?\n[\s\S]*?\r?\n---\s*/, '')
   const entries: ChangelogEntry[] = []
-  const pattern =
-    /<Update\s+label="([^"]+)"\s+description="([^"]+)"\s*>([\s\S]*?)<\/Update>/g
-  for (const match of body.matchAll(pattern)) {
-    const [, label, date, markdown] = match
+  const releaseIds = new Set<string>()
+  for (const match of body.matchAll(updatePattern)) {
+    if (!match.groups) throw new Error('Unsupported update')
+    const { attributes, markdown } = match.groups
+    const { label, date } = updateMetadata(attributes)
     if (!label || !date || !markdown.trim()) throw new Error('Empty update')
+    const id = releaseId(label)
+    if (releaseIds.has(id)) throw new Error('Ambiguous release label')
+    releaseIds.add(id)
     entries.push({ label, date, markdown: markdown.trim() })
   }
-  if (!entries.length || body.replace(pattern, '').trim()) {
+  if (!entries.length || body.replace(updatePattern, '').trim()) {
     throw new Error('Unsupported changelog format')
   }
   return entries

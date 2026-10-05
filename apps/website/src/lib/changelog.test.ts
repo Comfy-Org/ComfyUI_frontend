@@ -21,32 +21,55 @@ describe('docs changelog boundary', () => {
     ])
   })
   it.for([
+    `<Update description="October 5, 2026" label="v1">**New**</Update>`,
+    `<Update tags={['Features']} description='October 5, 2026' rss={{ title: 'Release' }} label='v1'>**New**</Update>`,
+    `<Update tags=" label='fake'" label="v1" description="October 5, 2026">**New**</Update>`
+  ])('reads reordered and inert optional release metadata', (input) => {
+    expect(parseChangelog(input)).toEqual([
+      { label: 'v1', date: 'October 5, 2026', markdown: '**New**' }
+    ])
+  })
+  it.for([
     '',
     '<html>Error</html>',
     source + '<Update label="v2">broken',
-    source.replace('October 5, 2026', '')
+    source.replace('October 5, 2026', ''),
+    source.replace('label="v1"', 'label="v1" label="v2"'),
+    source.replace('label="v1"', 'label={untrusted()}'),
+    source.replace('label="v1"', 'label="v1" unknown="value"')
   ])('rejects unavailable or changed source formats', (input) => {
     expect(() => parseChangelog(input)).toThrow()
   })
-  it('keeps only a validated recent cache', () => {
-    const cache = (value: unknown) => ({ getItem: () => JSON.stringify(value) })
-    expect(
-      readChangelogCache(cache({ source, checkedAt: Date.now() }))
-    ).toBeDefined()
-    expect(
-      readChangelogCache(
-        cache({
-          source,
-          checkedAt: Date.now() - CHANGELOG_CACHE_MAX_AGE_MS - 1
-        })
+  it.for(['v1', 'v1-0'])(
+    'rejects repeated or colliding release anchors (%s)',
+    (label) => {
+      const first = source.replace('v1', 'v1.0')
+      const second = source.replace('v1', label === 'v1' ? 'v1.0' : label)
+      expect(() => parseChangelog(first + second)).toThrow(
+        'Ambiguous release label'
       )
-    ).toBeUndefined()
+    }
+  )
+  it('keeps a validated recent cache', () => {
     expect(
-      readChangelogCache(cache({ source: 'broken', checkedAt: Date.now() }))
-    ).toBeUndefined()
+      readChangelogCache({
+        getItem: () => JSON.stringify({ source, checkedAt: Date.now() })
+      })
+    ).toBeDefined()
+  })
+  it.for([
+    [
+      'expired',
+      () => ({ source, checkedAt: Date.now() - CHANGELOG_CACHE_MAX_AGE_MS - 1 })
+    ],
+    ['invalid source', () => ({ source: 'broken', checkedAt: Date.now() })],
+    ['future timestamp', () => ({ source, checkedAt: Date.now() + 10000 })]
+  ] as const)('rejects a cache with %s', ([, value]) => {
     expect(
-      readChangelogCache(cache({ source, checkedAt: Date.now() + 10000 }))
+      readChangelogCache({ getItem: () => JSON.stringify(value()) })
     ).toBeUndefined()
+  })
+  it('handles disabled storage', () => {
     expect(
       readChangelogCache({
         getItem: () => {

@@ -94,4 +94,20 @@ describe('ChangelogContent', () => {
     )
     expect(fetcher).toHaveBeenCalledOnce()
   })
+  it('keeps validated saved notes when fresh release anchors are ambiguous', async () => {
+    localStorage.setItem(
+      CHANGELOG_CACHE_KEY,
+      JSON.stringify({ source, checkedAt: Date.now() })
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(source + source))
+    )
+    render(ChangelogContent)
+    await screen.findByRole('heading', { name: 'v1' })
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Showing saved')
+    )
+    expect(screen.getAllByRole('article')).toHaveLength(1)
+  })
 })
