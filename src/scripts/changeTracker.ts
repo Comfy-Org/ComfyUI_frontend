@@ -294,7 +294,7 @@ export class ChangeTracker {
     /**
      * The initial state of the workflow
      */
-    public initialState: ComfyWorkflowJSON
+    public initialState: ComfyWorkflowJSON | null
   ) {
     this.activeState = initialState
   }
