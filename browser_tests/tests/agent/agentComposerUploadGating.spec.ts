@@ -64,7 +64,6 @@ test.describe(
         // Enter stays a no-op by design while refs are unresolved; what changes
         // is that the reason is now on screen instead of nowhere.
         await agentPanel.composer.press('Enter')
-        expect(postedMessages).toHaveLength(0)
 
         releaseUploads()
 
@@ -72,6 +71,9 @@ test.describe(
         // first message lands in a region the screen reader already knows.
         await expect(agentPanel.composerUploadStatus).toHaveText('')
         await expect(agentPanel.sendButton).toBeEnabled()
+        // Check only after the upload requests and reactive UI have settled, so
+        // a POST leaked by the first Enter cannot still be in flight.
+        expect(postedMessages).toHaveLength(0)
 
         await agentPanel.composer.press('Enter')
         await expect.poll(() => postedMessages).toHaveLength(1)
