@@ -118,6 +118,43 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   ).toHaveCount(0)
 })
 
+for (const { reducedMotion, paused } of [
+  { reducedMotion: 'no-preference', paused: false },
+  { reducedMotion: 'reduce', paused: true }
+] as const) {
+  test(`shows each hub app card's video thumbnail over its poster, ${paused ? 'held still' : 'playing'} with ${reducedMotion} motion`, async ({
+    page,
+    context
+  }) => {
+    await mockFlags(context, { apps: true, workflows: false })
+    await page.emulateMedia({ reducedMotion })
+    await page.goto('/hub/apps/')
+
+    const artwork = page
+      .getByTestId('app-shelf')
+      .getByTestId('model-card-media')
+    await expect(artwork).toHaveCount(2)
+    await expect(artwork.nth(0)).toHaveAttribute(
+      'poster',
+      'https://media.comfy.org/website/workshop/apps/cinematic-studio/poster.jpg'
+    )
+    await expect(artwork.nth(0)).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/website/workshop/apps/cinematic-studio/thumbnail.mp4'
+    )
+    await expect(artwork.nth(1)).toHaveAttribute(
+      'poster',
+      'https://media.comfy.org/website/workshop/apps/reshoot/poster.jpg'
+    )
+    await expect(artwork.nth(1)).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/website/workshop/apps/reshoot/thumbnail.mp4'
+    )
+    await expect(artwork.nth(0)).toHaveJSProperty('paused', paused)
+    await expect(artwork.nth(1)).toHaveJSProperty('paused', paused)
+  })
+}
+
 test('hides Re-shoot from the hub apps page and closes its page while its flag is off', async ({
   page,
   context
