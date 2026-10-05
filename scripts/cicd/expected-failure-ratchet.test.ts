@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest'
 import { inspectSource } from './expected-failure-ratchet'
 
 describe('expected failure inventory', () => {
+  it('ignores test-shaped calls in production source files', () => {
+    expect(
+      inspectSource(
+        `const test = { fails: () => undefined }; test.fails('not a test')`,
+        'src/test-support.ts'
+      )
+    ).toEqual([])
+  })
+
   it('finds Vitest and Playwright pins without matching inert text', () => {
     const source = `
       // it.fails('commented out', () => {})

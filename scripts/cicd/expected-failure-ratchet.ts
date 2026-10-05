@@ -35,6 +35,8 @@ const SOURCE_ROOTS = [
   'tools'
 ]
 const SOURCE_EXTENSIONS = new Set(['.cts', '.mts', '.ts', '.tsx'])
+const TEST_FILE_PATTERN = /\.(?:spec|test)\.[cm]?tsx?$/
+const READ_BATCH_SIZE = 64
 
 function isTestExpression(
   expression: ts.Expression,
@@ -257,6 +259,8 @@ function vitestTitle(node: ts.CallExpression): string {
 }
 
 export function inspectSource(source: string, file: string): ExpectedFailure[] {
+  if (!TEST_FILE_PATTERN.test(file)) return []
+
   const sourceFile = ts.createSourceFile(
     file,
     source,
@@ -321,19 +325,24 @@ async function buildInventory(
     )
   ).flat()
 
-  return (
-    await Promise.all(
-      files.map(async (absoluteFile) => {
-        const file = path
-          .relative(repositoryRoot, absoluteFile)
-          .split(path.sep)
-          .join('/')
-        return inspectSource(await readFile(absoluteFile, 'utf8'), file)
-      })
+  const inventory: ExpectedFailure[] = []
+  for (let index = 0; index < files.length; index += READ_BATCH_SIZE) {
+    const batch = files.slice(index, index + READ_BATCH_SIZE)
+    inventory.push(
+      ...(
+        await Promise.all(
+          batch.map(async (absoluteFile) => {
+            const file = path
+              .relative(repositoryRoot, absoluteFile)
+              .split(path.sep)
+              .join('/')
+            return inspectSource(await readFile(absoluteFile, 'utf8'), file)
+          })
+        )
+      ).flat()
     )
-  )
-    .flat()
-    .sort((left, right) => left.id.localeCompare(right.id))
+  }
+  return inventory.sort((left, right) => left.id.localeCompare(right.id))
 }
 
 function validateBaseline(value: unknown): BaselineEntry[] {
