@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import {
   afterEach,
   assert,
@@ -20,6 +21,7 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
 } from '@/schemas/nodeDefSchema'
+import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
@@ -1020,6 +1022,58 @@ class RefSourceNode extends LGraphNode {
   }
 }
 
+const PREFIX_NODE_TYPE = 'test/PrefixNamedAutogrowInCombo'
+const PREFIX_GROUP_MAX = 4
+
+/**
+ * A nested autogrow group named by `prefix` rather than `names`, whose
+ * ordinals are therefore parsed back off the input name.
+ */
+const prefixNodeDef: ComfyNodeDefV1 = {
+  name: PREFIX_NODE_TYPE,
+  display_name: 'Prefix Named Autogrow In Combo',
+  category: 'testing',
+  python_module: 'nodes',
+  description: '',
+  input: {
+    required: {
+      model: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'only',
+              inputs: {
+                required: {
+                  seed: ['INT', { default: 0 }],
+                  refs: [
+                    'COMFY_AUTOGROW_V3',
+                    {
+                      template: {
+                        input: { required: { ref: ['IMAGE', {}] } },
+                        prefix: 'ref',
+                        min: 0,
+                        max: PREFIX_GROUP_MAX
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  output: ['IMAGE'],
+  output_name: ['IMAGE'],
+  output_node: false
+}
+
+function refNames(group: string, count: number): string[] {
+  return Array.from({ length: count }, (_, i) => `model.${group}.ref_${i + 1}`)
+}
+
 /** Names of `prefix` inputs on `node` that carry a link, in slot order. */
 function connectedUnder(node: LGraphNode, prefix: string): string[] {
   return node.inputs.flatMap((input, slot) =>
@@ -1049,9 +1103,8 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
     LiteGraph.registerNodeType('test/RefSource', RefSourceNode)
   })
 
-  // `min` sets how many slots the group regenerates on rebuild, so it alone
-  // decided how many links used to survive: the enterprise report's "first 3"
-  // is min=2, and FE-2443's "five or more images" threshold is min=4.
+  // Pre-fix the rebuild regenerated a fixed `max(1, min + 1)` ordinals, so
+  // `min` alone decided how many links survived while the rest were deleted.
   test.for([
     { min: 0, images: 5, videos: 2 },
     { min: 2, images: 6, videos: 2 },
@@ -1079,8 +1132,8 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
         images: connectedUnder(reloadedNode, 'model.reference_images.'),
         videos: connectedUnder(reloadedNode, 'model.reference_videos.')
       }).toEqual({
-        images: connectedUnder(node, 'model.reference_images.'),
-        videos: connectedUnder(node, 'model.reference_videos.')
+        images: refNames('reference_images', images),
+        videos: refNames('reference_videos', videos)
       })
     }
   )
@@ -1108,6 +1161,42 @@ describe('Nested autogrow links across a workflow reload (PN-1520, FE-2443)', ()
       connected: connectedUnder(reloadedNode, 'model.reference_videos.').length,
       slots: videoSlots.length
     }).toEqual({ connected: 4, slots: 4 })
+  })
+
+  test('ignores an out-of-range ordinal in a prefix-named group', async () => {
+    await useLitegraphService().registerNodeDef(PREFIX_NODE_TYPE, prefixNodeDef)
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(PREFIX_NODE_TYPE)
+    assert.ok(node, 'prefix node')
+    graph.add(node)
+    const slot = node.inputs.findIndex(
+      (input) => input.name === 'model.refs.ref0'
+    )
+    assert.ok(slot !== -1, 'prefix-named autogrow slot')
+    const source = new RefSourceNode()
+    graph.add(source)
+    assert.ok(source.connect(0, node, slot), 'connect model.refs.ref0')
+
+    // The state a hand-edited workflow leaves behind: a linked input whose
+    // trailing digits parse to an ordinal far beyond the group's `max`.
+    // Re-applying the value must not walk up to it - every ordinal costs an
+    // iteration whether or not a slot results, so `ref900000000` would spin
+    // ~900M times and hang the tab even though no slot is ever added.
+    node.inputs[slot].name = 'model.refs.ref900000000'
+
+    const combo = node.widgets?.find((widget) => widget.name === 'model')
+    assert.ok(combo, 'model combo widget')
+    const started = performance.now()
+    combo.value = 'only'
+    const elapsed = performance.now() - started
+
+    const refSlots = node.inputs.filter((input) =>
+      input.name.startsWith('model.refs.')
+    )
+    expect({
+      slotsWithinMax: refSlots.length <= PREFIX_GROUP_MAX,
+      completedPromptly: elapsed < 5_000
+    }).toEqual({ slotsWithinMax: true, completedPromptly: true })
   })
 })
 
@@ -1144,8 +1233,24 @@ const switchableNodeDef: ComfyNodeDefV1 = {
               }
             },
             {
-              key: 'no-refs',
-              inputs: { required: { seed: ['INT', { default: 0 }] } }
+              // Declares the same group, so regrowth is reachable on this
+              // option and the guard is what keeps the discarded links off it.
+              key: 'other-refs',
+              inputs: {
+                required: {
+                  seed: ['INT', { default: 0 }],
+                  reference_images: [
+                    'COMFY_AUTOGROW_V3',
+                    {
+                      template: {
+                        input: { required: { ref: ['IMAGE', {}] } },
+                        names: ['ref_1', 'ref_2', 'ref_3', 'ref_4'],
+                        min: 0
+                      }
+                    }
+                  ]
+                }
+              }
             }
           ]
         }
@@ -1172,17 +1277,54 @@ describe('Autogrow regrowth is scoped to restoring a value', () => {
     assert.ok(node, 'switchable node')
     graph.add(node)
     connectRefs(graph, node, 'reference_images', 0, 3)
-    expect(connectedUnder(node, 'model.reference_images.')).toHaveLength(3)
+    expect(connectedUnder(node, 'model.reference_images.')).toEqual(
+      refNames('reference_images', 3)
+    )
 
     const combo = node.widgets?.find((widget) => widget.name === 'model')
     assert.ok(combo, 'model combo widget')
-    combo.value = 'no-refs'
+    combo.value = 'other-refs'
 
-    expect({
-      refInputs: node.inputs.filter((input) =>
-        input.name.startsWith('model.reference_images.')
-      ).length,
-      links: graph.links.size
-    }).toEqual({ refInputs: 0, links: 0 })
+    // Only the ordinal the destination lays out on its own keeps its link;
+    // regrowing for the other two would be resurrecting discarded work.
+    expect(connectedUnder(node, 'model.reference_images.')).toEqual(
+      refNames('reference_images', 1)
+    )
+  })
+
+  test('restores a saved non-default option while the graph is configuring', () => {
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(SWITCHABLE_NODE_TYPE)
+    assert.ok(node, 'switchable node')
+    graph.add(node)
+    const combo = node.widgets?.find((widget) => widget.name === 'model')
+    assert.ok(combo, 'model combo widget')
+    combo.value = 'other-refs'
+    connectRefs(graph, node, 'reference_images', 0, 4)
+    expect(connectedUnder(node, 'model.reference_images.')).toEqual(
+      refNames('reference_images', 4)
+    )
+
+    // The saved option is not the one the node is constructed with, so
+    // `removedOption === value` is false here and only `app.configuringGraph`
+    // marks this as a restore. LGraph.configure sets it in the running app
+    // via an install the unit environment does not perform.
+    const serialized = structuredClone(graph.serialize())
+    const reloaded = new LGraph()
+    const appInternals = fromAny<{ configuringGraphLevel: number }, unknown>(
+      app
+    )
+    appInternals.configuringGraphLevel = 1
+    try {
+      reloaded.configure(serialized)
+    } finally {
+      appInternals.configuringGraphLevel = 0
+    }
+
+    const reloadedNode = reloaded.getNodeById(node.id)
+    assert.ok(reloadedNode, 'reloaded node')
+    expect(connectedUnder(reloadedNode, 'model.reference_images.')).toEqual(
+      refNames('reference_images', 4)
+    )
   })
 })

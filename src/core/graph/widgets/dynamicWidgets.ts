@@ -487,10 +487,10 @@ function addAutogrowGroup(
   groupName: string,
   node: AutogrowNode
 ) {
-  const { addNodeInput } = useLitegraphService()
   const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   if (ordinal >= max) return
 
+  const { addNodeInput } = useLitegraphService()
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
   const namedSpecs = inputSpecs.map((input) => ({
@@ -802,8 +802,9 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
 }
 /**
  * Highest ordinal of `groupName` named by `retainedNames`, or -1 for none.
- * Membership resolves through the group's registration, so an unrelated
- * dotted input sharing the prefix cannot inflate the count.
+ * Membership resolves through the group's registration. That pins the result
+ * to a declared ordinal only when the group declares `names`; otherwise the
+ * ordinal is parsed off the name and the caller must clamp it.
  */
 function highestRetainedOrdinal(
   node: AutogrowNode,
@@ -846,16 +847,24 @@ function applyAutogrow(
       transformInputSpecV1ToV2(v, { name, isOptional: index === 1 })
     )
   )
+  const groupMax = names?.length ?? max
   node.comfyDynamic.autogrow[inputSpecV2.name] = {
     names,
     min,
-    max: names?.length ?? max,
+    max: groupMax,
     prefix,
     inputSpecs: inputsV2
   }
-  const lastOrdinal = Math.max(
-    min,
-    highestRetainedOrdinal(node, inputSpecV2.name, retainedNames)
+  //Without `names`, an ordinal is parsed off a serialized input name and so
+  //is unbounded. Clamp the loop, not just the slot: `addAutogrowGroup`
+  //refusing the ordinal still costs an iteration apiece, and a workflow
+  //naming `ref<many digits>` would hang the tab.
+  const lastOrdinal = Math.min(
+    Math.max(
+      min,
+      highestRetainedOrdinal(node, inputSpecV2.name, retainedNames)
+    ),
+    groupMax - 1
   )
   for (let i = 0; i === 0 || i < lastOrdinal + 1; i++)
     addAutogrowGroup(i, inputSpecV2.name, node)
