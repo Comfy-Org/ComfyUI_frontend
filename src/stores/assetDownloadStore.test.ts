@@ -168,6 +168,10 @@ describe('useAssetDownloadStore', () => {
 
       expect(store.downloadList).toHaveLength(0)
 
+      dispatch(createDownloadMessage({ status: 'failed' }))
+      dispatch(createDownloadMessage({ status: 'running', progress: 0.5 }))
+      expect(store.downloadList).toHaveLength(0)
+
       dispatch(createDownloadMessage({ status: 'completed', progress: 1 }))
       expect(store.downloadList).toHaveLength(0)
       expect(store.lastCompletedDownload).toMatchObject({

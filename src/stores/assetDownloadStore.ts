@@ -319,7 +319,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         timestamp: Date.now()
       }
     }
-    if (reconcilableTaskStatuses.has(data.status)) {
+    if (data.status === 'completed' || data.status === 'cancelled') {
       dismissedPendingDownloads.delete(data.task_id)
     }
     return true
