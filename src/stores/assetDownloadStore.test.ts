@@ -10,7 +10,10 @@ import {
   taskService
 } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import {
+  isDownloadCancelled,
+  useAssetDownloadStore
+} from '@/stores/assetDownloadStore'
 
 type DownloadEventHandler = (e: CustomEvent<AssetDownloadWsMessage>) => void
 
@@ -148,6 +151,99 @@ describe('useAssetDownloadStore', () => {
       })
       expect(store.sessionDownloadCount).toBe(1)
       expect(store.isDownloadedThisSession('asset-456')).toBe(true)
+    })
+
+    it('does not resurrect a dismissed pending cancellation on late events', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+      store.clearDismissibleDownloads()
+      dispatch(createDownloadMessage({ status: 'running', progress: 0.75 }))
+
+      expect(store.downloadList).toHaveLength(0)
+
+      dispatch(createDownloadMessage({ status: 'failed' }))
+      dispatch(createDownloadMessage({ status: 'running', progress: 0.5 }))
+      expect(store.downloadList).toHaveLength(0)
+
+      dispatch(createDownloadMessage({ status: 'completed', progress: 1 }))
+      expect(store.downloadList).toHaveLength(0)
+      expect(store.lastCompletedDownload).toMatchObject({
+        taskId: 'task-123',
+        modelType: 'checkpoints'
+      })
+      const completionTimestamp = store.lastCompletedDownload?.timestamp
+      await vi.advanceTimersByTimeAsync(1)
+      dispatch(createDownloadMessage({ status: 'completed', progress: 1 }))
+      expect(store.lastCompletedDownload?.timestamp).toBe(completionTimestamp)
+
+      // Late progress after a terminal frame is still part of the dismissed
+      // task and must not reopen the toast.
+      dispatch(createDownloadMessage({ status: 'running', progress: 0.25 }))
+      expect(store.downloadList).toHaveLength(0)
+    })
+
+    it('does not resurrect a dismissed unconfirmed cancellation on late events', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({ status: 'running', result: undefined })
+      })
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(store.downloadList[0].status).toBe('cancellation_unconfirmed')
+
+      store.clearDismissibleDownloads()
+      dispatch(createDownloadMessage({ status: 'running', progress: 0.75 }))
+      expect(store.downloadList).toHaveLength(0)
+
+      dispatch(createDownloadMessage({ status: 'completed', progress: 1 }))
+      expect(store.downloadList).toHaveLength(0)
+      expect(store.lastCompletedDownload).toMatchObject({
+        taskId: 'task-123',
+        modelType: 'checkpoints'
+      })
+    })
+
+    it('allows explicit tracking to reuse a dismissed task id', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      store.trackDownload('task-123', 'checkpoints', 'first.safetensors')
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await store.cancelDownload('task-123')
+      store.clearDismissibleDownloads()
+
+      store.trackDownload('task-123', 'loras', 'second.safetensors')
+      dispatch(
+        createDownloadMessage({
+          status: 'running',
+          asset_name: 'second.safetensors'
+        })
+      )
+
+      expect(store.downloadList).toEqual([
+        expect.objectContaining({
+          taskId: 'task-123',
+          modelType: 'loras',
+          assetName: 'second.safetensors'
+        })
+      ])
     })
 
     // REGRESSION COVERAGE PM-1302 / PM-1309: cloud's HandleDownloadFile
@@ -411,6 +507,24 @@ describe('useAssetDownloadStore', () => {
       expect(taskService.getTask).toHaveBeenCalledWith('task-123')
     })
 
+    it('shows pending cancellation when a DELETE 404 reread is still running', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'missing'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({ status: 'running', result: undefined })
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await store.cancelDownload('task-123')
+
+      expect(store.downloadList[0].status).toBe('cancellation_pending')
+      expect(store.hasPendingCancellation).toBe(true)
+    })
+
     it('allows an authoritative completion to replace confirmed cancellation', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockResolvedValue({
@@ -528,7 +642,7 @@ describe('useAssetDownloadStore', () => {
       expect(store.lastCompletedDownload?.modelType).toBe('checkpoints')
     })
 
-    it('reconciles an authoritative failure after local cancellation and keeps polling', async () => {
+    it('recovers from an authoritative failure during cancellation', async () => {
       const store = useAssetDownloadStore()
       store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
       vi.mocked(taskService.cancelTask).mockResolvedValue({
@@ -557,12 +671,12 @@ describe('useAssetDownloadStore', () => {
         error: 'Cancellation failed'
       })
 
-      await vi.advanceTimersByTimeAsync(10_000)
+      await vi.advanceTimersByTimeAsync(60_000)
 
       expect(taskService.getTask).toHaveBeenCalledTimes(2)
       expect(store.finishedDownloads[0]).toMatchObject({
         status: 'completed',
-        assetId: 'asset-456'
+        error: undefined
       })
     })
 
@@ -638,7 +752,7 @@ describe('useAssetDownloadStore', () => {
       expect(taskService.getTask).toHaveBeenCalledTimes(1)
     })
 
-    it('keeps re-polling a running download whose task lookup 404s', async () => {
+    it('settles a running download after repeated task lookup 404s', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.getTask).mockResolvedValue({
         ok: false,
@@ -648,9 +762,161 @@ describe('useAssetDownloadStore', () => {
 
       await vi.advanceTimersByTimeAsync(10_000)
 
-      // Only a *pending cancellation* is settled by a 404; an ordinary
-      // download keeps its reported status.
       expect(store.activeDownloads).toHaveLength(1)
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(store.activeDownloads).toHaveLength(0)
+      expect(store.finishedDownloads[0]).toMatchObject({
+        status: 'failed',
+        error: 'The download task is no longer available.'
+      })
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(2)
+    })
+
+    it('restarts reconciliation when cancelling a task-unavailable row', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask)
+        .mockResolvedValueOnce({
+          ok: false,
+          error: new TaskNotFoundError('task-123')
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          error: new TaskNotFoundError('task-123')
+        })
+        .mockResolvedValue({
+          ok: true,
+          value: createTaskResponse({ status: 'running', result: undefined })
+        })
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await vi.advanceTimersByTimeAsync(20_000)
+      expect(store.finishedDownloads[0].status).toBe('failed')
+
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(taskService.getTask).toHaveBeenCalledTimes(3)
+      expect(store.downloadList[0].status).toBe('cancellation_pending')
+    })
+
+    it('recovers a task-unavailable row from new active progress', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: false,
+        error: new TaskNotFoundError('task-123')
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await vi.advanceTimersByTimeAsync(20_000)
+      expect(store.finishedDownloads[0].status).toBe('failed')
+
+      dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
+
+      expect(store.activeDownloads[0]).toMatchObject({
+        status: 'running',
+        progress: 75
+      })
+    })
+
+    it('keeps reconciling a failed task so a backend retry can recover', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask)
+        .mockResolvedValueOnce({
+          ok: true,
+          value: createTaskResponse({
+            status: 'failed',
+            result: undefined,
+            error_message: 'Retrying download'
+          })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          value: createTaskResponse({ status: 'running', result: undefined })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          value: createTaskResponse({ status: 'completed' })
+        })
+      dispatch(createDownloadMessage({ status: 'failed' }))
+
+      await vi.advanceTimersByTimeAsync(30_000)
+
+      expect(taskService.getTask).toHaveBeenCalledTimes(3)
+      expect(store.finishedDownloads[0].status).toBe('completed')
+    })
+
+    it('bounds polling for a permanently failed task', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({
+          status: 'failed',
+          result: undefined,
+          error_message: 'Download failed'
+        })
+      })
+      dispatch(createDownloadMessage({ status: 'failed' }))
+
+      await vi.advanceTimersByTimeAsync(300_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(30)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(taskService.getTask).toHaveBeenCalledTimes(30)
+
+      dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
+      expect(store.activeDownloads).toHaveLength(1)
+    })
+
+    it('accepts retry progress after an authoritative failed snapshot', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({
+          status: 'failed',
+          result: undefined,
+          error_message: 'Download failed'
+        })
+      })
+      dispatch(createDownloadMessage({ status: 'failed' }))
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
+
+      expect(store.activeDownloads[0]).toMatchObject({
+        status: 'running',
+        progress: 75
+      })
+    })
+
+    it('requires consecutive task lookup 404s before settling', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.getTask)
+        .mockResolvedValueOnce({
+          ok: false,
+          error: new TaskNotFoundError('task-123')
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          error: new Error('gateway unavailable')
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          error: new TaskNotFoundError('task-123')
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          value: createTaskResponse({ status: 'running', result: undefined })
+        })
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await vi.advanceTimersByTimeAsync(40_000)
+
+      expect(store.activeDownloads).toHaveLength(1)
+      expect(store.finishedDownloads).toHaveLength(0)
     })
 
     it('settles a pending cancellation the backend never confirms', async () => {
@@ -680,10 +946,10 @@ describe('useAssetDownloadStore', () => {
       expect(store.finishedDownloads[0].status).toBe('cancellation_unconfirmed')
       expect(store.hasPendingCancellation).toBe(false)
 
-      // The unconfirmed state remains recheckable because the backend still
-      // reports an active task.
+      // The unconfirmed state is terminal for polling; a late WebSocket
+      // terminal event can still replace it.
       await vi.advanceTimersByTimeAsync(10_000)
-      expect(taskService.getTask).toHaveBeenCalledTimes(7)
+      expect(taskService.getTask).toHaveBeenCalledTimes(6)
     })
 
     it('does not consume the cancellation bound on transient lookup failures', async () => {
@@ -721,7 +987,7 @@ describe('useAssetDownloadStore', () => {
       await vi.advanceTimersByTimeAsync(0)
     })
 
-    it('keeps polling when a completed task has a malformed result', async () => {
+    it('settles a completed task with a malformed result', async () => {
       const store = useAssetDownloadStore()
       store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
       vi.mocked(taskService.getTask).mockResolvedValue({
@@ -733,11 +999,11 @@ describe('useAssetDownloadStore', () => {
 
       await vi.advanceTimersByTimeAsync(10_000)
 
-      expect(store.downloadList[0].status).toBe('created')
-      expect(store.finishedDownloads).toHaveLength(0)
+      expect(store.downloadList[0].status).toBe('completed')
+      expect(store.finishedDownloads).toHaveLength(1)
     })
 
-    it('bounds pending cancellation reconciliation for malformed completed results', async () => {
+    it('accepts completed cancellation reconciliation with a malformed result', async () => {
       const store = useAssetDownloadStore()
       vi.mocked(taskService.cancelTask).mockResolvedValue({
         ok: true,
@@ -756,8 +1022,8 @@ describe('useAssetDownloadStore', () => {
       await store.cancelDownload('task-123')
       await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(taskService.getTask).toHaveBeenCalledTimes(6)
-      expect(store.finishedDownloads[0].status).toBe('cancellation_unconfirmed')
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
+      expect(store.finishedDownloads[0].status).toBe('completed')
       expect(store.hasPendingCancellation).toBe(false)
     })
 
@@ -803,7 +1069,7 @@ describe('useAssetDownloadStore', () => {
       )
 
       await store.cancelDownload('task-123')
-      expect(store.downloadList[0].error).toBe('Source server error')
+      expect(store.downloadList[0].error).toBeUndefined()
       await vi.advanceTimersByTimeAsync(10_000)
 
       expect(store.finishedDownloads[0]).toMatchObject({
@@ -833,6 +1099,16 @@ describe('useAssetDownloadStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(store.hasDownloads).toBe(false)
+    })
+
+    it('does not restore a dismissed confirmed cancellation from late progress', () => {
+      const store = useAssetDownloadStore()
+      dispatch(createDownloadMessage({ status: 'cancelled' }))
+
+      store.clearFinishedDownloads()
+      dispatch(createDownloadMessage({ status: 'running', progress: 80 }))
+
+      expect(store.downloadList).toHaveLength(0)
     })
 
     it('polls and marks failed downloads', async () => {
@@ -896,6 +1172,31 @@ describe('useAssetDownloadStore', () => {
 
       expect(store.finishedDownloads).toHaveLength(0)
     })
+
+    it('keeps a cleared unconfirmed cancellation hidden from late progress', async () => {
+      const store = useAssetDownloadStore()
+      vi.mocked(taskService.cancelTask).mockResolvedValue({
+        ok: true,
+        value: 'cancelling'
+      })
+      vi.mocked(taskService.getTask).mockResolvedValue({
+        ok: true,
+        value: createTaskResponse({ status: 'running', result: undefined })
+      })
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
+      dispatch(createDownloadMessage({ status: 'running' }))
+      await store.cancelDownload('task-123')
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      store.clearFinishedDownloads()
+      dispatch(createDownloadMessage({ status: 'running', progress: 75 }))
+
+      expect(store.downloadList).toHaveLength(0)
+    })
+  })
+
+  it('classifies an unconfirmed cancellation as cancelled for the UI', () => {
+    expect(isDownloadCancelled('cancellation_unconfirmed')).toBe(true)
   })
 
   describe('session download tracking', () => {
