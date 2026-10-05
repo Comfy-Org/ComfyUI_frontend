@@ -86,16 +86,10 @@ describe('BuildConfiguratorSplit01', () => {
     ).toBeTruthy()
   })
 
-  it('shows a more-options hint after each chip group', () => {
+  it('does not render a more-options hint after the chip groups', () => {
     render(BuildConfiguratorSplit01, { props: baseProps })
 
-    const hints = screen.getAllByText('more options')
-    expect(hints).toHaveLength(4)
-    for (const hint of hints) {
-      expect(hint.tagName).toBe('SPAN')
-      expect(hint.getAttribute('aria-hidden')).toBe('true')
-      expect(hint.className).not.toContain('underline')
-    }
+    expect(screen.queryByText('more options')).toBeNull()
   })
 
   it('renders node and model chips as text only, without status dots', () => {
