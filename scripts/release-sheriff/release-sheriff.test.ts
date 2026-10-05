@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { PullRequestSummary } from './release-sheriff'
 import {
   CONFIG,
+  assigneeAccepted,
   fetchDirectory,
   fetchOnCallEmails,
   isSheriffPr,
@@ -177,6 +178,36 @@ describe('parseSheriffConfig', () => {
     ],
     ['a missing backup', '{"sheriff":"a"}', /no usable "backupReviewer"/],
     [
+      'a sheriff login with a space',
+      '{"sheriff":"the data life","backupReviewer":"b"}',
+      /"the data life" is not a GitHub username/
+    ],
+    [
+      'a backup login with a space',
+      '{"sheriff":"a","backupReviewer":"christian byrne"}',
+      /"christian byrne" is not a GitHub username/
+    ],
+    [
+      'a login starting with a hyphen',
+      '{"sheriff":"-nope","backupReviewer":"b"}',
+      /not a GitHub username/
+    ],
+    [
+      'a login ending with a hyphen',
+      '{"sheriff":"nope-","backupReviewer":"b"}',
+      /not a GitHub username/
+    ],
+    [
+      'a login with consecutive hyphens',
+      '{"sheriff":"no--pe","backupReviewer":"b"}',
+      /not a GitHub username/
+    ],
+    [
+      'a login over 39 characters',
+      `{"sheriff":"${'a'.repeat(40)}","backupReviewer":"b"}`,
+      /not a GitHub username/
+    ],
+    [
       'a blank backup',
       '{"sheriff":"a","backupReviewer":""}',
       /no usable "backupReviewer"/
@@ -190,6 +221,19 @@ describe('parseSheriffConfig', () => {
     expect(error).toMatch(expected)
   })
 
+  it('accepts the hyphenated and 39-character logins GitHub allows', () => {
+    const longest = 'a'.repeat(39)
+
+    expect(
+      parseSheriffConfig(
+        `{"sheriff":"christian-byrne","backupReviewer":"${longest}"}`
+      )
+    ).toEqual({
+      config: { sheriff: 'christian-byrne', backupReviewer: longest },
+      error: null
+    })
+  })
+
   it('rejects a backup reviewer who is the sheriff, ignoring case', () => {
     const { config, error } = parseSheriffConfig(
       '{"sheriff":"thedatalife","backupReviewer":"TheDataLife"}'
@@ -197,6 +241,38 @@ describe('parseSheriffConfig', () => {
 
     expect(config).toBeNull()
     expect(error).toMatch(/same login as both "sheriff" and "backupReviewer"/)
+  })
+})
+
+describe('assigneeAccepted', () => {
+  const issue = (...logins: string[]) => ({
+    assignees: logins.map((login) => ({ login }))
+  })
+
+  it('confirms the login GitHub echoed back, ignoring case', () => {
+    expect(assigneeAccepted(issue('TheDataLife'), 'thedatalife')).toBe(true)
+    expect(
+      assigneeAccepted(issue('someone', 'thedatalife'), 'thedatalife')
+    ).toBe(true)
+  })
+
+  // The failure this exists for: GitHub drops an assignee without push access
+  // and still answers 201, so an empty list is a successful-looking no-op.
+  it('rejects a response that silently dropped the login', () => {
+    expect(assigneeAccepted(issue(), 'thedatalife')).toBe(false)
+    expect(assigneeAccepted(issue('someone-else'), 'thedatalife')).toBe(false)
+  })
+
+  const unusable: [label: string, response: unknown][] = [
+    ['a non-object', 'nope'],
+    ['null', null],
+    ['an object with no assignees', {}],
+    ['assignees that is not an array', { assignees: 'nope' }],
+    ['assignee entries without a login', { assignees: [{}, { login: 7 }] }]
+  ]
+
+  it.for(unusable)('rejects %s', ([, response]) => {
+    expect(assigneeAccepted(response, 'thedatalife')).toBe(false)
   })
 })
 

@@ -39,6 +39,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // weekly, the sheriff shepherds releases. Details in docs/release-process.md.
 const SHERIFF_CONFIG_PATH = '.github/release-sheriff.json'
 
+// Alphanumeric with single internal hyphens, 39 characters max. Checked because
+// the assignee API accepts a login it cannot resolve and silently drops it, so
+// a typo would otherwise surface weeks later as PRs nobody was assigned to,
+// rather than as a failed check on the PR that introduced it.
+const GITHUB_LOGIN = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/
+
 export interface SheriffConfig {
   sheriff: string
   backupReviewer: string
@@ -74,6 +80,16 @@ export function parseSheriffConfig(raw: string): SheriffConfigParse {
   if (!usable(sheriff)) return invalid('has no usable "sheriff" login')
   if (!usable(backupReviewer)) {
     return invalid('has no usable "backupReviewer" login')
+  }
+  for (const [field, login] of [
+    ['sheriff', sheriff.trim()],
+    ['backupReviewer', backupReviewer.trim()]
+  ] as const) {
+    if (!GITHUB_LOGIN.test(login)) {
+      return invalid(
+        `has no usable "${field}" login: "${login}" is not a GitHub username`
+      )
+    }
   }
   // GitHub rejects a self-review request, so a backup who is the sheriff leaves
   // sheriff-authored backports with nobody asked to review, waiting forever on
@@ -566,6 +582,31 @@ function ghPost(path: string, field: string): boolean {
   }
 }
 
+// POST .../assignees silently ignores a login without push access and still
+// answers 201 with the issue body, so the echoed assignees list is the only
+// evidence the assignment actually took. A plain "did the call throw" check
+// reports success for a PR that is still unowned.
+export function assigneeAccepted(response: unknown, login: string): boolean {
+  if (!isRecord(response) || !Array.isArray(response.assignees)) return false
+  return response.assignees.some(
+    (assignee) =>
+      isRecord(assignee) &&
+      typeof assignee.login === 'string' &&
+      assignee.login.toLowerCase() === login.toLowerCase()
+  )
+}
+
+function ghAssign(path: string, login: string): boolean {
+  try {
+    const response: unknown = JSON.parse(
+      gh(['api', '--method', 'POST', path, '-f', `assignees[]=${login}`])
+    )
+    return assigneeAccepted(response, login)
+  } catch {
+    return false
+  }
+}
+
 function runAssignment(
   repo: string,
   sheriff: string,
@@ -585,13 +626,15 @@ function runAssignment(
     )
   }
 
+  const unconfirmed: number[] = []
   for (const { number, assign, requestReview, reviewer } of actions) {
     if (assign) {
       const path = `repos/${repo}/issues/${number}/assignees`
-      if (ghPost(path, `assignees[]=${sheriff}`)) {
+      if (ghAssign(path, sheriff)) {
         summary(`- Assigned #${number}`)
       } else {
-        warn(`Could not assign #${number} to ${sheriff}`)
+        warn(`Could not confirm #${number} was assigned to ${sheriff}`)
+        unconfirmed.push(number)
       }
     }
 
@@ -604,6 +647,19 @@ function runAssignment(
         warn(`Could not request review from ${reviewer} on #${number}`)
       }
     }
+  }
+
+  // Reported once rather than per PR: `degraded` is a single workflow output,
+  // and appending a second record for the same key is how a heredoc output
+  // gets misparsed.
+  if (unconfirmed.length > 0) {
+    output(
+      'degraded',
+      `GitHub did not record \`${sheriff}\` as assignee on ` +
+        `${unconfirmed.map((number) => `#${number}`).join(', ')}. It ignores ` +
+        'an assignee without push access and still reports success.'
+    )
+    process.exitCode = 1
   }
 }
 
