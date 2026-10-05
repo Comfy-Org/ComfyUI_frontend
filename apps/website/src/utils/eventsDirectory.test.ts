@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyEvent } from '../data/events'
+import type { ComfyEvent } from '@/data/events'
 
 import {
   DIRECTORY_FILTER_ALL,
@@ -427,10 +427,10 @@ describe('groupRowsByMonth', () => {
       at('oct-2', '2026-10-20T10:00:00Z'),
       at('nov', '2026-11-03T10:00:00Z')
     ])
-    expect(months.map((month) => month.key)).toEqual(['2026-10', '2026-11'])
-    expect(months[0].rows.map((row) => row.event.id)).toEqual([
-      'oct-1',
-      'oct-2'
+    expect(months.map((month) => month.key)).toEqual(['2026-11', '2026-10'])
+    expect(months[1].rows.map((row) => row.event.id)).toEqual([
+      'oct-2',
+      'oct-1'
     ])
   })
 
@@ -439,10 +439,10 @@ describe('groupRowsByMonth', () => {
       at('sep', '2026-09-20T10:00:00Z'),
       at('dec', '2026-12-01T10:00:00Z')
     ])
-    expect(months.map((month) => month.key)).toEqual(['2026-09', '2026-12'])
+    expect(months.map((month) => month.key)).toEqual(['2026-12', '2026-09'])
   })
 
-  it('puts upcoming months ascending ahead of past months descending', () => {
+  it('orders every month latest first, upcoming and past alike', () => {
     const months = group([
       at('july', '2026-07-10T10:00:00Z'),
       at('nov', '2026-11-10T10:00:00Z'),
@@ -450,14 +450,14 @@ describe('groupRowsByMonth', () => {
       at('oct', '2026-10-10T10:00:00Z')
     ])
     expect(months.map((month) => month.key)).toEqual([
-      '2026-10',
       '2026-11',
+      '2026-10',
       '2026-07',
       '2026-06'
     ])
   })
 
-  it('counts a straddling month as upcoming and sorts it ascending', () => {
+  it('counts a straddling month as upcoming and sorts it latest first', () => {
     // September holds one event that has passed and two still ahead.
     const months = group([
       at('sep-late', '2026-09-28T10:00:00Z'),
@@ -467,9 +467,9 @@ describe('groupRowsByMonth', () => {
     expect(months).toHaveLength(1)
     expect(months[0].upcoming).toBe(true)
     expect(months[0].rows.map((row) => row.event.id)).toEqual([
-      'sep-past',
+      'sep-late',
       'sep-soon',
-      'sep-late'
+      'sep-past'
     ])
   })
 

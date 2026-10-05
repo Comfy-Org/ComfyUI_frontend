@@ -1,15 +1,15 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import AudienceSection from '../../templates/affiliate/AudienceSection.vue'
-import BenefitsSection from '../../templates/affiliate/BenefitsSection.vue'
-import BrandAssetsSection from '../../templates/affiliate/BrandAssetsSection.vue'
-import CtaSection from '../../templates/affiliate/CtaSection.vue'
-import FAQSection from '../../templates/affiliate/FAQSection.vue'
-import HeroSection from '../../templates/affiliate/HeroSection.vue'
-import HowItWorksSection from '../../templates/affiliate/HowItWorksSection.vue'
-import { affiliateFaqs } from '../../data/affiliateFaq'
-import type { JsonLdNode } from '../../utils/jsonLd'
-import { absoluteUrl, jsonLdId, pageContext } from '../../utils/jsonLd'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import AudienceSection from '@/templates/affiliate/AudienceSection.vue'
+import BenefitsSection from '@/templates/affiliate/BenefitsSection.vue'
+import BrandAssetsSection from '@/templates/affiliate/BrandAssetsSection.vue'
+import CtaSection from '@/templates/affiliate/CtaSection.vue'
+import FAQSection from '@/templates/affiliate/FAQSection.vue'
+import HeroSection from '@/templates/affiliate/HeroSection.vue'
+import HowItWorksSection from '@/templates/affiliate/HowItWorksSection.vue'
+import { affiliateFaqs } from '@/data/affiliateFaq'
+import type { JsonLdNode } from '@/utils/jsonLd'
+import { absoluteUrl, jsonLdId, pageContext } from '@/utils/jsonLd'
 
 const pageTitle = Astro.locals.t('affiliate.page.title')
 const pageDescription = Astro.locals.t('affiliate.page.description')

@@ -19,10 +19,15 @@ const NOW = new Date(2026, 2, 15, 12, 0, 0).getTime()
 const DAY = 86_400_000
 const scope = unsafeStorageScope
 
-const session = (id: string, updatedAt: number): ChatSession => ({
+const session = (
+  id: string,
+  updatedAt: number,
+  titleSource: ChatSession['titleSource'] = 'server'
+): ChatSession => ({
   id,
   title: id,
-  updatedAt
+  updatedAt,
+  titleSource
 })
 
 describe('groupSessionsByRecency', () => {

@@ -4,7 +4,7 @@ import type {
   ReshootCamera,
   ReshootMotion,
   ReshootSize
-} from '../reshoot'
+} from '@/lib/workshop/cinematic-studio/reshoot'
 import analyzeGraph from './analyze.api.json'
 import type { Keyframe, Vec3 } from './camera'
 import generateGraph from './generate.api.json'

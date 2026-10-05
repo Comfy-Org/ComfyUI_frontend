@@ -78,7 +78,17 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         preference: AgentRunModePreference
       ): Promise<AgentRunModePreference> => preference
     ),
-    listCloudWorkflows: vi.fn(async () => []),
+    listCloudWorkflows: vi.fn(async () => ({
+      entries: [],
+      complete: true
+    })),
+    getCloudWorkflow: vi.fn(async (workflowId: string) => ({
+      id: workflowId,
+      latest_version: 1,
+      created_by: 'user-1',
+      created_at: '2026-09-11T10:00:00Z',
+      updated_at: '2026-09-11T10:00:00Z'
+    })),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({
         status: 'cancelling'

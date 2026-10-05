@@ -4,9 +4,9 @@ import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { MAX_COLORS } from '../../../lib/workshop/cinematic-studio/colors'
-import { translationsFor } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { MAX_COLORS } from '@/lib/workshop/cinematic-studio/colors'
+import { translationsFor } from '@/i18n/translations'
 import CinematicColorPicker from './CinematicColorPicker.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

@@ -5985,7 +5985,8 @@ describe('useSubscriptionCheckout', () => {
         stage: 'succeeded',
         outcome: 'success',
         source: 'pricing_dialog',
-        payment_intent_source: 'subscribe_to_run'
+        payment_intent_source: 'subscribe_to_run',
+        duration_ms: expect.any(Number)
       })
     })
 
@@ -6009,7 +6010,8 @@ describe('useSubscriptionCheckout', () => {
         outcome: 'failure',
         source: 'pricing_dialog',
         payment_intent_source: undefined,
-        failure_category: 'unknown'
+        failure_category: 'unknown',
+        duration_ms: expect.any(Number)
       })
     })
 
