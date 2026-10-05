@@ -24,10 +24,8 @@ const emit = defineEmits<{ download: [] }>()
 const { t } = useI18n()
 
 /**
- * Requesting a download unmounts the control that requested it, which drops
- * focus to the body and sends a keyboard user back to the top of the dialog.
- * The element that replaces it takes focus instead, but only when the user
- * acted here - a download started elsewhere must not steal it.
+ * The control unmounts on request, dropping focus to the body. Hand it to what
+ * replaces it, but only when the user acted here.
  */
 const statusRegion = ref<HTMLElement | null>(null)
 const restoreFocus = ref(false)
@@ -124,7 +122,7 @@ function namedLabel(key: string): string {
       class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
     >
       <span
-        class="block h-full w-full animate-pulse rounded-full bg-[repeating-linear-gradient(135deg,currentColor_0_0.25rem,transparent_0.25rem_0.5rem)] text-primary-background motion-reduce:animate-none"
+        class="indeterminate-stripe indeterminate-stripe--drifting block h-full w-full rounded-full text-primary-background"
       />
     </span>
     <span class="shrink-0">
@@ -157,11 +155,11 @@ function namedLabel(key: string): string {
           cn(
             'block h-full rounded-full',
             status.downloadState.fraction === null
-              ? 'w-full bg-[repeating-linear-gradient(135deg,currentColor_0_0.25rem,transparent_0.25rem_0.5rem)] text-primary-background'
+              ? 'indeterminate-stripe w-full text-primary-background'
               : 'bg-primary-background',
             status.downloadState.fraction === null &&
               status.downloadState.activity === 'active' &&
-              'animate-pulse motion-reduce:animate-none'
+              'indeterminate-stripe--drifting'
           )
         "
         :style="
@@ -194,3 +192,40 @@ function namedLabel(key: string): string {
     @retry="emit('download')"
   />
 </template>
+
+<style scoped>
+/* Tiled, so one tile of travel loops seamlessly. */
+@keyframes template-download-stripe-drift {
+  to {
+    background-position: 0.75rem 0;
+  }
+}
+
+.indeterminate-stripe {
+  background-image: repeating-linear-gradient(
+    135deg,
+    currentColor 0 25%,
+    transparent 25% 50%
+  );
+  background-size: 0.75rem 0.75rem;
+}
+
+.indeterminate-stripe--drifting {
+  animation: template-download-stripe-drift 0.7s linear infinite;
+}
+
+/*
+ * Switched off by hand, as `agent-shimmer-outline` does: the global rule only
+ * collapses duration, which accelerates an infinite animation rather than
+ * stopping it. The stripe still reads as indeterminate while held still.
+ */
+.disable-animations .indeterminate-stripe--drifting {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indeterminate-stripe--drifting {
+    animation: none;
+  }
+}
+</style>

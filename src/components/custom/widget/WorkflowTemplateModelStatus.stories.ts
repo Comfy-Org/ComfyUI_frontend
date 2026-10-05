@@ -72,6 +72,18 @@ const rows: TemplateDetailRow[] = [
       fraction: null
     }
   }),
+  row('paused-unknown-size', {
+    kind: 'downloadable',
+    label: 'Download model',
+    downloadState: {
+      status: 'downloading',
+      attempt: 1,
+      activity: 'paused',
+      receivedBytes: 256_000_000,
+      totalBytes: null,
+      fraction: null
+    }
+  }),
   row('downloaded', {
     kind: 'downloadable',
     label: 'Download model',
@@ -109,11 +121,7 @@ export const EveryState: Story = {
   })
 }
 
-/**
- * The same states outside a row. Grid placement does nothing here, so progress
- * cannot reach its second row - use it to inspect one state's own markup, and
- * `EveryState` for how a state actually sits in a row.
- */
+/** The same states outside a row, where grid placement does nothing. */
 export const WithoutRowContext: Story = {
   render: () => ({
     components: { WorkflowTemplateModelStatus },
