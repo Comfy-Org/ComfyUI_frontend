@@ -18,7 +18,6 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import type { ReleaseNote } from '../common/releaseService'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
@@ -81,19 +80,6 @@ describe('ReleaseNotificationToast', () => {
     mockData.isDesktop = false
     Object.assign(useReleaseStore(), { recentRelease: null })
     Object.assign(useReleaseStore(), { shouldShowToast: true })
-  })
-
-  it('stays hidden while node selection mode is active', () => {
-    Object.assign(useReleaseStore(), {
-      recentRelease: {
-        version: '1.2.3',
-        content: '# Test Release\n\nSome content'
-      } as ReleaseNote
-    })
-    useAgentNodeSelectionStore().isActive = true
-
-    renderComponent()
-    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
   })
 
   it('displays rocket icon', () => {

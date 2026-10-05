@@ -173,7 +173,7 @@ import {
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -196,9 +196,8 @@ const unifiedWidth = computed(() =>
 )
 
 const { focusMode } = storeToRefs(workspaceStore)
-const { isActive: agentNodeSelectionActive } = storeToRefs(
-  useAgentNodeSelectionStore()
-)
+const { isPickingNodes: agentNodeSelectionActive } =
+  storeToRefs(useCanvasStore())
 
 const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
@@ -233,7 +232,10 @@ const graphMeetsAgentPanel = computed(
 )
 
 const sidebarPanelVisible = computed(
-  () => activeSidebarTab.value !== null && !isBuilderMode.value
+  () =>
+    activeSidebarTab.value !== null &&
+    !isBuilderMode.value &&
+    !agentNodeSelectionActive.value
 )
 
 /**

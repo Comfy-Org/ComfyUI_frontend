@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -101,7 +101,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     expect(screen.getByTestId('right-panel')).toBeInTheDocument()
     expect(screen.getByTestId('bottom-panel')).toBeInTheDocument()
 
-    useAgentNodeSelectionStore().enter()
+    useCanvasStore().isPickingNodes = true
     await nextTick()
 
     expect(screen.getByTestId('workflow-tabs')).toBeInTheDocument()
@@ -112,7 +112,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     expect(screen.getByTestId('graph')).toBeInTheDocument()
     expect(screen.getByTestId('agent-panel')).toBeInTheDocument()
 
-    useAgentNodeSelectionStore().exit()
+    useCanvasStore().stopNodePicking()
     await nextTick()
 
     expect(screen.getByTestId('topmenu')).toBeInTheDocument()

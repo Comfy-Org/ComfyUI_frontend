@@ -49,7 +49,7 @@ import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -571,6 +571,7 @@ function addTab(
   const slash = path.lastIndexOf('/')
   const { filename, suffix } = getFilenameDetails(path.slice(slash + 1))
   const tab = createMockLoadedWorkflow({
+    instanceId: path,
     path,
     directory: path.slice(0, slash),
     filename,
@@ -2297,7 +2298,7 @@ async function enterNodeSelectionMode(): Promise<void> {
 async function startVueNodeSelection() {
   const state = setupNodeSelectionCanvas()
   const selectClickedNode = vi.fn((node: LGraphNode) => {
-    if (!useAgentNodeSelectionStore().isActive) state.selectedItems.clear()
+    if (!canvasStore.isPickingNodes) state.selectedItems.clear()
     if (state.selectedItems.has(node)) state.selectedItems.delete(node)
     else state.selectedItems.add(node)
     syncFakeSelection()
@@ -2723,7 +2724,7 @@ describe('AgentPanelRoot attach flow', () => {
     await userEvent.paste(clipboard)
 
     await vi.waitFor(() => expect(uploaded).toEqual(['image.png']))
-    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect(canvasStore.isPickingNodes).toBe(true)
     expect([...selection.selectedItems]).toEqual(selection.nodes)
   })
 
@@ -4538,7 +4539,7 @@ describe('AgentPanelRoot lifecycle', () => {
       screen.getByRole('button', { name: i18n.global.t('agent.close') })
     )
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     expect(useTelemetry()!.trackAgentCloseButtonClicked).toHaveBeenCalled()
     expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
@@ -4554,7 +4555,7 @@ describe('AgentPanelRoot lifecycle', () => {
 
     selection.unmount()
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
@@ -10429,7 +10430,7 @@ describe('AgentPanelRoot workflow binding', () => {
     syncFakeSelection()
     await nextTick()
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     expect([...canvas.selectedItems]).toEqual([subgraphNode])
     expect(savedSelectionKeys(rootGraph)).toEqual([])
     expect(savedSelectionKeys(subgraph)).toEqual(['node:12'])
@@ -10495,7 +10496,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
     ).toBeVisible()
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('@')
     const nodesMenu = screen.getByRole('menuitem', { name: 'Nodes' })
@@ -10504,7 +10505,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'Switch to current to add nodes.'
     )
     await userEvent.click(nodesMenu)
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     workflowStore.activeWorkflow = target
     await nextTick()
     expect(screen.getByRole('menuitem', { name: 'Nodes' })).not.toHaveAttribute(
@@ -10642,13 +10643,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(await screen.findByText('KSampler'))
     workflowStore.activeWorkflow = addTab('workflows/other.json')
     await nextTick()
-    const nodeSelection = useAgentNodeSelectionStore()
-    nodeSelection.beginWorkflowLoad()
-    nodeSelection.restoreNodeIds(['9'])
     state.selectedItems.add(state.nodes[0])
     syncFakeSelection()
     await nextTick()
-    expect(nodeSelection.isLoadingWorkflow).toBe(false)
     expect(
       screen.queryByRole('button', { name: 'Remove VAE Decode #9 reference' })
     ).toBeNull()
@@ -10778,7 +10775,7 @@ describe('AgentPanelRoot workflow binding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
     await enterNodeSelectionMode()
-    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect(canvasStore.isPickingNodes).toBe(true)
     const other = addTab('workflows/other.json')
     workflowStore.activeWorkflow = other
     await nextTick()
@@ -10814,7 +10811,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     const state = setupNodeSelectionCanvas()
     const selectLegacyNode = (node: LGraphNode) => {
-      if (!useAgentNodeSelectionStore().isActive) state.selectedItems.clear()
+      if (!canvasStore.isPickingNodes) state.selectedItems.clear()
       state.selectedItems.add(node)
       syncFakeSelection()
     }
@@ -10899,7 +10896,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect(canvasStore.isPickingNodes).toBe(true)
     expect(selection.focus).toHaveBeenCalledOnce()
     expect(selection.selectClickedNode).toHaveBeenCalledTimes(2)
     expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
@@ -10907,7 +10904,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('explain this')
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     expect(bodies[0]).toMatchObject({
       selection: { node_ids: ['9', '12'] }
     })
@@ -10918,11 +10915,12 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()
+    render(NodeSelectionModeBanner, { global: { plugins: [i18n] } })
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await nextTick()
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     expect(canvasStore.selectedItems).toEqual([])
     expect([...selection.selectedItems]).toEqual([])
     expect(screen.getByText('VAE Decode')).toBeInTheDocument()
@@ -10942,7 +10940,7 @@ describe('AgentPanelRoot workflow binding', () => {
     canvasStore.currentGraph = fromPartial(nextGraph)
     await nextTick()
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
@@ -10950,12 +10948,10 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()
-    useAgentNodeSelectionStore().beginWorkflowLoad()
-
     workflowStore.activeWorkflow = addTab('workflows/other.json')
     await nextTick()
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
@@ -10970,7 +10966,7 @@ describe('AgentPanelRoot workflow binding', () => {
     active.filename = 'renamed'
     await nextTick()
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+    expect(canvasStore.isPickingNodes).toBe(true)
   })
 
   it('ends node selection when the target workflow changes', async () => {
@@ -10983,56 +10979,26 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     await nextTick()
 
-    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvasStore.isPickingNodes).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
-  it('keeps each workflow node selection separate after a graph load', async () => {
+  it('preserves node references after a workflow rename and panel remount', async () => {
     makeTab()
     const selection = await startVueNodeSelection()
-    const secondNode = createMockLGraphNode({
-      isNodeFake: true as const,
-      id: 20,
-      title: 'Save Image',
-      boundingRect: {}
-    })
-    const secondGraph = {
-      nodes: [secondNode],
-      getNodeById: (id: string | number) =>
-        String(id) === '20' ? secondNode : null
-    }
-    const nodeSelectionStore = useAgentNodeSelectionStore()
-
-    nodeSelectionStore.beginWorkflowLoad()
-    nodeSelectionStore.restoreNodeIds(['20'])
-    selection.canvas.graph = secondGraph
-    selection.selectedItems.clear()
-    selection.selectedItems.add(secondNode)
-    canvasStore.currentGraph = fromPartial(secondGraph)
-    syncFakeSelection()
+    const active = workflowStore.activeWorkflow
+    if (!active) throw new Error('expected an active workflow')
+    active.path = 'workflows/renamed.json'
+    active.filename = 'renamed'
     await nextTick()
-
-    expect(nodeSelectionStore.isLoadingWorkflow).toBe(false)
-    expect([...selection.selectedItems]).toEqual([secondNode])
-    expect(screen.getByText('Save Image')).toBeInTheDocument()
-    expect(screen.queryByText('VAE Decode')).not.toBeInTheDocument()
-  })
-
-  it('finishes a workflow restore completed before the panel mounts', async () => {
-    makeTab()
-    const state = setupNodeSelectionCanvas()
-    const nodeSelectionStore = useAgentNodeSelectionStore()
-    nodeSelectionStore.beginWorkflowLoad()
-    nodeSelectionStore.restoreNodeIds(['9'])
-    state.selectedItems.add(state.nodes[0])
-    syncFakeSelection()
-    useAgentPanelStore().isOpen = true
+    selection.unmount()
 
     renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
     await nextTick()
 
-    expect(nodeSelectionStore.isLoadingWorkflow).toBe(false)
     expect(screen.getByText('VAE Decode')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {

@@ -56,7 +56,6 @@ import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { isDesktop } from '@/platform/distribution/types'
 import { formatVersionAnchor } from '@/utils/formatUtil'
@@ -72,7 +71,6 @@ const { position = 'bottom-left' } = defineProps<{
 const { buildDocsUrl } = useExternalLink()
 const { toastErrorHandler } = useErrorHandling()
 const releaseStore = useReleaseStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const { t } = useI18n()
 
 // Local state for dismissed status
@@ -84,13 +82,8 @@ const latestRelease = computed<ReleaseNote | null>(() => {
 })
 
 // Show toast when new version available and not dismissed
-// Node selection mode keeps the canvas clear of everything but the graph and
-// its own banner, so this popup steps aside for the duration and returns after.
 const shouldShow = computed(
-  () =>
-    releaseStore.shouldShowToast &&
-    !isDismissed.value &&
-    !agentNodeSelectionStore.isActive
+  () => releaseStore.shouldShowToast && !isDismissed.value
 )
 
 // Generate changelog URL with version anchor (language-aware)
