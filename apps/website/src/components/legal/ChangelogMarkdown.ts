@@ -33,6 +33,18 @@ const blocked = new Set([
   'math'
 ])
 
+function safeHref(value: string | undefined): string | undefined {
+  if (!value || !/^https:\/\//i.test(value.trim())) return undefined
+  try {
+    const url = new URL(value.trim())
+    if (url.protocol === 'https:' && !url.username && !url.password)
+      return url.href
+  } catch {
+    /* Invalid source links render as plain text. */
+  }
+  return undefined
+}
+
 function nodes(node: DefaultTreeAdapterTypes.ChildNode): VNodeChild[] {
   if ('value' in node) return [node.value]
   if (!('tagName' in node)) return []
@@ -41,16 +53,10 @@ function nodes(node: DefaultTreeAdapterTypes.ChildNode): VNodeChild[] {
   if (!allowed.has(node.tagName)) return children
   const attrs: Record<string, string> = {}
   if (node.tagName === 'a') {
-    const href = node.attrs.find((attr) => attr.name === 'href')?.value.trim()
-    if (href && /^https:\/\//i.test(href)) {
-      try {
-        const url = new URL(href)
-        if (url.protocol === 'https:' && !url.username && !url.password)
-          attrs.href = url.href
-      } catch {
-        /* Invalid source links render as plain text. */
-      }
-    }
+    const href = safeHref(
+      node.attrs.find((attr) => attr.name === 'href')?.value
+    )
+    if (href) attrs.href = href
   }
   return [h(node.tagName, attrs, children)]
 }
