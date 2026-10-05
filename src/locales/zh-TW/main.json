@@ -5342,6 +5342,7 @@
     "menu": {
       "creatorCannotLeave": "工作區建立者無法離開自己建立的工作區",
       "deleteWorkspace": "刪除工作區",
+      "deleteWorkspaceAfterPlanEndsTooltip": "您可以在方案於 {date} 結束後刪除此工作區",
       "deleteWorkspaceDisabledTooltip": "請先取消工作區的有效訂閱",
       "editWorkspace": "編輯工作區詳細資料",
       "leaveWorkspace": "離開工作區"

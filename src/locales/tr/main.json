@@ -5342,6 +5342,7 @@
     "menu": {
       "creatorCannotLeave": "Çalışma alanını oluşturan kişi, oluşturduğu çalışma alanından ayrılamaz",
       "deleteWorkspace": "Çalışma Alanını Sil",
+      "deleteWorkspaceAfterPlanEndsTooltip": "Bu çalışma alanını, planınız {date} tarihinde sona erdikten sonra silebilirsiniz",
       "deleteWorkspaceDisabledTooltip": "Önce çalışma alanınızın aktif aboneliğini iptal edin",
       "editWorkspace": "Çalışma alanı detaylarını düzenle",
       "leaveWorkspace": "Çalışma Alanından Ayrıl"

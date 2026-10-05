@@ -5342,6 +5342,7 @@
     "menu": {
       "creatorCannotLeave": "سازنده workspace نمی‌تواند workspace ایجادشده را ترک کند.",
       "deleteWorkspace": "حذف محیط کاری",
+      "deleteWorkspaceAfterPlanEndsTooltip": "می‌توانید پس از پایان یافتن طرح‌تان در {date} این فضای کاری را حذف کنید",
       "deleteWorkspaceDisabledTooltip": "ابتدا اشتراک فعال محیط کاری خود را لغو کنید",
       "editWorkspace": "ویرایش جزئیات محیط کاری",
       "leaveWorkspace": "خروج از محیط کاری"

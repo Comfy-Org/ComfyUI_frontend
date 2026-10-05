@@ -5342,6 +5342,7 @@
     "menu": {
       "creatorCannotLeave": "워크스페이스 생성자는 자신이 만든 워크스페이스를 떠날 수 없습니다",
       "deleteWorkspace": "워크스페이스 삭제",
+      "deleteWorkspaceAfterPlanEndsTooltip": "요금제가 {date}에 종료된 후 이 워크스페이스를 삭제할 수 있습니다",
       "deleteWorkspaceDisabledTooltip": "먼저 워크스페이스의 활성 구독을 취소하세요",
       "editWorkspace": "워크스페이스 정보 수정",
       "leaveWorkspace": "워크스페이스 나가기"

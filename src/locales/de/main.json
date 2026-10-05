@@ -5342,6 +5342,7 @@
     "menu": {
       "creatorCannotLeave": "Der Ersteller des Workspace kann den von ihm erstellten Workspace nicht verlassen",
       "deleteWorkspace": "Workspace löschen",
+      "deleteWorkspaceAfterPlanEndsTooltip": "Sie können diesen Workspace nach Ablauf Ihres Plans am {date} löschen.",
       "deleteWorkspaceDisabledTooltip": "Kündigen Sie zuerst das aktive Abonnement Ihres Workspace",
       "editWorkspace": "Workspace-Details bearbeiten",
       "leaveWorkspace": "Workspace verlassen"
