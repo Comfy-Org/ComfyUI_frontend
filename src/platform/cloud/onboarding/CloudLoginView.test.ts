@@ -1,13 +1,19 @@
-import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import type { Mock } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(
   import('@/platform/cloud/onboarding/composables/usePostAuthRedirect'),
@@ -34,6 +40,16 @@ const FREE_RUN_MESSAGES = {
   }
 }
 
+const SignInFormStub = defineComponent({
+  emits: ['submit'],
+  setup: () => ({ email: ref('') }),
+  template: `
+    <form data-testid="signin-form" @submit.prevent="$emit('submit', { email, password: 'hunter22' })">
+      <input v-model="email" aria-label="Password form email" />
+      <button type="submit">Log in with password</button>
+    </form>`
+})
+
 async function renderLoginView(
   url = '/cloud/login',
   messages: {
@@ -59,9 +75,7 @@ async function renderLoginView(
         router,
         createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
       ],
-      stubs: {
-        CloudSignInForm: { template: '<form data-testid="signin-form" />' }
-      }
+      stubs: { CloudSignInForm: SignInFormStub }
     }
   })
 }
@@ -184,5 +198,199 @@ describe('CloudLoginView', () => {
     expect(
       screen.getByTestId('google-sso-in-app-browser-notice')
     ).toBeInTheDocument()
+  })
+})
+
+const discoverReplies = (body: unknown, status = 200) => {
+  const fetchMock = vi.fn<typeof fetch>(
+    async () =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { 'Content-Type': 'application/json' }
+      })
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+const discoverCalls = (fetchMock: ReturnType<typeof discoverReplies>) =>
+  fetchMock.mock.calls.filter(([url]) =>
+    String(url).endsWith('/api/auth/sso/discover')
+  )
+
+const startParams = (assign: Mock<(url: string | URL) => void>) => {
+  const [target] = assign.mock.calls[0]
+  const url = new URL(String(target))
+  return {
+    path: url.pathname,
+    email: url.searchParams.get('email'),
+    returnTo: url.searchParams.get('return_to')
+  }
+}
+
+describe('CloudLoginView SSO', () => {
+  let assign: Mock<(url: string | URL) => void>
+
+  beforeEach(() => {
+    assign = vi.fn<(url: string | URL) => void>()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
+  })
+
+  async function signInWithPassword(email: string) {
+    const user = userEvent.setup()
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+    await user.type(screen.getByLabelText('Password form email'), email)
+    await user.click(
+      screen.getByRole('button', { name: 'Log in with password' })
+    )
+  }
+
+  async function continueWithSso(email: string) {
+    const user = userEvent.setup()
+    await user.click(
+      screen.getByRole('button', { name: 'auth.sso.continueWithSso' })
+    )
+    await user.type(screen.getByLabelText('auth.sso.emailLabel'), email)
+    await user.click(screen.getByRole('button', { name: 'auth.sso.submit' }))
+  }
+
+  describe('with the flag off', () => {
+    it('offers no SSO entry and ignores an sso_error', async () => {
+      await renderLoginView('/cloud/login?sso_error=SSO_ORG_DISABLED')
+
+      expect(
+        screen.queryByRole('button', { name: 'auth.sso.continueWithSso' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('auth.sso.errors.orgDisabled')
+      ).not.toBeInTheDocument()
+    })
+
+    it('signs in with Firebase without asking ingest about SSO', async () => {
+      const fetchMock = discoverReplies({ sso: true })
+      await renderLoginView()
+
+      await signInWithPassword('ada@acme.com')
+
+      await waitFor(() =>
+        expect(useAuthActions().signInWithEmail).toHaveBeenCalledWith(
+          'ada@acme.com',
+          'hunter22'
+        )
+      )
+      expect(discoverCalls(fetchMock)).toEqual([])
+      expect(assign).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('with the flag on', () => {
+    beforeEach(() => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    })
+
+    it('sends an SSO email to ingest to start, returning to the user check', async () => {
+      discoverReplies({ sso: true, organization_name: 'Acme' })
+      await renderLoginView()
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(startParams(assign)).toEqual({
+        path: '/api/auth/sso/start',
+        email: 'ada@acme.com',
+        returnTo: '/cloud/user-check'
+      })
+    })
+
+    it('returns to the page the visitor came from', async () => {
+      discoverReplies({ sso: true })
+      await renderLoginView(
+        '/cloud/login?previousFullPath=%2Fworkflows%3Fid%3D7'
+      )
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(startParams(assign).returnTo).toBe('/workflows?id=7')
+    })
+
+    it.for<{ name: string; status: number; body: unknown; message: string }>([
+      {
+        name: 'an email without SSO',
+        status: 200,
+        body: { sso: false },
+        message: 'auth.sso.notSso'
+      },
+      {
+        name: 'an email ingest rejects',
+        status: 400,
+        body: { code: 'INVALID_EMAIL', message: 'bad' },
+        message: 'auth.sso.invalidEmail'
+      },
+      {
+        name: 'a discover outage',
+        status: 500,
+        body: { code: 'INTERNAL_ERROR', message: 'down' },
+        message: 'auth.sso.unavailable'
+      }
+    ])(
+      'explains $name and stays on the page',
+      async ({ status, body, message }) => {
+        discoverReplies(body, status)
+        await renderLoginView()
+
+        await continueWithSso('ada@example.com')
+
+        expect(await screen.findByText(message)).toBeInTheDocument()
+        expect(assign).not.toHaveBeenCalled()
+      }
+    )
+
+    it('sends an SSO email typed into the password form to SSO, not Firebase', async () => {
+      discoverReplies({ sso: true })
+      await renderLoginView()
+
+      await signInWithPassword('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(startParams(assign).email).toBe('ada@acme.com')
+      expect(useAuthActions().signInWithEmail).not.toHaveBeenCalled()
+    })
+
+    it.for<{ name: string; status: number; body: unknown }>([
+      { name: 'a non-SSO email', status: 200, body: { sso: false } },
+      {
+        name: 'a discover outage',
+        status: 503,
+        body: { code: 'INTERNAL_ERROR', message: 'down' }
+      }
+    ])('signs $name in with Firebase', async ({ status, body }) => {
+      const fetchMock = discoverReplies(body, status)
+      await renderLoginView()
+
+      await signInWithPassword('ada@example.com')
+
+      await waitFor(() =>
+        expect(useAuthActions().signInWithEmail).toHaveBeenCalledWith(
+          'ada@example.com',
+          'hunter22'
+        )
+      )
+      expect(discoverCalls(fetchMock)).toHaveLength(1)
+      expect(assign).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      ['SSO_ORG_DISABLED', 'auth.sso.errors.orgDisabled'],
+      ['SSO_INVALID_STATE', 'auth.sso.errors.expired'],
+      ['RATE_LIMITED', 'auth.sso.errors.rateLimited'],
+      ['SSO_SOMETHING_NEW', 'auth.sso.errors.failed']
+    ])('explains ?sso_error=%s', async ([code, message]) => {
+      await renderLoginView(`/cloud/login?sso_error=${code}`)
+
+      expect(screen.getByText(message)).toBeInTheDocument()
+    })
   })
 })

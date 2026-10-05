@@ -17,7 +17,7 @@ export function useCloudAuthPage(options: {
   defaultRedirect: () => RouteLocationRaw
 }) {
   const authError = ref('')
-  const showEmailForm = ref(false)
+  const authMode = ref<'social' | 'email' | 'sso'>('social')
 
   const { onAuthSuccess } = usePostAuthRedirect({
     authError,
@@ -32,16 +32,19 @@ export function useCloudAuthPage(options: {
 
   return {
     authError,
-    showEmailForm,
+    authMode,
     onAuthSuccess,
     /** Snapshots, not refs: neither can change while the page is mounted. */
     isSecureContext: globalThis.isSecureContext,
     showGoogleSsoInAppBrowserNotice: isEmbeddedWebView(),
     switchToEmailForm: () => {
-      showEmailForm.value = true
+      authMode.value = 'email'
+    },
+    switchToSsoForm: () => {
+      authMode.value = 'sso'
     },
     switchToSocialLogin: () => {
-      showEmailForm.value = false
+      authMode.value = 'social'
     },
     signInWithGoogle: () => {
       authError.value = ''
