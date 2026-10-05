@@ -26,7 +26,7 @@ export function modelDefinition(
         /^[aeiou]/i.test(task)
           ? 'workshop.model.definition.kindAn'
           : 'workshop.model.definition.kindA',
-        { task }
+        { task, label: taskLabelFor(model, locale) }
       )
     : t('workshop.model.definition.kind')
   const what = model.provider
@@ -39,7 +39,7 @@ export function modelDefinition(
   const router = t('workshop.model.definition.router', {
     routerId: model.routerId
   })
-  return [what, router].join(locale === 'en' ? ' ' : '')
+  return t('workshop.model.definition.sentence', { what, router })
 }
 
 export function modelFacts(

@@ -53,11 +53,23 @@ describe('modelDefinition', () => {
     expect(modelDefinition(model)).toBe(expected)
   })
 
-  it('writes Chinese copy without spaces between sentences', () => {
-    expect(modelDefinition(routerModel(), 'zh-CN')).toBe(
-      'FLUX 2 Max Text-to-Image 是 Black Forest Labs 推出的 text-to-image 模型。在 Comfy 上，你可以在浏览器中运行它，或通过 Comfy Router API 以 bfl/flux-2-max 调用。'
-    )
-  })
+  it.for([
+    {
+      locale: 'zh-CN',
+      expected:
+        'FLUX 2 Max Text-to-Image 是 Black Forest Labs 推出的 文本转图像模型。在 Comfy 上，你可以在浏览器中运行它，或通过 Comfy Router API 以 bfl/flux-2-max 调用。'
+    },
+    {
+      locale: 'ja',
+      expected:
+        'FLUX 2 Max Text-to-Image is a text-to-image model from Black Forest Labs. On Comfy you can run it in your browser or call it through the Comfy Router API as bfl/flux-2-max.'
+    }
+  ] as const)(
+    'writes the $locale sentence in its own wording',
+    ({ locale, expected }) => {
+      expect(modelDefinition(routerModel(), locale)).toBe(expected)
+    }
+  )
 
   it.for(workshopModels.map((model) => [model.slug, model] as const))(
     '%s names the model, its provider and its Router id',
