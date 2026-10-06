@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
-import { workshopAppRepo } from '../../../lib/workshop/apps'
-import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
-import { STARTER_SHOTS } from '../../../lib/workshop/cinematic-studio/starters'
-import type { Locale } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { workshopAppRepo } from '@/lib/workshop/apps'
+import type { StarterShot } from '@/lib/workshop/cinematic-studio/starters'
+import { STARTER_SHOTS } from '@/lib/workshop/cinematic-studio/starters'
+import type { Locale } from '@/i18n/translations'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
 import AppRepoLink from './AppRepoLink.vue'
 

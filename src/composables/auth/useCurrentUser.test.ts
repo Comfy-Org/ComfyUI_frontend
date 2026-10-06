@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { fakeWebSessionUser } from '@comfyorg/account-core/testing'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -12,6 +13,7 @@ import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { useCurrentUser } from './useCurrentUser'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: false }))
 
@@ -175,6 +177,31 @@ describe('useCurrentUser', () => {
       expect(needsFirebaseSignIn.value).toBe(false)
     }
   )
+
+  it.for([
+    { sso: true, provider: 'saml.workos', isEmailProvider: false },
+    { sso: true, provider: 'oidc.workos', isEmailProvider: false },
+    { sso: true, provider: 'google.com', isEmailProvider: true },
+    { sso: false, provider: 'saml.workos', isEmailProvider: true }
+  ])(
+    'offers a password change beside a $provider session only when it is not SSO (sso_enabled $sso)',
+    ({ sso, provider, isEmailProvider }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+      mockAuthState.currentUser = fromPartial<User>({
+        uid: 'session-user',
+        providerData: [{ providerId: 'password' }]
+      })
+      Object.assign(mockAuthState, {
+        sessionUser: fakeWebSessionUser({
+          id: 'session-user',
+          signInProvider: provider
+        })
+      })
+
+      expect(useCurrentUser().isEmailProvider.value).toBe(isEmailProvider)
+    }
+  )
+
   describe('handleSignOut', () => {
     function signInWithApiKeyOnly(): void {
       Object.assign(mockApiKeyState, { isAuthenticated: true })

@@ -1,15 +1,15 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro'
-import HeroSection from '../../../components/cloud-nodes/HeroSection.vue'
-import PackGridSection from '../../../components/cloud-nodes/PackGridSection.vue'
-import { toGridPack } from '../../../data/cloudNodes'
-import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroSection from '@/components/cloud-nodes/HeroSection.vue'
+import PackGridSection from '@/components/cloud-nodes/PackGridSection.vue'
+import { toGridPack } from '@/data/cloudNodes'
+import { loadPacksForBuild } from '@/utils/cloudNodes.build'
 import {
   absoluteUrl,
   itemListNode,
   jsonLdId,
   pageContext
-} from '../../../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 const packs = await loadPacksForBuild()
 const gridPacks = packs.map(toGridPack)

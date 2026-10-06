@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import CinematicEnhanceSwitch from './CinematicEnhanceSwitch.vue'
 
 const { video = false, locale = 'en' } = defineProps<{

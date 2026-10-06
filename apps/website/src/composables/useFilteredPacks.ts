@@ -1,7 +1,7 @@
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { GridPack } from '../data/cloudNodes'
+import type { GridPack } from '@/data/cloudNodes'
 
 export type PackSortMode = 'downloads' | 'mostNodes' | 'az' | 'recentlyUpdated'
 

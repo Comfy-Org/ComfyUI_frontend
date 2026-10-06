@@ -4,9 +4,9 @@ import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
-import type { StudioImage } from '../../../lib/workshop/cinematic-studio/take-image'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
 import CinematicTooltip from './CinematicTooltip.vue'
 import type { ReferenceKind } from './reference-kind'
 import { REFERENCE_SLOTS } from './reference-kind'

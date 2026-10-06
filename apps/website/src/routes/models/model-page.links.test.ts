@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { workshopModels } from '../../config/workshop-browse-content'
+import { workshopModels } from '@/config/workshop-browse-content'
 import { prepareModelPage } from './model-page'
 
 const relatedRows = await Promise.all(

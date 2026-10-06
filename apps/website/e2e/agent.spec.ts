@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { tAgent } from '../src/components/agent/agentTranslations'
-import { t } from '../src/i18n/translations'
+import { tAgent } from '@/components/agent/agentTranslations'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/agent/'
@@ -72,7 +72,7 @@ async function assertLandingPage(
   await expect(featuredStoryLink).toBeVisible()
   await expect(featuredStoryLink).toHaveAttribute(
     'href',
-    'https://blog.comfy.org/p/comfy-agent-the-first-agent-for-craft'
+    'https://comfy.org/customers/hakoniwa-yui/'
   )
   await expect(featuredStoryLink).toHaveAttribute('target', '_blank')
   await expect(featuredStoryLink).toHaveAttribute('rel', /\bnoopener\b/)

@@ -17,7 +17,7 @@ const hoisted = vi.hoisted(() => ({
   mockIsFeatureEnabled: vi.fn(),
   mockGetFeatureFlag: vi.fn(),
   mockIdentify: vi.fn(),
-  mockReset: vi.fn(),
+  mockPosthogReset: vi.fn(),
   mockGetProperty: vi.fn(),
   mockReloadFeatureFlags: vi.fn(),
   mockSetPersonPropertiesForFlags: vi.fn()
@@ -62,7 +62,7 @@ const postHogMock = {
   isFeatureEnabled: hoisted.mockIsFeatureEnabled,
   getFeatureFlag: hoisted.mockGetFeatureFlag,
   identify: hoisted.mockIdentify,
-  reset: hoisted.mockReset,
+  reset: hoisted.mockPosthogReset,
   get_property: hoisted.mockGetProperty,
   reloadFeatureFlags: hoisted.mockReloadFeatureFlags,
   setPersonPropertiesForFlags: hoisted.mockSetPersonPropertiesForFlags
@@ -200,14 +200,16 @@ describe('Workshop visibility', () => {
     hoisted.mockSetPersonPropertiesForFlags.mockClear()
     hoisted.mockGetProperty.mockReturnValue('signed-in-before')
     identifyWorkshopUser({ uid: 'someone-else' })
-    expect(hoisted.mockReset).toHaveBeenCalled()
+    expect(hoisted.mockPosthogReset).toHaveBeenCalled()
     expect(hoisted.mockSetPersonPropertiesForFlags).toHaveBeenCalledWith(
       environment,
       false
     )
     expect(
       hoisted.mockSetPersonPropertiesForFlags.mock.invocationCallOrder[0]
-    ).toBeGreaterThan(hoisted.mockReset.mock.invocationCallOrder.at(-1) ?? 0)
+    ).toBeGreaterThan(
+      hoisted.mockPosthogReset.mock.invocationCallOrder.at(-1) ?? 0
+    )
   })
 
   it('requires an explicit enable and keeps the last answer through load failures', async () => {
@@ -288,7 +290,7 @@ describe('Workshop visibility', () => {
     emitFeatureFlags()
     identifyWorkshopUser(null)
     expect(useWorkshopEnabled().value).toBe(false)
-    expect(hoisted.mockReset).toHaveBeenCalledTimes(2)
+    expect(hoisted.mockPosthogReset).toHaveBeenCalledTimes(2)
     expect(hoisted.mockReloadFeatureFlags).toHaveBeenCalledTimes(3)
   })
 
@@ -436,7 +438,9 @@ describe('Workshop visibility', () => {
       emitFeatureFlags()
       vi.spyOn(console, 'error').mockImplementation(() => undefined)
       const call =
-        operation === 'identify' ? hoisted.mockIdentify : hoisted.mockReset
+        operation === 'identify'
+          ? hoisted.mockIdentify
+          : hoisted.mockPosthogReset
       call.mockImplementationOnce(() => {
         throw new Error('Unavailable')
       })
@@ -455,14 +459,14 @@ describe('Workshop visibility', () => {
     const { initPostHog, identifyWorkshopUser } = await import('./posthog')
     initPostHog()
     identifyWorkshopUser(null)
-    expect(hoisted.mockReset).not.toHaveBeenCalled()
+    expect(hoisted.mockPosthogReset).not.toHaveBeenCalled()
 
     vi.resetModules()
     hoisted.mockGetProperty.mockReturnValue('previous-user')
     const restored = await import('./posthog')
     restored.initPostHog()
     restored.identifyWorkshopUser(null)
-    expect(hoisted.mockReset).toHaveBeenCalledOnce()
+    expect(hoisted.mockPosthogReset).toHaveBeenCalledOnce()
   })
 })
 
@@ -660,7 +664,7 @@ describe('Workshop analytics transport', () => {
       const { initPostHog, captureWorkshopEvent } = await import('./posthog')
       const { workshopFailureAnalytics } = await import('./workshop-analytics')
       const { WorkshopRouterError } =
-        await import('../config/workshop-router-errors')
+        await import('@/config/workshop-router-errors')
       const cause = new DOMException('Private filename.png', 'NotReadableError')
       const properties = {
         ...tags,

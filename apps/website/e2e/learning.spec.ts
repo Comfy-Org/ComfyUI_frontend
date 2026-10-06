@@ -12,9 +12,9 @@ import {
   tutorialDescription,
   tutorialMetaTitle,
   tutorialPath
-} from '../src/data/learningTutorials'
-import { externalLinks } from '../src/config/routes'
-import { t } from '../src/i18n/translations'
+} from '@/data/learningTutorials'
+import { externalLinks } from '@/config/routes'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const thumbnailLinkName = (title: string, locale: 'en' | 'zh-CN') =>

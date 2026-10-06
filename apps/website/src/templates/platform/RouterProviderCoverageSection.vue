@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { translationsFor } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check } from '@lucide/vue'
 
-import type { CompareRow } from '../../components/blocks/CompareTable01.vue'
-import CompareTable01 from '../../components/blocks/CompareTable01.vue'
-import InlineCodeText from '../../components/common/InlineCodeText.vue'
-import Button from '../../components/ui/button/Button.vue'
-import { getRoutes } from '../../config/routes'
+import type { CompareRow } from '@/components/blocks/CompareTable01.vue'
+import CompareTable01 from '@/components/blocks/CompareTable01.vue'
+import InlineCodeText from '@/components/common/InlineCodeText.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { getRoutes } from '@/config/routes'
 import {
   ROUTER_CATALOG_MODEL_COUNT,
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE,
   ROUTER_SERVING_PROVIDERS
-} from '../../config/router-providers'
-import type { Locale } from '../../i18n/translations'
+} from '@/config/router-providers'
+import type { Locale } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

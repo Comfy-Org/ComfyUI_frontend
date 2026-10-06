@@ -2,11 +2,11 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import * as reducedMotion from '../../composables/useReducedMotion'
+import * as reducedMotion from '@/composables/useReducedMotion'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
 
 beforeEach(() => {

@@ -2,13 +2,10 @@
 import type { GetStaticPaths } from 'astro'
 import { getCollection } from 'astro:content'
 
-import WorkshopPlayground from '../../../components/workshop/WorkshopPlayground.vue'
-import type { WorkshopDetailModel } from '../../../config/workshop-detail'
-import {
-  relatedWorkshopModels,
-  toDetailModel
-} from '../../../config/workshop-detail'
-import BaseLayout from '../../../layouts/BaseLayout.astro'
+import WorkshopPlayground from '@/components/workshop/WorkshopPlayground.vue'
+import type { WorkshopDetailModel } from '@/config/workshop-detail'
+import { relatedWorkshopModels, toDetailModel } from '@/config/workshop-detail'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const models = (await getCollection('workshopModels')).map((entry) =>

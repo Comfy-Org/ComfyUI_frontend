@@ -24,7 +24,7 @@ vi.mock(import('@comfyorg/account-core/webSessionIdentity'), async () => {
   await identityModule.arrives
   return { createWebSessionIdentity: () => identityModule.identity }
 })
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 it('never boots a session whose module arrives after the cap', async () => {

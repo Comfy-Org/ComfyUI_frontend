@@ -4,7 +4,7 @@ import {
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE,
   ROUTER_SERVING_PROVIDERS
-} from '../src/config/router-providers'
+} from '@/config/router-providers'
 import {
   alternateProviders,
   checkRouterProviderDrift,

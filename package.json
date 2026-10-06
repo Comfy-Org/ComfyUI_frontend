@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.56.2",
+  "version": "1.57.0",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -168,6 +168,7 @@
   },
   "devDependencies": {
     "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/website": "workspace:*",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",
     "@pinia/testing": "catalog:",
@@ -187,7 +188,6 @@
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@types/three": "catalog:",
-    "@typescript-eslint/utils": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",

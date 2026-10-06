@@ -3,9 +3,9 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 export type CatalogueTab = 'models' | 'workflows' | 'apps'
 
