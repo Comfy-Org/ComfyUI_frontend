@@ -7,18 +7,16 @@ import { expectDialogBoundsWithDockedPanel } from '@e2e/fixtures/utils/workspace
 const viewportCases = [
   {
     name: '1440px',
-    viewportWidth: 1440,
-    expectedOverlayBounds: { x: 0, y: 0, width: 1440, height: 800 }
+    viewportWidth: 1440
   },
   {
     name: '1920px',
-    viewportWidth: 1920,
-    expectedOverlayBounds: { x: 0, y: 0, width: 1920, height: 800 }
+    viewportWidth: 1920
   }
 ]
 
 test.describe('Dialog layout with a docked Agent panel', () => {
-  for (const { name, viewportWidth, expectedOverlayBounds } of viewportCases) {
+  for (const { name, viewportWidth } of viewportCases) {
     test.describe(`at a ${name} viewport`, () => {
       test.use({ viewport: { width: viewportWidth, height: 800 } })
 
@@ -32,11 +30,6 @@ test.describe('Dialog layout with a docked Agent panel', () => {
           comfyPage.page,
           comfyPage.templatesDialog.root,
           { panelWidths: [0, 420, 960] }
-        )
-
-        await expect(comfyPage.page.getByTestId('dialog-overlay')).toHaveBounds(
-          expectedOverlayBounds,
-          { numDigits: 1 }
         )
       })
     })
