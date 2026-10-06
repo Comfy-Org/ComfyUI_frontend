@@ -1,7 +1,12 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join, relative, sep } from 'node:path'
 
-import { findStaleLinks, isWorkflowsAppPath } from '@/lib/llms-txt'
+import {
+  findStaleLinks,
+  isLinkedFile,
+  isWorkflowsAppPath,
+  sectionLlmsFiles
+} from '@/lib/llms-txt'
 
 const DIST_DIR = join(process.cwd(), 'dist')
 const CANONICAL_LINK = /<link\b[^>]*\brel=["']canonical["'][^>]*>/i
@@ -10,8 +15,7 @@ const HREF_ATTRIBUTE = /\bhref=["']([^"']+)["']/i
 /** `/download` -> `dist/download/index.html`, `/hub/models.md` -> `dist/hub/models.md`. */
 function distFileFor(pathname: string): string {
   const trimmed = pathname.replace(/^\/|\/$/g, '')
-  const isFile = /\.[a-z]+$/i.test(trimmed)
-  return isFile
+  return isLinkedFile(trimmed)
     ? join(DIST_DIR, trimmed)
     : join(DIST_DIR, trimmed, 'index.html')
 }
@@ -46,10 +50,10 @@ function redirectSources(): string[] {
 
 /** `dist/llms-full.txt` plus every `llms.txt` the build wrote, root first. */
 function builtLlmsFiles(): string[] {
-  const sectionFiles = readdirSync(DIST_DIR, { recursive: true })
-    .map(String)
-    .filter((file) => file.endsWith('/llms.txt'))
-    .sort()
+  const sectionFiles = sectionLlmsFiles(
+    readdirSync(DIST_DIR, { recursive: true }).map(String),
+    sep
+  )
   return ['llms.txt', 'llms-full.txt', ...sectionFiles].map((file) =>
     join(DIST_DIR, file)
   )

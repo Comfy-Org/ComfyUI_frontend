@@ -5,10 +5,12 @@ import {
   findRedirectedLinks,
   findStaleLinks,
   internalLinks,
+  isLinkedFile,
   isWorkflowsAppPath,
   normalizePath,
   parseLlmsTxtLinks,
-  redirectSourcePattern
+  redirectSourcePattern,
+  sectionLlmsFiles
 } from './llms-txt'
 
 describe('parseLlmsTxtLinks', () => {
@@ -131,7 +133,9 @@ describe('redirectSourcePattern', () => {
     '/posts/:id(\\d+)',
     '/payment/(.*)',
     '/p/:slug(a|b)?',
-    '/p/:slug(a|(b))'
+    '/p/:slug(a|(b))',
+    '/cloud{/enterprise}',
+    '/docs\\.md'
   ])('rejects unsupported source syntax %s', (source) => {
     expect(() => redirectSourcePattern(source)).toThrow(/Unsupported/)
   })
@@ -329,4 +333,32 @@ describe('findCanonicalDrift', () => {
       { link: links[0], canonical: 'https://evil.example.com/enterprise/' }
     ])
   })
+})
+
+describe('isLinkedFile', () => {
+  it.for([
+    ['/hub/models.md', true],
+    ['/hub/models/local/llms.txt', true],
+    ['/sitemap-index.xml', true],
+    ['/models/catalogue.json', true],
+    ['/models/flux.dev', false],
+    ['/models/ltx-2.5', false]
+  ] as const)('%s is a file: %s', ([pathname, isFile]) => {
+    expect(isLinkedFile(pathname)).toBe(isFile)
+  })
+})
+
+describe('sectionLlmsFiles', () => {
+  it.for([
+    ['/', ['llms.txt', 'p/models/llms.txt', 'p/models', 'hub/llms.txt']],
+    ['\\', ['llms.txt', 'p\\models\\llms.txt', 'p\\models', 'hub\\llms.txt']]
+  ] as const)(
+    'finds the section files with separator %s',
+    ([separator, entries]) => {
+      expect(sectionLlmsFiles(entries, separator)).toEqual([
+        'hub/llms.txt',
+        'p/models/llms.txt'
+      ])
+    }
+  )
 })

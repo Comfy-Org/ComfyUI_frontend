@@ -24,6 +24,24 @@ export function isLlmsTxtLinkLine(line: string): boolean {
   return LINK_LINE.test(line)
 }
 
+const LINKED_FILE = /\.(md|txt|xml|json)$/i
+
+/** Whether a linked pathname is a file (`/hub/models.md`), not a page such as `/models/flux.dev`. */
+export function isLinkedFile(pathname: string): boolean {
+  return LINKED_FILE.test(pathname)
+}
+
+/** The section `llms.txt` files among `readdirSync` entries, with `/` separators on every OS. */
+export function sectionLlmsFiles(
+  entries: readonly string[],
+  separator: string
+): string[] {
+  return entries
+    .map((entry) => entry.split(separator).join('/'))
+    .filter((file) => file.endsWith('/llms.txt'))
+    .sort()
+}
+
 /** Drop a trailing slash so `/foo/` and `/foo` compare equal; keep `/` as `/`. */
 export function normalizePath(path: string): string {
   const trimmed = path.replace(/\/+$/, '')
@@ -43,7 +61,7 @@ export function internalLinks(
 
 const SOURCE_PARAM = /(\/:\w+\*|:\w+\+|:\w+\([^()]*\)|:\w+)/
 const LITERAL_ALTERNATIVE = /^[\w.~-]+$/
-const UNSUPPORTED_SOURCE_SYNTAX = /[()?*+]/
+const UNSUPPORTED_SOURCE_SYNTAX = /[(){}?*+\\]/
 
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
