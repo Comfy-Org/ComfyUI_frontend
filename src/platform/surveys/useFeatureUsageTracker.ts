@@ -511,12 +511,17 @@ function writeAndVerifyUsage(
     return {
       allPendingWritten: true,
       trackedUsageWritten: true,
+      writtenUsageIds: Object.keys(pendingUsageData.value),
       usageData: expectedUsageData
     }
   }
   const parsedReadBack = parseUsageData(readBack)
   if (parsedReadBack.status === 'invalid') {
-    return { allPendingWritten: false, trackedUsageWritten: false }
+    return {
+      allPendingWritten: false,
+      trackedUsageWritten: false,
+      writtenUsageIds: []
+    }
   }
   const writtenUsageIds = new Set([
     featureId,
@@ -531,6 +536,7 @@ function writeAndVerifyUsage(
       isWrittenGeneration(storedUsage, expectedUsage)
     )
   }
+  const confirmedUsageIds = [...writtenUsageIds].filter(usageWasWritten)
   return {
     allPendingWritten:
       [...writtenUsageIds].every(usageWasWritten) &&
@@ -540,6 +546,7 @@ function writeAndVerifyUsage(
           usageFor(parsedReadBack.usageData, resetFeatureId) === undefined
       ),
     trackedUsageWritten: usageWasWritten(featureId),
+    writtenUsageIds: confirmedUsageIds,
     usageData: parsedReadBack.usageData
   }
 }
@@ -604,6 +611,14 @@ function persistUsageData(featureId: string, now: number) {
       pendingUsageData.value = {}
       usageSnapshot.value = usageData
     } else {
+      pendingUsageData.value = verification.writtenUsageIds.reduce(
+        withoutFeature,
+        pendingUsageData.value
+      )
+      for (const writtenFeatureId of verification.writtenUsageIds) {
+        pendingResets.delete(writtenFeatureId)
+        pendingResetUsage.delete(writtenFeatureId)
+      }
       if (verification.usageData) {
         usageSnapshot.value = verification.usageData
       }

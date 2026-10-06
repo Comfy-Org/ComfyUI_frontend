@@ -234,6 +234,35 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['clobber-trigger']?.useCount).toBe(1)
   })
 
+  it('drains each pending feature confirmed before partial verification', () => {
+    const retainedTracker = useFeatureUsageTracker('retained-pending-write')
+    const droppedTracker = useFeatureUsageTracker('dropped-pending-write')
+    const failedSetItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+      })
+    retainedTracker.trackUsage()
+    droppedTracker.trackUsage()
+    failedSetItem.mockRestore()
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const clobber = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        const written = JSON.parse(value)
+        delete written['dropped-pending-write']
+        originalSetItem(key, JSON.stringify(written))
+      })
+
+    useFeatureUsageTracker('partial-verification-trigger').trackUsage()
+    clobber.mockRestore()
+    useFeatureUsageTracker('partial-verification-recovery').trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['retained-pending-write']?.useCount).toBe(1)
+    expect(stored['dropped-pending-write']?.useCount).toBe(1)
+  })
+
   it('assumes a successful write when verification cannot read storage', () => {
     const featureId = 'unreadable-verification'
     const tracker = useFeatureUsageTracker(featureId)
