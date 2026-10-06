@@ -11,10 +11,11 @@ interface FeatureUsage {
 
 type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
-interface PendingFeatureUsage {
+interface PendingUsageDelta {
   useCountDelta: number
   firstUsed: number
   lastUsed: number
+  recordedAt: number
   baseUsage?: FeatureUsage | null
 }
 
@@ -27,11 +28,11 @@ type ParsedUsageData =
   | { status: 'partial'; usageData: FeatureUsageRecord }
   | { status: 'invalid' }
 
-type PendingFeatureUsageRecord = Partial<Record<string, PendingFeatureUsage>>
+type PendingFeatureUsageRecord = Partial<Record<string, PendingUsageDelta[]>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const MAX_USAGE_COUNT = Number.MAX_SAFE_INTEGER - 1
-const MAX_CLOCK_SKEW_MS = 5 * 60 * 1_000
+const MAX_TIMESTAMP = Date.UTC(2100, 0, 1)
 const resetVersions = new Map<string, number>()
 const pendingResets = reactive(new Set<string>())
 const pendingResetUsage = new Map<string, PendingReset>()
@@ -69,10 +70,10 @@ function isValidUseCount(value: number | undefined): value is number {
   return value !== undefined && value >= 0 && value <= MAX_USAGE_COUNT
 }
 
-function normalizeTimestamp(value: unknown, now = Date.now()) {
+function normalizeTimestamp(value: unknown) {
   const timestamp = safeInteger(value)
   if (timestamp === undefined || timestamp <= 0) return
-  return timestamp > now + MAX_CLOCK_SKEW_MS ? now : timestamp
+  return Math.min(timestamp, MAX_TIMESTAMP)
 }
 
 function normalizeUsageData(value: unknown): FeatureUsageRecord {
@@ -95,7 +96,7 @@ function normalizeUsageData(value: unknown): FeatureUsageRecord {
 }
 
 function parseUsageData(value: string | null): ParsedUsageData {
-  if (!value) return { status: 'valid', usageData: {} }
+  if (value === null) return { status: 'valid', usageData: {} }
 
   try {
     const parsedValue: unknown = JSON.parse(value)
@@ -114,24 +115,27 @@ function parseUsageData(value: string | null): ParsedUsageData {
   }
 }
 
-function clearPendingState() {
-  pendingResets.clear()
-  pendingResetUsage.clear()
-  pendingUsageData.value = {}
-}
-
 function reconcileDeletedPendingUsage(
   oldUsageData: FeatureUsageRecord,
   storedUsageData: FeatureUsageRecord
 ) {
   pendingUsageData.value = Object.fromEntries(
-    Object.entries(pendingUsageData.value).filter(
-      ([featureId, pendingUsage]) => {
-        if (!pendingUsage) return false
+    Object.entries(pendingUsageData.value).flatMap(
+      ([featureId, pendingDeltas]) => {
+        if (!pendingDeltas) return []
         const existed = usageFor(oldUsageData, featureId)
         const exists = usageFor(storedUsageData, featureId)
-        if (!existed || exists) return true
-        return existed.lastUsed < pendingUsage.firstUsed
+        const retainedDeltas =
+          !existed || exists
+            ? pendingDeltas
+            : pendingDeltas.filter(
+                ({ baseUsage, recordedAt }) =>
+                  baseUsage === undefined ||
+                  (baseUsage === null && recordedAt >= existed.lastUsed)
+              )
+        return retainedDeltas.length > 0
+          ? [[featureId, retainedDeltas] as const]
+          : []
       }
     )
   )
@@ -165,9 +169,22 @@ function reconcilePendingResets(storedUsageData: FeatureUsageRecord) {
 
 function reconcileStoredUsage(storedUsageData: FeatureUsageRecord) {
   pendingUsageData.value = Object.fromEntries(
-    Object.entries(pendingUsageData.value).filter(
-      ([featureId, pendingUsage]) =>
-        !pendingUsage?.baseUsage || usageFor(storedUsageData, featureId)
+    Object.entries(pendingUsageData.value).flatMap(
+      ([featureId, pendingDeltas]) => {
+        if (!pendingDeltas) return []
+        const storedUsage = usageFor(storedUsageData, featureId)
+        const retainedDeltas = pendingDeltas.filter(({ baseUsage }) => {
+          if (baseUsage === undefined || baseUsage === null) return true
+          return (
+            storedUsage !== undefined &&
+            storedUsage.useCount >= baseUsage.useCount &&
+            storedUsage.lastUsed >= baseUsage.lastUsed
+          )
+        })
+        return retainedDeltas.length > 0
+          ? [[featureId, retainedDeltas] as const]
+          : []
+      }
     )
   )
   reconcilePendingResets(storedUsageData)
@@ -182,7 +199,7 @@ function reconcileExternalStorage(event: StorageEvent) {
   }
   if (event.storageArea !== storageArea) return
   if (event.key === null) {
-    clearPendingState()
+    reconcileStoredUsage({})
     return
   }
   if (event.key !== STORAGE_KEY) return
@@ -194,7 +211,7 @@ function reconcileExternalStorage(event: StorageEvent) {
 
   try {
     const currentUsage = parseUsageData(localStorage.getItem(STORAGE_KEY))
-    if (currentUsage.status === 'valid') {
+    if (currentUsage.status !== 'invalid') {
       reconcilePendingResets(currentUsage.usageData)
     }
   } catch {
@@ -257,26 +274,28 @@ function withoutFeature<T>(
 
 function applyPendingUsage(usageData: FeatureUsageRecord): FeatureUsageRecord {
   return Object.entries(pendingUsageData.value).reduce(
-    (mergedUsageData, [featureId, pendingUsage]) => {
-      if (!pendingUsage) return mergedUsageData
-      const storedUsage = usageFor(mergedUsageData, featureId)
-      return {
-        ...mergedUsageData,
-        [featureId]: {
-          useCount: Math.min(
-            (storedUsage?.useCount ?? 0) + pendingUsage.useCountDelta,
-            MAX_USAGE_COUNT
-          ),
-          firstUsed: Math.min(
-            storedUsage?.firstUsed ?? pendingUsage.firstUsed,
-            pendingUsage.firstUsed
-          ),
-          lastUsed: Math.max(
-            storedUsage?.lastUsed ?? pendingUsage.lastUsed,
-            pendingUsage.lastUsed
-          )
+    (mergedUsageData, [featureId, pendingDeltas]) => {
+      if (!pendingDeltas) return mergedUsageData
+      return pendingDeltas.reduce((usageWithPendingDeltas, pendingDelta) => {
+        const storedUsage = usageFor(usageWithPendingDeltas, featureId)
+        return {
+          ...usageWithPendingDeltas,
+          [featureId]: {
+            useCount: Math.min(
+              (storedUsage?.useCount ?? 0) + pendingDelta.useCountDelta,
+              MAX_USAGE_COUNT
+            ),
+            firstUsed: Math.min(
+              storedUsage?.firstUsed ?? pendingDelta.firstUsed,
+              pendingDelta.firstUsed
+            ),
+            lastUsed: Math.max(
+              storedUsage?.lastUsed ?? pendingDelta.lastUsed,
+              pendingDelta.lastUsed
+            )
+          }
         }
-      }
+      }, mergedUsageData)
     },
     usageData
   )
@@ -284,25 +303,22 @@ function applyPendingUsage(usageData: FeatureUsageRecord): FeatureUsageRecord {
 
 function recordPendingUsage(
   featureId: string,
-  usage: FeatureUsage,
   now: number,
   baseUsage: FeatureUsage | null | undefined
 ) {
-  const pendingUsage = pendingUsageFor(featureId)
+  const pendingDeltas = pendingUsageFor(featureId) ?? []
   pendingUsageData.value = {
     ...pendingUsageData.value,
-    [featureId]: {
-      useCountDelta: Math.min(
-        (pendingUsage?.useCountDelta ?? 0) + 1,
-        MAX_USAGE_COUNT
-      ),
-      firstUsed: pendingUsage?.firstUsed ?? usage.firstUsed,
-      lastUsed: Math.max(pendingUsage?.lastUsed ?? now, now),
-      baseUsage:
-        pendingUsage?.baseUsage !== undefined
-          ? pendingUsage.baseUsage
-          : baseUsage
-    }
+    [featureId]: [
+      ...pendingDeltas,
+      {
+        useCountDelta: 1,
+        firstUsed: baseUsage?.firstUsed ?? now,
+        lastUsed: now,
+        recordedAt: now,
+        baseUsage
+      }
+    ]
   }
 }
 
@@ -345,7 +361,7 @@ function persistUsageData(
     const parsedUsageData = parseUsageData(oldValue)
     const storedUsageData =
       parsedUsageData.status === 'invalid' ? {} : parsedUsageData.usageData
-    if (parsedUsageData.status === 'valid') {
+    if (parsedUsageData.status !== 'invalid') {
       reconcileStoredUsage(storedUsageData)
     }
     const resetAdjustedUsageData = applyPendingResets(storedUsageData)
@@ -364,10 +380,7 @@ function persistUsageData(
     pendingUsageData.value = {}
   } catch (error) {
     reportStorageError(error, 'error_persisting_feature_usage')
-    const failedUsage = usageFor(usageData, featureId)
-    if (failedUsage) {
-      recordPendingUsage(featureId, failedUsage, now, baseUsage)
-    }
+    recordPendingUsage(featureId, now, baseUsage)
   }
 
   if (storageWritten) {
@@ -388,13 +401,13 @@ function resetUsageData(featureId: string) {
     const storedUsageData =
       parsedUsageData.status === 'invalid' ? {} : parsedUsageData.usageData
     const pendingReset = pendingResetUsage.get(featureId)
-    if (pendingReset && parsedUsageData.status === 'valid') {
+    if (pendingReset && parsedUsageData.status !== 'invalid') {
       pendingResetUsage.set(featureId, {
         ...pendingReset,
         baseline: usageFor(storedUsageData, featureId) ?? null
       })
     }
-    if (parsedUsageData.status === 'valid') {
+    if (parsedUsageData.status !== 'invalid') {
       reconcileStoredUsage(storedUsageData)
     }
     usageData = applyPendingUsage(applyPendingResets(storedUsageData))
@@ -450,7 +463,9 @@ export function useFeatureUsageTracker(featureId: string) {
     resetVersions.set(featureId, resetVersion)
     observedResetVersions.set(featureId, resetVersion)
     pendingResets.add(featureId)
-    pendingResetUsage.set(featureId, {})
+    if (!pendingResetUsage.has(featureId)) {
+      pendingResetUsage.set(featureId, {})
+    }
     pendingUsageData.value = withoutFeature(pendingUsageData.value, featureId)
     const persisted = resetUsageData(featureId)
     if (persisted.storageWritten) usageData.value = persisted.usageData
