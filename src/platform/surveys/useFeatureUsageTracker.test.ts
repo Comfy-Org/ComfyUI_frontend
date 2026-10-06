@@ -113,7 +113,7 @@ describe('useFeatureUsageTracker', () => {
       'unavailable-storage'
     )
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
     })
 
@@ -127,11 +127,9 @@ describe('useFeatureUsageTracker', () => {
 
     trackUsage()
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    const setItem = vi
-      .spyOn(Storage.prototype, 'setItem')
-      .mockImplementation(() => {
-        throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
-      })
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
     trackUsage()
     setItem.mockRestore()
     trackUsage()
