@@ -59,6 +59,7 @@
   ],
 
   "ignoreDependencies": [
+    // Fallow 3.24.1 does not credit npm: extends as a dependency use.
     "@comfyorg/tooling-config",
     // Icon sets loaded at build time, never via a JS import: unplugin-icons
     // for `i-prefix:name` components, design-system's Tailwind plugins for
