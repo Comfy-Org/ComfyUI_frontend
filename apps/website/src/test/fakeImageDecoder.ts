@@ -17,6 +17,8 @@ export interface FakeImageDecoder {
   hold(): void
   /** Completes the held decode of `src`. */
   settle(src: string): void
+  /** Completes every held decode, oldest first. */
+  settleAll(): void
 }
 
 /**
@@ -81,6 +83,9 @@ export function stubImageDecoder(): FakeImageDecoder {
       const index = held.findIndex((entry) => entry.src === src)
       if (index === -1) throw new Error(`No decode is pending for ${src}`)
       held.splice(index, 1)[0].load()
+    },
+    settleAll() {
+      for (const entry of held.splice(0)) entry.load()
     }
   }
 }

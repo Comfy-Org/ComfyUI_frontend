@@ -106,7 +106,7 @@ describe('useFrameScrub', () => {
     await setAllIntersecting(true)
 
     unmount()
-    while (decoder.pending.length) decoder.settle(decoder.pending[0])
+    decoder.settleAll()
 
     await waitFor(() => expect(drawnOn).toContain('kept'))
     expect([...drawnOn]).toEqual(['kept'])
