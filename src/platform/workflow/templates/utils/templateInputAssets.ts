@@ -1,9 +1,20 @@
+import { promiseTimeout } from '@vueuse/core'
+
 import type {
   ComfyDesktop2Bridge,
   ComfyTemplateInputAsset
 } from '@comfyorg/comfyui-desktop-bridge-types'
 
 type BridgeProvider = () => ComfyDesktop2Bridge | undefined
+
+/**
+ * The detail view waits on this lookup before it can open, so a host that
+ * never answers would leave the user with no way to reach Open now. Every
+ * other failure here already degrades to "no assets"; this makes silence do
+ * the same.
+ */
+const LOOKUP_TIMEOUT_MS = 10_000
+const NO_ASSETS: readonly ComfyTemplateInputAsset[] = []
 
 export async function resolveTemplateInputAssets(
   templateId: string,
@@ -13,7 +24,12 @@ export async function resolveTemplateInputAssets(
   if (!bridge?.getTemplateInputAssets || bridge.isRemote?.()) return []
 
   try {
-    return (await bridge.getTemplateInputAssets(templateId)) ?? []
+    return (
+      (await Promise.race([
+        bridge.getTemplateInputAssets(templateId),
+        promiseTimeout(LOOKUP_TIMEOUT_MS).then(() => NO_ASSETS)
+      ])) ?? NO_ASSETS
+    )
   } catch {
     return []
   }

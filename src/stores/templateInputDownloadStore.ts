@@ -36,8 +36,12 @@ export const useTemplateInputDownloadStore = defineStore(
         return
       }
 
+      // A finished id never goes back to pending or downloading. A late event
+      // would re-add a record `completeGraphSync` can no longer clear, leaving
+      // the filename blocked for good.
+      if (completedIds.has(downloadId)) return
+
       if (status === 'completed') {
-        if (completedIds.has(downloadId)) return
         completedIds.add(downloadId)
         previewRevisions.set(
           filename,

@@ -105,4 +105,18 @@ describe('useTemplateInputDownloadStore', () => {
     expect(store.downloads).toEqual([])
     expect(store.blockingFilenames).toEqual(new Set())
   })
+
+  it('ignores a late in-flight event for a download that already finished', () => {
+    const store = useTemplateInputDownloadStore()
+
+    store.updateProgress(progress('completed', 1))
+    store.completeGraphSync(['subject.png'])
+
+    store.updateProgress(progress('downloading', 0.5))
+
+    // Re-added, the record is no longer `completed`, so `completeGraphSync`
+    // cannot clear it and the filename stays blocked for the session.
+    expect(store.downloads).toEqual([])
+    expect(store.blockingFilenames).toEqual(new Set())
+  })
 })

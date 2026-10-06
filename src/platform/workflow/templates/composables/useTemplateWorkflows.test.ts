@@ -411,11 +411,11 @@ describe('useTemplateWorkflows', () => {
   // 'all' is a category label, not a source: it resolves to the template's
   // real sourceModule, so only the resolved value decides authorization.
   it.for([
-    { sourceModule: 'default', authorized: true },
-    { sourceModule: 'some-extension', authorized: false }
+    { sourceModule: 'default', expectedCalls: 1 },
+    { sourceModule: 'some-extension', expectedCalls: 0 }
   ])(
-    'authorizes input downloads for $sourceModule: $authorized',
-    async ({ sourceModule, authorized }) => {
+    'asks the host for input assets $expectedCalls times for $sourceModule',
+    async ({ sourceModule, expectedCalls }) => {
       mockDistributionIsDesktop.value = true
       const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
       mockWorkflowTemplatesStore.isLoaded = true
@@ -425,7 +425,7 @@ describe('useTemplateWorkflows', () => {
 
       // Only first-party templates may ask the host to fetch files.
       expect(mockInputAssets.resolveTemplateInputAssets).toHaveBeenCalledTimes(
-        authorized ? 1 : 0
+        expectedCalls
       )
     }
   )

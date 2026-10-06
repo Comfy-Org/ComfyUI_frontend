@@ -65,6 +65,25 @@ describe('resolveTemplateInputAssets', () => {
     )
   })
 
+  it('answers nothing when the bridge never answers', async () => {
+    vi.useFakeTimers()
+    try {
+      // Detail waits on this before it can open, so silence must not be able
+      // to hold the view shut.
+      const pending = resolveTemplateInputAssets('t1', () =>
+        bridge({
+          getTemplateInputAssets: vi.fn(
+            (): Promise<ComfyTemplateInputAsset[]> => new Promise(() => {})
+          )
+        })
+      )
+      await vi.advanceTimersByTimeAsync(10_000)
+      await expect(pending).resolves.toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('answers nothing when the bridge rejects', async () => {
     const getTemplateInputAssets = vi.fn(async () => {
       throw new Error('bridge down')
