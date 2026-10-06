@@ -7,20 +7,22 @@ const nanoBananaLinks = {
     'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana-2'
 } as const
 
-interface LocalStill {
+const mediaBase = 'https://media.comfy.org/website/nano-banana'
+
+interface Still {
   slug: string
   en: string
   'zh-CN': string
 }
 
-const localCards = (theme: string, stills: readonly LocalStill[]) =>
+const stillCards = (theme: string, stills: readonly Still[]) =>
   stills.map(({ slug, ...alt }) => ({
     id: `${theme}-${slug}`,
     alt,
-    src: `/images/nano-banana/${theme}-${slug}.webp`
+    src: `${mediaBase}/${theme}-${slug}.webp`
   }))
 
-const photographyCards = localCards('photography', [
+const photographyCards = stillCards('photography', [
   {
     slug: 'fruit-still-life',
     en: 'Still life of grapes, pears, and lemons in a stoneware bowl',
@@ -48,7 +50,7 @@ const photographyCards = localCards('photography', [
   }
 ])
 
-const designCards = localCards('design', [
+const designCards = stillCards('design', [
   {
     slug: 'lake-photo',
     en: 'Mountain lake at dawn as a photograph',
@@ -86,7 +88,7 @@ const designCards = localCards('design', [
   }
 ])
 
-const advertisingCards = localCards('advertising', [
+const advertisingCards = stillCards('advertising', [
   {
     slug: 'spicy-mayo',
     en: 'Spicy mayo squeeze bottle on a kitchen table with burgers and fries',
