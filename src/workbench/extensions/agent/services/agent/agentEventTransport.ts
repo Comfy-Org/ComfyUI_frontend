@@ -335,7 +335,8 @@ export function createAgentEventTransport(
    * ask dropped in routing, so it is reported the same way. Generated-contract
    * kinds without a client renderer are tagged separately from unknown input.
    *
-   * An ask already on the message also returns `false`, and is NOT reported:
+   * An ask already on the message emits the closed transcript parts but is
+   * NOT reported:
    * turn recovery restores an unanswered ask off the persisted row, and the
    * server writes that row before it publishes the frame, so the two can
    * arrive in either order for the same `ask_id`. The second arrival is a
@@ -349,17 +350,17 @@ export function createAgentEventTransport(
       )
       return false
     }
-    if (
-      message.parts.some(
-        (part) => part.type === 'runApproval' && part.askId === data.ask_id
-      )
-    )
-      return false
     dropDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
+    if (
+      message.parts.some(
+        (part) => part.type === 'runApproval' && part.askId === data.ask_id
+      )
+    )
+      return true
     const part: RunApprovalPart = {
       type: 'runApproval',
       askId: data.ask_id,

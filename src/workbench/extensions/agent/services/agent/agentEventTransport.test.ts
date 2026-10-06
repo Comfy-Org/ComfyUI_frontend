@@ -606,6 +606,24 @@ describe('agentEventTransport run approval', () => {
     ])
   })
 
+  it('closes open transcript parts when a duplicate approval frame arrives', () => {
+    const message = drive([
+      runApproval(),
+      delta('before the delayed frame'),
+      runApproval()
+    ])
+
+    expect(message.parts).toEqual([
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow'
+      },
+      { type: 'text', text: 'before the delayed frame', state: 'done' }
+    ])
+  })
+
   it('removes only the matching approval when the ask resolves', () => {
     const message = drive([
       runApproval('ask-1'),

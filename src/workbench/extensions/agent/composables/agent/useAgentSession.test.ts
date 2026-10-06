@@ -3855,6 +3855,21 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.editableTurnId.value).toBe('msg-1')
   })
 
+  it('(g6b) an approval does not make a still-streaming stopped turn editable', async () => {
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    await session.stopTurn()
+    emit(runApproval('msg-1'))
+
+    expect(session.isStreaming.value).toBe(true)
+    expect(session.editableTurnId.value).toBeNull()
+  })
+
   it('(g7) a flapping socket starts one recovery job per turn, not one per reconnect', async () => {
     const rest = streamingTurnRest()
     const { source, emit, status } = fakeEvents()
@@ -4626,6 +4641,36 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(g38) a remount does not restore an ask the prior session retired', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      vi.mocked(rest.answerAsk).mockRejectedValue(
+        new AgentApiError('already answered', 409, undefined)
+      )
+      const firstEvents = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const first = useAgentSession({ rest, events: firstEvents.source })
+      first.start()
+      firstEvents.status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(first)).toHaveLength(1)
+
+      await first.answerAsk('turn-1:call-1', 'run')
+      first.stop()
+
+      const secondEvents = fakeEvents()
+      const second = useAgentSession({ rest, events: secondEvents.source })
+      second.start()
+      secondEvents.status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(second)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // The same lag `(g33)` describes, read from the other side: the server
   // clears `pending_ask` behind the answer, so a row it has already closed can
   // still be carrying a spent one. A later row keeps the turn open, so
@@ -4693,13 +4738,15 @@ describe('useAgentSession (v1 composition root)', () => {
           return [historyRow(1, 'user', 'msg-1', 'go'), parkedRow()]
         })
       })
-      const { source, emit, status } = fakeEvents()
+      const { source, status } = fakeEvents()
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
       const session = useAgentSession({ rest, events: source })
+      useAgentConversationStore().ingest(
+        zAgentWsEvent.parse(runApproval('msg-1'))
+      )
       session.start()
       status(true)
 
-      emit(runApproval('msg-1'))
       expect(session.entries.value).toHaveLength(0)
 
       releaseHistory()

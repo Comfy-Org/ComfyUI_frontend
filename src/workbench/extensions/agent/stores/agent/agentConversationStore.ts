@@ -460,6 +460,10 @@ export const useAgentConversationStore = defineStore(
       resolvedAskIds.set(key, retired)
       return retired
     }
+
+    function isAskRetired(askId: string, owner?: string): boolean {
+      return retiredAsksFor(owner).has(askId)
+    }
     /**
      * PM-1658: which way this client answered each ask. The server takes a
      * second answer from anywhere with 202 while committing only the FIRST, so
@@ -1329,6 +1333,7 @@ export const useAgentConversationStore = defineStore(
       submittedAskSelection,
       commitAsk,
       retireAsk,
+      isAskRetired,
       startTurn,
       ingest,
       setCanvasSyncGate,

@@ -318,6 +318,7 @@ const TERMINAL_ANSWER_STATUSES = new Set([403, 404, 409])
  * the shared 60s request deadline it replaces.
  */
 const ANSWER_RETRY_BACKOFF_MS = [300]
+const MAX_DELIVERED_ASKS = 128
 
 /**
  * A rejected fetch never reached the server, and 5xx is the status the server
@@ -523,6 +524,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   const deliveredAsks = new Set<string>()
   const lateAskReports = new Map<string, ReturnType<typeof setTimeout>>()
+
+  function recordDeliveredAsk(askId: string): void {
+    deliveredAsks.add(askId)
+    if (deliveredAsks.size <= MAX_DELIVERED_ASKS) return
+    const oldest = deliveredAsks.values().next().value
+    if (oldest !== undefined) deliveredAsks.delete(oldest)
+  }
+
+  function clearLateAskReports(): void {
+    for (const scheduled of lateAskReports.values()) clearTimeout(scheduled)
+    lateAskReports.clear()
+  }
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -868,8 +881,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus = null
     for (const running of recoveringTurns.values()) running.controller.abort()
     recoveringTurns.clear()
-    for (const scheduled of lateAskReports.values()) clearTimeout(scheduled)
-    lateAskReports.clear()
+    clearLateAskReports()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -1468,6 +1480,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       pushError(i18n.global.t('agent.runApproval.answerFailed'))
       // Nothing can ever answer this card, so retire it rather than let every
       // further click raise another toast and another telemetry event.
+      recordDeliveredAsk(askId)
       conversationStore.retireAsk(askId)
       return false
     }
@@ -1480,7 +1493,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setAskAnswering(askId, true)
     try {
       await sendAnswer(currentThreadId, askId, selection)
-      deliveredAsks.add(askId)
+      recordDeliveredAsk(askId)
       conversationStore.commitAsk(askId, currentThreadId)
       return true
     } catch (error) {
@@ -1514,7 +1527,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         // The card is retired for good here, by resolution (409) or because
         // this client could never answer it. Either way a later recovery poll
         // must not draw it again.
-        deliveredAsks.add(askId)
+        recordDeliveredAsk(askId)
         conversationStore.retireAsk(askId, currentThreadId)
         return false
       }
@@ -1533,7 +1546,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // effect. On a spend authorization that is the wrong way to be wrong, so
       // retire the card and say the outcome is unknown rather than show a raw
       // transport string next to a card that is about to vanish.
-      deliveredAsks.add(askId)
+      recordDeliveredAsk(askId)
       conversationStore.retireAsk(askId, currentThreadId)
       pushError(i18n.global.t('agent.runApproval.answerUncertain'))
       return false
@@ -1599,6 +1612,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
   ): void {
     readyThreadId.value = null
+    clearLateAskReports()
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
@@ -1622,6 +1636,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     isNavigationCurrent: () => boolean = () => true
   ): Promise<boolean> {
     readyThreadId.value = null
+    clearLateAskReports()
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
@@ -1782,7 +1797,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // owning turn's transport, and the turn is gone in exactly the case that
       // matters, so on its own it would re-enable a card it cannot remove.
       conversationStore.retireAsk(event.data.ask_id, event.data.thread_id)
-      deliveredAsks.add(event.data.ask_id)
+      recordDeliveredAsk(event.data.ask_id)
       onAskResolved?.(event.data.ask_id)
     }
     for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
@@ -1881,6 +1896,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return
       const outcome = await fetchTurnOutcome(turn, signal)
+      signal.throwIfAborted()
       if (!isTurnLive(turn, generation)) return
       consecutiveThreadMissing =
         outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
@@ -1912,8 +1928,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (pendingAsk?.kind !== 'run_approval') return
     if (deliveredAsks.has(pendingAsk.ask_id)) return
+    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) return
     if (conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
-    deliveredAsks.add(pendingAsk.ask_id)
     conversationStore.ingest({
       type: 'agent_ask',
       data: {
@@ -1922,7 +1938,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         message_id: turn.messageId
       }
     })
-    markStoppedTurnReady(turn)
+    if (!conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
+    recordDeliveredAsk(pendingAsk.ask_id)
     reportRestoredApproval(turn, pendingAsk.ask_id, cause)
   }
 
@@ -1968,7 +1985,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     event: Extract<AgentWsEvent, { type: 'agent_ask' }>
   ): void {
     const askId = event.data.ask_id
-    if (deliveredAsks.has(askId)) {
+    if (
+      deliveredAsks.has(askId) ||
+      conversationStore.isAskRetired(askId, event.data.thread_id)
+    ) {
       withdrawLateAskReport(askId)
       return
     }
@@ -1977,8 +1997,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       messageId: toTurnId(event.data.message_id)
     }
     conversationStore.ingest(event)
-    if (conversationStore.isApprovalShown(turn, askId)) deliveredAsks.add(askId)
-    markStoppedTurnReady(turn)
+    if (conversationStore.isApprovalShown(turn, askId))
+      recordDeliveredAsk(askId)
   }
 
   function withdrawLateAskReport(askId: string): void {
@@ -2112,6 +2132,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function forgetDeletedThread(turn: LiveTurn): void {
     skillTurnUsage.delete(recoveryKey(turn))
+    clearLateAskReports()
     if (conversationStore.threadId !== turn.threadId) {
       conversationStore.settleTurn(turn, undefined)
       return
