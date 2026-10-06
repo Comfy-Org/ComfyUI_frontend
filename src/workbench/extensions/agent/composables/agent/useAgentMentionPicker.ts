@@ -195,6 +195,32 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     )
   }
 
+  function updateMentionQuery(
+    trigger: '@' | '/',
+    start: number,
+    query: string
+  ): void {
+    if (
+      trigger === '@' &&
+      (mention.value.status === 'closed' || mention.value.section === 'skills')
+    )
+      loadMentionNodes()
+    dispatchMention({
+      type: 'queryChanged',
+      start,
+      query,
+      trigger,
+      firstMatchIndex: firstMentionMatchIndex(
+        trigger === '/'
+          ? 'skills'
+          : mentionSection.value === 'skills'
+            ? 'root'
+            : mentionSection.value,
+        query
+      )
+    })
+  }
+
   function syncMention(): void {
     const selection = options.editor()?.selection()
     const caret = selection?.start ?? 0
@@ -225,25 +251,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     }
     const { trigger, start: at } = candidate
     const query = text.slice(at + 1, caret)
-    if (
-      trigger === '@' &&
-      (mention.value.status === 'closed' || mention.value.section === 'skills')
-    )
-      loadMentionNodes()
-    dispatchMention({
-      type: 'queryChanged',
-      start: at,
-      query,
-      trigger,
-      firstMatchIndex: firstMentionMatchIndex(
-        trigger === '/'
-          ? 'skills'
-          : mentionSection.value === 'skills'
-            ? 'root'
-            : mentionSection.value,
-        query
-      )
-    })
+    updateMentionQuery(trigger, at, query)
   }
 
   watch(

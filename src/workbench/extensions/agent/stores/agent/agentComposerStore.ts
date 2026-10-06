@@ -67,7 +67,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     )
   )
   const nodeScope = ref<string | null>(null)
-  const skillScope = ref<string | null>(null)
+  let skillScope: string | null = null
   const promptEpoch = ref(0)
   // Set by the affordance that supplied the text; read once at submission and
   // reset there, so it describes the message being sent rather than the panel.
@@ -122,23 +122,29 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
   }
 
+  function resolveEditorReference(
+    item: ComposerReference
+  ): ComposerReference[] {
+    if (item.kind === 'node' && item.scope !== nodeScope.value) return []
+    if (item.kind !== 'asset') return [item]
+    if (retiredAssets.has(item.attachment.id)) return []
+    const attachment = undoAssets.get(item.attachment.id) ?? item.attachment
+    undoAssets.set(attachment.id, attachment)
+    return [{ ...item, attachment }]
+  }
+
   function applyEditorPrompt(next: ComposerPrompt): void {
     const seen = new Set<string>()
     let hasSkill = false
     const references = next.references.flatMap((item): ComposerReference[] => {
       if (item.kind === 'skill') {
-        if (item.scope !== skillScope.value || hasSkill) return []
+        if (item.scope !== skillScope || hasSkill) return []
         hasSkill = true
       }
       const key = composerReferenceKey(item)
       if (seen.has(key)) return []
       seen.add(key)
-      if (item.kind === 'node' && item.scope !== nodeScope.value) return []
-      if (item.kind !== 'asset') return [item]
-      if (retiredAssets.has(item.attachment.id)) return []
-      const attachment = undoAssets.get(item.attachment.id) ?? item.attachment
-      undoAssets.set(attachment.id, attachment)
-      return [{ ...item, attachment }]
+      return resolveEditorReference(item)
     })
     if (
       !next.text.trim() &&
@@ -167,9 +173,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       if (part.type === 'text') return []
       if (part.type === 'workflow')
         return [{ ...part.reference, kind: 'workflow' }]
-      return [
-        { ...part.reference, kind: 'skill', scope: skillScope.value ?? '' }
-      ]
+      return [{ ...part.reference, kind: 'skill', scope: skillScope ?? '' }]
     })
   }
 
@@ -312,8 +316,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function setSkillScope(scope: string | null): void {
-    if (scope === skillScope.value) return
-    skillScope.value = scope
+    if (scope === skillScope) return
+    skillScope = scope
     if (!prompt.value.references.some((item) => item.kind === 'skill')) return
     resetPromptHistory()
     const references = prompt.value.references.filter(
@@ -447,7 +451,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     prompt,
     nodes,
     nodeScope,
-    skillScope,
     promptEpoch,
     promptOrigin,
     starterPrompt,
