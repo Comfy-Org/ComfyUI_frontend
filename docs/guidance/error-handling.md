@@ -85,7 +85,9 @@ party libraries, and anything an extension or custom node supplies (`toJSON`,
 callbacks, widget serializers). Wrap exactly that call in `try/catch` and turn
 the result into a value before it leaves the function, as `parseJson` does
 above. When the call returns a promise, `await` it inside the `try`; a
-rejection from an un-awaited promise skips the `catch`.
+rejection from an un-awaited promise skips the `catch`. A rejection is not the
+only failure: `fetch` and `api.fetchApi` resolve on HTTP error statuses, so
+check `response.ok` and return the failure value when it is false.
 
 Once the failure is a value, pass it up with ordinary returns. A `try/catch`
 two or three frames above the risky call, around your own code, is the tell
