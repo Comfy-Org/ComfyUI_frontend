@@ -1,0 +1,66 @@
+{
+  "1": {
+    "class_type": "LoadLoraModel",
+    "inputs": {
+      "model": ["3", 0],
+      "loras.0.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.0.strength": 1,
+      "loras.1.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.1.strength": 1,
+      "loras.2.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.2.strength": 1,
+      "loras.3.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.3.strength": 1,
+      "loras.4.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.4.strength": 1,
+      "loras.5.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.5.strength": 1,
+      "loras.6.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.6.strength": 1,
+      "loras.7.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.7.strength": 1,
+      "loras.8.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.8.strength": 1,
+      "loras.9.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.9.strength": 1,
+      "loras.10.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.10.strength": 1,
+      "loras.11.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.11.strength": 1,
+      "loras.12.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.12.strength": 1,
+      "loras.13.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.13.strength": 1,
+      "loras.14.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.14.strength": 1,
+      "loras.15.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.15.strength": 1,
+      "loras.16.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.16.strength": 1,
+      "loras.17.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.17.strength": 1,
+      "loras.18.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.18.strength": 1,
+      "loras.19.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.19.strength": 1,
+      "loras.20.lora_name": "native-lora-e2e/A.safetensors",
+      "loras.20.strength": 1
+    }
+  },
+  "2": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": ["4", 0]
+    }
+  },
+  "3": {
+    "class_type": "NativeLoraTestSource",
+    "inputs": {}
+  },
+  "4": {
+    "class_type": "NativeLoraTestOutput",
+    "inputs": {
+      "model": ["1", 0]
+    }
+  }
+}
