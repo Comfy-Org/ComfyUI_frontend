@@ -6,6 +6,9 @@ const API_VERSION = '2022-11-28'
 const PAGE_SIZE = 100
 const HOLD_LABEL = 'website-fast-lane:hold'
 const APPROVE_LABEL = 'website-fast-lane:approve'
+const GRAPHQL_URL = 'https://api.github.com/graphql'
+const POLICY_REVIEW_PREFIX =
+  '[Validation canary] Policy-only automatic approval.'
 const DECISIVE_REVIEW_STATES = new Set([
   'APPROVED',
   'CHANGES_REQUESTED',
@@ -150,6 +153,16 @@ function requiredEnv(name) {
   return value
 }
 
+function optionalPositiveIntegerEnv(name) {
+  const value = process.env[name]?.trim()
+  if (!value) return
+  const number = Number(value)
+  if (!Number.isSafeInteger(number) || number <= 0) {
+    throw new Error(`${name} must be positive`)
+  }
+  return number
+}
+
 function githubClient(token, repository) {
   const root = `https://api.github.com/repos/${repository}`
   const headers = {
@@ -177,7 +190,23 @@ function githubClient(token, repository) {
     }
   }
 
-  return { paginate, request }
+  async function graphql(query, variables) {
+    const body = await request(GRAPHQL_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query, variables })
+    })
+    if (body?.errors?.length) {
+      throw new Error(
+        `GitHub GraphQL failed: ${body.errors
+          .map((error) => error.message)
+          .join('; ')}`
+      )
+    }
+    return body?.data
+  }
+
+  return { graphql, paginate, request }
 }
 
 function apiUrl(root, requestPath) {
@@ -218,7 +247,7 @@ function configuration() {
   const config = {
     token: requiredEnv('WEBSITE_APPROVAL_TOKEN'),
     repository: requiredEnv('GITHUB_REPOSITORY'),
-    prNumber: Number(requiredEnv('PR_NUMBER')),
+    prNumber: optionalPositiveIntegerEnv('PR_NUMBER'),
     eventHeadSha: requiredEnv('PR_HEAD_SHA'),
     defaultBranch: requiredEnv('WEBSITE_APPROVAL_BASE_REF'),
     expectedApprover: requiredEnv('WEBSITE_APPROVER_LOGIN'),
@@ -229,10 +258,31 @@ function configuration() {
       requiredEnv('WEBSITE_AUTO_APPROVE_LABELERS')
     )
   }
-  if (!Number.isSafeInteger(config.prNumber) || config.prNumber <= 0) {
-    throw new Error('PR_NUMBER must be positive')
-  }
   return config
+}
+
+async function resolvePullNumber(github, config) {
+  if (config.prNumber) return config.prNumber
+  const pulls = await github.request(`/commits/${config.eventHeadSha}/pulls`)
+  if (!Array.isArray(pulls)) {
+    throw new Error('GitHub did not return pull requests for the commit')
+  }
+  const matches = pulls.filter((pull) => {
+    return (
+      pull?.state === 'open' &&
+      pull?.head?.sha === config.eventHeadSha &&
+      isSameRepository(pull, config.repository) &&
+      targetsDefaultBranch(pull, config.repository, config.defaultBranch)
+    )
+  })
+  if (matches.length !== 1) {
+    summary(
+      `Skipped: expected one open same-repository pull request for ${config.eventHeadSha.slice(0, 12)}, found ${matches.length}.`
+    )
+    return
+  }
+  config.prNumber = matches[0].number
+  return config.prNumber
 }
 
 function readinessFailure({ pull }) {
@@ -308,6 +358,17 @@ function approvalForHead(reviews, approverLogin, headSha) {
   }
 }
 
+function latestPolicyReview(reviews, approverLogin) {
+  const expectedLogin = approverLogin.toLowerCase()
+  return [...reviews].reverse().find((review) => {
+    return (
+      review?.user?.login?.toLowerCase() === expectedLogin &&
+      review?.body?.startsWith(POLICY_REVIEW_PREFIX) &&
+      !Number.isNaN(Date.parse(review.submitted_at))
+    )
+  })
+}
+
 async function dismissApproval(github, prNumber, review, reason) {
   if (!review?.id) return false
   await github.request(`/pulls/${prNumber}/reviews/${review.id}/dismissals`, {
@@ -318,8 +379,143 @@ async function dismissApproval(github, prNumber, review, reason) {
   return true
 }
 
-async function stopWithSummary({ github, config, reviews, headSha, message }) {
-  const approval = approvalForHead(reviews, config.expectedApprover, headSha)
+const MERGE_AUTOMATION_STATE = `
+  query WebsiteFastLaneMergeState($pullRequestId: ID!) {
+    node(id: $pullRequestId) {
+      ... on PullRequest {
+        id
+        headRefOid
+        mergeStateStatus
+        autoMergeRequest { enabledAt enabledBy { login } }
+        mergeQueueEntry {
+          id
+          enqueuedAt
+          enqueuer { login }
+          headCommit { oid }
+        }
+      }
+    }
+  }
+`
+
+function actorMatches(actor, expectedLogin) {
+  return actor?.login?.toLowerCase() === expectedLogin.toLowerCase()
+}
+
+async function mergeAutomationState(github, pullRequestId) {
+  const data = await github.graphql(MERGE_AUTOMATION_STATE, { pullRequestId })
+  if (!data?.node?.id) {
+    throw new Error('GitHub did not return the pull request merge state')
+  }
+  return data.node
+}
+
+function atOrAfter(value, floor) {
+  return Date.parse(value) >= Date.parse(floor)
+}
+
+export async function stopMergeAutomation(github, config, pull, policyReview) {
+  // Christian may also use native auto-merge manually. Only touch merge state
+  // created after this workflow's identifiable policy review.
+  if (!policyReview) return
+  if (!pull?.node_id) {
+    throw new Error(
+      'the pull request node id is required to stop merge automation'
+    )
+  }
+  const state = await mergeAutomationState(github, pull.node_id)
+  const entry = state.mergeQueueEntry
+  if (
+    entry &&
+    actorMatches(entry.enqueuer, config.expectedApprover) &&
+    atOrAfter(entry.enqueuedAt, policyReview.submitted_at)
+  ) {
+    await github.graphql(
+      `mutation WebsiteFastLaneDequeue($id: ID!) {
+        dequeuePullRequest(input: { id: $id }) { clientMutationId }
+      }`,
+      { id: entry.id }
+    )
+  }
+  if (
+    state.autoMergeRequest &&
+    actorMatches(state.autoMergeRequest.enabledBy, config.expectedApprover) &&
+    atOrAfter(state.autoMergeRequest.enabledAt, policyReview.submitted_at)
+  ) {
+    await github.graphql(
+      `mutation WebsiteFastLaneDisableAutoMerge($pullRequestId: ID!) {
+        disablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId }) {
+          clientMutationId
+        }
+      }`,
+      { pullRequestId: pull.node_id }
+    )
+  }
+}
+
+export async function armMergeAutomation(github, config, pull) {
+  if (!pull?.node_id) {
+    throw new Error(
+      'the pull request node id is required to arm merge automation'
+    )
+  }
+  const state = await mergeAutomationState(github, pull.node_id)
+  if (state.headRefOid !== pull.head.sha) {
+    throw new Error('the pull request head advanced before merge automation')
+  }
+  if (state.mergeQueueEntry) {
+    summary(`Already queued ${pull.head.sha.slice(0, 12)}.`)
+    return
+  }
+  if (state.mergeStateStatus === 'CLEAN') {
+    await github.graphql(
+      `mutation WebsiteFastLaneEnqueue(
+        $pullRequestId: ID!
+        $expectedHeadOid: GitObjectID!
+      ) {
+        enqueuePullRequest(input: {
+          pullRequestId: $pullRequestId
+          expectedHeadOid: $expectedHeadOid
+          jump: false
+        }) { clientMutationId }
+      }`,
+      {
+        pullRequestId: pull.node_id,
+        expectedHeadOid: pull.head.sha
+      }
+    )
+    summary(`Entered the native merge queue for ${pull.head.sha.slice(0, 12)}.`)
+    return
+  }
+  if (state.autoMergeRequest) {
+    summary(`Auto-merge already armed for ${pull.head.sha.slice(0, 12)}.`)
+    return
+  }
+  await github.graphql(
+    `mutation WebsiteFastLaneEnableAutoMerge(
+      $pullRequestId: ID!
+      $expectedHeadOid: GitObjectID!
+    ) {
+      enablePullRequestAutoMerge(input: {
+        pullRequestId: $pullRequestId
+        expectedHeadOid: $expectedHeadOid
+        mergeMethod: SQUASH
+      }) { clientMutationId }
+    }`,
+    {
+      pullRequestId: pull.node_id,
+      expectedHeadOid: pull.head.sha
+    }
+  )
+  summary(`Armed native auto-merge for ${pull.head.sha.slice(0, 12)}.`)
+}
+
+async function stopWithSummary({ github, config, pull, reviews, message }) {
+  const approval = approvalForHead(
+    reviews,
+    config.expectedApprover,
+    pull?.head?.sha
+  )
   if (approval) {
     await dismissApproval(
       github,
@@ -328,6 +524,12 @@ async function stopWithSummary({ github, config, reviews, headSha, message }) {
       `Website fast-lane approval withdrawn: ${message}`
     )
   }
+  await stopMergeAutomation(
+    github,
+    config,
+    pull,
+    latestPolicyReview(reviews, config.expectedApprover)
+  )
   summary(message)
 }
 
@@ -337,8 +539,8 @@ async function validateWebsitePaths(github, config, pull, reviews) {
     await stopWithSummary({
       github,
       config,
+      pull,
       reviews,
-      headSha: pull.head.sha,
       message: 'Skipped: could not enumerate every changed file.'
     })
     return false
@@ -348,8 +550,8 @@ async function validateWebsitePaths(github, config, pull, reviews) {
     await stopWithSummary({
       github,
       config,
+      pull,
       reviews,
-      headSha: pull.head.sha,
       message: 'Skipped: at least one changed file is outside apps/website/**.'
     })
     return false
@@ -374,8 +576,8 @@ async function revalidatePull(github, config, liveHeadSha) {
     await stopWithSummary({
       github,
       config,
+      pull: recheckedPull,
       reviews: recheckedReviews,
-      headSha: liveHeadSha,
       message: recheckedFailure
     })
     return
@@ -384,8 +586,8 @@ async function revalidatePull(github, config, liveHeadSha) {
     await stopWithSummary({
       github,
       config,
+      pull: recheckedPull,
       reviews: recheckedReviews,
-      headSha: liveHeadSha,
       message: 'Skipped: an active reviewer change request is present.'
     })
     return
@@ -400,7 +602,7 @@ export async function approveCurrentHead(github, config, liveHeadSha, reviews) {
     summary(
       `Already approved ${liveHeadSha.slice(0, 12)} as @${config.expectedApprover}.`
     )
-    return
+    return true
   }
 
   const createdReview = await github.request(
@@ -411,7 +613,7 @@ export async function approveCurrentHead(github, config, liveHeadSha, reviews) {
       body: JSON.stringify({
         event: 'APPROVE',
         commit_id: liveHeadSha,
-        body: '[Validation canary] Policy-only automatic approval. No diff review was performed; eligibility was bound to a trusted author or authorized approval-label event, the exact head commit, and the `apps/website/**` path boundary.'
+        body: `${POLICY_REVIEW_PREFIX} No diff review was performed; eligibility was bound to a trusted author or authorized approval-label event, the exact head commit, and the \`apps/website/**\` path boundary.`
       })
     }
   )
@@ -450,17 +652,19 @@ export async function approveCurrentHead(github, config, liveHeadSha, reviews) {
       `Website fast-lane approval withdrawn: ${reason}`
     )
     summary(`Approval withdrawn: ${reason}`)
-    return
+    return false
   }
   summary(
     `Approved ${liveHeadSha.slice(0, 12)} as @${config.expectedApprover}.`
   )
+  return true
 }
 
 async function main() {
   const config = configuration()
   const github = githubClient(config.token, config.repository)
   await assertApproverIdentity(github, config.expectedApprover)
+  if (!(await resolvePullNumber(github, config))) return
 
   const pull = await github.request(`/pulls/${config.prNumber}`)
   const reviews = await github.paginate(`/pulls/${config.prNumber}/reviews`)
@@ -470,8 +674,8 @@ async function main() {
     await stopWithSummary({
       github,
       config,
+      pull,
       reviews,
-      headSha: pull?.head?.sha,
       message: failure
     })
     return
@@ -484,7 +688,20 @@ async function main() {
   const recheckedReviews = await revalidatePull(github, config, liveHeadSha)
   if (!recheckedReviews) return
 
-  await approveCurrentHead(github, config, liveHeadSha, recheckedReviews)
+  const approved = await approveCurrentHead(
+    github,
+    config,
+    liveHeadSha,
+    recheckedReviews
+  )
+  if (!approved) return
+
+  const queuePull = await github.request(`/pulls/${config.prNumber}`)
+  await armMergeAutomation(github, config, queuePull)
+
+  // Recheck once more after arming. A concurrent hold, new commit, or human
+  // change request must withdraw both the policy approval and merge intent.
+  await revalidatePull(github, config, liveHeadSha)
 }
 
 if (

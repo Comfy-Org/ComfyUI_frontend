@@ -21,6 +21,16 @@ on:
       - edited
       - labeled
       - unlabeled
+  pull_request_review:
+    types: [submitted, dismissed]
+  workflow_run:
+    workflows:
+      - 'CI: Lint Format'
+      - 'CI: Tests Unit'
+      - 'CI: Tests E2E'
+      - 'CI: Website E2E'
+    types: [completed]
+  status:
 
 permissions:
   contents: read
@@ -28,11 +38,12 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: website-auto-approve-${{ github.event.pull_request.number }}
+  group: website-auto-approve-${{ github.event.pull_request.number || github.event.workflow_run.head_sha || github.event.sha || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   approve:
+    if: github.event_name == 'pull_request_target' || github.event_name == 'pull_request_review'
     environment: website-approval
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -44,7 +55,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: .github/scripts
 
-      - name: Approve eligible website pull request
+      - name: Approve and queue eligible website pull request
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -57,5 +68,29 @@ jobs:
           WEBSITE_AUTO_APPROVE_AUTHORS: '["bertfy"]'
           # The label is a second route for a non-allowlisted author. The script
           # verifies its latest event came from one of these operators.
+          WEBSITE_AUTO_APPROVE_LABELERS: '["christian-byrne", "DrJKL", "benjcooley"]'
+        run: node .github/scripts/website-auto-approve.mjs
+
+  reconcile-after-check:
+    if: github.event_name == 'status' || (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request')
+    environment: website-approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted base automation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: refs/heads/${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Reconcile approval and native queue state
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_HEAD_SHA: ${{ github.event.sha || github.event.workflow_run.head_sha }}
+          WEBSITE_APPROVAL_BASE_REF: ${{ github.event.repository.default_branch }}
+          WEBSITE_APPROVAL_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
+          WEBSITE_APPROVER_LOGIN: christian-byrne
+          WEBSITE_AUTO_APPROVE_AUTHORS: '["bertfy"]'
           WEBSITE_AUTO_APPROVE_LABELERS: '["christian-byrne", "DrJKL", "benjcooley"]'
         run: node .github/scripts/website-auto-approve.mjs

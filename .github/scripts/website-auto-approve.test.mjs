@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  armMergeAutomation,
   approveCurrentHead,
   alreadyApprovedCurrentHead,
   changedPaths,
@@ -12,6 +13,7 @@ import {
   isSameRepository,
   isWebsiteOnly,
   parseApprovedAuthors,
+  stopMergeAutomation,
   targetsDefaultBranch
 } from './website-auto-approve.mjs'
 
@@ -33,7 +35,7 @@ void test('a failed post-approval verification withdraws the new approval', asyn
   await assert.rejects(
     approveCurrentHead(
       github,
-      { prNumber: 42, expectedApprover: 'webreviewer-bot' },
+      { prNumber: 42, expectedApprover: 'christian-byrne' },
       '0123456789abcdef0123456789abcdef01234567',
       []
     ),
@@ -216,7 +218,7 @@ void test('only each non-app reviewer latest state can actively block', () => {
     hasActiveChangeRequest([
       {
         state: 'CHANGES_REQUESTED',
-        user: { login: 'webreviewer-bot', type: 'User' }
+        user: { login: 'human-reviewer', type: 'User' }
       }
     ]),
     true
@@ -283,27 +285,160 @@ void test('only pull requests targeting the default branch are eligible', () => 
   )
 })
 
-void test('idempotency is scoped to the bot and exact head commit', () => {
+void test('idempotency is scoped to Christian and the exact head commit', () => {
   const reviews = [
-    { state: 'APPROVED', commit_id: 'old', user: { login: 'webreviewer-bot' } },
+    { state: 'APPROVED', commit_id: 'old', user: { login: 'christian-byrne' } },
     { state: 'APPROVED', commit_id: 'head', user: { login: 'someone-else' } },
     {
       state: 'CHANGES_REQUESTED',
       commit_id: 'head',
-      user: { login: 'webreviewer-bot' }
+      user: { login: 'christian-byrne' }
     }
   ]
   assert.equal(
-    alreadyApprovedCurrentHead(reviews, 'webreviewer-bot', 'head'),
+    alreadyApprovedCurrentHead(reviews, 'christian-byrne', 'head'),
     false
   )
   reviews.push({
     state: 'APPROVED',
     commit_id: 'head',
-    user: { login: 'WebReviewer-Bot' }
+    user: { login: 'Christian-Byrne' }
   })
   assert.equal(
-    alreadyApprovedCurrentHead(reviews, 'webreviewer-bot', 'head'),
+    alreadyApprovedCurrentHead(reviews, 'christian-byrne', 'head'),
     true
   )
+})
+
+void test('arms native auto-merge for the exact head with squash', async () => {
+  const calls = []
+  const github = {
+    async graphql(query, variables) {
+      calls.push({ query, variables })
+      if (calls.length === 1) {
+        return {
+          node: {
+            id: 'PR_1',
+            headRefOid: 'head-sha',
+            mergeStateStatus: 'BLOCKED',
+            autoMergeRequest: null,
+            mergeQueueEntry: null
+          }
+        }
+      }
+      return { enablePullRequestAutoMerge: { clientMutationId: null } }
+    }
+  }
+  await armMergeAutomation(
+    github,
+    { expectedApprover: 'christian-byrne' },
+    { node_id: 'PR_1', head: { sha: 'head-sha' } }
+  )
+  assert.equal(calls.length, 2)
+  assert.match(calls[1].query, /enablePullRequestAutoMerge/)
+  assert.match(calls[1].query, /mergeMethod: SQUASH/)
+  assert.deepEqual(calls[1].variables, {
+    pullRequestId: 'PR_1',
+    expectedHeadOid: 'head-sha'
+  })
+})
+
+void test('explicitly enqueues a clean exact head without jumping the queue', async () => {
+  const calls = []
+  const github = {
+    async graphql(query, variables) {
+      calls.push({ query, variables })
+      if (calls.length === 1) {
+        return {
+          node: {
+            id: 'PR_1',
+            headRefOid: 'head-sha',
+            mergeStateStatus: 'CLEAN',
+            autoMergeRequest: {
+              enabledAt: '2026-10-06T10:01:00Z',
+              enabledBy: { login: 'christian-byrne' }
+            },
+            mergeQueueEntry: null
+          }
+        }
+      }
+      return { enqueuePullRequest: { clientMutationId: null } }
+    }
+  }
+  await armMergeAutomation(
+    github,
+    { expectedApprover: 'christian-byrne' },
+    { node_id: 'PR_1', head: { sha: 'head-sha' } }
+  )
+  assert.equal(calls.length, 2)
+  assert.match(calls[1].query, /enqueuePullRequest/)
+  assert.match(calls[1].query, /jump: false/)
+  assert.deepEqual(calls[1].variables, {
+    pullRequestId: 'PR_1',
+    expectedHeadOid: 'head-sha'
+  })
+})
+
+void test('stops only merge state created after the policy review', async () => {
+  const calls = []
+  const github = {
+    async graphql(query, variables) {
+      calls.push({ query, variables })
+      if (calls.length === 1) {
+        return {
+          node: {
+            id: 'PR_1',
+            headRefOid: 'head-sha',
+            autoMergeRequest: {
+              enabledAt: '2026-10-06T10:01:00Z',
+              enabledBy: { login: 'christian-byrne' }
+            },
+            mergeQueueEntry: {
+              id: 'MQE_1',
+              enqueuedAt: '2026-10-06T10:02:00Z',
+              enqueuer: { login: 'christian-byrne' },
+              headCommit: { oid: 'head-sha' }
+            }
+          }
+        }
+      }
+      return {}
+    }
+  }
+  await stopMergeAutomation(
+    github,
+    { expectedApprover: 'christian-byrne' },
+    { node_id: 'PR_1', head: { sha: 'head-sha' } },
+    { submitted_at: '2026-10-06T10:00:00Z' }
+  )
+  assert.equal(calls.length, 3)
+  assert.match(calls[1].query, /dequeuePullRequest/)
+  assert.match(calls[2].query, /disablePullRequestAutoMerge/)
+})
+
+void test('leaves Christian merge state that predates the workflow review alone', async () => {
+  const calls = []
+  const github = {
+    async graphql(query, variables) {
+      calls.push({ query, variables })
+      return {
+        node: {
+          id: 'PR_1',
+          headRefOid: 'head-sha',
+          autoMergeRequest: {
+            enabledAt: '2026-10-06T09:59:00Z',
+            enabledBy: { login: 'christian-byrne' }
+          },
+          mergeQueueEntry: null
+        }
+      }
+    }
+  }
+  await stopMergeAutomation(
+    github,
+    { expectedApprover: 'christian-byrne' },
+    { node_id: 'PR_1', head: { sha: 'head-sha' } },
+    { submitted_at: '2026-10-06T10:00:00Z' }
+  )
+  assert.equal(calls.length, 1)
 })

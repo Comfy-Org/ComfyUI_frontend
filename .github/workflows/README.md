@@ -42,6 +42,18 @@ rejects other base branches and fork pull requests, rechecks the live head, and 
 approve Christian's own pull requests; use another allowlisted author or the fresh-label route on
 a pull request from a different author.
 
+After exact-head approval, the same Christian credential arms GitHub's native auto-merge with the
+repository's only allowed merge method, squash. GitHub moves the pull request into the protected
+branch's native merge queue as soon as its remaining requirements pass; no manual merge click or
+queue jump is used. Because native auto-merge has not always handed ruleset-protected pull requests
+to the queue reliably, the workflow also reconciles after each required Actions workflow and commit
+status completes. When GitHub reports the exact head as clean, it explicitly enters that head in the
+native queue with `jump: false`; otherwise it leaves native auto-merge armed. The workflow also
+listens for human review changes. If a draft, hold, stale
+head, mixed path, or active human change request makes the pull request ineligible, it withdraws
+Christian's policy approval and disables or dequeues merge state created by Christian's workflow.
+Merge state created by another person is left alone.
+
 Approval-label eligibility is provenance-checked against the issue event
 timeline; the latest matching label event must be from an allowlisted operator
 and later than the latest commit or force-push event. Every new head therefore
