@@ -505,7 +505,9 @@ function writeAndVerifyUsage(
       )
     }) &&
     [...pendingResets].every(
-      (featureId) => usageFor(parsedReadBack.usageData, featureId) === undefined
+      (featureId) =>
+        Object.hasOwn(expectedUsageData, featureId) ||
+        usageFor(parsedReadBack.usageData, featureId) === undefined
     )
   )
 }

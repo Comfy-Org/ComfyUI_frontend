@@ -734,6 +734,22 @@ describe('useFeatureUsageTracker', () => {
     expect(stored['failed-reset-usage']?.useCount).toBe(3)
   })
 
+  it('does not duplicate usage after a pending reset write recovers', () => {
+    const tracker = useFeatureUsageTracker('recovered-reset-usage')
+    tracker.trackUsage()
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    tracker.reset()
+    setItem.mockRestore()
+
+    tracker.trackUsage()
+    tracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['recovered-reset-usage']?.useCount).toBe(2)
+  })
+
   it('keeps post-reset usage through deletion of the pre-reset record', () => {
     vi.setSystemTime(1_000)
     const featureId = 'post-reset-usage-after-deletion'
