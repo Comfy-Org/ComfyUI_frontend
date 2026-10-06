@@ -8,6 +8,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
@@ -54,7 +55,10 @@ const SignInFormStub = defineComponent({
 async function renderLoginView(
   url = '/cloud/login',
   messages: {
-    auth?: { login?: Partial<typeof FREE_RUN_MESSAGES.auth.login> }
+    auth?: {
+      login?: Partial<typeof FREE_RUN_MESSAGES.auth.login>
+      sso?: { errors?: Partial<typeof enMessages.auth.sso.errors> }
+    }
   } = {}
 ) {
   const router = createRouter({
@@ -266,14 +270,17 @@ describe('CloudLoginView SSO', () => {
   }
 
   describe('with the flag off', () => {
-    it('offers no SSO entry and ignores an sso_error', async () => {
-      await renderLoginView('/cloud/login?sso_error=SSO_ORG_DISABLED')
+    it('offers no SSO entry and ignores an sso_error or sso=open', async () => {
+      await renderLoginView('/cloud/login?sso_error=SSO_ORG_DISABLED&sso=open')
 
       expect(
         screen.queryByRole('button', { name: 'auth.sso.continueWithSso' })
       ).not.toBeInTheDocument()
       expect(
         screen.queryByText('auth.sso.errors.orgDisabled')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByLabelText('auth.sso.emailLabel')
       ).not.toBeInTheDocument()
     })
 
@@ -417,6 +424,54 @@ describe('CloudLoginView SSO', () => {
       expect(discoverCalls(fetchMock)).toHaveLength(1)
       expect(assign).not.toHaveBeenCalled()
     })
+
+    it.for([
+      { query: '', open: false },
+      { query: '?sso=open', open: true },
+      { query: '?sso=1', open: false }
+    ])(
+      'opens the SSO entry on arrival for "$query": $open',
+      async ({ query, open }) => {
+        await renderLoginView(`/cloud/login${query}`)
+
+        expect(screen.queryByLabelText('auth.sso.emailLabel') !== null).toBe(
+          open
+        )
+      }
+    )
+
+    it('keeps one SSO check in flight across the SSO and password forms', async () => {
+      const fetchMock = vi.fn<typeof fetch>(
+        (_input, init) =>
+          new Promise((_resolve, reject) =>
+            init?.signal?.addEventListener('abort', () =>
+              reject(init.signal?.reason)
+            )
+          )
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      await renderLoginView()
+
+      await continueWithSso('ada@acme.com')
+      await signInWithPassword('ada@acme.com')
+
+      expect(discoverCalls(fetchMock)).toHaveLength(1)
+      expect(useAuthActions().signInWithEmail).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      ['SSO_ACCOUNT_DELETED', 'accountDeleted'],
+      ['SSO_ACCOUNT_CONFLICT', 'accountConflict']
+    ] as const)(
+      'names the support address for ?sso_error=%s',
+      async ([code, key]) => {
+        await renderLoginView(`/cloud/login?sso_error=${code}`, {
+          auth: { sso: { errors: { [key]: enMessages.auth.sso.errors[key] } } }
+        })
+
+        expect(screen.getByText(/support@comfy\.org/)).toBeInTheDocument()
+      }
+    )
 
     it.for([
       ['SSO_ORG_DISABLED', 'auth.sso.errors.orgDisabled'],
