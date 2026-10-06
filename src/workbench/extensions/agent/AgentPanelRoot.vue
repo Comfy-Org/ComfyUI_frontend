@@ -1520,8 +1520,11 @@ const { submit: onSend } = useAgentDraftSubmission({
         input_method: meta.inputMethod,
         starter_prompt_id: meta.starterPrompt?.id ?? null,
         starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
-        '$feature/agent-starter-prompt-set':
-          meta.starterPrompt?.assignment ?? starterPromptAssignment.value
+        ...(meta.starterPrompt?.assignment
+          ? {
+              '$feature/agent-starter-prompt-set': meta.starterPrompt.assignment
+            }
+          : {})
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }

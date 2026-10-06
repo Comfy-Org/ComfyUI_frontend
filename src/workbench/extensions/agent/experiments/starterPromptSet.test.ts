@@ -64,7 +64,7 @@ describe('useStarterPromptSet', () => {
     authenticatedRemoteConfigState.value = 'authenticated'
     remoteConfigRevision.value++
 
-    await vi.waitFor(() => expect(assignment.value).toBe('test'))
+    await vi.waitFor(() => expect(assignment.value).toBe('control'))
     expect(
       useTelemetry()?.trackAgentStarterPromptExposure
     ).not.toHaveBeenCalled()

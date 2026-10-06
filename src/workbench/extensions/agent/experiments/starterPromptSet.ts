@@ -51,6 +51,18 @@ export function useStarterPromptSet() {
 
   const assign = () => {
     const resolved = resolveAssignment()
+    if (
+      surfaceRendered &&
+      renderedSurfaceAssignment.value !== undefined &&
+      renderedSurfaceAssignment.value !== resolved.assignment
+    ) {
+      // Keep the assignment that produced the currently rendered surface.
+      // A late auth/config update must not turn control copy into treatment
+      // without a matching exposure.
+      assigned.value = renderedSurfaceAssignment.value
+      qaOverride.value = resolved.hasQaOverride
+      return
+    }
     qaOverride.value = resolved.hasQaOverride
     assigned.value = resolved.assignment
     if (
