@@ -461,17 +461,24 @@ function writeStorageAndReadBack(value: string) {
 
 function writeAndVerifyUsage(
   value: string,
-  featureId: string,
-  expectedUsage: FeatureUsage
+  expectedUsageData: FeatureUsageRecord
 ) {
   const readBack = writeStorageAndReadBack(value)
   if (readBack === undefined) return true
   const parsedReadBack = parseUsageData(readBack)
   if (parsedReadBack.status === 'invalid') return false
-  const storedUsage = usageFor(parsedReadBack.usageData, featureId)
   return (
-    storedUsage !== undefined &&
-    isSameOrNewerGeneration(storedUsage, expectedUsage)
+    Object.entries(expectedUsageData).every(([featureId, expectedUsage]) => {
+      const storedUsage = usageFor(parsedReadBack.usageData, featureId)
+      return (
+        expectedUsage !== undefined &&
+        storedUsage !== undefined &&
+        isSameOrNewerGeneration(storedUsage, expectedUsage)
+      )
+    }) &&
+    [...pendingResets].every(
+      (featureId) => usageFor(parsedReadBack.usageData, featureId) === undefined
+    )
   )
 }
 
@@ -508,7 +515,7 @@ function persistUsageData(featureId: string, now: number) {
     }
     newValue = JSON.stringify(usageData)
 
-    storageWritten = writeAndVerifyUsage(newValue, featureId, nextUsage)
+    storageWritten = writeAndVerifyUsage(newValue, usageData)
     if (storageWritten) {
       pendingResets.clear()
       pendingResetUsage.clear()

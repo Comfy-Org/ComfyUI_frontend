@@ -155,6 +155,30 @@ describe('useFeatureUsageTracker', () => {
     expect(stored.external?.useCount).toBe(1)
   })
 
+  it('retains every pending feature dropped before verification', () => {
+    const pendingTracker = useFeatureUsageTracker('pending-before-clobber')
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    pendingTracker.trackUsage()
+    setItem.mockRestore()
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    const clobber = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        const written = JSON.parse(value)
+        delete written['pending-before-clobber']
+        originalSetItem(key, JSON.stringify(written))
+      })
+
+    useFeatureUsageTracker('clobber-trigger').trackUsage()
+    clobber.mockRestore()
+    pendingTracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['pending-before-clobber']?.useCount).toBe(2)
+  })
+
   it('assumes a successful write when verification cannot read storage', () => {
     const featureId = 'unreadable-verification'
     const tracker = useFeatureUsageTracker(featureId)
