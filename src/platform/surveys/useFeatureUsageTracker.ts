@@ -1,5 +1,5 @@
 import { useStorage } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, reactive, shallowRef } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -14,15 +14,15 @@ type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 const STORAGE_KEY = 'Comfy.FeatureUsage'
 const MAX_USAGE_COUNT = Number.MAX_SAFE_INTEGER - 1
 const resetVersions = new Map<string, number>()
-const pendingResets = new Set<string>()
+const pendingResets = reactive(new Set<string>())
 const reportedErrorTypes = new Set<string>()
-let pendingUsageData: FeatureUsageRecord = {}
+const pendingUsageData = shallowRef<FeatureUsageRecord>({})
 
 export function resetFeatureUsageTrackerStateForTest() {
   resetVersions.clear()
   pendingResets.clear()
   reportedErrorTypes.clear()
-  pendingUsageData = {}
+  pendingUsageData.value = {}
 }
 
 function reportStorageError(error: unknown, errorType: string) {
@@ -185,7 +185,7 @@ function persistUsageData(
     const storedUsageData = parseUsageData(oldValue)
     const mergedUsageData = mergeUsageData(
       applyPendingResets(storedUsageData),
-      pendingUsageData
+      pendingUsageData.value
     )
     usageData = {
       ...mergedUsageData,
@@ -195,18 +195,18 @@ function persistUsageData(
 
     localStorage.setItem(STORAGE_KEY, newValue)
     pendingResets.clear()
-    pendingUsageData = {}
+    pendingUsageData.value = {}
   } catch (error) {
     reportStorageError(error, 'error_persisting_feature_usage')
     const fallbackUsageData = mergeUsageData(
       applyPendingResets(currentUsageData),
-      pendingUsageData
+      pendingUsageData.value
     )
     usageData ??= {
       ...fallbackUsageData,
       [featureId]: incrementUsage(usageFor(fallbackUsageData, featureId), now)
     }
-    pendingUsageData = mergeUsageData(pendingUsageData, {
+    pendingUsageData.value = mergeUsageData(pendingUsageData.value, {
       [featureId]: usageFor(usageData, featureId)
     })
   }
@@ -224,12 +224,12 @@ function resetUsageData(currentUsageData: FeatureUsageRecord) {
     oldValue = localStorage.getItem(STORAGE_KEY)
     usageData = mergeUsageData(
       applyPendingResets(parseUsageData(oldValue)),
-      pendingUsageData
+      pendingUsageData.value
     )
     newValue = JSON.stringify(usageData)
     localStorage.setItem(STORAGE_KEY, newValue)
     pendingResets.clear()
-    pendingUsageData = {}
+    pendingUsageData.value = {}
   } catch (error) {
     reportStorageError(error, 'error_resetting_feature_usage')
   }
@@ -250,7 +250,7 @@ export function useFeatureUsageTracker(featureId: string) {
     usageFor(
       mergeUsageData(
         applyPendingResets(normalizeUsageData(usageData.value)),
-        pendingUsageData
+        pendingUsageData.value
       ),
       featureId
     )
@@ -278,7 +278,7 @@ export function useFeatureUsageTracker(featureId: string) {
     resetVersions.set(featureId, resetVersion)
     observedResetVersions.set(featureId, resetVersion)
     pendingResets.add(featureId)
-    pendingUsageData = withoutFeature(pendingUsageData, featureId)
+    pendingUsageData.value = withoutFeature(pendingUsageData.value, featureId)
     usageData.value = resetUsageData(currentUsageData)
   }
 

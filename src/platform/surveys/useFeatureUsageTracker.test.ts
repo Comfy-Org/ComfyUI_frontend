@@ -274,6 +274,22 @@ describe('useFeatureUsageTracker', () => {
     expect(tracker.useCount.value).toBe(3)
   })
 
+  it('shares pending usage when storage access blocks event dispatch', () => {
+    const tracking = useFeatureUsageTracker('reactive-pending-usage')
+    const observing = useFeatureUsageTracker('reactive-pending-usage')
+    expect(tracking.useCount.value).toBe(0)
+    expect(observing.useCount.value).toBe(0)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Storage access denied', 'SecurityError')
+    })
+
+    tracking.trackUsage()
+
+    expect(tracking.useCount.value).toBe(1)
+    expect(observing.useCount.value).toBe(1)
+  })
+
   it('preserves other in-memory features when storage recovers', () => {
     const recoveringFeature = useFeatureUsageTracker('recovering-feature')
     const triggerFeature = useFeatureUsageTracker('trigger-feature')
