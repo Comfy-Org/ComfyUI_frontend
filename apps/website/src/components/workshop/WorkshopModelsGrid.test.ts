@@ -54,6 +54,16 @@ function openWeightCards() {
   return screen.queryAllByTestId('open-weight-model-card')
 }
 
+async function pickUseCase(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string
+) {
+  if (!screen.queryByRole('dialog', { name: 'Filter' }))
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+  await user.click(within(dialog).getByRole('button', { name }))
+}
+
 async function search() {
   const field = screen.getByRole('searchbox', {
     name: 'Search models, providers, and categories'
@@ -98,23 +108,22 @@ describe('WorkshopModelsGrid', () => {
     expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
   })
 
-  it('narrows the grid to one use case', async () => {
+  it('opens the use case the address names and goes back to Trending', async () => {
+    history.replaceState(null, '', '/models/?useCase=edit-images')
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images' }))
     expect(
-      screen.getByRole('heading', {
-        level: 2,
-        name: 'Edit images 1'
-      })
+      await screen.findByRole('heading', { level: 2, name: 'Edit images 1' })
     ).toBeTruthy()
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
     expect(openWeightCards()).toEqual([])
 
     await user.click(screen.getByRole('button', { name: /Back to/ }))
-    await user.click(screen.getByRole('button', { name: 'Generate videos' }))
-    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Trending' })
+    ).toBeTruthy()
+    expect(cardNames()).toHaveLength(3)
   })
 
   it('returns the viewport to the top when a section or browse-all opens', async () => {
@@ -124,7 +133,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    await pickUseCase(user, 'Edit images 1')
     await nextTick()
     await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
 
@@ -196,7 +205,8 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    await pickUseCase(user, 'Edit images 1')
+    await user.keyboard('{Escape}')
     expect(
       screen.getByRole('heading', { level: 2, name: /Edit images/ })
     ).toBeTruthy()
@@ -255,12 +265,8 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images' }))
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Generate videos 1' })
-    )
+    await pickUseCase(user, 'Edit images 1')
+    await pickUseCase(user, 'Generate videos 1')
 
     expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('2')
     expect(cardNames()).toHaveLength(2)
@@ -278,7 +284,7 @@ describe('WorkshopModelsGrid', () => {
       const user = userEvent.setup()
       render(WorkshopModelsGrid, { props: { models, initialSearch } })
 
-      await user.click(screen.getByRole('button', { name: 'Edit images' }))
+      await pickUseCase(user, 'Edit images 1')
       expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
 
       // A different shelf in the address, so a handler that only emptied the
@@ -306,7 +312,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    await pickUseCase(user, 'Edit images 1')
     window.dispatchEvent(new Event('pageshow'))
 
     await waitFor(() =>
@@ -344,6 +350,26 @@ describe('WorkshopModelsGrid', () => {
       await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
     )
     expect(cardNames()[0]).toContain('Flux')
+  })
+
+  it('leaves the Trending row for the full list sorted by name', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Trending' })
+    ).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Sort' }))
+    await user.click(
+      await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
+    )
+
+    expect(
+      screen.queryByRole('heading', { level: 2, name: 'Trending' })
+    ).toBeNull()
+    expect(
+      cardNames().map((name) => name.match(/Flux|Kling AI|Mystery/)?.[0])
+    ).toEqual(['Flux', 'Kling AI', 'Mystery'])
   })
 
   it('keeps Flux 3 out of the featured models', () => {

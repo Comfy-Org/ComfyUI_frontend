@@ -20,7 +20,10 @@ const { t } = translationsFor(locale)
 </script>
 
 <template>
-  <span :class="cn(FLOAT, GLASS, 'p-3 sm:w-48 sm:translate-x-[-26%]')">
+  <span
+    :class="cn(FLOAT, GLASS, 'p-3 sm:w-48 sm:translate-x-[-26%]')"
+    data-testid="explore-door-panel"
+  >
     <span class="flex items-center justify-between gap-2 text-3xs">
       <span class="truncate text-primary-warm-white/65">
         {{ t(app.control) }}

@@ -4285,7 +4285,8 @@
       "otherFormats": "其他格式",
       "scrollBack": "向前滚动",
       "scrollForward": "向后滚动",
-      "seeAll": "查看全部 ({n})"
+      "seeAll": "查看全部 ({n})",
+      "trending": "热门"
     },
     "showMore": "显示更多模型",
     "signIn": {
@@ -4482,10 +4483,9 @@
       "buildHint": "通过 API 用在你的产品中"
     },
     "explore": {
-      "subtitle": "你想做什么？从一个任务开始，或直接搜索。每个结果都会标明它是应用、工作流还是模型。",
+      "subtitle": "直接搜索，或选择你的工作方式：探索模型、打开工作流或使用应用。",
       "searchLabel": "搜索 Hub",
-      "searchPlaceholder": "试试“upscale”、“image to video”或模型名称",
-      "tasks": "任务",
+      "searchPlaceholder": "试试“relight”、“upscale”或模型名称",
       "popularTitle": "当前热门",
       "resultsFor": "“{query}”的结果",
       "empty": "暂时没有匹配的结果。",
@@ -4506,15 +4506,9 @@
       "communityExplore": "浏览作品集",
       "communityShare": "分享你的作品",
       "modelsSeeAll": "查看全部模型",
-      "popularFor": "{useCase}热门",
       "modelsIntent": "探索与比较",
       "workflowsIntent": "使用节点",
       "appsIntent": "最快出结果",
-      "groupImage": "图像",
-      "groupVideo": "视频",
-      "groupEdit": "编辑",
-      "group3d": "3D",
-      "groupAudio": "音频",
       "doorModelPromptLake": "蓝调时刻的高山湖泊",
       "doorModelPromptRowboat": "热带泻湖上的小划艇",
       "doorModelRun": "运行",

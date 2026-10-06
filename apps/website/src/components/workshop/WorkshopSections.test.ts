@@ -2,8 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
-import type { TranslationKey } from '@/i18n/translations'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import WorkshopSections from './WorkshopSections.vue'
 import { lastShelf } from '@/lib/workshop/shelf-memory'
 
@@ -11,22 +10,11 @@ afterEach(() => {
   sessionStorage.clear()
 })
 
-const labelKey: Record<UseCase | 'all', TranslationKey> = {
-  all: 'workshop.useCase.all',
-  'generate-images': 'workshop.useCase.generateImages',
-  'edit-images': 'workshop.useCase.editImages',
-  'generate-videos': 'workshop.useCase.generateVideos',
-  'animate-images': 'workshop.useCase.animateImages',
-  'edit-videos': 'workshop.useCase.editVideos',
-  '3d': 'workshop.useCase.3d',
-  audio: 'workshop.useCase.audio',
-  text: 'workshop.useCase.text'
-}
-
 function model(
   slug: string,
   task: WorkshopModel['task'],
-  modality: WorkshopModel['modality']
+  modality: WorkshopModel['modality'],
+  recommendedRank?: number
 ): WorkshopModel {
   return {
     slug,
@@ -37,7 +25,8 @@ function model(
     capabilities: [],
     provider: 'Acme',
     modality,
-    task
+    task,
+    recommendedRank
   }
 }
 
@@ -47,29 +36,58 @@ function videos(count: number): WorkshopModel[] {
   )
 }
 
-// The combined shelf gathers the formats too sparse for one of their own.
-function audios(count: number): WorkshopModel[] {
-  return Array.from({ length: count }, (_, index) =>
-    model(`a${String(index).padStart(2, '0')}`, 'text-to-audio', 'audio')
-  )
-}
-
-const SHELVES = { 'generate-videos': videos, 'other-formats': audios }
-
 const models: WorkshopModel[] = [
   model('a', 'text-to-video', 'video'),
-  model('b', 'text-to-video', 'video'),
+  model('b', 'text-to-audio', 'audio'),
   model('c', 'text-to-image', 'image')
 ]
 
+const trendingNames = () =>
+  within(screen.getByTestId('section-trending'))
+    .getAllByRole('heading', { level: 3 })
+    .map((heading) => heading.textContent)
+
 describe('WorkshopSections', () => {
+  it('shows one Trending row of every format and no use-case rows', () => {
+    render(WorkshopSections, { props: { models } })
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Trending' })
+    ).toBeVisible()
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(1)
+    expect(trendingNames()).toHaveLength(3)
+    expect(trendingNames()).toEqual(expect.arrayContaining(['a', 'b', 'c']))
+  })
+
+  it('names the row in Chinese', () => {
+    render(WorkshopSections, { props: { models, locale: 'zh-CN' } })
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: '热门' })
+    ).toBeVisible()
+  })
+
+  it('leads the row with the most popular models', () => {
+    render(WorkshopSections, {
+      props: {
+        models: [
+          model('first', 'text-to-image', 'image', 1),
+          model('third', 'text-to-image', 'image', 3),
+          model('second', 'text-to-image', 'image', 2)
+        ]
+      }
+    })
+
+    expect(trendingNames()).toEqual(['first', 'second', 'third'])
+  })
+
   it('remembers the row only when its model is opened in this tab', async () => {
     const user = userEvent.setup()
-    render(WorkshopSections, { props: { models, labelKey } })
+    render(WorkshopSections, { props: { models } })
 
-    const row = within(screen.getByTestId('section-generate-videos'))
+    const row = within(screen.getByTestId('section-trending'))
     await user.click(row.getByRole('link', { name: /\ba\b/i }))
-    expect(lastShelf('/models/a/')).toBe('generate-videos')
+    expect(lastShelf('/models/a/')).toBe('all')
   })
 
   it.for([
@@ -81,8 +99,8 @@ describe('WorkshopSections', () => {
   ] satisfies [string, MouseEventInit][])(
     '%s navigation does not remember the row',
     async ([, event]) => {
-      render(WorkshopSections, { props: { models, labelKey } })
-      const row = within(screen.getByTestId('section-generate-videos'))
+      render(WorkshopSections, { props: { models } })
+      const row = within(screen.getByTestId('section-trending'))
 
       // userEvent.click cannot express a non-primary button or click modifier.
       // oxlint-disable-next-line testing-library/prefer-user-event
@@ -92,113 +110,28 @@ describe('WorkshopSections', () => {
     }
   )
 
-  it('deduplicates and limits the combined formats shelf while showing its full count', async () => {
-    const entries = Array.from({ length: 10 }, (_, index) => ({
-      ...model(
-        `audio-${String(index).padStart(2, '0')}`,
-        'text-to-audio',
-        'audio'
-      ),
-      useCases: ['audio', 'text'] as const
-    }))
-    const { emitted } = render(WorkshopSections, {
-      props: { models: entries, labelKey, sort: 'name' }
-    })
-    const shelf = within(screen.getByTestId('section-other-formats'))
-    expect(shelf.getByRole('button', { name: 'Other formats' })).toBeTruthy()
-    await userEvent.click(shelf.getByRole('button', { name: 'See all (10)' }))
-    expect(emitted().open).toEqual([['other']])
-    expect(
-      shelf
-        .getAllByRole('heading', { level: 3 })
-        .map((heading) => heading.textContent)
-    ).toEqual(entries.slice(0, 8).map((entry) => entry.name))
-  })
-  it('gives a row per use case and none to a use case with no models', () => {
-    render(WorkshopSections, { props: { models, labelKey } })
-
-    expect(screen.getByTestId('section-generate-videos')).toBeTruthy()
-    expect(screen.getByTestId('section-generate-images')).toBeTruthy()
-    expect(screen.queryByTestId('section-audio')).toBeNull()
-  })
-
-  // The link promised a screen with more on it. On a row already holding every
-  // match there was no more, and it led back to the same cards. Both shelves
-  // decide this for themselves, so both are held to the boundary: eight is the
-  // row's own load, and only a ninth match puts anything behind the link.
   it.for([
-    { shelf: 'generate-videos', total: 8, seeAll: undefined },
-    { shelf: 'generate-videos', total: 9, seeAll: 'See all (9)' },
-    { shelf: 'other-formats', total: 8, seeAll: undefined },
-    { shelf: 'other-formats', total: 9, seeAll: 'See all (9)' }
+    { total: 8, seeAll: undefined, shown: 8 },
+    { total: 9, seeAll: 'See all (9)', shown: 8 }
   ] as const)(
-    'offers See all on a $shelf shelf of $total only as $seeAll',
-    ({ shelf, total, seeAll }) => {
-      render(WorkshopSections, {
-        props: { models: SHELVES[shelf](total), labelKey }
-      })
-      const row = within(screen.getByTestId(`section-${shelf}`))
+    'loads $shown of $total and offers See all only as $seeAll',
+    ({ total, seeAll, shown }) => {
+      render(WorkshopSections, { props: { models: videos(total) } })
 
-      const link = row.queryByTestId(`section-${shelf}-see-all`)
-      expect(link?.textContent.trim()).toBe(seeAll)
+      expect(trendingNames()).toHaveLength(shown)
+      expect(
+        screen.queryByTestId('section-trending-see-all')?.textContent.trim()
+      ).toBe(seeAll)
     }
   )
 
-  it('shows a multi-purpose model in each tagged row', () => {
-    render(WorkshopSections, {
-      props: {
-        models: [
-          {
-            ...models[2],
-            useCases: ['generate-images', 'edit-images']
-          }
-        ],
-        labelKey
-      }
-    })
-
-    expect(screen.getByTestId('section-generate-images')).toBeTruthy()
-    expect(screen.getByTestId('section-edit-images')).toBeTruthy()
-  })
-
-  it('applies the chosen sort inside each row', () => {
-    render(WorkshopSections, {
-      props: { models, labelKey, sort: 'name' }
-    })
-
-    const names = within(screen.getByTestId('section-generate-videos'))
-      .getAllByRole('heading', { level: 3 })
-      .map((heading) => heading.textContent)
-    expect(names).toEqual(['a', 'b'])
-  })
-
-  it.for(['open', 'see-all'])(
-    'asks the catalog to open the section from its %s control',
-    async (control) => {
-      const { emitted } = render(WorkshopSections, {
-        props: { models: videos(9), labelKey }
-      })
-
-      await userEvent.click(
-        screen.getByTestId(`section-generate-videos-${control}`)
-      )
-
-      expect(emitted().open).toEqual([['generate-videos']])
-    }
-  )
-
-  it('opens the sparse formats as one combined section', async () => {
-    const sparse = [
-      ...models,
-      model('d', 'text-to-audio', 'audio'),
-      model('e', 'text-to-3d', '3d')
-    ]
+  it('asks the catalogue to browse every model from See all', async () => {
     const { emitted } = render(WorkshopSections, {
-      props: { models: sparse, labelKey }
+      props: { models: videos(9) }
     })
 
-    await userEvent.click(screen.getByTestId('section-other-formats-open'))
+    await userEvent.click(screen.getByRole('button', { name: 'See all (9)' }))
 
-    expect(emitted().open).toEqual([['other']])
+    expect(emitted().browse).toEqual([[]])
   })
 })

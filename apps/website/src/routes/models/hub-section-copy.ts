@@ -6,7 +6,7 @@ export const HUB_SECTION_COPY = {
     title: 'Comfy Hub: AI Apps, Workflows & Models - Comfy',
     description:
       'Find a starting point in the Comfy Hub: ready-made apps, workflows you can control step by step, and models you can call by API.',
-    heading: 'Find your starting point.'
+    heading: 'What do you want to make?'
   },
   workflows: {
     title: 'ComfyUI Workflows: Multi-Step AI Image & Video Workflows - Comfy',

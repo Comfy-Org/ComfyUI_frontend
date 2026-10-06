@@ -123,32 +123,21 @@ test.describe('Models catalog', () => {
   test('switches between the curated recommendation and alphabetical order', async ({
     page
   }) => {
-    await page.goto('/hub/models/')
-    const sections = page.getByTestId('workshop-sections')
-    await expect(sections).toBeVisible()
     const sort = page.getByTestId('workshop-sort')
-    await expect(sort).toContainText('Most popular')
-    async function recommendedIn(section: string, count: number) {
-      return page
-        .getByTestId(`section-${section}`)
-        .getByTestId('workshop-model-card')
-        .evaluateAll(
-          (cards, limit) =>
-            cards
-              .slice(0, limit)
-              .map((card) => card.getAttribute('href') ?? ''),
-          count
-        )
-    }
     const leading = page
-      .getByTestId('section-generate-images')
+      .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
-    await expect(leading.first()).toBeVisible()
-    const rowCount = await leading.count()
-    expect(rowCount).toBeGreaterThanOrEqual(6)
-    const recommended = await leading.evaluateAll((cards) =>
-      cards.slice(0, 6).map((card) => card.getAttribute('href') ?? '')
-    )
+    async function recommendedIn(useCase: string, count: number) {
+      await page.goto(`/hub/models/?useCase=${useCase}`)
+      await expect(sort).toContainText('Most popular')
+      await expect(leading.first()).toBeVisible()
+      return leading.evaluateAll(
+        (cards, limit) =>
+          cards.slice(0, limit).map((card) => card.getAttribute('href') ?? ''),
+        count
+      )
+    }
+    const recommended = await recommendedIn('generate-images', 6)
     expect(recommended).toEqual([
       '/hub/models/seedream-5-0-pro-text-to-image/',
       '/hub/models/gpt-image-2-text-to-image/',
@@ -172,7 +161,7 @@ test.describe('Models catalog', () => {
       '/hub/models/wan-3-0-image-to-video/',
       '/hub/models/wan-3-0-reference-to-video/'
     ])
-    expect(await recommendedIn('other-formats', 1)).toEqual([
+    expect(await recommendedIn('other', 1)).toEqual([
       '/hub/models/seed-audio-1-0-text-to-speech/'
     ])
     expect(await recommendedIn('edit-videos', 6)).toEqual([
@@ -191,6 +180,9 @@ test.describe('Models catalog', () => {
       '/hub/models/seedream-4-5-image-edit/'
     ])
 
+    await page.goto('/hub/models/?useCase=generate-images')
+    await expect(leading.first()).toBeVisible()
+    const rowCount = await leading.count()
     await sort.click()
     await page.getByTestId('sort-name').click()
     await expect(sort).toContainText('Name A to Z')
@@ -201,10 +193,12 @@ test.describe('Models catalog', () => {
           .allTextContents()
         return (
           names.length === rowCount &&
-          names.every(
-            (name, index) =>
-              index === 0 || names[index - 1].localeCompare(name) <= 0
-          )
+          names
+            .slice(0, 8)
+            .every(
+              (name, index) =>
+                index === 0 || names[index - 1].localeCompare(name) <= 0
+            )
         )
       })
       .toBe(true)
@@ -250,62 +244,45 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
-  test('category rows drill into the promised number of models', async ({
+  test('the Hub models listing leads with one Trending row', async ({
     page
   }) => {
     await page.goto('/hub/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
-    const videos = page.getByTestId('section-generate-videos')
-    const rowLabel = (
-      await videos.getByRole('heading', { level: 2 }).innerText()
-    ).trim()
-    const seeAll = await videos
-      .getByTestId('section-generate-videos-see-all')
+    await expect(sections.getByRole('heading', { level: 2 })).toHaveText([
+      'Trending'
+    ])
+    const trending = page.getByTestId('section-trending')
+    await expect(trending.getByTestId('workshop-model-card')).toHaveCount(8)
+    const seeAll = await trending
+      .getByTestId('section-trending-see-all')
       .innerText()
     const promisedCount = Number(seeAll.match(/(\d+)/)?.[1])
-    expect(promisedCount).toBeGreaterThan(0)
-    await videos.getByTestId('section-generate-videos-open').click()
-    const cards = page
-      .getByTestId('workshop-models-grid')
-      .getByTestId('workshop-model-card')
+    expect(promisedCount).toBeGreaterThan(8)
+
+    await trending.getByTestId('section-trending-see-all').click()
     await expect(sections).toHaveCount(0)
-    await expect(cards).toHaveCount(promisedCount)
-    await expect(page.getByTestId('workshop-hero')).toHaveCount(0)
     await expect(
-      page.getByRole('heading', { level: 2, name: rowLabel })
-    ).toBeVisible()
-    await page
-      .getByRole('button', { name: 'Back to all categories', exact: true })
-      .click()
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+    ).toHaveCount(promisedCount)
+    await page.getByTestId('section-back').click()
     await expect(sections).toBeVisible()
-    await expect(page.getByTestId('workshop-hero')).toBeVisible()
   })
 
-  // A row loads eight whatever its total says, so a row holding fewer than
-  // eight cards is showing its whole shelf and has nothing left to open.
-  test('a shelf showing everything stops promising more', async ({ page }) => {
+  test('every model by provider waits behind a closed disclosure', async ({
+    page
+  }) => {
     await page.goto('/hub/models/')
-    const sections = page.getByTestId('workshop-sections')
-    await expect(sections).toBeVisible()
-    await expect(
-      sections.getByTestId('workshop-model-card').first()
-    ).toBeVisible()
-    const shelves = sections
-      .locator('[data-testid^="section-"]')
-      .filter({ has: page.getByTestId('workshop-model-card') })
-    const count = await shelves.count()
-    expect(count).toBeGreaterThan(1)
-
-    let complete = 0
-    for (let index = 0; index < count; index++) {
-      const shelf = shelves.nth(index)
-      if ((await shelf.getByTestId('workshop-model-card').count()) >= 8)
-        continue
-      complete++
-      await expect(shelf.locator('[data-testid$="-see-all"]')).toHaveCount(0)
-    }
-    expect(complete).toBeGreaterThan(0)
+    const directory = page.getByTestId('models-directory')
+    const toggle = directory.getByTestId('models-directory-toggle')
+    await expect(toggle).toContainText('All models by provider')
+    const firstLink = directory.getByRole('link').first()
+    await expect(firstLink).toBeHidden()
+    await toggle.click()
+    await expect(firstLink).toBeVisible()
   })
 
   test('the rows listing opens the whole catalogue', async ({ page }) => {
@@ -333,8 +310,7 @@ test.describe('Models catalog', () => {
   })
 
   test('an opened shelf reads as a chosen filter', async ({ page }) => {
-    await page.goto('/hub/models/')
-    await page.getByTestId('section-generate-videos-open').click()
+    await page.goto('/hub/models/?useCase=generate-videos')
     await expect(
       page.getByRole('heading', { level: 2, name: /Generate videos/ })
     ).toBeVisible()
@@ -350,8 +326,7 @@ test.describe('Models catalog', () => {
   test('a model page returns to the shelf it was opened from', async ({
     page
   }) => {
-    await page.goto('/hub/models/')
-    await page.getByTestId('section-generate-videos-open').click()
+    await page.goto('/hub/models/?useCase=generate-videos')
     await expect(
       page.getByRole('heading', { level: 2, name: 'Generate videos' })
     ).toBeVisible()
@@ -405,8 +380,7 @@ test.describe('Models catalog', () => {
   test('the category heading stays clear of the nav while searching', async ({
     page
   }) => {
-    await page.goto('/hub/models/')
-    await page.getByTestId('section-generate-videos-open').click()
+    await page.goto('/hub/models/?useCase=generate-videos')
     const heading = page.getByRole('heading', {
       level: 2,
       name: 'Generate videos'
@@ -473,8 +447,11 @@ test.describe('Models catalog', () => {
 
   test('the use-case filter actually narrows the catalog', async ({ page }) => {
     await page.goto('/hub/models/')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
-    const all = await page.getByTestId('workshop-model-card').count()
+    await page.getByTestId('browse-all-end').click()
+    const all = await page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+      .count()
     expect(all).toBeGreaterThan(0)
     await page.getByTestId('workshop-filter').click()
     await page.getByTestId('filter-useCase-edit-images').click()
@@ -498,7 +475,7 @@ test.describe('Models catalog', () => {
     )
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(cards).toHaveCount(all)
   })
 
   test('hosted model cards say they run here and by API', async ({ page }) => {
@@ -630,7 +607,7 @@ test.describe('Models catalog', () => {
     for (const width of [1440, 820, 420]) {
       await page.setViewportSize({ width, height: 1000 })
       await page.goto('/hub/models/')
-      const row = page.getByTestId('section-generate-images')
+      const row = page.getByTestId('section-trending')
       const card = row.getByTestId('workshop-model-card').first()
       await expect(card).toBeVisible()
       await card.hover()
@@ -645,7 +622,7 @@ test.describe('Models catalog', () => {
 
   test('the fade reaches both ends of the scrolling row', async ({ page }) => {
     await page.goto('/hub/models/')
-    const row = page.getByTestId('section-generate-images')
+    const row = page.getByTestId('section-trending')
     await expect(row.getByTestId('workshop-model-card').first()).toBeVisible()
     await row.hover()
     const edges = await row.evaluate((section) => {

@@ -29,6 +29,7 @@ const widgets = [
         'sm:w-40 sm:max-w-[calc(100%-1.5rem)] sm:translate-x-[-18%]'
       )
     "
+    data-testid="explore-door-panel"
   >
     <span
       class="block border-b border-primary-warm-white/15 px-3 py-2 text-2xs font-semibold"

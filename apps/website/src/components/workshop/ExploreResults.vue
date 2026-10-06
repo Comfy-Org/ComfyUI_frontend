@@ -37,9 +37,7 @@ defineEmits<{ clear: [] }>()
   <section aria-labelledby="explore-results" data-testid="explore-results">
     <CardRow v-if="apps.length || results.length" :locale>
       <template #heading>
-        <ExploreResultsHeading :title :description>
-          <slot />
-        </ExploreResultsHeading>
+        <ExploreResultsHeading :title :description />
       </template>
       <template #actions>
         <ExploreSeeAll
@@ -79,9 +77,7 @@ defineEmits<{ clear: [] }>()
       </li>
     </CardRow>
     <template v-else>
-      <ExploreResultsHeading :title :description class="mb-5">
-        <slot />
-      </ExploreResultsHeading>
+      <ExploreResultsHeading :title :description class="mb-5" />
       <div
         class="flex flex-col items-start gap-3 rounded-3xl bg-hub-surface p-8"
         data-testid="explore-empty"

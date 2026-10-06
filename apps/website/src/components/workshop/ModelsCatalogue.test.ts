@@ -97,6 +97,17 @@ describe('ModelsCatalogue', () => {
   it.for([
     {
       locale: 'en',
+      tab: 'explore',
+      subtitle:
+        'Search, or pick how you want to work: explore models, open a workflow or use an app.'
+    },
+    {
+      locale: 'zh-CN',
+      tab: 'explore',
+      subtitle: '直接搜索，或选择你的工作方式：探索模型、打开工作流或使用应用。'
+    },
+    {
+      locale: 'en',
       tab: 'models',
       subtitle:
         'Run many of them right here, call them by API or download them.'
@@ -225,43 +236,38 @@ describe('ModelsCatalogue', () => {
         .queryAllByRole('link')
         .map((link) => link.getAttribute('href'))
 
-    const chips = () =>
-      within(screen.getByTestId('explore-results')).getByRole('group', {
-        name: 'Tasks'
-      })
+    it.for([
+      { locale: 'en', placeholder: 'Try “relight”, “upscale” or a model name' },
+      { locale: 'zh-CN', placeholder: '试试“relight”、“upscale”或模型名称' }
+    ] as const)(
+      'suggests tasks and model names in the search box ($locale)',
+      async ({ locale, placeholder }) => {
+        render(ModelsCatalogue, {
+          props: { models: catalogue, locale, section: 'explore' }
+        })
 
-    it('offers a chip under Popular right now for each group of use cases it holds', async () => {
+        expect(await screen.findByPlaceholderText(placeholder)).toBeVisible()
+      }
+    )
+
+    it('shows Popular right now across every format with no task chips', async () => {
       renderExplore()
 
       const popular = within(await screen.findByTestId('explore-results'))
       expect(
         popular.getByRole('heading', { name: 'Popular right now' })
       ).toBeVisible()
-      expect(
-        within(chips())
-          .getAllByRole('button')
-          .map((chip) => chip.textContent.trim())
-      ).toEqual(['All', 'Image', 'Video', 'Edit'])
-    })
-
-    it('narrows Popular to the use case a visitor picks and links to it in the catalogue', async () => {
-      const user = userEvent.setup()
-      renderExplore()
-      await screen.findByTestId('explore-results')
-
-      await user.click(within(chips()).getByRole('button', { name: 'Video' }))
-
-      expect(
-        screen.getByRole('heading', { name: 'Popular for video' })
-      ).toBeVisible()
-      expect(
-        within(chips()).getByRole('button', { name: 'Video' })
-      ).toHaveAttribute('aria-pressed', 'true')
-      expect(resultNames()).toEqual([
-        '/hub/models/?useCase=animate-images',
-        '/hub/workflows/animate-still/',
-        '/hub/models/animator/'
-      ])
+      expect(popular.queryByRole('group')).toBeNull()
+      expect(popular.queryAllByRole('button')).toEqual([])
+      expect(resultNames()).toHaveLength(4)
+      expect(resultNames()).toEqual(
+        expect.arrayContaining([
+          '/hub/models/animator/',
+          '/hub/models/painter/',
+          '/hub/workflows/animate-still/',
+          '/hub/workflows/relight/'
+        ])
+      )
     })
 
     it.for([
@@ -296,31 +302,6 @@ describe('ModelsCatalogue', () => {
         ).toEqual(kinds)
       }
     )
-
-    it('narrows by a chip and widens back with All', async () => {
-      const user = userEvent.setup()
-      renderExplore()
-      await screen.findByTestId('explore-results')
-
-      await user.click(within(chips()).getByRole('button', { name: 'Edit' }))
-
-      expect(
-        screen.getByRole('heading', { name: 'Popular for edit' })
-      ).toBeVisible()
-      expect(resultNames()).toEqual([
-        '/hub/models/?useCase=edit-images',
-        '/hub/workflows/relight/'
-      ])
-
-      await user.click(within(chips()).getByRole('button', { name: 'All' }))
-
-      expect(
-        screen.getByRole('heading', { name: 'Popular right now' })
-      ).toBeVisible()
-      expect(
-        within(chips()).getByRole('button', { name: 'All' })
-      ).toHaveAttribute('aria-pressed', 'true')
-    })
 
     it('fronts each door with real catalogue work', async () => {
       appsFlag.value = true
@@ -371,16 +352,10 @@ describe('ModelsCatalogue', () => {
       expect(screen.getByTestId('explore-empty')).toBeVisible()
       expect(screen.queryByTestId('explore-doors')).not.toBeInTheDocument()
       expect(screen.queryByTestId('explore-community')).not.toBeInTheDocument()
-      expect(
-        within(screen.getByTestId('explore-results')).queryByRole('group', {
-          name: 'Tasks'
-        })
-      ).not.toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: 'Clear search' }))
 
       expect(screen.getByTestId('explore-search')).toHaveValue('')
-      expect(chips()).toBeVisible()
       expect(screen.getByTestId('explore-doors')).toBeVisible()
       expect(screen.getByTestId('explore-community')).toBeVisible()
       expect(
@@ -445,7 +420,6 @@ describe('ModelsCatalogue', () => {
       renderExplore([])
 
       await screen.findByTestId('explore-doors')
-      expect(screen.queryByRole('group', { name: 'Tasks' })).toBeNull()
       expect(screen.queryByTestId('explore-results')).toBeNull()
     })
   })

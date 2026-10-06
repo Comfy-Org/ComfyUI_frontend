@@ -89,7 +89,10 @@ const doors = computed(() =>
           "
           :data-testid="`explore-door-${door.section}`"
         >
-          <span class="flex flex-1 flex-col items-start justify-end p-6 pr-3">
+          <span
+            class="flex flex-1 flex-col items-start justify-center p-6 pr-3"
+            data-testid="explore-door-copy"
+          >
             <span
               :class="
                 cn(

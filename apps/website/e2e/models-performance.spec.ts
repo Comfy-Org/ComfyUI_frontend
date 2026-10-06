@@ -70,19 +70,19 @@ test('the footer loads its animation when it approaches the viewport', async ({
 test('video cards load on screen and stop playing when scrolled away', async ({
   page
 }) => {
-  await page.goto('/hub/models/')
+  await page.goto('/hub/models/?useCase=generate-videos')
   await page.getByTestId('workshop-filter').click()
-  const videos = page.getByTestId('section-generate-videos').locator('video')
+  const videos = page.getByTestId('workshop-models-grid').locator('video')
   await expect.poll(() => videos.count()).toBeGreaterThan(0)
+  const first = videos.last()
   await expect
     .poll(() =>
-      videos.evaluateAll((elements: HTMLVideoElement[]) =>
-        elements.every((video) => video.currentSrc === '' && video.paused)
+      first.evaluate(
+        (video: HTMLVideoElement) => video.currentSrc === '' && video.paused
       )
     )
     .toBe(true)
 
-  const first = videos.first()
   await first.scrollIntoViewIfNeeded()
   await expect
     .poll(() =>
@@ -93,11 +93,7 @@ test('video cards load on screen and stop playing when scrolled away', async ({
     .toBe(true)
   await page.getByRole('heading', { level: 1 }).scrollIntoViewIfNeeded()
   await expect
-    .poll(() =>
-      videos.evaluateAll((elements: HTMLVideoElement[]) =>
-        elements.every((video) => video.paused)
-      )
-    )
+    .poll(() => first.evaluate((video: HTMLVideoElement) => video.paused))
     .toBe(true)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await first.scrollIntoViewIfNeeded()

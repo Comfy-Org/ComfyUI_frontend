@@ -92,10 +92,10 @@ test.describe('enabled workshop', () => {
   })
 
   test('client-side navigation does not flash marketing', async ({ page }) => {
-    await page.goto('/hub/models/')
+    await page.goto('/hub/models/?useCase=generate-images')
     await waitForIsland(page, page.getByTestId('workshop-search'))
     await page
-      .getByTestId('workshop-sections')
+      .getByTestId('workshop-models-grid')
       .getByRole('link', { name: /Grok Imagine Image/i })
       .first()
       .click()

@@ -60,7 +60,7 @@ function focusTab(step: number) {
       ref="list"
       role="tablist"
       :aria-label="t('workshop.explorer.tabs.label')"
-      class="inline-flex items-center gap-1 rounded-full bg-transparency-white-t4 p-1 ring-1 ring-transparency-white-t20"
+      class="inline-flex items-center gap-0.5 rounded-full bg-hub-surface p-1"
       data-testid="model-tabs"
     >
       <button
@@ -75,7 +75,7 @@ function focusTab(step: number) {
         :tabindex="tab === selected ? 0 : -1"
         :class="
           cn(
-            'inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
+            'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-[13px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
             tab === selected
               ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
               : 'text-primary-comfy-canvas hover:bg-transparency-white-t8 hover:text-primary-warm-white'
@@ -85,7 +85,7 @@ function focusTab(step: number) {
         @keydown.right.prevent="focusTab(1)"
         @keydown.left.prevent="focusTab(-1)"
       >
-        <component :is="icon[tab]" class="size-4" aria-hidden="true" />
+        <component :is="icon[tab]" class="size-3.5" aria-hidden="true" />
         {{ t(modelTabLabelKey[tab]) }}
       </button>
     </div>

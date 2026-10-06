@@ -209,7 +209,9 @@ watch(
     })
   }
 )
-const browsing = computed(() => !isFiltered.value && !browseAll.value)
+const browsing = computed(
+  () => !isFiltered.value && !browseAll.value && sort.value === 'popular'
+)
 const inSection = computed(
   () => selectedUseCases.value.length > 0 || browseAll.value
 )
@@ -245,10 +247,6 @@ const featured = computed(() => {
   )
 })
 const featuredSlides = computed(() => modelSlides(featured.value, locale))
-
-function openSection(value: UseCase | 'other') {
-  selectedUseCases.value = openedUseCases(value)
-}
 
 function leaveSection() {
   clearFilters()
@@ -358,13 +356,7 @@ watch(browseAll, (on) => on && resetFilters())
         />
 
         <template v-if="browsing">
-          <WorkshopSections
-            :models
-            :label-key="useCaseLabelKey"
-            :sort
-            :locale
-            @open="openSection"
-          />
+          <WorkshopSections :models :locale @browse="browseAll = true" />
 
           <button
             type="button"

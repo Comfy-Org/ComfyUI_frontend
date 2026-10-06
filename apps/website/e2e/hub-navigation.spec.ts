@@ -16,7 +16,7 @@ test.beforeEach(async ({ context }) => {
 })
 
 const SECTIONS = {
-  explore: { path: '/hub/', heading: 'Find your starting point.' },
+  explore: { path: '/hub/', heading: 'What do you want to make?' },
   apps: { path: '/hub/apps/', heading: 'ComfyUI apps' },
   workflows: { path: '/hub/workflows/', heading: 'ComfyUI workflows' },
   models: { path: '/hub/models/', heading: 'ComfyUI models' }
@@ -99,7 +99,11 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       to: 'workflows',
       copy: 'Turn your ideas into finished results'
     },
-    { from: 'apps', to: 'explore', copy: 'What do you want to make?' }
+    {
+      from: 'apps',
+      to: 'explore',
+      copy: 'Search, or pick how you want to work'
+    }
   ] as const) {
     test(`${from} to ${to} crossfades only under no-preference (${reducedMotion})`, async ({
       page
@@ -233,7 +237,7 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await expect(page).toHaveURL('/hub/')
   await expect(menu).toBeHidden()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Find your starting point.'
+    'What do you want to make?'
   )
   await waitForIsland(page, toggle)
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
@@ -263,36 +267,52 @@ test('mobile search suggestions show a video model as a still frame', async ({
   ).toHaveCount(0)
 })
 
-test('a use case chip under Popular right now narrows that row and All widens it back', async ({
+for (const width of [1440, 1360, 1280, 1024, 390]) {
+  test(`each Hub door centres its words beside its panel at ${width}px`, async ({
+    page
+  }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/hub/')
+    const doors = page.getByTestId('explore-doors').getByRole('link')
+    await expect(doors).toHaveCount(3)
+
+    for (const door of await doors.all()) {
+      await expect(door.getByTestId('explore-door-panel')).toBeVisible()
+      const layout = await door.evaluate((card) => {
+        const box = (element: Element | null) => {
+          if (!element) throw new Error('the door lost part of its layout')
+          return element.getBoundingClientRect()
+        }
+        const copy = card.querySelector('[data-testid="explore-door-copy"]')
+        const lines = [...(copy?.children ?? [])].map((line) => box(line))
+        const panel = box(
+          card.querySelector('[data-testid="explore-door-panel"]')
+        )
+        const own = box(card)
+        const top = Math.min(...lines.map((line) => line.top))
+        const bottom = Math.max(...lines.map((line) => line.bottom))
+        return {
+          offCentre: Math.abs((top + bottom) / 2 - (own.top + own.bottom) / 2),
+          gap: panel.left - Math.max(...lines.map((line) => line.right))
+        }
+      })
+      expect(layout.offCentre).toBeLessThan(2)
+      expect(layout.gap).toBeGreaterThan(0)
+    }
+  })
+}
+
+test('Popular right now shows every format with no task chips', async ({
   page
 }) => {
   await page.goto('/hub/')
   const popular = page.getByTestId('explore-results')
-  const chips = popular.getByRole('group', { name: 'Tasks' })
-  await waitForIsland(page, chips)
   await expect(
     popular.getByRole('heading', { name: 'Popular right now' })
   ).toBeVisible()
-
-  await chips.getByRole('button', { name: 'Generate images' }).click()
-
-  await expect(
-    popular.getByRole('heading', { name: 'Popular for generate images' })
-  ).toBeVisible()
-  await expect(
-    chips.getByRole('button', { name: 'Generate images' })
-  ).toHaveAttribute('aria-pressed', 'true')
   await expect(popular.getByTestId('explore-kind')).not.toHaveCount(0)
-  await expect(
-    popular.locator('[data-testid="explore-kind"][data-kind="app"]')
-  ).toHaveCount(0)
-
-  await chips.getByRole('button', { name: 'All' }).click()
-
-  await expect(
-    popular.getByRole('heading', { name: 'Popular right now' })
-  ).toBeVisible()
-  await expect(page).toHaveURL('/hub/')
+  await expect(popular.getByRole('group')).toHaveCount(0)
+  await expect(popular.getByRole('button', { name: 'All' })).toHaveCount(0)
 })
 
 test('keeps the Hub visible until a cold section is ready', async ({
