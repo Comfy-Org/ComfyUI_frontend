@@ -23,12 +23,16 @@ interface OpenTab {
   path: string
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
 function isPersistedBinding(value: unknown): value is PersistedBinding {
   if (typeof value !== 'object' || value === null) return false
   const { tabPath, graphId, confirmedAt } = value as Record<string, unknown>
   return (
     typeof tabPath === 'string' &&
-    (graphId === null || typeof graphId === 'string') &&
+    (graphId === null || isNonEmptyString(graphId)) &&
     typeof confirmedAt === 'number'
   )
 }
@@ -73,7 +77,7 @@ function graphIdOf(tab: ComfyWorkflow): string | undefined {
     return typeof parsed === 'object' &&
       parsed !== null &&
       'id' in parsed &&
-      typeof parsed.id === 'string'
+      isNonEmptyString(parsed.id)
       ? parsed.id
       : undefined
   } catch {

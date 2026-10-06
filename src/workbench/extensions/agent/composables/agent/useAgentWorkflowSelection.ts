@@ -15,7 +15,28 @@ import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
-import type { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
+import type {
+  CloudWorkflowLifecycle,
+  useAgentWorkflowResolver
+} from './useAgentWorkflowResolver'
+
+type RestorationOutcome =
+  | { outcome: 'open'; target: ComfyWorkflow | null }
+  | { outcome: 'deleted' }
+  | { outcome: 'superseded' }
+
+function restorationOutcomeFor(
+  lifecycle: CloudWorkflowLifecycle,
+  target: ComfyWorkflow | null
+): RestorationOutcome {
+  switch (lifecycle) {
+    case 'gone':
+      return { outcome: 'deleted' }
+    case 'live':
+    case 'unknown':
+      return { outcome: 'open', target }
+  }
+}
 
 interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
@@ -54,7 +75,8 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    isCloudWorkflowListed
+    cloudListingOmits,
+    cloudWorkflowLifecycle
   } = resolver
   const editableWorkflowId = computed(() =>
     selectedTarget.value ? cloudIdFor(selectedTarget.value) : undefined
@@ -215,6 +237,30 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
+  /**
+   * A complete listing that omits the id is conclusive only when nothing local
+   * owns it. With a local owner, `GET /api/workflows/{id}` decides, because the
+   * listing hides version-less drafts.
+   */
+  async function resolveRestorationTarget(
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<RestorationOutcome> {
+    const listed = await refreshCloudWorkflowIds()
+    if (!isCurrent()) return { outcome: 'superseded' }
+    const target =
+      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    if (!listed || !cloudListingOmits(workflowId))
+      return { outcome: 'open', target }
+    if (target === null) return { outcome: 'deleted' }
+    const lifecycle = await cloudWorkflowLifecycle(workflowId)
+    if (!isCurrent()) return { outcome: 'superseded' }
+    return restorationOutcomeFor(
+      lifecycle,
+      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    )
+  }
+
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
@@ -229,21 +275,16 @@ export function useAgentWorkflowSelection({
       isSessionCurrent() &&
       canRestoreWorkflow.value
     if (workflowId === undefined) return true
-    let target = cachedOpenWorkflowFor(workflowId)
-    if (target === null) {
-      const listed = await refreshCloudWorkflowIds()
-      if (!isCurrent()) return false
-      // A successful listing without the id means the workflow is gone, even
-      // when a stale local binding still names a tab; a failed listing stays
-      // a retryable restoration failure.
-      if (listed && !isCloudWorkflowListed(workflowId)) {
-        panelStore.markWorkflowTargetUnavailable()
-        return true
-      }
-      target =
-        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    const cached = cachedOpenWorkflowFor(workflowId)
+    if (cached !== null)
+      return openRestoredWorkflow(cached, workflowId, isCurrent)
+    const resolved = await resolveRestorationTarget(workflowId, isCurrent)
+    if (resolved.outcome === 'superseded') return false
+    if (resolved.outcome === 'deleted') {
+      panelStore.markWorkflowTargetUnavailable()
+      return true
     }
-    return openRestoredWorkflow(target, workflowId, isCurrent)
+    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
   }
 
   async function openRestoredWorkflow(

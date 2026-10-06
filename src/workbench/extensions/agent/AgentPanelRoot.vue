@@ -358,7 +358,8 @@ const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
-  listCloudWorkflows: () => rest.listCloudWorkflows()
+  listCloudWorkflows: () => rest.listCloudWorkflows(),
+  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId)
 })
 const {
   refreshCloudWorkflowIds,
