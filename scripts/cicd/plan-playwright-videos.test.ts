@@ -15,6 +15,7 @@ import { parse } from 'yaml'
 import { z } from 'zod'
 
 const script = join(import.meta.dirname, 'plan-playwright-videos.sh')
+const bash = '/bin/bash'
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
 
 function fixture(chromiumCount: number, cloudCount = 0) {
@@ -171,19 +172,15 @@ describe('independent video workflow', () => {
           `#!${process.execPath}\nconsole.log(JSON.stringify(process.argv.slice(2)))\n`,
           { mode: 0o755 }
         )
-        const result = spawnSync(
-          '/bin/bash',
-          ['-eo', 'pipefail', '-c', command],
-          {
-            encoding: 'utf8',
-            env: {
-              PATH: root,
-              FILES_JSON: files,
-              PROJECT: 'cloud',
-              SHARD: '2/3'
-            }
+        const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
+          encoding: 'utf8',
+          env: {
+            PATH: root,
+            FILES_JSON: files,
+            PROJECT: 'cloud',
+            SHARD: '2/3'
           }
-        )
+        })
 
         expect(result.status).toBe(status)
         expect(JSON.parse(result.stdout || '[]')).toEqual(expectedArgs)
