@@ -7,9 +7,11 @@ import { z } from 'zod'
 import { websiteRoot } from '@website/paths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { routeOf } from '@/utils/hreflangRoutes'
-import { hubAppSlugs, hubModelAliases, hubModelSlugs } from './hub-models'
+import hubAppNames from './hub-app-names.json' with { type: 'json' }
+import hubWorkflowNames from './hub-workflow-names.json' with { type: 'json' }
+import { hubModelAliases } from './hub-models'
 import { localModelPath, localModels } from './local-models'
-import { modelPageUrls } from './model-urls'
+import { modelAliasUrls, modelPageUrls } from './model-urls'
 import { modelsUrlKind } from './models-url-registry'
 import {
   astroRedirects,
@@ -147,21 +149,7 @@ describe('generated Vercel rules', () => {
       source: '/p/supported-models/t5xxl-fp8-e4m3fn-scaled',
       destination: '/hub/models/local/t5xxl-fp16/'
     },
-    { source: '/p/supported-models', destination: '/hub/models/local/' }
-  ])(
-    'send $source and $source/ to $destination permanently',
-    ({ source, destination }) => {
-      for (const form of [source, `${source}/`]) {
-        expect(find(form)).toEqual({
-          source: form,
-          destination,
-          permanent: true
-        })
-      }
-    }
-  )
-
-  it.for([
+    { source: '/p/supported-models', destination: '/hub/models/local/' },
     { source: '/models', destination: '/hub/models/' },
     {
       source: '/models/workflows/change-material',
@@ -180,25 +168,22 @@ describe('generated Vercel rules', () => {
       destination: `/hub/models/${hubModelAliases.get('vertexai--gemini-3-pro-image')}/`
     }
   ])(
-    'send $source and $source/ to $destination temporarily until comfy-router#46 is live',
+    'send $source and $source/ to $destination permanently',
     ({ source, destination }) => {
       for (const form of [source, `${source}/`]) {
         expect(find(form)).toEqual({
           source: form,
           destination,
-          permanent: false
+          permanent: true
         })
       }
     }
   )
 
-  it('keeps only the listed rows and the old Models addresses temporary', () => {
+  it('keeps only the listed rows temporary', () => {
     expect(
       vercelRedirects
-        .filter(
-          ({ source, permanent }) =>
-            !permanent && source !== '/models' && !source.startsWith('/models/')
-        )
+        .filter(({ permanent }) => !permanent)
         .map(({ source }) => source)
     ).toEqual([
       '/trust',
@@ -271,26 +256,52 @@ describe('Astro redirects', () => {
 
 describe('old Models addresses', () => {
   const vercelRedirects = toVercelRedirects(siteRedirects)
-  const oldPaths = [
-    '/models',
-    ...[...hubModelSlugs.keys(), ...hubModelAliases.keys(), ...hubAppSlugs].map(
-      (slug) => `/models/${slug}`
-    )
-  ].flatMap((path) => [path, `${path}/`])
+  const frozenDestinations: [string, string][] = [
+    ['/models', '/hub/models/'],
+    ...modelPageUrls.map(({ oldSlug, newSlug }): [string, string] => [
+      `/models/${oldSlug}`,
+      `/hub/models/${newSlug}/`
+    ]),
+    ...modelAliasUrls.map(({ alias, newSlug }): [string, string] => [
+      `/models/${alias}`,
+      `/hub/models/${newSlug}/`
+    ]),
+    ...hubWorkflowNames.map((name): [string, string] => [
+      `/models/workflows/${name}`,
+      `/hub/workflows/${name}/`
+    ]),
+    ...hubAppNames.map((name): [string, string] => [
+      `/models/apps/${name}`,
+      `/hub/apps/${name}/`
+    ])
+  ].flatMap(([path, destination]) => [
+    [path, destination],
+    [`${path}/`, destination]
+  ])
 
-  it('each redirect once, temporarily, to a page the site builds', () => {
-    const landsOnPage = (destination: string) =>
-      ['model', 'hub', 'app'].includes(modelsUrlKind(destination) ?? '')
-    expect(
-      oldPaths.filter((path) => {
-        const rows = vercelRedirects.filter(({ source }) => source === path)
-        return (
-          modelsUrlKind(path) !== 'alias' ||
-          rows.length !== 1 ||
-          rows[0].permanent ||
-          !landsOnPage(rows[0].destination)
+  it('each redirect once, permanently, to the page in the frozen URL tables', () => {
+    const served = (path: string) =>
+      vercelRedirects
+        .filter(({ source }) => source === path)
+        .map(({ permanent, destination }) =>
+          permanent ? destination : `temporary ${destination}`
         )
-      })
+    expect(
+      Object.fromEntries(
+        frozenDestinations.map(([path]) => [path, served(path)])
+      )
+    ).toEqual(
+      Object.fromEntries(
+        frozenDestinations.map(([path, destination]) => [path, [destination]])
+      )
+    )
+  })
+
+  it('each is an alias in the Models URL registry', () => {
+    expect(
+      frozenDestinations
+        .map(([path]) => path)
+        .filter((path) => modelsUrlKind(path) !== 'alias')
     ).toEqual([])
   })
 })

@@ -43,12 +43,6 @@ interface VercelRedirect {
 const MINIMAX_TEMPORARY_BECAUSE =
   '/minimax/ is a live namespace (the license pages sit under it); the page owner signs off before both locales go permanent together'
 
-const HUB_ROUTER_PENDING =
-  'switch to permanent once comfy-router#46 is confirmed live on prod; a 308 is cached by browsers and cannot be retracted'
-
-const HUB_APPS_ROUTER_PENDING =
-  'switch to permanent once comfy-router sends /hub/apps/ to this site on prod; a 308 is cached by browsers and cannot be retracted'
-
 const SUPPORTED_MODELS_PATH = '/p/supported-models'
 
 /** Leaves room under Vercel's 2,048-character limit on a rule's source. */
@@ -121,27 +115,22 @@ const supportedModelRedirects: readonly SiteRedirect[] = [
   )
 ]
 
+// Permanent since comfy-router#46: prod serves /hub/models, /hub/workflows and /hub/apps from this site.
+// 308 tells search engines the move is permanent: confirm a new destination serves 200 first.
 // Literal rows only: hub pages fetch /models/<slug>/page.json, so a /models/:path* catch-all would break them.
 const hubModelRedirects: readonly SiteRedirect[] = [
-  {
-    source: '/models',
-    destination: `${HUB_MODELS_PATH}/`,
-    temporaryBecause: HUB_ROUTER_PENDING
-  },
+  { source: '/models', destination: `${HUB_MODELS_PATH}/` },
   ...[...hubModelSlugs, ...hubModelAliases].map(([slug, hubSlug]) => ({
     source: `/models/${slug}` as const,
-    destination: hubModelPath(hubSlug),
-    temporaryBecause: HUB_ROUTER_PENDING
+    destination: hubModelPath(hubSlug)
   })),
   ...hubWorkflowSlugs.map((slug) => ({
     source: `/models/${slug}` as const,
-    destination: hubWorkflowHref(slug),
-    temporaryBecause: HUB_ROUTER_PENDING
+    destination: hubWorkflowHref(slug)
   })),
   ...hubAppSlugs.map((slug) => ({
     source: `/models/${slug}` as const,
-    destination: hubAppHref(slug),
-    temporaryBecause: HUB_APPS_ROUTER_PENDING
+    destination: hubAppHref(slug)
   }))
 ]
 
