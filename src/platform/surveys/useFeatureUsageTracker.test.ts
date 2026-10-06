@@ -130,6 +130,7 @@ describe('useFeatureUsageTracker', () => {
     tracker.reset()
     tracker.trackUsage()
     tracker.trackUsage()
+    expect(tracker.useCount.value).toBe(2)
     setItem.mockRestore()
 
     tracker.trackUsage()

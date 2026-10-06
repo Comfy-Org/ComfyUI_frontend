@@ -248,8 +248,9 @@ export function useFeatureUsageTracker(featureId: string) {
 
   const usage = computed(() =>
     usageFor(
-      applyPendingResets(
-        mergeUsageData(normalizeUsageData(usageData.value), pendingUsageData)
+      mergeUsageData(
+        applyPendingResets(normalizeUsageData(usageData.value)),
+        pendingUsageData
       ),
       featureId
     )
