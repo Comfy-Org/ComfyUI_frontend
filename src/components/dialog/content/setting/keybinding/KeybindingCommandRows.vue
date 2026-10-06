@@ -1,104 +1,106 @@
 <template>
-  <TableRow
-    tabindex="0"
-    :data-state="selected ? 'selected' : undefined"
-    :aria-expanded="command.keybindings.length >= 2 ? expanded : undefined"
-    @click="emit('rowClick')"
-    @dblclick="emit('rowDblclick')"
-    @contextmenu="emit('rowContextmenu', $event)"
-    @keydown.enter.self.prevent="emit('rowClick')"
-    @keydown.space.self.prevent="emit('rowClick')"
-  >
-    <TableCell class="p-1">
-      <div
-        :class="
-          cn(
-            'flex min-w-0 items-center gap-1 truncate',
-            command.keybindings.length < 2 && 'pl-5'
-          )
-        "
-        :title="command.id"
-      >
-        <i
-          v-if="command.keybindings.length >= 2"
+  <RovingFocusItem as-child :tab-stop-id="rowId">
+    <TableRow
+      :id="rowId"
+      :data-state="selected ? 'selected' : undefined"
+      :aria-expanded="command.keybindings.length >= 2 ? expanded : undefined"
+      @click="emit('rowClick')"
+      @dblclick="emit('rowDblclick')"
+      @contextmenu="emit('rowContextmenu', $event)"
+      @keydown.enter.self.prevent="emit('rowClick')"
+      @keydown.space.self.prevent="emit('rowClick')"
+    >
+      <TableCell class="p-1">
+        <div
           :class="
             cn(
-              'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
-              expanded && 'rotate-90'
+              'flex min-w-0 items-center gap-1 truncate',
+              command.keybindings.length < 2 && 'pl-5'
             )
           "
+          :title="command.id"
+        >
+          <i
+            v-if="command.keybindings.length >= 2"
+            :class="
+              cn(
+                'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                expanded && 'rotate-90'
+              )
+            "
+          />
+          <i
+            v-if="
+              command.keybindings.some(
+                (binding) => binding.combo.isBrowserReserved
+              )
+            "
+            v-tooltip="$t('g.browserReservedKeybindingTooltip')"
+            class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
+          />
+          {{ command.label }}
+        </div>
+      </TableCell>
+      <TableCell class="p-1">
+        <KeybindingList
+          :keybindings="command.keybindings"
+          :is-modified="command.isModified"
         />
-        <i
-          v-if="
-            command.keybindings.some(
-              (binding) => binding.combo.isBrowserReserved
-            )
-          "
-          v-tooltip="$t('g.browserReservedKeybindingTooltip')"
-          class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
-        />
-        {{ command.label }}
-      </div>
-    </TableCell>
-    <TableCell class="p-1">
-      <KeybindingList
-        :keybindings="command.keybindings"
-        :is-modified="command.isModified"
-      />
-    </TableCell>
-    <TableCell class="p-1">
-      <span class="block truncate" :title="command.source">{{
-        command.source || '-'
-      }}</span>
-    </TableCell>
-    <TableCell class="p-1 whitespace-nowrap">
-      <div
-        class="flex flex-row justify-end whitespace-nowrap"
-        @click.stop
-        @dblclick.stop
-      >
-        <Button
-          v-if="command.keybindings.length === 1"
-          v-tooltip="$t('g.edit')"
-          variant="textonly"
-          size="icon"
-          :aria-label="$t('g.edit')"
-          @click="emit('edit', command.keybindings[0])"
+      </TableCell>
+      <TableCell class="p-1">
+        <span class="block truncate" :title="command.source">{{
+          command.source || '-'
+        }}</span>
+      </TableCell>
+      <TableCell class="p-1 whitespace-nowrap">
+        <div
+          class="flex flex-row justify-end whitespace-nowrap"
+          @click.stop
+          @dblclick.stop
         >
-          <i class="icon-[lucide--pencil]" />
-        </Button>
-        <Button
-          v-tooltip="$t('g.addNewKeybinding')"
-          variant="textonly"
-          size="icon"
-          :aria-label="$t('g.addNewKeybinding')"
-          @click="emit('add')"
-        >
-          <i class="icon-[lucide--plus]" />
-        </Button>
-        <Button
-          v-tooltip="$t('g.reset')"
-          variant="textonly"
-          size="icon"
-          :aria-label="$t('g.reset')"
-          :disabled="!command.isModified"
-          @click="emit('reset')"
-        >
-          <i class="icon-[lucide--rotate-ccw]" />
-        </Button>
-        <Button
-          v-tooltip="$t('g.delete')"
-          variant="textonly"
-          size="icon"
-          :aria-label="$t('g.delete')"
-          :disabled="command.keybindings.length === 0"
-          @click="emit('remove')"
-        >
-          <i class="icon-[lucide--trash-2]" />
-        </Button>
-      </div>
-    </TableCell>
-  </TableRow>
+          <Button
+            v-if="command.keybindings.length === 1"
+            v-tooltip="$t('g.edit')"
+            variant="textonly"
+            size="icon"
+            :aria-label="$t('g.edit')"
+            @click="emit('edit', command.keybindings[0])"
+          >
+            <i class="icon-[lucide--pencil]" />
+          </Button>
+          <Button
+            v-tooltip="$t('g.addNewKeybinding')"
+            variant="textonly"
+            size="icon"
+            :aria-label="$t('g.addNewKeybinding')"
+            @click="emit('add')"
+          >
+            <i class="icon-[lucide--plus]" />
+          </Button>
+          <Button
+            v-tooltip="$t('g.reset')"
+            variant="textonly"
+            size="icon"
+            :aria-label="$t('g.reset')"
+            :disabled="!command.isModified"
+            @click="emit('reset')"
+          >
+            <i class="icon-[lucide--rotate-ccw]" />
+          </Button>
+          <Button
+            v-tooltip="$t('g.delete')"
+            variant="textonly"
+            size="icon"
+            :aria-label="$t('g.delete')"
+            :disabled="command.keybindings.length === 0"
+            @click="emit('remove')"
+          >
+            <i class="icon-[lucide--trash-2]" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  </RovingFocusItem>
   <TableRow v-if="expanded">
     <TableCell colspan="4" class="p-0">
       <div class="pl-4" data-testid="keybinding-expansion-content">
@@ -142,6 +144,8 @@
 </template>
 
 <script setup lang="ts">
+import { RovingFocusItem } from 'reka-ui'
+
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -162,6 +166,8 @@ const { command, expanded, selected } = defineProps<{
   expanded: boolean
   selected: boolean
 }>()
+
+const rowId = `keybinding-row-${command.id}`
 
 const emit = defineEmits<{
   rowClick: []

@@ -57,8 +57,21 @@
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableRow v-for="extension in visibleExtensions" :key="extension.name">
-          <TableCell>
+        <TableRow
+          v-for="extension in visibleExtensions"
+          :key="extension.name"
+          class="cursor-pointer"
+          :data-state="
+            selectedExtensionNames.has(extension.name) ? 'selected' : undefined
+          "
+          @click="
+            setExtensionSelected(
+              extension.name,
+              !selectedExtensionNames.has(extension.name)
+            )
+          "
+        >
+          <TableCell @click.stop>
             <Checkbox
               :model-value="selectedExtensionNames.has(extension.name)"
               :aria-label="$t('g.selectItem', { name: extension.name })"
@@ -74,7 +87,7 @@
             </Badge>
             <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
           </TableCell>
-          <TableCell class="text-right">
+          <TableCell class="text-right" @click.stop>
             <Switch
               :model-value="editingEnabledExtensions[extension.name]"
               :disabled="extensionStore.isExtensionReadOnly(extension.name)"

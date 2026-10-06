@@ -47,23 +47,25 @@
           </TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody>
-        <KeybindingCommandRows
-          v-for="command in visibleCommands"
-          :key="command.id"
-          :command="command"
-          :expanded="expandedCommandIds.has(command.id)"
-          :selected="selectedCommandId === command.id"
-          @row-click="activateRow(command)"
-          @row-dblclick="handleRowDblClick(command)"
-          @row-contextmenu="handleRowContextMenu($event, command)"
-          @edit="editKeybinding(command, $event)"
-          @add="addKeybinding(command)"
-          @reset="resetKeybinding(command)"
-          @remove="handleRemoveKeybindingFromMenu(command)"
-          @remove-single="removeSingleKeybinding(command, $event)"
-        />
-      </TableBody>
+      <RovingFocusGroup as-child orientation="vertical">
+        <TableBody>
+          <KeybindingCommandRows
+            v-for="command in visibleCommands"
+            :key="command.id"
+            :command="command"
+            :expanded="expandedCommandIds.has(command.id)"
+            :selected="selectedCommandId === command.id"
+            @row-click="activateRow(command)"
+            @row-dblclick="handleRowDblClick(command)"
+            @row-contextmenu="handleRowContextMenu($event, command)"
+            @edit="editKeybinding(command, $event)"
+            @add="addKeybinding(command)"
+            @reset="resetKeybinding(command)"
+            @remove="handleRemoveKeybindingFromMenu(command)"
+            @remove-single="removeSingleKeybinding(command, $event)"
+          />
+        </TableBody>
+      </RovingFocusGroup>
     </Table>
     <Pagination
       v-if="filteredCommands.length > commandsPerPageOptions[0]"
@@ -91,6 +93,7 @@
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RovingFocusGroup } from 'reka-ui'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'

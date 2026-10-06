@@ -63,6 +63,23 @@ describe('ExtensionPanel', () => {
     ).toBePartiallyChecked()
   })
 
+  it('toggles selection from anywhere on the row except its enable switch', async () => {
+    const user = userEvent.setup()
+    registerExtensions('Alpha')
+    vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
+    renderPanel()
+    const checkbox = screen.getByRole('checkbox', { name: 'Select Alpha' })
+
+    await user.click(screen.getByRole('cell', { name: 'Alpha Custom' }))
+    expect(checkbox).toBeChecked()
+
+    await user.click(checkbox)
+    expect(checkbox).not.toBeChecked()
+
+    await user.click(screen.getByRole('switch', { name: 'Alpha' }))
+    expect(checkbox).not.toBeChecked()
+  })
+
   it('replaces the selection with the visible rows on select all and clears it on unselect', async () => {
     const user = userEvent.setup()
     registerExtensions('Alpha', 'Zebra')

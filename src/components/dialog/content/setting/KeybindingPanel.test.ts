@@ -95,7 +95,6 @@ describe('KeybindingPanel', () => {
       screen.getByRole('row', { name: /Single binding/ })
     ).not.toHaveAttribute('aria-expanded')
     expect(multiRow()).toHaveAttribute('aria-expanded', 'false')
-    expect(multiRow()).toHaveAttribute('tabindex', '0')
 
     await waitForSearchAutofocus()
     multiRow().focus()
@@ -113,6 +112,32 @@ describe('KeybindingPanel', () => {
     expect(
       screen.queryByTestId('keybinding-expansion-content')
     ).not.toBeInTheDocument()
+  })
+
+  it('moves between rows with the arrow keys and tabs back to the last row', async () => {
+    const user = userEvent.setup()
+    registerCommand('command-alpha', 'Alpha')
+    registerCommand('command-bravo', 'Bravo')
+    renderPanel()
+    await waitForSearchAutofocus()
+    const sortButton = screen.getByRole('button', { name: 'Command' })
+    const alphaRow = screen.getByRole('row', { name: /^Alpha/ })
+    const bravoRow = screen.getByRole('row', { name: /^Bravo/ })
+
+    sortButton.focus()
+    await user.tab()
+    expect(alphaRow).toHaveFocus()
+
+    await user.keyboard('{ArrowDown}')
+    expect(bravoRow).toHaveFocus()
+    expect(alphaRow).toHaveAttribute('tabindex', '-1')
+
+    sortButton.focus()
+    await user.tab()
+    expect(bravoRow).toHaveFocus()
+
+    await user.keyboard('{ArrowUp}')
+    expect(alphaRow).toHaveFocus()
   })
 
   it('changes page size, navigates to the last page, and resets on search', async () => {
