@@ -535,7 +535,7 @@ class TestBranchNode(IO.ComfyNode):
             inputs=[
                 IO.Autogrow.Input("autogrow", template=template),
                 IO.Combo.Input("branch", extra_dict={"widgetType": "COMFY_BRANCH_SELECTOR"}),
-                IO.Array.Input("branch_names", extra_dict={"widgetType": "COMFY_BRANCH_INPUT_NAMES", "socketless": True}),
+                IO.Array.Input("branch_names", extra_dict={"widgetType": "COMFY_BRANCH_INPUT_NAMES"}),
             ],
             outputs=[
                 IO.MatchType.Output(template=mtemplate, display_name="output"),
