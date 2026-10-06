@@ -1320,8 +1320,11 @@ const { copy } = useClipboard({ legacy: true })
  * denominator — to the panel openers the hypothesis is about.
  */
 const { variant: freeUsePlacement } = useFreeUsePlacement()
-const { assignment: starterPromptAssignment, expose: exposeStarterPromptSet } =
-  useStarterPromptSet()
+const {
+  assignment: starterPromptAssignment,
+  expose: exposeStarterPromptSet,
+  invalidateSurface: invalidateStarterPromptSurface
+} = useStarterPromptSet()
 
 function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
   useTelemetry()?.trackAgentFreeUseNotice(metadata)
@@ -1518,7 +1521,7 @@ const { submit: onSend } = useAgentDraftSubmission({
         starter_prompt_id: meta.starterPrompt?.id ?? null,
         starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
         '$feature/agent-starter-prompt-set':
-          meta.starterPrompt?.assignment ?? 'control'
+          meta.starterPrompt?.assignment ?? starterPromptAssignment.value
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }
@@ -1911,6 +1914,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :on-starter-prompt-rendered="exposeStarterPromptSet"
+      :on-starter-prompt-unmounted="invalidateStarterPromptSurface"
       @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"

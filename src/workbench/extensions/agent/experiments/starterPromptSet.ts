@@ -60,6 +60,10 @@ export function useStarterPromptSet() {
     if (isAuthenticatedConfigLoaded.value) assign()
   }
 
+  const invalidateSurface = () => {
+    surfaceRendered = false
+  }
+
   if (isAuthenticatedConfigLoaded.value) {
     assign()
   } else {
@@ -77,5 +81,9 @@ export function useStarterPromptSet() {
     )
   }
 
-  return { assignment: computed(() => assigned.value), expose }
+  return {
+    assignment: computed(() => assigned.value),
+    expose,
+    invalidateSurface
+  }
 }

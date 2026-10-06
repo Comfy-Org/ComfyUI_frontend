@@ -215,8 +215,11 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await expect
           .poll(() => telemetryPayloads.join('\n'))
           .toContain('agent_message_sent')
-        expect(telemetryPayloads.join('\n')).toContain(
-          '$feature/agent-starter-prompt-set'
+        const messageSent = telemetryPayloads.find((payload) =>
+          payload.includes('agent_message_sent')
+        )
+        expect(messageSent).toContain(
+          '"$feature/agent-starter-prompt-set":"test"'
         )
       })
     })
