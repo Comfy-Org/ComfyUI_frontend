@@ -144,6 +144,13 @@ export const authoredRouterContentBySlug = new Map(
 export const routerContentBySlug = new Map(
   publishedContentSources.map((source) => [source.overlay.slug, source])
 )
+const unpublishedSummarySlugs = [...editorialSummaries.keys()].filter(
+  (slug) => !routerContentBySlug.has(slug)
+)
+if (unpublishedSummarySlugs.length)
+  console.warn(
+    `Model summaries kept for pages this build does not publish: ${unpublishedSummarySlugs.join(', ')}`
+  )
 export const routerContentById = new Map(
   routerIndex.flatMap((record) => {
     const sources = publishedContentSources.filter(
