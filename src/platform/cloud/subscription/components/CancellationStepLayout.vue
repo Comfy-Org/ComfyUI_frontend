@@ -1,6 +1,6 @@
 <template>
   <section
-    class="relative flex w-full max-w-[512px] flex-col gap-6 rounded-2xl border border-border-default bg-base-background p-8"
+    class="relative flex w-[min(32rem,calc(100vw-2rem))] flex-col gap-6 rounded-2xl border border-border-default bg-base-background p-8"
     :aria-labelledby="titleId"
   >
     <Button

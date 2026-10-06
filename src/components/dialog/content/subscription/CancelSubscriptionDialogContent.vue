@@ -181,7 +181,9 @@ onUnmounted(() => {
 })
 
 const formattedEndDate = computed(() => {
-  const date = parseIsoDateSafe(cancelAt ?? subscription.value?.endDate)
+  const date = parseIsoDateSafe(
+    cancelAt ?? subscription.value?.endDate ?? subscription.value?.renewalDate
+  )
   if (!date) return t('subscription.cancelDialog.endOfBillingPeriod')
   return date.toLocaleDateString('en-US', {
     month: 'long',

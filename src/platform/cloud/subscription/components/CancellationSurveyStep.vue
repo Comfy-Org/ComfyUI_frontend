@@ -47,7 +47,7 @@
         <Textarea
           :id="commentId"
           v-model="comment"
-          class="h-24 resize-none"
+          class="h-24 resize-none font-inter"
           :placeholder="$t('subscription.cancelFlow.survey.commentPlaceholder')"
           maxlength="2000"
         />

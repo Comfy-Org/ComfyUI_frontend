@@ -984,6 +984,17 @@ describe('CancelSubscriptionDialogContent', () => {
       expect(screen.getAllByText(/April 18, 2026/)).toHaveLength(2)
       expect(screen.queryByText(/January 1, 2030/)).not.toBeInTheDocument()
     })
+
+    it('uses the renewal date of an active plan that has no end date', () => {
+      setSubscription(subscription({ renewalDate: '2026-11-05T12:00:00.000Z' }))
+
+      renderComponent()
+
+      expect(screen.getAllByText(/November 5, 2026/)).toHaveLength(2)
+      expect(
+        screen.queryByText(/the end of your billing period/)
+      ).not.toBeInTheDocument()
+    })
   })
 
   describe('confirmation', () => {
