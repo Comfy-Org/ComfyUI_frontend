@@ -226,10 +226,12 @@ describe('useFeatureUsageTracker', () => {
 
     useFeatureUsageTracker('clobber-trigger').trackUsage()
     clobber.mockRestore()
+    useFeatureUsageTracker('unrelated-after-clobber').trackUsage()
     pendingTracker.trackUsage()
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['pending-before-clobber']?.useCount).toBe(2)
+    expect(stored['clobber-trigger']?.useCount).toBe(1)
   })
 
   it('assumes a successful write when verification cannot read storage', () => {
