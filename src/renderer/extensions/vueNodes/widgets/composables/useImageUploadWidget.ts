@@ -7,7 +7,7 @@ import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
@@ -61,7 +61,9 @@ export const useImageUploadWidget = () => {
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
     function alertExtensionlessVideo(files: File[]) {
       if (!files.some(isExtensionlessVideo)) return false
-      useToastStore().addAlert(t('g.videoFilenameExtensionRequired'))
+      useToast().warning('Alert', {
+        description: t('g.videoFilenameExtensionRequired')
+      })
       return true
     }
     const fileComboWidget = findFileComboWidget(node, imageInputName)
