@@ -9,7 +9,7 @@ const { app } = defineProps<{ app: CatalogueApp }>()
 <template>
   <a
     :href="app.href"
-    class="group flex cursor-pointer flex-col gap-4 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+    class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     data-testid="workshop-app-card"
   >
     <div
@@ -19,9 +19,9 @@ const { app } = defineProps<{ app: CatalogueApp }>()
       <WorkshopCardMedia :model="app" />
     </div>
 
-    <div class="flex flex-col gap-2 px-3">
+    <div class="flex flex-col gap-3 px-3">
       <h3
-        class="truncate text-sm/5 font-medium text-content-bright"
+        class="truncate text-xs font-medium text-content-bright lg:text-sm"
         :title="app.name"
         data-testid="app-card-name"
       >

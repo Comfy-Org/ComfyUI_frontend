@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronLeft } from '@lucide/vue'
 import { computed, nextTick, watch } from 'vue'
 
 import type { Locale } from '@/i18n/translations'
@@ -8,6 +8,7 @@ import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import { ac } from '@/lib/workshop/catalogue-apps'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
+import Button from '@/components/ui/button/Button.vue'
 import CardRow from './CardRow.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
@@ -85,19 +86,16 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
           </li>
         </CardRow>
       </section>
-      <button
+      <Button
         v-if="hasMore"
-        type="button"
-        class="group mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:w-full"
+        variant="outline"
+        size="lg"
+        class="mx-auto mt-12 max-sm:w-full"
         data-testid="browse-all-end"
         @click="browseAll = true"
       >
         {{ ac('browseAllApps', locale) }}
-        <ChevronRight
-          class="size-4 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
-      </button>
+      </Button>
     </div>
   </section>
 </template>
