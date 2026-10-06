@@ -1,20 +1,7 @@
 import type { LocaleObject, LocaleValue } from './locale-tree'
 import { collectLeaves } from './locale-tree'
 
-const violationCodes = [
-  'missing-token',
-  'added-token',
-  'empty-translation',
-  'added-plural-separator',
-  'plural-form-count-changed',
-  'added-linked-message',
-  'malformed-markup',
-  'leaf-type-changed',
-  'array-length-changed',
-  'leaf-value-changed'
-] as const
-
-export type ViolationCode = (typeof violationCodes)[number]
+export type ViolationCode = keyof typeof violationDescriptions
 
 export interface TokenViolation {
   path: string[]
@@ -75,6 +62,7 @@ const protectedLiteralPatterns = [
 const interpolationPattern = /\{(?:[A-Za-z][A-Za-z0-9_.-]*|\d+|'[^']*')\}/g
 const literalInterpolationPattern = /\{'[^']*'\}/g
 const linkedMessagePattern = /@[.:]/
+const urlPattern = /\]\((https?:\/\/[^\s)]+)\)|https?:\/\/[\w\-./?=&#%~:@+,;]+/g
 
 function pluralForms(value: string): string[] {
   const forms: string[] = []
@@ -155,7 +143,15 @@ function formTokens(
   const htmlTokens = strict
     ? htmlTags(form).map((text) => htmlToken(text, localeCode))
     : []
-  return [...literalTokens, ...htmlTokens]
+  const urlTokens = strict
+    ? [...form.replace(htmlTagPattern, ' ').matchAll(urlPattern)].map(
+        ([match, target]) => {
+          const text = target || match.replace(/[.,;:]+$/, '')
+          return { text, identity: text }
+        }
+      )
+    : []
+  return [...literalTokens, ...htmlTokens, ...urlTokens]
 }
 
 function countFormTokens(
@@ -301,7 +297,7 @@ function changesPluralFormCount(source: string, target: string): boolean {
 function addedMessageSyntax(
   source: string,
   target: string
-): { code: ViolationCode; token: string }[] {
+): Omit<TokenViolation, 'path'>[] {
   return [
     ...(pluralForms(target).length > 1 && pluralForms(source).length === 1
       ? [{ code: 'added-plural-separator' as const, token: '|' }]
@@ -373,7 +369,7 @@ function leafViolations(
     : [{ path, code: 'leaf-value-changed', token: '' }]
 }
 
-const violationDescriptions: Record<ViolationCode, string> = {
+const violationDescriptions = {
   'missing-token': 'missing',
   'added-token': 'added',
   'empty-translation': 'empty translation',

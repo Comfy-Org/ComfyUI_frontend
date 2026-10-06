@@ -109,12 +109,12 @@ copy. Both scripts call the shared CLI in `scripts/i18n/update-locales.ts` with
 
 The website uses the app's pipeline and manifest format, described in
 [`src/locales/CONTRIBUTING.md`](../../src/locales/CONTRIBUTING.md#what-happens-in-ci).
-`src/locales/.source-manifest.json` maps each English file to the Git blob ID
+`apps/website/src/locales/.source-manifest.json` maps each English file to the Git blob ID
 of the English last generated. Its `knownViolations` field lists accepted
 protected-token violations as JSON-encoded key paths, such as
 `["cloud","reason","1","title"]`. Use a clone with full history: if the recorded
-blob is missing, `locale:check` warns and skips change detection, and
-`pnpm locale` fails. When translation of an entry file fails,
+blob is missing, `locale:check` warns and skips change detection and token
+validation for that file, and `pnpm locale` fails. When translation of an entry file fails,
 its English, locale catalogs and manifest entry keep their previous contents.
 
 Commit the generated English catalog, locale catalogs and manifest together. If
@@ -128,14 +128,22 @@ The website differs from the app in these ways:
   change. When English is modified, generation replaces the matching eligible
   translations, including locale edits made in the same change. The app
   regenerates every added or modified key.
-- Excluded namespaces are never generated. An excluded value that is missing,
-  or nonempty and equal to the current or previous English, is removed so the
-  page falls back to current English. Other excluded translations stay when
+- Generation does not repair retained copy with invalid tokens. Fix that copy
+  by hand, or delete an eligible value to regenerate it. Generation stops with
+  "Fix retained copy before generation" unless the leaf path is listed in
+  `knownViolations`. Add accepted exceptions there by hand. Entries apply to
+  every locale for that file; generation retains entries that still violate
+  and drops healed ones.
+- Excluded namespaces are never generated. Missing values stay missing;
+  nonempty copies of the current or previous English are removed so the page
+  falls back to current English. Other excluded translations stay when
   English changes; legal review of them is a human task.
 - Validation is strict. A translated plural message keeps the English form
   count or collapses to one form. Matching forms keep their placeholders and
   markup; a collapsed form keeps every token at its highest English count.
-  Generated copy keeps every link URL exactly.
+  Generated copy keeps HTML link attributes and bare or Markdown HTTP(S) URLs
+  exactly. Three existing Chinese contact FAQ links use localized absolute
+  URLs and are listed in `knownViolations`.
   Authored copy may prefix an internal `href` with the target locale, such as
   `/zh-CN/pricing/`; the validator does not check that the route exists.
 

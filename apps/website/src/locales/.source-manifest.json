@@ -7,6 +7,9 @@
     "main.json": [
       "[\"cloud\",\"reason\",\"1\",\"title\"]",
       "[\"cloud\",\"reason\",\"4\",\"title\"]",
+      "[\"contact\",\"faq\",\"a1\"]",
+      "[\"contact\",\"faq\",\"a2\"]",
+      "[\"contact\",\"faq\",\"a3\"]",
       "[\"models\",\"list\",\"heroTitleAfter\"]",
       "[\"workshop\",\"model\",\"meta\",\"price\"]"
     ]

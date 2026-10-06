@@ -1,3 +1,5 @@
+import { isEqual } from 'es-toolkit'
+
 import type { TranslationPipelineConfig } from './config'
 import type {
   LocaleLeafEntry,
@@ -17,7 +19,8 @@ function usesEnglishFallback({
 }): boolean {
   return (
     current === undefined ||
-    (current !== '' && [source, previous].includes(current))
+    (current !== '' &&
+      [source, previous].some((value) => isEqual(value, current)))
   )
 }
 

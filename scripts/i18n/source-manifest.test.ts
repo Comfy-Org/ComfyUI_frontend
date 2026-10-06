@@ -1,11 +1,23 @@
 import { describe, expect, it } from 'vitest'
 
 import type { SourceManifest } from './source-manifest'
-import { loadManifest } from './source-manifest'
+import { loadManifest, serializeManifest } from './source-manifest'
 
 const filename = '/catalogs/.source-manifest.json'
 const sha1 = 'a'.repeat(40)
 const sha256 = 'b'.repeat(64)
+
+it('serializes manifest files in stable order after a partial failure', () => {
+  expect(
+    serializeManifest({
+      version: 1,
+      files: { 'z.json': sha256, 'a.json': sha1 },
+      knownViolations: { 'z.json': ['["title"]'] }
+    })
+  ).toBe(
+    `${JSON.stringify({ files: { 'a.json': sha1, 'z.json': sha256 }, knownViolations: { 'z.json': ['["title"]'] }, version: 1 }, null, 2)}\n`
+  )
+})
 
 describe('loadManifest', () => {
   it.for<{ label: string; manifest: SourceManifest }>([

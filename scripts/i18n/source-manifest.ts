@@ -13,6 +13,22 @@ const manifestSchema = z
 
 export type SourceManifest = z.infer<typeof manifestSchema>
 
+export function serializeManifest({
+  files,
+  knownViolations
+}: SourceManifest): string {
+  const manifest = {
+    files: Object.fromEntries(
+      Object.entries(files).sort(([a], [b]) => a.localeCompare(b))
+    ),
+    ...(knownViolations && Object.keys(knownViolations).length
+      ? { knownViolations }
+      : {}),
+    version: 1
+  }
+  return `${JSON.stringify(manifest, null, 2)}\n`
+}
+
 function describeError(error: unknown): string {
   if (!(error instanceof z.ZodError)) return String(error)
   return error.issues

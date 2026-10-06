@@ -38,7 +38,7 @@ import {
   protectedTokens
 } from './protected-tokens'
 import type { SourceManifest } from './source-manifest'
-import { loadManifest } from './source-manifest'
+import { loadManifest, serializeManifest } from './source-manifest'
 import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
@@ -355,7 +355,11 @@ function auditState(
   for (const violation of actual) {
     const key = violation.path
       .map((_, index) => pathKey(violation.path.slice(0, index + 1)))
-      .find((path) => state.plan.knownViolationKeys.has(path))
+      .find(
+        (path) =>
+          state.plan.sourceLeaves.has(path) &&
+          state.plan.knownViolationKeys.has(path)
+      )
     if (key) known.add(key)
     else unexpected.push(violation)
   }
@@ -485,7 +489,7 @@ export async function updateLocales({
     config,
     translateBatch
   )
-  const written = publishOutcomes({
+  const written = writeOutcomes({
     repoRoot,
     outputDir,
     manifest,
@@ -613,7 +617,7 @@ async function translateStates(
   return { outcomes, pending }
 }
 
-function publishOutcomes({
+function writeOutcomes({
   repoRoot,
   outputDir,
   manifest,
@@ -636,12 +640,9 @@ function publishOutcomes({
   const failedFiles = new Set(failures.map(({ state }) => state.plan.filename))
   const completed = outcomes.filter((outcome) => 'output' in outcome)
   const updates = new Map<string, string | null>()
-  const next: SourceManifest = {
-    files: Object.fromEntries(
-      Object.entries(manifest.files).filter(([name]) => failedFiles.has(name))
-    ),
-    version: 1
-  }
+  const files = Object.fromEntries(
+    Object.entries(manifest.files).filter(([name]) => failedFiles.has(name))
+  )
   const knownViolations = Object.fromEntries(
     Object.entries(manifest.knownViolations ?? {}).filter(([name]) =>
       failedFiles.has(name)
@@ -651,7 +652,7 @@ function publishOutcomes({
     ({ filename }) => !failedFiles.has(filename)
   )) {
     const sourceBytes = serializeLocale(plan.source)
-    next.files[plan.filename] = execFileSync(
+    files[plan.filename] = execFileSync(
       'git',
       ['hash-object', '-w', '--stdin'],
       {
@@ -672,9 +673,10 @@ function publishOutcomes({
     if (remaining.size) knownViolations[plan.filename] = [...remaining].sort()
   }
   for (const orphan of orphans) updates.set(orphan, null)
-  if (Object.keys(knownViolations).length)
-    next.knownViolations = knownViolations
-  updates.set(manifestFile, `${JSON.stringify(next, null, 2)}\n`)
+  updates.set(
+    manifestFile,
+    serializeManifest({ version: 1, files, knownViolations })
+  )
   const written = writeCatalogUpdates(updates, inputs)
   if (failures.length)
     throw new Error(

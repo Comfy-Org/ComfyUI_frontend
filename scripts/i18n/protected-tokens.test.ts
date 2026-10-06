@@ -4,7 +4,6 @@ import { pathKey } from './locale-tree'
 import type { TokenViolation } from './protected-tokens'
 import {
   auditLocaleTokens,
-  formatTokenViolation,
   leafTokensDiffer,
   protectedTokens,
   tokenErrors
@@ -56,6 +55,16 @@ describe('strict protected-token audit', () => {
       name: 'a void element',
       source: 'One<br>Two',
       target: '一<br>二'
+    },
+    {
+      name: 'bare and Markdown URLs with translated labels and punctuation',
+      source: 'See https://x.org/docs. Or [FAQ](https://x.org/faq?q=1&n=2).',
+      target: '请看 https://x.org/docs。或[问答](https://x.org/faq?q=1&n=2)。'
+    },
+    {
+      name: 'markup already malformed in the source',
+      source: '<b><i>Guide</b></i>',
+      target: '<b><i>指南</b></i>'
     },
     {
       name: 'an uppercase tag written in lowercase',
@@ -114,6 +123,30 @@ describe('strict protected-token audit', () => {
       source: 'No items | {count} item | {count} items',
       target: '没有项目 | {count} 个项目',
       expected: [{ code: 'plural-form-count-changed', token: '|' }]
+    },
+    {
+      name: 'an expanded plural',
+      source: '{count} item | {count} items',
+      target: '{count} 项 | {count} 项 | {count} 项',
+      expected: [{ code: 'plural-form-count-changed', token: '|' }]
+    },
+    {
+      name: 'a rewritten bare URL',
+      source: 'See https://x.org/docs.',
+      target: '请看 https://x.org/ja/docs。',
+      expected: [
+        { code: 'missing-token', token: 'https://x.org/docs' },
+        { code: 'added-token', token: 'https://x.org/ja/docs' }
+      ]
+    },
+    {
+      name: 'a rewritten Markdown target',
+      source: 'See [FAQ](https://x.org/faq?q=1&n=2).',
+      target: '请看[问答](https://x.org/faq?q=1)。',
+      expected: [
+        { code: 'missing-token', token: 'https://x.org/faq?q=1&n=2' },
+        { code: 'added-token', token: 'https://x.org/faq?q=1' }
+      ]
     },
     {
       name: 'a placeholder dropped from one kept plural form',
@@ -183,6 +216,22 @@ describe('strict protected-token audit', () => {
   })
 
   it.for([
+    {
+      name: 'a locale prefix in a non-href attribute',
+      source: '<img src="/guide.png">',
+      target: '<img src="/zh-CN/guide.png">',
+      localeCode: 'zh-CN',
+      missing: '<img src="/guide.png">',
+      added: '<img src="/zh-CN/guide.png">'
+    },
+    {
+      name: 'a locale prefix on a protocol-relative link',
+      source: '<a href="//x.org/docs">Guide</a>',
+      target: '<a href="/zh-CN//x.org/docs">指南</a>',
+      localeCode: 'zh-CN',
+      missing: '<a href="//x.org/docs">',
+      added: '<a href="/zh-CN//x.org/docs">'
+    },
     {
       name: 'another locale prefix',
       source: faqLink,
@@ -277,6 +326,7 @@ describe('auditLocaleTokens', () => {
           shape: ['a', 'b'],
           type: ['a'],
           flag: true,
+          untranslated: 'Hello {name}',
           skipped: 'Hi {name}'
         },
         {
@@ -305,10 +355,6 @@ describe('auditLocaleTokens', () => {
     expect(violations).toEqual([
       { path: ['a.b'], code: 'missing-token', token: '{name}' },
       { path: ['a', 'b'], code: 'missing-token', token: '{name}' }
-    ])
-    expect(violations.map(formatTokenViolation)).toEqual([
-      'a.b: missing {name}',
-      'a.b: missing {name}'
     ])
   })
 })
@@ -345,7 +391,7 @@ describe('leafTokensDiffer', () => {
 })
 
 describe('protectedTokens', () => {
-  it('lists the per-form token multiset without inventing localized routes', () => {
+  it('lists each token at its highest per-form count', () => {
     expect(
       protectedTokens(
         '<a href="/enterprise/">{count} seat</a> | <a href="https://x.org">{count} seats</a>',

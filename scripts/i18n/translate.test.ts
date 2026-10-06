@@ -166,10 +166,10 @@ describe('translateLocaleItems', () => {
     {
       name: 'malformed markup',
       locale: { code: 'fr', name: 'French' },
-      rejected: "Lisez d'abord le guide",
+      rejected: 'Lisez </a>d\'abord le <a href="/docs">guide',
       accepted: 'Lisez d\'abord le <a href="/docs">guide</a>',
       retryNote:
-        'A previous attempt was rejected (missing </a>, <a href="/docs">). Reproduce every "preserve" substring exactly as written.'
+        'A previous attempt was rejected (malformed HTML nesting at </a>). Reproduce every "preserve" substring exactly as written.'
     },
     {
       name: 'a localized source URL',

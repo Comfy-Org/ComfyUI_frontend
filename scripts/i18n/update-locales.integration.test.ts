@@ -149,14 +149,19 @@ function createCatalogRepo(target: TranslationPipelineConfig = config) {
 describe('updateLocales generation', () => {
   it('regenerates changed app copy even when the locale was edited, recording the English blob', async () => {
     const repo = createCatalogRepo(translationTargets.app)
-    const english = { title: '<b>{n}</b> and {n}' }
-    repo.recordEnglish({ 'main.json': { title: 'Old {n}' } })
+    const english = { greeting: 'Hi {n}', title: '<b>{n}</b> and {n}' }
+    repo.recordEnglish({
+      'main.json': { greeting: 'Hi {n}', title: 'Old {n}' }
+    })
     repo.writeCatalog('en/main.json', english)
-    repo.writeCatalog('zh/main.json', { title: '人工 {n}' })
+    repo.writeCatalog('zh/main.json', { greeting: '你好', title: '人工 {n}' })
 
-    await repo.run(false, async () => ({ '1': '生成 {n}' }))
+    await repo.run(false, async () => ({ '1': '你好 {n}', '2': '生成 {n}' }))
 
-    expect(repo.readCatalog('zh/main.json')).toEqual({ title: '生成 {n}' })
+    expect(repo.readCatalog('zh/main.json')).toEqual({
+      greeting: '你好 {n}',
+      title: '生成 {n}'
+    })
     expect(repo.readManifest()).toEqual({
       version: 1,
       files: { 'main.json': repo.blobId(english) }
@@ -168,7 +173,8 @@ describe('updateLocales generation', () => {
     const english = {
       hero: { title: 'Hello {name}', subtitle: 'Build anything' }
     }
-    repo.writeCatalog('en/main.json', english)
+    repo.writeText('en/main.json', JSON.stringify(english, null, 2))
+    repo.writeCatalog('ja/removed.json', { gone: '消えた' })
     repo.writeText(manifestFile, json({ version: 1, files: {} }))
 
     expect((await repo.run(false, createTranslator().translate)).status).toBe(0)
@@ -474,6 +480,26 @@ describe('protected-token baselines', () => {
   const english = { farewell: 'Bye {name}', greeting: 'Hello {name}' }
   const japanese = { farewell: 'さようなら {name}', greeting: 'こんにちは' }
   const chinese = { farewell: '再见 {name}', greeting: '你好 {name}' }
+
+  it('baselines array leaves without exempting object subtrees', async () => {
+    const repo = createCatalogRepo()
+    const source = { group: { title: 'Hi {name}' }, list: ['Bye {name}'] }
+    repo.recordEnglish(
+      { 'main.json': source },
+      { 'main.json': ['["group"]', '["list"]'] }
+    )
+    repo.writeCatalog('en/main.json', source)
+    repo.writeCatalog('ja/main.json', {
+      group: { title: 'こんにちは' },
+      list: ['さようなら']
+    })
+
+    const check = await repo.run(true)
+
+    expect(check.status).toBe(1)
+    expect(check.output).toContain('1 protected-token violations')
+    expect(check.output).toContain('group.title: missing {name}')
+  })
 
   it('keeps baselined paths that still violate and drops healed ones', async () => {
     const repo = createCatalogRepo()

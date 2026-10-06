@@ -142,6 +142,17 @@ describe('locale retention', () => {
       expect(simulateGeneration({ ...changedEnglish, existing })).toEqual({})
     })
 
+    it('omits an excluded array that copies English structurally', () => {
+      expect(
+        simulateGeneration({
+          previousEnglish: { tos: { body: ['Old terms'] } },
+          english: { tos: { body: ['New terms'] } },
+          existing: { tos: { body: ['Old terms'] } },
+          excludedPaths
+        })
+      ).toEqual({})
+    })
+
     it.for<{ label: string; existing: LocaleObject }>([
       { label: 'a translation', existing: { tos: { body: '旧規約' } } },
       {
@@ -149,9 +160,13 @@ describe('locale retention', () => {
         existing: { tos: { body: '' } }
       }
     ])('keeps $label after English changes', ({ existing }) => {
-      expect(simulateGeneration({ ...changedEnglish, existing })).toEqual(
-        existing
-      )
+      expect(
+        simulateGeneration({
+          ...changedEnglish,
+          previousEnglish: { tos: { body: '' } },
+          existing
+        })
+      ).toEqual(existing)
     })
 
     it('prunes the translation when its English source is deleted', () => {
