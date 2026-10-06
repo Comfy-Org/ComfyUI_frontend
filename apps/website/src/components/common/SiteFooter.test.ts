@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { externalLinks, getRoutes } from '@/config/routes'
@@ -65,5 +65,44 @@ describe('SiteFooter', () => {
     for (const link of links) {
       expect(link.getAttribute('href')).toBe('/zh-CN/minimax/license/')
     }
+  })
+
+  // The footer mirrors the top nav: same Products and Features columns, same
+  // order, with Pricing kept at the end of Products.
+  it('lists the nav Products and Features links in nav order (en)', () => {
+    render(SiteFooter)
+    const routes = getRoutes()
+
+    const linksIn = (name: string) =>
+      within(screen.getByRole('navigation', { name }))
+        .getAllByRole('link')
+        .map((link) => [link.textContent.trim(), link.getAttribute('href')])
+
+    expect(linksIn('Products')).toEqual([
+      ['Comfy Desktop', routes.download],
+      ['Comfy Cloud', routes.cloud],
+      ['Developer Platform', routes.platform],
+      ['Comfy Router', routes.platformRouter],
+      ['Comfy Enterprise', routes.enterprise],
+      ['Managed Builds', routes.managedBuilds],
+      ['Pricing', routes.pricing]
+    ])
+    expect(linksIn('Features')).toEqual([
+      ['Comfy MCP', routes.mcp],
+      ['Comfy Agent', routes.agent],
+      ['Comfy CLI', routes.cli],
+      ['Launches', routes.launches],
+      ['Supported Models', routes.models],
+      ['Docs', externalLinks.docs]
+    ])
+  })
+
+  it('opens the Features Docs link in a new tab', () => {
+    render(SiteFooter)
+
+    const docs = within(
+      screen.getByRole('navigation', { name: 'Features' })
+    ).getByRole('link', { name: 'Docs' })
+    expect(docs.getAttribute('target')).toBe('_blank')
   })
 })
