@@ -9,14 +9,8 @@
     "directory": "packages/code-quality"
   },
   "files": [
-    "fallow",
     "fallow.json"
   ],
-  "type": "module",
-  "exports": {
-    "./fallow": "./fallow.json",
-    "./package.json": "./package.json"
-  },
   "publishConfig": {
     "access": "public"
   },

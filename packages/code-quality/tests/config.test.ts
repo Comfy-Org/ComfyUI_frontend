@@ -51,7 +51,7 @@ const test = baseTest.extend<{
       write(
         '.fallowrc.json',
         JSON.stringify({
-          extends: 'npm:@comfyorg/code-quality/fallow',
+          extends: 'npm:@comfyorg/code-quality/fallow.json',
           entry: ['src/main.ts'],
           ...local
         })

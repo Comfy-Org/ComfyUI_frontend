@@ -1,24 +1,22 @@
 # @comfyorg/code-quality
 
-Shared tooling policy for Comfy repositories. The Fallow preset is exposed at
-`@comfyorg/code-quality/fallow`; future tools can have their own subpaths.
-The preset contains no code. Fallow 3.24.1 resolves npm subpaths as literal files,
-so the extensionless `fallow` file uses TOML to extend `fallow.json`. The package
-export points to the same JSON policy for consumers that use Node resolution.
+Shared code quality policy for Comfy repositories. The Fallow preset is a single
+JSON file at `@comfyorg/code-quality/fallow.json`, with no executable code.
+Fallow 3.24.1 resolves this file directly.
 
 ## Usage
 
 Install the preset and the tested CLI version:
 
 ```sh
-npm install --save-dev --save-exact @comfyorg/code-quality@0.0.1 fallow@3.24.1
+pnpm add --save-dev --save-exact @comfyorg/code-quality@0.0.1 fallow@3.24.1
 ```
 
 Add `extends` to the repository's existing `.fallowrc.jsonc`:
 
 ```json
 {
-  "extends": "npm:@comfyorg/code-quality/fallow",
+  "extends": "npm:@comfyorg/code-quality/fallow.json",
   "ignoreDependencies": ["@comfyorg/code-quality"]
 }
 ```
@@ -28,15 +26,25 @@ Add only `@comfyorg/code-quality` to the local `ignoreDependencies` array to
 avoid that false unused-dependency warning. Knip consumers need the same narrow
 exception because Knip does not follow Fallow's `npm:` references.
 
-Each repository owns its `.fallowrc.jsonc`. Keep repository-specific entry
-points, framework roles, exclusions, rule overrides, and export exceptions there.
-Fallow merges the local config over the preset. The shared settings are
-`duplicates.minOccurrences: 3`,
-`audit.gate: "new-only"` (Fallow 3.24.1's default, stated explicitly), and
-`dev-dependencies-in-production: "error"`.
-All other rule severities and thresholds retain Fallow 3.24.1's defaults.
+## Shared policy
+
+This preset starts with the policy already used by Frontend:
+
+- Report duplication from three occurrences, avoiding the default two-copy noise.
+- Fail when production code imports a development dependency.
+- Gate only newly introduced findings so existing debt does not block adoption.
+  This is Fallow 3.24.1's default, kept explicit as shared policy.
+
+The dependency lets repositories adopt reviewed policy changes through one
+package version bump instead of copying settings. It does not add a broader
+rule set or bundle the Fallow CLI. All other severities and thresholds retain
+Fallow 3.24.1's defaults.
 Pin the `fallow` dev dependency and any Fallow CI action to 3.24.1 to keep
 those defaults.
+
+Each repository owns its `.fallowrc.jsonc`. Keep repository-specific entry
+points, framework roles, exclusions, rule overrides, and export exceptions there.
+Fallow merges the local config over the preset.
 
 Baseline paths and contents stay in the consuming repository. The preset does
 not require baseline files.

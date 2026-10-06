@@ -23,7 +23,6 @@ const config: KnipConfig = {
         '!src/__ecs_matrix__/**'
       ],
       ignore: ['scripts/registry-census/detection-proof/**'],
-      // Fallow loads this preset through its native npm: config resolver.
       ignoreDependencies: ['@comfyorg/code-quality']
     },
     'packages/account-core': {

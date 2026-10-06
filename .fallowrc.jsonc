@@ -1,13 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
-  "extends": "npm:@comfyorg/code-quality/fallow",
+  "extends": "npm:@comfyorg/code-quality/fallow.json",
 
-  // Staged adoption: the residual dead-code, complexity, and duplication findings
-  // are inherited legacy (litegraph extension-API members, store members, intra-lib
-  // cycles, the marketing-media file pending page adoption). They are captured in
-  // per-analysis baselines so `fallow audit` fails only on NEWLY introduced issues
-  // in changed files. Baselines are a migration aid, not the desired steady state;
-  // shrink them as the underlying code is cleaned up, then re-save.
+  // The shared preset's new-only gate fails only on introduced findings.
+  // Local baselines track inherited litegraph extension-API and store members,
+  // intra-lib cycles, and marketing media pending adoption. Shrink and re-save
+  // these baselines as that debt is removed.
   "audit": {
     "deadCodeBaseline": ".fallow-baselines/dead-code.json",
     "healthBaseline": ".fallow-baselines/health.json",
