@@ -341,8 +341,7 @@ describe('storageIO', () => {
     it('blocks workflow writes during logout cleanup', async () => {
       const isolatedStorageIO = await import('./storageIO')
 
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
-      isolatedStorageIO.clearAllWorkflowStorage()
+      isolatedStorageIO.signOutWorkflowStorage()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
@@ -422,11 +421,17 @@ describe('storageIO', () => {
         'SecurityError'
       )
       const unregisterFailedFlush =
-        isolatedStorageIO.registerWorkflowPersistenceFlush(() => {
-          throw flushError
+        isolatedStorageIO.registerWorkflowPersistenceOwner({
+          flush: () => {
+            throw flushError
+          },
+          cancel: () => {}
         })
       const unregisterSuccessfulFlush =
-        isolatedStorageIO.registerWorkflowPersistenceFlush(successfulFlush)
+        isolatedStorageIO.registerWorkflowPersistenceOwner({
+          flush: successfulFlush,
+          cancel: () => {}
+        })
 
       expect(() =>
         isolatedStorageIO.prepareWorkflowWorkspaceTransition()
@@ -488,7 +493,7 @@ describe('storageIO', () => {
       isolatedStorageIO.completeWorkflowLogoutTransition()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.signOutWorkflowStorage()
       isolatedStorageIO.completeWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
@@ -498,10 +503,28 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.markStorageUnavailable()
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.signOutWorkflowStorage()
       isolatedStorageIO.completeWorkflowLogoutTransition()
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+    })
+
+    it('broadcasts sign-out intent only after freeing storage, so a full quota cannot block it', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:draft-1', '{}')
+      const writeToStorage = localStorage.setItem.bind(localStorage)
+      const setItemSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => {
+          if (localStorage.length > 0) {
+            throw new DOMException('Quota exceeded', 'QuotaExceededError')
+          }
+          writeToStorage(key, value)
+        })
+
+      isolatedStorageIO.signOutWorkflowStorage()
+
+      expect(setItemSpy).toHaveReturned()
     })
 
     it('does not let a duplicate transition cancel the owner transition', async () => {
