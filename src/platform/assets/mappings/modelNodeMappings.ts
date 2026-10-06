@@ -12,10 +12,13 @@
  * "a/b/c" → "a/b" → "a", so registering a parent directory covers
  * all its children unless a more specific entry exists.
  *
- * Format: [modelDirectory, nodeClass, inputKey]
+ * An optional pattern enables the same picker on repeated inputs. The input
+ * key remains the concrete widget to populate when adding a node from a model.
+ *
+ * Format: [modelDirectory, nodeClass, inputKey, widgetNamePattern?]
  */
 export const MODEL_NODE_MAPPINGS: ReadonlyArray<
-  readonly [string, string, string]
+  readonly [string, string, string, RegExp?]
 > = [
   // Intentionally unmapped (widget values are model ids / HF repo ids, not
   // asset filenames): rmbg, florence2, LLM/Qwen-VL/*, qwen-tts, diffusers
@@ -33,6 +36,18 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['checkpoints', 'ImageOnlyCheckpointLoader', 'ckpt_name'],
   ['loras', 'LoraLoader', 'lora_name'],
   ['loras', 'LoraLoaderModelOnly', 'lora_name'],
+  [
+    'loras',
+    'LoadLoraModel',
+    'loras.0.lora_name',
+    /^loras\.(?:0|[1-9]\d*)\.lora_name$/
+  ],
+  [
+    'loras',
+    'LoadLoraTextEncoder',
+    'loras.0.lora_name',
+    /^loras\.(?:0|[1-9]\d*)\.lora_name$/
+  ],
   ['vae', 'VAELoader', 'vae_name'],
   ['controlnet', 'ControlNetLoader', 'control_net_name'],
   ['diffusion_models', 'UNETLoader', 'unet_name'],
@@ -158,4 +173,4 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
 
   // ---- LTX-Video IC-LoRA (ComfyUI-LTXVideo) ----
   ['loras', 'LTXICLoRALoaderModelOnly', 'lora_name']
-] as const satisfies ReadonlyArray<readonly [string, string, string]>
+] as const satisfies ReadonlyArray<readonly [string, string, string, RegExp?]>

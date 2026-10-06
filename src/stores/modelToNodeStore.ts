@@ -13,9 +13,17 @@ export class ModelNodeProvider {
   /** The node input key for where to insert the model name. */
   public key: string
 
-  constructor(nodeDef: ComfyNodeDefImpl, key: string) {
+  /** Additional widget names that use the same model category. */
+  public widgetNamePattern?: RegExp
+
+  constructor(
+    nodeDef: ComfyNodeDefImpl,
+    key: string,
+    widgetNamePattern?: RegExp
+  ) {
     this.nodeDef = nodeDef
     this.key = key
+    this.widgetNamePattern = widgetNamePattern
   }
 }
 
@@ -25,15 +33,25 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   const nodeDefStore = useNodeDefStore()
   const haveDefaultsLoaded = ref(false)
 
-  /** Internal computed for reactive caching of registered node types */
-  const registeredNodeTypes = computed<Record<string, string>>(() => {
-    return Object.fromEntries(
-      Object.values(modelToNodeMap.value)
-        .filter((providers) => providers !== undefined)
-        .flat()
-        .map((provider) => [provider.nodeDef.name, provider.key])
+  const registeredNodeProviders = computed<Record<string, ModelNodeProvider>>(
+    () => {
+      return Object.fromEntries(
+        Object.values(modelToNodeMap.value)
+          .filter((providers) => providers !== undefined)
+          .flat()
+          .map((provider) => [provider.nodeDef.name, provider])
+      )
+    }
+  )
+
+  const registeredNodeTypes = computed<Record<string, string>>(() =>
+    Object.fromEntries(
+      Object.entries(registeredNodeProviders.value).map(([name, provider]) => [
+        name,
+        provider.key
+      ])
     )
-  })
+  )
 
   /** Internal computed for efficient reverse lookup: nodeType -> category */
   const nodeTypeToCategory = computed(() => {
@@ -54,6 +72,17 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   function getRegisteredNodeTypes(): Record<string, string> {
     registerDefaults()
     return registeredNodeTypes.value
+  }
+
+  function isModelWidget(nodeType: string, widgetName: string): boolean {
+    const key = getRegisteredNodeTypes()[nodeType]
+    return (
+      key === widgetName ||
+      (registeredNodeProviders.value[nodeType]?.widgetNamePattern?.test(
+        widgetName
+      ) ??
+        false)
+    )
   }
 
   /**
@@ -138,10 +167,19 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    * @param nodeClass The node class name to register.
    * @param key The key to use for the node input.
    */
-  function quickRegister(modelType: string, nodeClass: string, key: string) {
+  function quickRegister(
+    modelType: string,
+    nodeClass: string,
+    key: string,
+    widgetNamePattern?: RegExp
+  ) {
     registerNodeProvider(
       modelType,
-      new ModelNodeProvider(nodeDefStore.nodeDefsByName[nodeClass], key)
+      new ModelNodeProvider(
+        nodeDefStore.nodeDefsByName[nodeClass],
+        key,
+        widgetNamePattern
+      )
     )
   }
 
@@ -154,14 +192,20 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     }
     haveDefaultsLoaded.value = true
 
-    for (const [modelType, nodeClass, key] of MODEL_NODE_MAPPINGS) {
-      quickRegister(modelType, nodeClass, key)
+    for (const [
+      modelType,
+      nodeClass,
+      key,
+      widgetNamePattern
+    ] of MODEL_NODE_MAPPINGS) {
+      quickRegister(modelType, nodeClass, key, widgetNamePattern)
     }
   }
 
   return {
     modelToNodeMap,
     getRegisteredNodeTypes,
+    isModelWidget,
     getCategoryForNodeType,
     getNodeProvider,
     getAllNodeProviders,

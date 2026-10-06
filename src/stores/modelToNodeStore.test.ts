@@ -45,6 +45,8 @@ const MOCK_NODE_NAMES = [
   'ImageOnlyCheckpointLoader',
   'LoraLoader',
   'LoraLoaderModelOnly',
+  'LoadLoraModel',
+  'LoadLoraTextEncoder',
   'VAELoader',
   'ControlNetLoader',
   'UNETLoader',
@@ -242,6 +244,36 @@ describe('useModelToNodeStore', () => {
     )
   })
 
+  it('supports repeated model fields registered outside the default mappings', () => {
+    const store = useModelToNodeStore()
+    store.registerNodeProvider(
+      'vae',
+      new ModelNodeProvider(
+        createMockNodeDef('MultiVAE'),
+        'items.0.file',
+        /^items\.\d+\.file$/
+      )
+    )
+
+    expect(store.isModelWidget('MultiVAE', 'items.3.file')).toBe(true)
+    expect(store.isModelWidget('MultiVAE', 'items.3.strength')).toBe(false)
+    expect(store.getCategoryForNodeType('MultiVAE')).toBe('vae')
+    expect(store.getRegisteredNodeTypes().MultiVAE).toBe('items.0.file')
+  })
+
+  it.for(['LoadLoraModel', 'LoadLoraTextEncoder'])(
+    'inserts a model browser selection into the first row of %s',
+    (nodeType) => {
+      const provider = useModelToNodeStore()
+        .getAllNodeProviders('loras')
+        .find(({ nodeDef }) => nodeDef.name === nodeType)
+      expect(provider?.key).toBe('loras.0.lora_name')
+      expect(useModelToNodeStore().getCategoryForNodeType(nodeType)).toBe(
+        'loras'
+      )
+    }
+  )
+
   describe('getAllNodeProviders', () => {
     it('should return all providers for model type with multiple nodes', () => {
       const modelToNodeStore = useModelToNodeStore()
@@ -264,7 +296,7 @@ describe('useModelToNodeStore', () => {
       )
 
       const loraProviders = modelToNodeStore.getAllNodeProviders('loras')
-      expect(loraProviders).toHaveLength(3)
+      expect(loraProviders).toHaveLength(5)
       expect(loraProviders).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
