@@ -17,19 +17,12 @@ import {
 } from '@e2e/fixtures/data/agent/inputOrder'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 
-const SOCKET_SID = '6a80fd06-c647-4b17-9f68-202366e468d8'
-
 export const test = agentTest.extend<{
   inputOrderHost: AgentFollowerHostSocket
 }>({
   inputOrderHost: async ({ page }, use) => {
     const host = new HostDoc(workflowId, structuredClone(seed), catalog)
-    const socket = new AgentFollowerHostSocket(
-      page,
-      workflowId,
-      host,
-      SOCKET_SID
-    )
+    const socket = new AgentFollowerHostSocket(page, workflowId, host)
     await socket.install()
 
     await mockAgentTurnApi(page, {

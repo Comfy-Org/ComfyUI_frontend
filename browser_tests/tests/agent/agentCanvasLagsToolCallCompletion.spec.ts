@@ -20,6 +20,7 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 
 /**
  * Repro for PM-1575 / PM-1576 (stagingcloud, 2026-09): every agent tool call
@@ -85,7 +86,6 @@ const THREAD_ID = 'f0e1d2c3-b4a5-4968-8172-6354a3b2c1d0'
 const MESSAGE_ID = '1e2d3c4b-5a69-4788-9061-52f3e4d5c6b7'
 const ADDED_NODE_ID = 4242
 const NODE_TEXT = 'added while the doc broadcast lags'
-const SOCKET_SID = 'a9b8c7d6-e5f4-4321-8a9b-0c1d2e3f4a5b'
 
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
@@ -152,7 +152,8 @@ async function driveThroughToolCallDone(
       parseServerDocFrame(frame) === null
     )
       throw new Error(`frame ${frame.type} is not a valid doc frame`)
-    if (!socket) throw new Error('the app has not opened /ws yet')
+    if (!socket)
+      throw new Error('the panel has not opened the agent socket yet')
     socket.send(JSON.stringify(frame))
   }
 
@@ -173,17 +174,8 @@ async function driveThroughToolCallDone(
     }
     return route.fulfill(jsonRoute([]))
   })
-  await page.routeWebSocket(/\/ws/, (ws) => {
+  await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
     socket = ws
-    ws.send(
-      JSON.stringify({
-        type: 'status',
-        data: {
-          status: { exec_info: { queue_remaining: 0 } },
-          sid: SOCKET_SID
-        }
-      })
-    )
     ws.onMessage((raw) => {
       const stateVector = subscribeStateVectorOf(raw)
       if (stateVector === null) return

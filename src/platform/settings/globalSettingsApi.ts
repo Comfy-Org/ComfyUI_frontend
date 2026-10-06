@@ -13,6 +13,7 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
+import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 
 export class GlobalSettingsApiError extends Error {
@@ -28,6 +29,21 @@ export class GlobalSettingsApiError extends Error {
 function globalSettingsUrl(key?: GlobalSettingKey): string {
   const path = `/global-settings${key ? `/${encodeURIComponent(key)}` : ''}`
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
+}
+
+/**
+ * The credential the Global Settings endpoint above accepts, chosen with it:
+ * in the cloud the endpoint is ingest, which scopes a setting to the active
+ * workspace; everywhere else it is the Comfy API, which authenticates the user
+ * — their session token or API key — and rejects a workspace token the cloud
+ * minted. Callers take the header from here rather than pick one, so the URL
+ * and its credential can never disagree.
+ */
+export async function getGlobalSettingsAuthHeader(): Promise<AuthHeader | null> {
+  const authStore = useAuthStore()
+  return isCloud
+    ? authStore.getWorkspaceAuthHeader()
+    : authStore.getUserAuthHeader()
 }
 
 async function responseBody(response: Response): Promise<unknown> {

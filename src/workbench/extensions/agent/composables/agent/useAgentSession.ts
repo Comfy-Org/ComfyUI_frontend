@@ -1,5 +1,5 @@
 import { delay } from 'es-toolkit'
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
@@ -75,6 +75,12 @@ interface SentTag {
 export interface WorkflowTurnContext {
   id?: string
   tabPath: string
+  /**
+   * A saved tab the saved-workflow index has not named. Its identity is kept
+   * so the send can refuse it: sent without an id it would be attributed to
+   * whatever workflow the thread used last, i.e. another canvas.
+   */
+  unresolved?: true
 }
 
 /**
@@ -343,6 +349,12 @@ function consumeStopPendingAck() {
   return pending
 }
 
+/**
+ * Firebase ID tokens live an hour; the local agent keeps the newest credential
+ * any request carried, so a running turn re-sends one well inside that window.
+ */
+export const CREDENTIAL_REFRESH_INTERVAL_MS = 4 * 60 * 1000
+
 function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
   const parsed = zAgentAdmissionError.safeParse(error.body)
@@ -434,6 +446,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
     'first_open'
   )
+
+  // A turn can outlive the auth token it started with; while one runs — the
+  // displayed turn or one a thread switch moved to the background — the user's
+  // header is re-presented so the local agent always holds a current
+  // credential. One cheap request every few minutes, unused by the cloud.
+  let refreshTimer: ReturnType<typeof setInterval> | undefined
+  const stopCredentialRefresh = (): void => {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
+  }
+  watch(
+    () => conversationStore.hasUnfinishedTurn,
+    (running) => {
+      stopCredentialRefresh()
+      if (!running) return
+      refreshTimer = setInterval(() => {
+        rest.refreshCredential().catch(() => undefined)
+      }, CREDENTIAL_REFRESH_INTERVAL_MS)
+    },
+    { immediate: true }
+  )
+  onScopeDispose(stopCredentialRefresh, true)
 
   function nextLocalErrorId(): TurnId {
     return toTurnId(`local-error-${createUuidv4()}`)
@@ -815,6 +849,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function recordUnresolvedTarget(text: string): void {
+    conversationStore.recordFailedSend(
+      nextLocalErrorId(),
+      text,
+      i18n.global.t('agent.targetNotResolved')
+    )
+  }
+
   function postTurn(
     threadId: string,
     text: string,
@@ -1095,10 +1137,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (workflowTargetChanged(originContext, wfContext)) {
-        recordUnavailableTarget(text)
-        return false
-      }
+      if (refusesTarget(text, originContext, wfContext)) return false
       sentContext = wfContext
       const ack = await postTurn(
         threadAtSend,
@@ -1126,12 +1165,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  /**
+   * Refuses, with a notice, a turn whose target cannot be attributed after
+   * preparation. Sent without a workflow, the server would fall back to the
+   * thread's previous one and edit a tab the user is not looking at.
+   */
+  function refusesTarget(
+    text: string,
+    origin: WorkflowTurnContext | undefined,
+    current: WorkflowTurnContext | undefined
+  ): boolean {
+    if (workflowTargetChanged(origin, current)) {
+      recordUnavailableTarget(text)
+      return true
+    }
+    // Still unnamed after preparation refreshed the index: the turn has no
+    // workflow to belong to, so it is not sent at all.
+    if (current?.unresolved) {
+      recordUnresolvedTarget(text)
+      return true
+    }
+    return false
+  }
+
+  // A named origin that no longer resolves has closed, whether or not it had
+  // a workflow id yet: an id-less tab closing mid-preparation must not send
+  // with neither a workflow nor the unbound flag.
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
     current: WorkflowTurnContext | undefined
   ): boolean {
-    if (origin?.id === undefined) return false
-    return current?.id !== origin.id
+    if (origin === undefined) return false
+    if (current === undefined) return true
+    return origin.id !== undefined && current.id !== origin.id
   }
 
   async function sendMessage(

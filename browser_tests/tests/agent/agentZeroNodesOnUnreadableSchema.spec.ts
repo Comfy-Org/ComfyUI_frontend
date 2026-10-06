@@ -20,6 +20,7 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 
 /**
  * Regression test for PM-1343: the in-app agent used to report a turn as
@@ -65,7 +66,6 @@ const THREAD_ID = 'c9b6a9c0-9b1a-4b9b-8f0e-1a2b3c4d5e70'
 const MESSAGE_ID = '0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5002'
 const ADDED_NODE_ID = 9002
 const NODE_TEXT = 'added after the schema gate tripped'
-const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e70'
 
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
@@ -99,7 +99,8 @@ test.describe(
           parseServerDocFrame(frame) === null
         )
           throw new Error(`frame ${frame.type} is not a valid doc frame`)
-        if (!socket) throw new Error('the app has not opened /ws yet')
+        if (!socket)
+          throw new Error('the panel has not opened the agent socket yet')
         socket.send(JSON.stringify(frame))
       }
 
@@ -120,17 +121,8 @@ test.describe(
         }
         return route.fulfill(jsonRoute([]))
       })
-      await page.routeWebSocket(/\/ws/, (ws) => {
+      await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
         socket = ws
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: {
-              status: { exec_info: { queue_remaining: 0 } },
-              sid: SOCKET_SID
-            }
-          })
-        )
         ws.onMessage((raw) => {
           const frame: unknown = JSON.parse(raw.toString())
           if (typeof frame !== 'object' || frame === null) return

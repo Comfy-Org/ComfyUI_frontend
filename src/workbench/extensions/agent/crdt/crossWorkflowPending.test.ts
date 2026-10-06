@@ -75,23 +75,6 @@ const devLogState = vi.hoisted(() => ({
   recordDevEvent: vi.fn()
 }))
 
-const apiState = vi.hoisted(() => {
-  const target = new EventTarget()
-  return {
-    target,
-    api: {
-      socket: { readyState: 1, send: vi.fn() },
-      addCustomEventListener: vi.fn(),
-      removeCustomEventListener: vi.fn(),
-      addEventListener: (type: string, listener: EventListener) =>
-        target.addEventListener(type, listener),
-      removeEventListener: vi.fn((type: string, listener: EventListener) =>
-        target.removeEventListener(type, listener)
-      )
-    }
-  }
-})
-
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
     constructor() {
@@ -128,11 +111,11 @@ vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
@@ -149,14 +132,23 @@ function mountFollower(initial: string): {
   workflowId: Ref<string | null>
   enqueue: (operations: GraphOperation[]) => Promise<void>
   status: () => AgentCrdtStatus
+  reconnect: () => void
 } {
+  const agentSocket = createFakeAgentSocket()
   const workflowId = ref<string | null>(initial)
   let enqueue!: (operations: GraphOperation[]) => Promise<void>
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
-      const { enqueueHumanOperations, status } =
-        useAgentCrdtFollower(workflowId)
+      const { enqueueHumanOperations, status } = useAgentCrdtFollower(
+        workflowId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        agentSocket.transport
+      )
       enqueue = async (operations) => {
         enqueueHumanOperations(operations)
         await Promise.resolve()
@@ -167,7 +159,13 @@ function mountFollower(initial: string): {
   })
   const { unmount } = render(host)
   onTestFinished(unmount)
-  return { unmount, workflowId, enqueue, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    enqueue,
+    status: exposedStatus,
+    reconnect: () => agentSocket.open()
+  }
 }
 
 async function switchWorkflow(workflowId: Ref<string | null>, next: string) {
@@ -429,7 +427,7 @@ function ackResubscribe(workflowId: string): void {
  */
 describe('a human edit made while the document connection is down', () => {
   it('does not flush a pending batch on reconnect before the resubscribe ack', async () => {
-    const { enqueue } = mountFollower('wf-a')
+    const { enqueue, reconnect } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
@@ -441,7 +439,7 @@ describe('a human edit made while the document connection is down', () => {
     expect(clientState.sent).toHaveLength(0)
 
     clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    reconnect()
     expect(bridge().reconnect).toHaveBeenCalledOnce()
     expect(clientState.sent).toHaveLength(0)
   })
@@ -466,7 +464,7 @@ describe('a human edit made while the document connection is down', () => {
   })
 
   it('does not resend an acknowledged retry on a later reconnect', async () => {
-    const { enqueue } = mountFollower('wf-a')
+    const { enqueue, reconnect } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
@@ -490,7 +488,7 @@ describe('a human edit made while the document connection is down', () => {
         ops: [expect.objectContaining({ op_id: replayedOperationId })]
       })
     )
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    reconnect()
     ackResubscribe('wf-a')
 
     expect(clientState.sent).toHaveLength(1)

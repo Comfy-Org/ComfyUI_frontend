@@ -37,7 +37,13 @@ const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 // delivered, so intent already equals reality. Retry the subscribe itself
 // with bounded exponential backoff while the desired doc is unchanged.
 const SUBSCRIBE_RETRY_BASE_MS = 500
-const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
+export const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
+
+/**
+ * Why the lifecycle stopped trying: the host refused the document for good,
+ * or every subscribe in the silent budget went unanswered.
+ */
+export type SubscribeGiveUpReason = 'refused' | 'timeout'
 
 // PM-1604 / BE-11437: the doc-host's terminal classifications for a
 // document this build can never read back - unlike every other refusal
@@ -217,7 +223,7 @@ export class AgentCrdtDocLifecycle {
   constructor(
     private readonly workflowId: () => string | null,
     private readonly resubscribe: () => void,
-    private readonly onGaveUp: () => void
+    private readonly onGaveUp: (reason: SubscribeGiveUpReason) => void
   ) {}
 
   readPersistedDocId(): string | null {
@@ -262,6 +268,20 @@ export class AgentCrdtDocLifecycle {
     this.clearStaleProbe()
     this.scheduleSubscribeRetry()
     return false
+  }
+
+  /**
+   * Whether the last refusal was the last word: no retry is scheduled (the
+   * budget is spent, the refusal was permanent, or nothing is bound), so
+   * nothing will answer the intent until the next confirmed subscribe,
+   * reconnect or retarget restores the budget. The composable needs the
+   * distinction because its intent (`status.workflowId`) is what the panel
+   * withholds the draft seed on, and an intent nothing will ever satisfy must
+   * be visible as such. A stale permanent refusal that raced behind a
+   * confirm (see `confirmedSinceLastSend`) answers nothing, so it is not.
+   */
+  refusalIsFinal(): boolean {
+    return !this.confirmedSinceLastSend && this.subscribeRetryTimer === null
   }
 
   stopProbing(): void {
@@ -423,7 +443,7 @@ export class AgentCrdtDocLifecycle {
       level: 'warning',
       tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
     })
-    this.onGaveUp()
+    this.onGaveUp('refused')
     return true
   }
 
@@ -444,7 +464,7 @@ export class AgentCrdtDocLifecycle {
         tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
       }
     )
-    this.onGaveUp()
+    this.onGaveUp('timeout')
   }
 
   private clearSubscribeRetry(): void {

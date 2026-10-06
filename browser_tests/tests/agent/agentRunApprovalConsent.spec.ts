@@ -17,6 +17,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 
 // The consent contract this suite pins (fire-2, PM-1494 / PM-1450, slack-18):
 // a run_approval ask blocks the run on the user's explicit answer. The server
@@ -31,7 +32,6 @@ const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
 const THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
 const MESSAGE_ID = '1e2d3c4b-5a69-4788-9a7b-6c5d4e3f2a1b'
 const ASK_ID = `${MESSAGE_ID}:call-run`
-const SOCKET_SID = '8e2f3a4b-5c6d-4e7f-9a01-2b3c4d5e6f70'
 const CATALOG: WidgetCatalog = { types: {} }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
@@ -119,7 +119,8 @@ async function startTurn(
   const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
   let socket: WebSocketRoute | null = null
   const send = (frame: AgentWsEvent | HostFrame): void => {
-    if (!socket) throw new Error('the app has not opened /ws yet')
+    if (!socket)
+      throw new Error('the panel has not opened the agent socket yet')
     socket.send(JSON.stringify(frame))
   }
   const answerCalls: AnswerCall[] = []
@@ -149,14 +150,8 @@ async function startTurn(
     }
     return route.fulfill(jsonRoute([]))
   })
-  await page.routeWebSocket(/\/ws/, (ws) => {
+  await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
     socket = ws
-    ws.send(
-      JSON.stringify({
-        type: 'status',
-        data: { status: { exec_info: { queue_remaining: 0 } }, sid: SOCKET_SID }
-      })
-    )
     ws.onMessage((raw) => {
       const frame: unknown = JSON.parse(raw.toString())
       if (!isRecord(frame)) return

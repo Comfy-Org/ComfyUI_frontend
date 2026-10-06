@@ -16,6 +16,8 @@ import {
 import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
+import type * as AgentAuth from './agentAuth'
+
 import {
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
@@ -24,7 +26,8 @@ import {
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
-  zCloudWorkflowIndex
+  zCloudWorkflowIndex,
+  zAgentIdentityWire
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerAccepted,
@@ -37,6 +40,21 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
+
+// The auth header module is loaded on first use and shared: the auth store it
+// reads is app state, and a client module that pulled it in at load would
+// drag it into every importer (and every test that only needs the transport).
+// One promise for every request, so concurrent first requests load it once.
+let agentAuth: Promise<typeof AgentAuth> | undefined
+function loadAgentAuth(): Promise<typeof AgentAuth> {
+  // A failed chunk load (a deploy, a network drop) is forgotten, so the next
+  // request retries it instead of every request failing until a reload.
+  agentAuth ??= import('./agentAuth').catch((error: unknown) => {
+    agentAuth = undefined
+    throw error
+  })
+  return agentAuth
+}
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
@@ -67,6 +85,7 @@ const ANSWER_ASK_TIMEOUT_MS = 15_000
 type AgentApiOperation =
   | 'answer_thread_ask'
   | 'cancel_thread_message'
+  | 'get_agent_identity'
   | 'get_cloud_workflow'
   | 'get_run_mode'
   | 'get_thread_messages'
@@ -74,6 +93,7 @@ type AgentApiOperation =
   | 'list_threads'
   | 'post_thread_message'
   | 'put_run_mode'
+  | 'refresh_credential'
   | 'upload_image'
 
 type ReportedAuthScheme = AuthScheme | 'unreported'
@@ -141,6 +161,11 @@ export type OpenTabsSnapshot = Pick<
 export type DraftSnapshot = Required<
   NonNullable<AgentPostMessageRequest['draft']>
 >
+
+export interface AgentIdentity {
+  workspaceId: string
+  userId: string
+}
 
 export interface PostMessageInput {
   content: string
@@ -471,12 +496,16 @@ export function createAgentRestClient() {
     schema: z.ZodType<T>
   ): Promise<T> {
     let authScheme: ReportedAuthScheme = 'unreported'
-    const response = await api.fetchApi(route, {
-      ...init,
-      onAuthScheme: (scheme) => {
-        authScheme = scheme
-      }
-    })
+    const { withAgentAuth } = await loadAgentAuth()
+    const response = await api.fetchApi(
+      route,
+      await withAgentAuth({
+        ...init,
+        onAuthScheme: (scheme: AuthScheme) => {
+          authScheme = scheme
+        }
+      })
+    )
     if (!response.ok) throw await toApiError(response, operation, authScheme)
     let payload: unknown
     try {
@@ -540,6 +569,21 @@ export function createAgentRestClient() {
       zAgentThreads
     )
     return page.threads
+  }
+
+  /**
+   * The identity the agent authenticated this client as. Standalone bootstraps
+   * a fixed local user the panel cannot otherwise see, and every canvas op
+   * must carry that actor or the writer refuses it.
+   */
+  async function getIdentity(): Promise<AgentIdentity> {
+    const wire = await request(
+      'get_agent_identity',
+      '/agent/identity',
+      { method: 'GET' },
+      zAgentIdentityWire
+    )
+    return { workspaceId: wire.workspace_id, userId: wire.user_id }
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -627,6 +671,21 @@ export function createAgentRestClient() {
     )
   }
 
+  /**
+   * Re-presents the user's auth header during a long turn. The local agent
+   * makes its model and CLI calls as the user and reads the credential off
+   * requests, so a turn that outlives the token it started with needs a fresh
+   * one. A one-thread page is the cheapest request every backend answers.
+   */
+  async function refreshCredential(): Promise<void> {
+    await request(
+      'refresh_credential',
+      '/agent/threads?limit=1',
+      { method: 'GET' },
+      zAgentThreads
+    )
+  }
+
   async function uploadImage(
     image: Blob,
     filename: string,
@@ -651,12 +710,14 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getIdentity,
     getRunMode,
     putRunMode,
     listCloudWorkflows,
     getCloudWorkflow,
     cancelMessage,
     answerAsk,
+    refreshCredential,
     uploadImage
   }
 }

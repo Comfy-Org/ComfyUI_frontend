@@ -1,6 +1,5 @@
 vi.mock(import('firebase/auth'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
-import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
@@ -16,11 +15,13 @@ import { useAgentConsentStore } from './agentConsentStore'
 
 const accountApi = vi.hoisted(() => ({
   get: vi.fn(),
-  set: vi.fn()
+  set: vi.fn(),
+  header: vi.fn()
 }))
 vi.mock(import('@/platform/settings/globalSettingsApi'), () => ({
   getGlobalSetting: accountApi.get,
-  setGlobalSetting: accountApi.set
+  setGlobalSetting: accountApi.set,
+  getGlobalSettingsAuthHeader: accountApi.header
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -47,8 +48,8 @@ describe('agentConsentStore', () => {
     useTeamWorkspaceStore().isSwitching = false
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockReset()
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
+    accountApi.header.mockReset()
+    accountApi.header.mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
     accountApi.get.mockReset()
@@ -72,7 +73,7 @@ describe('agentConsentStore', () => {
   })
 
   it('settles a failed check so the entry can offer a retry', async () => {
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValueOnce(null)
+    accountApi.header.mockResolvedValueOnce(null)
     const store = useAgentConsentStore()
     await expect(store.load()).rejects.toThrow('authentication is required')
     expect(store).toMatchObject({ isChecking: false })
@@ -133,9 +134,7 @@ describe('agentConsentStore', () => {
     await store.load()
     await store.accept()
 
-    expect(
-      vi.mocked(useAuthStore().getWorkspaceAuthHeader)
-    ).not.toHaveBeenCalled()
+    expect(accountApi.header).not.toHaveBeenCalled()
     expect(accountApi.get).toHaveBeenCalledWith(
       'Comfy.AgentPanel.ConsentAccepted',
       expect.any(Function)
@@ -293,16 +292,10 @@ describe('agentConsentStore', () => {
 
   it('does not write when workspace scope changes while acquiring a token', async () => {
     const token = deferred<{ Authorization: `Bearer ${string}` }>()
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockReturnValueOnce(
-      token.promise
-    )
+    accountApi.header.mockReturnValueOnce(token.promise)
     const store = useAgentConsentStore()
     const request = store.accept()
-    await vi.waitFor(() =>
-      expect(
-        vi.mocked(useAuthStore().getWorkspaceAuthHeader)
-      ).toHaveBeenCalledOnce()
-    )
+    await vi.waitFor(() => expect(accountApi.header).toHaveBeenCalledOnce())
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     token.resolve({ Authorization: 'Bearer workspace-b-token' })
     await expect(request).resolves.toBe(false)
