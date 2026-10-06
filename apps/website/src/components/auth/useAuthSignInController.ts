@@ -5,44 +5,44 @@
  * state and calls the returned commands; it holds no flow logic of its own.
  */
 import {
-  AUTH_TOAST_SUMMARIES,
   isFirebaseAuthErrorLike,
   severityForAuthError
-} from '@comfyorg/account/firebaseAuthError'
-import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
+} from '@comfyorg/account-core/firebaseAuthError'
+import type { AuthErrorClassification } from '@comfyorg/account-core/firebaseAuthError'
 import { until } from '@vueuse/core'
 import type { UserCredential } from 'firebase/auth'
 import { computed, onBeforeUnmount, onMounted, readonly, ref, watch } from 'vue'
 
-import type { OperationHandle } from '@comfyorg/account/boundedOperation'
-import { useGenerationGuard } from '@comfyorg/account/vue/useGenerationGuard'
-import type { RegionGateStatus } from '@comfyorg/account/vue/regionGate'
-import { useRegionGate } from '@comfyorg/account/vue/regionGate'
-import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
+import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
+import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
+import type { RegionGateStatus } from '@comfyorg/account-ui/auth/regionGate'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import type {
   AuthSignInEvent,
   AuthSignInProvider,
   AuthSignInState
-} from '../../config/auth-sign-in-state'
+} from '@/config/auth-sign-in-state'
 import {
   authSignInTransition,
   signInErrorMessage
-} from '../../config/auth-sign-in-state'
-import { addToast } from '../../config/auth-toast-state'
+} from '@/config/auth-sign-in-state'
+import { addToast } from '@/config/auth-toast-state'
 import {
   isSwitchingAccount,
   requestedReturnPath
-} from '../../config/workshop-return'
-import type { WorkshopSessionUser } from '../../config/workshop-session-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import type { Locale } from '../../i18n/translations'
+} from '@/config/workshop-return'
+import type { WorkshopSessionUser } from '@/config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import {
   captureAuthCompleted,
   captureAuthFailed,
   captureSignupOpened,
   useWorkshopAuthFlag
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import type { AuthMode } from './AuthSignInPanel.vue'
 
 const HOME = '/'
@@ -86,8 +86,9 @@ interface AuthSignInControllerOptions {
 
 export function useAuthSignInController(options: AuthSignInControllerOptions) {
   const { mode, locale, resetTurnstile, onSwitchMode } = options
+  const { t } = translationsFor(locale)
 
-  const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
+  const loadWorkshopFirebase = () => import('@/config/workshop-firebase')
   type WorkshopFirebase = Awaited<ReturnType<typeof loadWorkshopFirebase>>
 
   const enabled = useWorkshopAuthFlag()
@@ -212,7 +213,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     const severity = severityForAuthError(classification)
     addToast({
       severity,
-      summary: AUTH_TOAST_SUMMARIES[locale][severity],
+      summary: t(severity === 'warn' ? 'g.warning' : 'g.error'),
       detail: signInErrorMessage(classification, locale, hostname)
     })
   }
@@ -382,10 +383,17 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   }
 
   function signInWith(provider: 'google' | 'github') {
+    const live = liveWhile(signIn.capture())
+    const options = {
+      onResumed: (credential: Promise<UserCredential>) =>
+        void completeSignIn(provider, () => credential),
+      // An attempt that has not reached Firebase yet still owns the page.
+      keepLateResult: () => live() && !busy.value
+    }
     return completeSignIn(provider, (firebase) =>
       provider === 'google'
-        ? firebase.signInWorkshopWithGoogle()
-        : firebase.signInWorkshopWithGitHub()
+        ? firebase.signInWorkshopWithGoogle(options)
+        : firebase.signInWorkshopWithGitHub(options)
     )
   }
 

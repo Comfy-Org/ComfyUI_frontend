@@ -1,8 +1,8 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   AssetItem,
   AssetResponse
@@ -14,7 +14,6 @@ import {
 import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -22,16 +21,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get supportsModelTypeTags() {
-        return mockSupportsModelTypeTags.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -43,10 +33,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key,
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
 
@@ -215,6 +202,28 @@ describe(assetService.getAssetMetadata, () => {
           encodeURIComponent('https://example.com/foo bar?x=1')
       )
     )
+  })
+})
+
+describe(assetService.getInputAssetsIncludingPublic, () => {
+  beforeEach(() => {
+    assetService.invalidateInputAssetsIncludingPublic()
+  })
+
+  it('keeps hash-only assets whose file_path and display_name are null', async () => {
+    const hashOnlyAsset = validAsset({
+      id: 'hash-only-input',
+      name: 'fe746_photo.png',
+      tags: ['input'],
+      hash: 'blake3:fe746',
+      file_path: null,
+      display_name: null
+    })
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([hashOnlyAsset]))
+
+    const assets = await assetService.getInputAssetsIncludingPublic()
+
+    expect(assets).toEqual([hashOnlyAsset])
   })
 })
 
@@ -398,7 +407,7 @@ describe('assetResponseSchema accepts real API shapes', () => {
 describe(assetService.getAssetModels, () => {
   beforeEach(() => {
     assetService.invalidateModelBuckets()
-    mockSupportsModelTypeTags.value = true
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
   })
 
   it('walks the models tag once, excluding missing assets', async () => {
@@ -447,7 +456,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('buckets by bare tags when model_type tags are unsupported', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -467,7 +476,7 @@ describe(assetService.getAssetModels, () => {
     // The flag arrives asynchronously over the websocket handshake. A first
     // walk before it lands (flag still false) buckets a model_type: tag as a
     // literal folder, so 'checkpoints' comes back empty.
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -481,7 +490,7 @@ describe(assetService.getAssetModels, () => {
 
     // Once the flag lands, the stale cache must be discarded and re-walked so
     // the asset buckets under 'checkpoints' instead of staying invisible.
-    mockSupportsModelTypeTags.value = true
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -600,7 +609,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('groups slashed bare tags by their top-level segment', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -617,7 +626,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('falls back to filename metadata then name on bare-tag backends', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -737,6 +746,111 @@ describe(assetService.getAssetModels, () => {
     expect(diffusion).toEqual([{ name: 'dual_use.safetensors', pathIndex: 0 }])
     // Both folder reads resolve from a single memoized models walk.
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves a legacy hierarchical category from its top-level bucket', async () => {
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'chatglm3',
+          name: 'chatglm3-checkpoint.safetensors',
+          tags: ['models', 'LLM/checkpoints']
+        }),
+        validAsset({
+          id: 'llm-vae',
+          name: 'llm-vae.safetensors',
+          tags: ['models', 'LLM/vae']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('LLM/checkpoints')
+
+    expect(models).toEqual([
+      { name: 'chatglm3-checkpoint.safetensors', pathIndex: 0 }
+    ])
+  })
+
+  it('excludes sibling categories from a hierarchical legacy lookup', async () => {
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'base',
+          name: 'base.safetensors',
+          tags: ['models', 'chatterbox/chatterbox']
+        }),
+        validAsset({
+          id: 'turbo',
+          name: 'turbo.safetensors',
+          tags: ['models', 'chatterbox/chatterbox_turbo']
+        }),
+        validAsset({
+          id: 'nested',
+          name: 'nested.safetensors',
+          tags: ['models', 'chatterbox/chatterbox/gguf']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('chatterbox/chatterbox')
+
+    expect(models).toEqual([
+      { name: 'base.safetensors', pathIndex: 0 },
+      { name: 'nested.safetensors', pathIndex: 0 }
+    ])
+  })
+
+  it.for([
+    {
+      name: 'resolves a covered asset by its bare tag on legacy backends',
+      modelTypeMode: false,
+      tags: ['models', 'model_type:LLM', 'LLM/checkpoints'],
+      expected: [{ name: 'chatglm3.safetensors', pathIndex: 0 }]
+    },
+    {
+      name: 'resolves an uncovered asset on model-type backends',
+      modelTypeMode: true,
+      tags: ['models', 'LLM/checkpoints'],
+      expected: [{ name: 'chatglm3.safetensors', pathIndex: 0 }]
+    },
+    {
+      name: 'keeps covered assets exact on model-type backends',
+      modelTypeMode: true,
+      tags: ['models', 'model_type:LLM', 'LLM/checkpoints'],
+      expected: []
+    }
+  ])(
+    '$name for a hierarchical query',
+    async ({ modelTypeMode, tags, expected }) => {
+      vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = modelTypeMode
+      fetchApiMock.mockResolvedValueOnce(
+        buildAssetListResponse([
+          validAsset({ id: 'chatglm3', name: 'chatglm3.safetensors', tags })
+        ])
+      )
+
+      const models = await assetService.getAssetModels('LLM/checkpoints')
+
+      expect(models).toEqual(expected)
+    }
+  )
+
+  it('does not use legacy parent folders for model-type categories', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'checkpoint',
+          name: 'checkpoint.safetensors',
+          tags: ['models', 'model_type:LLM']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels('LLM/checkpoints')
+
+    expect(models).toEqual([])
   })
 })
 
@@ -1165,7 +1279,4 @@ describe(assetService.getAssetsForNodeType, () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))

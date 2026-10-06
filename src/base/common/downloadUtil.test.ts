@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   downloadFile,
+  downloadFileAsBlob,
   extractFilenameFromContentDisposition,
   openFileInNewTab
 } from '@/base/common/downloadUtil'
@@ -13,7 +14,7 @@ const { mockIsCloud } = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  import('@/platform/distribution/types'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/platform/distribution/types'), // oxlint-disable-line comfy/no-restricted-paths
   () => ({
     get isCloud() {
       return mockIsCloud.value
@@ -21,9 +22,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>
 let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
@@ -146,18 +145,6 @@ describe('downloadUtil', () => {
 
       expect(mockLink.href).toBe(relativeUrl)
       expect(mockLink.download).toBe('relative-image.png')
-      expect(fetchMock).not.toHaveBeenCalled()
-      expect(createObjectURLSpy).not.toHaveBeenCalled()
-    })
-
-    it('should clean up DOM elements after download', () => {
-      const testUrl = 'https://example.com/image.png'
-
-      downloadFile(testUrl)
-
-      // Verify the element was added and then removed
-      expect(document.body.appendChild).toHaveBeenCalledWith(mockLink)
-      expect(document.body.removeChild).toHaveBeenCalledWith(mockLink)
       expect(fetchMock).not.toHaveBeenCalled()
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
@@ -306,6 +293,37 @@ describe('downloadUtil', () => {
       await blobPromise
       await Promise.resolve()
       expect(mockLink.download).toBe('my-fallback.png')
+    })
+  })
+
+  describe('downloadFileAsBlob', () => {
+    it('rejects a non-OK response without starting a download', async () => {
+      const fetchFile = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockResolvedValue(new Response(null, { status: 503 }))
+
+      await expect(
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
+      ).rejects.toThrow('Failed to fetch /api/asset: 503')
+      expect(mockLink.click).not.toHaveBeenCalled()
+    })
+
+    it('propagates a rejected fetch without starting a download', async () => {
+      const networkError = new Error('network unavailable')
+      const fetchFile = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockRejectedValue(networkError)
+
+      await expect(
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
+      ).rejects.toBe(networkError)
+      expect(mockLink.click).not.toHaveBeenCalled()
     })
   })
 

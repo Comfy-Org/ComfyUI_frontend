@@ -16,6 +16,7 @@ import type {
   JobListItem,
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
@@ -23,15 +24,12 @@ import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const BatchCountEditStub = {
   template: '<div data-testid="batch-count-edit" />'
@@ -136,12 +134,7 @@ const missingResourceCases = [
 ]
 
 const stubs = {
-  BatchCountEdit: BatchCountEditStub,
-  DropdownMenuRoot: { template: '<div><slot /></div>' },
-  DropdownMenuTrigger: { template: '<div><slot /></div>' },
-  DropdownMenuPortal: { template: '<div><slot /></div>' },
-  DropdownMenuContent: { template: '<div><slot /></div>' },
-  DropdownMenuItem: { template: '<div><slot /></div>' }
+  BatchCountEdit: BatchCountEditStub
 }
 
 function renderQueueButton(
@@ -244,6 +237,24 @@ describe('ComfyQueueButton', () => {
     await nextTick()
 
     expect(getQueueButtonIcon()).toHaveClass('icon-[lucide--play]')
+  })
+
+  it('selects one queue mode without closing the radio menu', async () => {
+    const { user } = renderQueueButton()
+
+    await user.click(screen.getByTestId('queue-mode-menu-trigger'))
+    await user.click(
+      screen.getByRole('menuitemradio', { name: 'Run (On Change)' })
+    )
+
+    expect(useQueueSettingsStore().mode).toBe('change')
+    expect(screen.getByRole('menu')).toBeVisible()
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'queue_mode_option_run_on_change_selected',
+      element_group: 'queue'
+    })
   })
 
   it('keeps the run instant presentation while idle even with active jobs', async () => {

@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 import {
   WORKSHOP_EMAIL,
@@ -148,7 +149,7 @@ test.describe('Live sign-up error codes and password checklist', () => {
 
     await expect(
       page.getByText(
-        'An account with this email already exists. Try signing in instead.'
+        t('auth.errors.auth/email-already-in-use', {}, { locale: 'en' })
       )
     ).toBeVisible()
     await expect(page).toHaveURL(/\/signup\//)

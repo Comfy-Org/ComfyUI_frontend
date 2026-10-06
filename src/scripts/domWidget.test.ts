@@ -8,13 +8,17 @@ vi.mock(import('@/utils/formatUtil'), () => ({
 }))
 
 describe('DOMWidget Y Position Preservation', () => {
-  test('BaseDOMWidgetImpl createCopyForNode preserves Y position', () => {
+  test('ComponentWidgetImpl createCopyForNode preserves Y position and component wiring', () => {
     const mockNode = new LGraphNode('test-node')
+    const component = { template: '<div></div>' }
+    const inputSpec = { name: 'test', type: 'string' }
+    const props = { placeholder: 'hint' }
     const originalWidget = new ComponentWidgetImpl({
       node: mockNode,
       name: 'test-widget',
-      component: { template: '<div></div>' },
-      inputSpec: { name: 'test', type: 'string' },
+      component,
+      inputSpec,
+      props,
       options: {}
     })
 
@@ -28,6 +32,9 @@ describe('DOMWidget Y Position Preservation', () => {
     expect(clonedWidget.y).toBe(66)
     expect(clonedWidget.node).toBe(newNode)
     expect(clonedWidget.name).toBe('test-widget')
+    expect(clonedWidget.component).toBe(component)
+    expect(clonedWidget.inputSpec).toBe(inputSpec)
+    expect(clonedWidget.props).toBe(props)
   })
 
   test('DOMWidgetImpl createCopyForNode preserves Y position', () => {

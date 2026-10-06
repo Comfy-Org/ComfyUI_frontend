@@ -210,7 +210,7 @@ test.describe(
         await expect(moreButtons.first()).toBeVisible()
         await moreButtons.first().click()
 
-        const menu = comfyPage.page.getByTestId(TestIds.menu.moreMenuContent)
+        const menu = comfyPage.page.getByRole('menu')
         await expect(menu).toBeVisible()
         await expect(menu.getByText('Rename')).toBeVisible()
 

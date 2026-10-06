@@ -11,11 +11,11 @@ import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopSession } from '../../config/workshop-session-state'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { initialsOf, workspaceInitialsOf } from '../../lib/workshop/initials'
-import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { initialsOf, workspaceInitialsOf } from '@/lib/workshop/initials'
+import type { WorkspaceWithRole } from '@/lib/workshop/workspaces'
 import HeaderWorkspaceMenu from './HeaderWorkspaceMenu.vue'
 
 const {
@@ -47,6 +47,7 @@ const {
   accountIdentity?: string | null
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   retry: []
@@ -70,7 +71,7 @@ const workspaceInitials = computed(() =>
 // already carries says enough here, and the plan is one click away in the
 // switcher, where the list is loaded anyway.
 const workspaceRole = computed(() =>
-  t(session.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner', locale)
+  t(session.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner')
 )
 
 const avatarFailed = ref(false)
@@ -141,7 +142,7 @@ const surfaceClass =
           balance is never read as the reader's own. -->
         <div class="bg-site-dropdown pb-3">
           <div
-            class="flex items-center gap-3 p-3"
+            class="flex items-center gap-3 p-4"
             data-testid="account-workspace-current"
           >
             <!-- The mark is the workspace's own colour here, where it stands
@@ -160,7 +161,7 @@ const surfaceClass =
                 {{ session.workspace.name }}
               </span>
               <span
-                class="text-[0.625rem] font-medium text-primary-warm-gray uppercase"
+                class="text-3xs font-medium text-primary-warm-gray uppercase"
               >
                 {{ workspaceRole }}
               </span>
@@ -182,11 +183,11 @@ const surfaceClass =
             role="alert"
             data-testid="account-workspace-switch-error"
           >
-            {{ t('nav.workspaceSwitchError', locale) }}
+            {{ t('nav.workspaceSwitchError') }}
           </p>
 
           <p v-if="balanceError" class="px-4 pb-3 text-xs text-red-400">
-            {{ t('auth.header.balanceError', locale) }}
+            {{ t('auth.header.balanceError') }}
           </p>
 
           <DropdownMenuItem
@@ -197,13 +198,13 @@ const surfaceClass =
           >
             <Coins class="size-4 text-primary-warm-gray" aria-hidden="true" />
             <span class="flex-1 text-left">
-              {{ t('workshop.run.buyCredits', locale) }}
+              {{ t('workshop.run.buyCredits') }}
             </span>
           </DropdownMenuItem>
         </div>
 
         <div
-          class="group/footer flex items-center gap-3 bg-transparency-white-t4 p-4"
+          class="group/footer flex items-center gap-3 bg-transparency-white-t4 px-4 py-2"
           data-testid="account-identity"
         >
           <span
@@ -215,11 +216,16 @@ const surfaceClass =
           <DropdownMenuItem as-child>
             <button
               type="button"
-              :aria-label="t('nav.signOut', locale)"
-              class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-md text-primary-warm-gray transition-colors outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
+              :aria-label="t('nav.signOut')"
+              class="flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-md px-2 text-sm text-primary-warm-gray transition-colors outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
               data-testid="account-sign-out"
               @click="emit('signOut')"
             >
+              <span
+                class="hidden group-focus-within/footer:inline group-hover/footer:inline"
+              >
+                {{ t('nav.signOut') }}
+              </span>
               <LogOut class="size-4" aria-hidden="true" />
             </button>
           </DropdownMenuItem>

@@ -25,6 +25,18 @@ export class SettingDialog extends BaseDialog {
     await this.waitForVisible()
   }
 
+  async openExtensionActions() {
+    await this.category('Extension').click()
+    const button = this.contentArea
+      .getByRole('columnheader')
+      .getByRole('button')
+    await button.click()
+    return button.evaluate((element) => {
+      const { x, y, width, height } = element.getBoundingClientRect()
+      return { x: x + width / 2, y: y + height / 2 }
+    })
+  }
+
   async selectLocale(locale: 'zh' | 'en') {
     await this.open()
     await this.category('Comfy').click()
@@ -64,6 +76,15 @@ export class SettingDialog extends BaseDialog {
    */
   async toggleBooleanSetting(id: string) {
     await this.root.locator(`button[role="switch"][id="${id}"]`).click()
+  }
+
+  async selectSetting(id: string, value: string) {
+    await this.root
+      .locator(`[data-setting-id="${id}"]`)
+      .getByRole('combobox')
+      .click()
+    await this.page.getByRole('option', { name: value, exact: true }).click()
+    await expect.poll(() => this.comfyPage.settings.getSetting(id)).toBe(value)
   }
 
   category(name: string) {

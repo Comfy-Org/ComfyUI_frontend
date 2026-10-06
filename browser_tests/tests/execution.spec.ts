@@ -1,6 +1,6 @@
 import { mergeTests } from '@playwright/test'
 
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -168,4 +168,38 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
       .toBe(VALIDATION_ERROR_MESSAGE)
     await expect(errorOverlay).toBeVisible()
   })
+
+  test(
+    'renders cloud node errors when optional details are omitted',
+    { tag: '@cloud' },
+    async ({ comfyPage, getWebSocket }) => {
+      await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      const jobId = await exec.run()
+      exec.executionStart(jobId)
+      exec.validationError(jobId, VALIDATION_ERROR_NODE_ID, {
+        [VALIDATION_ERROR_NODE_ID]: {
+          class_type: 'PreviewAny',
+          dependent_outputs: [VALIDATION_ERROR_NODE_ID],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: VALIDATION_ERROR_MESSAGE,
+              extra_info: { input_name: 'source' }
+            }
+          ]
+        }
+      })
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await expect(errorOverlay).toContainText(
+        'Preview as Text is missing a required input: source'
+      )
+    }
+  )
 })

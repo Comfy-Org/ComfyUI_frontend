@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import type { DirectoryRow } from '../../utils/eventsDirectory'
+import type { Locale } from '@/i18n/translations'
+import type { DirectoryRow } from '@/utils/eventsDirectory'
 
-import { t } from '../../i18n/translations'
-import { groupRowsByMonth, monthLabel } from '../../utils/eventsDirectory'
+import { translationsFor } from '@/i18n/translations'
+import { groupRowsByMonth, monthLabel } from '@/utils/eventsDirectory'
 import EventsDirectoryRow from './EventsDirectoryRow.vue'
 
 const { rows, locale = 'en' } = defineProps<{
   rows: readonly DirectoryRow[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 // This view has no Figma design (blueprint open question 2): agenda grouped by
 // month with sticky headers was decided at blueprint time, drawn in the list
@@ -28,7 +29,7 @@ const months = computed(() => groupRowsByMonth(rows))
       v-if="months.length === 0"
       class="px-6 py-8 text-sm text-primary-comfy-canvas/70"
     >
-      {{ t('events.directory.empty', locale) }}
+      {{ t('events.directory.empty') }}
     </p>
 
     <template v-else>

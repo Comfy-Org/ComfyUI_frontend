@@ -2,9 +2,9 @@ import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   NodeError,
-  NodeProgressState,
-  PromptResponse
-} from '@/schemas/apiSchema'
+  PromptFailureResponse
+} from '@/platform/remote/comfyui/types'
+import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -112,7 +112,7 @@ export class ExecutionHelper {
   async mockValidationFailure(
     nodeErrors: Record<string, NodeError>
   ): Promise<void> {
-    const response: PromptResponse = {
+    const response: PromptFailureResponse = {
       node_errors: nodeErrors,
       error: {
         type: 'prompt_outputs_failed_validation',
@@ -227,6 +227,28 @@ export class ExecutionHelper {
           node_type: 'Unknown',
           exception_message: message,
           exception_type: 'RuntimeError',
+          traceback: []
+        }
+      })
+    )
+  }
+
+  /** Send `execution_error` WS event carrying cloud validation node errors. */
+  validationError(
+    jobId: string,
+    nodeId: string,
+    nodeErrors: Record<string, NodeError>
+  ): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_error',
+        data: {
+          prompt_id: jobId,
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: 'Unknown',
+          exception_message: JSON.stringify({ node_errors: nodeErrors }),
+          exception_type: 'prompt_outputs_failed_validation',
           traceback: []
         }
       })

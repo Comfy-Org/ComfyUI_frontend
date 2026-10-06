@@ -16,12 +16,13 @@ import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
+import { toError } from '@/utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
@@ -37,6 +38,11 @@ function updateUIWidget(
   audioUIWidget.callback?.(url)
   if (url) audioUIWidget.element.classList.remove('empty-audio-widget')
   else audioUIWidget.element.classList.add('empty-audio-widget')
+}
+
+function appendWidgetValue(widget: IStringWidget, path: string) {
+  const values = widget.options.values
+  if (values && !values.includes(path)) values.push(path)
 }
 
 async function uploadFile(
@@ -58,16 +64,11 @@ async function uploadFile(
     })
 
     if (resp.status === 200) {
-      const data = await resp.json()
+      const data: { name: string; subfolder?: string } = await resp.json()
       // Add the file to the dropdown list and update the widget value
-      let path = data.name
-      if (data.subfolder) path = data.subfolder + '/' + path
+      const path = data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 
-      // @ts-expect-error fixme ts strict error
-      if (!audioWidget.options.values.includes(path)) {
-        // @ts-expect-error fixme ts strict error
-        audioWidget.options.values.push(path)
-      }
+      appendWidgetValue(audioWidget, path)
 
       if (updateNode) {
         const oldValue = audioWidget.value
@@ -87,8 +88,7 @@ async function uploadFile(
       return false
     }
   } catch (error) {
-    // @ts-expect-error fixme ts strict error
-    useToastStore().addAlert(error)
+    useToastStore().addAlert(toError(error).message)
     return false
   }
 }
@@ -101,7 +101,9 @@ app.registerExtension({
     nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
+    const comfyClass = nodeType.prototype.comfyClass
     if (
+      comfyClass &&
       [
         'LoadAudio',
         'SaveAudio',
@@ -109,13 +111,11 @@ app.registerExtension({
         'SaveAudioMP3',
         'SaveAudioOpus',
         'SaveAudioAdvanced'
-      ].includes(
-        // @ts-expect-error fixme ts strict error
-        nodeType.prototype.comfyClass
-      )
+      ].includes(comfyClass)
     ) {
-      // @ts-expect-error fixme ts strict error
-      nodeData.input.required.audioUI = ['AUDIO_UI', {}]
+      const input = (nodeData.input ??= {})
+      const required = (input.required ??= {})
+      required.audioUI = ['AUDIO_UI', {}]
     }
   },
   getCustomWidgets() {
@@ -153,14 +153,16 @@ app.registerExtension({
           }
         }
 
-        audioUIWidget.options.getValue = () =>
-          (useWidgetValueStore().getWidget(
+        audioUIWidget.options.getValue = () => {
+          const value = useWidgetValueStore().getWidget(
             widgetId(
               resolveNodeRootGraphId(node, app.rootGraph.id),
               node.id,
               inputName
             )
-          )?.value as string) ?? ''
+          )?.value
+          return typeof value === 'string' ? value : ''
+        }
         audioUIWidget.options.setValue = (v) => {
           const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
@@ -202,20 +204,20 @@ app.registerExtension({
     _nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
-    if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
-      nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
+    const required: Partial<Record<string, InputSpec>> | undefined =
+      nodeData.input?.required
+    if (required?.audio?.[1]?.audio_upload === true) {
+      required.upload = ['AUDIOUPLOAD', {}]
     }
   },
   getCustomWidgets() {
     return {
       AUDIOUPLOAD(node, inputName: string) {
         // The widget that allows user to select file.
-        // @ts-expect-error fixme ts strict error
-        const audioWidget = node.widgets.find(
+        const audioWidget = node.widgets?.find(
           (w) => w.name === 'audio'
         ) as IStringWidget
-        // @ts-expect-error fixme ts strict error
-        const audioUIWidget = node.widgets.find(
+        const audioUIWidget = node.widgets?.find(
           (w) => w.name === 'audioUI'
         ) as unknown as DOMWidget<HTMLAudioElement, string>
 
@@ -239,13 +241,12 @@ app.registerExtension({
         // Load saved audio file widget values if restoring from workflow
         const onGraphConfigured = node.onGraphConfigured
         node.onGraphConfigured = function () {
-          // @ts-expect-error fixme ts strict error
-          onGraphConfigured?.apply(this, arguments)
+          onGraphConfigured?.call(this)
           onAudioWidgetUpdate()
         }
 
         const handleUpload = async (files: File[]) => {
-          if (!files?.length) return files
+          if (!files.length) return files
 
           if (node.isUploading) {
             useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
@@ -335,6 +336,7 @@ app.registerExtension({
 
         const handleRecordingStartFailure = (error: unknown) => {
           reportError(error, {
+            surface: 'assets',
             errorType: 'failure_starting_audio_recorder',
             tags: {
               failure_kind: 'caught_unexpected',
@@ -349,7 +351,9 @@ app.registerExtension({
           if (mediaRecorder) {
             try {
               mediaRecorder.stop()
-            } catch {}
+            } catch {
+              // A recorder that never started throws on stop; recovery continues.
+            }
           }
           mediaRecorder = null
           useAudioService().stopAllTracks(currentStream)
@@ -488,7 +492,7 @@ app.registerExtension({
             mediaRecorder.stop()
           }
           useAudioService().stopAllTracks(currentStream)
-          if (audioUIWidget.element.src?.startsWith('blob:')) {
+          if (audioUIWidget.element.src.startsWith('blob:')) {
             URL.revokeObjectURL(audioUIWidget.element.src)
           }
           originalOnRemoved?.call(this)

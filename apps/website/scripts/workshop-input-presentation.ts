@@ -1,12 +1,12 @@
 import { z } from 'astro/zod'
 
-import rawPresentation from '../src/data/workshop-input-presentation.json'
-import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
-import { deriveWorkshopFields } from '../src/config/workshop-fields'
-import { workshopInputDefinitionSchema } from '../src/config/workshop-input-definition'
-import type { WorkshopInputDefinition } from '../src/config/workshop-input-definition'
-import { validateWorkshopInput } from '../src/config/workshop-json-schema'
-import { resolveSchemaReference } from '../src/config/workshop-router-openapi'
+import rawPresentation from '@/data/workshop-input-presentation.json'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
+import { deriveWorkshopFields } from '@/config/workshop-fields'
+import { workshopInputDefinitionSchema } from '@/config/workshop-input-definition'
+import type { WorkshopInputDefinition } from '@/config/workshop-input-definition'
+import { validateWorkshopInput } from '@/config/workshop-json-schema'
+import { resolveSchemaReference } from '@/config/workshop-router-openapi'
 
 const jsonObject = z.record(z.string(), z.json())
 const scalar = z.union([z.string(), z.number(), z.boolean()])
@@ -240,6 +240,17 @@ export function curateWorkshopInputs(
       ...(rule.unit ? { unit: rule.unit } : {}),
       ...(rule.optionLabels ? { optionLabels: rule.optionLabels } : {}),
       ...(rule.imageSource ? { imageSource: rule.imageSource } : {}),
+      ...(rule.maxUploadBytes ? { maxUploadBytes: rule.maxUploadBytes } : {}),
+      ...(rule.maxVideoDurationSeconds
+        ? { maxVideoDurationSeconds: rule.maxVideoDurationSeconds }
+        : {}),
+      ...(rule.videoWidthPixels
+        ? { videoWidthPixels: rule.videoWidthPixels }
+        : {}),
+      ...(rule.imageAspectRatio
+        ? { imageAspectRatio: rule.imageAspectRatio }
+        : {}),
+      ...(rule.formConstraint ? { formConstraint: rule.formConstraint } : {}),
       ...(rule.urlUpload ? { urlUpload: rule.urlUpload } : {})
     })
     return [name, effective] as const

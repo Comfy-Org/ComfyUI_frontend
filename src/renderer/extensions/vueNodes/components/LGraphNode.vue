@@ -75,7 +75,9 @@
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
-          hasAnyError && 'ring-4 ring-destructive-background',
+          hasAnyError && 'ring-4',
+          errorSeverity === 'missing' && 'ring-warning-background',
+          errorSeverity === 'error' && 'ring-destructive-background',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
           isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
@@ -145,10 +147,11 @@
         <div
           :class="
             cn(
-              'flex flex-1 flex-col gap-1 bg-component-node-background pt-1 pb-3',
+              'flex flex-1 flex-col bg-component-node-background pt-1 pb-3',
               bodyRoundingClass
             )
           "
+          :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
           :data-testid="`node-body-${nodeData.id}`"
         >
           <NodeSlots :node-data />
@@ -156,10 +159,20 @@
           <NodeWidgets
             v-if="hasRenderableWidgets"
             :node-data
-            :widget-ids="renderedWidgetIds"
+            :processed-widget-model
           />
 
-          <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
+          <div
+            v-if="hasCustomContent"
+            :class="
+              cn(
+                'flex min-h-0 flex-col',
+                nodeMedia?.type === 'image' && hasExpandingWidget
+                  ? 'shrink-0'
+                  : 'flex-1'
+              )
+            "
+          >
             <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
             <NodeContent
               v-for="preview in promotedPreviews"
@@ -184,7 +197,7 @@
     <NodeFooter
       v-if="!isRerouteNode"
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
-      :has-any-error="hasAnyError"
+      :error-severity="errorSeverity"
       :show-errors-tab-enabled="showErrorsTabEnabled"
       :show-advanced-inputs-button="showAdvancedInputsButton"
       :show-advanced-state="!!nodeData.showAdvanced"
@@ -274,6 +287,7 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -284,7 +298,8 @@ import {
   shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
+import { getNodeErrorSeverity } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
+import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import {
   applyLightThemeColor,
   shapeVariantClass
@@ -318,6 +333,10 @@ import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
+import {
+  IMAGE_PREVIEW_HEIGHT_RESERVE,
+  NODE_CONTENT_GAP
+} from './imagePreviewLayout'
 
 const { nodeData } = defineProps<{
   nodeData: NodeState
@@ -351,9 +370,11 @@ const nodeLocatorId = computed(
   () => locatorIdFromState(nodeData, canvasStore.rootGraphId) ?? undefined
 )
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
-const hasAnyError = computed(() =>
-  nodeHasError(nodeData, canvasStore.rootGraphId, lgraphNode.value)
+const errorSeverity = computed(() =>
+  getNodeErrorSeverity(nodeData, canvasStore.rootGraphId, lgraphNode.value)
 )
+
+const hasAnyError = computed(() => errorSeverity.value !== 'none')
 
 const showErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
@@ -399,12 +420,18 @@ onErrorCaptured((error) => {
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
+const imagePreviewGrowth = computed(() =>
+  nodeMedia.value?.type === 'image' && hasExpandingWidget.value
+    ? IMAGE_PREVIEW_HEIGHT_RESERVE
+    : 0
+)
+
 const nodeSizeStyle = computed(() =>
   isCollapsed.value
     ? {}
     : {
         '--node-width': `${size.value.width}px`,
-        '--node-height': `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT}px`
+        '--node-height': `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT + imagePreviewGrowth.value}px`
       }
 )
 
@@ -440,7 +467,7 @@ const handleContextMenu = (event: MouseEvent) => {
   handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
-  showNodeOptions(event)
+  showNodeOptions(event, { nodeId: nodeData.id })
 }
 
 const baseResizeHandleClasses =
@@ -455,7 +482,8 @@ const { startResize } = useNodeResize((result) => {
     node,
     {
       width: Math.max(result.size.width, MIN_NODE_WIDTH),
-      height: removeNodeTitleHeight(result.size.height)
+      height:
+        removeNodeTitleHeight(result.size.height) - imagePreviewGrowth.value
     },
     {
       position: result.position,
@@ -654,6 +682,20 @@ const renderedWidgetIds = computed(() => {
 })
 
 const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
+const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
+  () => nodeData,
+  () => renderedWidgetIds.value
+)
+const processedWidgetModel = computed(() => ({
+  processedWidgets: processedWidgets.value,
+  nodeType: nodeType.value,
+  canSelectInputs: canSelectInputs.value
+}))
+const hasExpandingWidget = computed(() =>
+  processedWidgets.value.some(
+    (widget) => widget.visible && shouldExpand(widget.simplified.type)
+  )
+)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value

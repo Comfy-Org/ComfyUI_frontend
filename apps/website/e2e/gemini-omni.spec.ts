@@ -1,22 +1,22 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
-import { creatorReviews } from '../src/data/creatorReviews'
-import { geminiOmniPage } from '../src/data/geminiOmni'
-import { t } from '../src/i18n/translations'
-import type { ModelLaunchCta } from '../src/templates/model-launch/types'
+import { getRoutes } from '@/config/routes'
+import { creatorReviews } from '@/data/creatorReviews'
+import { geminiOmniPage } from '@/data/geminiOmni'
+import { t } from '@/i18n/translations'
+import type { ModelLaunchCta } from '@/templates/model-launch/types'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/gemini-omni'
 const ZH_PATH = '/zh-CN/gemini-omni'
-const HERO_TITLE = `${t('geminiOmni.hero.titleModel', 'en')}${t('geminiOmni.hero.titleRest', 'en')}`
-const MODELS_HEADING = t('geminiOmni.models.heading', 'en')
-const STEPS_HEADING = t('geminiOmni.steps.heading', 'en')
-const STEPS_CTA = t('geminiOmni.steps.secondaryCta', 'en')
-const REVIEWS_HEADING = t('geminiOmni.reviews.heading', 'en')
-const HIGHLIGHT_CTA = t('geminiOmni.reviews.highlightCta', 'en')
-const COPY_PROMPT = t('modelLaunch.copyPrompt', 'en')
+const HERO_TITLE = `${t('geminiOmni.hero.titleModel', {}, { locale: 'en' })}${t('geminiOmni.hero.titleRest', {}, { locale: 'en' })}`
+const MODELS_HEADING = t('geminiOmni.models.heading', {}, { locale: 'en' })
+const STEPS_HEADING = t('geminiOmni.steps.heading', {}, { locale: 'en' })
+const STEPS_CTA = t('geminiOmni.steps.secondaryCta', {}, { locale: 'en' })
+const REVIEWS_HEADING = t('geminiOmni.reviews.heading', {}, { locale: 'en' })
+const HIGHLIGHT_CTA = t('geminiOmni.reviews.highlightCta', {}, { locale: 'en' })
+const COPY_PROMPT = t('modelLaunch.copyPrompt', {}, { locale: 'en' })
 const MODELS_ROUTE = getRoutes('en').models
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
@@ -74,7 +74,9 @@ test.describe('Gemini Omni page — desktop @smoke', () => {
 
     for (const key of BADGE_KEYS) {
       await expect(
-        heroSection(page).getByText(t(key, 'en'), { exact: true })
+        heroSection(page).getByText(t(key, {}, { locale: 'en' }), {
+          exact: true
+        })
       ).toBeVisible()
     }
   })
@@ -99,8 +101,12 @@ test.describe('Gemini Omni page — link targets', () => {
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: t('ui.breadcrumb', 'en') })
-      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
+      .getByRole('navigation', {
+        name: t('ui.breadcrumb', {}, { locale: 'en' })
+      })
+      .getByRole('link', {
+        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+      })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
@@ -110,14 +116,14 @@ test.describe('Gemini Omni page — link targets', () => {
     const hero = heroSection(page)
 
     const runCta = hero.getByRole('link', {
-      name: t('geminiOmni.hero.primaryCta', 'en')
+      name: t('geminiOmni.hero.primaryCta', {}, { locale: 'en' })
     })
     await expect(runCta).toHaveAttribute('href', HERO_PRIMARY_CTA.href)
     await expect(runCta).toHaveAttribute('href', RUN_TEMPLATE)
     await expect(runCta).toHaveAttribute('target', '_blank')
 
     const secondary = hero.getByRole('link', {
-      name: t('geminiOmni.hero.secondaryCta', 'en')
+      name: t('geminiOmni.hero.secondaryCta', {}, { locale: 'en' })
     })
     await expect(secondary).toHaveAttribute(
       'href',
@@ -248,13 +254,13 @@ test.describe('Gemini Omni — how to direct your shot', () => {
   test('footer links back to this page in both locales', async ({ page }) => {
     const footerLink = page
       .locator('footer')
-      .getByRole('link', { name: t('footer.geminiOmni', 'en') })
+      .getByRole('link', { name: t('footer.geminiOmni', {}, { locale: 'en' }) })
     await expect(footerLink).toHaveAttribute('href', getRoutes('en').geminiOmni)
 
     await page.goto(ZH_PATH)
-    const zhFooterLink = page
-      .locator('footer')
-      .getByRole('link', { name: t('footer.geminiOmni', 'zh-CN') })
+    const zhFooterLink = page.locator('footer').getByRole('link', {
+      name: t('footer.geminiOmni', {}, { locale: 'zh-CN' })
+    })
     await expect(zhFooterLink).toHaveAttribute(
       'href',
       getRoutes('zh-CN').geminiOmni
@@ -289,10 +295,7 @@ test.describe('Gemini Omni — Q&A', () => {
           'script[type="application/ld+json"]'
         )
       )
-      return (
-        scripts.find((s) => (s.textContent ?? '').includes('FAQPage'))
-          ?.textContent ?? null
-      )
+      return scripts.find((s) => s.text.includes('FAQPage'))?.text ?? null
     })
 
     const faq = geminiOmniPage.faq
@@ -325,7 +328,7 @@ test.describe('Gemini Omni page — zh-CN', () => {
 
     const reviews = page.getByRole('heading', {
       level: 2,
-      name: t('geminiOmni.reviews.heading', 'zh-CN')
+      name: t('geminiOmni.reviews.heading', {}, { locale: 'zh-CN' })
     })
     await reviews.scrollIntoViewIfNeeded()
     await expect(reviews).toBeVisible()
@@ -345,7 +348,7 @@ test.describe('Gemini Omni page — mobile @mobile', () => {
 
   test('hero CTA stays within the viewport width', async ({ page }) => {
     const cta = heroSection(page).getByRole('link', {
-      name: t('geminiOmni.hero.primaryCta', 'en')
+      name: t('geminiOmni.hero.primaryCta', {}, { locale: 'en' })
     })
 
     await expect(cta).toBeVisible()

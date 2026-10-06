@@ -1,8 +1,8 @@
 import type { AnchorHTMLAttributes } from 'vue'
 
-import type { getRoutes } from '../../config/routes'
-import type { BillingCycle } from '../../data/pricingPlans'
-import type { LocalizedText, TranslationKey } from '../../i18n/translations'
+import type { getRoutes } from '@/config/routes'
+import type { BillingCycle } from '@/data/pricingPlans'
+import type { LocalizedText, TranslationKey } from '@/i18n/translations'
 
 // Shape of a model-launch landing page (comfy.org/minimax was the first one).
 // To add the next launch page: export one of these from `src/data/<model>.ts`,
@@ -34,6 +34,10 @@ export interface ModelLaunchHero {
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
+  // Overlay pages without videoSrc only: spins the extruded Comfy C above the
+  // copy and shows this image through its body. A flat C stands in until
+  // WebGL is ready and for reduced-motion visitors.
+  logoMaskImageSrc?: string
   // Still shown instead of the video below the 768px breakpoint, so phones
   // never fetch videoSrc. Opt-in: pages that omit it keep playing the video
   // at every viewport size, as they did before this field existed.

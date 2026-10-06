@@ -17,11 +17,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    loadGraphData: vi.fn().mockResolvedValue(undefined)
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -336,6 +332,7 @@ describe('workflowDraftStoreV2', () => {
       expect(ok).toBe(false)
 
       expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
         errorType: 'storage_quota_exhausted',
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },

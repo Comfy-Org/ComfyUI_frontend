@@ -2,15 +2,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { assert, beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   OnboardingTourStepStage,
   OnboardingTourStepMetadata
 } from '@/platform/telemetry/types'
-
-import type { AppMode } from '@/utils/appMode'
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import { TOUR_SEEN_SETTING, registerTour } from './onboardingTours'
@@ -24,27 +21,6 @@ assert.exists(dispatcher)
 const trackOnboardingTour = vi.mocked<
   (stage: OnboardingTourStepStage, metadata: OnboardingTourStepMetadata) => void
 >(dispatcher.trackOnboardingTour)
-
-const appModeMock = vi.hoisted(() => ({ mode: null as Ref<AppMode> | null }))
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { ref, computed } = await import('vue')
-  appModeMock.mode = ref<AppMode>('graph')
-  return {
-    useAppMode: () => ({
-      mode: appModeMock.mode,
-      isAppMode: computed(() => appModeMock.mode?.value === 'app'),
-      isBuilderMode: computed(() =>
-        appModeMock.mode?.value.startsWith('builder:')
-      ),
-      isSelectMode: computed(
-        () =>
-          appModeMock.mode?.value === 'builder:inputs' ||
-          appModeMock.mode?.value === 'builder:outputs'
-      ),
-      setMode: vi.fn()
-    })
-  }
-})
 
 function step(
   name: string,

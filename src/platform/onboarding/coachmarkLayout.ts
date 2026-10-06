@@ -29,6 +29,17 @@ export interface SpotlightRect {
   height: number
 }
 
+export function unionRect(a: DOMRectReadOnly, b: DOMRectReadOnly): DOMRect {
+  const left = Math.min(a.left, b.left)
+  const top = Math.min(a.top, b.top)
+  return new DOMRect(
+    left,
+    top,
+    Math.max(a.right, b.right) - left,
+    Math.max(a.bottom, b.bottom) - top
+  )
+}
+
 export function clampSpotlightRect(
   r: DOMRect,
   pad: number,

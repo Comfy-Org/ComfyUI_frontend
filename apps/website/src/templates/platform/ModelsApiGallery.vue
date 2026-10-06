@@ -2,8 +2,10 @@
 import { useIntervalFn } from '@vueuse/core'
 import { ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import type { GalleryMedia, ModelsGalleryCard } from './modelsGalleryCards'
 import { modelsGalleryCards } from './modelsGalleryCards'
 
@@ -11,6 +13,7 @@ const { locale = 'en', cards = modelsGalleryCards } = defineProps<{
   locale?: Locale
   cards?: ModelsGalleryCard[]
 }>()
+const { t } = translationsFor(locale)
 
 const rotationIndex = ref(0)
 
@@ -27,13 +30,20 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
 <template>
   <section
     class="mx-auto max-w-9xl px-6 pb-16 md:pb-24 lg:px-16"
-    :aria-label="t('platform.modelsGallery.ariaLabel', locale)"
+    :aria-label="t('platform.modelsGallery.ariaLabel')"
   >
-    <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
-      <div
+    <div class="grid grid-cols-2 gap-2 lg:grid-cols-3">
+      <component
+        :is="card.modelId ? 'a' : 'div'"
         v-for="card in cards"
         :key="card.titleKey"
-        class="relative aspect-square overflow-hidden rounded-3xl bg-black/40"
+        :href="card.href"
+        :class="
+          cn(
+            'relative block aspect-square overflow-hidden rounded-3xl bg-black/40',
+            card.modelId && 'cursor-pointer'
+          )
+        "
       >
         <Transition
           enter-active-class="transition-opacity duration-700"
@@ -46,7 +56,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
             :key="activeMedia(card).src"
             :src="activeMedia(card).src"
             :poster="activeMedia(card).posterSrc"
-            :aria-label="t(card.titleKey, locale)"
+            :aria-label="t(card.titleKey)"
             class="absolute inset-0 size-full object-cover"
             autoplay
             loop
@@ -65,7 +75,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
             v-else
             :key="activeMedia(card).src"
             :src="activeMedia(card).src"
-            :alt="t(card.titleKey, locale)"
+            :alt="t(card.titleKey)"
             class="absolute inset-0 size-full object-cover"
             loading="lazy"
             decoding="async"
@@ -93,9 +103,9 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
         <p
           class="absolute bottom-3 left-4 text-base/tight font-medium whitespace-pre-line text-primary-warm-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:bottom-4 lg:text-lg"
         >
-          {{ t(card.titleKey, locale) }}
+          {{ t(card.titleKey) }}
         </p>
-      </div>
+      </component>
     </div>
   </section>
 </template>

@@ -14,13 +14,14 @@
       draggable="true"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
       @contextmenu="handleContextMenu"
+      @pointerdown="handleContextMenu"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
     >
       <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
-      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
+      <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
         <slot name="node" :node="item.value">
           {{ item.value.label }}
         </slot>
@@ -66,6 +67,7 @@
       :style="rowStyle"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
       @contextmenu="clearContextMenuNode"
+      @pointerdown="clearContextMenuNode"
     >
       <i
         v-if="item.hasChildren"
@@ -79,7 +81,7 @@
       <i
         :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
       />
-      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
+      <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}
         </slot>

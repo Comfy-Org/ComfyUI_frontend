@@ -5,13 +5,15 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ButtonVariants } from './button.variants'
-import { buttonVariants } from './button.variants'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
 
 interface Props extends PrimitiveProps {
   variant?: ButtonVariants['variant']
   size?: ButtonVariants['size']
   class?: HTMLAttributes['class']
+  icon?: string
+  indicator?: boolean
   loading?: boolean
   disabled?: boolean
 }
@@ -36,6 +38,14 @@ const {
     <template v-if="loading">
       <span class="sr-only"><slot /></span>
     </template>
-    <slot v-else />
+    <template v-else>
+      <i v-if="icon" :class="cn(icon, 'size-4 shrink-0')" aria-hidden="true" />
+      <slot />
+    </template>
+    <span
+      v-if="indicator"
+      aria-hidden="true"
+      class="pointer-events-none absolute -top-1 -right-1 size-2 rounded-full bg-base-foreground"
+    />
   </Primitive>
 </template>

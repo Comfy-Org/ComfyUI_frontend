@@ -103,6 +103,7 @@ describe('LGraph Serialisation', () => {
         message: 'Graph serialization state mismatch'
       }),
       {
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,
@@ -123,6 +124,22 @@ describe('LGraph Serialisation', () => {
     const serialized = graph.serialize()
 
     expect(serialized.nodes.map(({ title }) => title)).toEqual(['Doubled'])
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
+  test('serialises stored state when a default adapter has a duplicate id', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const impostor = new LGraphNode('Impostor')
+    impostor.id = registered.id
+    graph._nodes.push(impostor)
+
+    expect(graph.serialize().nodes.map(({ title }) => title)).toEqual([
+      'Registered'
+    ])
     expect(mockReportError).not.toHaveBeenCalled()
   })
 
