@@ -30,7 +30,7 @@
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
-    <Table class="rounded-lg border border-border-default">
+    <Table>
       <TableHeader>
         <TableRow>
           <TableHead class="w-12">

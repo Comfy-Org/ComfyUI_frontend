@@ -27,12 +27,18 @@
         @click="onNodeContentClick($event, item.value)"
         @contextmenu="handleContextMenu($event, item.value)"
       >
-        <i
-          :class="
-            cn(item.value.icon, 'tree-explorer-node-icon size-4 shrink-0')
-          "
-          :style="{ color: item.value.iconColor }"
-        />
+        <span class="relative size-4 shrink-0">
+          <i
+            :class="cn(item.value.icon, 'tree-explorer-node-icon size-4')"
+            :style="{ color: item.value.iconColor }"
+          />
+          <span
+            v-if="item.value.iconImage"
+            data-testid="tree-node-icon-image"
+            class="absolute inset-0 rounded-xs bg-cover bg-center"
+            :style="{ backgroundImage: `url(${item.value.iconImage})` }"
+          />
+        </span>
         <div class="flex min-w-0 flex-1 items-center">
           <slot
             v-if="item.value.type === 'folder'"
@@ -164,6 +170,7 @@ const fillNodeInfo = (
     ...node,
     icon: getTreeNodeIcon(node),
     iconColor: node.getIconColor?.(),
+    iconImage: node.getIconImage?.(),
     children,
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,

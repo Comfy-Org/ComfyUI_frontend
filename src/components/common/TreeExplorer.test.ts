@@ -94,6 +94,28 @@ describe('TreeExplorer', () => {
     expect(within(folder).getByText('1')).toBeInTheDocument()
   })
 
+  it('draws an icon image over the node icon', () => {
+    renderHarness({
+      key: 'root',
+      label: 'Root',
+      children: [
+        {
+          key: 'model',
+          label: 'Model',
+          leaf: true,
+          icon: 'pi pi-file',
+          getIconImage: () => '/preview.webp'
+        }
+      ]
+    })
+
+    const row = screen.getByRole('treeitem', { name: 'Model' })
+
+    expect(within(row).getByTestId('tree-node-icon-image')).toHaveStyle({
+      backgroundImage: 'url(/preview.webp)'
+    })
+  })
+
   it('selects a clicked row when the selection is bound', async () => {
     const user = userEvent.setup()
     const selectionKeys = ref<Record<string, boolean>>({})

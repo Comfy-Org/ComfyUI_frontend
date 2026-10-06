@@ -7,7 +7,7 @@
       <Message severity="error">{{ error }}</Message>
     </div>
     <template v-else>
-      <Table class="rounded-lg border border-border-default">
+      <Table>
         <TableHeader>
           <TableRow>
             <TableHead>{{ $t('credits.eventType') }}</TableHead>

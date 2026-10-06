@@ -1,18 +1,6 @@
 <template>
   <div ref="container" class="model-lib-node-container size-full">
-    <TreeExplorerTreeNode :node="node">
-      <template #before-label>
-        <span
-          v-if="modelPreviewUrl"
-          class="relative inline-block h-6 w-0 align-top"
-        >
-          <span
-            class="relative -top-0.5 -left-9 inline-block size-7 bg-cover bg-center align-top"
-            :style="{ backgroundImage: `url(${modelPreviewUrl})` }"
-          />
-        </span>
-      </template>
-    </TreeExplorerTreeNode>
+    <TreeExplorerTreeNode :node="node" />
 
     <teleport v-if="showPreview" to="#model-library-model-preview-container">
       <div class="model-lib-model-preview" :style="modelPreviewStyle">
@@ -30,7 +18,6 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
-import { getModelPreviewUrl } from '@/stores/modelStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
@@ -41,8 +28,6 @@ const { node } = defineProps<{
 
 // Note: The leaf node should always have a model definition on node.data.
 const modelDef = computed<ComfyModelDef>(() => node.data!)
-
-const modelPreviewUrl = computed(() => getModelPreviewUrl(modelDef.value))
 
 const previewRef = ref<InstanceType<typeof ModelPreview> | null>(null)
 const modelPreviewStyle = ref<CSSProperties>({

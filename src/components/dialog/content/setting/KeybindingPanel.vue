@@ -31,10 +31,7 @@
       </div>
     </Teleport>
 
-    <Table
-      data-testid="keybinding-table-container"
-      class="rounded-lg border border-border-default"
-    >
+    <Table data-testid="keybinding-table-container">
       <TableHeader>
         <TableRow>
           <TableSortHead v-model:direction="commandSortDirection">

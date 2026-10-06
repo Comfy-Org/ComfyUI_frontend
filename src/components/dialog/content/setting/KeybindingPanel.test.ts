@@ -5,6 +5,7 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -24,18 +25,12 @@ vi.mock(import('@/composables/useEditKeybindingDialog'), () => ({
 }))
 
 vi.mock(import('@/platform/keybindings/presetService'), () => ({
-  useKeybindingPresetService: () => ({
-    applyPreset: vi.fn(),
-    deletePreset: vi.fn(),
-    exportPreset: vi.fn(),
-    importPreset: vi.fn(),
-    listPresets: vi.fn(async () => []),
-    loadPreset: vi.fn(),
-    promptAndSaveNewPreset: vi.fn(),
-    savePreset: vi.fn(),
-    switchPreset: vi.fn(),
-    switchToDefaultPreset: vi.fn()
-  })
+  useKeybindingPresetService: () =>
+    fromPartial({
+      listPresets: async () => [],
+      loadPreset: async () => null,
+      switchToDefaultPreset: async () => {}
+    })
 }))
 
 function registerCommand(id: string, label: string, keys: string[] = []) {

@@ -161,6 +161,7 @@ import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -277,12 +278,62 @@ const openWorkflowsTree = computed(() =>
   ])
 )
 
+function renamedWorkflowPath(
+  workflow: ComfyWorkflow,
+  type: WorkflowTreeType,
+  newName: string
+) {
+  const fileName = ensureWorkflowSuffix(
+    newName,
+    getWorkflowSuffix(workflow.suffix)
+  )
+  if (type === WorkflowTreeType.Browse) {
+    return `${workflow.directory}/${fileName}`
+  }
+  return ComfyWorkflow.basePath + fileName
+}
+
+function workflowContextMenuItems(workflow: ComfyWorkflow): MenuItem[] {
+  const duplicate: MenuItem = {
+    label: t('g.duplicate'),
+    icon: 'pi pi-file-export',
+    command: () => workflowService.duplicateWorkflow(workflow)
+  }
+  if (isAppMode.value) return [duplicate]
+
+  const insert: MenuItem = {
+    label: t('g.insert'),
+    icon: 'pi pi-file-export',
+    command: () => workflowService.insertWorkflow(workflow)
+  }
+  return [insert, duplicate]
+}
+
+function workflowLeafActions(
+  workflow: ComfyWorkflow,
+  type: WorkflowTreeType
+): Partial<TreeExplorerNode<ComfyWorkflow>> {
+  const actions: Partial<TreeExplorerNode<ComfyWorkflow>> = {
+    contextMenuItems: () => workflowContextMenuItems(workflow),
+    draggable: true,
+    handleRename: (newName: string) =>
+      workflowService.renameWorkflow(
+        workflow,
+        renamedWorkflowPath(workflow, type, newName)
+      )
+  }
+  if (!workflow.isTemporary) {
+    actions.handleDelete = async () => {
+      await workflowService.deleteWorkflow(workflow)
+    }
+  }
+  return actions
+}
+
 const renderTreeNode = (
   node: TreeNode<ComfyWorkflow>,
   type: WorkflowTreeType
 ): TreeExplorerNode<ComfyWorkflow> => {
-  const children = node.children?.map((child) => renderTreeNode(child, type))
-
   const workflow = node.data
 
   async function handleClick(
@@ -296,62 +347,15 @@ const renderTreeNode = (
     }
   }
 
-  const actions =
-    node.leaf && workflow
-      ? {
-          handleClick,
-          async handleRename(newName: string) {
-            const suffix = getWorkflowSuffix(workflow.suffix)
-            const newPath =
-              type === WorkflowTreeType.Browse
-                ? workflow.directory +
-                  '/' +
-                  ensureWorkflowSuffix(newName, suffix)
-                : ComfyWorkflow.basePath + ensureWorkflowSuffix(newName, suffix)
-
-            await workflowService.renameWorkflow(workflow, newPath)
-          },
-          handleDelete: workflow.isTemporary
-            ? undefined
-            : async function () {
-                await workflowService.deleteWorkflow(workflow)
-              },
-          contextMenuItems() {
-            return [
-              ...(isAppMode.value
-                ? []
-                : [
-                    {
-                      label: t('g.insert'),
-                      icon: 'pi pi-file-export',
-                      command: async () => {
-                        await workflowService.insertWorkflow(workflow)
-                      }
-                    }
-                  ]),
-              {
-                label: t('g.duplicate'),
-                icon: 'pi pi-file-export',
-                command: async () => {
-                  await workflowService.duplicateWorkflow(workflow)
-                }
-              }
-            ]
-          },
-          draggable: true
-        }
-      : { handleClick }
-
-  const label = node.leaf ? getFilenameDetails(node.label).filename : node.label
-
   return {
     key: node.key,
-    label,
-    leaf: node.leaf,
+    label: node.leaf ? getFilenameDetails(node.label).filename : node.label,
+    children: node.children?.map((child) => renderTreeNode(child, type)),
+    data: workflow,
+    handleClick,
     icon: node.leaf && hideLeafIcon ? 'hidden' : undefined,
-    data: node.data,
-    children,
-    ...actions
+    leaf: node.leaf,
+    ...(node.leaf && workflow ? workflowLeafActions(workflow, type) : {})
   }
 }
 

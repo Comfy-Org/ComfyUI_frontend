@@ -40,6 +40,7 @@ export interface TreeExplorerNode<T = unknown> extends TreeNode<T> {
    */
   getIcon?: (this: TreeExplorerNode<T>) => string | undefined
   getIconColor?: (this: TreeExplorerNode<T>) => string | undefined
+  getIconImage?: (this: TreeExplorerNode<T>) => string | undefined
   /** Function to handle adding a folder */
   handleAddFolder?: (
     this: TreeExplorerNode<T>,
@@ -81,6 +82,7 @@ export interface RenderedTreeExplorerNode<
   /** Text to display on the leaf-count badge. Empty string means no badge. */
   badgeText?: string
   iconColor?: string
+  iconImage?: string
   /** Whether the node label is currently being edited */
   isEditingLabel?: boolean
 }

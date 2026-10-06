@@ -82,7 +82,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
-import { ModelFolder, ResourceState, useModelStore } from '@/stores/modelStore'
+import {
+  ModelFolder,
+  ResourceState,
+  getModelPreviewUrl,
+  useModelStore
+} from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import { isDesktop } from '@/platform/distribution/types'
@@ -203,6 +208,9 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
             : 'pi pi-folder'
         }
         return 'pi pi-folder'
+      },
+      getIconImage() {
+        return (model && getModelPreviewUrl(model)) || undefined
       },
       getBadgeText() {
         // Return undefined to apply default badge text
