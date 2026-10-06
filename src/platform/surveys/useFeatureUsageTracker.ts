@@ -23,6 +23,7 @@ const STORAGE_KEY = 'Comfy.FeatureUsage'
 const MAX_USAGE_COUNT = Number.MAX_SAFE_INTEGER - 1
 const resetVersions = new Map<string, number>()
 const pendingResets = reactive(new Set<string>())
+const pendingResetUsage = new Map<string, FeatureUsage | undefined>()
 const reportedErrorTypes = new Set<string>()
 const pendingUsageData = shallowRef<PendingFeatureUsageRecord>({})
 
@@ -30,6 +31,7 @@ export function resetFeatureUsageTrackerStateForTest() {
   if (import.meta.env.MODE !== 'test') return
   resetVersions.clear()
   pendingResets.clear()
+  pendingResetUsage.clear()
   reportedErrorTypes.clear()
   pendingUsageData.value = {}
 }
@@ -101,14 +103,40 @@ function reconcileExternalStorage(event: StorageEvent) {
   if (event.storageArea !== storageArea) return
   if (event.key === null) {
     pendingResets.clear()
+    pendingResetUsage.clear()
     pendingUsageData.value = {}
     return
   }
   if (event.key !== STORAGE_KEY) return
+  if (event.newValue === null) {
+    pendingResets.clear()
+    pendingResetUsage.clear()
+    pendingUsageData.value = {}
+    return
+  }
 
+  const oldUsageData = parseUsageData(event.oldValue)
   const storedUsageData = parseUsageData(event.newValue)
+  pendingUsageData.value = Object.fromEntries(
+    Object.entries(pendingUsageData.value).filter(([featureId]) => {
+      const existed = usageFor(oldUsageData, featureId)
+      const exists = usageFor(storedUsageData, featureId)
+      return !existed || exists
+    })
+  )
   for (const featureId of pendingResets) {
-    if (usageFor(storedUsageData, featureId)) pendingResets.delete(featureId)
+    const baseline =
+      usageFor(oldUsageData, featureId) ?? pendingResetUsage.get(featureId)
+    const storedUsage = usageFor(storedUsageData, featureId)
+    const usageAdvanced =
+      storedUsage &&
+      (!baseline ||
+        storedUsage.useCount > baseline.useCount ||
+        storedUsage.lastUsed > baseline.lastUsed)
+    if (!storedUsage || usageAdvanced) {
+      pendingResets.delete(featureId)
+      pendingResetUsage.delete(featureId)
+    }
   }
 }
 
@@ -200,7 +228,7 @@ function recordPendingUsage(
         MAX_USAGE_COUNT
       ),
       firstUsed: pendingUsage?.firstUsed ?? usage.firstUsed,
-      lastUsed: now
+      lastUsed: Math.max(pendingUsage?.lastUsed ?? now, now)
     }
   }
 }
@@ -253,6 +281,7 @@ function persistUsageData(
     localStorage.setItem(STORAGE_KEY, newValue)
     storageWritten = true
     pendingResets.clear()
+    pendingResetUsage.clear()
     pendingUsageData.value = {}
   } catch (error) {
     reportStorageError(error, 'error_persisting_feature_usage')
@@ -266,26 +295,29 @@ function persistUsageData(
   return { storageWritten, usageData }
 }
 
-function resetUsageData(currentUsageData: FeatureUsageRecord) {
+function resetUsageData(featureId: string) {
   let oldValue: string | null = null
-  let usageData = applyPendingUsage(applyPendingResets(currentUsageData))
-  let newValue: string | undefined
+  let usageData: FeatureUsageRecord = {}
+  let newValue = ''
   let storageWritten = false
 
   try {
     oldValue = localStorage.getItem(STORAGE_KEY)
-    usageData = applyPendingUsage(applyPendingResets(parseUsageData(oldValue)))
+    const storedUsageData = parseUsageData(oldValue)
+    pendingResetUsage.set(featureId, usageFor(storedUsageData, featureId))
+    usageData = applyPendingUsage(applyPendingResets(storedUsageData))
     newValue = JSON.stringify(usageData)
     localStorage.setItem(STORAGE_KEY, newValue)
     storageWritten = true
     pendingResets.clear()
+    pendingResetUsage.clear()
     pendingUsageData.value = {}
   } catch (error) {
     reportStorageError(error, 'error_resetting_feature_usage')
   }
 
   if (storageWritten) {
-    dispatchStorageUpdate(oldValue, newValue ?? JSON.stringify(usageData))
+    dispatchStorageUpdate(oldValue, newValue)
   }
   return { storageWritten, usageData }
 }
@@ -330,8 +362,9 @@ export function useFeatureUsageTracker(featureId: string) {
     resetVersions.set(featureId, resetVersion)
     observedResetVersions.set(featureId, resetVersion)
     pendingResets.add(featureId)
+    pendingResetUsage.set(featureId, usageFor(currentUsageData, featureId))
     pendingUsageData.value = withoutFeature(pendingUsageData.value, featureId)
-    const persisted = resetUsageData(currentUsageData)
+    const persisted = resetUsageData(featureId)
     if (persisted.storageWritten) usageData.value = persisted.usageData
   }
 
