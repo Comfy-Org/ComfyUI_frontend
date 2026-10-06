@@ -37,6 +37,7 @@ import {
 } from '@/utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '@/utils/jsonLd'
 import JsonLdGraph from '@/components/common/JsonLdGraph.astro'
+import LocaleCatalogPreloads from '@/components/common/LocaleCatalogPreloads.astro'
 
 type PPFormulaFace =
   'Light' | 'Regular' | 'Medium' | 'Semibold' | 'Bold' | 'NarrowSemibold'
@@ -148,6 +149,7 @@ const structuredData = head.emitStructuredData
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <LocaleCatalogPreloads locale={locale} />
     <meta name="description" content={description} />
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
     {head.robotsNoindex && <meta name="robots" content="noindex, nofollow" />}
