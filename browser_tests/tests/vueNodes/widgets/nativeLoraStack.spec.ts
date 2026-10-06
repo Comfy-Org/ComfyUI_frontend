@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
+import { NATIVE_LORA_ASSETS } from '@e2e/fixtures/data/nativeLoraAssets'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getConnectedInputs } from '@e2e/fixtures/utils/nodeInputLinks'
 import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
@@ -18,6 +20,140 @@ test.describe(
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
       await comfyPage.canvasOps.resetView()
+    })
+
+    test.describe('node creation and model drops', () => {
+      test.use({
+        initialSettings: { 'Comfy.ModelLibrary.UseAssetBrowser': false }
+      })
+
+      for (const title of ['Load LoRA (Model)', 'Load LoRA (Text Encoder)']) {
+        test(`opens asset popovers on a new ${title} node and its added row`, async ({
+          comfyPage
+        }) => {
+          await comfyPage.nodeOps.clearGraph()
+          const id = await comfyPage.searchBoxV2.addNodeAndGetId(title)
+          const node = comfyPage.vueNodes.getNodeLocator(id)
+          const first = new WidgetSelectDropdownFixture(
+            node.getByRole('group', { name: 'LoRA #1', exact: true })
+          )
+          await first.selectOption('B.safetensors')
+          await node.getByRole('button', { name: 'Add LoRA' }).click()
+          const second = new WidgetSelectDropdownFixture(
+            node.getByRole('group', { name: 'LoRA #2', exact: true })
+          )
+          await second.open()
+          const popover = comfyPage.page.getByTestId(
+            TestIds.widgets.formDropdownMenu
+          )
+          await expect(popover).toBeVisible()
+          await expect(
+            popover.getByText('A.safetensors', { exact: true })
+          ).toBeVisible()
+          await expect(
+            popover.getByText('B.safetensors', { exact: true })
+          ).toBeVisible()
+          await popover.getByText('C.safetensors', { exact: true }).click()
+          await expect(popover).toBeHidden()
+          await expect(first.selection).toHaveText('B.safetensors')
+          await expect(second.selection).toHaveText('C.safetensors')
+          const ref = await comfyPage.nodeOps.getNodeRefById(id)
+          expect(
+            await (await ref.getWidgetByName('loras.0.lora_name')).getValue()
+          ).toBe('native-lora-e2e/B.safetensors')
+          expect(
+            await (await ref.getWidgetByName('loras.1.lora_name')).getValue()
+          ).toBe('native-lora-e2e/C.safetensors')
+        })
+      }
+
+      test('previews and places the default LoRA loader with the selected asset', async ({
+        comfyPage
+      }) => {
+        await comfyPage.nodeOps.clearGraph()
+        await comfyPage.command.executeCommand('Comfy.BrowseModelAssets')
+        const modal = comfyPage.page.locator(
+          '[data-component-id="AssetBrowserModal"]'
+        )
+        await expect(modal).toBeVisible()
+        const card = modal.locator(
+          `[data-component-id="AssetCard"][data-asset-id="${NATIVE_LORA_ASSETS[1].id}"]`
+        )
+        await card.getByRole('button', { name: 'Use' }).click()
+        await expect(modal).toBeHidden()
+        const preview = comfyPage.page.locator(
+          '[data-node-id="preview-LoraLoader"]'
+        )
+        await expect(preview).toBeVisible()
+        await expect(preview).toContainText('B.safetensors')
+        expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        const box = (await comfyPage.canvas.boundingBox())!
+        await comfyPage.canvas.click({
+          position: { x: box.width / 2, y: box.height / 2 }
+        })
+        await expect(preview).toBeHidden()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        const [loader] = await comfyPage.nodeOps.getNodeRefsByType('LoraLoader')
+        expect(
+          await (await loader.getWidgetByName('lora_name')).getValue()
+        ).toBe('native-lora-e2e/B.safetensors')
+      })
+
+      test('drops a model onto only the first matching native row and executes it', async ({
+        comfyPage,
+        lora
+      }) => {
+        await lora.populate()
+        const before = await comfyPage.workflow.getExportedWorkflow({
+          api: true
+        })
+        const tab = comfyPage.menu.modelLibraryTab
+        await tab.open()
+        await tab.getFolderRowByLabel('loras').click()
+        await tab.getFolderRowByLabel('native-lora-e2e').click()
+        await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+        await comfyPage.canvasOps.waitForViewToSettle()
+        await tab.getLeafByLabel('C').dragTo(lora.row(2))
+        await comfyPage.nextFrame()
+        await lora.expectNames([
+          'C.safetensors',
+          'B.safetensors',
+          'C.safetensors'
+        ])
+        const after = await comfyPage.workflow.getExportedWorkflow({
+          api: true
+        })
+        expect(after).toEqual({
+          ...before,
+          '1': {
+            ...before['1'],
+            inputs: {
+              ...before['1'].inputs,
+              'loras.0.lora_name': 'native-lora-e2e/C.safetensors'
+            }
+          }
+        })
+        await lora.execute('9.000')
+      })
+
+      test('creates a loader when a model is dragged onto empty canvas', async ({
+        comfyPage
+      }) => {
+        await comfyPage.nodeOps.clearGraph()
+        const tab = comfyPage.menu.modelLibraryTab
+        await tab.open()
+        await tab.getFolderRowByLabel('loras').click()
+        await tab.getFolderRowByLabel('native-lora-e2e').click()
+        const box = (await comfyPage.canvas.boundingBox())!
+        await tab.getLeafByLabel('C').dragTo(comfyPage.canvas, {
+          targetPosition: { x: box.width / 2, y: box.height / 2 }
+        })
+        await comfyPage.nextFrame()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        const [loader] = await comfyPage.nodeOps.getNodeRefsByType('LoraLoader')
+        const filename = await loader.getWidgetByName('lora_name')
+        expect(await filename.getValue()).toBe('native-lora-e2e/C.safetensors')
+      })
     })
 
     test('selects an asset and executes the minimum row through the native model loader', async ({
