@@ -28,7 +28,16 @@ if [[ "$actual_playwright" != "$image_playwright" ]]; then
   exit 1
 fi
 
+test ! -w "$(command -v node)"
 node --version
+node <<'JS'
+const assert = require('node:assert/strict')
+const { satisfies } = require('semver')
+const { engines } = require('./package.json')
+assert(satisfies(process.versions.node, engines.node),
+  `Node ${process.versions.node} does not satisfy ${engines.node}`)
+JS
+corepack --version
 python3 --version
 python3 -c 'from importlib.metadata import distributions; print("\n".join(sorted(f"{d.name}=={d.version}" for d in distributions())))'
 cp -R tools/devtools/. /ComfyUI/custom_nodes/ComfyUI_devtools/

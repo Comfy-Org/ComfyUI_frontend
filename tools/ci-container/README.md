@@ -31,8 +31,9 @@ bash tools/ci-container/validate.sh
 
 Pass another local image tag as the script's first argument to test it.
 The script runs without external network access or a root-user override. It
-checks writable runtime directories, Playwright version compatibility, CPU
-quantization, node registration, and served template and documentation bytes.
+checks writable runtime directories, Node engine and Playwright version
+compatibility, CPU quantization, node registration, and served template and
+documentation bytes.
 Both the checkout frontend and the bundled fallback frontend must work.
 Firefox and WebKit open the checkout frontend. The existing
 `setupApiUrl.spec.ts` exercises the real devtools settings endpoint in Chromium.
@@ -47,9 +48,16 @@ log in to a registry.
 ## Runtime contract
 
 The Dockerfile pins ComfyUI and Playwright. It supplies Python 3.12, CPU
-PyTorch, Node 26 through fnm, Corepack, fonts, and `wait-for-it`.
+PyTorch, Node 26.10.0, Corepack, fonts, and `wait-for-it`.
 ComfyUI lives at `/ComfyUI`, the Python environment at `/opt/venv`, and the
 default working directory is `/app`. The image runs as `pwuser`.
+
+Node installs directly from the official release archive, verified against
+committed SHA-256 checksums for amd64 and arm64 before extraction. Update
+`NODE_VERSION` and both checksums together using the release's
+[SHASUMS256.txt](https://nodejs.org/dist/v26.10.0/SHASUMS256.txt).
+The image has no version manager. GitHub jobs use `actions/setup-node` with
+`.nvmrc`; offline runs use the image's pinned Node.
 
 CI consumers provide the checkout's frontend build through `--front-end-root`.
 The local E2E launcher uses the bundled frontend instead. Consumers copy or
@@ -60,7 +68,7 @@ The image does not bake in the checkout frontend or devtools.
 
 The optimized image measured 1.93 GB of compressed OCI layers, down from
 3.04 GB for the unchanged import. Uncompressed layers fell from 7.87 GB to
-4.94 GB. Docker's containerd image store reported 10.91 GB and 6.87 GB
+4.93 GB. Docker's containerd image store reported 10.91 GB and 6.85 GB
 respectively because it stores both representations. These are local Linux
 amd64 measurements, not registry download measurements.
 

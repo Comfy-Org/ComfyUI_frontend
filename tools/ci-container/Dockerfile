@@ -24,21 +24,25 @@ RUN rm -rf /ComfyUI/.git && \
 # Stage 2: Final image with Playwright
 FROM mcr.microsoft.com/playwright:v1.63.0-noble
 
-# Install fonts to match GitHub Actions runner (curl/unzip needed by the fnm installer)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      ca-certificates curl unzip zstd \
+      ca-certificates curl zstd \
       fonts-dejavu-core fonts-noto-core fonts-noto-cjk fonts-ubuntu && \
     rm -rf /var/lib/apt/lists/*
 
-# Node follows the caller's .nvmrc via fnm (26 pre-installed as the offline
-# default; .nvmrc wins at runtime via `fnm use`). Corepack manages pnpm from the
-# repo's packageManager field. Node 26 no longer bundles Corepack, so install it.
-ENV FNM_DIR=/opt/fnm PATH="/opt/fnm/aliases/default/bin:$PATH"
-RUN curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir /usr/local/bin --skip-shell \
- && fnm install 26 && fnm default 26 \
- && npm i -g corepack@latest && corepack enable \
- && chmod -R a+w /opt/fnm
+ARG NODE_VERSION=26.10.0
+RUN case "$(dpkg --print-architecture)" in \
+      amd64) arch=x64; sha256=cb5c9ce9c80d7b8821e3a258543c71b939138cf17c74d5cc44bbe85d6dbc5ad8 ;; \
+      arm64) arch=arm64; sha256=423a41bff8e2a2fa15e702fefe2919ef95823b2378744daccb8439302534b44f ;; \
+      *) echo 'Unsupported Node architecture' >&2; exit 1 ;; \
+    esac && \
+    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${arch}.tar.gz" \
+      -o /tmp/node.tar.gz && \
+    echo "${sha256}  /tmp/node.tar.gz" > /tmp/node.sha256 && \
+    sha256sum --check --strict /tmp/node.sha256 && \
+    tar -xzf /tmp/node.tar.gz -C /usr/local --strip-components=1 --no-same-owner && \
+    rm /tmp/node.tar.gz /tmp/node.sha256 && \
+    npm i -g corepack@latest && corepack enable
 
 # Copy venv and ComfyUI from builder
 COPY --from=builder --chown=pwuser:pwuser /opt/venv /opt/venv
