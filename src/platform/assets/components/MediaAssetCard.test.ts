@@ -11,6 +11,8 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 
 vi.mock(import('../composables/useMediaAssetActions'))
@@ -298,6 +300,35 @@ describe('MediaAssetCard', () => {
       expect(emitted().select).toHaveLength(1)
     }
   )
+
+  it('names the web-session workspace on a video preview served by the assets API', async () => {
+    const release = provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ workspaceId: () => 'ws-1' })
+    )
+    try {
+      const { container } = renderCard({
+        loading: false,
+        asset: {
+          ...asset,
+          name: 'clip.mp4',
+          preview_url: '/api/assets/clip-id/content'
+        }
+      })
+      const video = await vi.waitFor(() => {
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+        const element = container.querySelector('video')
+        expect(element).toBeInTheDocument()
+        return element!
+      })
+
+      expect(video).toHaveAttribute(
+        'src',
+        '/api/assets/clip-id/content?workspace_id=ws-1'
+      )
+    } finally {
+      release()
+    }
+  })
 
   it('disables native controls for compact video cards', async () => {
     const user = userEvent.setup()

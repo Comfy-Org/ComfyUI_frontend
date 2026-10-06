@@ -81,6 +81,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -139,9 +140,8 @@ function isVideoAsset(asset: AssetItem): boolean {
 
 function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
-  if (mediaType === 'image' || mediaType === 'video') {
-    return asset.preview_url || ''
-  }
+  if (mediaType === 'video') return resolveMediaSrc(asset.preview_url)
+  if (mediaType === 'image') return asset.preview_url || ''
   return ''
 }
 

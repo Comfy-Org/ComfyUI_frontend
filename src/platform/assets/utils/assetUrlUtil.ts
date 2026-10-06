@@ -3,6 +3,7 @@
  */
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { api } from '@/scripts/api'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import type { AssetItem } from '../schemas/assetSchema'
@@ -89,4 +90,22 @@ export function getAssetFileUrl(
     return api.apiURL(`/assets/${getAssetContentId(asset)}/content${query}`)
   }
   return asset.preview_url || getAssetUrl(asset)
+}
+
+/**
+ * Prepares a server-supplied media URL (e.g. `thumbnail_url`/`preview_url`)
+ * for a `<video>`/`<audio>` `src`, which sends cookies but no headers.
+ *
+ * Root-relative media routes go through `api.apiURL` so a web session names
+ * its workspace on them. Anything else is returned as is: absolute, signed
+ * external, `blob:` and `data:` URLs, protocol-relative URLs and non-media
+ * routes.
+ *
+ * @param url The URL the server supplied, if any
+ * @returns The URL to load, or an empty string when there is none
+ */
+export function resolveMediaSrc(url: string | undefined): string {
+  if (!url) return ''
+  if (!url.startsWith('/') || url.startsWith('//')) return url
+  return isMediaRoute(url) ? api.apiURL(url) : url
 }
