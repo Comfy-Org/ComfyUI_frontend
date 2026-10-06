@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { auditMediaLabels, auditModelPage } from './models-html-audit'
+import {
+  auditMediaLabels,
+  auditModelDefinition,
+  auditModelPage
+} from './models-html-audit'
 
 const showcase = '<h1>Grok Imagine in <span>ComfyUI</span></h1>'
 const related = (cards: string) =>
@@ -48,6 +52,56 @@ describe(auditModelPage, () => {
         'Grok Imagine & Video'
       )
     ).toEqual([])
+  })
+})
+
+describe(auditModelDefinition, () => {
+  const definition = (text: string) =>
+    `<p class="text-sm" data-testid="model-definition">\n  ${text}\n</p>`
+  const facts = (rows: string) =>
+    `<dl class="grid" data-testid="model-facts"><!--[-->${rows}<!--]--></dl>`
+  const routerRow =
+    '<dt class="a">Router model ID</dt><dd class="b">bfl/flux-2-max</dd>'
+
+  it.for([
+    {
+      name: 'the sentence and the Router id row',
+      html:
+        definition(
+          'FLUX 2 Max is a model. You can call it through the Comfy Router API as bfl/flux-2-max.'
+        ) + facts(`<dt>Provider</dt><dd>BFL</dd>${routerRow}`),
+      errors: []
+    },
+    {
+      name: 'an empty sentence and no facts',
+      html: definition('') + facts(''),
+      errors: [
+        'expected a definition containing " as bfl/flux-2-max."',
+        'expected a "Router model ID" row reading bfl/flux-2-max'
+      ]
+    },
+    {
+      name: 'the sentence only inside a template',
+      html: `<template>${definition('… as bfl/flux-2-max.')}${facts(routerRow)}</template>`,
+      errors: [
+        'expected a definition containing " as bfl/flux-2-max."',
+        'expected a "Router model ID" row reading bfl/flux-2-max'
+      ]
+    },
+    {
+      name: "another model's Router id",
+      html:
+        definition('X is a model. … as bfl/flux-2-pro.') +
+        facts(
+          '<dt>Router model ID</dt><dd class="font-mono">bfl/flux-2-pro</dd>'
+        ),
+      errors: [
+        'expected a definition containing " as bfl/flux-2-max."',
+        'expected a "Router model ID" row reading bfl/flux-2-max'
+      ]
+    }
+  ])('$name', ({ html, errors }) => {
+    expect(auditModelDefinition(html, 'bfl/flux-2-max')).toEqual(errors)
   })
 })
 

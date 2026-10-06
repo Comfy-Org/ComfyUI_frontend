@@ -4,7 +4,11 @@ import { join } from 'node:path'
 import { workshopModels } from '@/config/workshop-browse-content'
 import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import { auditExampleGallery } from './models-gallery-audit'
-import { auditMediaLabels, auditModelPage } from './models-html-audit'
+import {
+  auditMediaLabels,
+  auditModelDefinition,
+  auditModelPage
+} from './models-html-audit'
 
 const DIST = join(process.cwd(), 'dist')
 
@@ -14,14 +18,15 @@ function examplesOf(slug: string) {
   return detail.examples
 }
 
-const pagedModels = workshopModels.flatMap(({ href, name, slug }) =>
-  href === undefined ? [] : [{ href, name, slug }]
+const pagedModels = workshopModels.flatMap(({ href, name, slug, routerId }) =>
+  href === undefined ? [] : [{ href, name, slug, routerId }]
 )
 
 const errors = pagedModels.flatMap((model) => {
   const html = readFileSync(join(DIST, model.href, 'index.html'), 'utf-8')
   return [
     ...auditModelPage(html, model.name),
+    ...auditModelDefinition(html, model.routerId),
     ...auditMediaLabels(html),
     ...auditExampleGallery(html, examplesOf(model.slug).length)
   ].map((error) => `${model.href}: ${error}`)

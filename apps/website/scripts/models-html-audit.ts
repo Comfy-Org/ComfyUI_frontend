@@ -39,6 +39,28 @@ export function auditModelPage(html: string, modelName: string): string[] {
   return errors
 }
 
+function innerOf(html: string, tag: string, testId: string) {
+  return new RegExp(
+    `<${tag}\\b[^>]*data-testid="${testId}"[^>]*>([\\s\\S]*?)</${tag}>`
+  ).exec(html)?.[1]
+}
+
+export function auditModelDefinition(html: string, routerId: string): string[] {
+  const live = withoutHiddenMarkup(html)
+  const errors: string[] = []
+  const definition = textOf(innerOf(live, 'p', 'model-definition') ?? '')
+  if (!definition.includes(` as ${routerId}.`))
+    errors.push(`expected a definition containing " as ${routerId}."`)
+  const facts = innerOf(live, 'dl', 'model-facts') ?? ''
+  const routerRow =
+    /<dt\b[^>]*>\s*Router model ID\s*<\/dt>\s*<dd\b[^>]*>([\s\S]*?)<\/dd>/.exec(
+      facts
+    )?.[1]
+  if (routerRow === undefined || textOf(routerRow) !== routerId)
+    errors.push(`expected a "Router model ID" row reading ${routerId}`)
+  return errors
+}
+
 const PLACEHOLDER_LABEL = /^(?:Output|Sample \d+)$/
 
 function attributeOf(tag: string, name: string): string | undefined {
