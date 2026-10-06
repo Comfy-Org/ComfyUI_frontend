@@ -3,7 +3,8 @@ import type { ModelLaunchPage } from '@/templates/model-launch/types'
 const nanoBananaLinks = {
   cloud:
     'https://cloud.comfy.org/?utm_source=comfy.org&utm_medium=referral&utm_campaign=nano-banana',
-  workflows: 'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana'
+  workflows:
+    'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana-2'
 } as const
 
 interface LocalStill {
